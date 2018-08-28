@@ -1,32 +1,33 @@
+DEPENDENCIES
+* mysql
+
+
+
 HOW TO INSTALL
 
-cd $GOPATH/src
+`cd $GOPATH/src`
 
-mkdir bitbucket.org
+`mkdir bitbucket.org`
 
-cd bitbucket.org
+`cd bitbucket.org`
 
-mkdir whiteblockio
+`mkdir whiteblockio`
 
-cd whiteblockio
+`cd whiteblockio`
 
-wget http://ns2/vyos.tar.gz
+`git clone https://bitbucket.org/whiteblockio/vyos.git`
 
-tar xfz vyos.tar.gz
+`tar xfz vyos.tar.gz`
 
-cd ~/back_end/Docker_Deploy
+`cd ~/back_end/Docker_Deploy`
 
-go get
+`go get`
 
-go build
+`go build
 
 
 
 HOW TO USE	
 To run the default, which is currently syscoin
 
-./Docker_Deploy -i <image> -n <number of nodes> --servers <server1,server2...>
-
-To run ethereum or syscoin
-
-./Docker_Deploy -i <image> -n <number of nodes> [--ethereum | --syscoin]```
+./Docker_Deploy [-i <image>] [-n <number of nodes>] [--servers <server1,server2...>] [--ethereum | --syscoin | --eos] [--verbose]

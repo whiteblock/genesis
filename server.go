@@ -70,17 +70,6 @@ func getAllServers() map[string]Server {
 			ips:[]string{},
 			switches:[]Switch{ Switch{addr:"172.16.1.1",iface:"eth4",brand:VYOS} }}
 
-	allServers["delta"] = 
-		Server{	
-			addr:"172.16.4.5",
-			iaddr:Iface{ip:"10.254.4.100",gateway:"10.254.4.1",subnet:24},
-			nodes:0,
-			max:32,
-			id:4,
-			iface:"eno3",
-			ips:[]string{},
-			switches:[]Switch{ Switch{addr:"172.16.1.1",iface:"eth4",brand:VYOS} }}
-
 	allServers["ns2"] = 
 		Server{
 			addr:"172.16.8.8",
@@ -115,11 +104,11 @@ func getServers(args string) []Server {
 
 /**
  * Get information on a node based on its absolute index number
- * @param  []Server servers       The servers
- * @param  int		index  		  The node index          
- * @return string				  The host server's IP address
- * @return string				  The node's IP address
- * @return int					  The node's relative number on the server
+ * @param  []Server servers		The servers
+ * @param  int		index		The node index          
+ * @return string				The host server's IP address
+ * @return string				The node's IP address
+ * @return int					The node's relative number on the server
  */
 func getInfo(servers []Server, index int) (string,string,int){
 	k := 0

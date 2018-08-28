@@ -148,6 +148,10 @@ func check_fatal(err error){
 	}
 }
 
+func checkFatal(err error){
+	check_fatal(err)
+}
+
 /**
  * Check and log if error
  * @param  Error 	err 	The Error to check
