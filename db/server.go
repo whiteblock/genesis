@@ -65,7 +65,7 @@ func GetServer(id int) (Server,string) {
 	return server, name
 }
 
-func _InsertServer(name string,server Server,switch_id int){
+func _InsertServer(name string,server Server,switch_id int) int {
 	db := getDB()
 	defer db.Close()
 
@@ -77,22 +77,58 @@ func _InsertServer(name string,server Server,switch_id int){
 
 	defer stmt.Close()
 
-	_,err := stmt.Exec(server.Id,server.Addr,server.Iaddr.Ip,server.Iaddr.Gateway,server.Iaddr.Subnet,
+	res,err := stmt.Exec(server.Id,server.Addr,server.Iaddr.Ip,server.Iaddr.Gateway,server.Iaddr.Subnet,
 					   server.Nodes,server.Max,switch_id,name)
 	checkFatal(err)
 	tx.Commit()
+	return int(res.LastInsertId())
 }
 
-func InsertServer(name string,server Server){
+func InsertServer(name string,server Server) int {
 	db := getDB()
 	defer db.Close()
 
-	swtch,err := GetSwitchByIP(server.switches[0].addr)
+	swtch,err := GetSwitchByIP(server.switches[0].Addr)
 
 	if err == nil {
-		_InsertServer(name,server,InsertSwitch(server.switches[0]))
+		return _InsertServer(name,server,InsertSwitch(server.Switches[0]))
+	}
+	return _InsertServer(name,server,swtch.Id)
+	
+
+}
+
+func DeleteServer(id int){
+	db := getDB()
+	defer db.Close()
+
+	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",SERVER_TABLE,id))
+}
+
+func UpdateServer(id int,server Server){
+	//verify that the switch has not changed
+	swtch,err := GetSwitchByIP(server.Switches[0].Addr)
+
+	var switch_id int;
+
+	if err != nil {
+		switch_id = InsertSwitch(server.Switches[0])
 	}else{
-		_InsertServer(name,server,swtch.id)
+		switch_id = swtch.Id
 	}
 
+	db := getDB()
+	defer db.Close()
+
+	tx,err := db.Begin()
+	checkFatal(err)
+
+	stmt,err := tx.Prepare(fmt.Sprintf("UPDATE %s SET addr = ?, iaddr_ip = ?, iaddr_gateway = ?, iaddr_subnet = ?, nodes = ?, max = ?, iface = ?, switch = ? WHERE id = ? "))
+	checkFatal(err)
+	defer stmt.Close()
+
+	_,err := stmt.Exec(server.Addr,server.Iaddr.Ip,server.Iaddr.Gateway,server.Iaddr.Subnet,
+					   server.Nodes,server.Max,switch_id,server.Id)
+	checkFatal(err)
+	tx.Commit()
 }

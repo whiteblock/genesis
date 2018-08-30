@@ -5,6 +5,8 @@ import (
     "log"
     "net/http"
     "github.com/gorilla/mux"
+    db "./db"
+  	"strconv"
 )
 
 
@@ -13,7 +15,8 @@ func StartServer(){
 	router := mux.NewRouter();
 
 	router.HandleFunc("/servers/",getAllServerInfo).Methods("GET")
-	router.HandleFunc("/servers/",addNewServer).Methods("POST")
+
+	router.HandleFunc("/servers/{name}",addNewServer).Methods("PUT")
 
 	router.HandleFunc("/servers/{id}",getServerInfo).Methods("GET")
 	router.HandleFunc("/servers/{id}",deleteServer).Methods("DELETE")
@@ -38,22 +41,84 @@ func StartServer(){
 	router.HandleFunc("/switch/{id}",updateSwitch).Methods("UPDATE")
 	router.HandleFunc("/switch/{id}",deleteSwitch).Methods("DELETE")
 
+	http.ListenAndServe(":8000", router)
+}
+
+func getAllServerInfo(w http.ResponseWriter, r *http.Request){
+	servers := db.GetAllServers()
+	json.NewEncoder(w).Encode(servers);
 
 }
 
-func GetPerson(w http.ResponseWriter, r *http.Request) {
-    params := mux.Vars(r)
-   
+func addNewServer(w http.ResponseWriter, r *http.Request){
+	params := mux.Vars(r)
+	var server Server
+	_ = json.NewDecoder(r.Body).Decode(&server)
+	id := InsertServer(params["name"],server)
+	_, _ := w.Write(strconv.Itoa(id))
+}
+
+func getServerInfo(w http.ResponseWriter, r *http.Request){
+	params := mux.Vars(r)
+	server := db.GetServer(params["id"])
+	json.NewEncoder(w).Encode(server);
+}
+
+func deleteServer(w http.ResponseWriter, r *http.Request){
+	params := mux.Vars(r)
+	db.DeleteServer(params["id"])
+}
+
+func updateServerInfo(w http.ResponseWriter, r *http.Request){
+	params := mux.Vars(r)
+	var server Server
+	_ = json.NewDecoder(r.Body).Decode(&server)
+	db.UpdateServer(params["id"],server)
+	w.Write("Success")
 }
 
 
-allServers["bravo"] =
-		Server{	
-			addr:"172.16.2.5",
-			iaddr:Iface{ip:"10.254.2.100",gateway:"10.254.2.1",subnet:24},
-			nodes:0,
-			max:100,
-			id:2,
-			iface:"eno1",
-			ips:[]string{},
-			switches:[]Switch{ Switch{addr:"172.16.2.1",iface:"eth0",brand:HP} }}
+func getAllTestNets(w http.ResponseWriter, r *http.Request){
+
+}
+
+func createTestNet(w http.ResponseWriter, r *http.Request){
+
+}
+
+func getTestNetInfo(w http.ResponseWriter, r *http.Request){
+
+}
+
+
+func deleteTestNet(w http.ResponseWriter, r *http.Request){
+
+}
+
+func updateTestNet(w http.ResponseWriter, r *http.Request){
+
+}
+
+func getTestNetNodes(w http.ResponseWriter, r *http.Request){
+
+}
+
+func addNodesToTestNet(w http.ResponseWriter, r *http.Request){
+
+}
+
+func removeNodesFromTestNet(w http.ResponseWriter, r *http.Request){
+
+}
+
+func addSwitch(w http.ResponseWriter, r *http.Request){
+
+}
+
+func updateSwitch(w http.ResponseWriter, r *http.Request){
+
+}
+
+func deleteSwitch(w http.ResponseWriter, r *http.Request){
+	
+}

@@ -31,21 +31,21 @@ func GetAllSwitches() Switch[] {
 	return allServers
 }
 
-func GetSwitchById(id int) Switch {
+func GetSwitchById(id int) (Switch, error) {
 	db := getDB()
 	defer db.Close()
 
-	rows, err :=  db.Query(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s WHERE id = %d",SWITCH_TABLE,id))
+	row, err :=  db.QueryRow(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s WHERE id = %d",SWITCH_TABLE,id))
 	checkFatal(err)
-	defer rows.Close()
-	
 	var swtch Switch
 
-	for rows.Next() { //This needs to be improved
-		checkFatal(rows.Scan(&swtch.Id,&swtch.Addr,&swtch.Iface,&swtch.Brand));
+	defer row.Close()
+
+	if row.Scan(&swtch.Id,&swtch.Addr,&swtch.Iface,&swtch.Brand) == sql.ErrNoRows {
+		return swtch, errors.New("Not Found")
 	}
 
-	return swtch
+	return swtch, nil
 }
 
 func GetSwitchByIP(ip string) (Switch, error) {
@@ -54,19 +54,15 @@ func GetSwitchByIP(ip string) (Switch, error) {
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s WHERE addr = %s",SWITCH_TABLE,ip))
 	checkFatal(err)
-	defer rows.Close()
-	
 	var swtch Switch
 
-	if len(rows.Columns()) == 0 {
-		return nil, errors.New()
-	} 
+	defer row.Close()
 
-	for rows.Next() { //This needs to be improved
-		checkFatal(rows.Scan(&swtch.Id,&swtch.Addr,&swtch.Iface,&swtch.Brand));
+	if row.Scan(&swtch.Id,&swtch.Addr,&swtch.Iface,&swtch.Brand) == sql.ErrNoRows {
+		return swtch, errors.New("Not Found")
 	}
 
-	return swtch,nil
+	return swtch, nil
 }
 
 func InsertSwitch(swtch Switch) int {
@@ -81,12 +77,9 @@ func InsertSwitch(swtch Switch) int {
 
 	defer stmt.Close()
 
-	_,err := stmt.Exec(server.Id, server.Addr, server.Iaddr.Ip, server.Iaddr.Gateway, server.Iaddr.Subnet,
+	res,err := stmt.Exec(server.Id, server.Addr, server.Iaddr.Ip, server.Iaddr.Gateway, server.Iaddr.Subnet,
 					   server.Nodes, server.Max, switch_id,name)
 	checkFatal(err)
 	tx.Commit()
-
-	tmp := GetSwitchByIP(swtch.Ip)
-
-	return tmp.Id
+	return int(res.LastInsertId())
 }

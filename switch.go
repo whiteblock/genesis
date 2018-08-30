@@ -1,17 +1,13 @@
 package main
 
 import (
-	"bitbucket.org/whiteblockio/vyos"
+	vyos "./vyos"
+	db "./db"
 	"regexp"
 	"fmt"
 )
 
-type Switch struct {
-	addr 	string
-	iface	string
-	brand	int
-	id		int
-}
+
 
 func getConfig(host string) (*vyos.Config, string) {
 
@@ -26,32 +22,32 @@ func getConfig(host string) (*vyos.Config, string) {
 	return conf,meta
 }
 
-func prepareSwitches(server Server,nodes int){
+func prepareSwitches(server db.Server,nodes int){
 	//Assume one switch per server
-	if server.switches[0].brand == HP {
+	if server.Switches[0].Brand == HP {
 		setupHPSwitch(server,nodes)
 		return
 	}
-	conf,meta := getConfig(server.switches[0].addr)
-	gws := getGateways(server.id, nodes)
-	conf.RemoveVifs(server.switches[0].iface)
-	conf.SetIfaceAddr(server.switches[0].iface,fmt.Sprintf("%s/%d",server.iaddr.gateway,server.iaddr.subnet))//Update this later on to be more dynamic
+	conf,meta := getConfig(server.Switches[0].Addr)
+	gws := getGateways(server.Id, nodes)
+	conf.RemoveVifs(server.Switches[0].Iface)
+	conf.SetIfaceAddr(server.Switches[0].Iface,fmt.Sprintf("%s/%d",server.Iaddr.Gateway,server.Iaddr.Subnet))//Update this later on to be more dynamic
 	for i,gw := range gws {
 		conf.AddVif(
 			fmt.Sprintf("%d",i+101),
 			fmt.Sprintf("%s/%d",gw,getSubnet()),
-			server.switches[0].iface)
+			server.Switches[0].Iface)
 	}
 	//fmt.Printf(conf.ToString())
 	//fmt.Printf(meta)
 	write("config.boot",fmt.Sprintf("%s\n%s",conf.ToString(),meta))
-	_scp(server.switches[0].addr,"./config.boot","/config/config.boot")
-	_scp(server.switches[0].addr,"./install.sh","/home/appo/install.sh")
-	sshExec(server.switches[0].addr,"chmod +x ./install.sh && ./install.sh")
+	_scp(server.Switches[0].Addr,"./config.boot","/config/config.boot")
+	_scp(server.Switches[0].Addr,"./install.sh","/home/appo/install.sh")
+	sshExec(server.Switches[0].Addr,"chmod +x ./install.sh && ./install.sh")
 	rm("config.boot")
 }
 
-func prepareVlans(server Server,nodes int){
-	cmd := fmt.Sprintf("cd local_deploy && ./whiteblock -k && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s",server.id,nodes,SERVER_BITS,CLUSTER_BITS,NODE_BITS,server.iface)
-	sshExec(server.addr,cmd)
+func prepareVlans(server db.Server,nodes int){
+	cmd := fmt.Sprintf("cd local_deploy && ./whiteblock -k && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s",server.Id,nodes,SERVER_BITS,CLUSTER_BITS,NODE_BITS,server.Iface)
+	sshExec(server.Addr,cmd)
 }
