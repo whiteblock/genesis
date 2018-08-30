@@ -20,17 +20,3 @@ const 	THREAD_LIMIT int64				=	10
 const	VYOS	int						=   1
 const	HP		int						=	2
 
-/**
- * Data Constants
- */
-
-const 	DATA_LOC	string				= 	"~/.dddata"
-
-/**
- * Schema Constants
- */
-
-const 	SWITCH_TABLE	string			= 	"switches"
-const 	SERVER_TABLE	string			= 	"servers"
-const	TEST_TABLE		string			= 	"testnets"
-const	NODES_TABLE		string			= 	"nodes"

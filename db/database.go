@@ -1,5 +1,10 @@
 package db;
 
+const 	DATA_LOC	string			= 	"~/.dddata"
+const 	SWITCH_TABLE	string		= 	"switches"
+const 	SERVER_TABLE	string		= 	"servers"
+const	TEST_TABLE		string		= 	"testnets"
+const	NODES_TABLE		string		= 	"nodes"
 
 func dbInit(){
 	db := getDB()

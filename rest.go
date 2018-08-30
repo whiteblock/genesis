@@ -46,13 +46,12 @@ func StartServer(){
 
 func getAllServerInfo(w http.ResponseWriter, r *http.Request){
 	servers := db.GetAllServers()
-	json.NewEncoder(w).Encode(servers);
-
+	json.NewEncoder(w).Encode(servers)
 }
 
 func addNewServer(w http.ResponseWriter, r *http.Request){
 	params := mux.Vars(r)
-	var server Server
+	var server db.Server
 	_ = json.NewDecoder(r.Body).Decode(&server)
 	id := InsertServer(params["name"],server)
 	_, _ := w.Write(strconv.Itoa(id))
@@ -61,7 +60,7 @@ func addNewServer(w http.ResponseWriter, r *http.Request){
 func getServerInfo(w http.ResponseWriter, r *http.Request){
 	params := mux.Vars(r)
 	server := db.GetServer(params["id"])
-	json.NewEncoder(w).Encode(server);
+	json.NewEncoder(w).Encode(server)
 }
 
 func deleteServer(w http.ResponseWriter, r *http.Request){
@@ -71,7 +70,7 @@ func deleteServer(w http.ResponseWriter, r *http.Request){
 
 func updateServerInfo(w http.ResponseWriter, r *http.Request){
 	params := mux.Vars(r)
-	var server Server
+	var server db.Server
 	_ = json.NewDecoder(r.Body).Decode(&server)
 	db.UpdateServer(params["id"],server)
 	w.Write("Success")
@@ -89,7 +88,6 @@ func createTestNet(w http.ResponseWriter, r *http.Request){
 func getTestNetInfo(w http.ResponseWriter, r *http.Request){
 
 }
-
 
 func deleteTestNet(w http.ResponseWriter, r *http.Request){
 
@@ -120,5 +118,5 @@ func updateSwitch(w http.ResponseWriter, r *http.Request){
 }
 
 func deleteSwitch(w http.ResponseWriter, r *http.Request){
-	
+
 }
