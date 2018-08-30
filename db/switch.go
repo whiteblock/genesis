@@ -1,4 +1,4 @@
-package db;
+package db
 
 import(
 	_ "github.com/mattn/go-sqlite3"
@@ -14,32 +14,31 @@ type Switch struct {
 	Id		int
 }
 
-func GetAllSwitches() Switch[] {
+func GetAllSwitches() []Switch {
 	db := getDB()
 	defer db.Close()
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s",SWITCH_TABLE ))
 	checkFatal(err)
 	defer rows.Close()
-	switches := Switch[]{}
+	switches := []Switch{}
 
 	for rows.Next() {
 		var swtch Switch
 		checkFatal(rows.Scan(&swtch.Id,&swtch.Addr,&swtch.Iface,&swtch.Brand))
 		switches = append(switches,swtch)
 	}
-	return allServers
+	return switches
 }
 
 func GetSwitchById(id int) (Switch, error) {
 	db := getDB()
 	defer db.Close()
 
-	row, err :=  db.QueryRow(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s WHERE id = %d",SWITCH_TABLE,id))
-	checkFatal(err)
+	row := db.QueryRow(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s WHERE id = %d",SWITCH_TABLE,id))
+
 	var swtch Switch
 
-	defer row.Close()
 
 	if row.Scan(&swtch.Id,&swtch.Addr,&swtch.Iface,&swtch.Brand) == sql.ErrNoRows {
 		return swtch, errors.New("Not Found")
@@ -52,11 +51,9 @@ func GetSwitchByIP(ip string) (Switch, error) {
 	db := getDB()
 	defer db.Close()
 
-	rows, err :=  db.QueryRow(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s WHERE addr = %s",SWITCH_TABLE,ip))
-	checkFatal(err)
+	row := db.QueryRow(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s WHERE addr = %s",SWITCH_TABLE,ip))
+	
 	var swtch Switch
-
-	defer row.Close()
 
 	if row.Scan(&swtch.Id,&swtch.Addr,&swtch.Iface,&swtch.Brand) == sql.ErrNoRows {
 		return swtch, errors.New("Not Found")
@@ -81,14 +78,17 @@ func InsertSwitch(swtch Switch) int {
 	checkFatal(err)
 
 	tx.Commit()
-	return int(res.LastInsertId())
+	id, err := res.LastInsertId()
+	checkFatal(err)
+
+	return int(id)
 }
 
 func DeleteSwitch(id int){
 	db := getDB()
 	defer db.Close()
 
-	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",SWITCH,id))
+	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",SWITCH_TABLE,id))
 }
 
 func UpdateSwitch(id int,swtch Switch){
@@ -102,7 +102,7 @@ func UpdateSwitch(id int,swtch Switch){
 	checkFatal(err)
 	defer stmt.Close()
 
-	_,err := stmt.Exec(swtch.Addr,swtch.Iface,swtch.Brand,swtch.Id)
+	_,err = stmt.Exec(swtch.Addr,swtch.Iface,swtch.Brand,swtch.Id)
 	checkFatal(err)
 	tx.Commit()
 }

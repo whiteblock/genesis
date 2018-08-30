@@ -1,9 +1,10 @@
-package db;
+package db
 
 import(
 	_ "github.com/mattn/go-sqlite3"
 	"database/sql"
 	"fmt"
+	"errors"
 )
 
 type Server struct{
@@ -37,34 +38,40 @@ func GetAllServers() map[string]Server {
 		var server Server
 		var switchId int
 		checkFatal(rows.Scan(&server.Id,&server.Addr,&server.Iaddr.Ip,&server.Iaddr.Gateway,&server.Iaddr.Subnet,
-							 &server.Nodes,&server.Max,&switch_id,&name))
-		server.switches = []Switch{ GetSwitchById(switchId) }
+							 &server.Nodes,&server.Max,&switchId,&name))
+		swtch, err := GetSwitchById(switchId)
+		checkFatal(err)
+
+		server.Switches = []Switch{ swtch }
 		allServers[name] = server
 	}
-	return allServers;
+	return allServers
 }
 
-func GetServer(id int) (Server,string) {
+func GetServer(id int) (Server, string, error) {
 	db := getDB()
 	defer db.Close()
 
-	row, err :=  db.QueryRow(fmt.Sprintf("SELECT * FROM %s WHERE id = %d",SERVER_TABLE,id))
-	checkFatal(err)
-	defer row.Close()
+	row := db.QueryRow(fmt.Sprintf("SELECT * FROM %s WHERE id = %d",SERVER_TABLE,id))
 	
 	var server Server
 	var name string
-
+	var switchId int
 
 	if row.Scan(&server.Id,&server.Addr,&server.Iaddr.Ip,&server.Iaddr.Gateway,&server.Iaddr.Subnet,
-							&server.Nodes,&server.Max,&switch_id,&name) == sql.ErrNoRows {
-		return swtch, name errors.New("Not Found")
+				&server.Nodes,&server.Max,&switchId,&name) == sql.ErrNoRows {
+		return server, name, errors.New("Not Found")
 	}
 
-	return swtch, name, nil
+	swtch, err := GetSwitchById(switchId)
+	checkFatal(err)
+
+	server.Switches = []Switch{ swtch }
+
+	return server, name, nil
 }
 
-func _InsertServer(name string,server Server,switch_id int) int {
+func _insertServer(name string,server Server,switchId int) int {
 	db := getDB()
 	defer db.Close()
 
@@ -77,22 +84,23 @@ func _InsertServer(name string,server Server,switch_id int) int {
 	defer stmt.Close()
 
 	res,err := stmt.Exec(server.Id,server.Addr,server.Iaddr.Ip,server.Iaddr.Gateway,server.Iaddr.Subnet,
-					   server.Nodes,server.Max,switch_id,name)
+					   server.Nodes,server.Max,switchId,name)
 	checkFatal(err)
 	tx.Commit()
-	return int(res.LastInsertId())
+	id, err := res.LastInsertId()
+	return int(id)
 }
 
 func InsertServer(name string,server Server) int {
 	db := getDB()
 	defer db.Close()
 
-	swtch,err := GetSwitchByIP(server.switches[0].Addr)
+	swtch,err := GetSwitchByIP(server.Switches[0].Addr)
 
 	if err == nil {
-		return _InsertServer(name,server,InsertSwitch(server.Switches[0]))
+		return _insertServer(name,server,InsertSwitch(server.Switches[0]))
 	}
-	return _InsertServer(name,server,swtch.Id)
+	return _insertServer(name,server,swtch.Id)
 	
 
 }
@@ -105,15 +113,15 @@ func DeleteServer(id int){
 }
 
 func UpdateServer(id int,server Server){
-	//verify that the switch has not changed
+	//Handle Updating of Switch
 	swtch,err := GetSwitchByIP(server.Switches[0].Addr)
 
-	var switch_id int;
+	var switchId int
 
 	if err != nil {
-		switch_id = InsertSwitch(server.Switches[0])
+		switchId = InsertSwitch(server.Switches[0])
 	}else{
-		switch_id = swtch.Id
+		switchId = swtch.Id
 	}
 
 	db := getDB()
@@ -126,8 +134,14 @@ func UpdateServer(id int,server Server){
 	checkFatal(err)
 	defer stmt.Close()
 
-	_,err := stmt.Exec(server.Addr,server.Iaddr.Ip,server.Iaddr.Gateway,server.Iaddr.Subnet,
-					   server.Nodes,server.Max,switch_id,server.Id)
+	_,err = stmt.Exec(server.Addr,server.Iaddr.Ip,server.Iaddr.Gateway,server.Iaddr.Subnet,
+					   server.Nodes,server.Max,switchId,server.Id)
 	checkFatal(err)
 	tx.Commit()
+}
+
+func UpdateServerNodes(id int,nodes int){
+	db := getDB()
+	defer db.Close()
+	db.Exec(fmt.Sprintf("UPDATE %s SET nodes = %d WHERE id = %d",SERVER_TABLE,id,nodes))
 }

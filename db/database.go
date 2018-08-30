@@ -1,5 +1,12 @@
 package db;
 
+import(
+	_ "github.com/mattn/go-sqlite3"
+	"database/sql"
+	"fmt"
+	"os"
+)
+
 const 	DATA_LOC	string			= 	"~/.dddata"
 const 	SWITCH_TABLE	string		= 	"switches"
 const 	SERVER_TABLE	string		= 	"servers"
@@ -62,6 +69,12 @@ func getDB() *sql.DB {
 	}
 	db, err := sql.Open("sqlite3", DATA_LOC)
 	checkFatal(err)
-	return db;
+	return db
+}
+
+func checkFatal(err error){
+	if(err != nil){
+		panic(err)
+	}
 }
 

@@ -1,9 +1,10 @@
-package db;
+package db
 
 import(
 	_ "github.com/mattn/go-sqlite3"
 	"database/sql"
 	"fmt"
+	"errors"
 )
 
 type Node struct {
@@ -23,13 +24,13 @@ func GetAllNodesByServer(serverId int) []Node {
 	checkFatal(err)
 	defer rows.Close()
 	
-	nodes := Node[]{}
+	nodes := []Node{}
 	for rows.Next() {
 		var node Node
 		checkFatal(rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip))
 		nodes = append(nodes,node)
 	}
-	return nodes;
+	return nodes
 }
 
 func GetAllNodesByTest(testId int)[]Node{
@@ -40,7 +41,7 @@ func GetAllNodesByTest(testId int)[]Node{
 	checkFatal(err)
 	defer rows.Close()
 
-	nodes := Node[]{}
+	nodes := []Node{}
 	for rows.Next() {
 		var node Node
 		checkFatal(rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip))
@@ -60,22 +61,20 @@ func GetAllNodes() []Node {
 	nodes := []Node{}
 
 	for rows.Next() {
-		var testnet TestNet
+		var node Node
 		checkFatal(rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip))
-		nodes = append(nodes,node);
+		nodes = append(nodes,node)
 	}
-	return testnets;
+	return nodes
 }
 
 func GetNode(id int) (Node,error) {
 	db := getDB()
 	defer db.Close()
 
-	row, err :=  db.QueryRow(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s WHERE id = %d",NODES_TABLE,id))
-	checkFatal(err)
-	var node Node
+	row :=  db.QueryRow(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s WHERE id = %d",NODES_TABLE,id))
 
-	defer row.Close()
+	var node Node
 
 	if row.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip) == sql.ErrNoRows {
 		return node, errors.New("Not Found")
@@ -99,7 +98,8 @@ func InsertNode(node Node) int {
 	res,err := stmt.Exec(node.TestNetId,node.Server,node.LocalId,node.Ip)
 	checkFatal(err)
 	tx.Commit()
-	return int(res.LastInsertId())
+	id, err := res.LastInsertId()
+	return int(id)
 }
 
 
@@ -108,4 +108,18 @@ func DeleteNode(id int){
 	defer db.Close()
 
 	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",NODES_TABLE,id))
+}
+
+func DeleteNodesByTestNet(id int){
+	db := getDB()
+	defer db.Close()
+
+	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE test_net = %d",NODES_TABLE,id))
+}
+
+func DeleteNodesByServer(id int){
+	db := getDB()
+	defer db.Close()
+
+	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE server = %d",NODES_TABLE,id))
 }

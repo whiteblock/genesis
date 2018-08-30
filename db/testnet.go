@@ -1,4 +1,4 @@
-package db;
+package db
 
 import(
 	_ "github.com/mattn/go-sqlite3"
@@ -27,20 +27,18 @@ func GetAllTestNets() []TestNet {
 	for rows.Next() {
 		var testnet TestNet
 		checkFatal(rows.Scan(&testnet.Id,&testnet.Blockchain,&testnet.Nodes,&testnet.Image))
-		testnets = append(testnets,testnet);
+		testnets = append(testnets,testnet)
 	}
-	return testnets;
+	return testnets
 }
 
 func GetTestNet(id int) (TestNet,error) {
 	db := getDB()
 	defer db.Close()
 
-	row, err :=  db.QueryRow(fmt.Sprintf("SELECT id,blockchain,nodes,image FROM %s WHERE id = %d",TEST_TABLE,id))
-	checkFatal(err)
-	var testnet TestNet
+	row :=  db.QueryRow(fmt.Sprintf("SELECT id,blockchain,nodes,image FROM %s WHERE id = %d",TEST_TABLE,id))
 
-	defer row.Close()
+	var testnet TestNet
 
 	if row.Scan(&testnet.Id,&testnet.Blockchain,&testnet.Nodes,&testnet.Image) == sql.ErrNoRows {
 		return testnet, errors.New("Not Found")
@@ -64,7 +62,11 @@ func InsertTestNet(testnet TestNet) int {
 	res,err := stmt.Exec(testnet.Blockchain,testnet.Nodes,testnet.Image)
 	checkFatal(err)
 	tx.Commit()
-	return int(res.LastInsertId())
+
+	id, err := res.LastInsertId()
+	checkFatal(err)
+
+	return int(id)
 }
 
 
@@ -73,9 +75,10 @@ func DeleteTestNet(id int){
 	defer db.Close()
 
 	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",TEST_TABLE,id))
+	DeleteNodesByTestNet(id)
 }
 
-func UpdateTestNet(id int,server Server){
+func UpdateTestNet(id int,testnet TestNet){
 	db := getDB()
 	defer db.Close()
 
@@ -86,7 +89,13 @@ func UpdateTestNet(id int,server Server){
 	checkFatal(err)
 	defer stmt.Close()
 
-	_,err := stmt.Exec(testnet.Blockchain,testnet.Nodes,testnet.Image,testnet.Id)
+	_,err = stmt.Exec(testnet.Blockchain,testnet.Nodes,testnet.Image,testnet.Id)
 	checkFatal(err)
 	tx.Commit()
+}
+
+func UpdateTestNetNodes(id int,nodes int){
+	db := getDB()
+	defer db.Close()
+	db.Exec(fmt.Sprintf("UPDATE %s SET nodes = %d WHERE id = %d",TEST_TABLE,id,nodes))
 }

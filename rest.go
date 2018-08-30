@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-    "log"
     "net/http"
     "github.com/gorilla/mux"
     db "./db"
@@ -12,7 +11,7 @@ import (
 
 
 func StartServer(){
-	router := mux.NewRouter();
+	router := mux.NewRouter()
 
 	router.HandleFunc("/servers/",getAllServerInfo).Methods("GET")
 
@@ -30,16 +29,9 @@ func StartServer(){
 	router.HandleFunc("/testnet/{id}",deleteTestNet).Methods("DELETE")
 	router.HandleFunc("/testnet/{id}/",updateTestNet).Methods("UPDATE")
 
-	router.HandleFunc("/testnet/{id}/nodes/",getTestNetNodes).Methods("GET");
+	router.HandleFunc("/testnet/{id}/nodes/",getTestNetNodes).Methods("GET")
 	router.HandleFunc("/testnet/{id}/nodes/",addNodesToTestNet).Methods("POST")
 	router.HandleFunc("/testnet/{id}/nodes/",removeNodesFromTestNet).Methods("DELETE")
-
-	router.HandleFunc("/switch/",addSwitch).Methods("POST")
-	router.HandleFunc("/switch/",getSwitches).Methods("GET")
-
-	router.HandleFunc("/switch/{id}",getSwitch).Methods("GET")
-	router.HandleFunc("/switch/{id}",updateSwitch).Methods("UPDATE")
-	router.HandleFunc("/switch/{id}",deleteSwitch).Methods("DELETE")
 
 	http.ListenAndServe(":8000", router)
 }
@@ -54,12 +46,12 @@ func addNewServer(w http.ResponseWriter, r *http.Request){
 	var server db.Server
 	_ = json.NewDecoder(r.Body).Decode(&server)
 	id := InsertServer(params["name"],server)
-	_, _ := w.Write(strconv.Itoa(id))
+	w.Write(strconv.Itoa(id))
 }
 
 func getServerInfo(w http.ResponseWriter, r *http.Request){
 	params := mux.Vars(r)
-	server := db.GetServer(params["id"])
+	server,err := db.GetServer(params["id"])
 	json.NewEncoder(w).Encode(server)
 }
 
@@ -78,45 +70,59 @@ func updateServerInfo(w http.ResponseWriter, r *http.Request){
 
 
 func getAllTestNets(w http.ResponseWriter, r *http.Request){
-
+	testNets := GetAllTestNets()
+	json.NewEncoder(w).Encode(testNets)
 }
 
 func createTestNet(w http.ResponseWriter, r *http.Request){
-
+	params := mux.Vars(r)
+	var testnet db.TestNet
+	_ = json.NewDecoder(r.Body).Decode(&testnet)
+	//TODO handle the creation of a testnet
+	
+	//Handle the nodes, and everything...
+	id := db.InsertTestNet(testnet)
+	w.Write(strconv.Itoa(id))
 }
 
 func getTestNetInfo(w http.ResponseWriter, r *http.Request){
+	params := mux.Vars(r)
+	testnet, err := db.GetTestNet(params["id"])
+	if err == nil {
+		w.Write("Does Not Exist")
+	}else{
+		json.NewEncoder(w).Encode(testNets)
+	}
 
 }
 
 func deleteTestNet(w http.ResponseWriter, r *http.Request){
-
-}
+	params := mux.Vars(r)
+	//TODO handle the deletion of the test net
+	db.DeleteTestNet(params["id"])
+}	
 
 func updateTestNet(w http.ResponseWriter, r *http.Request){
-
+	params := mux.Vars(r)
+	var testnet db.TestNet
+	_ = json.NewDecoder(r.Body).Decode(&testnet)
+	//TODO handle the update of a testnet
+	
+	//Handle the nodes, and everything...
+	id := db.UpdateTestNet(params["id"],testnet)
+	w.Write(strconv.Itoa(id))
 }
 
 func getTestNetNodes(w http.ResponseWriter, r *http.Request){
-
+	params := mux.Vars(r)
+	nodes := db.GetAllNodesByTest(params["id"])
+	json.NewEncoder(w).Encode(nodes)
 }
 
 func addNodesToTestNet(w http.ResponseWriter, r *http.Request){
-
+	params := mux.Vars(r)
 }
 
 func removeNodesFromTestNet(w http.ResponseWriter, r *http.Request){
-
-}
-
-func addSwitch(w http.ResponseWriter, r *http.Request){
-
-}
-
-func updateSwitch(w http.ResponseWriter, r *http.Request){
-
-}
-
-func deleteSwitch(w http.ResponseWriter, r *http.Request){
-
+	params := mux.Vars(r)
 }
