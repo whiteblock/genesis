@@ -10,6 +10,7 @@ type Switch struct {
 	addr 	string
 	iface	string
 	brand	int
+	id		int
 }
 
 func getConfig(host string) (*vyos.Config, string) {
