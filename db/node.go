@@ -7,6 +7,7 @@ import(
 	"errors"
 )
 
+//TODO: Fix broken naming convention
 type Node struct {
 	Id			int
 	TestNetId	int

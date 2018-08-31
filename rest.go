@@ -9,7 +9,6 @@ import (
 )
 
 
-
 func StartServer(){
 	router := mux.NewRouter()
 
@@ -27,11 +26,8 @@ func StartServer(){
 
 	router.HandleFunc("/testnet/{id}",getTestNetInfo).Methods("GET")
 	router.HandleFunc("/testnet/{id}",deleteTestNet).Methods("DELETE")
-	router.HandleFunc("/testnet/{id}/",updateTestNet).Methods("UPDATE")
 
 	router.HandleFunc("/testnet/{id}/nodes/",getTestNetNodes).Methods("GET")
-	router.HandleFunc("/testnet/{id}/nodes/",addNodesToTestNet).Methods("POST")
-	router.HandleFunc("/testnet/{id}/nodes/",removeNodesFromTestNet).Methods("DELETE")
 
 	http.ListenAndServe(":8000", router)
 }
@@ -81,8 +77,7 @@ func createTestNet(w http.ResponseWriter, r *http.Request){
 	//TODO handle the creation of a testnet
 	
 	//Handle the nodes, and everything...
-	id := db.InsertTestNet(testnet)
-	w.Write(strconv.Itoa(id))
+	
 }
 
 func getTestNetInfo(w http.ResponseWriter, r *http.Request){
@@ -99,30 +94,12 @@ func getTestNetInfo(w http.ResponseWriter, r *http.Request){
 func deleteTestNet(w http.ResponseWriter, r *http.Request){
 	params := mux.Vars(r)
 	//TODO handle the deletion of the test net
-	db.DeleteTestNet(params["id"])
+	
 }	
 
-func updateTestNet(w http.ResponseWriter, r *http.Request){
-	params := mux.Vars(r)
-	var testnet db.TestNet
-	_ = json.NewDecoder(r.Body).Decode(&testnet)
-	//TODO handle the update of a testnet
-	
-	//Handle the nodes, and everything...
-	id := db.UpdateTestNet(params["id"],testnet)
-	w.Write(strconv.Itoa(id))
-}
 
 func getTestNetNodes(w http.ResponseWriter, r *http.Request){
 	params := mux.Vars(r)
 	nodes := db.GetAllNodesByTest(params["id"])
 	json.NewEncoder(w).Encode(nodes)
-}
-
-func addNodesToTestNet(w http.ResponseWriter, r *http.Request){
-	params := mux.Vars(r)
-}
-
-func removeNodesFromTestNet(w http.ResponseWriter, r *http.Request){
-	params := mux.Vars(r)
 }

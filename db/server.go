@@ -14,8 +14,8 @@ type Server struct{
 	Max 		int
 	Id			int
 	Iface		string
-	Ips			[]string
 	Switches	[]Switch
+	Ips			[]string
 }
 
 type Iface struct {
@@ -46,6 +46,33 @@ func GetAllServers() map[string]Server {
 		allServers[name] = server
 	}
 	return allServers
+}
+
+func GetServers(ids []int) ([]Server,error) {
+	db := getDB()
+	defer db.Close()
+
+	var servers []Server
+
+	for id := range ids {
+		row := db.QueryRow(fmt.Sprintf("SELECT * FROM %s WHERE id = %d",SERVER_TABLE,id))
+	
+		var server Server
+		var name string
+		var switchId int
+
+		if row.Scan(&server.Id,&server.Addr,&server.Iaddr.Ip,&server.Iaddr.Gateway,&server.Iaddr.Subnet,
+					&server.Nodes,&server.Max,&switchId,&name) == sql.ErrNoRows {
+			return servers, errors.New("Unknown Server")
+		}
+		swtch, err := GetSwitchById(switchId)
+		checkFatal(err)
+
+		server.Switches = []Switch{ swtch }
+		servers := append(servers,server)
+	}
+
+	return servers, nil
 }
 
 func GetServer(id int) (Server, string, error) {
