@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	db "./db"
 	deploy "./deploy"
 	util "./util"
@@ -22,7 +23,7 @@ func AddTestNet(dd DeploymentDetails) error {
 
 	newServerData := deploy.Build(&config, servers) //TODO: Restructure distribution of nodes over servers
 
-	testNetId := db.InsertTestNet(db.TestNet{Id: -1, Blockchain: dd.Blockchain, Nodes: dd.Nodes, Image: db.Image})
+	testNetId := db.InsertTestNet(db.TestNet{Id: -1, Blockchain: dd.Blockchain, Nodes: dd.Nodes, Image: dd.Image})
 
 	for _, server := range newServerData {
 		for i, ip := range server.Ips {
@@ -42,11 +43,11 @@ func RemoveTestNet(id int) {
 	nodes := db.GetAllNodesByTestNet(id)
 	for _, node := range nodes {
 		server, _, _ := db.GetServer(node.Server)
-		util.SshExec(server.Ip, fmt.Sprintf("~/local_deploy/deploy --kill=%d", node.LocalId))
+		util.SshExec(server.Addr, fmt.Sprintf("~/local_deploy/deploy --kill=%d", node.LocalId))
 	}
 
 }
 
-func ClearServers(servers []Servers) {
+func ClearServers(servers []db.Server) {
 
 }

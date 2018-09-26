@@ -70,7 +70,7 @@ func InsertSwitch(swtch Switch) int {
 	tx,err := db.Begin()
 	util.CheckFatal(err)
 
-	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (addr,iface,brand) VALUES (?,?,?,?)",SwitchTable))
+	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (addr,iface,brand) VALUES (?,?,?)",SwitchTable))
 	util.CheckFatal(err)
 
 	defer stmt.Close()

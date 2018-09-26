@@ -87,7 +87,7 @@ func getAllTestNets(w http.ResponseWriter, r *http.Request) {
 }
 
 func createTestNet(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
+	//params := mux.Vars(r)
 	var testnet db.TestNet
 	_ = json.NewDecoder(r.Body).Decode(&testnet)
 	//TODO handle the creation of a testnet
@@ -103,17 +103,17 @@ func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Invalid id"))
 		return
 	}
-	testnet, err := db.GetTestNet(id)
+	testNet, err := db.GetTestNet(id)
 	if err == nil {
 		w.Write([]byte("Does Not Exist"))
 	} else {
-		json.NewEncoder(w).Encode(testNets)
+		json.NewEncoder(w).Encode(testNet)
 	}
 
 }
 
 func deleteTestNet(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
+	//params := mux.Vars(r)
 	//TODO handle the deletion of the test net
 
 }

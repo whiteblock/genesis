@@ -26,11 +26,11 @@ type Iface struct {
 }
 
 func GetAllServers() map[string]Server {
-	
+
 	db := getDB()
 	defer db.Close()
 
-	rows, err :=  db.Query(fmt.Sprintf("SELECT * FROM %s",ServerTable ))
+	rows, err :=  db.Query(fmt.Sprintf("SELECT id,addr, iaddr_ip,iaddr_gateway,iaddr_subnet,nodes,max,iface,switch,name FROM %s",ServerTable ))
 	util.CheckFatal(err)
 	defer rows.Close()
 	allServers := make(map[string]Server)
@@ -38,8 +38,11 @@ func GetAllServers() map[string]Server {
 		var name string
 		var server Server
 		var switchId int
-		util.CheckFatal(rows.Scan(&server.Id,&server.Addr,&server.Iaddr.Ip,&server.Iaddr.Gateway,&server.Iaddr.Subnet,
-							 &server.Nodes,&server.Max,&switchId,&name))
+		//var subnet string
+		util.CheckFatal(rows.Scan(&server.Id,&server.Addr,
+								  &server.Iaddr.Ip, &server.Iaddr.Gateway, &server.Iaddr.Subnet,
+							 	  &server.Nodes,&server.Max,&server.Iface,&switchId,&name))
+		//fmt.Println(subnet)
 		swtch, err := GetSwitchById(switchId)
 		util.CheckFatal(err)
 
@@ -106,13 +109,13 @@ func _insertServer(name string,server Server,switchId int) int {
 	tx,err := db.Begin()
 	util.CheckFatal(err)
 
-	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (addr,iaddr_ip,iaddr_gateway,iaddr_subnet,nodes,max,iface,switch,name) VALUES (?,?,?,?,?,?,?,?,?)",ServerTable))
+	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (addr,iaddr_ip,iaddr_gateway,iaddr_subnet, nodes,max,iface,switch,name) VALUES (?,?,?,?,?,?,?,?,?)",ServerTable))
 	util.CheckFatal(err)
 
 	defer stmt.Close()
 
-	res,err := stmt.Exec(server.Id,server.Addr,server.Iaddr.Ip,server.Iaddr.Gateway,server.Iaddr.Subnet,
-					   server.Nodes,server.Max,switchId,name)
+	res,err := stmt.Exec(server.Addr, server.Iaddr.Ip, server.Iaddr.Gateway, server.Iaddr.Subnet,
+					   server.Nodes,server.Max,server.Iface,switchId,name)
 	util.CheckFatal(err)
 	tx.Commit()
 	id, err := res.LastInsertId()

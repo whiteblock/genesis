@@ -8,62 +8,70 @@ import(
 	util "../util"
 )
 
-const 	dataLoc			string		= 	"~/.dddata"
+const 	dataLoc			string		= 	".gdata"
 const 	SwitchTable		string		= 	"switches"
 const 	ServerTable		string		= 	"servers"
 const	TestTable		string		= 	"testnets"
 const	NodesTable		string		= 	"nodes"
 
 func dbInit(){
+	_, err := os.Create(dataLoc)
+	if err != nil {
+		panic(err)
+	}
 	db := getDB()
 	defer db.Close()
 
-	switchTable := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s,%s);",
+	switchSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s,%s);",
 		SwitchTable,
-		"id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT",
+		"id INTEGER PRIMARY KEY AUTOINCREMENT",
 		"addr TEXT NOT NULL",
 		"iface TEXT NOT NULL",
-		"brand INTEGER NOT NULL")
+		"brand INTEGER")
 
-	serverTable := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s,%s,%s, %s);",
+	serverSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s,%s,%s, %s);",
 		ServerTable,
 		
-		"id INTERGER NOT NULL PRIMARY KEY AUTOINCREMENT",
+		"id INTEGER PRIMARY KEY AUTOINCREMENT",
 		"addr TEXT NOT NULL",
 		"iaddr_ip TEXT NOT NULL",
 
-		"iaddr_Gateway TEXT NOT NULL",
-		"iaddr_Subnet INTERGER NOT NULL",
-		"nodes INTEGER NOT NULL DEFAULT 0",
+		"iaddr_gateway TEXT NOT NULL",
+		"iaddr_subnet INTEGER",
+		"nodes INTEGER DEFAULT 0",
 
-		"max INTEGER NOT NULL",
+		"max INTEGER",
 		"iface TEXT NOT NULL",
-		"switch INTEGER NOT NULL",
+		"switch INTEGER",
 		"name TEXT")
 
-	testTable := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s,%s);",
+	testSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s,%s);",
 		TestTable,
-		"id INTERGER NOT NULL PRIMARY KEY AUTOINCREMENT",
+		"id INTEGER PRIMARY KEY AUTOINCREMENT",
 		"blockchain TEXT NOT NULL",
-		"nodes INTERGER NOT NULL",
+		"nodes INTERGER",
 		"image TEXT NOT NULL")
 
-	nodesTable := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s);",
+	nodesSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s);",
 		NodesTable,
 
-		"id INTERGER NOT NULL PRIMARY KEY AUTOINCREMENT",
-		"test_net INTERGER NOT NULL",
-		"server INTERGER NOT NULL",
+		"id INTEGER PRIMARY KEY AUTOINCREMENT",
+		"test_net INTERGER",
+		"server INTERGER",
 
-		"local_id INTERGER NOT NULL",
+		"local_id INTERGER",
 		"ip TEXT NOT NULL")
 
 	
 
-	db.Exec(switchTable)
-	db.Exec(serverTable)
-	db.Exec(testTable)
-	db.Exec(nodesTable)
+	_,err = db.Exec(switchSchema)
+	util.CheckFatal(err)
+	_,err = db.Exec(serverSchema)
+	util.CheckFatal(err)
+	_,err = db.Exec(testSchema)
+	util.CheckFatal(err)
+	_,err = db.Exec(nodesSchema)
+	util.CheckFatal(err)
 
 	InsertLocalServers(db);
 
