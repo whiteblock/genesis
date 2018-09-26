@@ -14,7 +14,7 @@ import (
  */
 func GetServers(args string) []db.Server {
 	requestedServers := strings.Split(args,",")
-	allServers := db.getAllServers()
+	allServers := db.GetAllServers()
 	servers := []db.Server{}
 	for _, server := range requestedServers {
 		servers = append(servers,allServers[server])
@@ -33,9 +33,9 @@ func GetServers(args string) []db.Server {
 func GetInfo(servers []db.Server, index int) (string,string,int){
 	k := 0
 	for i := 0; i < len(servers); i++ {
-		for j := 0; j < len(servers[i].ips); j++ {
+		for j := 0; j < len(servers[i].Ips); j++ {
 			if k == index {
-				return servers[i].addr, servers[i].ips[j], j
+				return servers[i].Addr, servers[i].Ips[j], j
 			}
 			k++
 		}

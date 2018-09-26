@@ -22,7 +22,7 @@ func GetAllNodesByServer(serverId int) []Node {
 	db := getDB()
 	defer db.Close()
 
-	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s WHERE server = %d",NODES_TABLE ))
+	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s WHERE server = %d",NodesTable ))
 	util.CheckFatal(err)
 	defer rows.Close()
 	
@@ -39,7 +39,7 @@ func GetAllNodesByTestNet(testId int)[]Node{
 	db := getDB()
 	defer db.Close()
 
-	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s WHERE test_net = %d",NODES_TABLE ))
+	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s WHERE test_net = %d",NodesTable ))
 	util.CheckFatal(err)
 	defer rows.Close()
 
@@ -57,7 +57,7 @@ func GetAllNodes() []Node {
 	db := getDB()
 	defer db.Close()
 
-	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s",NODES_TABLE ))
+	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s",NodesTable ))
 	util.CheckFatal(err)
 	defer rows.Close()
 	nodes := []Node{}
@@ -74,7 +74,7 @@ func GetNode(id int) (Node,error) {
 	db := getDB()
 	defer db.Close()
 
-	row :=  db.QueryRow(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s WHERE id = %d",NODES_TABLE,id))
+	row :=  db.QueryRow(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s WHERE id = %d",NodesTable,id))
 
 	var node Node
 
@@ -92,7 +92,7 @@ func InsertNode(node Node) int {
 	tx,err := db.Begin()
 	util.CheckFatal(err)
 
-	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (test_net,server,local_id,ip) VALUES (?,?,?,?)",NODES_TABLE))
+	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (test_net,server,local_id,ip) VALUES (?,?,?,?)",NodesTable))
 	util.CheckFatal(err)
 
 	defer stmt.Close()
@@ -109,19 +109,19 @@ func DeleteNode(id int){
 	db := getDB()
 	defer db.Close()
 
-	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",NODES_TABLE,id))
+	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",NodesTable,id))
 }
 
 func DeleteNodesByTestNet(id int){
 	db := getDB()
 	defer db.Close()
 
-	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE test_net = %d",NODES_TABLE,id))
+	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE test_net = %d",NodesTable,id))
 }
 
 func DeleteNodesByServer(id int){
 	db := getDB()
 	defer db.Close()
 
-	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE server = %d",NODES_TABLE,id))
+	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE server = %d",NodesTable,id))
 }

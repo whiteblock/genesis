@@ -30,7 +30,7 @@ func GetAllServers() map[string]Server {
 	db := getDB()
 	defer db.Close()
 
-	rows, err :=  db.Query(fmt.Sprintf("SELECT * FROM %s",SERVER_TABLE ))
+	rows, err :=  db.Query(fmt.Sprintf("SELECT * FROM %s",ServerTable ))
 	util.CheckFatal(err)
 	defer rows.Close()
 	allServers := make(map[string]Server)
@@ -56,7 +56,7 @@ func GetServers(ids []int) ([]Server,error) {
 	var servers []Server
 
 	for id := range ids {
-		row := db.QueryRow(fmt.Sprintf("SELECT * FROM %s WHERE id = %d",SERVER_TABLE,id))
+		row := db.QueryRow(fmt.Sprintf("SELECT * FROM %s WHERE id = %d",ServerTable,id))
 	
 		var server Server
 		var name string
@@ -80,7 +80,7 @@ func GetServer(id int) (Server, string, error) {
 	db := getDB()
 	defer db.Close()
 
-	row := db.QueryRow(fmt.Sprintf("SELECT * FROM %s WHERE id = %d",SERVER_TABLE,id))
+	row := db.QueryRow(fmt.Sprintf("SELECT * FROM %s WHERE id = %d",ServerTable,id))
 	
 	var server Server
 	var name string
@@ -106,7 +106,7 @@ func _insertServer(name string,server Server,switchId int) int {
 	tx,err := db.Begin()
 	util.CheckFatal(err)
 
-	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (addr,iaddr_ip,iaddr_gateway,iaddr_subnet,nodes,max,iface,switch,name) VALUES (?,?,?,?,?,?,?,?,?)",SERVER_TABLE))
+	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (addr,iaddr_ip,iaddr_gateway,iaddr_subnet,nodes,max,iface,switch,name) VALUES (?,?,?,?,?,?,?,?,?)",ServerTable))
 	util.CheckFatal(err)
 
 	defer stmt.Close()
@@ -135,7 +135,7 @@ func DeleteServer(id int){
 	db := getDB()
 	defer db.Close()
 
-	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",SERVER_TABLE,id))
+	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",ServerTable,id))
 }
 
 func UpdateServer(id int,server Server){
@@ -156,7 +156,7 @@ func UpdateServer(id int,server Server){
 	tx,err := db.Begin()
 	util.CheckFatal(err)
 
-	stmt,err := tx.Prepare(fmt.Sprintf("UPDATE %s SET addr = ?, iaddr_ip = ?, iaddr_gateway = ?, iaddr_subnet = ?, nodes = ?, max = ?, iface = ?, switch = ? WHERE id = ? ",SERVER_TABLE))
+	stmt,err := tx.Prepare(fmt.Sprintf("UPDATE %s SET addr = ?, iaddr_ip = ?, iaddr_gateway = ?, iaddr_subnet = ?, nodes = ?, max = ?, iface = ?, switch = ? WHERE id = ? ",ServerTable))
 	util.CheckFatal(err)
 	defer stmt.Close()
 
@@ -169,7 +169,7 @@ func UpdateServer(id int,server Server){
 func UpdateServerNodes(id int,nodes int){
 	db := getDB()
 	defer db.Close()
-	db.Exec(fmt.Sprintf("UPDATE %s SET nodes = %d WHERE id = %d",SERVER_TABLE,id,nodes))
+	db.Exec(fmt.Sprintf("UPDATE %s SET nodes = %d WHERE id = %d",ServerTable,id,nodes))
 }
 
 func GetHostIPsByTestNet(id int) ([]string,error) {
@@ -177,13 +177,13 @@ func GetHostIPsByTestNet(id int) ([]string,error) {
 	defer db.Close()
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT id,addr,iaddr_ip,iaddr_gateway,iaddr_subnet,nodes,max,iface,switch,name FROM %s INNER JOIN %s ON %s.id == %s.server WHERE %s.id == %d GROUP BY %s.id",
-		SERVER_TABLE,
-		NODES_TABLE,
-		SERVER_TABLE,
-		NODES_TABLE,
-		SERVER_TABLE,
+		ServerTable,
+		NodesTable,
+		ServerTable,
+		NodesTable,
+		ServerTable,
 		id,
-		SERVER_TABLE))
+		ServerTable))
 
 	ips := []string{}
 
@@ -210,13 +210,13 @@ func GetServersByTestNet(id int) ([]Server,error) {
 	defer db.Close()
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT ip FROM %s INNER JOIN %s ON %s.id == %s.server WHERE %s.id == %d GROUP BY %s.id",
-		SERVER_TABLE,
-		NODES_TABLE,
-		SERVER_TABLE,
-		NODES_TABLE,
-		SERVER_TABLE,
+		ServerTable,
+		NodesTable,
+		ServerTable,
+		NodesTable,
+		ServerTable,
 		id,
-		SERVER_TABLE))
+		ServerTable))
 	
 	servers := []Server{}
 

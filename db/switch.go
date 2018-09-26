@@ -19,7 +19,7 @@ func GetAllSwitches() []Switch {
 	db := getDB()
 	defer db.Close()
 
-	rows, err :=  db.Query(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s",SWITCH_TABLE ))
+	rows, err :=  db.Query(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s",SwitchTable ))
 	util.CheckFatal(err)
 	defer rows.Close()
 	switches := []Switch{}
@@ -36,7 +36,7 @@ func GetSwitchById(id int) (Switch, error) {
 	db := getDB()
 	defer db.Close()
 
-	row := db.QueryRow(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s WHERE id = %d",SWITCH_TABLE,id))
+	row := db.QueryRow(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s WHERE id = %d",SwitchTable,id))
 
 	var swtch Switch
 
@@ -52,7 +52,7 @@ func GetSwitchByIP(ip string) (Switch, error) {
 	db := getDB()
 	defer db.Close()
 
-	row := db.QueryRow(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s WHERE addr = %s",SWITCH_TABLE,ip))
+	row := db.QueryRow(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s WHERE addr = %s",SwitchTable,ip))
 	
 	var swtch Switch
 
@@ -70,7 +70,7 @@ func InsertSwitch(swtch Switch) int {
 	tx,err := db.Begin()
 	util.CheckFatal(err)
 
-	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (addr,iface,brand) VALUES (?,?,?,?)",SWITCH_TABLE))
+	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (addr,iface,brand) VALUES (?,?,?,?)",SwitchTable))
 	util.CheckFatal(err)
 
 	defer stmt.Close()
@@ -89,7 +89,7 @@ func DeleteSwitch(id int){
 	db := getDB()
 	defer db.Close()
 
-	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",SWITCH_TABLE,id))
+	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",SwitchTable,id))
 }
 
 func UpdateSwitch(id int,swtch Switch){
@@ -99,7 +99,7 @@ func UpdateSwitch(id int,swtch Switch){
 	tx,err := db.Begin()
 	util.CheckFatal(err)
 
-	stmt,err := tx.Prepare(fmt.Sprintf("UPDATE %s SET addr = ?, iface = ?, brand = ? WHERE id = ? ",SWITCH_TABLE))
+	stmt,err := tx.Prepare(fmt.Sprintf("UPDATE %s SET addr = ?, iface = ?, brand = ? WHERE id = ? ",SwitchTable))
 	util.CheckFatal(err)
 	defer stmt.Close()
 

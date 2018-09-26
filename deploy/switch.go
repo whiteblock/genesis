@@ -25,7 +25,7 @@ func getConfig(host string) (*vyos.Config, string) {
 
 func PrepareSwitches(server db.Server,nodes int){
 	//Assume one switch per server
-	if server.Switches[0].Brand == HP {
+	if server.Switches[0].Brand == util.Hp {
 		setupHPSwitch(server,nodes)
 		return
 	}
@@ -49,6 +49,7 @@ func PrepareSwitches(server db.Server,nodes int){
 }
 
 func prepareVlans(server db.Server,nodes int){
-	cmd := fmt.Sprintf("cd local_deploy && ./whiteblock -k && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s",server.Id,nodes,SERVER_BITS,CLUSTER_BITS,NODE_BITS,server.Iface)
+	cmd := fmt.Sprintf("cd local_deploy && ./whiteblock -k && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s",
+							server.Id,nodes,util.ServerBits,util.ClusterBits,util.NodeBits,server.Iface)
 	util.SshExec(server.Addr,cmd)
 }

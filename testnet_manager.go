@@ -3,6 +3,7 @@ package main
 import (
 	db "./db"
 	deploy "./deploy"
+	util "./util"
 )
 
 type DeploymentDetails struct {
@@ -17,9 +18,9 @@ func AddTestNet(dd DeploymentDetails) error {
 	if err != nil {
 		return err
 	}
-	config := deploy.Config{nodes: dd.Nodes, image: dd.Image, servers: dd.Servers}
+	config := deploy.Config{Nodes: dd.Nodes, Image: dd.Image, Servers: dd.Servers}
 
-	newServerData := build(&config, servers) //TODO: Restructure distribution of nodes over servers
+	newServerData := deploy.Build(&config, servers) //TODO: Restructure distribution of nodes over servers
 
 	testNetId := db.InsertTestNet(db.TestNet{Id: -1, Blockchain: dd.Blockchain, Nodes: dd.Nodes, Image: db.Image})
 
@@ -41,7 +42,7 @@ func RemoveTestNet(id int) {
 	nodes := db.GetAllNodesByTestNet(id)
 	for _, node := range nodes {
 		server, _, _ := db.GetServer(node.Server)
-		sshExec(server.Ip, fmt.Sprintf("~/local_deploy/deploy --kill=%d", node.LocalId))
+		util.SshExec(server.Ip, fmt.Sprintf("~/local_deploy/deploy --kill=%d", node.LocalId))
 	}
 
 }

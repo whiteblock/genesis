@@ -16,12 +16,12 @@ var sem	= semaphore.NewWeighted(util.ThreadLimit)
  * Builds out the Docker Network on pre-setup servers
  * Returns a string of all of the IP addresses 
  */
-func Build(buildConf *Config,_servers []db.Server) []db.Server {
+func Build(buildConf *Config,servers []db.Server) []db.Server {
 
 	ctx := context.TODO()
-	servers := Prepare(buildConf.nodes,_servers)
+	Prepare(buildConf.Nodes,servers)
 	fmt.Println("-------------Building The Docker Containers-------------")
-	n := buildConf.nodes
+	n := buildConf.Nodes
 	i := 0
 	for n > 0 && i < len(servers){
 		fmt.Printf("-------------Building on Server %d-------------\n",i)
@@ -34,14 +34,14 @@ func Build(buildConf *Config,_servers []db.Server) []db.Server {
 			nodes = max_nodes
 		}
 		for j := 0; j < nodes; j++ {
-			servers[i].ips = append(servers[i].Ips,util.GetNodeIP(servers[i].Id,j))
+			servers[i].Ips = append(servers[i].Ips,util.GetNodeIP(servers[i].Id,j))
 		}
 		
 
 		startCmd := fmt.Sprintf("~/local_deploy/whiteblock -n %d -i %s -s %d -a %d -b %d -c %d -S",
 			nodes,
-			buildConf.image,
-			servers[i].id,
+			buildConf.Image,
+			servers[i].Id,
 			util.ServerBits,
 			util.ClusterBits,
 			util.NodeBits)
@@ -55,12 +55,12 @@ func Build(buildConf *Config,_servers []db.Server) []db.Server {
 		i++
 	}
 	//Acquire all of the resources here,  then release and destroy
-	if sem.Acquire(ctx,THREAD_LIMIT) != nil {
+	if sem.Acquire(ctx,util.ThreadLimit) != nil {
 		panic("Semaphore Error")
 	}
-	sem.Release(THREAD_LIMIT)
+	sem.Release(util.ThreadLimit)
 	if n != 0 {
-		fmt.Printf("ERROR: Only able to build %d/%d nodes\n",(buildConf.nodes - n),buildConf.nodes)
+		fmt.Printf("ERROR: Only able to build %d/%d nodes\n",(buildConf.Nodes - n),buildConf.Nodes)
 	}
 
 	return servers
@@ -68,7 +68,7 @@ func Build(buildConf *Config,_servers []db.Server) []db.Server {
 
 func buildInternalInfrastructure(server string,startCmd string){
 	
-	sshExec(server,startCmd)
+	util.SshExec(server,startCmd)
 	//Release the resource
 	sem.Release(1)
 }

@@ -57,7 +57,7 @@ func Prepare(noNodes int,servers []db.Server){
 }
 
 func prepareLocalDeploy(ip string){
-	sshExec(ip,"cd ~ && rm -rf local_deploy.tar.gz* local_deploy && wget http://172.16.0.8/local_deploy.tar.gz && tar xf local_deploy.tar.gz && cd ~/local_deploy && make")
+	util.SshExec(ip,"cd ~ && rm -rf local_deploy.tar.gz* local_deploy && wget http://172.16.0.8/local_deploy.tar.gz && tar xf local_deploy.tar.gz && cd ~/local_deploy && make")
 	fmt.Printf("Finished Downloading And Installing Local Deploy\n")
 	prepareSem.Release(1)
 }
@@ -90,7 +90,7 @@ func prepareSwitchesThread(noNodes int,servers []db.Server){
 		}else{
 			nodes = max_nodes
 		}
-		prepareSwitches(servers[i],nodes)
+		PrepareSwitches(servers[i],nodes)
 		fmt.Printf("Set up the Switch\n")
 		n -= nodes
 		i++

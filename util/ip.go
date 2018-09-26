@@ -27,22 +27,22 @@ func InetNtoa(ip uint32) string {
  */
 func GetNodeIP(server int,node int) string {
 	var ip uint32 = 10 << 24
-	var clusterShift uint32 = NODE_BITS
-	var serverShift uint32 = NODE_BITS + CLUSTER_BITS
-	var clusterLast uint32 =  (1 << CLUSTER_BITS) - 1
+	var clusterShift uint32 = NodeBits
+	var serverShift uint32 = NodeBits + ClusterBits
+	var clusterLast uint32 =  (1 << ClusterBits) - 1
 	//set server bits
 	ip += uint32(server) << serverShift
 	//set cluster bits 
-	cluster := uint32(uint32(node)/NODES_PER_CLUSTER)
+	cluster := uint32(uint32(node)/NodesPerCluster)
 	//fmt.Printf("CLUSTER IS %d\n",cluster)
 	ip += cluster << clusterShift
 	//set the node bits
 	if(cluster == clusterLast){
 		if(node != 0){
-			ip += uint32(node)%NODES_PER_CLUSTER + 1
+			ip += uint32(node)%NodesPerCluster + 1
 		}
 	}else{
-		ip += uint32(node)%NODES_PER_CLUSTER + 2
+		ip += uint32(node)%NodesPerCluster + 2
 	}
 	return InetNtoa(ip)
 }
@@ -56,12 +56,12 @@ func GetNodeIP(server int,node int) string {
  */
 func GetGateway(server int, node int) string {
 	var ip uint32 = 10 << 24
-	clusterShift := NODE_BITS
-	serverShift := NODE_BITS + CLUSTER_BITS
+	clusterShift := NodeBits
+	serverShift := NodeBits + ClusterBits
 	//set server bits
 	ip += uint32(server) << serverShift
 	//set cluster bits 
-	cluster := uint32(uint32(node)/NODES_PER_CLUSTER)
+	cluster := uint32(uint32(node)/NodesPerCluster)
 	ip += cluster << clusterShift
 	ip += 1
 	return InetNtoa(ip)
@@ -75,11 +75,11 @@ func GetGateway(server int, node int) string {
  * @return []string			A list of gateways for all of the nodes on that server
  */
 func GetGateways(server int, nodes int) []string {
-	clusters := uint32((uint32(nodes) - (uint32(nodes)%NODES_PER_CLUSTER))/NODES_PER_CLUSTER) + 1
+	clusters := uint32((uint32(nodes) - (uint32(nodes)%NodesPerCluster))/NodesPerCluster) + 1
 	out := []string{}
 	var i uint32;
 	for i = 0; i < clusters ; i++ {
-		out = append(out,GetGateway(server,int(i * NODES_PER_CLUSTER)))
+		out = append(out,GetGateway(server,int(i * NodesPerCluster)))
 	}
 
 	return out;
@@ -90,5 +90,5 @@ func GetGateways(server int, nodes int) []string {
  * @return int	The subnet for all of the nodes
  */
 func GetSubnet() int {
-	return 32 - int(NODE_BITS)
+	return 32 - int(NodeBits)
 }
