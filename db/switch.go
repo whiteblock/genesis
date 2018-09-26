@@ -5,6 +5,7 @@ import(
 	"database/sql"
 	"fmt"
 	"errors"
+	util "../util"
 )
 
 type Switch struct {
@@ -19,13 +20,13 @@ func GetAllSwitches() []Switch {
 	defer db.Close()
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s",SWITCH_TABLE ))
-	checkFatal(err)
+	util.CheckFatal(err)
 	defer rows.Close()
 	switches := []Switch{}
 
 	for rows.Next() {
 		var swtch Switch
-		checkFatal(rows.Scan(&swtch.Id,&swtch.Addr,&swtch.Iface,&swtch.Brand))
+		util.CheckFatal(rows.Scan(&swtch.Id,&swtch.Addr,&swtch.Iface,&swtch.Brand))
 		switches = append(switches,swtch)
 	}
 	return switches
@@ -67,19 +68,19 @@ func InsertSwitch(swtch Switch) int {
 	defer db.Close()
 
 	tx,err := db.Begin()
-	checkFatal(err)
+	util.CheckFatal(err)
 
 	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (addr,iface,brand) VALUES (?,?,?,?)",SWITCH_TABLE))
-	checkFatal(err)
+	util.CheckFatal(err)
 
 	defer stmt.Close()
 
 	res,err := stmt.Exec(swtch.Addr,swtch.Iface,swtch.Brand)
-	checkFatal(err)
+	util.CheckFatal(err)
 
 	tx.Commit()
 	id, err := res.LastInsertId()
-	checkFatal(err)
+	util.CheckFatal(err)
 
 	return int(id)
 }
@@ -96,13 +97,13 @@ func UpdateSwitch(id int,swtch Switch){
 	defer db.Close()
 
 	tx,err := db.Begin()
-	checkFatal(err)
+	util.CheckFatal(err)
 
 	stmt,err := tx.Prepare(fmt.Sprintf("UPDATE %s SET addr = ?, iface = ?, brand = ? WHERE id = ? ",SWITCH_TABLE))
-	checkFatal(err)
+	util.CheckFatal(err)
 	defer stmt.Close()
 
 	_,err = stmt.Exec(swtch.Addr,swtch.Iface,swtch.Brand,swtch.Id)
-	checkFatal(err)
+	util.CheckFatal(err)
 	tx.Commit()
 }

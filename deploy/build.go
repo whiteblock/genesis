@@ -1,24 +1,25 @@
-package main
+package deploy
 
 import (
 	"context"
 	"fmt"
 	"golang.org/x/sync/semaphore"
-	db "./db"
+	db "../db"
+	util "../util"
 )
 
 
-var sem	= semaphore.NewWeighted(THREAD_LIMIT)
+var sem	= semaphore.NewWeighted(util.ThreadLimit)
 
 
 /**
  * Builds out the Docker Network on pre-setup servers
  * Returns a string of all of the IP addresses 
  */
-func build(buildConf *Config,_servers []db.Server) []db.Server,  {
+func Build(buildConf *Config,_servers []db.Server) []db.Server {
 
 	ctx := context.TODO()
-	servers := prepare(buildConf.nodes,_servers)
+	servers := Prepare(buildConf.nodes,_servers)
 	fmt.Println("-------------Building The Docker Containers-------------")
 	n := buildConf.nodes
 	i := 0
@@ -33,7 +34,7 @@ func build(buildConf *Config,_servers []db.Server) []db.Server,  {
 			nodes = max_nodes
 		}
 		for j := 0; j < nodes; j++ {
-			servers[i].ips = append(servers[i].Ips,getNodeIP(servers[i].Id,j))
+			servers[i].ips = append(servers[i].Ips,util.GetNodeIP(servers[i].Id,j))
 		}
 		
 
@@ -41,9 +42,9 @@ func build(buildConf *Config,_servers []db.Server) []db.Server,  {
 			nodes,
 			buildConf.image,
 			servers[i].id,
-			SERVER_BITS,
-			CLUSTER_BITS,
-			NODE_BITS)
+			util.ServerBits,
+			util.ClusterBits,
+			util.NodeBits)
 		//Acquire resources
 		if sem.Acquire(ctx,1) != nil {
 			panic("Semaphore Error")

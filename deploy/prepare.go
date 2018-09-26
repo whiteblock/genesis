@@ -10,9 +10,10 @@ import (
  	"context"
 	"golang.org/x/sync/semaphore"
 	db "../db"
+	util "../util"
 )
 
-var prepareSem = semaphore.NewWeighted(THREAD_LIMIT)
+var prepareSem = semaphore.NewWeighted(util.ThreadLimit)
 
 func Prepare(noNodes int,servers []db.Server){
 	fmt.Println("-------------Setting Up Servers-------------")
@@ -28,8 +29,8 @@ func Prepare(noNodes int,servers []db.Server){
 	go prepareSwitchesThread(noNodes,servers)
 	//wait for completion
 	fmt.Println("Awaiting completion of prepare part 1")
-	prepareSem.Acquire(ctx,THREAD_LIMIT)
-	prepareSem.Release(THREAD_LIMIT)
+	prepareSem.Acquire(ctx,util.ThreadLimit)
+	prepareSem.Release(util.ThreadLimit)
 
 	for n > 0 && i < len(servers){
 		fmt.Printf("-------------Setting Up Server %d-------------\n",i)
@@ -51,8 +52,8 @@ func Prepare(noNodes int,servers []db.Server){
 
 	}
 
-	prepareSem.Acquire(ctx,THREAD_LIMIT)
-	prepareSem.Release(THREAD_LIMIT)
+	prepareSem.Acquire(ctx,util.ThreadLimit)
+	prepareSem.Release(util.ThreadLimit)
 }
 
 func prepareLocalDeploy(ip string){

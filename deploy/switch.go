@@ -1,8 +1,9 @@
-package main
+package deploy
 
 import (
-	vyos "./vyos"
-	db "./db"
+	vyos "../vyos"
+	db "../db"
+	util "../util"
 	"regexp"
 	"fmt"
 )
@@ -11,7 +12,7 @@ import (
 
 func getConfig(host string) (*vyos.Config, string) {
 
-	data := sshExec(host,"cat /config/config.boot")
+	data := util.SshExec(host,"cat /config/config.boot")
 	conf := vyos.NewConfig(data)
 	metaPattern := regexp.MustCompile(`\/\*[^(*\/)]*\*\/`)
 	metaResults := metaPattern.FindAllString(data,-1)
@@ -22,32 +23,32 @@ func getConfig(host string) (*vyos.Config, string) {
 	return conf,meta
 }
 
-func prepareSwitches(server db.Server,nodes int){
+func PrepareSwitches(server db.Server,nodes int){
 	//Assume one switch per server
 	if server.Switches[0].Brand == HP {
 		setupHPSwitch(server,nodes)
 		return
 	}
 	conf,meta := getConfig(server.Switches[0].Addr)
-	gws := getGateways(server.Id, nodes)
+	gws := util.GetGateways(server.Id, nodes)
 	conf.RemoveVifs(server.Switches[0].Iface)
 	conf.SetIfaceAddr(server.Switches[0].Iface,fmt.Sprintf("%s/%d",server.Iaddr.Gateway,server.Iaddr.Subnet))//Update this later on to be more dynamic
 	for i,gw := range gws {
 		conf.AddVif(
 			fmt.Sprintf("%d",i+101),
-			fmt.Sprintf("%s/%d",gw,getSubnet()),
+			fmt.Sprintf("%s/%d",gw,util.GetSubnet()),
 			server.Switches[0].Iface)
 	}
 	//fmt.Printf(conf.ToString())
 	//fmt.Printf(meta)
-	write("config.boot",fmt.Sprintf("%s\n%s",conf.ToString(),meta))
-	_scp(server.Switches[0].Addr,"./config.boot","/config/config.boot")
-	_scp(server.Switches[0].Addr,"./install.sh","/home/appo/install.sh")
-	sshExec(server.Switches[0].Addr,"chmod +x ./install.sh && ./install.sh")
-	rm("config.boot")
+	util.Write("config.boot",fmt.Sprintf("%s\n%s",conf.ToString(),meta))
+	util.Scp(server.Switches[0].Addr,"./config.boot","/config/config.boot")
+	util.Scp(server.Switches[0].Addr,"./install.sh","/home/appo/install.sh")
+	util.SshExec(server.Switches[0].Addr,"chmod +x ./install.sh && ./install.sh")
+	util.Rm("config.boot")
 }
 
 func prepareVlans(server db.Server,nodes int){
 	cmd := fmt.Sprintf("cd local_deploy && ./whiteblock -k && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s",server.Id,nodes,SERVER_BITS,CLUSTER_BITS,NODE_BITS,server.Iface)
-	sshExec(server.Addr,cmd)
+	util.SshExec(server.Addr,cmd)
 }
