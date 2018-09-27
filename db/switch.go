@@ -79,7 +79,8 @@ func InsertSwitch(swtch Switch) int {
 	util.CheckFatal(err)
 
 	tx.Commit()
-	id, err := res.LastInsertId()
+	id, err := res.LastInsertId();
+	//fmt.Printf("id on insert is %v\n",id);
 	util.CheckFatal(err)
 
 	return int(id)

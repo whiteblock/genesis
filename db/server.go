@@ -43,6 +43,7 @@ func GetAllServers() map[string]Server {
 								  &server.Iaddr.Ip, &server.Iaddr.Gateway, &server.Iaddr.Subnet,
 							 	  &server.Nodes,&server.Max,&server.Iface,&switchId,&name))
 		//fmt.Println(subnet)
+		
 		swtch, err := GetSwitchById(switchId)
 		util.CheckFatal(err)
 
@@ -59,7 +60,7 @@ func GetServers(ids []int) ([]Server,error) {
 	var servers []Server
 
 	for id := range ids {
-		row := db.QueryRow(fmt.Sprintf("SELECT * FROM %s WHERE id = %d",ServerTable,id))
+		row := db.QueryRow(fmt.Sprintf("SELECT id,addr, iaddr_ip,iaddr_gateway,iaddr_subnet,nodes,max,iface,switch,name FROM %s WHERE id = %d",ServerTable,id))
 	
 		var server Server
 		var name string
@@ -69,6 +70,7 @@ func GetServers(ids []int) ([]Server,error) {
 					&server.Nodes,&server.Max,&switchId,&name) == sql.ErrNoRows {
 			return servers, errors.New("Unknown Server")
 		}
+
 		swtch, err := GetSwitchById(switchId)
 		util.CheckFatal(err)
 
@@ -82,24 +84,34 @@ func GetServers(ids []int) ([]Server,error) {
 func GetServer(id int) (Server, string, error) {
 	db := getDB()
 	defer db.Close()
-
-	row := db.QueryRow(fmt.Sprintf("SELECT * FROM %s WHERE id = %d",ServerTable,id))
-	
-	var server Server
 	var name string
-	var switchId int
+	var server Server
 
-	if row.Scan(&server.Id,&server.Addr,&server.Iaddr.Ip,&server.Iaddr.Gateway,&server.Iaddr.Subnet,
-				&server.Nodes,&server.Max,&switchId,&name) == sql.ErrNoRows {
-		return server, name, errors.New("Not Found")
+	rows, err :=  db.Query(fmt.Sprintf("SELECT id,addr, iaddr_ip,iaddr_gateway,iaddr_subnet,nodes,max,iface,switch,name FROM %s WHERE id = %d",
+		ServerTable,id ))
+	if err != nil {
+		return server,name,err
 	}
 
+	defer rows.Close()
+	
+	rows.Next()
+	
+	var switchId int
+	//var subnet string
+	util.CheckFatal(rows.Scan(&server.Id,&server.Addr,
+							  &server.Iaddr.Ip, &server.Iaddr.Gateway, &server.Iaddr.Subnet,
+						 	  &server.Nodes,&server.Max,&server.Iface,&switchId,&name))
+	//fmt.Println(subnet)
+	//fmt.Printf("Switch id is %d\n",switchId)
 	swtch, err := GetSwitchById(switchId)
-	util.CheckFatal(err)
+	if err != nil {
+		return server,name,err
+	}
 
 	server.Switches = []Switch{ swtch }
-
-	return server, name, nil
+	
+	return server,name,nil
 }
 
 func _insertServer(name string,server Server,switchId int) int {

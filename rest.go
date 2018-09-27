@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
+	"fmt"
 )
 
 func StartServer() {
@@ -21,6 +22,8 @@ func StartServer() {
 
 	router.HandleFunc("/testnet/", getAllTestNets).Methods("GET")
 	router.HandleFunc("/testnet/", createTestNet).Methods("POST") //Create new test net
+
+	router.HandleFunc("/switches/", getAllSwitchesInfo).Methods("GET")
 
 	router.HandleFunc("/testnet/{id}", getTestNetInfo).Methods("GET")
 	router.HandleFunc("/testnet/{id}", deleteTestNet).Methods("DELETE")
@@ -45,14 +48,17 @@ func addNewServer(w http.ResponseWriter, r *http.Request) {
 
 func getServerInfo(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
+
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		w.Write([]byte("Invalid id"))
+		json.NewEncoder(w).Encode(err)
 		return
 	}
-
 	server, _, err := db.GetServer(id)
-
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
 	json.NewEncoder(w).Encode(server)
 }
 
@@ -60,7 +66,7 @@ func deleteServer(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		w.Write([]byte("Invalid id"))
+		json.NewEncoder(w).Encode(err)
 		return
 	}
 	db.DeleteServer(id)
@@ -80,6 +86,14 @@ func updateServerInfo(w http.ResponseWriter, r *http.Request) {
 	db.UpdateServer(id, server)
 	w.Write([]byte("Success"))
 }
+
+
+func getAllSwitchesInfo(w http.ResponseWriter, r *http.Request) {
+	switches := db.GetAllSwitches()
+	json.NewEncoder(w).Encode(switches)
+}
+
+
 
 func getAllTestNets(w http.ResponseWriter, r *http.Request) {
 	testNets := db.GetAllTestNets()
