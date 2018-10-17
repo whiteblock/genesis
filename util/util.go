@@ -15,6 +15,8 @@ type KeyPair struct {
 	publicKey	string
 }
 
+var VERBOSE bool
+
 
 /****Basic Linux Functions****/
 
@@ -203,4 +205,19 @@ func BashExec(_cmd string) string {
 	cmd.Wait()
 
 	return resultsRaw.String()
+}
+
+
+
+
+func IntArrRemove(op []int,index int) []int {
+	return append(op[:index],op[index+1:]...)
+}
+
+func IntArrFill(size int, f func(int) int) []int{
+	out := make([]int,size)
+	for i := 0; i < size; i++ {
+		out[i] = f(i)
+	}
+	return out
 }

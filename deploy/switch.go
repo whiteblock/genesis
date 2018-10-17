@@ -8,8 +8,6 @@ import (
 	"fmt"
 )
 
-
-
 func getConfig(host string) (*vyos.Config, string) {
 
 	data := util.SshExec(host,"cat /config/config.boot")
@@ -46,10 +44,4 @@ func PrepareSwitches(server db.Server,nodes int){
 	util.Scp(server.Switches[0].Addr,"./install.sh","/home/appo/install.sh")
 	util.SshExec(server.Switches[0].Addr,"chmod +x ./install.sh && ./install.sh")
 	util.Rm("config.boot")
-}
-
-func prepareVlans(server db.Server,nodes int){
-	cmd := fmt.Sprintf("cd local_deploy && ./whiteblock -k && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s",
-							server.Id,nodes,util.ServerBits,util.ClusterBits,util.NodeBits,server.Iface)
-	util.SshExec(server.Addr,cmd)
 }

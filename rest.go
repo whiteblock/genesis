@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
-	"fmt"
+	//"fmt"
 )
 
 func StartServer() {
@@ -14,11 +14,11 @@ func StartServer() {
 
 	router.HandleFunc("/servers/", getAllServerInfo).Methods("GET")
 
-	router.HandleFunc("/servers/{name}", addNewServer).Methods("PUT")
+	router.HandleFunc("/servers/{name}", addNewServer).Methods("PUT") //Private
 
-	router.HandleFunc("/servers/{id}", getServerInfo).Methods("GET")
-	router.HandleFunc("/servers/{id}", deleteServer).Methods("DELETE")
-	router.HandleFunc("/servers/{id}", updateServerInfo).Methods("UPDATE")
+	router.HandleFunc("/servers/{id}", getServerInfo).Methods("GET") 
+	router.HandleFunc("/servers/{id}", deleteServer).Methods("DELETE") //Private
+	router.HandleFunc("/servers/{id}", updateServerInfo).Methods("UPDATE") //Private
 
 	router.HandleFunc("/testnet/", getAllTestNets).Methods("GET")
 	router.HandleFunc("/testnet/", createTestNet).Methods("POST") //Create new test net
@@ -29,6 +29,8 @@ func StartServer() {
 	router.HandleFunc("/testnet/{id}", deleteTestNet).Methods("DELETE")
 
 	router.HandleFunc("/testnet/{id}/nodes/", getTestNetNodes).Methods("GET")
+	router.HandleFunc("/testnet/{id}/node/", addTestNetNode).Methods("POST")
+	router.HandleFunc("/testnet/{id}/node/{nid}",deleteTestNetNode).Methods("DELETE")
 
 	http.ListenAndServe(":8000", router)
 }
@@ -141,4 +143,13 @@ func getTestNetNodes(w http.ResponseWriter, r *http.Request) {
 	}
 	nodes := db.GetAllNodesByTestNet(id)
 	json.NewEncoder(w).Encode(nodes)
+}
+
+
+func addTestNetNode(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func deleteTestNetNode(w http.ResponseWriter, r *http.Request) {
+
 }

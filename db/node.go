@@ -125,3 +125,21 @@ func DeleteNodesByServer(id int){
 
 	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE server = %d",NodesTable,id))
 }
+
+
+/*******COMMON QUERY FUNCTIONS********/
+
+func GetAvailibleNodes(serverId int, nodesRequested int) []int{
+
+	nodes := GetAllNodesByServer(serverId)
+	server,_,_ := GetServer(serverId)
+
+	out := util.IntArrFill(server.Max,func(index int) int{
+		return index
+	})
+
+	for _,node := range nodes {
+		out = util.IntArrRemove(out,node.Id)
+	}
+	return out;
+}

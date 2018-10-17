@@ -14,24 +14,24 @@ type DeploymentDetails struct {
 	Image      string
 }
 
-func AddTestNet(dd DeploymentDetails) error {
-	servers, err := db.GetServers(dd.Servers)
+func AddTestNet(details DeploymentDetails) error {
+	servers, err := db.GetServers(details.Servers)
 	if err != nil {
 		return err
 	}
-	config := deploy.Config{Nodes: dd.Nodes, Image: dd.Image, Servers: dd.Servers}
+	config := deploy.Config{Nodes: details.Nodes, Image: details.Image, Servers: details.Servers}
 
 	newServerData := deploy.Build(&config, servers) //TODO: Restructure distribution of nodes over servers
 
-	testNetId := db.InsertTestNet(db.TestNet{Id: -1, Blockchain: dd.Blockchain, Nodes: dd.Nodes, Image: dd.Image})
+	testNetId := db.InsertTestNet(db.TestNet{Id: -1, Blockchain: details.Blockchain, Nodes: details.Nodes, Image: details.Image})
 
 	for _, server := range newServerData {
+		db.UpdateServerNodes(server.Id,server.Nodes)
 		for i, ip := range server.Ips {
 			node := db.Node{Id: -1, TestNetId: testNetId, Server: server.Id, LocalId: i, Ip: ip} //TODO: Correct LocalId obtaining method
 			db.InsertNode(node)
 		}
 	}
-
 	return nil
 }
 

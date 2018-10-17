@@ -27,7 +27,6 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 		fmt.Printf("-------------Building on Server %d-------------\n",i)
 		max_nodes := int(servers[i].Max - servers[i].Nodes)
 		var nodes int
-
 		if max_nodes > n {
 			nodes = n
 		}else{
