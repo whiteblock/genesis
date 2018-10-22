@@ -20,17 +20,17 @@ func StartServer() {
 	router.HandleFunc("/servers/{id}", deleteServer).Methods("DELETE") //Private
 	router.HandleFunc("/servers/{id}", updateServerInfo).Methods("UPDATE") //Private
 
-	router.HandleFunc("/testnet/", getAllTestNets).Methods("GET")
-	router.HandleFunc("/testnet/", createTestNet).Methods("POST") //Create new test net
+	router.HandleFunc("/testnets/", getAllTestNets).Methods("GET")
+	router.HandleFunc("/testnets/", createTestNet).Methods("POST") //Create new test net
 
 	router.HandleFunc("/switches/", getAllSwitchesInfo).Methods("GET")
 
-	router.HandleFunc("/testnet/{id}", getTestNetInfo).Methods("GET")
-	router.HandleFunc("/testnet/{id}", deleteTestNet).Methods("DELETE")
+	router.HandleFunc("/testnets/{id}", getTestNetInfo).Methods("GET")
+	router.HandleFunc("/testnets/{id}", deleteTestNet).Methods("DELETE")
 
-	router.HandleFunc("/testnet/{id}/nodes/", getTestNetNodes).Methods("GET")
-	router.HandleFunc("/testnet/{id}/node/", addTestNetNode).Methods("POST")
-	router.HandleFunc("/testnet/{id}/node/{nid}",deleteTestNetNode).Methods("DELETE")
+	router.HandleFunc("/testnets/{id}/nodes/", getTestNetNodes).Methods("GET")
+	router.HandleFunc("/testnets/{id}/node/", addTestNetNode).Methods("POST")
+	router.HandleFunc("/testnets/{id}/node/{nid}",deleteTestNetNode).Methods("DELETE")
 
 	http.ListenAndServe(":8000", router)
 }
@@ -72,6 +72,7 @@ func deleteServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	db.DeleteServer(id)
+	w.Write([]byte("Success"))
 }
 
 func updateServerInfo(w http.ResponseWriter, r *http.Request) {
@@ -104,11 +105,15 @@ func getAllTestNets(w http.ResponseWriter, r *http.Request) {
 
 func createTestNet(w http.ResponseWriter, r *http.Request) {
 	//params := mux.Vars(r)
-	var testnet db.TestNet
+	var testnet DeploymentDetails
 	_ = json.NewDecoder(r.Body).Decode(&testnet)
-	//TODO handle the creation of a testnet
-
-	//Handle the nodes, and everything...
+	
+	err := AddTestNet(testnet)
+	if(err != nil){
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+	w.Write([]byte("Success"))
 
 }
 

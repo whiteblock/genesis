@@ -10,11 +10,11 @@ import(
 
 //TODO: Fix broken naming convention
 type Node struct {	
-	Id			int 	`json:"id"`
-	TestNetId	int		`json:"testNetId"`
-	Server		int		`json:"server"`
-	LocalId		int		`json:"localid"`
-	Ip			string	`json:"ip"`
+	Id			int 	
+	TestNetId	int		
+	Server		int		
+	LocalId		int		
+	Ip			string	
 }
 
 

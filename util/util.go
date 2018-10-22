@@ -11,8 +11,8 @@ import (
 
 /****Standard Data Structures****/
 type KeyPair struct {
-	privateKey	string
-	publicKey	string
+	PrivateKey	string
+	PublicKey	string
 }
 
 var VERBOSE bool

@@ -1,4 +1,4 @@
-package main
+package eth
 
 import (
 	"encoding/json"
@@ -7,14 +7,16 @@ import (
 	"golang.org/x/sync/semaphore"
 	"regexp"
 	"github.com/satori/go.uuid"
+	util "../../util"
+	db "../../db"
 )
 
 /**CONSTANTS**/
-const ETH_MAX_PEERS	int 			= 	1000
-const ETH_INIT_WALLET_VALUE	string	=	"100000000000000000000"
+const THREAD_LIMIT int64		=   10
+const MAX_PEERS	int 			= 	1000
+const INIT_WALLET_VALUE	string	=	"100000000000000000000"
 
-var eth_sem = semaphore.NewWeighted(THREAD_LIMIT)
-
+var sem = semaphore.NewWeighted(THREAD_LIMIT)
 
 /**
  * Build the Ethereum Test Network
@@ -24,20 +26,20 @@ var eth_sem = semaphore.NewWeighted(THREAD_LIMIT)
  * @param  int		nodes		The number of nodes in the network
  * @param  []Server	servers		The list of servers passed from build
  */
-func ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []Server){
+func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.Server){
 	ctx := context.TODO()
-	rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
+	util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
 	for i := 1; i <= nodes; i++ {
-		mkdir(fmt.Sprintf("./tmp/node%d",i))
+		util.Mkdir(fmt.Sprintf("./tmp/node%d",i))
 		//fmt.Printf("---------------------  CREATING pre-allocated accounts for NODE-%d  ---------------------\n",i)
 
 	}
-	eth_createPassFiles(nodes)
+	createPassFiles(nodes)
 	wallets := []string{}
 
 	for i := 1; i <= nodes; i++{
-		eth_sem.Acquire(ctx,1)
-		wallets = append(wallets,eth_getWallet(i));
+		sem.Acquire(ctx,1)
+		wallets = append(wallets,getWallet(i));
 	}
 	unlock := ""
 
@@ -48,42 +50,67 @@ func ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []Ser
 		unlock += wallet
 	}
 
-	eth_createGenesisfile(gas,chainId,wallets)
+	createGenesisfile(gas,chainId,wallets)
 
-	eth_initNodeDirectories(nodes,networkId,servers)
-	mkdir("tmp/keystore")
-	eth_distributeUTCKeystore(nodes)
+	initNodeDirectories(nodes,networkId,servers)
+	util.Mkdir("tmp/keystore")
+	distributeUTCKeystore(nodes)
 	for i := 1; i <= nodes; i++ {
-		cp("tmp/static_nodes.json",fmt.Sprintf("tmp/node%d/",i))
+		util.Cp("tmp/static_nodes.json",fmt.Sprintf("tmp/node%d/",i))
 	}
-	for i := 0; i < nodes; i++ {
-		eth_sem.Acquire(ctx,1)
-		fmt.Printf("-----------------------------  Starting NODE-%d  -----------------------------\n",i + 1)
-		serverip, nodeIP , num := getInfo(servers,i)
-		go eth_startNode(networkId,i+1,serverip,num,unlock,nodeIP)
-	}
-	err := eth_sem.Acquire(ctx,THREAD_LIMIT)
-	check_fatal(err)
-
-	eth_sem.Release(THREAD_LIMIT)
-
-	eth_setupEthNetStats(servers[0].addr)
 	node := 0
+	for _, server := range servers {
+		for j, ip := range server.Ips{
+			sem.Acquire(ctx,1)
+			fmt.Printf("-----------------------------  Starting NODE-%d  -----------------------------\n",node)
+
+			go func(networkId uint64,node int,server string,num int,unlock string,nodeIP string){
+				name := fmt.Sprintf("whiteblock-node%d",num)
+				util.SshExec(server,fmt.Sprintf("rm -rf tmp/node%d",node))
+				util.Scpr(server,fmt.Sprintf("tmp/node%d",node))
+
+				gethCmd := fmt.Sprintf(`geth --datadir /whiteblock/node%d --nodiscover --maxpeers %d --networkid %d --rpc --rpcaddr %s --rpcapi "web3,db,eth,net,personal" --rpccorsdomain "0.0.0.0" --mine --unlock="%s" --password /whiteblock/node%d/passwd.file console`,
+						node,
+						MAX_PEERS,
+						networkId,
+						nodeIP,
+						unlock,
+						node)
+
+				util.SshMultiExec(server,
+					fmt.Sprintf("docker exec %s mkdir -p /whiteblock/node%d/",name,node),
+					fmt.Sprintf("docker cp ~/tmp/node%d %s:/whiteblock",node,name),
+					fmt.Sprintf("docker exec -d %s tmux new -s whiteblock -d",name),
+					fmt.Sprintf("docker exec -d %s tmux send-keys -t whiteblock '%s' C-m",name,gethCmd),
+				)
+
+				sem.Release(1)
+			}(networkId,node+1,server.Addr,j,unlock,ip)
+			node ++
+		}
+	}
+	err := sem.Acquire(ctx,THREAD_LIMIT)
+	util.CheckFatal(err)
+
+	sem.Release(THREAD_LIMIT)
+
+	setupEthNetStats(servers[0].Addr)
+	node = 0
 	for _,server := range servers {
-		for j,ip := range server.ips{
-			eth_sem.Acquire(ctx,1)
-			go eth_setupEthNetIntel(server.addr,ip,servers[0].iaddr.ip,node,j)
+		for j,ip := range server.Ips{
+			sem.Acquire(ctx,1)
+			go setupEthNetIntel(server.Addr,ip,servers[0].Iaddr.Ip,node,j)
 			node++
 		}
 	}
-	eth_setupBlockExplorer(servers[0].ips[0],servers[0].addr)
+	setupBlockExplorer(servers[0].Ips[0],servers[0].Addr)
 
-	err = eth_sem.Acquire(ctx,THREAD_LIMIT)
-	check_fatal(err)
+	err = sem.Acquire(ctx,THREAD_LIMIT)
+	util.CheckFatal(err)
 
-	eth_sem.Release(THREAD_LIMIT)
+	sem.Release(THREAD_LIMIT)
 	fmt.Printf("Cleaning up...")
-	rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
+	util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
 	fmt.Printf("done\n")
 	//fmt.Printf("To view Eth Net Stat type:\t\t\ttmux attach-session -t netstats\n")
 	
@@ -94,14 +121,14 @@ func ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []Ser
  * Create the password files
  * @param  int	nodes	The number of nodes
  */
-func eth_createPassFiles(nodes int){
+func createPassFiles(nodes int){
 	var data string
 	for i := 1; i <= nodes; i++{
 		data += "second\n"
 	}
 
 	for i := 1; i <= nodes; i++{
-		write(fmt.Sprintf("tmp/node%d/passwd.file",i),data)
+		util.Write(fmt.Sprintf("tmp/node%d/passwd.file",i),data)
 	}
 }
 
@@ -109,8 +136,8 @@ func eth_createPassFiles(nodes int){
  * Creates a wallet for a node
  * @param  uint64  node        The node number
  */
-func eth_getWallet(node int) string{
-	gethResults := bashExec(
+func getWallet(node int) string{
+	gethResults := util.BashExec(
 		fmt.Sprintf("geth --datadir tmp/node%d/ --password tmp/node%d/passwd.file account new",
 			node,node))
 	//fmt.Printf("RAW:%s\n",gethResults)
@@ -121,7 +148,7 @@ func eth_getWallet(node int) string{
 	}
 	address := addresses[0]
 	address = address[1:len(address)-1]
- 	eth_sem.Release(1)
+ 	sem.Release(1)
 	return address
 }
 
@@ -131,10 +158,10 @@ func eth_getWallet(node int) string{
  * @param  uint64	chainId		The chain id
  * @param  []string wallets		The wallets to be allocated a balance
  */
-func eth_createGenesisfile(gas uint64,chainId uint64,wallets []string){
+func createGenesisfile(gas uint64,chainId uint64,wallets []string){
 	alloc := "\n"
 	for i,wallet := range wallets {
-		alloc += fmt.Sprintf("\t\t\"%s\":{\"balance\":\"%s\"}",wallet,ETH_INIT_WALLET_VALUE)
+		alloc += fmt.Sprintf("\t\t\"%s\":{\"balance\":\"%s\"}",wallet,INIT_WALLET_VALUE)
 		if len(wallets) - 1 != i {
 			alloc += ","
 		}
@@ -154,7 +181,7 @@ func eth_createGenesisfile(gas uint64,chainId uint64,wallets []string){
 	"alloc": {%s 	}
 }`,chainId,gas,alloc)
 
-	write("tmp/CustomGenesis.json",genesis)
+	util.Write("tmp/CustomGenesis.json",genesis)
 }
 
 /**
@@ -164,16 +191,16 @@ func eth_createGenesisfile(gas uint64,chainId uint64,wallets []string){
  * @param  string	ip			The node's IP address
  * @return string				The node's enode address
  */
-func eth_initNode(node int, networkId uint64,ip string) string {
+func initNode(node int, networkId uint64,ip string) string {
 	fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n",node)
-	gethResults := bashExec(fmt.Sprintf("echo -e \"admin.nodeInfo.enode\\nexit\\n\" |  geth --rpc --datadir tmp/node%d/ --networkid %d console",node,networkId))
+	gethResults := util.BashExec(fmt.Sprintf("echo -e \"admin.nodeInfo.enode\\nexit\\n\" |  geth --rpc --datadir tmp/node%d/ --networkid %d console",node,networkId))
 	//fmt.Printf("RAWWWWWWWWWWWW%s\n\n\n",gethResults)
 	enodePattern := regexp.MustCompile(`enode:\/\/[A-z|0-9]+@\[\:\:\]\:[0-9]+`)
 	enode := enodePattern.FindAllString(gethResults,1)[0]
 	enodeAddressPattern := regexp.MustCompile(`\[\:\:\]`)
 	enode = enodeAddressPattern.ReplaceAllString(enode,ip);
 
-	write(fmt.Sprintf("./tmp/node%d/enode",node),fmt.Sprintf("%s\n",enode))
+	util.Write(fmt.Sprintf("./tmp/node%d/enode",node),fmt.Sprintf("%s\n",enode))
 	return enode
 }
 
@@ -183,23 +210,26 @@ func eth_initNode(node int, networkId uint64,ip string) string {
  * @param  uint64	networkId	The test net network id
  * @param  []Server	servers		The list of servers
  */
-func eth_initNodeDirectories(nodes int,networkId uint64,servers []Server){
+func initNodeDirectories(nodes int,networkId uint64,servers []db.Server){
 	static_nodes := []string{};
-	for i := 1; i <= nodes; i++ {
-		//fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n",i)
-		//Load the CustomGenesis file
-		bashExec(
-			fmt.Sprintf("geth --datadir tmp/node%d --networkid %d init tmp/CustomGenesis.json",i,networkId))
-		
+	node := 1
+	for _,server := range servers{
+		for _,ip := range server.Ips{
+			//fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n",i)
+			//Load the CustomGenesis file
+			util.BashExec(
+				fmt.Sprintf("geth --datadir tmp/node%d --networkid %d init tmp/CustomGenesis.json",node,networkId))
+			
 
-		_,ip,_ := getInfo(servers,i - 1)
-		static_nodes = append(static_nodes,eth_initNode(i,networkId,ip))
+			static_nodes = append(static_nodes,initNode(node,networkId,ip))
+			nodes++;
+		}
 	}
 	out, err := json.Marshal(static_nodes)
 	//fmt.Printf("-----Static Nodes.json------\n%+v\n\n",static_nodes)
-	check_fatal(err)
+	util.CheckFatal(err)
 	for i := 1; i <= nodes; i++ {
-		write(fmt.Sprintf("tmp/node%d/static-nodes.json",i),string(out))
+		util.Write(fmt.Sprintf("tmp/node%d/static-nodes.json",i),string(out))
 	}
 	
 		
@@ -209,49 +239,16 @@ func eth_initNodeDirectories(nodes int,networkId uint64,servers []Server){
  * Distribute the UTC keystore files amongst the nodes
  * @param  int	nodes	The number of nodes
  */
-func eth_distributeUTCKeystore(nodes int){
+func distributeUTCKeystore(nodes int){
 	//Copy all UTC keystore files to every Node directory
 	for i := 1; i <= nodes; i++ {
-		cpr(fmt.Sprintf("tmp/node%d/keystore/",i),"tmp/")
+		util.Cpr(fmt.Sprintf("tmp/node%d/keystore/",i),"tmp/")
 	}
 	for i := 1; i <= nodes; i++ {
-		cpr("tmp/keystore/",fmt.Sprintf("tmp/node%d/",i))
+		util.Cpr("tmp/keystore/",fmt.Sprintf("tmp/node%d/",i))
 	}
 }
 
-/**
- * Starts geth on a node
- * @param  uint64	networkId	The test net network id
- * @param  int		node		The absolute node number
- * @param  string	server		The IP address of the server
- * @param  int		num			The relative node number
- * @param  string	unlock		The unlock argument string
- * @param  string	nodeIP		The IP address of the node
- */
-func eth_startNode(networkId uint64,node int,server string,num int,unlock string,nodeIP string){
-	
-	name := fmt.Sprintf("whiteblock-node%d",num)
-	sshExec(server,fmt.Sprintf("rm -rf tmp/node%d",node))
-	scpr(server,fmt.Sprintf("tmp/node%d",node))
-
-	gethCmd := fmt.Sprintf(`geth --datadir /whiteblock/node%d --nodiscover --maxpeers %d --networkid %d --rpc --rpcaddr %s --rpcapi "web3,db,eth,net,personal" --rpccorsdomain "0.0.0.0" --mine --unlock="%s" --password /whiteblock/node%d/passwd.file console`,
-			node,
-			ETH_MAX_PEERS,
-			networkId,
-			nodeIP,
-			unlock,
-			node)
-
-	sshMultiExec(server,
-		
-		fmt.Sprintf("docker exec %s mkdir -p /whiteblock/node%d/",name,node),
-		fmt.Sprintf("docker cp ~/tmp/node%d %s:/whiteblock",node,name),
-		fmt.Sprintf("docker exec -d %s tmux new -s whiteblock -d",name),
-		fmt.Sprintf("docker exec -d %s tmux send-keys -t whiteblock '%s' C-m",name,gethCmd),
-	)
-
-	eth_sem.Release(1)
-}
 
 /**
  * Setups Eth Net Intelligence API on a node
@@ -261,7 +258,7 @@ func eth_startNode(networkId uint64,node int,server string,num int,unlock string
  * @param  int		absNum					The absolute number of the node
  * @param  int		relNum					The relative number of the node on the host server
  */
-func eth_setupEthNetIntel(serverIP string,nodeIP string,ethnetIP string,absNum int,relNum int){
+func setupEthNetIntel(serverIP string,nodeIP string,ethnetIP string,absNum int,relNum int){
 	relName := fmt.Sprintf("whiteblock-node%d",relNum)
 	absName := fmt.Sprintf("whiteblock-node%d",absNum)
 	sedCmd := fmt.Sprintf(`docker exec %s sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`,relName,absName)
@@ -269,7 +266,7 @@ func eth_setupEthNetIntel(serverIP string,nodeIP string,ethnetIP string,absNum i
 	sedCmd3 := fmt.Sprintf(`docker exec %s sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`,relName,nodeIP)
 
 	//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
-	sshFastMultiExec(serverIP,
+	util.SshMultiExec(serverIP,
 		fmt.Sprintf("docker exec -d %s tmux new -s ethnet -d",relName),
 		sedCmd,
 		sedCmd2,
@@ -277,23 +274,23 @@ func eth_setupEthNetIntel(serverIP string,nodeIP string,ethnetIP string,absNum i
 		fmt.Sprintf("docker exec -d %s tmux send-keys -t ethnet 'cd /eth-net-intelligence-api && pm2 start app.json' C-m",relName),
 		)
 	
-	//sshExec(server.addr,
+	//util.SshExec(server.addr,
 		//fmt.Sprintf("%s&&%s&&%s&&%s",sedCmd,sedCmd2,sedCmd3,startEthNetStatsCmd))
 	
-	eth_sem.Release(1)
+	sem.Release(1)
 }
 
 /**
  * Setup Eth Net Stats on a server
  * @param  string 	 ip 	The servers config
  */
-func eth_setupEthNetStats(ip string){
-	sshExecIgnore(ip,"rm -rf eth-netstats")
-	sshExec(ip,"wget http://172.16.0.8/eth-netstats.tar.gz && tar xf eth-netstats.tar.gz && rm eth-netstats.tar.gz")
+func setupEthNetStats(ip string){
+	util.SshExecIgnore(ip,"rm -rf eth-netstats")
+	util.SshExec(ip,"wget http://172.16.0.8/eth-netstats.tar.gz && tar xf eth-netstats.tar.gz && rm eth-netstats.tar.gz")
 
-	sshExecIgnore(ip,"tmux kill-session -t netstats")
-	sshExec(ip,"tmux new -s netstats -d")
-	sshExec(ip,"tmux send-keys -t netstats 'cd /home/appo/eth-netstats && npm install && grunt && WS_SECRET=second npm start' C-m")
+	util.SshExecIgnore(ip,"tmux kill-session -t netstats")
+	util.SshExec(ip,"tmux new -s netstats -d")
+	util.SshExec(ip,"tmux send-keys -t netstats 'cd /home/appo/eth-netstats && npm install && grunt && WS_SECRET=second npm start' C-m")
 
 }
 
@@ -302,12 +299,12 @@ func eth_setupEthNetStats(ip string){
  * @param  string	nodeIP        The IP address of the node
  * @param  string	serverIP      The IP address of the host server
  */
-func eth_setupBlockExplorer(nodeIP string,serverIP string){
-	sshExecIgnore(serverIP,"rm -rf ~/explorer")
-	sshExecIgnore(serverIP,"tmux kill-session -t blockExplorer")
+func setupBlockExplorer(nodeIP string,serverIP string){
+	util.SshExecIgnore(serverIP,"rm -rf ~/explorer")
+	util.SshExecIgnore(serverIP,"tmux kill-session -t blockExplorer")
 
 	id, _ := uuid.NewV4()
-	sshFastMultiExec(serverIP,
+	util.SshMultiExec(serverIP,
 		"git clone https://github.com/ethereumproject/explorer.git",
 		"cp ~/explorer/config.example.json ~/explorer/config.json",
 		fmt.Sprintf(`sed -i -r 's/"nodeAddr"(\s)*:(\s)*"(\S)*"/"nodeAddr":\t"%s"/g' ~/explorer/config.json`,nodeIP),
@@ -318,7 +315,7 @@ func eth_setupBlockExplorer(nodeIP string,serverIP string){
 		"tmux new -s blockExplorer -d",
 		
 	)
-	sshMultiExec(serverIP,
+	util.SshMultiExec(serverIP,
 		
 		"tmux send-keys -t blockExplorer 'cd ~/explorer && npm install' C-m",
 		fmt.Sprintf("tmux send-keys -t blockExplorer 'PORT=8000 MONGO_URI=mongodb://localhost/blockDB%s npm start' C-m",id),)

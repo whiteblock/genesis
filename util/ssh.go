@@ -198,8 +198,6 @@ func Scp(host string, src string, dest string) {
 	if VERBOSE {
 		fmt.Printf("done\n")
 	}
-	
-
 }
 
 /**

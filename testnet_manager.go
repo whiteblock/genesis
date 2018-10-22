@@ -5,6 +5,8 @@ import (
 	db "./db"
 	deploy "./deploy"
 	util "./util"
+	eos "./blockchains/eos"
+	eth "./blockchains/ethereum"
 )
 
 type DeploymentDetails struct {
@@ -28,9 +30,15 @@ func AddTestNet(details DeploymentDetails) error {
 	for _, server := range newServerData {
 		db.UpdateServerNodes(server.Id,server.Nodes)
 		for i, ip := range server.Ips {
-			node := db.Node{Id: -1, TestNetId: testNetId, Server: server.Id, LocalId: i, Ip: ip} //TODO: Correct LocalId obtaining method
+			node := db.Node{Id: -1, TestNetId: testNetId, Server: server.Id, LocalId: i, Ip: ip} 
 			db.InsertNode(node)
 		}
+	}
+	switch(details.Blockchain){
+		case "eos":
+			eos.Eos(details.Nodes,newServerData);
+		case "ethereum":
+			eth.Ethereum(4000000,15468,15468,details.Nodes,newServerData)
 	}
 	return nil
 }
@@ -48,6 +56,3 @@ func RemoveTestNet(id int) {
 
 }
 
-func ClearServers(servers []db.Server) {
-
-}
