@@ -93,15 +93,17 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 }
 ```
 
-__PRIVATE__
-DELETE /servers/{id}
-
+###DELETE /servers/{id}
+####PRIVATE
+```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
+```
 
+###UPDATE /servers/{id}
 
-UPDATE /servers/{id}
+```
 {
 	"Addr":(string),
 	"Iaddr":{
@@ -122,14 +124,16 @@ UPDATE /servers/{id}
 		}
 	]
 }
-
+```
+```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
+```
 
+###GET /testnets/
 
-GET /testnets/
-
+```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 [
@@ -141,23 +145,28 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 	},...
 
 ]
+```
 
+###POST /testnets/
 
-POST /testnets/
+```
 {
 	"Servers":[(int),(int)...],
 	"Blockchain":(string),
 	"Nodes":(int),
 	"Image":(string)
 }
+```
 
+```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
+```
 
+###GET /testnets/{id}
 
-GET /testnets/{id}
-
+```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 {
@@ -166,10 +175,12 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 	"Nodes":(int),
 	"Image":(string)
 }
+```
 
-__PRIVATE__
-GET /testnets/{id}/nodes/
+###GET /testnets/{id}/nodes/
+####PRIVATE
 
+```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 [
@@ -179,5 +190,5 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 	"LocalId":(int),
 	"Ip":(string)
 ]
-
+```
 
