@@ -4,6 +4,7 @@ __Warning: Do not use any path marked PRIVATE, they will begin to require creden
 
 ###GET /servers/
 Get the current registered servers
+#####RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
@@ -37,6 +38,7 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 ####PRIVATE
 Register and add a new server to be 
 controlled by the instance
+#####BODY
 ```
 {
 	"Addr":(string),
@@ -59,7 +61,7 @@ controlled by the instance
 	]
 }
 ```
-
+#####RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
@@ -68,6 +70,7 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 
 ###GET /servers/{id}
 Get a server by id
+#####RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
@@ -95,6 +98,8 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 
 ###DELETE /servers/{id}
 ####PRIVATE
+Delete a server
+#####RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
@@ -102,7 +107,9 @@ Success
 ```
 
 ###UPDATE /servers/{id}
-
+####PRIVATE
+Update server information
+#####BODY
 ```
 {
 	"Addr":(string),
@@ -125,6 +132,7 @@ Success
 	]
 }
 ```
+#####RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
@@ -132,7 +140,8 @@ Success
 ```
 
 ###GET /testnets/
-
+Get all testnets which are currently running
+#####RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
@@ -148,7 +157,8 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 ```
 
 ###POST /testnets/
-
+Add and deploy a new testnet
+#####BODY
 ```
 {
 	"Servers":[(int),(int)...],
@@ -157,7 +167,7 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 	"Image":(string)
 }
 ```
-
+#####RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
@@ -165,7 +175,8 @@ Success
 ```
 
 ###GET /testnets/{id}
-
+Get data on a single testnet
+#####RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
@@ -179,7 +190,8 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 
 ###GET /testnets/{id}/nodes/
 ####PRIVATE
-
+Get the nodes in a testnet
+#####RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
