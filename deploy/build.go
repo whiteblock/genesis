@@ -23,6 +23,7 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 	fmt.Println("-------------Building The Docker Containers-------------")
 	n := buildConf.Nodes
 	i := 0
+
 	for n > 0 && i < len(servers){
 		fmt.Printf("-------------Building on Server %d-------------\n",i)
 		max_nodes := int(servers[i].Max - servers[i].Nodes)
@@ -37,7 +38,7 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 		}
 		
 
-		startCmd := fmt.Sprintf("~/local_deploy/whiteblock -n %d -i %s -s %d -a %d -b %d -c %d -S",
+		startCmd := fmt.Sprintf("~/umba/umba -n %d -i %s -s %d -a %d -b %d -c %d",
 			nodes,
 			buildConf.Image,
 			servers[i].Id,
@@ -53,7 +54,7 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 		n -= nodes
 		i++
 	}
-	//Acquire all of the resources here,  then release and destroy
+	//Acquire all of the resources here, then release and destroy
 	if sem.Acquire(ctx,util.ThreadLimit) != nil {
 		panic("Semaphore Error")
 	}
