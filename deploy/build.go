@@ -19,7 +19,7 @@ var sem	= semaphore.NewWeighted(util.ThreadLimit)
 func Build(buildConf *Config,servers []db.Server) []db.Server {
 
 	ctx := context.TODO()
-	Prepare(buildConf.Nodes,servers)
+	//Prepare(buildConf.Nodes,servers)
 	fmt.Println("-------------Building The Docker Containers-------------")
 	n := buildConf.Nodes
 	i := 0
@@ -38,13 +38,11 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 		}
 		
 
-		startCmd := fmt.Sprintf("~/umba/umba -n %d -i %s -s %d -a %d -b %d -c %d",
+		startCmd := fmt.Sprintf("~/umba/umba --n %d --i %s --s %d --I %s",
 			nodes,
 			buildConf.Image,
 			servers[i].Id,
-			util.ServerBits,
-			util.ClusterBits,
-			util.NodeBits)
+			servers[i].Iface)
 		//Acquire resources
 		if sem.Acquire(ctx,1) != nil {
 			panic("Semaphore Error")

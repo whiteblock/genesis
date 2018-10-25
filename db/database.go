@@ -90,56 +90,25 @@ func getDB() *sql.DB {
 func InsertLocalServers(db *sql.DB) {
 	InsertServer("alpha",
 		Server{	
-			Addr:"172.16.1.5",
-			Iaddr:Iface{Ip:"10.254.1.100",Gateway:"10.254.1.1",Subnet:24},
+			Addr:"172.16.0.2",
+			Iaddr:Iface{Ip:"172.16.0.2",Gateway:"172.16.0.1",Subnet:16},
 			Nodes:0,
-			Max:100,
+			Max:30,
 			Id:1,
-			Iface:"eno4",
+			Iface:"ens4",
 			Ips:[]string{},
-			Switches:[]Switch{ Switch{Addr:"172.16.1.1",Iface:"eth1",Brand:util.Vyos} }})
+			Switches:[]Switch{ Switch{Addr:"0.0.0.0",Iface:"dummy0",Brand:util.Vyos} }})
 
 	InsertServer("bravo",
 		Server{	
-			Addr:"172.16.2.5",
-			Iaddr:Iface{Ip:"10.254.2.100",Gateway:"10.254.2.1",Subnet:24},
-			Nodes:0,
-			Max:100,
-			Id:2,
-			Iface:"eno1",
-			Ips:[]string{},
-			Switches:[]Switch{ Switch{Addr:"172.16.1.1",Iface:"eth2",Brand:util.Vyos} }})
-
-	InsertServer("charlie",
-		Server{	
-			Addr:"172.16.3.5",
-			Iaddr:Iface{Ip:"10.254.3.100",Gateway:"10.254.3.1",Subnet:24},
+			Addr:"172.16.0.3",
+			Iaddr:Iface{Ip:"172.16.0.3",Gateway:"172.16.0.1",Subnet:16},
 			Nodes:0,
 			Max:30,
-			Id:3,
-			Iface:"eno3",
+			Id:2,
+			Iface:"ens4",
 			Ips:[]string{},
-			Switches:[]Switch{ Switch{Addr:"172.16.1.1",Iface:"eth3",Brand:util.Vyos} }})
+			Switches:[]Switch{ Switch{Addr:"0.0.0.0",Iface:"dummy0",Brand:util.Vyos} }})
 
-	InsertServer("delta",
-		Server{	
-			Addr:"172.16.4.5",
-			Iaddr:Iface{Ip:"10.254.4.100",Gateway:"10.254.4.1",Subnet:24},
-			Nodes:0,
-			Max:32,
-			Id:4,
-			Iface:"eno3",
-			Ips:[]string{},
-			Switches:[]Switch{ Switch{Addr:"172.16.1.1",Iface:"eth4",Brand:util.Vyos} }})
-
-	InsertServer("ns2", 
-		Server{
-			Addr:"172.16.8.8",
-			Iaddr:Iface{Ip:"10.254.5.100",Gateway:"10.254.5.1",Subnet:24},
-			Nodes:0,
-			Max:10,
-			Id:5,
-			Iface:"eth0",
-			Ips:[]string{},
-			Switches:[]Switch{ Switch{Addr:"172.16.5.1",Iface:"eth0",Brand:util.Vyos} }})
+	
 }
