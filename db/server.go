@@ -14,6 +14,7 @@ type Server struct{
 	Nodes 		int
 	Max 		int
 	Id			int
+	ServerID	int
 	Iface		string
 	Switches	[]Switch
 	Ips			[]string

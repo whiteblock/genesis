@@ -34,14 +34,14 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 			nodes = max_nodes
 		}
 		for j := 0; j < nodes; j++ {
-			servers[i].Ips = append(servers[i].Ips,util.GetNodeIP(servers[i].Id,j))
+			servers[i].Ips = append(servers[i].Ips,util.GetNodeIP(servers[i].ServerID,j))
 		}
 		
 
 		startCmd := fmt.Sprintf("~/umba/umba --n %d --i %s --s %d --I %s",
 			nodes,
 			buildConf.Image,
-			servers[i].Id,
+			servers[i].ServerID,
 			servers[i].Iface)
 		//Acquire resources
 		if sem.Acquire(ctx,1) != nil {

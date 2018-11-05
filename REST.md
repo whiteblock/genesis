@@ -19,6 +19,7 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 		"Nodes":(int),
 		"Max":(int),
 		"Id":(int),
+		"ServerID":(int),
 		"Iface":(string),
 		"Switches":[
 			{
@@ -50,6 +51,7 @@ controlled by the instance
 	"Nodes":(int),
 	"Max":(int),
 	"Id":-1,
+	"ServerID":(int),
 	"Iface":(string),
 	"Switches":[
 		{
@@ -84,6 +86,7 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 	"Nodes":(int),
 	"Max":(int),
 	"Id":(int),
+	"ServerID":(int),
 	"Iface":(string),
 	"Switches":[
 		{
@@ -121,6 +124,7 @@ Update server information
 	"Nodes":(int),
 	"Max":(int),
 	"Id":(int),
+	"ServerID":(int),
 	"Iface":(string),
 	"Switches":[
 		{

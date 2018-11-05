@@ -29,10 +29,11 @@ func dbInit(){
 		"iface TEXT NOT NULL",
 		"brand INTEGER")
 
-	serverSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s,%s,%s, %s);",
+	serverSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s);",
 		ServerTable,
 		
 		"id INTEGER PRIMARY KEY AUTOINCREMENT",
+		"server_id INTEGER",
 		"addr TEXT NOT NULL",
 		"iaddr_ip TEXT NOT NULL",
 
@@ -88,27 +89,41 @@ func getDB() *sql.DB {
 }
 
 func InsertLocalServers(db *sql.DB) {
-	InsertServer("alpha",
+	InsertServer("cloud1",
 		Server{	
 			Addr:"172.16.0.2",
 			Iaddr:Iface{Ip:"172.16.0.2",Gateway:"172.16.0.1",Subnet:16},
 			Nodes:0,
 			Max:30,
 			Id:1,
+			ServerID:1,
 			Iface:"ens4",
 			Ips:[]string{},
 			Switches:[]Switch{ Switch{Addr:"0.0.0.0",Iface:"dummy0",Brand:util.Vyos} }})
 
-	InsertServer("bravo",
+	InsertServer("cloud2",
 		Server{	
 			Addr:"172.16.0.3",
 			Iaddr:Iface{Ip:"172.16.0.3",Gateway:"172.16.0.1",Subnet:16},
 			Nodes:0,
 			Max:30,
 			Id:2,
+			ServerID:2,
 			Iface:"ens4",
 			Ips:[]string{},
 			Switches:[]Switch{ Switch{Addr:"0.0.0.0",Iface:"dummy0",Brand:util.Vyos} }})
 
+
+	InsertServer("foxtrot",
+		Server{
+			Addr:"172.16.6.5",
+			Iaddr:Iface{Ip:"10.254.6.100",Gateway:"10.254.6.1",Subnet:24},
+			Nodes:0,
+			Max:30,
+			Id:6,
+			ServerID:6,
+			Iface:"eno3",
+			Ips:[]string{},
+			Switches:[]Switch{ Switch{Addr:"172.16.1.1",Iface:"eth13",Brand:util.Vyos} }})
 	
 }
