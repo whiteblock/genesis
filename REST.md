@@ -194,6 +194,10 @@ HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
 ```
+#####EXAMPLE
+```
+curl -X POST http://localhost:8000/testnets/ -d '{"Servers":[3],"Blockchain":"ethereum","Nodes":3,"Image":"ethereum:latest"}'
+```
 
 ###GET /testnets/{id}
 Get data on a single testnet
