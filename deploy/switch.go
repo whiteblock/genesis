@@ -28,7 +28,7 @@ func PrepareSwitches(server db.Server,nodes int){
 		return
 	}
 	conf,meta := getConfig(server.Switches[0].Addr)
-	gws := util.GetGateways(server.Id, nodes)
+	gws := util.GetGateways(server.ServerID, nodes)
 	conf.RemoveVifs(server.Switches[0].Iface)
 	conf.SetIfaceAddr(server.Switches[0].Iface,fmt.Sprintf("%s/%d",server.Iaddr.Gateway,server.Iaddr.Subnet))//Update this later on to be more dynamic
 	for i,gw := range gws {

@@ -33,7 +33,10 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 	"server2_name":{...}...
 }
 ```
-
+####EXAMPLE
+```
+curl -XGET http://localhost:8000/servers/
+```
 
 ###PUT /servers/{name}
 ####PRIVATE
@@ -68,6 +71,10 @@ controlled by the instance
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 <server id>
+```
+####EXAMPLE
+```
+curl -X PUT http://localhost:8000/servers/foxtrot -d '{"Addr":"172.16.6.5","Iaddr":{"Ip":"10.254.6.100","Gateway":"10.254.6.1","Subnet":24},"Nodes":0,"Max":10,"ServerID":6,"Id":-1,"Iface":"eth0","Switches":[{"Addr":"172.16.1.1","Iface":"eno3","Brand":1,"Id":5}],"Ips":null}}'
 ```
 
 ###GET /servers/{id}
@@ -107,6 +114,11 @@ Delete a server
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
+```
+
+####EXAMPLE
+```
+curl -XDELETE http://localhost:8000/servers/5
 ```
 
 ###UPDATE /servers/{id}
