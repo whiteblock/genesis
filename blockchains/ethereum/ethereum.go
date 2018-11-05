@@ -27,20 +27,58 @@ var sem = semaphore.NewWeighted(THREAD_LIMIT)
  * @param  []Server	servers		The list of servers passed from build
  */
 func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.Server){
+	var mutex = &sync.Mutex{}
 	ctx := context.TODO()
 	util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
+	
 	for i := 1; i <= nodes; i++ {
 		util.Mkdir(fmt.Sprintf("./tmp/node%d",i))
 		//fmt.Printf("---------------------  CREATING pre-allocated accounts for NODE-%d  ---------------------\n",i)
 
 	}
-	createPassFiles(nodes)
+
+
+	/**Create the Password files**/
+	{
+		var data string
+		for i := 1; i <= nodes; i++{
+			data += "second\n"
+		}
+
+		for i := 1; i <= nodes; i++{
+			util.Write(fmt.Sprintf("tmp/node%d/passwd.file",i),data)
+		}
+	}
+
+
+
+	/**Create the wallets**/
 	wallets := []string{}
 
 	for i := 1; i <= nodes; i++{
-		sem.Acquire(ctx,1)
-		wallets = append(wallets,getWallet(i));
+
+		go func(node int){
+			sem.Acquire(1)
+			gethResults := util.BashExec(
+				fmt.Sprintf("geth --datadir tmp/node%d/ --password tmp/node%d/passwd.file account new",
+					node,node))
+			//fmt.Printf("RAW:%s\n",gethResults)
+			addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
+			addresses := addressPattern.FindAllString(gethResults,-1)
+			if len(addresses) < 1 {
+				return ""
+			}
+			address := addresses[0]
+			address = address[1:len(address)-1]
+		 	sem.Release(1)
+
+		 	mutex.Lock()
+		 	wallets = append(wallets,address)
+		 	mutex.Unlock()
+		}(i)
+		
 	}
+
 	unlock := ""
 
 	for i,wallet := range wallets {
@@ -117,40 +155,8 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 }
 /***************************************************************************************************************************/
 
-/**
- * Create the password files
- * @param  int	nodes	The number of nodes
- */
-func createPassFiles(nodes int){
-	var data string
-	for i := 1; i <= nodes; i++{
-		data += "second\n"
-	}
 
-	for i := 1; i <= nodes; i++{
-		util.Write(fmt.Sprintf("tmp/node%d/passwd.file",i),data)
-	}
-}
 
-/**
- * Creates a wallet for a node
- * @param  uint64  node        The node number
- */
-func getWallet(node int) string{
-	gethResults := util.BashExec(
-		fmt.Sprintf("geth --datadir tmp/node%d/ --password tmp/node%d/passwd.file account new",
-			node,node))
-	//fmt.Printf("RAW:%s\n",gethResults)
-	addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
-	addresses := addressPattern.FindAllString(gethResults,-1)
-	if len(addresses) < 1 {
-		return ""
-	}
-	address := addresses[0]
-	address = address[1:len(address)-1]
- 	sem.Release(1)
-	return address
-}
 
 /**
  * Create the custom genesis file for Ethereum
@@ -221,7 +227,7 @@ func initNodeDirectories(nodes int,networkId uint64,servers []db.Server){
 				fmt.Sprintf("geth --datadir tmp/node%d --networkid %d init tmp/CustomGenesis.json",node,networkId))
 			
 
-			static_nodes = append(static_nodes,initNode(node,networkId,ip))
+			static_nodes = append(static_nodes,z(node,networkId,ip))
 			nodes++;
 		}
 	}

@@ -18,12 +18,18 @@ type DeploymentDetails struct {
 
 func AddTestNet(details DeploymentDetails) error {
 	servers, err := db.GetServers(details.Servers)
+	
 	if err != nil {
+		fmt.Printf("Error Getting the Servers")
 		return err
 	}
+	fmt.Println("Got the Servers")
+	
 	config := deploy.Config{Nodes: details.Nodes, Image: details.Image, Servers: details.Servers}
+	fmt.Printf("Created the build configuration : %+v \n",config)
 
 	newServerData := deploy.Build(&config, servers) //TODO: Restructure distribution of nodes over servers
+	fmt.Println("Built the docker containers")
 
 	testNetId := db.InsertTestNet(db.TestNet{Id: -1, Blockchain: details.Blockchain, Nodes: details.Nodes, Image: details.Image})
 
@@ -39,6 +45,8 @@ func AddTestNet(details DeploymentDetails) error {
 			eos.Eos(details.Nodes,newServerData);
 		case "ethereum":
 			eth.Ethereum(4000000,15468,15468,details.Nodes,newServerData)
+		default:
+			fmt.Printf("ERROR: Unknown blockchain %s\n",details.Blockchain)
 	}
 	return nil
 }

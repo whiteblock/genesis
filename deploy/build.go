@@ -9,15 +9,13 @@ import (
 )
 
 
-var sem	= semaphore.NewWeighted(util.ThreadLimit)
-
-
 /**
  * Builds out the Docker Network on pre-setup servers
  * Returns a string of all of the IP addresses 
  */
 func Build(buildConf *Config,servers []db.Server) []db.Server {
-
+	var sem	= semaphore.NewWeighted(util.ThreadLimit)
+	
 	ctx := context.TODO()
 	//Prepare(buildConf.Nodes,servers)
 	fmt.Println("-------------Building The Docker Containers-------------")
@@ -37,8 +35,9 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 			servers[i].Ips = append(servers[i].Ips,util.GetNodeIP(servers[i].ServerID,j))
 		}
 		
+		fmt.Printf("Creating the docker containers on server %d\n",i)
 
-		startCmd := fmt.Sprintf("~/umba/umba --n %d --i %s --s %d --I %s",
+		startCmd := fmt.Sprintf("DOCKER_API_VERSION=\"1.38\" ~/umba/umba -n %d -i %s -s %d -I %s",
 			nodes,
 			buildConf.Image,
 			servers[i].ServerID,
@@ -47,7 +46,11 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 		if sem.Acquire(ctx,1) != nil {
 			panic("Semaphore Error")
 		}
-		go buildInternalInfrastructure(servers[i].Addr,startCmd)
+		go func(server string,startCmd string){
+			util.SshExec(server,startCmd)
+			//Release the resource
+			sem.Release(1)
+		}(servers[i].Addr,startCmd)
 
 		n -= nodes
 		i++
@@ -62,11 +65,4 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 	}
 
 	return servers
-}
-
-func buildInternalInfrastructure(server string,startCmd string){
-	
-	util.SshExec(server,startCmd)
-	//Release the resource
-	sem.Release(1)
 }

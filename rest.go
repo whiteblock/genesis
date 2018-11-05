@@ -6,7 +6,6 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
-	"fmt"
 )
 
 func StartServer() {
@@ -81,7 +80,6 @@ func updateServerInfo(w http.ResponseWriter, r *http.Request) {
 	var server db.Server
 
 	_ = json.NewDecoder(r.Body).Decode(&server)
-	fmt.Printf("Body: %s\n\n",r.Body)
 
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {

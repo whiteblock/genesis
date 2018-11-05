@@ -2,9 +2,7 @@ package db
 
 import(
 	_ "github.com/mattn/go-sqlite3"
-	"database/sql"
 	"fmt"
-	"errors"
 	util "../util"
 )
 
@@ -55,31 +53,15 @@ func GetAllServers() map[string]Server {
 }
 
 func GetServers(ids []int) ([]Server,error) {
-	db := getDB()
-	defer db.Close()
-
 	var servers []Server
-
-	for id := range ids {
-		row := db.QueryRow(fmt.Sprintf("SELECT id,server_id,addr,iaddr_ip,iaddr_gateway,iaddr_subnet,nodes,max,iface,switch,name FROM %s WHERE id = %d",ServerTable,id))
-	
-		var server Server
-		var name string
-		var switchId int
-
-		if row.Scan(&server.Id,&server.ServerID,&server.Addr,&server.Iaddr.Ip,&server.Iaddr.Gateway,&server.Iaddr.Subnet,
-					&server.Nodes,&server.Max,&switchId,&name) == sql.ErrNoRows {
-			return servers, errors.New("Unknown Server")
+	for _, id := range ids {
+		server,_,err := GetServer(id)
+		if err != nil {
+			return servers, err
 		}
-
-		swtch, err := GetSwitchById(switchId)
-		util.CheckFatal(err)
-
-		server.Switches = []Switch{ swtch }
 		servers = append(servers,server)
 	}
-
-	return servers, nil
+	return servers,nil
 }
 
 func GetServer(id int) (Server, string, error) {
@@ -136,15 +118,8 @@ func _insertServer(name string,server Server,switchId int) int {
 }
 
 func InsertServer(name string,server Server) int {
-	db := getDB()
-	defer db.Close()
-	//fmt.Printf("INSERTED server is %+v\n",server)
-	swtch,err := GetSwitchByIP(server.Switches[0].Addr)
-
-	if err == nil {
-		return _insertServer(name,server,InsertSwitch(server.Switches[0]))
-	}
-	return _insertServer(name,server,swtch.Id)
+	
+	return _insertServer(name,server,InsertSwitch(server.Switches[0]))
 }
 
 func DeleteServer(id int){

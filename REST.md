@@ -157,7 +157,7 @@ Success
 
 #####EXAMPLE
 ```
-curl -X UPDATE http://localhost:8000/servers/5 '{"Addr":"172.16.4.5","Iaddr":{"Ip":"10.254.4.100","Gateway":"10.254.4.1","Subnet":24},"Nodes":0,"Max":30,"Id":5,"ServerID":4,"Iface":"eno3","Switches":[{"Addr":"172.16.1.1","Iface":"eth4","Brand":1,"Id":3}],"Ips":null}'
+curl -X UPDATE http://localhost:8000/servers/5 -d '{"Addr":"172.16.4.5","Iaddr":{"Ip":"10.254.4.100","Gateway":"10.254.4.1","Subnet":24},"Nodes":0,"Max":30,"Id":5,"ServerID":4,"Iface":"eno3","Switches":[{"Addr":"172.16.1.1","Iface":"eth4","Brand":1,"Id":3}],"Ips":null}'
 ```
 
 ###GET /testnets/
