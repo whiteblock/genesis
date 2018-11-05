@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
-	//"fmt"
+	"fmt"
 )
 
 func StartServer() {
@@ -77,8 +77,11 @@ func deleteServer(w http.ResponseWriter, r *http.Request) {
 
 func updateServerInfo(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
+
 	var server db.Server
+
 	_ = json.NewDecoder(r.Body).Decode(&server)
+	fmt.Printf("Body: %s\n\n",r.Body)
 
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {

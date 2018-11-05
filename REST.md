@@ -33,7 +33,7 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 	"server2_name":{...}...
 }
 ```
-####EXAMPLE
+#####EXAMPLE
 ```
 curl -XGET http://localhost:8000/servers/
 ```
@@ -72,7 +72,7 @@ HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 <server id>
 ```
-####EXAMPLE
+#####EXAMPLE
 ```
 curl -X PUT http://localhost:8000/servers/foxtrot -d '{"Addr":"172.16.6.5","Iaddr":{"Ip":"10.254.6.100","Gateway":"10.254.6.1","Subnet":24},"Nodes":0,"Max":10,"ServerID":6,"Id":-1,"Iface":"eth0","Switches":[{"Addr":"172.16.1.1","Iface":"eno3","Brand":1,"Id":5}],"Ips":null}}'
 ```
@@ -116,9 +116,9 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
 ```
 
-####EXAMPLE
+#####EXAMPLE
 ```
-curl -XDELETE http://localhost:8000/servers/5
+curl -X DELETE http://localhost:8000/servers/5
 ```
 
 ###UPDATE /servers/{id}
@@ -153,6 +153,11 @@ Update server information
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
+```
+
+#####EXAMPLE
+```
+curl -X UPDATE http://localhost:8000/servers/5 '{"Addr":"172.16.4.5","Iaddr":{"Ip":"10.254.4.100","Gateway":"10.254.4.1","Subnet":24},"Nodes":0,"Max":30,"Id":5,"ServerID":4,"Iface":"eno3","Switches":[{"Addr":"172.16.1.1","Iface":"eth4","Brand":1,"Id":3}],"Ips":null}'
 ```
 
 ###GET /testnets/
