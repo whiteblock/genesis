@@ -7,6 +7,7 @@ import (
 	"golang.org/x/sync/semaphore"
 	"regexp"
 	"github.com/satori/go.uuid"
+	"sync"
 	util "../../util"
 	db "../../db"
 )
@@ -16,7 +17,7 @@ const THREAD_LIMIT int64		=   10
 const MAX_PEERS	int 			= 	1000
 const INIT_WALLET_VALUE	string	=	"100000000000000000000"
 
-var sem = semaphore.NewWeighted(THREAD_LIMIT)
+
 
 /**
  * Build the Ethereum Test Network
@@ -28,6 +29,7 @@ var sem = semaphore.NewWeighted(THREAD_LIMIT)
  */
 func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.Server){
 	var mutex = &sync.Mutex{}
+	var sem = semaphore.NewWeighted(THREAD_LIMIT)
 	ctx := context.TODO()
 	util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
 	
@@ -58,7 +60,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 	for i := 1; i <= nodes; i++{
 
 		go func(node int){
-			sem.Acquire(1)
+			sem.Acquire(ctx,1)
 			gethResults := util.BashExec(
 				fmt.Sprintf("geth --datadir tmp/node%d/ --password tmp/node%d/passwd.file account new",
 					node,node))
@@ -66,7 +68,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 			addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
 			addresses := addressPattern.FindAllString(gethResults,-1)
 			if len(addresses) < 1 {
-				return ""
+				return
 			}
 			address := addresses[0]
 			address = address[1:len(address)-1]
@@ -137,7 +139,27 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 	for _,server := range servers {
 		for j,ip := range server.Ips{
 			sem.Acquire(ctx,1)
-			go setupEthNetIntel(server.Addr,ip,servers[0].Iaddr.Ip,node,j)
+			go func(serverIP string,nodeIP string,ethnetIP string,absNum int,relNum int){
+				relName := fmt.Sprintf("whiteblock-node%d",relNum)
+				absName := fmt.Sprintf("whiteblock-node%d",absNum)
+				sedCmd := fmt.Sprintf(`docker exec %s sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`,relName,absName)
+				sedCmd2 := fmt.Sprintf(`docker exec %s sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:3000"/g' /eth-net-intelligence-api/app.json`,relName,ethnetIP)
+				sedCmd3 := fmt.Sprintf(`docker exec %s sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`,relName,nodeIP)
+
+				//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
+				util.SshMultiExec(serverIP,
+					fmt.Sprintf("docker exec -d %s tmux new -s ethnet -d",relName),
+					sedCmd,
+					sedCmd2,
+					sedCmd3,
+					fmt.Sprintf("docker exec -d %s tmux send-keys -t ethnet 'cd /eth-net-intelligence-api && pm2 start app.json' C-m",relName),
+				)
+	
+				//util.SshExec(server.addr,
+				//fmt.Sprintf("%s&&%s&&%s&&%s",sedCmd,sedCmd2,sedCmd3,startEthNetStatsCmd))
+	
+				sem.Release(1)
+			}(server.Addr,ip,servers[0].Iaddr.Ip,node,j)
 			node++
 		}
 	}
@@ -227,8 +249,8 @@ func initNodeDirectories(nodes int,networkId uint64,servers []db.Server){
 				fmt.Sprintf("geth --datadir tmp/node%d --networkid %d init tmp/CustomGenesis.json",node,networkId))
 			
 
-			static_nodes = append(static_nodes,z(node,networkId,ip))
-			nodes++;
+			static_nodes = append(static_nodes,initNode(node,networkId,ip))
+			node++;
 		}
 	}
 	out, err := json.Marshal(static_nodes)
@@ -255,37 +277,6 @@ func distributeUTCKeystore(nodes int){
 	}
 }
 
-
-/**
- * Setups Eth Net Intelligence API on a node
- * @param  string	serverIP				The IP address of the host server
- * @param  string	nodeIP					The IP address of the node
- * @param  string	ethnetIP				The IP of the node reachable interface for ETH Net Stats
- * @param  int		absNum					The absolute number of the node
- * @param  int		relNum					The relative number of the node on the host server
- */
-func setupEthNetIntel(serverIP string,nodeIP string,ethnetIP string,absNum int,relNum int){
-	relName := fmt.Sprintf("whiteblock-node%d",relNum)
-	absName := fmt.Sprintf("whiteblock-node%d",absNum)
-	sedCmd := fmt.Sprintf(`docker exec %s sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`,relName,absName)
-	sedCmd2 := fmt.Sprintf(`docker exec %s sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:3000"/g' /eth-net-intelligence-api/app.json`,relName,ethnetIP)
-	sedCmd3 := fmt.Sprintf(`docker exec %s sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`,relName,nodeIP)
-
-	//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
-	util.SshMultiExec(serverIP,
-		fmt.Sprintf("docker exec -d %s tmux new -s ethnet -d",relName),
-		sedCmd,
-		sedCmd2,
-		sedCmd3,
-		fmt.Sprintf("docker exec -d %s tmux send-keys -t ethnet 'cd /eth-net-intelligence-api && pm2 start app.json' C-m",relName),
-		)
-	
-	//util.SshExec(server.addr,
-		//fmt.Sprintf("%s&&%s&&%s&&%s",sedCmd,sedCmd2,sedCmd3,startEthNetStatsCmd))
-	
-	sem.Release(1)
-}
-
 /**
  * Setup Eth Net Stats on a server
  * @param  string 	 ip 	The servers config
@@ -306,8 +297,9 @@ func setupEthNetStats(ip string){
  * @param  string	serverIP      The IP address of the host server
  */
 func setupBlockExplorer(nodeIP string,serverIP string){
-	util.SshExecIgnore(serverIP,"rm -rf ~/explorer")
 	util.SshExecIgnore(serverIP,"tmux kill-session -t blockExplorer")
+	util.SshExecIgnore(serverIP,"rm -rf ~/explorer")
+	
 
 	id, _ := uuid.NewV4()
 	util.SshMultiExec(serverIP,

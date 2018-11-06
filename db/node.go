@@ -39,7 +39,7 @@ func GetAllNodesByTestNet(testId int)[]Node{
 	db := getDB()
 	defer db.Close()
 
-	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s WHERE test_net = %d",NodesTable ))
+	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s WHERE test_net = %d",NodesTable,testId ))
 	util.CheckFatal(err)
 	defer rows.Close()
 

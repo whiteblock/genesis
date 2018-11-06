@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
+	"log"
 )
 
 func StartServer() {
@@ -109,24 +110,25 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
 	var testnet DeploymentDetails
 	_ = json.NewDecoder(r.Body).Decode(&testnet)
 	
-	err := AddTestNet(testnet)
-	if(err != nil){
-		json.NewEncoder(w).Encode(err)
-		return
-	}
-	w.Write([]byte("Success"))
+	w.Write([]byte(GetNextTestNetId()))
 
+	go AddTestNet(testnet)
+	
+	//log.Println("Created a test net successfully!");
 }
 
 func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
+	//log.Println("Received raw id \""+params["id"]+"\"")
 	if err != nil {
 		w.Write([]byte("Invalid id"))
 		return
 	}
+	//log.Println(fmt.Sprintf("Attempting to find testnet with id %d",id))
 	testNet, err := db.GetTestNet(id)
-	if err == nil {
+	if err != nil {
+		log.Println("Error:",err)
 		w.Write([]byte("Does Not Exist"))
 	} else {
 		json.NewEncoder(w).Encode(testNet)

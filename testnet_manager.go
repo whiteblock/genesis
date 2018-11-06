@@ -17,6 +17,7 @@ type DeploymentDetails struct {
 }
 
 func AddTestNet(details DeploymentDetails) error {
+	
 	servers, err := db.GetServers(details.Servers)
 	
 	if err != nil {
@@ -31,15 +32,7 @@ func AddTestNet(details DeploymentDetails) error {
 	newServerData := deploy.Build(&config, servers) //TODO: Restructure distribution of nodes over servers
 	fmt.Println("Built the docker containers")
 
-	testNetId := db.InsertTestNet(db.TestNet{Id: -1, Blockchain: details.Blockchain, Nodes: details.Nodes, Image: details.Image})
-
-	for _, server := range newServerData {
-		db.UpdateServerNodes(server.Id,server.Nodes)
-		for i, ip := range server.Ips {
-			node := db.Node{Id: -1, TestNetId: testNetId, Server: server.Id, LocalId: i, Ip: ip} 
-			db.InsertNode(node)
-		}
-	}
+	
 	switch(details.Blockchain){
 		case "eos":
 			eos.Eos(details.Nodes,newServerData);
@@ -48,7 +41,29 @@ func AddTestNet(details DeploymentDetails) error {
 		default:
 			fmt.Printf("ERROR: Unknown blockchain %s\n",details.Blockchain)
 	}
+
+	testNetId := db.InsertTestNet(db.TestNet{Id: -1, Blockchain: details.Blockchain, Nodes: details.Nodes, Image: details.Image})
+
+	for _, server := range newServerData {
+		db.UpdateServerNodes(server.Id,0)
+		for i, ip := range server.Ips {
+			node := db.Node{Id: -1, TestNetId: testNetId, Server: server.Id, LocalId: i, Ip: ip} 
+			db.InsertNode(node)
+		}
+	}
 	return nil
+}
+
+func GetNextTestNetId() string {
+	testNets := db.GetAllTestNets()
+	highestId := -1
+
+	for _, testNet := range testNets {
+		if testNet.Id > highestId {
+			highestId = testNet.Id
+		}
+	}
+	return fmt.Sprintf("%d",highestId+1)
 }
 
 func RebuildTestNet(id int) {
