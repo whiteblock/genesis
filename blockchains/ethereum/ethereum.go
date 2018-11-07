@@ -7,7 +7,7 @@ import (
 	"golang.org/x/sync/semaphore"
 	"regexp"
 	"github.com/satori/go.uuid"
-	"sync"
+	//"sync"
 	util "../../util"
 	db "../../db"
 )
@@ -28,7 +28,7 @@ const INIT_WALLET_VALUE	string	=	"100000000000000000000"
  * @param  []Server	servers		The list of servers passed from build
  */
 func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.Server){
-	var mutex = &sync.Mutex{}
+	//var mutex = &sync.Mutex{}
 	var sem = semaphore.NewWeighted(THREAD_LIMIT)
 	ctx := context.TODO()
 	util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
@@ -59,25 +59,25 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 
 	for i := 1; i <= nodes; i++{
 
-		go func(node int){
-			sem.Acquire(ctx,1)
-			gethResults := util.BashExec(
-				fmt.Sprintf("geth --datadir tmp/node%d/ --password tmp/node%d/passwd.file account new",
-					node,node))
-			//fmt.Printf("RAW:%s\n",gethResults)
-			addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
-			addresses := addressPattern.FindAllString(gethResults,-1)
-			if len(addresses) < 1 {
-				return
-			}
-			address := addresses[0]
-			address = address[1:len(address)-1]
-		 	sem.Release(1)
-
-		 	mutex.Lock()
-		 	wallets = append(wallets,address)
-		 	mutex.Unlock()
-		}(i)
+		node := i
+		//sem.Acquire(ctx,1)
+		gethResults := util.BashExec(
+			fmt.Sprintf("geth --datadir tmp/node%d/ --password tmp/node%d/passwd.file account new",
+				node,node))
+		//fmt.Printf("RAW:%s\n",gethResults)
+		addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
+		addresses := addressPattern.FindAllString(gethResults,-1)
+		if len(addresses) < 1 {
+			return
+		}
+		address := addresses[0]
+		address = address[1:len(address)-1]
+	 	//sem.Release(1)
+	 	//fmt.Printf("Created wallet with address: %s\n",address)
+	 	//mutex.Lock()
+	 	wallets = append(wallets,address)
+	 	//mutex.Unlock()
+		
 		
 	}
 
@@ -89,6 +89,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 		}
 		unlock += wallet
 	}
+	fmt.Printf("unlock = %s\n%+v\n\n",wallets,unlock)
 
 	createGenesisfile(gas,chainId,wallets)
 
@@ -109,7 +110,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 				util.SshExec(server,fmt.Sprintf("rm -rf tmp/node%d",node))
 				util.Scpr(server,fmt.Sprintf("tmp/node%d",node))
 
-				gethCmd := fmt.Sprintf(`geth --datadir /whiteblock/node%d --nodiscover --maxpeers %d --networkid %d --rpc --rpcaddr %s --rpcapi "web3,db,eth,net,personal" --rpccorsdomain "0.0.0.0" --mine --unlock="%s" --password /whiteblock/node%d/passwd.file console`,
+				gethCmd := fmt.Sprintf(`geth --datadir /whiteblock/node%d --nodiscover --maxpeers %d --networkid %d --rpc --rpcaddr %s --rpcapi "web3,db,eth,net,personal,miner" --rpccorsdomain "0.0.0.0" --mine --unlock="%s" --password /whiteblock/node%d/passwd.file console`,
 						node,
 						MAX_PEERS,
 						networkId,
