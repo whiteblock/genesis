@@ -15,7 +15,7 @@ type KeyPair struct {
 	PublicKey	string
 }
 
-var VERBOSE bool
+var VERBOSE = true
 
 
 /****Basic Linux Functions****/

@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
-	"log"
+	//"log"
 )
 
 func StartServer() {
@@ -128,7 +128,7 @@ func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
 	//log.Println(fmt.Sprintf("Attempting to find testnet with id %d",id))
 	testNet, err := db.GetTestNet(id)
 	if err != nil {
-		log.Println("Error:",err)
+		//log.Println("Error:",err)
 		w.Write([]byte("Does Not Exist"))
 	} else {
 		json.NewEncoder(w).Encode(testNet)

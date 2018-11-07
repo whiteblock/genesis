@@ -17,7 +17,7 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 	var sem	= semaphore.NewWeighted(util.ThreadLimit)
 	
 	ctx := context.TODO()
-	//Prepare(buildConf.Nodes,servers)
+	Prepare(buildConf.Nodes,servers)
 	fmt.Println("-------------Building The Docker Containers-------------")
 	n := buildConf.Nodes
 	i := 0
@@ -34,14 +34,20 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 		for j := 0; j < nodes; j++ {
 			servers[i].Ips = append(servers[i].Ips,util.GetNodeIP(servers[i].ServerID,j))
 		}
-		
+		prepareVlans(servers[i], nodes)
 		fmt.Printf("Creating the docker containers on server %d\n",i)
-
-		startCmd := fmt.Sprintf("DOCKER_API_VERSION=\"1.38\" ~/umba/umba -n %d -i %s -s %d -I %s",
+		startCmd := fmt.Sprintf("~/local_deploy/whiteblock -n %d -i %s -s %d -a %d -b %d -c %d -S",
 			nodes,
 			buildConf.Image,
 			servers[i].ServerID,
-			servers[i].Iface)
+			util.ServerBits,
+			util.ClusterBits,
+			util.NodeBits)
+		/*startCmd := fmt.Sprintf("DOCKER_API_VERSION=\"1.38\" ~/umba/umba -n %d -i %s -s %d -I %s",
+			nodes,
+			buildConf.Image,
+			servers[i].ServerID,
+			servers[i].Iface)*/
 		//Acquire resources
 		if sem.Acquire(ctx,1) != nil {
 			panic("Semaphore Error")
@@ -65,4 +71,10 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 	}
 
 	return servers
+}
+
+
+func prepareVlans(server db.Server, nodes int) {
+	cmd := fmt.Sprintf("cd local_deploy && ./whiteblock -k && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s", server.ServerID, nodes, util.ServerBits, util.ClusterBits, util.NodeBits, server.Iface)
+	util.SshExec(server.Addr, cmd)
 }

@@ -7,23 +7,23 @@ package deploy
  */
 import (
  	"fmt"
- 	"context"
-	"golang.org/x/sync/semaphore"
+ 	//"context"
+	//"golang.org/x/sync/semaphore"
 	db "../db"
-	util "../util"
+	//util "../util"
 )
 
-var prepareSem = semaphore.NewWeighted(util.ThreadLimit)
+//var prepareSem = semaphore.NewWeighted(util.ThreadLimit)
 
 func Prepare(noNodes int,servers []db.Server){
 	fmt.Println("-------------Setting Up Servers-------------")
-	ctx := context.TODO()
+	//ctx := context.TODO()
 	
-	go prepareSwitchesThread(noNodes,servers)
+	prepareSwitchesThread(noNodes,servers)
 	//wait for completion
 	fmt.Println("Awaiting completion of prepare part 1")
-	prepareSem.Acquire(ctx,util.ThreadLimit)
-	prepareSem.Release(util.ThreadLimit)
+	//prepareSem.Acquire(ctx,util.ThreadLimit)
+	//prepareSem.Release(util.ThreadLimit)
 
 	
 }
