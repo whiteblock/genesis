@@ -113,6 +113,17 @@ func InsertLocalServers(db *sql.DB) {
 			Ips:[]string{},
 			Switches:[]Switch{ Switch{Addr:"0.0.0.0",Iface:"dummy0",Brand:util.Vyos} }})
 
+	InsertServer("charlie",
+		Server{
+			Addr:"172.16.3.5",
+			Iaddr:Iface{Ip:"10.254.3.100",Gateway:"10.254.3.1",Subnet:24},
+			Nodes:0,
+			Max:30,
+			Id:3,
+			ServerID:3,
+			Iface:"eno3",
+			Ips:[]string{},
+			Switches:[]Switch{ Switch{Addr:"172.16.1.1",Iface:"eth3",Brand:util.Vyos} }})
 
 	InsertServer("foxtrot",
 		Server{
