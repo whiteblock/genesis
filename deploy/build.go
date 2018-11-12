@@ -75,6 +75,7 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 
 
 func prepareVlans(server db.Server, nodes int) {
-	cmd := fmt.Sprintf("cd local_deploy && ./whiteblock -k && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s", server.ServerID, nodes, util.ServerBits, util.ClusterBits, util.NodeBits, server.Iface)
+	util.SshExecIgnore(server.Addr,"~/local_deploy/whiteblock -k")
+	cmd := fmt.Sprintf("cd local_deploy && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s", server.ServerID, nodes, util.ServerBits, util.ClusterBits, util.NodeBits, server.Iface)
 	util.SshExec(server.Addr, cmd)
 }
