@@ -76,10 +76,12 @@ func GetServer(id int) (Server, string, error) {
 		return server,name,err
 	}
 
+	
+	
+	if !rows.Next() {
+		panic(rows.Err())
+	}
 	defer rows.Close()
-	
-	rows.Next()
-	
 	var switchId int
 	//var subnet string
 	util.CheckFatal(rows.Scan(&server.Id,&server.ServerID,&server.Addr,

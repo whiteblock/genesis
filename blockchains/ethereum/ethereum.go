@@ -32,6 +32,12 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 	var sem = semaphore.NewWeighted(THREAD_LIMIT)
 	ctx := context.TODO()
 	util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
+
+	defer func(){
+		fmt.Printf("Cleaning up...")
+		util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
+		fmt.Printf("done\n")
+	}()
 	
 	for i := 1; i <= nodes; i++ {
 		util.Mkdir(fmt.Sprintf("./tmp/node%d",i))
@@ -170,9 +176,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 	util.CheckFatal(err)
 
 	sem.Release(THREAD_LIMIT)
-	fmt.Printf("Cleaning up...")
-	util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
-	fmt.Printf("done\n")
+	
 	//fmt.Printf("To view Eth Net Stat type:\t\t\ttmux attach-session -t netstats\n")
 	
 }
@@ -224,9 +228,10 @@ func initNode(node int, networkId uint64,ip string) string {
 	fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n",node)
 	gethResults := util.BashExec(fmt.Sprintf("echo -e \"admin.nodeInfo.enode\\nexit\\n\" |  geth --rpc --datadir tmp/node%d/ --networkid %d console",node,networkId))
 	//fmt.Printf("RAWWWWWWWWWWWW%s\n\n\n",gethResults)
-	enodePattern := regexp.MustCompile(`enode:\/\/[A-z|0-9]+@\[\:\:\]\:[0-9]+`)
+	enodePattern := regexp.MustCompile(`enode:\/\/[A-z|0-9]+@(\[\:\:\]|([0-9]|\.)+)\:[0-9]+`)
 	enode := enodePattern.FindAllString(gethResults,1)[0]
-	enodeAddressPattern := regexp.MustCompile(`\[\:\:\]`)
+	fmt.Printf("ENODE fetched is: %s\n",enode)
+	enodeAddressPattern := regexp.MustCompile(`\[\:\:\]|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})`)
 	enode = enodeAddressPattern.ReplaceAllString(enode,ip);
 
 	util.Write(fmt.Sprintf("./tmp/node%d/enode",node),fmt.Sprintf("%s\n",enode))

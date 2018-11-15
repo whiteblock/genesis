@@ -134,11 +134,15 @@ func sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
 	client, err = ssh.Dial("tcp", fmt.Sprintf("%s:22", host), sshConfig)
 	
 	if err != nil {//Try to connect using the id_rsa file
-		usr := os.Getenv("USER")
-		key, err := ioutil.ReadFile(fmt.Sprintf("/home/%s/.ssh/id_rsa",usr))
-		CheckFatal(err)
+		home := os.Getenv("HOME")
+		key, err := ioutil.ReadFile(fmt.Sprintf("%s/.ssh/id_rsa",home))
+		if err != nil {
+			return nil,nil,err
+		}
 		signer, err := ssh.ParsePrivateKey(key)
-		CheckFatal(err)
+		if err != nil {
+			return nil, nil, err
+		}
 		sshConfig = &ssh.ClientConfig{
 		    User: USER,
 		    Auth: []ssh.AuthMethod{
@@ -157,7 +161,6 @@ func sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
 	session, err := client.NewSession()
 	if err != nil {
 		client.Close()
-		
 		return nil, nil, err
 		
 	}
