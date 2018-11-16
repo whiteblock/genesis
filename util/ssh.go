@@ -101,7 +101,10 @@ func SshExecIgnore(host string, command string) string {
 		fmt.Printf("Running command on %s : %s\n", host, command)
 	}
 
-	session, client,_ := sshConnect(host)
+	session, client,err := sshConnect(host)
+	if err != nil{
+		panic(err)
+	}
 	defer client.Close()
 	defer session.Close()
 	out, _ := session.CombinedOutput(command)
@@ -120,19 +123,21 @@ func SshExecIgnore(host string, command string) string {
  */
 func sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
 	USER := "appo"
-	PASS := "w@ntest"
+	//PASS := "w@ntest"
 	var client *ssh.Client
 	var err error
 	
 
 	sshConfig := &ssh.ClientConfig{
-		User: USER,
-		Auth: []ssh.AuthMethod{ssh.Password(PASS)},
+		User: "vyos",
+		Auth: []ssh.AuthMethod{ssh.Password("vyos")},
 	}
 	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 
 	client, err = ssh.Dial("tcp", fmt.Sprintf("%s:22", host), sshConfig)
-	
+	if err != nil {
+		fmt.Println("First ssh attempt failed: " + err.Error())
+	}
 	if err != nil {//Try to connect using the id_rsa file
 		home := os.Getenv("HOME")
 		key, err := ioutil.ReadFile(fmt.Sprintf("%s/.ssh/id_rsa",home))
@@ -150,6 +155,7 @@ func sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
 		        ssh.PublicKeys(signer),
 		    },
 		}
+		sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 		client, err = ssh.Dial("tcp", fmt.Sprintf("%s:22", host), sshConfig)
 		if err != nil{
 			return nil,nil,err

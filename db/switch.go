@@ -5,6 +5,7 @@ import(
 	"database/sql"
 	"fmt"
 	"errors"
+	"regexp"
 	util "../util"
 )
 
@@ -13,6 +14,17 @@ type Switch struct {
 	Iface	string
 	Brand	int
 	Id		int
+}
+
+func (s Switch) Validate() error {
+	var re = regexp.MustCompile(`(?m)[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}`)
+	if !re.Match([]byte(s.Addr)) {
+		return errors.New("Switch Addr is invalid")
+	}
+	if s.Brand < 1 && s.Brand > 2{
+		return errors.New("Invalid Brand: Currently have 1-Vyos, 2-HP")
+	}
+	return nil
 }
 
 func GetAllSwitches() []Switch {

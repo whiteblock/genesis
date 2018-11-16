@@ -36,7 +36,7 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 		}
 		prepareVlans(servers[i], nodes)
 		fmt.Printf("Creating the docker containers on server %d\n",i)
-		startCmd := fmt.Sprintf("~/local_deploy/whiteblock -n %d -i %s -s %d -a %d -b %d -c %d -S",
+		startCmd := fmt.Sprintf("~/local_deploy/deploy -n %d -i %s -s %d -a %d -b %d -c %d -S",
 			nodes,
 			buildConf.Image,
 			servers[i].ServerID,
@@ -75,7 +75,7 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 
 
 func prepareVlans(server db.Server, nodes int) {
-	util.SshExecIgnore(server.Addr,"~/local_deploy/whiteblock -k")
-	cmd := fmt.Sprintf("cd local_deploy && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s", server.ServerID, nodes, util.ServerBits, util.ClusterBits, util.NodeBits, server.Iface)
+	util.SshExecIgnore(server.Addr,"~/local_deploy/deploy -k")
+	cmd := fmt.Sprintf("cd ~/local_deploy && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s", server.ServerID, nodes, util.ServerBits, util.ClusterBits, util.NodeBits, server.Iface)
 	util.SshExec(server.Addr, cmd)
 }

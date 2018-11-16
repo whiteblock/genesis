@@ -3,6 +3,8 @@ package db
 import(
 	_ "github.com/mattn/go-sqlite3"
 	"fmt"
+	"regexp"
+	"errors"
 	util "../util"
 )
 
@@ -22,6 +24,33 @@ type Iface struct {
 	Ip 			string
 	Gateway 	string
 	Subnet 		int
+}
+
+func (s Server) Validate() error {
+	var re = regexp.MustCompile(`(?m)[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}`)
+	if !re.Match([]byte(s.Addr)) {
+		return errors.New("Addr is invalid")
+	}
+	if !re.Match([]byte(s.Iaddr.Ip)) {
+		return errors.New("Iaddr.Ip is invalid")
+	}
+	if s.Nodes < 0 {
+		return errors.New("Nodes is invalid")
+	}
+	if s.Nodes > s.Max {
+		return errors.New("Max is invalid")
+	}
+	if s.ServerID < 1 {
+		return errors.New("ServerID is invalid")
+	}
+	if len(s.Switches) == 0 {
+		return errors.New("Server currently must have a switch")
+	}
+	err := s.Switches[0].Validate()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func GetAllServers() map[string]Server {
