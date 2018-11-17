@@ -89,29 +89,17 @@ func getDB() *sql.DB {
 }
 
 func InsertLocalServers(db *sql.DB) {
-	InsertServer("cloud1",
-		Server{	
-			Addr:"172.16.0.2",
-			Iaddr:Iface{Ip:"172.16.0.2",Gateway:"172.16.0.1",Subnet:16},
-			Nodes:0,
-			Max:30,
-			Id:1,
-			ServerID:1,
-			Iface:"ens4",
-			Ips:[]string{},
-			Switches:[]Switch{ Switch{Addr:"0.0.0.0",Iface:"dummy0",Brand:util.Vyos} }})
-
-	InsertServer("cloud2",
-		Server{	
-			Addr:"172.16.0.3",
-			Iaddr:Iface{Ip:"172.16.0.3",Gateway:"172.16.0.1",Subnet:16},
+	InsertServer("bravo",
+		Server{
+			Addr:"172.16.2.5",
+			Iaddr:Iface{Ip:"10.254.2.100",Gateway:"10.254.2.1",Subnet:24},
 			Nodes:0,
 			Max:30,
 			Id:2,
 			ServerID:2,
-			Iface:"ens4",
+			Iface:"eno4",
 			Ips:[]string{},
-			Switches:[]Switch{ Switch{Addr:"0.0.0.0",Iface:"dummy0",Brand:util.Vyos} }})
+			Switches:[]Switch{ Switch{Addr:"172.16.1.1",Iface:"eth2",Brand:util.Vyos} }})
 
 	InsertServer("charlie",
 		Server{

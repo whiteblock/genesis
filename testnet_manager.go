@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"errors"
 	db "./db"
 	deploy "./deploy"
 	util "./util"
@@ -21,7 +23,7 @@ func AddTestNet(details DeploymentDetails) error {
 	servers, err := db.GetServers(details.Servers)
 	
 	if err != nil {
-		fmt.Printf("Error Getting the Servers")
+		log.Println(err.Error())
 		return err
 	}
 	fmt.Println("Got the Servers")
@@ -39,7 +41,7 @@ func AddTestNet(details DeploymentDetails) error {
 		case "ethereum":
 			eth.Ethereum(4000000,15468,15468,details.Nodes,newServerData)
 		default:
-			fmt.Printf("ERROR: Unknown blockchain %s\n",details.Blockchain)
+			return errors.New("Unknown blockchain")
 	}
 
 	testNetId := db.InsertTestNet(db.TestNet{Id: -1, Blockchain: details.Blockchain, Nodes: details.Nodes, Image: details.Image})

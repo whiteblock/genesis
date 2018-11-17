@@ -108,7 +108,7 @@ func GetServer(id int) (Server, string, error) {
 	
 	
 	if !rows.Next() {
-		panic(rows.Err())
+		return server, name, errors.New("Not found")
 	}
 	defer rows.Close()
 	var switchId int

@@ -1,0 +1,10 @@
+{
+	"builder":"local deploy legacy",
+	"ssh-user":"appo",
+	"ssh-password":"w@ntest",
+	"vyos-home-dir":"/home/appo/",
+	"listen":"127.0.0.1:8000",
+	"rsa-key":"/home/appo/.ssh/id_rsa",
+	"rsa-user":"appo",
+	"verbose":true
+}
