@@ -257,7 +257,7 @@ curl -XGET http://localhost:8000/status/nodes/
 Execute a command on a given node
 #####BODY
 ```
-ls -a
+<bash command>
 ```
 #####RESPONSE
 ```
