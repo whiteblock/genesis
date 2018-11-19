@@ -44,7 +44,12 @@ func StartServer() {
 }
 
 func getAllServerInfo(w http.ResponseWriter, r *http.Request) {
-	servers := db.GetAllServers()
+	servers,err := db.GetAllServers()
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(err.Error()))
+		return
+	}
 	json.NewEncoder(w).Encode(servers)
 }
 
@@ -63,7 +68,12 @@ func addNewServer(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println(fmt.Sprintf("Adding server: %+v",server))
 	
-	id := db.InsertServer(params["name"], server)
+	id,err := db.InsertServer(params["name"], server)
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(err.Error()))
+		return
+	}
 	w.Write([]byte(strconv.Itoa(id)))
 }
 

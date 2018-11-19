@@ -14,7 +14,7 @@ import (
  */
 func GetServers(args string) []db.Server {
 	requestedServers := strings.Split(args,",")
-	allServers := db.GetAllServers()
+	allServers,_ := db.GetAllServers()
 	servers := []db.Server{}
 	for _, server := range requestedServers {
 		servers = append(servers,allServers[server])

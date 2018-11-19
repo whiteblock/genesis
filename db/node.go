@@ -18,21 +18,26 @@ type Node struct {
 }
 
 
-func GetAllNodesByServer(serverId int) []Node {
+func GetAllNodesByServer(serverId int) ([]Node,error) {
 	db := getDB()
 	defer db.Close()
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s WHERE server = %d",NodesTable ))
-	util.CheckFatal(err)
+	if err != nil {
+		return nil,err
+	}
 	defer rows.Close()
 	
 	nodes := []Node{}
 	for rows.Next() {
 		var node Node
-		util.CheckFatal(rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip))
+		err := rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip)
+		if err != nil {
+			return nil,err
+		}
 		nodes = append(nodes,node)
 	}
-	return nodes
+	return nodes,nil
 }
 
 func GetAllNodesByTestNet(testId int) ([]Node,error) {
@@ -58,22 +63,27 @@ func GetAllNodesByTestNet(testId int) ([]Node,error) {
 	return nodes, nil
 }
 
-func GetAllNodes() []Node {
+func GetAllNodes() ([]Node,error) {
 	
 	db := getDB()
 	defer db.Close()
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s",NodesTable ))
-	util.CheckFatal(err)
+	if err != nil {
+		return nil,err
+	}
 	defer rows.Close()
 	nodes := []Node{}
 
 	for rows.Next() {
 		var node Node
-		util.CheckFatal(rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip))
+		err := rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip)
+		if err != nil {
+			return nil, err
+		}
 		nodes = append(nodes,node)
 	}
-	return nodes
+	return nodes,nil
 }
 
 func GetNode(id int) (Node,error) {
@@ -146,11 +156,16 @@ func DeleteNodesByServer(id int) error {
 
 /*******COMMON QUERY FUNCTIONS********/
 
-func GetAvailibleNodes(serverId int, nodesRequested int) []int{
+func GetAvailibleNodes(serverId int, nodesRequested int) ([]int,error){
 
-	nodes := GetAllNodesByServer(serverId)
-	server,_,_ := GetServer(serverId)
-
+	nodes,err := GetAllNodesByServer(serverId)
+	if err != nil {
+		return nil,err
+	}
+	server,_,err := GetServer(serverId)
+	if err != nil {
+		return nil,err
+	}
 	out := util.IntArrFill(server.Max,func(index int) int{
 		return index
 	})
@@ -158,5 +173,5 @@ func GetAvailibleNodes(serverId int, nodesRequested int) []int{
 	for _,node := range nodes {
 		out = util.IntArrRemove(out,node.Id)
 	}
-	return out;
+	return out,nil
 }
