@@ -37,6 +37,7 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 		prepareVlans(servers[i], nodes)
 		var startCmd string
 		fmt.Printf("Creating the docker containers on server %d\n",i)
+
 		if conf.Builder == "local deploy legacy"{
 			startCmd = fmt.Sprintf("~/local_deploy/whiteblock -n %d -i %s -s %d -a %d -b %d -c %d -S",
 				nodes,
@@ -62,7 +63,6 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 		}else{
 			panic("Invalid builder")
 		}
-
 		//Acquire resources
 		if sem.Acquire(ctx,1) != nil {
 			panic("Semaphore Error")
@@ -90,6 +90,7 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 
 
 func prepareVlans(server db.Server, nodes int) {
+
 	if conf.Builder == "local deploy" {
 		util.SshExecIgnore(server.Addr,"~/local_deploy/deploy -k")
 		cmd := fmt.Sprintf("cd ~/local_deploy && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s", server.ServerID, nodes, util.ServerBits, util.ClusterBits, util.NodeBits, server.Iface)
