@@ -1,14 +1,17 @@
 package main
 
 import (
-	db "./db"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
 	"log"
 	"fmt"
+	"io/ioutil"
+	util "./util"
+	db "./db"
 )
+
 
 func StartServer() {
 	router := mux.NewRouter()
@@ -32,8 +35,12 @@ func StartServer() {
 	router.HandleFunc("/testnets/{id}/nodes/", getTestNetNodes).Methods("GET")
 	router.HandleFunc("/testnets/{id}/node/", addTestNetNode).Methods("POST")
 	router.HandleFunc("/testnets/{id}/node/{nid}",deleteTestNetNode).Methods("DELETE")
+	
+	/**Management Functions**/
+	router.HandleFunc("/status/nodes/",nodesStatus).Methods("GET")
+	router.HandleFunc("/exec/{server}/{node}",dockerExec).Methods("POST")
 
-	http.ListenAndServe(":8000", router)
+	http.ListenAndServe(conf.Listen, router)
 }
 
 func getAllServerInfo(w http.ResponseWriter, r *http.Request) {
@@ -176,7 +183,12 @@ func getTestNetNodes(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Invalid id"))
 		return
 	}
-	nodes := db.GetAllNodesByTestNet(id)
+	nodes,err := db.GetAllNodesByTestNet(id)
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(err.Error()))
+		return
+	}
 	json.NewEncoder(w).Encode(nodes)
 }
 
@@ -187,4 +199,44 @@ func addTestNetNode(w http.ResponseWriter, r *http.Request) {
 
 func deleteTestNetNode(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Currently not supported"))
+}
+
+func dockerExec(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	serverId, err := strconv.Atoi(params["server"])
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(err.Error()))
+		return
+	}
+	node := params["node"]
+	server,_,err := db.GetServer(serverId)
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(err.Error()))
+		return
+	}
+	cmd, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(err.Error()))
+		return
+	}
+	res,err := util.SshExecCheck(server.Addr,fmt.Sprintf("docker exec %s %s",node,cmd))
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(fmt.Sprintf("%s %s",res,err.Error())))
+		return
+	}
+	w.Write([]byte(res))
+}
+
+func nodesStatus(w http.ResponseWriter, r *http.Request) {
+	status, err := CheckTestNetStatus()
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(err.Error()))
+		return
+	}
+	json.NewEncoder(w).Encode(status)
 }

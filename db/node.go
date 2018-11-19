@@ -35,21 +35,27 @@ func GetAllNodesByServer(serverId int) []Node {
 	return nodes
 }
 
-func GetAllNodesByTestNet(testId int)[]Node{
+func GetAllNodesByTestNet(testId int) ([]Node,error) {
 	db := getDB()
 	defer db.Close()
+	nodes := []Node{}
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s WHERE test_net = %d",NodesTable,testId ))
-	util.CheckFatal(err)
+	if err != nil {
+		return nodes,err
+	}
 	defer rows.Close()
 
-	nodes := []Node{}
+	
 	for rows.Next() {
 		var node Node
-		util.CheckFatal(rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip))
+		err := rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip)
+		if err != nil {
+			return nodes, err
+		}
 		nodes = append(nodes,node)
 	}
-	return nodes
+	return nodes, nil
 }
 
 func GetAllNodes() []Node {
@@ -85,45 +91,56 @@ func GetNode(id int) (Node,error) {
 	return node, nil
 }
 
-func InsertNode(node Node) int {
+func InsertNode(node Node) (int,error) {
 	db := getDB()
 	defer db.Close()
 
 	tx,err := db.Begin()
-	util.CheckFatal(err)
+	if err != nil {
+		return -1, err
+	}
 
 	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (test_net,server,local_id,ip) VALUES (?,?,?,?)",NodesTable))
-	util.CheckFatal(err)
+	
+	if err != nil {
+		return -1, err
+	}
 
 	defer stmt.Close()
 
 	res,err := stmt.Exec(node.TestNetId,node.Server,node.LocalId,node.Ip)
-	util.CheckFatal(err)
+	if err != nil {
+		return -1, nil
+	}
+	
 	tx.Commit()
 	id, err := res.LastInsertId()
-	return int(id)
+	return int(id), err
 }
 
 
-func DeleteNode(id int){
+func DeleteNode(id int) error {
 	db := getDB()
 	defer db.Close()
 
-	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",NodesTable,id))
+	_,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",NodesTable,id))
+	return err
 }
 
-func DeleteNodesByTestNet(id int){
+func DeleteNodesByTestNet(id int) error {
 	db := getDB()
 	defer db.Close()
 
-	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE test_net = %d",NodesTable,id))
-}
+	_,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE test_net = %d",NodesTable,id))
+	return err
+}	
 
-func DeleteNodesByServer(id int){
+func DeleteNodesByServer(id int) error {
 	db := getDB()
 	defer db.Close()
 
-	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE server = %d",NodesTable,id))
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE server = %d",NodesTable,id))
+	return err
 }
 
 

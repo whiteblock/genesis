@@ -12,6 +12,7 @@ type Config struct {
 	SshUser			string		`json:"ssh-user"`
 	SshPassword		string		`json:"ssh-password"`
 	VyosHomeDir		string		`json:"vyos-home-dir"`
+	Listen			string		`json:"listen"`
 	RsaKey			string		`json:"rsa-key"`
 	RsaUser			string		`json:"rsa-user"`
 	Verbose			bool		`json:"verbose"`
@@ -30,6 +31,10 @@ func (c *Config) AutoFillMissing() {
 	if len(c.VyosHomeDir) == 0 {
 		c.VyosHomeDir = "/home/appo/"
 	}
+	if len(c.Listen) == 0 {
+		c.Listen = "127.0.0.1:8000"
+	}
+	
 	if len(c.RsaKey) == 0 {
 		home := os.Getenv("HOME")
 		c.RsaKey = home+"/.ssh/id_rsa"
