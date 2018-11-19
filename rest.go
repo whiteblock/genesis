@@ -209,7 +209,12 @@ func dockerExec(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	node := params["node"]
+	node,err := strconv.Atoi(params["node"])
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(err.Error()))
+		return
+	}
 	server,_,err := db.GetServer(serverId)
 	if err != nil {
 		log.Println(err.Error())
@@ -222,7 +227,7 @@ func dockerExec(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	res,err := util.SshExecCheck(server.Addr,fmt.Sprintf("docker exec %s %s",node,cmd))
+	res,err := util.SshExecCheck(server.Addr,fmt.Sprintf("docker exec whiteblock-node%d %s",node,cmd))
 	if err != nil {
 		log.Println(err.Error())
 		w.Write([]byte(fmt.Sprintf("%s %s",res,err.Error())))
