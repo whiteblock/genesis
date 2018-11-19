@@ -41,7 +41,7 @@ func PrepareSwitches(server db.Server,nodes int){
 	//fmt.Printf(meta)
 	util.Write("config.boot",fmt.Sprintf("%s\n%s",conf.ToString(),meta))
 	util.Scp(server.Switches[0].Addr,"./config.boot","/config/config.boot")
-	util.Scp(server.Switches[0].Addr,"./install.sh","/home/vyos/install.sh")
+	util.Scp(server.Switches[0].Addr,"./install.sh","/home/appo/install.sh")
 	util.SshExec(server.Switches[0].Addr,"chmod +x ./install.sh && ./install.sh")
 	util.Rm("config.boot")
 }

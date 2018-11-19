@@ -123,14 +123,14 @@ func SshExecIgnore(host string, command string) string {
  */
 func sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
 	USER := "appo"
-	//PASS := "w@ntest"
+	PASS := "w@ntest"
 	var client *ssh.Client
 	var err error
 	
 
 	sshConfig := &ssh.ClientConfig{
-		User: "vyos",
-		Auth: []ssh.AuthMethod{ssh.Password("vyos")},
+		User: USER,
+		Auth: []ssh.AuthMethod{ssh.Password(PASS)},
 	}
 	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 
