@@ -52,7 +52,6 @@ func GetSwitchById(id int) (Switch, error) {
 
 	var swtch Switch
 
-
 	if row.Scan(&swtch.Id,&swtch.Addr,&swtch.Iface,&swtch.Brand) == sql.ErrNoRows {
 		return swtch, errors.New("Not Found")
 	}

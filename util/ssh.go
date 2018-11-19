@@ -3,7 +3,6 @@ package util
 import (
 	"fmt"
 	"strings"
-	"os"
 	"io/ioutil"
 	"github.com/tmc/scp"
 	"golang.org/x/crypto/ssh"
@@ -52,7 +51,7 @@ func sshFastMultiExec(host string, commands ...string) string {
  * @return string			The result of execution
  */
 func SshExec(host string, command string) string {
-	if VERBOSE {
+	if conf.Verbose {
 		fmt.Printf("Running command on %s : %s\n", host, command)
 	}
 
@@ -68,7 +67,7 @@ func SshExec(host string, command string) string {
 }
 
 func SshExecCheck(host string, command string) (string, error) {
-	if VERBOSE {
+	if conf.Verbose {
 		fmt.Printf("Running command on %s : %s\n", host, command)
 	}
 
@@ -97,7 +96,7 @@ func SshExecCheck(host string, command string) (string, error) {
  * @return string			The result of execution
  */
 func SshExecIgnore(host string, command string) string {
-	if VERBOSE {
+	if conf.Verbose {
 		fmt.Printf("Running command on %s : %s\n", host, command)
 	}
 
@@ -122,15 +121,13 @@ func SshExecIgnore(host string, command string) string {
  * @return error				The error, if any occured
  */
 func sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
-	USER := "appo"
-	PASS := "w@ntest"
 	var client *ssh.Client
 	var err error
 	
 
 	sshConfig := &ssh.ClientConfig{
-		User: USER,
-		Auth: []ssh.AuthMethod{ssh.Password(PASS)},
+		User: conf.SshUser,
+		Auth: []ssh.AuthMethod{ssh.Password(conf.SshPassword)},
 	}
 	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 
@@ -139,8 +136,7 @@ func sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
 		fmt.Println("First ssh attempt failed: " + err.Error())
 	}
 	if err != nil {//Try to connect using the id_rsa file
-		home := os.Getenv("HOME")
-		key, err := ioutil.ReadFile(fmt.Sprintf("%s/.ssh/id_rsa",home))
+		key, err := ioutil.ReadFile(conf.RsaKey)
 		if err != nil {
 			return nil,nil,err
 		}
@@ -149,7 +145,7 @@ func sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
 			return nil, nil, err
 		}
 		sshConfig = &ssh.ClientConfig{
-		    User: USER,
+		    User: conf.RsaUser,
 		    Auth: []ssh.AuthMethod{
 		        // Use the PublicKeys method for remote authentication.
 		        ssh.PublicKeys(signer),
@@ -161,8 +157,6 @@ func sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
 			return nil,nil,err
 		}
 	}
-		
-
 
 	session, err := client.NewSession()
 	if err != nil {
@@ -193,7 +187,7 @@ func InitSCPR(host string, dir string) {
  * @param  string	dest	The destination path of the file
  */
 func Scp(host string, src string, dest string) {
-	if VERBOSE {
+	if conf.Verbose {
 		fmt.Printf("Copying %s to %s:%s...", src, host, dest)
 	}
 
@@ -204,7 +198,7 @@ func Scp(host string, src string, dest string) {
 	err = scp.CopyPath(src, dest, session)
 	CheckAndPrint(err, "SCP failed")
 
-	if VERBOSE {
+	if conf.Verbose {
 		fmt.Printf("done\n")
 	}
 }

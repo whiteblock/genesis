@@ -15,6 +15,7 @@ type TestNet struct {
 	Image		string
 }
 
+
 func GetAllTestNets() []TestNet {
 	
 	db := getDB()
@@ -100,3 +101,4 @@ func UpdateTestNetNodes(id int,nodes int){
 	defer db.Close()
 	db.Exec(fmt.Sprintf("UPDATE %s SET nodes = %d WHERE id = %d",TestTable,id,nodes))
 }
+
