@@ -10,6 +10,7 @@ import (
 	//"sync"
 	util "../../util"
 	db "../../db"
+	state "../../state"
 )
 
 /**CONSTANTS**/
@@ -32,7 +33,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 	var sem = semaphore.NewWeighted(THREAD_LIMIT)
 	ctx := context.TODO()
 	util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
-
+	state.SetBuildSteps(8)
 	defer func(){
 		fmt.Printf("Cleaning up...")
 		util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
@@ -44,7 +45,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 		//fmt.Printf("---------------------  CREATING pre-allocated accounts for NODE-%d  ---------------------\n",i)
 
 	}
-
+	state.IncrementBuildProgress() 
 
 	/**Create the Password files**/
 	{
@@ -57,7 +58,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 			util.Write(fmt.Sprintf("tmp/node%d/passwd.file",i),data)
 		}
 	}
-
+	state.IncrementBuildProgress()
 
 
 	/**Create the wallets**/
@@ -86,7 +87,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 		
 		
 	}
-
+	state.IncrementBuildProgress()
 	unlock := ""
 
 	for i,wallet := range wallets {
@@ -97,11 +98,17 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 	}
 	fmt.Printf("unlock = %s\n%+v\n\n",wallets,unlock)
 
-	createGenesisfile(gas,chainId,wallets)
+	state.IncrementBuildProgress()
 
+	createGenesisfile(gas,chainId,wallets)
+	state.IncrementBuildProgress()
 	initNodeDirectories(nodes,networkId,servers)
+	state.IncrementBuildProgress()
 	util.Mkdir("tmp/keystore")
 	distributeUTCKeystore(nodes)
+
+	state.IncrementBuildProgress()
+
 	for i := 1; i <= nodes; i++ {
 		util.Cp("tmp/static_nodes.json",fmt.Sprintf("tmp/node%d/",i))
 	}
@@ -138,7 +145,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 	}
 	err := sem.Acquire(ctx,THREAD_LIMIT)
 	util.CheckFatal(err)
-
+	state.IncrementBuildProgress()
 	sem.Release(THREAD_LIMIT)
 	/*
 	setupEthNetStats(servers[0].Addr)

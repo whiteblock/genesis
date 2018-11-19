@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	util "./util"
 	db "./db"
+	state "./state"
 )
 
 
@@ -37,7 +38,9 @@ func StartServer() {
 	router.HandleFunc("/testnets/{id}/node/{nid}",deleteTestNetNode).Methods("DELETE")
 	
 	/**Management Functions**/
+
 	router.HandleFunc("/status/nodes/",nodesStatus).Methods("GET")
+	router.HandleFunc("/status/build/",buildStatus).Methods("GET")
 	router.HandleFunc("/exec/{server}/{node}",dockerExec).Methods("POST")
 
 	http.ListenAndServe(conf.Listen, router)
@@ -149,8 +152,18 @@ func getAllTestNets(w http.ResponseWriter, r *http.Request) {
 func createTestNet(w http.ResponseWriter, r *http.Request) {
 	//params := mux.Vars(r)
 	var testnet DeploymentDetails
-	_ = json.NewDecoder(r.Body).Decode(&testnet)
-	
+	err := json.NewDecoder(r.Body).Decode(&testnet)
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(err.Error()))
+		return
+	}
+	err = state.AcquireBuilding()
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(err.Error()))
+		return
+	}
 	w.Write([]byte(GetNextTestNetId()))
 
 	go AddTestNet(testnet)
@@ -254,4 +267,9 @@ func nodesStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(status)
+}
+
+
+func buildStatus(w http.ResponseWriter,r *http.Request){
+	json.NewEncoder(w).Encode(CheckBuildStatus())
 }

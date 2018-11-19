@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"log"
 	"errors"
-	"strings"
 	db "./db"
 	deploy "./deploy"
 	util "./util"
 	eos "./blockchains/eos"
 	eth "./blockchains/ethereum"
+	state "./state"
 )
 
 type DeploymentDetails struct {
@@ -19,17 +19,14 @@ type DeploymentDetails struct {
 	Image      string
 }
 
-type TestNetStatus struct {
-	Name		string	`json:"name"`
-	Server		int		`json:"server"`
-}
 
 func AddTestNet(details DeploymentDetails) error {
-	
+	defer state.DoneBuilding()
 	servers, err := db.GetServers(details.Servers)
-	
+
 	if err != nil {
 		log.Println(err.Error())
+		state.BuildError = err
 		return err
 	}
 	fmt.Println("Got the Servers")
@@ -47,6 +44,7 @@ func AddTestNet(details DeploymentDetails) error {
 		case "ethereum":
 			eth.Ethereum(4000000,15468,15468,details.Nodes,newServerData)
 		default:
+			state.BuildError = errors.New("Unknown blockchain")
 			return errors.New("Unknown blockchain")
 	}
 
@@ -56,7 +54,10 @@ func AddTestNet(details DeploymentDetails) error {
 		db.UpdateServerNodes(server.Id,0)
 		for i, ip := range server.Ips {
 			node := db.Node{Id: -1, TestNetId: testNetId, Server: server.Id, LocalId: i, Ip: ip} 
-			db.InsertNode(node)
+			_,err := db.InsertNode(node)
+			if err != nil {
+				log.Println(err.Error())
+			}
 		}
 	}
 	return nil
@@ -80,7 +81,7 @@ func GetNextTestNetId() string {
 }
 
 func RebuildTestNet(id int) {
-
+	panic("Not Implemented")
 }
 
 func RemoveTestNet(id int) error {
@@ -96,47 +97,4 @@ func RemoveTestNet(id int) error {
 		util.SshExec(server.Addr, fmt.Sprintf("~/local_deploy/deploy --kill=%d", node.LocalId))
 	}
 	return nil
-}
-
-
-func CheckTestNetStatus() ([]TestNetStatus, error){
-	testnetId := GetLastTestNetId()
-	nodes,err := db.GetAllNodesByTestNet(testnetId)
-
-	if err != nil {
-		return nil, err
-	}
-
-	serverIds := []int{}
-	for _, node := range nodes {
-		push := true
-		for _, id := range serverIds {
-			if id == node.Server {
-				push = false
-			}
-		}
-		if push {
-			serverIds = append(serverIds,node.Server)
-		}
-	}
-	servers, err := db.GetServers(serverIds)
-	if err != nil {
-		return nil, err
-	}
-	out := []TestNetStatus{}
-	for _, server := range servers {
-		res, err := util.SshExecCheck(server.Addr,"docker ps | egrep -o 'whiteblock-node[0-9]*' | sort")
-		if err != nil {
-			return nil, err
-		}
-		names := strings.Split(res,"\n")
-		for _,name := range names {
-			if len(name) == 0 {
-				continue
-			}
-			status := TestNetStatus{Name:name,Server:server.Id}
-			out = append(out,status)
-		}
-	}
-	return out, nil
 }
