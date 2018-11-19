@@ -155,8 +155,6 @@ func sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
 			return nil,nil,err
 		}
 	}
-		
-
 
 	session, err := client.NewSession()
 	if err != nil {
