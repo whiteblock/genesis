@@ -140,7 +140,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 	util.CheckFatal(err)
 
 	sem.Release(THREAD_LIMIT)
-
+	/*
 	setupEthNetStats(servers[0].Addr)
 	node = 0
 	for _,server := range servers {
@@ -176,7 +176,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 	util.CheckFatal(err)
 
 	sem.Release(THREAD_LIMIT)
-	
+	*/
 	//fmt.Printf("To view Eth Net Stat type:\t\t\ttmux attach-session -t netstats\n")
 	
 }

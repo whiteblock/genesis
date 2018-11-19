@@ -15,8 +15,6 @@ type KeyPair struct {
 	PublicKey	string
 }
 
-var VERBOSE = true
-
 
 /****Basic Linux Functions****/
 
@@ -26,13 +24,13 @@ var VERBOSE = true
  */
 func Rm(directories ...string){
 	for _, directory := range directories {
-		if VERBOSE {
+		if conf.Verbose {
 			fmt.Printf("Removing  %s...",directory)
 		}
 		
 		cmd := exec.Command("bash","-c",fmt.Sprintf("rm -rf %s",directory))
 		cmd.Run()
-		if VERBOSE {
+		if conf.Verbose {
 			fmt.Printf("done\n")
 		}
 		
@@ -44,7 +42,7 @@ func Rm(directories ...string){
  * @param  string	directory	The directory to create
  */
 func Mkdir(directory string){
-	if VERBOSE {
+	if conf.Verbose {
 		fmt.Printf("Creating directory %s\n",directory)
 	}
 	
@@ -58,7 +56,7 @@ func Mkdir(directory string){
  * @param  string	dest	The destination for the file
  */
 func Cp(src string, dest string){
-	if VERBOSE {
+	if conf.Verbose {
 		fmt.Printf("Copying %s to %s\n",src,dest)
 	}
 	
@@ -72,7 +70,7 @@ func Cp(src string, dest string){
  * @param  string	dest	The destination for the directory
  */
 func Cpr(src string,dest string){
-	if VERBOSE {
+	if conf.Verbose {
 		fmt.Printf("Copying %s to %s\n",src,dest)
 	}
 
@@ -86,13 +84,13 @@ func Cpr(src string,dest string){
  * @param  string	data	The data to write to the file
  */
 func Write(path string,data string){
-	if VERBOSE {
+	if conf.Verbose {
 		fmt.Printf("Writing to file %s...",path)
 	}
 	
 	err := ioutil.WriteFile(path,[]byte(data),0777)
 	CheckFatal(err)
-	if VERBOSE {
+	if conf.Verbose {
 		fmt.Printf("done\n")
 	}
 	
@@ -192,7 +190,7 @@ func CombineConfig(entries []string) string {
  * @return string 			The result of execution
  */
 func BashExec(_cmd string) string {
-	if VERBOSE {
+	if conf.Verbose {
 		fmt.Printf("Execuing : %s\n",_cmd)
 	}
 	
@@ -206,9 +204,6 @@ func BashExec(_cmd string) string {
 
 	return resultsRaw.String()
 }
-
-
-
 
 func IntArrRemove(op []int,index int) []int {
 	return append(op[:index],op[index+1:]...)

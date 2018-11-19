@@ -6,7 +6,8 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
-	//"log"
+	"log"
+	"fmt"
 )
 
 func StartServer() {
@@ -43,7 +44,18 @@ func getAllServerInfo(w http.ResponseWriter, r *http.Request) {
 func addNewServer(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	var server db.Server
-	_ = json.NewDecoder(r.Body).Decode(&server)
+	err := json.NewDecoder(r.Body).Decode(&server)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+	err = server.Validate()
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+	log.Println(fmt.Sprintf("Adding server: %+v",server))
+	
 	id := db.InsertServer(params["name"], server)
 	w.Write([]byte(strconv.Itoa(id)))
 }
@@ -61,14 +73,17 @@ func getServerInfo(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	json.NewEncoder(w).Encode(server)
+	err = json.NewEncoder(w).Encode(server)
+	if err != nil {
+		log.Println(err.Error())
+	}
 }
 
 func deleteServer(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		json.NewEncoder(w).Encode(err)
+		w.Write([]byte(err.Error()))
 		return
 	}
 	db.DeleteServer(id)
@@ -80,7 +95,16 @@ func updateServerInfo(w http.ResponseWriter, r *http.Request) {
 
 	var server db.Server
 
-	_ = json.NewDecoder(r.Body).Decode(&server)
+	err := json.NewDecoder(r.Body).Decode(&server)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+	err = server.Validate()
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
 
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
@@ -130,8 +154,11 @@ func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		//log.Println("Error:",err)
 		w.Write([]byte("Does Not Exist"))
-	} else {
-		json.NewEncoder(w).Encode(testNet)
+		return
+	}
+	err = json.NewEncoder(w).Encode(testNet)
+	if err != nil {
+		log.Println(err)
 	}
 
 }
@@ -139,7 +166,7 @@ func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
 func deleteTestNet(w http.ResponseWriter, r *http.Request) {
 	//params := mux.Vars(r)
 	//TODO handle the deletion of the test net
-
+	w.Write([]byte("Currently not supported"))
 }
 
 func getTestNetNodes(w http.ResponseWriter, r *http.Request) {
@@ -155,9 +182,9 @@ func getTestNetNodes(w http.ResponseWriter, r *http.Request) {
 
 
 func addTestNetNode(w http.ResponseWriter, r *http.Request) {
-
+	w.Write([]byte("Currently not supported"))
 }
 
 func deleteTestNetNode(w http.ResponseWriter, r *http.Request) {
-
+	w.Write([]byte("Currently not supported"))
 }
