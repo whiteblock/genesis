@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"golang.org/x/sync/semaphore"
 	"regexp"
-	"github.com/satori/go.uuid"
 	//"sync"
 	util "../../util"
 	db "../../db"
@@ -17,7 +16,7 @@ import (
 const THREAD_LIMIT int64		=   10
 const MAX_PEERS	int 			= 	1000
 const INIT_WALLET_VALUE	string	=	"100000000000000000000"
-
+const ETH_NET_STATS_PORT int	=	3030
 
 
 /**
@@ -33,7 +32,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 	var sem = semaphore.NewWeighted(THREAD_LIMIT)
 	ctx := context.TODO()
 	util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
-	state.SetBuildSteps(8)
+	state.SetBuildSteps(8+(2*nodes))
 	defer func(){
 		fmt.Printf("Cleaning up...")
 		util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
@@ -139,6 +138,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 				)
 
 				sem.Release(1)
+				state.IncrementBuildProgress() 
 			}(networkId,node+1,server.Addr,j,unlock,ip)
 			node ++
 		}
@@ -147,7 +147,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 	util.CheckFatal(err)
 	state.IncrementBuildProgress()
 	sem.Release(THREAD_LIMIT)
-	/*
+	
 	setupEthNetStats(servers[0].Addr)
 	node = 0
 	for _,server := range servers {
@@ -157,7 +157,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 				relName := fmt.Sprintf("whiteblock-node%d",relNum)
 				absName := fmt.Sprintf("whiteblock-node%d",absNum)
 				sedCmd := fmt.Sprintf(`docker exec %s sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`,relName,absName)
-				sedCmd2 := fmt.Sprintf(`docker exec %s sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:3000"/g' /eth-net-intelligence-api/app.json`,relName,ethnetIP)
+				sedCmd2 := fmt.Sprintf(`docker exec %s sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:%d"/g' /eth-net-intelligence-api/app.json`,relName,ethnetIP,ETH_NET_STATS_PORT)
 				sedCmd3 := fmt.Sprintf(`docker exec %s sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`,relName,nodeIP)
 
 				//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
@@ -173,17 +173,17 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 				//fmt.Sprintf("%s&&%s&&%s&&%s",sedCmd,sedCmd2,sedCmd3,startEthNetStatsCmd))
 	
 				sem.Release(1)
+				state.IncrementBuildProgress()
 			}(server.Addr,ip,servers[0].Iaddr.Ip,node,j)
 			node++
 		}
 	}
-	setupBlockExplorer(servers[0].Ips[0],servers[0].Addr)
 
 	err = sem.Acquire(ctx,THREAD_LIMIT)
 	util.CheckFatal(err)
 
 	sem.Release(THREAD_LIMIT)
-	*/
+	
 	//fmt.Printf("To view Eth Net Stat type:\t\t\ttmux attach-session -t netstats\n")
 	
 }
@@ -300,35 +300,7 @@ func setupEthNetStats(ip string){
 
 	util.SshExecIgnore(ip,"tmux kill-session -t netstats")
 	util.SshExec(ip,"tmux new -s netstats -d")
-	util.SshExec(ip,"tmux send-keys -t netstats 'cd /home/appo/eth-netstats && npm install && grunt && WS_SECRET=second npm start' C-m")
+	util.SshExec(ip,fmt.Sprintf(
+		"tmux send-keys -t netstats 'cd /home/appo/eth-netstats && npm install && grunt && WS_SECRET=second PORT=%d npm start' C-m",ETH_NET_STATS_PORT))
 
-}
-
-/**
- * Set up the block explorer
- * @param  string	nodeIP        The IP address of the node
- * @param  string	serverIP      The IP address of the host server
- */
-func setupBlockExplorer(nodeIP string,serverIP string){
-	util.SshExecIgnore(serverIP,"tmux kill-session -t blockExplorer")
-	util.SshExecIgnore(serverIP,"rm -rf ~/explorer")
-	
-
-	id, _ := uuid.NewV4()
-	util.SshMultiExec(serverIP,
-		"git clone https://github.com/ethereumproject/explorer.git",
-		"cp ~/explorer/config.example.json ~/explorer/config.json",
-		fmt.Sprintf(`sed -i -r 's/"nodeAddr"(\s)*:(\s)*"(\S)*"/"nodeAddr":\t"%s"/g' ~/explorer/config.json`,nodeIP),
-		`sed -i -r 's/"symbol"(\s)*:(\s)*"(\S| )*"/"symbol":\t"ETH"/g' ~/explorer/config.json`,
-		`sed -i -r 's/"name"(\s)*:(\s)*"(\S| )*"/"name":\t"Whiteblock"/g' ~/explorer/config.json`,
-		`sed -i -r 's/"title"(\s)*:(\s)*"(\S| )*"/"title":\t"Whiteblock Block Explorer"/g' ~/explorer/config.json`,
-		`sed -i -r 's/"author"(\s)*:(\s)*"(\S| )*"/"author":\t"WB"/g' ~/explorer/config.json`,
-		"tmux new -s blockExplorer -d",
-		
-	)
-	util.SshMultiExec(serverIP,
-		
-		"tmux send-keys -t blockExplorer 'cd ~/explorer && npm install' C-m",
-		fmt.Sprintf("tmux send-keys -t blockExplorer 'PORT=8000 MONGO_URI=mongodb://localhost/blockDB%s npm start' C-m",id),)
-	
 }
