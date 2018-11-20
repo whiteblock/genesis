@@ -31,7 +31,9 @@ func StartServer() {
 	router.HandleFunc("/switches/", getAllSwitchesInfo).Methods("GET")
 
 	router.HandleFunc("/testnets/{id}", getTestNetInfo).Methods("GET")
+	router.HandleFunc("/testnets/{id}/", getTestNetInfo).Methods("GET")
 	router.HandleFunc("/testnets/{id}", deleteTestNet).Methods("DELETE")
+	router.HandleFunc("/testnets/{id}/", deleteTestNet).Methods("DELETE")
 
 	router.HandleFunc("/testnets/{id}/nodes/", getTestNetNodes).Methods("GET")
 	router.HandleFunc("/testnets/{id}/node/", addTestNetNode).Methods("POST")
@@ -141,8 +143,6 @@ func getAllSwitchesInfo(w http.ResponseWriter, r *http.Request) {
 	switches := db.GetAllSwitches()
 	json.NewEncoder(w).Encode(switches)
 }
-
-
 
 func getAllTestNets(w http.ResponseWriter, r *http.Request) {
 	testNets := db.GetAllTestNets()

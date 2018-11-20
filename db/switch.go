@@ -10,10 +10,10 @@ import(
 )
 
 type Switch struct {
-	Addr 	string
-	Iface	string
-	Brand	int
-	Id		int
+	Addr 	string	`json:"addr"`
+	Iface	string	`json:"iface"`
+	Brand	int		`json:"brand"`
+	Id		int		`json:"id"`
 }
 
 func (s Switch) Validate() error {
