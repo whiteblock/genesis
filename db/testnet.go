@@ -9,10 +9,10 @@ import(
 )
 
 type TestNet struct {
-	Id			int
-	Blockchain	string
-	Nodes		int
-	Image		string
+	Id			int		`json:"id"`
+	Blockchain	string	`json:"blockchain"`
+	Nodes		int		`json:"nodes"`
+	Image		string	`json:"image"`
 }
 
 

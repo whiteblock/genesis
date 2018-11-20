@@ -13,10 +13,10 @@ import (
 )
 
 type DeploymentDetails struct {
-	Servers    []int
-	Blockchain string
-	Nodes      int
-	Image      string
+	Servers    []int	`json:"servers"`
+	Blockchain string	`json:"blockchain"`
+	Nodes      int		`json:"nodes"`
+	Image      string	`json:"image"`
 }
 
 
