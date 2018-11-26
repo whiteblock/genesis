@@ -32,7 +32,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 	var sem = semaphore.NewWeighted(THREAD_LIMIT)
 	ctx := context.TODO()
 	util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
-	state.SetBuildSteps(8+(2*nodes))
+	state.SetBuildSteps(8+(4*nodes))
 	defer func(){
 		fmt.Printf("Cleaning up...")
 		util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
@@ -83,7 +83,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 	 	//mutex.Lock()
 	 	wallets = append(wallets,address)
 	 	//mutex.Unlock()
-		
+		state.IncrementBuildProgress() 
 		
 	}
 	state.IncrementBuildProgress()
@@ -121,7 +121,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 				name := fmt.Sprintf("whiteblock-node%d",num)
 				util.SshExec(server,fmt.Sprintf("rm -rf tmp/node%d",node))
 				util.Scpr(server,fmt.Sprintf("tmp/node%d",node))
-
+				state.IncrementBuildProgress() 
 				gethCmd := fmt.Sprintf(`geth --datadir /whiteblock/node%d --nodiscover --maxpeers %d --networkid %d --rpc --rpcaddr %s --rpcapi "web3,db,eth,net,personal,miner" --rpccorsdomain "0.0.0.0" --mine --unlock="%s" --password /whiteblock/node%d/passwd.file console`,
 						node,
 						MAX_PEERS,
@@ -296,7 +296,7 @@ func distributeUTCKeystore(nodes int){
  */
 func setupEthNetStats(ip string){
 	util.SshExecIgnore(ip,"rm -rf eth-netstats")
-	util.SshExec(ip,"wget http://172.16.0.8/eth-netstats.tar.gz && tar xf eth-netstats.tar.gz && rm eth-netstats.tar.gz")
+	util.SshExec(ip,"wget http://whiteblock.io/eth-netstats.tar.gz && tar xf eth-netstats.tar.gz && rm eth-netstats.tar.gz")
 
 	util.SshExecIgnore(ip,"tmux kill-session -t netstats")
 	util.SshExec(ip,"tmux new -s netstats -d")
