@@ -14,7 +14,7 @@ var conf *util.Config = util.GetConfig()
  * Returns a string of all of the IP addresses 
  */
 func Build(buildConf *Config,servers []db.Server) []db.Server {
-	var sem	= semaphore.NewWeighted(util.ThreadLimit)
+	var sem	= semaphore.NewWeighted(conf.ThreadLimit)
 	
 	ctx := context.TODO()
 	Prepare(buildConf.Nodes,servers)
@@ -43,17 +43,17 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 				nodes,
 				buildConf.Image,
 				servers[i].ServerID,
-				util.ServerBits,
-				util.ClusterBits,
-				util.NodeBits)
+				conf.ServerBits,
+				conf.ClusterBits,
+				conf.NodeBits)
 		}else if conf.Builder == "local deploy" {
 			startCmd = fmt.Sprintf("~/local_deploy/deploy -n %d -i %s -s %d -a %d -b %d -c %d -S",
 				nodes,
 				buildConf.Image,
 				servers[i].ServerID,
-				util.ServerBits,
-				util.ClusterBits,
-				util.NodeBits)
+				conf.ServerBits,
+				conf.ClusterBits,
+				conf.NodeBits)
 		}else if conf.Builder == "umba" {
 			startCmd = fmt.Sprintf("~/umba/umba -n %d -i %s -s %d -I %s",
 				nodes,
@@ -77,10 +77,10 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 		i++
 	}
 	//Acquire all of the resources here, then release and destroy
-	if sem.Acquire(ctx,util.ThreadLimit) != nil {
+	if sem.Acquire(ctx,conf.ThreadLimit) != nil {
 		panic("Semaphore Error")
 	}
-	sem.Release(util.ThreadLimit)
+	sem.Release(conf.ThreadLimit)
 	if n != 0 {
 		fmt.Printf("ERROR: Only able to build %d/%d nodes\n",(buildConf.Nodes - n),buildConf.Nodes)
 	}
@@ -93,11 +93,19 @@ func prepareVlans(server db.Server, nodes int) {
 
 	if conf.Builder == "local deploy" {
 		util.SshExecIgnore(server.Addr,"~/local_deploy/deploy -k")
-		cmd := fmt.Sprintf("cd ~/local_deploy && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s", server.ServerID, nodes, util.ServerBits, util.ClusterBits, util.NodeBits, server.Iface)
-		util.SshExec(server.Addr, cmd)
+		if(conf.BuildMode == "stand alone"){
+			cmd := fmt.Sprintf("cd ~/local_deploy && ./vlan -k && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s --stand-alone", 
+					server.ServerID, nodes, conf.ServerBits, conf.ClusterBits, conf.NodeBits, server.Iface)
+			util.SshExec(server.Addr, cmd)
+		}else{
+			cmd := fmt.Sprintf("cd ~/local_deploy && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s", 
+					server.ServerID, nodes, conf.ServerBits, conf.ClusterBits, conf.NodeBits, server.Iface)
+			util.SshExec(server.Addr, cmd)
+		}
 	}else if conf.Builder == "local deploy legacy" {
 		util.SshExecIgnore(server.Addr,"~/local_deploy/whiteblock -k")
-		cmd := fmt.Sprintf("cd ~/local_deploy && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s", server.ServerID, nodes, util.ServerBits, util.ClusterBits, util.NodeBits, server.Iface)
+		cmd := fmt.Sprintf("cd ~/local_deploy && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s", 
+				server.ServerID, nodes, conf.ServerBits, conf.ClusterBits, conf.NodeBits, server.Iface)
 		util.SshExec(server.Addr, cmd)
 	}
 }

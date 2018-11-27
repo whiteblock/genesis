@@ -1,5 +1,5 @@
 
-
+##REST API
 __Warning: Do not use any path marked PRIVATE, they will begin to require credentials in the near future__
 
 ###GET /servers/
@@ -10,23 +10,23 @@ HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 {
 	"server_name":{
-		"Addr":(string),
-		"Iaddr":{
-			"Ip":(string),
-			"Gateway":(string),
-			"Subnet":(int)
+		"addr":(string),
+		"iaddr":{
+			"ip":(string),
+			"gateway":(string),
+			"subnet":(int)
 		},
-		"Nodes":(int),
-		"Max":(int),
-		"Id":(int),
-		"ServerID":(int),
-		"Iface":(string),
-		"Switches":[
+		"nodes":(int),
+		"max":(int),
+		"id":(int),
+		"serverID":(int),
+		"iface":(string),
+		"switches":[
 			{
-				"Addr":(string),
-				"Iface":(string),
-				"Brand":(int),
-				"Id":(int)
+				"addr":(string),
+				"iface":(string),
+				"brand":(int),
+				"id":(int)
 			}
 		]
 	},
@@ -45,23 +45,23 @@ controlled by the instance
 #####BODY
 ```
 {
-	"Addr":(string),
-	"Iaddr":{
-		"Ip":(string),
-		"Gateway":(string),
-		"Subnet":(int)
+	"addr":(string),
+	"iaddr":{
+		"ip":(string),
+		"gateway":(string),
+		"subnet":(int)
 	},
-	"Nodes":(int),
-	"Max":(int),
-	"Id":-1,
-	"ServerID":(int),
-	"Iface":(string),
-	"Switches":[
+	"nodes":(int),
+	"max":(int),
+	"id":-1,
+	"serverID":(int),
+	"iface":(string),
+	"switches":[
 		{
-			"Addr":(string),
-			"Iface":(string),
-			"Brand":(int),
-			"Id":(int)
+			"addr":(string),
+			"iface":(string),
+			"brand":(int),
+			"id":(int)
 		}
 	]
 }
@@ -75,7 +75,7 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 
 #####EXAMPLE
 ```bash
-curl -X PUT http://localhost:8000/servers/foxtrot -d '{"Addr":"172.16.6.5","Iaddr":{"Ip":"10.254.6.100","Gateway":"10.254.6.1","Subnet":24},"Nodes":0,"Max":10,"ServerID":6,"Id":-1,"Iface":"eth0","Switches":[{"Addr":"172.16.1.1","Iface":"eno3","Brand":1,"Id":5}],"Ips":null}}'
+curl -X PUT http://localhost:8000/servers/foxtrot -d '{"addr":"172.16.6.5","iaddr":{"ip":"10.254.6.100","gateway":"10.254.6.1","subnet":24},"nodes":0,"max":10,"serverID":6,"id":-1,"iface":"eth0","switches":[{"addr":"172.16.1.1","iface":"eno3","brand":1,"id":5}],"ips":null}}'
 ```
 
 ###GET /servers/{id}
@@ -85,23 +85,23 @@ Get a server by id
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 {
-	"Addr":(string),
-	"Iaddr":{
-		"Ip":(string),
-		"Gateway":(string),
-		"Subnet":(int)
+	"addr":(string),
+	"iaddr":{
+		"ip":(string),
+		"gateway":(string),
+		"subnet":(int)
 	},
-	"Nodes":(int),
-	"Max":(int),
-	"Id":(int),
-	"ServerID":(int),
-	"Iface":(string),
-	"Switches":[
+	"nodes":(int),
+	"max":(int),
+	"id":(int),
+	"serverID":(int),
+	"iface":(string),
+	"switches":[
 		{
-			"Addr":(string),
-			"Iface":(string),
-			"Brand":(int),
-			"Id":(int)
+			"addr":(string),
+			"iface":(string),
+			"brand":(int),
+			"id":(int)
 		}
 	]
 }
@@ -128,23 +128,23 @@ Update server information
 #####BODY
 ```
 {
-	"Addr":(string),
-	"Iaddr":{
-		"Ip":(string),
-		"Gateway":(string),
-		"Subnet":(int)
+	"addr":(string),
+	"iaddr":{
+		"ip":(string),
+		"gateway":(string),
+		"subnet":(int)
 	},
-	"Nodes":(int),
-	"Max":(int),
-	"Id":(int),
-	"ServerID":(int),
-	"Iface":(string),
-	"Switches":[
+	"nodes":(int),
+	"max":(int),
+	"id":(int),
+	"serverID":(int),
+	"iface":(string),
+	"switches":[
 		{
-			"Addr":(string),
-			"Iface":(string),
-			"Brand":(int),
-			"Id":(int)
+			"addr":(string),
+			"iface":(string),
+			"brand":(int),
+			"id":(int)
 		}
 	]
 }
@@ -158,7 +158,7 @@ Success
 
 #####EXAMPLE
 ```bash
-curl -X UPDATE http://localhost:8000/servers/5 -d '{"Addr":"172.16.4.5","Iaddr":{"Ip":"10.254.4.100","Gateway":"10.254.4.1","Subnet":24},"Nodes":0,"Max":30,"Id":5,"ServerID":4,"Iface":"eno3","Switches":[{"Addr":"172.16.1.1","Iface":"eth4","Brand":1,"Id":3}],"Ips":null}'
+curl -X UPDATE http://localhost:8000/servers/5 -d '{"addr":"172.16.4.5","iaddr":{"ip":"10.254.4.100","gateway":"10.254.4.1","subnet":24},"nodes":0,"max":30,"id":5,"serverID":4,"iface":"eno3","switches":[{"addr":"172.16.1.1","iface":"eth4","brand":1,"id":3}],"ips":null}'
 ```
 
 ###GET /testnets/
@@ -169,10 +169,10 @@ HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 [
 	{
-		"Id":(int),
-		"Blockchain":(string),
-		"Nodes":(int),
-		"Image":(string)
+		"id":(int),
+		"blockchain":(string),
+		"nodes":(int),
+		"image":(string)
 	},...
 
 ]
@@ -183,10 +183,10 @@ Add and deploy a new testnet
 #####BODY
 ```
 {
-	"Servers":[(int),(int)...],
-	"Blockchain":(string),
-	"Nodes":(int),
-	"Image":(string)
+	"servers":[(int),(int)...],
+	"blockchain":(string),
+	"nodes":(int),
+	"image":(string)
 }
 ```
 #####RESPONSE
@@ -197,7 +197,7 @@ Success
 ```
 #####EXAMPLE
 ```bash
-curl -X POST http://localhost:8000/testnets/ -d '{"Servers":[3],"Blockchain":"ethereum","Nodes":3,"Image":"ethereum:latest"}'
+curl -X POST http://localhost:8000/testnets/ -d '{"servers":[3],"blockchain":"ethereum","nodes":3,"image":"ethereum:latest"}'
 ```
 
 ###GET /testnets/{id}
@@ -207,10 +207,10 @@ Get data on a single testnet
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 {
-	"Id":(int),
-	"Blockchain":(string),
-	"Nodes":(int),
-	"Image":(string)
+	"id":(int),
+	"blockchain":(string),
+	"nodes":(int),
+	"image":(string)
 }
 ```
 
@@ -223,11 +223,11 @@ HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 [
 	{
-		"Id":(int),
-		"TestNetId":(int),
-		"Server":(int),
-		"LocalId":(int),
-		"Ip":(string)
+		"id":(int),
+		"testNetId":(int),
+		"server":(int),
+		"localId":(int),
+		"ip":(string)
 	},...
 ]
 ```
@@ -270,3 +270,18 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 ```bash
 curl -X POST http://localhost:8000/exec/4/0 -d 'ls'
 ```
+
+
+##Configuration
+
+* __builder__: The application to use to build the nodes
+* __ssh-user__: The default username for ssh
+* __ssh-password__: The default password for ssh
+* __vyos-home-dir__: The location to put the vyos script
+* __rsa-key__: The location of the ssh private key
+* __rsa-user__: The corresponding username for that private key
+* __verbose__: Enable or disable verbose mode
+* __server-bits__: The bits given to each server's number
+* __cluster-bits__: The bits given to each clusters's number
+* __node-bits__: The bits given to each nodes's number
+* __thread-limit__: The maximum number of threads that can be used for building

@@ -16,6 +16,11 @@ type Config struct {
 	RsaKey			string		`json:"rsa-key"`
 	RsaUser			string		`json:"rsa-user"`
 	Verbose			bool		`json:"verbose"`
+	ServerBits		uint32		`json:"server-bits"`
+	ClusterBits		uint32		`json:"cluster-bits"`
+	NodeBits		uint32		`json:"node-bits"`
+	ThreadLimit		int64		`json:"thread-limit"`
+	BuildMode		string		`json:"build-mode"`
 }
 
 func (c *Config) AutoFillMissing() {
@@ -42,7 +47,25 @@ func (c *Config) AutoFillMissing() {
 	if len(c.RsaUser) == 0 {
 		c.RsaUser = "appo"
 	}
-} 
+	if c.ServerBits <= 0 {
+		log.Println("Warning: Using default server bits")
+		c.ServerBits = 8
+	}
+	if c.ClusterBits <= 0 {
+		log.Println("Warning: Using default cluster bits")
+		c.ClusterBits = 14
+	}
+	if c.NodeBits <= 0 {
+		log.Println("Warning: Using default node bits")
+		c.NodeBits = 2
+	}
+	if c.ThreadLimit <= 0 {
+		log.Println("Warning: Using default thread limit")
+		c.ThreadLimit = 10
+	}
+}
+
+var	NodesPerCluster uint32
 
 var conf *Config = nil
 
@@ -50,6 +73,7 @@ var conf *Config = nil
 func init() {
 	LoadConfig()
 	conf.AutoFillMissing()
+	NodesPerCluster	= (1 << conf.NodeBits) - ReservedIps
 }
 
 func LoadConfig() *Config {

@@ -43,13 +43,13 @@ func (s Server) Validate() error {
 	if s.ServerID < 1 {
 		return errors.New("ServerID is invalid")
 	}
-	if len(s.Switches) == 0 {
-		return errors.New("Server currently must have a switch")
+	if len(s.Switches) != 0 {
+		err := s.Switches[0].Validate()
+		if err != nil {
+			return err
+		}
 	}
-	err := s.Switches[0].Validate()
-	if err != nil {
-		return err
-	}
+	
 	return nil
 }
 
@@ -75,13 +75,18 @@ func GetAllServers() (map[string]Server,error) {
 		if err != nil {
 			return nil,err
 		}
-		
-		swtch, err := GetSwitchById(switchId)
-		if err != nil {
-			return nil,err
+		if switchId != -1 {
+			swtch, err := GetSwitchById(switchId)
+			if err != nil {
+				return nil,err
+			}
+			server.Switches = []Switch{ swtch }
+		}else{
+			server.Switches = nil
 		}
+		
 
-		server.Switches = []Switch{ swtch }
+		
 		allServers[name] = server
 	}
 	return allServers,nil
@@ -124,12 +129,18 @@ func GetServer(id int) (Server, string, error) {
 						 	  &server.Nodes,&server.Max,&server.Iface,&switchId,&name))
 	//fmt.Println(subnet)
 	//fmt.Printf("Switch id is %d\n",switchId)
-	swtch, err := GetSwitchById(switchId)
-	if err != nil {
-		return server,name,err
+	if switchId != -1 {
+		swtch, err := GetSwitchById(switchId)
+		if err != nil {
+			return server,name,err
+		}
+		server.Switches = []Switch{ swtch }
+	}else{
+		server.Switches = nil
 	}
+	
 
-	server.Switches = []Switch{ swtch }
+	
 	
 	return server,name,nil
 }
@@ -161,7 +172,9 @@ func _insertServer(name string,server Server,switchId int) (int,error) {
 }
 
 func InsertServer(name string,server Server) (int,error) {
-	
+	if len(server.Switches) == 0 {
+		return _insertServer(name,server,-1)
+	}
 	return _insertServer(name,server,InsertSwitch(server.Switches[0]))
 }
 
@@ -179,8 +192,9 @@ func UpdateServer(id int,server Server) error {
 	swtch,err := GetSwitchById(server.Switches[0].Id)
 
 	var switchId int
-
-	if err != nil {
+	if server.Switches == nil || len(server.Switches) == 0 {
+		switchId = -1
+	}else if err != nil {
 		switchId = InsertSwitch(server.Switches[0])
 	}else{
 		switchId = swtch.Id

@@ -7,29 +7,16 @@ package deploy
  */
 import (
  	"fmt"
- 	//"context"
-	//"golang.org/x/sync/semaphore"
 	db "../db"
-	//util "../util"
 )
 
-//var prepareSem = semaphore.NewWeighted(util.ThreadLimit)
-
 func Prepare(noNodes int,servers []db.Server){
-	fmt.Println("-------------Setting Up Servers-------------")
-	//ctx := context.TODO()
-	
+	fmt.Println("-------------Setting Up Servers-------------")		
 	prepareSwitchesThread(noNodes,servers)
-	//wait for completion
-	fmt.Println("Awaiting completion of prepare part 1")
-	//prepareSem.Acquire(ctx,util.ThreadLimit)
-	//prepareSem.Release(util.ThreadLimit)
-
-	
 }
 
 /**
- * Prepare the switches, this can be done whenever
+ * Prepare the switches
  * @param  {[type]} noNodes int           [description]
  * @param  {[type]} servers []Server      [description]
  * @return {[type]}         [description]
@@ -49,8 +36,11 @@ func prepareSwitchesThread(noNodes int,servers []db.Server){
 		}else{
 			nodes = max_nodes
 		}
-		PrepareSwitches(servers[i],nodes)
-		fmt.Printf("Set up the Switch\n")
+		if servers[i].Switches != nil && len(servers[i].Switches) > 0 {
+			PrepareSwitches(servers[i],nodes)
+			fmt.Printf("Set up the Switch\n")
+		}
+		
 		n -= nodes
 		i++
 	}

@@ -1,7 +1,8 @@
 package util
 
-import "fmt"
-
+import (
+	"fmt"
+)
 
 /**
  * Converts the IP address, given in network byte order,
@@ -27,9 +28,9 @@ func InetNtoa(ip uint32) string {
  */
 func GetNodeIP(server int,node int) string {
 	var ip uint32 = 10 << 24
-	var clusterShift uint32 = NodeBits
-	var serverShift uint32 = NodeBits + ClusterBits
-	var clusterLast uint32 =  (1 << ClusterBits) - 1
+	var clusterShift uint32 = conf.NodeBits
+	var serverShift uint32 = conf.NodeBits + conf.ClusterBits
+	var clusterLast uint32 =  (1 << conf.ClusterBits) - 1
 	//set server bits
 	ip += uint32(server) << serverShift
 	//set cluster bits 
@@ -39,7 +40,7 @@ func GetNodeIP(server int,node int) string {
 	//set the node bits
 	if(cluster == clusterLast){
 		if(node != 0){
-			ip += uint32(node)%NodesPerCluster + 1
+			ip += uint32(node) % NodesPerCluster + 1
 		}
 	}else{
 		ip += uint32(node)%NodesPerCluster + 2
@@ -56,8 +57,8 @@ func GetNodeIP(server int,node int) string {
  */
 func GetGateway(server int, node int) string {
 	var ip uint32 = 10 << 24
-	clusterShift := NodeBits
-	serverShift := NodeBits + ClusterBits
+	clusterShift := conf.NodeBits
+	serverShift := conf.NodeBits + conf.ClusterBits
 	//set server bits
 	ip += uint32(server) << serverShift
 	//set cluster bits 
@@ -90,5 +91,5 @@ func GetGateways(server int, nodes int) []string {
  * @return int	The subnet for all of the nodes
  */
 func GetSubnet() int {
-	return 32 - int(NodeBits)
+	return 32 - int(conf.NodeBits)
 }
