@@ -98,7 +98,7 @@ func prepareVlans(server db.Server, nodes int) {
 					server.ServerID, nodes, conf.ServerBits, conf.ClusterBits, conf.NodeBits, server.Iface)
 			util.SshExec(server.Addr, cmd)
 		}else{
-			cmd := fmt.Sprintf("cd ~/local_deploy && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s", 
+			cmd := fmt.Sprintf("cd ~/local_deploy && ./vlan -k && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s", 
 					server.ServerID, nodes, conf.ServerBits, conf.ClusterBits, conf.NodeBits, server.Iface)
 			util.SshExec(server.Addr, cmd)
 		}
