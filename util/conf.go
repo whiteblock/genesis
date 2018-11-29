@@ -21,6 +21,7 @@ type Config struct {
 	NodeBits		uint32		`json:"node-bits"`
 	ThreadLimit		int64		`json:"thread-limit"`
 	BuildMode		string		`json:"build-mode"`
+	IPPrefix		uint32		`json:"ip-prefix"`
 }
 
 func (c *Config) AutoFillMissing() {
@@ -39,7 +40,6 @@ func (c *Config) AutoFillMissing() {
 	if len(c.Listen) == 0 {
 		c.Listen = "127.0.0.1:8000"
 	}
-	
 	if len(c.RsaKey) == 0 {
 		home := os.Getenv("HOME")
 		c.RsaKey = home+"/.ssh/id_rsa"

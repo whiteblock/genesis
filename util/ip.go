@@ -27,7 +27,7 @@ func InetNtoa(ip uint32) string {
  * @return string			The IP address of the node
  */
 func GetNodeIP(server int,node int) string {
-	var ip uint32 = 10 << 24
+	var ip uint32 = conf.IPPrefix << (conf.NodeBits+conf.ClusterBits+conf.ServerBits)
 	var clusterShift uint32 = conf.NodeBits
 	var serverShift uint32 = conf.NodeBits + conf.ClusterBits
 	var clusterLast uint32 =  (1 << conf.ClusterBits) - 1
@@ -56,7 +56,7 @@ func GetNodeIP(server int,node int) string {
  * @return string			The node's gateway address
  */
 func GetGateway(server int, node int) string {
-	var ip uint32 = 10 << 24
+	var ip uint32 = conf.IPPrefix << (conf.NodeBits+conf.ClusterBits+conf.ServerBits)
 	clusterShift := conf.NodeBits
 	serverShift := conf.NodeBits + conf.ClusterBits
 	//set server bits
