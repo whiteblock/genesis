@@ -13,10 +13,12 @@ import (
 )
 
 type DeploymentDetails struct {
-	Servers    []int	`json:"servers"`
-	Blockchain string	`json:"blockchain"`
-	Nodes      int		`json:"nodes"`
-	Image      string	`json:"image"`
+	Servers		[]int					`json:"servers"`
+	Blockchain	string					`json:"blockchain"`
+	Nodes		int						`json:"nodes"`
+	Image		string					`json:"image"`
+	Params		map[string]interface{}	`json:"params"`
+	Resources	deploy.Resources		`json:"resources"`
 }
 
 
@@ -34,7 +36,11 @@ func AddTestNet(details DeploymentDetails) error {
 	config := deploy.Config{Nodes: details.Nodes, Image: details.Image, Servers: details.Servers}
 	fmt.Printf("Created the build configuration : %+v \n",config)
 
-	newServerData := deploy.Build(&config, servers) //TODO: Restructure distribution of nodes over servers
+	newServerData,err := deploy.Build(&config,servers,details.Resources) //TODO: Restructure distribution of nodes over servers
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 	fmt.Println("Built the docker containers")
 
 	
@@ -42,7 +48,7 @@ func AddTestNet(details DeploymentDetails) error {
 		case "eos":
 			eos.Eos(details.Nodes,newServerData);
 		case "ethereum":
-			eth.Ethereum(4000000,15468,15468,details.Nodes,newServerData)
+			eth.Ethereum(details.Params,details.Nodes,newServerData)
 		default:
 			state.BuildError = errors.New("Unknown blockchain")
 			return errors.New("Unknown blockchain")

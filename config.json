@@ -9,8 +9,8 @@
 	"rsa-user":"appo",
 	"verbose":true,
 	"server-bits":8,
-	"cluster-bits":14,
-	"node-bits":2,
+	"cluster-bits":2,
+	"node-bits":14,
 	"thread-limit":10,
 	"ip-prefix":10
 }

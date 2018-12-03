@@ -152,7 +152,9 @@ func getAllTestNets(w http.ResponseWriter, r *http.Request) {
 func createTestNet(w http.ResponseWriter, r *http.Request) {
 	//params := mux.Vars(r)
 	var testnet DeploymentDetails
-	err := json.NewDecoder(r.Body).Decode(&testnet)
+	decoder := json.NewDecoder(r.Body)
+	decoder.UseNumber()
+	err := decoder.Decode(&testnet)
 	if err != nil {
 		log.Println(err.Error())
 		w.Write([]byte(err.Error()))
@@ -225,7 +227,9 @@ func deleteTestNetNode(w http.ResponseWriter, r *http.Request) {
 }
 
 func dockerExec(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
+	w.Write([]byte("This function is currently down for security reasons"))
+	return
+	/*params := mux.Vars(r)
 	serverId, err := strconv.Atoi(params["server"])
 	if err != nil {
 		log.Println(err.Error())
@@ -256,7 +260,7 @@ func dockerExec(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(fmt.Sprintf("%s %s",res,err.Error())))
 		return
 	}
-	w.Write([]byte(res))
+	w.Write([]byte(res))*/
 }
 
 func nodesStatus(w http.ResponseWriter, r *http.Request) {

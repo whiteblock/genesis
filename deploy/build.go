@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"golang.org/x/sync/semaphore"
+	"errors"
 	db "../db"
 	util "../util"
 )
@@ -13,7 +14,7 @@ var conf *util.Config = util.GetConfig()
  * Builds out the Docker Network on pre-setup servers
  * Returns a string of all of the IP addresses 
  */
-func Build(buildConf *Config,servers []db.Server) []db.Server {
+func Build(buildConf *Config,servers []db.Server,resources Resources) ([]db.Server,error) {
 	var sem	= semaphore.NewWeighted(conf.ThreadLimit)
 	
 	ctx := context.TODO()
@@ -24,6 +25,7 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 
 	for n > 0 && i < len(servers){
 		fmt.Printf("-------------Building on Server %d-------------\n",i)
+		
 		max_nodes := int(servers[i].Max - servers[i].Nodes)
 		var nodes int
 		if max_nodes > n {
@@ -36,7 +38,22 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 		}
 		prepareVlans(servers[i], nodes)
 		var startCmd string
+		
 		fmt.Printf("Creating the docker containers on server %d\n",i)
+		
+		extra_args := ""
+
+		if !resources.NoCpuLimits() {
+			extra_args += fmt.Sprintf(" -C %s",resources.Cpus)
+		}
+
+		if !resources.NoMemoryLimits() {
+			mem,err := resources.GetMemory()
+			if err != nil {
+				return nil, errors.New("Invalid value for memory")
+			}
+			extra_args += fmt.Sprintf(" -M %d",mem)
+		}
 
 		if conf.Builder == "local deploy legacy"{
 			startCmd = fmt.Sprintf("~/local_deploy/whiteblock -n %d -i %s -s %d -a %d -b %d -c %d -S",
@@ -47,13 +64,15 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 				conf.ClusterBits,
 				conf.NodeBits)
 		}else if conf.Builder == "local deploy" {
-			startCmd = fmt.Sprintf("~/local_deploy/deploy -n %d -i %s -s %d -a %d -b %d -c %d -S",
+
+			startCmd = fmt.Sprintf("~/local_deploy/deploy -n %d -i %s -s %d -a %d -b %d -c %d%s -S",
 				nodes,
 				buildConf.Image,
 				servers[i].ServerID,
 				conf.ServerBits,
 				conf.ClusterBits,
-				conf.NodeBits)
+				conf.NodeBits,
+				extra_args)
 		}else if conf.Builder == "umba" {
 			startCmd = fmt.Sprintf("~/umba/umba -n %d -i %s -s %d -I %s",
 				nodes,
@@ -64,8 +83,9 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 			panic("Invalid builder")
 		}
 		//Acquire resources
-		if sem.Acquire(ctx,1) != nil {
-			panic("Semaphore Error")
+		err := sem.Acquire(ctx,1)
+		if err != nil {
+			return nil,err
 		}
 		go func(server string,startCmd string){
 			util.SshExec(server,startCmd)
@@ -77,15 +97,16 @@ func Build(buildConf *Config,servers []db.Server) []db.Server {
 		i++
 	}
 	//Acquire all of the resources here, then release and destroy
-	if sem.Acquire(ctx,conf.ThreadLimit) != nil {
-		panic("Semaphore Error")
+	err := sem.Acquire(ctx,conf.ThreadLimit)
+	if err != nil {
+		return servers, nil
 	}
 	sem.Release(conf.ThreadLimit)
 	if n != 0 {
-		fmt.Printf("ERROR: Only able to build %d/%d nodes\n",(buildConf.Nodes - n),buildConf.Nodes)
+		return servers, errors.New(fmt.Sprintf("ERROR: Only able to build %d/%d nodes\n",(buildConf.Nodes - n),buildConf.Nodes))
 	}
 
-	return servers
+	return servers, nil
 }
 
 

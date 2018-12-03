@@ -7,6 +7,7 @@ import (
 	"golang.org/x/sync/semaphore"
 	"regexp"
 	//"sync"
+	"errors"
 	util "../../util"
 	db "../../db"
 	state "../../state"
@@ -14,23 +15,30 @@ import (
 
 /**CONSTANTS**/
 const THREAD_LIMIT int64		=   10
-const MAX_PEERS	int 			= 	1000
-const INIT_WALLET_VALUE	string	=	"100000000000000000000"
+
 const ETH_NET_STATS_PORT int	=	3030
 
+var conf *util.Config
+
+func init() {
+	conf = util.GetConfig()
+}
 
 /**
  * Build the Ethereum Test Network
- * @param  uint64	gas			The gas limit
- * @param  uint64	chainId		The chain id 
- * @param  uint64	networkId	The test net network id
+ * @param  map[string]interface{}	data	Configuration Data for the network
  * @param  int		nodes		The number of nodes in the network
  * @param  []Server	servers		The list of servers passed from build
  */
-func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.Server){
+func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 	//var mutex = &sync.Mutex{}
-	var sem = semaphore.NewWeighted(THREAD_LIMIT)
+	var sem = semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
+	ethconf,err := NewConf(data)
+	if err != nil {
+		return err
+	}
+
 	util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
 	state.SetBuildSteps(8+(4*nodes))
 	defer func(){
@@ -74,7 +82,7 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 		addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
 		addresses := addressPattern.FindAllString(gethResults,-1)
 		if len(addresses) < 1 {
-			return
+			return errors.New("Unable to get addresses")
 		}
 		address := addresses[0]
 		address = address[1:len(address)-1]
@@ -99,9 +107,9 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 
 	state.IncrementBuildProgress()
 
-	createGenesisfile(gas,chainId,wallets)
+	createGenesisfile(ethconf,wallets)
 	state.IncrementBuildProgress()
-	initNodeDirectories(nodes,networkId,servers)
+	initNodeDirectories(nodes,ethconf.NetworkId,servers)
 	state.IncrementBuildProgress()
 	util.Mkdir("tmp/keystore")
 	distributeUTCKeystore(nodes)
@@ -117,14 +125,14 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 			sem.Acquire(ctx,1)
 			fmt.Printf("-----------------------------  Starting NODE-%d  -----------------------------\n",node)
 
-			go func(networkId uint64,node int,server string,num int,unlock string,nodeIP string){
+			go func(networkId int64,node int,server string,num int,unlock string,nodeIP string){
 				name := fmt.Sprintf("whiteblock-node%d",num)
 				util.SshExec(server,fmt.Sprintf("rm -rf tmp/node%d",node))
 				util.Scpr(server,fmt.Sprintf("tmp/node%d",node))
 				state.IncrementBuildProgress() 
 				gethCmd := fmt.Sprintf(`geth --datadir /whiteblock/node%d --nodiscover --maxpeers %d --networkid %d --rpc --rpcaddr %s --rpcapi "web3,db,eth,net,personal,miner" --rpccorsdomain "0.0.0.0" --mine --unlock="%s" --password /whiteblock/node%d/passwd.file console`,
 						node,
-						MAX_PEERS,
+						ethconf.MaxPeers,
 						networkId,
 						nodeIP,
 						unlock,
@@ -139,14 +147,14 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 
 				sem.Release(1)
 				state.IncrementBuildProgress() 
-			}(networkId,node+1,server.Addr,j,unlock,ip)
+			}(ethconf.NetworkId,node+1,server.Addr,j,unlock,ip)
 			node ++
 		}
 	}
-	err := sem.Acquire(ctx,THREAD_LIMIT)
+	err = sem.Acquire(ctx,conf.ThreadLimit)
 	util.CheckFatal(err)
 	state.IncrementBuildProgress()
-	sem.Release(THREAD_LIMIT)
+	sem.Release(conf.ThreadLimit)
 	
 	setupEthNetStats(servers[0].Addr)
 	node = 0
@@ -179,11 +187,11 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 		}
 	}
 
-	err = sem.Acquire(ctx,THREAD_LIMIT)
+	err = sem.Acquire(ctx,conf.ThreadLimit)
 	util.CheckFatal(err)
 
-	sem.Release(THREAD_LIMIT)
-	
+	sem.Release(conf.ThreadLimit)
+	return nil
 	//fmt.Printf("To view Eth Net Stat type:\t\t\ttmux attach-session -t netstats\n")
 	
 }
@@ -194,14 +202,13 @@ func Ethereum(gas uint64,chainId uint64,networkId uint64,nodes int,servers []db.
 
 /**
  * Create the custom genesis file for Ethereum
- * @param  uint64	gas			The target gas limit
- * @param  uint64	chainId		The chain id
+ * @param  *EthConf	ethconf		The chain configuration
  * @param  []string wallets		The wallets to be allocated a balance
  */
-func createGenesisfile(gas uint64,chainId uint64,wallets []string){
+func createGenesisfile(ethconf *EthConf,wallets []string){
 	alloc := "\n"
 	for i,wallet := range wallets {
-		alloc += fmt.Sprintf("\t\t\"%s\":{\"balance\":\"%s\"}",wallet,INIT_WALLET_VALUE)
+		alloc += fmt.Sprintf("\t\t\"%s\":{\"balance\":\"%s\"}",wallet,ethconf.InitBalance)
 		if len(wallets) - 1 != i {
 			alloc += ","
 		}
@@ -212,14 +219,21 @@ func createGenesisfile(gas uint64,chainId uint64,wallets []string){
 `{
 	"config": {
 		"chainId": %d,
-		"homesteadBlock": 0,
-		"eip155Block": 0,
-		"eip158Block": 0
+		"homesteadBlock": %d,
+		"eip155Block": %d,
+		"eip158Block": %d
 	},
-	"difficulty": "0x0100000",
+	"difficulty": "0x0%X",
 	"gasLimit": "0x0%X",
 	"alloc": {%s 	}
-}`,chainId,gas,alloc)
+}`,
+	ethconf.ChainId,
+	ethconf.HomesteadBlock,
+	ethconf.Eip155Block,
+	ethconf.Eip158Block,
+	ethconf.Difficulty,
+	ethconf.GasLimit,
+	alloc)
 
 	util.Write("tmp/CustomGenesis.json",genesis)
 }
@@ -227,11 +241,11 @@ func createGenesisfile(gas uint64,chainId uint64,wallets []string){
 /**
  * Creates the datadir for a node and returns the enode address
  * @param  int		node		The nodes number
- * @param  uint64	networkId	The test net network id
+ * @param  int64	networkId	The test net network id
  * @param  string	ip			The node's IP address
  * @return string				The node's enode address
  */
-func initNode(node int, networkId uint64,ip string) string {
+func initNode(node int, networkId int64,ip string) string {
 	fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n",node)
 	gethResults := util.BashExec(fmt.Sprintf("echo -e \"admin.nodeInfo.enode\\nexit\\n\" |  geth --rpc --datadir tmp/node%d/ --networkid %d console",node,networkId))
 	//fmt.Printf("RAWWWWWWWWWWWW%s\n\n\n",gethResults)
@@ -248,10 +262,10 @@ func initNode(node int, networkId uint64,ip string) string {
 /**
  * Initialize the chain from the custom genesis file
  * @param  int		nodes		The number of nodes
- * @param  uint64	networkId	The test net network id
+ * @param  int64	networkId	The test net network id
  * @param  []Server	servers		The list of servers
  */
-func initNodeDirectories(nodes int,networkId uint64,servers []db.Server){
+func initNodeDirectories(nodes int,networkId int64,servers []db.Server){
 	static_nodes := []string{};
 	node := 1
 	for _,server := range servers{
