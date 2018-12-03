@@ -9,6 +9,7 @@ import (
 	util "./util"
 	eos "./blockchains/eos"
 	eth "./blockchains/ethereum"
+	sys "./blockchains/syscoin"
 	state "./state"
 )
 
@@ -39,6 +40,7 @@ func AddTestNet(details DeploymentDetails) error {
 	newServerData,err := deploy.Build(&config,servers,details.Resources) //TODO: Restructure distribution of nodes over servers
 	if err != nil {
 		log.Println(err)
+		state.BuildError = err
 		return err
 	}
 	fmt.Println("Built the docker containers")
@@ -48,7 +50,17 @@ func AddTestNet(details DeploymentDetails) error {
 		case "eos":
 			eos.Eos(details.Nodes,newServerData);
 		case "ethereum":
-			eth.Ethereum(details.Params,details.Nodes,newServerData)
+			err := eth.Ethereum(details.Params,details.Nodes,newServerData)
+			if err != nil {
+				state.BuildError = err
+				return err
+			}
+		case "syscoin":
+			err := sys.RegTest(details.Params,details.Nodes,newServerData)
+			if err != nil {
+				state.BuildError = err
+				return err
+			}
 		default:
 			state.BuildError = errors.New("Unknown blockchain")
 			return errors.New("Unknown blockchain")

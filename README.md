@@ -294,7 +294,7 @@ curl -X POST http://localhost:8000/exec/4/0 -d 'ls'
 * __thread-limit__: The maximum number of threads that can be used for building
 
 
-##Block Chain Specific Parameters
+##Blockchain Specific Parameters
 
 ###Geth (Go-Ethereum)
 __Note:__ Any configuration option can be left out, and this entire section can even be null,
@@ -324,5 +324,31 @@ the example contains all of the defaults
 	"eip155Block":0,
 	"eip158Block":0
 }
-	
+```
+###Syscoin (RegTest)
+
+####Options
+* `rpcUser`: The username credential
+* `rpcPass`: The password credential
+* `options`: Options to set enabled
+* `extras`: Extra options to add to the config file
+
+####Example (using defaults)
+```json
+{
+	"rpcUser":"username",
+	"rpcPass":"password",
+	"options":[
+		"server",
+		"regtest",
+		"listen",
+		"rest",
+		"debug",
+		"unittest",
+		"addressindex",
+		"assetallocationindex",
+		"tpstest",
+	],
+	"extras":[]
+}
 ```
