@@ -297,7 +297,7 @@ curl -X POST http://localhost:8000/exec/4/0 -d 'ls'
 ##Block Chain Specific Parameters
 
 ###Geth (Go-Ethereum)
-__Note:__ Any configuration option can be left out, and params can even be nil,
+__Note:__ Any configuration option can be left out, and this entire section can even be null,
 the example contains all of the defaults
 
 ####Options
