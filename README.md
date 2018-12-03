@@ -186,7 +186,12 @@ Add and deploy a new testnet
 	"servers":[(int),(int)...],
 	"blockchain":(string),
 	"nodes":(int),
-	"image":(string)
+	"image":(string),
+	"resources":{
+		"cpus":(string),
+		"memory":(string)
+	},
+	"params":(Object containing params specific to the chain/client being built)
 }
 ```
 #####RESPONSE
@@ -197,7 +202,8 @@ Success
 ```
 #####EXAMPLE
 ```bash
-curl -X POST http://localhost:8000/testnets/ -d '{"servers":[3],"blockchain":"ethereum","nodes":3,"image":"ethereum:latest"}'
+curl -X POST http://localhost:8000/testnets/ -d '{"servers":[3],"blockchain":"ethereum","nodes":3,"image":"ethereum:latest",
+"resources":{"cpus":"2.0","memory":"10gb"},"params":null}'
 ```
 
 ###GET /testnets/{id}
@@ -254,6 +260,7 @@ curl -XGET http://localhost:8000/status/nodes/
 
 
 ###POST /exec/{server}/{node}
+###Temporarily disabled
 Execute a command on a given node
 #####BODY
 ```
@@ -285,3 +292,37 @@ curl -X POST http://localhost:8000/exec/4/0 -d 'ls'
 * __cluster-bits__: The bits given to each clusters's number
 * __node-bits__: The bits given to each nodes's number
 * __thread-limit__: The maximum number of threads that can be used for building
+
+
+##Block Chain Specific Parameters
+
+###Geth (Go-Ethereum)
+__Note:__ Any configuration option can be left out, and params can even be nil,
+the example contains all of the defaults
+
+####Options
+* `chainId`: The chain id set in the genesis.conf
+* `networkId`: The network id
+* `difficulty`: The initial difficulty set in the genesis.conf file
+* `initBalance`: The initial balance for the accounts
+* `maxPeers`: The maximum number of peers for each node
+* `gasLimit`: The initial gas limit
+* `homesteadBlock`: Set in genesis.conf
+* `eip155Block`: Set in genesis.conf
+* `eip158Block`: Set in genesis.conf
+
+####Example (using defaults)
+```json
+{
+	"chainId":15468,
+	"networkId":15468,
+	"difficulty":100000,
+	"initBalance":100000000000000000000,
+	"maxPeers":1000,
+	"gasLimit":4000000,
+	"homesteadBlock":0,
+	"eip155Block":0,
+	"eip158Block":0
+}
+	
+```
