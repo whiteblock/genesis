@@ -6,6 +6,9 @@ import (
 	"log"
 	"io/ioutil"
 	"bytes"
+	"errors"
+	"math/rand"
+	"time"
 	//"golang.org/x/sys/unix"
 )
 
@@ -209,10 +212,52 @@ func IntArrRemove(op []int,index int) []int {
 	return append(op[:index],op[index+1:]...)
 }
 
-func IntArrFill(size int, f func(int) int) []int{
+func IntArrFill(size int, f func(int) int) []int {
 	out := make([]int,size)
 	for i := 0; i < size; i++ {
 		out[i] = f(i)
 	}
 	return out
+}
+
+
+func Distribute(nodes []string,dist []int) ([][]string,error){
+	if len(nodes) < 2 {
+		return nil,errors.New("Cannot distribute a series smaller than 1")
+	}
+	for _,d := range dist{
+		if d >= len(nodes){
+			return nil,errors.New("Cannot distribute among more nodes than those that are given")
+		}
+	}
+	s1 := rand.NewSource(time.Now().UnixNano())
+    	r1 := rand.New(s1)
+
+	out := [][]string{}
+	for i, _ := range nodes {
+		conns := []string{}
+		for j := 0; j < dist[i]; j++ {
+			newConnIndex := r1.Intn(len(nodes))
+			if newConnIndex == i {
+				j--
+				continue
+			}
+			newConn := nodes[newConnIndex]
+			unique := true
+			for _, conn := range conns{
+				if newConn == conn {
+					unique = false
+					break
+				}
+			}
+			if !unique {
+				j--
+				continue
+			}
+			conns = append(conns,newConn)
+		
+		}
+		out = append(out,conns)
+	}
+	return out,nil
 }

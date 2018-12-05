@@ -3,7 +3,9 @@ package syscoin
 import (
 	"context"
 	"fmt"
+	"log"
 	"golang.org/x/sync/semaphore"
+	"errors"
 	util "../../util"
 	db "../../db"
 	state "../../state"
@@ -15,12 +17,23 @@ func init(){
 	conf = util.GetConfig()
 }
 
-func RegTest(data map[string]interface{},nodes int,servers []db.Server) error {
+/**
+ * Sets up Syscoin Testnet in Regtest mode
+ * @param {[type]} data    map[string]interface{} 	The configuration optiosn given by the client
+ * @param {[type]} nodes   int                      The number of nodes to build
+ * @param {[type]} servers []db.Server) 			The servers to be built on       
+ * @return ([]string,error [description]
+ */
+func RegTest(data map[string]interface{},nodes int,servers []db.Server) ([]string,error) {
+	if nodes < 3 {
+		log.Println("Tried to build syscoin with not enough nodes")
+		return nil,errors.New("Tried to build syscoin with not enough nodes")
+	}
 	sem3 := semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
 	sysconf,err := NewConf(data)
 	if err != nil {
-		return err
+		return nil,err
 	}
 	defer func(){
 		fmt.Printf("Cleaning up...")
@@ -31,31 +44,25 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server) error {
 	state.SetBuildSteps(1+(1*nodes))
 
 	fmt.Println("-------------Setting Up Syscoin-------------")
-	{
-		fmt.Printf("Creating the syscoin conf file...")
-		createSyscoinConf(servers,sysconf)
-		state.IncrementBuildProgress()
-		fmt.Printf("done\n")
+	
+	fmt.Printf("Creating the syscoin conf files...")
+	out,err := handleConf(servers,sysconf)
+	if err != nil {
+		return nil,err
 	}
+	state.IncrementBuildProgress()
+	fmt.Printf("done\n")
+
 
 	fmt.Printf("Launching the nodes")
 	for _,server := range servers {
 		sem3.Acquire(ctx,1)
 		go func(server db.Server){
-			util.SshExecIgnore(server.Addr,"mkdir ~/datadir")
-			util.Scp(server.Addr,"./regtest.conf","/home/appo/regtest.conf")
-			util.SshExec(server.Addr,"rm -rf ~/datadir && mkdir -p ~/datadir")
-			util.SshExec(server.Addr,"cp /home/appo/regtest.conf /home/appo/datadir/regtest.conf")
-			util.SshExecIgnore(server.Addr,"killall syscoind")
-			util.SshExec(server.Addr,"syscoind -daemon -conf=\"/home/appo/datadir/regtest.conf\" -datadir=\"/home/appo/datadir/\"")
 			for j,_ := range server.Ips {
 				fmt.Printf(".")
 				container := fmt.Sprintf("whiteblock-node%d",j)
-				mkdirCmd := fmt.Sprintf("docker exec %s mkdir -p /syscoin && docker exec %s mkdir -p /syscoin/datadir",container,container)
-				cpCmd := fmt.Sprintf("docker cp /home/appo/regtest.conf %s:/syscoin/datadir/regtest.conf",container)
 				execCmd := fmt.Sprintf("docker exec %s syscoind -daemon -conf=\"/syscoin/datadir/regtest.conf\" -datadir=\"/syscoin/datadir/\"",container)
-				util.SshExec(server.Addr,
-					fmt.Sprintf("%s&&%s&&%s",mkdirCmd,cpCmd,execCmd))
+				util.SshExec(server.Addr,execCmd)
 				state.IncrementBuildProgress()
 			}
 			sem3.Release(1)
@@ -65,38 +72,84 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server) error {
 
 	err = sem3.Acquire(ctx,conf.ThreadLimit)
 	if err != nil{
-		return err
+		return nil,err
 	}
 	fmt.Printf("done\n")
 	sem3.Release(conf.ThreadLimit)
 
 
-	return nil 
+	return out,nil 
 }
 
-func createSyscoinConf(servers []db.Server, sysconf *SysConf){
-	confData := sysconf.Generate()
-	confData += "rpcport=8369\nport=8370\n"
 
-	maxConns := 1
+
+func handleConf(servers []db.Server, sysconf *SysConf) ([]string,error) {
+	ips := []string{}
 	for _,server := range servers {
-		for _,ip := range server.Ips {
-			//confData += fmt.Sprintf("connect=%s:8370\n",ip)
-			//confData += fmt.Sprintf("whitelist=%s\n",ip)
-			confData += fmt.Sprintf("connect=%s:8370\n",ip)
-			//confData += fmt.Sprintf("rpcconnect=%s:8369\n",ip)
-			maxConns += 4
+		for _, ip := range server.Ips {
+			ips = append(ips,ip)
 		}
 	}
-	for _,server := range servers {
-		//confData += fmt.Sprintf("connect=%s:8370\n",server.iaddr.ip)
-		//confData += fmt.Sprintf("whitelist=%s\n",server.iaddr.ip)
-		confData += fmt.Sprintf("connect=%s:8370\n",server.Iaddr.Ip)
-		//confData += fmt.Sprintf("rpcconnect=%s:8369\n",server.iaddr.ip)
-		maxConns += 4
-	}
-	confData += "rpcallowip=10.0.0.0/8\n"
-	confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
-	util.Write("./regtest.conf",confData)
-}
 
+	noMasterNodes := len(ips) * (int(sysconf.PercOfMNodes)/100)
+
+	if (len(ips) - noMasterNodes) == 0 {
+		log.Println("Warning: No sender/receiver nodes availible. Removing 2 master nodes and setting them as sender/receiver")
+		noMasterNodes -= 2;
+	}else if (len(ips) - noMasterNodes) % 2 != 0 {
+		log.Println("Warning: Removing a master node to keep senders and receivers equal")
+		noMasterNodes--;
+		if noMasterNodes < 0 {
+			log.Println("Warning: Attempt to remove a master node failed, adding one instead")
+			noMasterNodes += 2
+		}
+	}
+
+	connDistModel := make([]int,len(ips))
+	for i := 0; i < len(ips); i++ {
+		if i < noMasterNodes {
+			connDistModel[i] = int(sysconf.MasterNodeConns)
+		}else{
+			connDistModel[i] = int(sysconf.NodeConns)
+		}
+	}
+
+	connsDist,err := util.Distribute(ips,connDistModel)
+	if err != nil {
+		return nil,err
+	}
+	//Finally generate the configuration for each node
+	node := 0
+	labels := make([]string,len(ips))
+	for _,server := range servers {
+		for _,_ = range server.Ips{
+			confData := ""
+			maxConns := 1
+			if node < noMasterNodes{//Master Node
+				confData += sysconf.GenerateMN()
+				labels[node] = "Master Node"
+			}else if node%2 == 0 {//Sender
+				confData += sysconf.GenerateSender()
+				labels[node] = "Sender"
+			}else{//Receiver
+				confData += sysconf.GenerateReceiver()
+				labels[node] = "Receiver"
+			}
+			confData += "rpcport=8369\nport=8370\n"
+			for _, conn := range connsDist[node]{
+				confData += fmt.Sprintf("connect=%s:8370\n",conn)
+				maxConns += 4
+			}
+			confData += "rpcallowip=10.0.0.0/8\n"
+			confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
+			util.Write("./regtest.conf",confData)
+			util.Scp(server.Addr,"./regtest.conf","/home/appo/regtest.conf")
+			container := fmt.Sprintf("whiteblock-node%d",node)
+			util.SshExec(server.Addr,fmt.Sprintf("docker exec %s mkdir -p /syscoin/datadir",container))
+			util.SshExec(server.Addr,fmt.Sprintf("docker cp /home/appo/regtest.conf %s:/syscoin/datadir/regtest.conf",container))
+			util.Rm("./regtest.conf")
+		}
+	}
+
+	return labels,nil
+}

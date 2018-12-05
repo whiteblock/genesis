@@ -330,25 +330,45 @@ the example contains all of the defaults
 ####Options
 * `rpcUser`: The username credential
 * `rpcPass`: The password credential
-* `options`: Options to set enabled
-* `extras`: Extra options to add to the config file
+* `masterNodeConns`: The number of connections to set up for the master nodes
+* `nodeConns`:  The number of connections to set up for the normal nodes
+* `percentMasternodes`: The percentage of the network consisting of master nodes
+
+* `options`: Options to set enabled for all nodes
+* `senderOptions`: Options to set enabled for senders
+* `receiverOptions`: Options to set enabled for receivers
+* `mnOptions`: Options to set enabled for master nodes
+
+* `extras`: Extra options to add to the config file for all nodes
+* `senderExtras`: Extra options to add to the config file for senders
+* `receiverExtras`: Extra options to add to the config file for receivers
+* `mnExtras`: Extra options to add to the config file for master nodes
 
 ####Example (using defaults)
 ```json
 {
 	"rpcUser":"username",
 	"rpcPass":"password",
+	"masterNodeConns":25,
+	"nodeConns":8,
+	"percentMasternodes":90,
 	"options":[
 		"server",
 		"regtest",
 		"listen",
-		"rest",
-		"debug",
-		"unittest",
-		"addressindex",
-		"assetallocationindex",
-		"tpstest",
+		"rest"
 	],
-	"extras":[]
+	"senderOptions":[
+		"tpstest",
+		"addressindex"
+	],
+	"mnOptions":[],
+	"receiverOptions":[
+		"tpstest"
+	],
+	"extras":[],
+	"senderExtras":[],
+	"receiverExtras":[],
+	"mnExtras":[]
 }
 ```

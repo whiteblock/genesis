@@ -45,7 +45,8 @@ func AddTestNet(details DeploymentDetails) error {
 	}
 	fmt.Println("Built the docker containers")
 
-	
+	var labels []string = nil
+
 	switch(details.Blockchain){
 		case "eos":
 			eos.Eos(details.Nodes,newServerData);
@@ -56,7 +57,7 @@ func AddTestNet(details DeploymentDetails) error {
 				return err
 			}
 		case "syscoin":
-			err := sys.RegTest(details.Params,details.Nodes,newServerData)
+			labels,err = sys.RegTest(details.Params,details.Nodes,newServerData)
 			if err != nil {
 				state.BuildError = err
 				return err
@@ -68,14 +69,19 @@ func AddTestNet(details DeploymentDetails) error {
 
 	testNetId := db.InsertTestNet(db.TestNet{Id: -1, Blockchain: details.Blockchain, Nodes: details.Nodes, Image: details.Image})
 
+	i := 0
 	for _, server := range newServerData {
 		db.UpdateServerNodes(server.Id,0)
-		for i, ip := range server.Ips {
-			node := db.Node{Id: -1, TestNetId: testNetId, Server: server.Id, LocalId: i, Ip: ip} 
+		for _, ip := range server.Ips {
+			node := db.Node{Id: -1, TestNetId: testNetId, Server: server.Id, LocalId: i, Ip: ip}
+			if labels != nil {
+				node.Label = labels[i]
+			}
 			_,err := db.InsertNode(node)
 			if err != nil {
 				log.Println(err.Error())
 			}
+			i++
 		}
 	}
 	return nil

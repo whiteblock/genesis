@@ -53,15 +53,14 @@ func dbInit(){
 		"nodes INTERGER",
 		"image TEXT NOT NULL")
 
-	nodesSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s);",
+	nodesSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s);",
 		NodesTable,
-
 		"id INTEGER PRIMARY KEY AUTOINCREMENT",
 		"test_net INTERGER",
 		"server INTERGER",
-
 		"local_id INTERGER",
-		"ip TEXT NOT NULL")
+		"ip TEXT NOT NULL",
+		"label TEXT")
 
 	
 

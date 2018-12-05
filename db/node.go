@@ -15,6 +15,7 @@ type Node struct {
 	Server		int		`json:"server"`
 	LocalId		int		`json:"localId"`
 	Ip			string	`json:"ip"`
+	Label		string	`json:"label"`
 }
 
 
@@ -22,7 +23,7 @@ func GetAllNodesByServer(serverId int) ([]Node,error) {
 	db := getDB()
 	defer db.Close()
 
-	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s WHERE server = %d",NodesTable ))
+	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE server = %d",NodesTable ))
 	if err != nil {
 		return nil,err
 	}
@@ -31,7 +32,7 @@ func GetAllNodesByServer(serverId int) ([]Node,error) {
 	nodes := []Node{}
 	for rows.Next() {
 		var node Node
-		err := rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip)
+		err := rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip,&node.Label)
 		if err != nil {
 			return nil,err
 		}
@@ -45,7 +46,7 @@ func GetAllNodesByTestNet(testId int) ([]Node,error) {
 	defer db.Close()
 	nodes := []Node{}
 
-	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s WHERE test_net = %d",NodesTable,testId ))
+	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE test_net = %d",NodesTable,testId ))
 	if err != nil {
 		return nodes,err
 	}
@@ -54,7 +55,7 @@ func GetAllNodesByTestNet(testId int) ([]Node,error) {
 	
 	for rows.Next() {
 		var node Node
-		err := rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip)
+		err := rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip,&node.Label)
 		if err != nil {
 			return nodes, err
 		}
@@ -68,7 +69,7 @@ func GetAllNodes() ([]Node,error) {
 	db := getDB()
 	defer db.Close()
 
-	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s",NodesTable ))
+	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s",NodesTable ))
 	if err != nil {
 		return nil,err
 	}
@@ -77,7 +78,7 @@ func GetAllNodes() ([]Node,error) {
 
 	for rows.Next() {
 		var node Node
-		err := rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip)
+		err := rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip,&node.Label)
 		if err != nil {
 			return nil, err
 		}
@@ -90,11 +91,11 @@ func GetNode(id int) (Node,error) {
 	db := getDB()
 	defer db.Close()
 
-	row :=  db.QueryRow(fmt.Sprintf("SELECT id,test_net,server,local_id,ip FROM %s WHERE id = %d",NodesTable,id))
+	row :=  db.QueryRow(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE id = %d",NodesTable,id))
 
 	var node Node
 
-	if row.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip) == sql.ErrNoRows {
+	if row.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip,&node.Label) == sql.ErrNoRows {
 		return node, errors.New("Not Found")
 	}
 
@@ -110,7 +111,7 @@ func InsertNode(node Node) (int,error) {
 		return -1, err
 	}
 
-	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (test_net,server,local_id,ip) VALUES (?,?,?,?)",NodesTable))
+	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (test_net,server,local_id,ip,label) VALUES (?,?,?,?,?)",NodesTable))
 	
 	if err != nil {
 		return -1, err
@@ -118,7 +119,7 @@ func InsertNode(node Node) (int,error) {
 
 	defer stmt.Close()
 
-	res,err := stmt.Exec(node.TestNetId,node.Server,node.LocalId,node.Ip)
+	res,err := stmt.Exec(node.TestNetId,node.Server,node.LocalId,node.Ip,node.Label)
 	if err != nil {
 		return -1, nil
 	}

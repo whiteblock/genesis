@@ -309,8 +309,11 @@ func distributeUTCKeystore(nodes int){
  * @param  string 	 ip 	The servers config
  */
 func setupEthNetStats(ip string){
-	util.SshExecIgnore(ip,"rm -rf eth-netstats")
-	util.SshExec(ip,"wget http://whiteblock.io/eth-netstats.tar.gz && tar xf eth-netstats.tar.gz && rm eth-netstats.tar.gz")
+	res,err := util.SshExecCheck(ip,"[ -d ~/eth-netstats ] && echo \"success\"")
+	if res != "success" || err != nil {
+		util.SshExec(ip,"wget http://whiteblock.io/eth-netstats.tar.gz && tar xf eth-netstats.tar.gz && rm eth-netstats.tar.gz")
+		util.SshExecIgnore(ip,"rm -rf eth-netstats")
+	}
 
 	util.SshExecIgnore(ip,"tmux kill-session -t netstats")
 	util.SshExec(ip,"tmux new -s netstats -d")
