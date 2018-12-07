@@ -279,6 +279,6 @@ func GetParams() string {
 	{"mnExtras":"[]string"},
 	{"masterNodeConns":"int"},
 	{"nodeConns":"int"},
-	{"percentMasternodes","int"}
+	{"percentMasternodes":"int"}
 ]`
 }
