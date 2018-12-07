@@ -263,3 +263,22 @@ func (this *SysConf) GenerateMN() string {
 	}
 	return out
 }
+
+
+func GetParams() string {
+	return `[
+	{"rpcUser":"string"},
+	{"rpcPass":"string"},
+	{"options":"[]string"},
+	{"extras":"[]string"},
+	{"senderOptions":"[]string"},
+	{"receiverOptions":"[]string"},
+	{"mnOptions":"[]string"},
+	{"senderExtras":"[]string"},
+	{"receiverExtras":"[]string"},
+	{"mnExtras":"[]string"},
+	{"masterNodeConns":"int"},
+	{"nodeConns":"int"},
+	{"percentMasternodes","int"}
+]`
+}

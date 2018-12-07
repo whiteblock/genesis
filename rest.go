@@ -45,6 +45,9 @@ func StartServer() {
 	router.HandleFunc("/status/build/",buildStatus).Methods("GET")
 	router.HandleFunc("/exec/{server}/{node}",dockerExec).Methods("POST")
 
+	router.HandleFunc("/params/{blockchain}",getBlockChainParams).Methods("GET")
+	router.HandleFunc("/params/{blockchain}/",getBlockChainParams).Methods("GET")
+
 	http.ListenAndServe(conf.Listen, router)
 }
 
@@ -276,4 +279,10 @@ func nodesStatus(w http.ResponseWriter, r *http.Request) {
 
 func buildStatus(w http.ResponseWriter,r *http.Request){
 	json.NewEncoder(w).Encode(CheckBuildStatus())
+}
+
+
+func getBlockChainParams(w http.ResponseWriter,r *http.Request){
+	params := mux.Vars(r)
+	w.Write([]byte(GetParams(params["blockchain"])))
 }

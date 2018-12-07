@@ -108,3 +108,18 @@ func NewConf(data map[string]interface{}) (*EthConf,error) {
 
 	return out,nil
 }
+
+
+func GetParams() string {
+	return `[
+		{"chainId":"int"},
+		{"networkId":"int"},
+		{"difficulty":"int"},
+		{"initBalance":"string"},
+		{"maxPeers":"int"},
+		{"gasLimit":"int"},
+		{"homesteadBlock":"int"},
+		{"eip155Block":"int"},
+		{"eip158Block","int"}
+]`
+}

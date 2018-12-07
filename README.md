@@ -279,6 +279,27 @@ curl -X POST http://localhost:8000/exec/4/0 -d 'ls'
 ```
 
 
+###GET /params/{blockchain}/
+Get the build params for a blockchain
+#####RESPONSE
+```json
+[
+	{"chainId":"int"},
+	{"networkId":"int"},
+	{"difficulty":"int"},
+	{"initBalance":"string"},
+	{"maxPeers":"int"},
+	{"gasLimit":"int"},
+	{"homesteadBlock":"int"},
+	{"eip155Block":"int"},
+	{"eip158Block":"int"}
+]
+```
+#####EXAMPLE
+```bash
+curl -X GET http://localhost:8000/params/ethereum
+```
+
 ##Configuration
 
 * __builder__: The application to use to build the nodes

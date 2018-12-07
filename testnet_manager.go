@@ -124,3 +124,16 @@ func RemoveTestNet(id int) error {
 	}
 	return nil
 }
+
+
+func GetParams(blockchain string) string {
+	switch blockchain{
+		case "ethereum":
+			return eth.GetParams()
+		case "syscoin":
+			return sys.GetParams()
+
+		default:
+			return "[]"
+	}
+}
