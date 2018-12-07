@@ -38,7 +38,6 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server) ([]strin
 	defer func(){
 		fmt.Printf("Cleaning up...")
 		util.Rm("config.boot")
-		util.Rm("regtest.conf")
 		fmt.Printf("done\n")
 	}()
 	state.SetBuildSteps(1+(1*nodes))
@@ -91,7 +90,7 @@ func handleConf(servers []db.Server, sysconf *SysConf) ([]string,error) {
 		}
 	}
 
-	noMasterNodes := len(ips) * (int(sysconf.PercOfMNodes)/100)
+	noMasterNodes := int(float64(len(ips)) * (float64(sysconf.PercOfMNodes)/float64(100)))
 
 	if (len(ips) - noMasterNodes) == 0 {
 		log.Println("Warning: No sender/receiver nodes availible. Removing 2 master nodes and setting them as sender/receiver")
@@ -119,35 +118,44 @@ func handleConf(servers []db.Server, sysconf *SysConf) ([]string,error) {
 		return nil,err
 	}
 	//Finally generate the configuration for each node
+	sem := semaphore.NewWeighted(conf.ThreadLimit)
+	ctx := context.TODO()
 	node := 0
 	labels := make([]string,len(ips))
 	for _,server := range servers {
 		for _,_ = range server.Ips{
-			confData := ""
-			maxConns := 1
-			if node < noMasterNodes{//Master Node
-				confData += sysconf.GenerateMN()
-				labels[node] = "Master Node"
-			}else if node%2 == 0 {//Sender
-				confData += sysconf.GenerateSender()
-				labels[node] = "Sender"
-			}else{//Receiver
-				confData += sysconf.GenerateReceiver()
-				labels[node] = "Receiver"
-			}
-			confData += "rpcport=8369\nport=8370\n"
-			for _, conn := range connsDist[node]{
-				confData += fmt.Sprintf("connect=%s:8370\n",conn)
-				maxConns += 4
-			}
-			confData += "rpcallowip=10.0.0.0/8\n"
-			confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
-			util.Write("./regtest.conf",confData)
-			util.Scp(server.Addr,"./regtest.conf","/home/appo/regtest.conf")
-			container := fmt.Sprintf("whiteblock-node%d",node)
-			util.SshExec(server.Addr,fmt.Sprintf("docker exec %s mkdir -p /syscoin/datadir",container))
-			util.SshExec(server.Addr,fmt.Sprintf("docker cp /home/appo/regtest.conf %s:/syscoin/datadir/regtest.conf",container))
-			util.Rm("./regtest.conf")
+			sem.Acquire(ctx,1)
+			go func(node int){
+				confData := ""
+				maxConns := 1
+				if node < noMasterNodes{//Master Node
+					confData += sysconf.GenerateMN()
+					labels[node] = "Master Node"
+				}else if node%2 == 0 {//Sender
+					confData += sysconf.GenerateSender()
+					labels[node] = "Sender"
+				}else{//Receiver
+					confData += sysconf.GenerateReceiver()
+					labels[node] = "Receiver"
+				}
+				confData += "rpcport=8369\nport=8370\n"
+				for _, conn := range connsDist[node]{
+					confData += fmt.Sprintf("connect=%s:8370\n",conn)
+					maxConns += 4
+				}
+				confData += "rpcallowip=10.0.0.0/8\n"
+				confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
+				util.Write(fmt.Sprintf("./regtest%d.conf",node),confData)
+
+				util.Scp(server.Addr,fmt.Sprintf("./regtest%d.conf",node),fmt.Sprintf("/home/appo/regtest%d.conf",node))
+				container := fmt.Sprintf("whiteblock-node%d",node)
+				util.SshExec(server.Addr,fmt.Sprintf("docker exec %s mkdir -p /syscoin/datadir",container))
+				util.SshExec(server.Addr,fmt.Sprintf("docker cp /home/appo/regtest%d.conf %s:/syscoin/datadir/regtest.conf",node,container))
+				util.Rm(fmt.Sprintf("./regtest%d.conf",node))
+				sem.Release(1)
+				
+			}(node)
+			node++
 		}
 	}
 

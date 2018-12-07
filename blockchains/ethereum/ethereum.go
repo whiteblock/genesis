@@ -156,7 +156,7 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 	state.IncrementBuildProgress()
 	sem.Release(conf.ThreadLimit)
 	
-	setupEthNetStats(servers[0].Addr)
+	/*setupEthNetStats(servers[0].Addr)
 	node = 0
 	for _,server := range servers {
 		for j,ip := range server.Ips{
@@ -190,7 +190,7 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 	err = sem.Acquire(ctx,conf.ThreadLimit)
 	util.CheckFatal(err)
 
-	sem.Release(conf.ThreadLimit)
+	sem.Release(conf.ThreadLimit)*/
 	return nil
 	//fmt.Printf("To view Eth Net Stat type:\t\t\ttmux attach-session -t netstats\n")
 	

@@ -53,6 +53,7 @@ func AddTestNet(details DeploymentDetails) error {
 		case "ethereum":
 			err := eth.Ethereum(details.Params,details.Nodes,newServerData)
 			if err != nil {
+				log.Println(err)
 				state.BuildError = err
 				return err
 			}
@@ -60,6 +61,7 @@ func AddTestNet(details DeploymentDetails) error {
 			labels,err = sys.RegTest(details.Params,details.Nodes,newServerData)
 			if err != nil {
 				state.BuildError = err
+				log.Println(err)
 				return err
 			}
 		default:
