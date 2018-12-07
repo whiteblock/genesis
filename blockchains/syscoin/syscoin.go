@@ -158,6 +158,8 @@ func handleConf(servers []db.Server, sysconf *SysConf) ([]string,error) {
 			node++
 		}
 	}
+	sem.Acquire(ctx,conf.ThreadLimit)
+	sem.Release(conf.ThreadLimit)
 
 	return labels,nil
 }
