@@ -27,8 +27,6 @@ type SysConf struct {
 
 func NewConf(data map[string]interface{}) (*SysConf,error) {
 	out := new(SysConf)
-	out.RpcUser = "appo"
-	out.RpcPass = "w@ntest"
 
 	out.Options = []string{
 		"server",
