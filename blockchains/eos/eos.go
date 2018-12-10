@@ -11,29 +11,32 @@ import (
 	util "../../util"
 )
 
-const userAccounts = 100
 
 
-type EosCredentials struct {
-	BlockProducerKeyPairs			map[string]util.KeyPair
-	UserKeyPairs					map[string]util.KeyPair
-	ContractKeyPairs				map[string]util.KeyPair
-	BlockProducerWalletPassword		string
-	MainWalletPassword				string
-	WalletPasswords					map[string]string
+var conf *util.Config
+
+func init(){
+	conf = util.GetConfig()
 }
+
 /**
  * Setup the EOS test net
  * @param  int		nodes		The number of producers to make
  * @param  []Server servers		The list of relevant servers
  */
-func Eos(nodes int,servers []db.Server) EosCredentials {
+func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,error) {
 	blockProducers := nodes
 	if(blockProducers > 22){
 		blockProducers = 22;
 	}
+	eosconf,err := NewConf(data)
+	if err != nil {
+		return nil,err
+	} 
 	fmt.Println("-------------Setting Up EOS-------------")
+	sem := semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
+
 	masterIP := servers[0].Ips[0]
 	masterServerIP := servers[0].Addr
 	
@@ -41,9 +44,9 @@ func Eos(nodes int,servers []db.Server) EosCredentials {
 	util.SshExec(masterServerIP,fmt.Sprintf("docker exec -d whiteblock-node0 keosd --http-server-address 0.0.0.0:8900"))
 	util.SshExec(masterServerIP,fmt.Sprintf("docker exec -d whiteblock-node1 keosd --http-server-address 0.0.0.0:8900"))	
 	
-	password := eos_createWallet(masterServerIP,0)//create the one and only wallet
+	//
 
-	passwordNormal := eos_createWallet(masterServerIP,1)
+	
 
 	clientPasswords := make(map[string]string)
 
@@ -70,7 +73,7 @@ func Eos(nodes int,servers []db.Server) EosCredentials {
 	masterKeyPair := keyPairs[servers[0].Ips[0]]
 
 	var accountNames []string
-	for i := 0; i < userAccounts; i++{
+	for i := 0; i < int(eosconf.UserAccounts); i++{
 		accountNames = append(accountNames,eos_getRegularName(i))
 	}
 	accountKeyPairs := eos_getUserAccountKeyPairs(masterServerIP,accountNames)
@@ -80,14 +83,10 @@ func Eos(nodes int,servers []db.Server) EosCredentials {
 
 	
 	{
-		nodes := 0
-		sem := semaphore.NewWeighted(40)
+		
 		for _, server := range servers {
 			for i,ip := range server.Ips {
-				if nodes < 2 {
-					nodes++
-					continue
-				}
+				
 				util.SshExec(server.Addr,fmt.Sprintf("docker exec -d whiteblock-node%d keosd --http-server-address 0.0.0.0:8900",i))
 				clientPasswords[ip] = eos_createWallet(server.Addr, i)
 				sem.Acquire(ctx,1)
@@ -103,9 +102,11 @@ func Eos(nodes int,servers []db.Server) EosCredentials {
 
 			}
 		}
-		sem.Acquire(ctx,40)
-		sem.Release(40)
+		sem.Acquire(ctx,conf.ThreadLimit)
+		sem.Release(conf.ThreadLimit)
 	}
+	password := clientPasswords[servers[0].Ips[0]]
+	passwordNormal := clientPasswords[servers[0].Ips[1]]
 
 	{
 		var wg sync.WaitGroup
@@ -128,6 +129,10 @@ func Eos(nodes int,servers []db.Server) EosCredentials {
 		}
 		wg.Wait()
 	}
+	defer func(){
+		util.Rm("./genesis.json")
+		util.Rm("./config.ini")
+	}()
 
 	/**Step 2d**/
 	{
@@ -211,7 +216,6 @@ func Eos(nodes int,servers []db.Server) EosCredentials {
 
 	/**Step 10a**/
 	{
-		sem := semaphore.NewWeighted(10)
 		node := 0
 		for _, server := range servers {
 			for _, ip := range server.Ips {
@@ -248,13 +252,12 @@ func Eos(nodes int,servers []db.Server) EosCredentials {
 				node++
 			}
 		}
-		sem.Acquire(ctx,10)
-		sem.Release(10)
+		sem.Acquire(ctx,conf.ThreadLimit)
+		sem.Release(conf.ThreadLimit)
 	}
 	
 	/**Step 11c**/
 	{
-		sem := semaphore.NewWeighted(10)
 		node := 0
 		for _, server := range servers {
 			for i, ip := range server.Ips {
@@ -290,8 +293,8 @@ func Eos(nodes int,servers []db.Server) EosCredentials {
 				node++
 			}
 		}
-		sem.Acquire(ctx,10)
-		sem.Release(10)
+		sem.Acquire(ctx,conf.ThreadLimit)
+		sem.Release(conf.ThreadLimit)
 	}
 
 	/**Step 11a**/
@@ -333,8 +336,6 @@ func Eos(nodes int,servers []db.Server) EosCredentials {
 
 	/**Create normal user accounts**/
 	{
-		sem := semaphore.NewWeighted(10)
-		
 		
 		for _, name := range accountNames {
 			sem.Acquire(ctx,1)
@@ -359,8 +360,8 @@ func Eos(nodes int,servers []db.Server) EosCredentials {
 							name)))
 			}(masterServerIP,name,masterKeyPair,accountKeyPairs[name])
 		}
-		sem.Acquire(ctx,10)
-		sem.Release(10)
+		sem.Acquire(ctx,conf.ThreadLimit)
+		sem.Release(conf.ThreadLimit)
 	}
 	/**Vote in block producers**/
 	{	
@@ -397,8 +398,8 @@ func Eos(nodes int,servers []db.Server) EosCredentials {
 			}(masterServerIP,masterIP,name,prod)
 			n++;
 		}
-		sem.Acquire(ctx,10)
-		sem.Release(10)
+		sem.Acquire(ctx,conf.ThreadLimit)
+		sem.Release(conf.ThreadLimit)
 	}
 	
 	/**Step 12**/
@@ -472,23 +473,11 @@ func Eos(nodes int,servers []db.Server) EosCredentials {
 
 
 
-	util.Write("eos_info.txt",
+	/*util.Write("eos_info.txt",
 		fmt.Sprintf("Account Key Pairs \n%+v\n\nContract Key Pairs\n%+v\n\nWallet Password\n%s\n\nWallet Password2\n%s\n\nRest of Wallets%v\n\n\n\n",
-			keyPairs,contractKeyPairs,password,passwordNormal,clientPasswords))
+			keyPairs,contractKeyPairs,password,passwordNormal,clientPasswords))*/
 
-
-	util.Rm("./genesis.json")
-	util.Rm("./config.ini")
-
-	return EosCredentials{
-		BlockProducerKeyPairs : keyPairs,
-		UserKeyPairs : accountKeyPairs,
-		ContractKeyPairs : contractKeyPairs,
-		BlockProducerWalletPassword : password,
-		MainWalletPassword : passwordNormal,
-		WalletPasswords : clientPasswords,
-	}
-	
+	return nil,nil
 }
 func eos_getKeyPair(serverIP string) util.KeyPair {
 	data := util.SshExec(serverIP, "docker exec whiteblock-node0 cleos create key --to-console | awk '{print $3}'")
@@ -632,12 +621,10 @@ func eos_createConf(servers []db.Server, keyPair util.KeyPair) {
 	constantEntries := []string{
 		"bnet-endpoint = 0.0.0.0:4321",
 		"bnet-no-trx = false",
-		"blocks-dir = /datadir/blocks/",
+		
 		"chain-state-db-size-mb = 8192",
 		"reversible-blocks-db-size-mb = 340",
 		"contracts-console = false",
-		"https-client-validate-peers = 0",
-		"access-control-allow-credentials = false",
 		"p2p-max-nodes-per-host = 4",
 		"allowed-connection = any",
 		"max-clients = 0",//no limit
@@ -651,6 +638,10 @@ func eos_createConf(servers []db.Server, keyPair util.KeyPair) {
 		"max-irreversible-block-age = -1",
 		"keosd-provider-timeout = 5",
 		"txn-reference-block-lag = 0",
+		
+		"blocks-dir = /datadir/blocks/",
+		"https-client-validate-peers = 0",
+		"access-control-allow-credentials = false",
 		"http-server-address = 0.0.0.0:8889",
 		"p2p-listen-endpoint = 0.0.0.0:8999",
 		/*"agent-name = \"EOS Test Agent\"",*/ 

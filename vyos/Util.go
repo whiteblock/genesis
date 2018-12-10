@@ -4,6 +4,7 @@ package vyos
 import (
 	"fmt"
 	"regexp"
+	"log"
 )
 
 
@@ -16,7 +17,10 @@ func GrabValue(indent int,term string,data string) string{
 	}
 	extractPattern := regexp.MustCompile(`([0-9|A-z]|\.|\/|:|\-|_)+`)
 	results := extractPattern.FindAllString(initResults[0],2)
-
+	if len(results) < 2 {
+		log.Println(fmt.Sprintf("Error, grab value results is: %v",results))
+		return ""
+	}
 	return results[1]
 }
 

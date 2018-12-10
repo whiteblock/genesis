@@ -58,7 +58,6 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server) ([]strin
 		sem3.Acquire(ctx,1)
 		go func(server db.Server){
 			for j,_ := range server.Ips {
-				fmt.Printf(".")
 				container := fmt.Sprintf("whiteblock-node%d",j)
 				execCmd := fmt.Sprintf("docker exec %s syscoind -daemon -conf=\"/syscoin/datadir/regtest.conf\" -datadir=\"/syscoin/datadir/\"",container)
 				util.SshExec(server.Addr,execCmd)
@@ -146,12 +145,12 @@ func handleConf(servers []db.Server, sysconf *SysConf) ([]string,error) {
 				confData += "rpcallowip=10.0.0.0/8\n"
 				confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
 				util.Write(fmt.Sprintf("./regtest%d.conf",node),confData)
-
 				util.Scp(server.Addr,fmt.Sprintf("./regtest%d.conf",node),fmt.Sprintf("/home/appo/regtest%d.conf",node))
 				container := fmt.Sprintf("whiteblock-node%d",node)
 				util.SshExec(server.Addr,fmt.Sprintf("docker exec %s mkdir -p /syscoin/datadir",container))
 				util.SshExec(server.Addr,fmt.Sprintf("docker cp /home/appo/regtest%d.conf %s:/syscoin/datadir/regtest.conf",node,container))
 				util.Rm(fmt.Sprintf("./regtest%d.conf",node))
+				util.SshExec(server.Addr,fmt.Sprintf("rm /home/appo/regtest%d.conf",node))
 				sem.Release(1)
 				
 			}(node)

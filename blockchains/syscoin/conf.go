@@ -6,8 +6,6 @@ import(
 )
 
 type SysConf struct {
-	RpcUser			string		`json:"rpcUser"`
-	RpcPass			string 		`json:"rpcPass"`
 	Options			[]string	`json:"options"`
 	Extras			[]string	`json:"extras"`
 
@@ -69,25 +67,6 @@ func NewConf(data map[string]interface{}) (*SysConf,error) {
 	}
 	var err error
 
-	rpcUser,exists := data["rpcUser"]
-	if exists {
-		switch rpcUser.(type){
-			case string:
-				out.RpcUser = rpcUser.(string)
-			default:
-				return nil,errors.New("Incorrect type for rpcUser given")
-		}
-	}
-
-	rpcPass,exists := data["rpcPass"]
-	if exists {
-		switch rpcPass.(type) {
-			case string:
-				out.RpcPass = rpcPass.(string)
-			default:
-				return nil,errors.New("Incorrect type for rpcPass given")
-		}
-	}
 
 	options,exists := data["options"]
 	if exists && options != nil {
@@ -211,8 +190,8 @@ func NewConf(data map[string]interface{}) (*SysConf,error) {
 } 
 
 func (this *SysConf) Generate() string {
-	out := "rpcuser="+this.RpcUser+"\n"
-	out += "rpcpassword="+this.RpcPass+"\n"
+	out := "rpcuser=appo\n"
+	out += "rpcpassword=w@ntest\n"
 	
 	for _,opt := range this.Options {
 		out += opt +"=1\n"
@@ -267,8 +246,6 @@ func (this *SysConf) GenerateMN() string {
 
 func GetParams() string {
 	return `[
-	{"rpcUser":"string"},
-	{"rpcPass":"string"},
 	{"options":"[]string"},
 	{"extras":"[]string"},
 	{"senderOptions":"[]string"},
