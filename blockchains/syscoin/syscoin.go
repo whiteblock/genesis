@@ -142,7 +142,7 @@ func handleConf(servers []db.Server, sysconf *SysConf) ([]string,error) {
 					confData += fmt.Sprintf("connect=%s:8370\n",conn)
 					maxConns += 4
 				}
-				confData += "rpcallowip=10.0.0.0/8\n"
+				confData += "rpcallowip=0.0.0.0/0\n"
 				confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
 				util.Write(fmt.Sprintf("./regtest%d.conf",node),confData)
 				util.Scp(server.Addr,fmt.Sprintf("./regtest%d.conf",node),fmt.Sprintf("/home/appo/regtest%d.conf",node))

@@ -5,43 +5,44 @@ import(
 )
 
 type EosConf struct{
-	UserAccounts					int64	`json:"userAccounts"`
-	BlockProducers					int64	`json:"blockProducers"`
+	UserAccounts					int64		`json:"userAccounts"`
+	BlockProducers					int64		`json:"blockProducers"`
 	
-	MaxBlockNetUsage				int64	`json:"maxBlockNetUsage"`
-	TargetBlockNetUsagePct			int64	`json:"targetBlockNetUsagePct"`
-	MaxTransactionNetUsage			int64	`json:"maxTransactionNetUsage"`
-	BasePerTransactionNetUsage		int64	`json:"basePerTransactionNetUsage"`
-	NetUsageLeeway					int64	`json:"netUsageLeeway"`
-	ContextFreeDiscountNetUsageNum	int64	`json:"contextFreeDiscountNetUsageNum"`
-	ContextFreeDiscountNetUsageDen	int64	`json:"contextFreeDiscountNetUsageDen"`
-	MaxBlockCpuUsage				int64	`json:"maxBlockCpuUsage"`
-	TargetBlockCpuUsagePct			int64	`json:"targetBlockCpuUsagePct"`
-	MaxTransactionCpuUsage			int64	`json:"maxTransactionCpuUsage"`
-	MinTransactionCpuUsage			int64	`json:"minTransactionCpuUsage"`
-	MaxTransactionLifetime			int64	`json:"maxTransactionLifetime"`
-	DeferredTrxExpirationWindow		int64	`json:"deferredTrxExpirationWindow"`
-	MaxTransactionDelay				int64	`json:"maxTransactionDelay"`
-	MaxInlineActionSize				int64	`json:"maxInlineActionSize"`
-	MaxInlineActionDepth			int64	`json:"maxInlineActionDepth"`
-	MaxAuthorityDepth				int64	`json:"maxAuthorityDepth"`
-	InitialChainId					string	`json:"initialChainId"`
+	MaxBlockNetUsage				int64		`json:"maxBlockNetUsage"`
+	TargetBlockNetUsagePct			int64		`json:"targetBlockNetUsagePct"`
+	MaxTransactionNetUsage			int64		`json:"maxTransactionNetUsage"`
+	BasePerTransactionNetUsage		int64		`json:"basePerTransactionNetUsage"`
+	NetUsageLeeway					int64		`json:"netUsageLeeway"`
+	ContextFreeDiscountNetUsageNum	int64		`json:"contextFreeDiscountNetUsageNum"`
+	ContextFreeDiscountNetUsageDen	int64		`json:"contextFreeDiscountNetUsageDen"`
+	MaxBlockCpuUsage				int64		`json:"maxBlockCpuUsage"`
+	TargetBlockCpuUsagePct			int64		`json:"targetBlockCpuUsagePct"`
+	MaxTransactionCpuUsage			int64		`json:"maxTransactionCpuUsage"`
+	MinTransactionCpuUsage			int64		`json:"minTransactionCpuUsage"`
+	MaxTransactionLifetime			int64		`json:"maxTransactionLifetime"`
+	DeferredTrxExpirationWindow		int64		`json:"deferredTrxExpirationWindow"`
+	MaxTransactionDelay				int64		`json:"maxTransactionDelay"`
+	MaxInlineActionSize				int64		`json:"maxInlineActionSize"`
+	MaxInlineActionDepth			int64		`json:"maxInlineActionDepth"`
+	MaxAuthorityDepth				int64		`json:"maxAuthorityDepth"`
+	InitialChainId					string		`json:"initialChainId"`
 
-	ChainStateDbSizeMb				int64	`json:"chainStateDbSizeMb"`
-	ReversibleBlocksDbSizeMb		int64	`json:"reversibleBlocksDbSizeMb"`
-	ContractsConsole				bool	`json:"contractsConsole"`
-	P2pMaxNodesPerHost				int64	`json:"p2pMaxNodesPerHost"`
-	AllowedConnection				string	`json:"allowedConnection"`
-	MaxClients						int64	`json:"maxClients"`
-	ConnectionCleanupPeriod			int64	`json:"connectionCleanupPeriod"`
-	NetworkVersionMatch				int64	`json:"networkVersionMatch"`
-	SyncFetchSpan					int64	`json:"syncFetchSpan"`
-	MaxImplicitRequest				int64	`json:"maxImplicitRequest"`
-	PauseOnStartup					bool	`json:"pauseOnStartup"`
-	MaxTransactionTime				int64	`json:"maxTransactionTime"`
-	MaxIrreversibleBlockAge			int64	`json:"maxIrreversibleBlockAge"`
-	KeosdProviderTimeout			int64	`json:"keosdProviderTimeout"`
-	TxnReferenceBlockLag			int64	`json:"txnReferenceBlockLag"`
+	ChainStateDbSizeMb				int64		`json:"chainStateDbSizeMb"`
+	ReversibleBlocksDbSizeMb		int64		`json:"reversibleBlocksDbSizeMb"`
+	ContractsConsole				bool		`json:"contractsConsole"`
+	P2pMaxNodesPerHost				int64		`json:"p2pMaxNodesPerHost"`
+	AllowedConnection				string		`json:"allowedConnection"`
+	MaxClients						int64		`json:"maxClients"`
+	ConnectionCleanupPeriod			int64		`json:"connectionCleanupPeriod"`
+	NetworkVersionMatch				int64		`json:"networkVersionMatch"`
+	SyncFetchSpan					int64		`json:"syncFetchSpan"`
+	MaxImplicitRequest				int64		`json:"maxImplicitRequest"`
+	PauseOnStartup					bool		`json:"pauseOnStartup"`
+	MaxTransactionTime				int64		`json:"maxTransactionTime"`
+	MaxIrreversibleBlockAge			int64		`json:"maxIrreversibleBlockAge"`
+	KeosdProviderTimeout			int64		`json:"keosdProviderTimeout"`
+	TxnReferenceBlockLag			int64		`json:"txnReferenceBlockLag"`
+	Plugins							[]string	`json:"plugins"`
 }
 
 func NewConf(data map[string]interface{}) (*EosConf,error){
@@ -86,8 +87,16 @@ func GetDefaults() string{
 	"maxImplicitRequest":1500,
 	"pauseOnStartup":false,
 	"keosdProviderTimeout":5,
-	"txnReferenceBlockLag":0
-
+	"txnReferenceBlockLag":0,
+	"plugins":[
+		"eosio::chain_plugin",
+		"eosio::chain_api_plugin",
+		"eosio::producer_plugin",
+		"eosio::http_plugin",
+		"eosio::history_api_plugin",
+		"eosio::net_plugin",
+		"eosio::net_api_plugin"
+	]
 }`
 }
 
