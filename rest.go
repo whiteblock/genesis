@@ -18,6 +18,7 @@ func StartServer() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/servers/", getAllServerInfo).Methods("GET")
+	router.HandleFunc("/servers", getAllServerInfo).Methods("GET")
 
 	router.HandleFunc("/servers/{name}", addNewServer).Methods("PUT") //Private
 
@@ -26,7 +27,10 @@ func StartServer() {
 	router.HandleFunc("/servers/{id}", updateServerInfo).Methods("UPDATE") //Private
 
 	router.HandleFunc("/testnets/", getAllTestNets).Methods("GET")
+	router.HandleFunc("/testnets", getAllTestNets).Methods("GET")
+
 	router.HandleFunc("/testnets/", createTestNet).Methods("POST") //Create new test net
+	router.HandleFunc("/testnets", createTestNet).Methods("POST") //Create new test net
 
 	router.HandleFunc("/switches/", getAllSwitchesInfo).Methods("GET")
 
@@ -47,6 +51,9 @@ func StartServer() {
 
 	router.HandleFunc("/params/{blockchain}",getBlockChainParams).Methods("GET")
 	router.HandleFunc("/params/{blockchain}/",getBlockChainParams).Methods("GET")
+
+	router.HandleFunc("/state/{blockchain}",getBlockChainState).Methods("GET")
+	router.HandleFunc("/state/{blockchain}/",getBlockChainState).Methods("GET")
 
 	http.ListenAndServe(conf.Listen, router)
 }
@@ -285,4 +292,19 @@ func buildStatus(w http.ResponseWriter,r *http.Request){
 func getBlockChainParams(w http.ResponseWriter,r *http.Request){
 	params := mux.Vars(r)
 	w.Write([]byte(GetParams(params["blockchain"])))
+}
+
+func getBlockChainState(w http.ResponseWriter,r *http.Request){
+	params := mux.Vars(r)
+	blockchain := params["blockchain"]
+	switch blockchain {
+		case "eos":
+			data := state.GetEosState()
+			if data == nil{
+				w.Write([]byte("No state availible for eos"))
+			}
+			json.NewEncoder(w).Encode(*data)
+			return
+	}
+	w.Write([]byte("Unknown blockchain "+ blockchain))
 }

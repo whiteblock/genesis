@@ -11,8 +11,6 @@ import (
 	util "../../util"
 )
 
-
-
 var conf *util.Config
 
 func init(){
@@ -25,28 +23,19 @@ func init(){
  * @param  []Server servers		The list of relevant servers
  */
 func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,error) {
-	blockProducers := nodes
-	if(blockProducers > 22){
-		blockProducers = 22;
-	}
+	
 	eosconf,err := NewConf(data)
 	if err != nil {
 		return nil,err
-	} 
+	}
+	eosconf.BlockProducers++
+
 	fmt.Println("-------------Setting Up EOS-------------")
 	sem := semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
 
 	masterIP := servers[0].Ips[0]
 	masterServerIP := servers[0].Addr
-	
-	/**Start keosd**/
-	util.SshExec(masterServerIP,fmt.Sprintf("docker exec -d whiteblock-node0 keosd --http-server-address 0.0.0.0:8900"))
-	util.SshExec(masterServerIP,fmt.Sprintf("docker exec -d whiteblock-node1 keosd --http-server-address 0.0.0.0:8900"))	
-	
-	//
-
-	
 
 	clientPasswords := make(map[string]string)
 
@@ -78,15 +67,14 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	}
 	accountKeyPairs := eos_getUserAccountKeyPairs(masterServerIP,accountNames)
 
-	eos_createGenesis(keyPairs[masterIP].PublicKey)
-	eos_createConf(servers,keyPairs[masterIP])
-
+	util.Write("genesis.json", eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey))
+	util.Write("config.ini", eosconf.GenerateConfig())
 	
 	{
 		
 		for _, server := range servers {
 			for i,ip := range server.Ips {
-				
+				/**Start keosd**/
 				util.SshExec(server.Addr,fmt.Sprintf("docker exec -d whiteblock-node%d keosd --http-server-address 0.0.0.0:8900",i))
 				clientPasswords[ip] = eos_createWallet(server.Addr, i)
 				sem.Acquire(ctx,1)
@@ -119,12 +107,13 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 				util.Scp(serverIP, "./config.ini", "/home/appo/config.ini")
 
 				for i := 0; i < len(ips); i++ {
-					
 					util.SshExecIgnore(serverIP, fmt.Sprintf("docker exec whiteblock-node%d mkdir /datadir/", i))
 					util.SshExec(serverIP, fmt.Sprintf("docker cp /home/appo/genesis.json whiteblock-node%d:/datadir/", i))
 					util.SshExec(serverIP, fmt.Sprintf("docker cp /home/appo/config.ini whiteblock-node%d:/datadir/", i))
 					node++
 				}
+				util.SshExec(serverIP,fmt.Sprintf("rm /home/appo/genesis.json"))
+				util.SshExec(serverIP,fmt.Sprintf("rm /home/appo/config.ini"))
 			}(server.Addr,server.Ips)
 		}
 		wg.Wait()
@@ -231,7 +220,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 						util.SshExec(masterServerIP,
 							fmt.Sprintf("docker exec whiteblock-node0 cleos wallet import --private-key %s",
 								keyPair.PrivateKey)))
-					if node < blockProducers {
+					if node < eosconf.BlockProducers {
 						fmt.Println(
 							util.SshExec(masterServerIP,
 								fmt.Sprintf(`docker exec whiteblock-node0 cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "1000000.0000 SYS" --stake-cpu "1000000.0000 SYS" --buy-ram "1000000 SYS"`,
@@ -245,8 +234,6 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 									masterIP,
 									eos_getProducerName(node))))
 					}
-
-					
 					
 				}(masterServerIP,masterKeyPair,keyPairs[ip],node)
 				node++
@@ -272,7 +259,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 					defer sem.Release(1)
 					util.SshExecIgnore(serverIP, fmt.Sprintf("docker exec whiteblock-node%d mkdir -p /datadir/blocks", i))
 					p2pFlags := eos_getPTPFlags(servers,node)
-					if node > blockProducers {
+					if node > eosconf.BlockProducers {
 						fmt.Println(
 							util.SshExec(serverIP,
 								fmt.Sprintf(`docker exec -d whiteblock-node%d nodeos --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s`,
@@ -306,7 +293,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 				if node == 0 {
 					node++
 					continue
-				}else if node >= blockProducers {
+				}else if node >= eosconf.BlockProducers {
 					break
 				}
 
@@ -342,10 +329,6 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 			go func(masterServerIP string,name string,masterKeyPair util.KeyPair,accountKeyPair util.KeyPair){
 				defer sem.Release(1)
 				fmt.Println(
-							util.SshExec(masterServerIP,
-								fmt.Sprintf("docker exec whiteblock-node1 cleos wallet import --private-key %s",
-									accountKeyPair.PrivateKey)))
-				fmt.Println(
 					util.SshExec(masterServerIP,
 						fmt.Sprintf(`docker exec whiteblock-node0 cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "500000.0000 SYS" --stake-cpu "2000000.0000 SYS" --buy-ram "2000000 SYS"`,
 							masterIP,
@@ -371,8 +354,8 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 				node++
 			}
 		}
-		if(node > blockProducers){
-			node = blockProducers
+		if(node > eosconf.BlockProducers){
+			node = eosconf.BlockProducers
 		}
 		util.SshExecIgnore(masterServerIP, fmt.Sprintf("docker exec whiteblock-node1 cleos -u http://%s:8889 wallet unlock --password %s",
 				masterIP, passwordNormal))
@@ -470,14 +453,15 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 
 
 
+	out := []string{}
 
+	for _, server := range servers {
+		for _, ip := range server.Ips {
+			out = append(out,clientPasswords[ip])
+		}
+	}
 
-
-	/*util.Write("eos_info.txt",
-		fmt.Sprintf("Account Key Pairs \n%+v\n\nContract Key Pairs\n%+v\n\nWallet Password\n%s\n\nWallet Password2\n%s\n\nRest of Wallets%v\n\n\n\n",
-			keyPairs,contractKeyPairs,password,passwordNormal,clientPasswords))*/
-
-	return nil,nil
+	return out,nil
 }
 func eos_getKeyPair(serverIP string) util.KeyPair {
 	data := util.SshExec(serverIP, "docker exec whiteblock-node0 cleos create key --to-console | awk '{print $3}'")
@@ -577,99 +561,13 @@ func eos_createWallet(serverIP string, id int) string {
 	return data
 }
 
-
-func eos_createGenesis(masterPublicKey string) {
-	genesisData := fmt.Sprintf (
-`{
-	"initial_timestamp": "2018-10-07T12:11:00.000",
-	"initial_key": "%s",
-	"initial_configuration": {
-		"max_block_net_usage": 1048576,
-		"target_block_net_usage_pct": 1000,
-		"max_transaction_net_usage": 524288,
-		"base_per_transaction_net_usage": 12,
-		"net_usage_leeway": 500,
-		"context_free_discount_net_usage_num": 20,
-		"context_free_discount_net_usage_den": 100,
-		"max_block_cpu_usage": 100000,
-		"target_block_cpu_usage_pct": 500,
-		"max_transaction_cpu_usage": 50000,
-		"min_transaction_cpu_usage": 100,
-		"max_transaction_lifetime": 3600,
-		"deferred_trx_expiration_window": 600,
-		"max_transaction_delay": 3888000,
-		"max_inline_action_size": 4096,
-		"max_inline_action_depth": 4,
-		"max_authority_depth": 6
-	},
-	"initial_chain_id": "6469636b627574740a"
-}`, masterPublicKey)
-
-	util.Write("genesis.json", genesisData)
-}
-
 func eos_getKeyPairFlag(keyPair util.KeyPair) string {
 	return fmt.Sprintf("--private-key '[ \"%s\",\"%s\" ]'", keyPair.PublicKey, keyPair.PrivateKey)
 }
 
-
-/**
- * Create the Config file for the EOS Nodes
- * @param  []Server servers The list of servers
- */
-func eos_createConf(servers []db.Server, keyPair util.KeyPair) {
-	constantEntries := []string{
-		"bnet-endpoint = 0.0.0.0:4321",
-		"bnet-no-trx = false",
-		
-		"chain-state-db-size-mb = 8192",
-		"reversible-blocks-db-size-mb = 340",
-		"contracts-console = false",
-		"p2p-max-nodes-per-host = 4",
-		"allowed-connection = any",
-		"max-clients = 0",//no limit
-		"connection-cleanup-period = 30",
-		"network-version-match = 0",
-		"sync-fetch-span = 100",
-		"max-implicit-request = 1500",
-		/*"enable-stale-production = true",*/
-		"pause-on-startup = false",
-		"max-transaction-time = 30",
-		"max-irreversible-block-age = -1",
-		"keosd-provider-timeout = 5",
-		"txn-reference-block-lag = 0",
-		
-		"blocks-dir = /datadir/blocks/",
-		"https-client-validate-peers = 0",
-		"access-control-allow-credentials = false",
-		"http-server-address = 0.0.0.0:8889",
-		"p2p-listen-endpoint = 0.0.0.0:8999",
-		/*"agent-name = \"EOS Test Agent\"",*/ 
-		"plugin = eosio::chain_plugin",
-		"plugin = eosio::chain_api_plugin",
-		"plugin = eosio::producer_plugin",
-		"plugin = eosio::http_plugin",
-		"plugin = eosio::history_api_plugin",
-		"plugin = eosio::net_plugin",
-		"plugin = eosio::net_api_plugin",
-	}
-	confData := util.CombineConfig(constantEntries)
-	/*for _, server := range servers {
-		for _, ip := range server.ips {
-			confData += fmt.Sprintf("p2p-peer-address = %s:8999\n", ip)
-		}
-	}*/
-	util.Write("config.ini", confData)
-}
-
-
 func eos_getProducerName(num int) string {
-	switch(num){
-		case 0:
-			return "eosio"
-	}
 	if num == 0 {
-		
+		return "eosio"
 	}
 	out := ""
 

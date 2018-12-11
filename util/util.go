@@ -9,6 +9,7 @@ import (
 	"errors"
 	"math/rand"
 	"time"
+	"encoding/json"
 	//"golang.org/x/sys/unix"
 )
 
@@ -260,4 +261,86 @@ func Distribute(nodes []string,dist []int) ([][]string,error){
 		out = append(out,conns)
 	}
 	return out,nil
+}
+
+
+func GetJSONNumber(data map[string]interface{},field string) (json.Number,error){
+	rawValue,exists := data[field]
+	if exists && rawValue != nil {
+		switch rawValue.(type){
+			case json.Number:
+				value,valid := rawValue.(json.Number)
+				if !valid {
+					return "",errors.New("Invalid json number")
+				}
+				return value,nil
+				
+		}
+	}
+	return "",errors.New("Incorrect type for "+field+" given")
+}
+
+
+func GetJSONInt64(data map[string]interface{},field string) (int64,error){
+	rawValue,exists := data[field]
+	if exists && rawValue != nil {
+		switch rawValue.(type){
+			case json.Number:
+				value,err := rawValue.(json.Number).Int64()
+				if err != nil {
+					return 0,err
+				}
+				return value,nil
+				
+		}
+	}
+	return 0,errors.New("Incorrect type for "+field+" given")
+}
+
+func GetJSONStringArr(data map[string]interface{},field string) ([]string,error){
+	rawValue,exists := data[field]
+	if exists && rawValue != nil {
+		switch rawValue.(type){
+			case []string:
+				value,valid := rawValue.([]string)
+				if !valid {
+					return nil,errors.New("Invalid string array")
+				}
+				return value,nil
+				
+		}
+	}
+	return nil,errors.New("Incorrect type for "+field+" given")
+}
+
+func GetJSONString(data map[string]interface{},field string) (string,error){
+	rawValue,exists := data[field]
+	if exists && rawValue != nil {
+		switch rawValue.(type){
+			case string:
+				value,valid := rawValue.(string)
+				if !valid {
+					return "",errors.New("Invalid string")
+				}
+				return value,nil
+				
+		}
+	}
+	return "",errors.New("Incorrect type for "+field+" given")
+}
+
+func GetJSONBool(data map[string]interface{},field string) (bool,error){
+	rawValue,exists := data[field]
+	if exists && rawValue != nil {
+		switch rawValue.(type){
+			case bool:
+				value,valid := rawValue.(bool)
+				if !valid {
+					return false,errors.New("Invalid bool")
+				}
+				return value,nil
+				
+		}
+	}
+	return false,errors.New("Incorrect type for "+field+" given")
 }
