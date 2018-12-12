@@ -290,7 +290,9 @@ func buildStatus(w http.ResponseWriter,r *http.Request){
 
 
 func getBlockChainParams(w http.ResponseWriter,r *http.Request){
+
 	params := mux.Vars(r)
+	log.Println("GET PARAMS : "+params["blockchain"])
 	w.Write([]byte(GetParams(params["blockchain"])))
 }
 

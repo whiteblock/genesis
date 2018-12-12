@@ -134,7 +134,8 @@ func GetParams(blockchain string) string {
 			return eth.GetParams()
 		case "syscoin":
 			return sys.GetParams()
-
+		case "eos":
+			return eos.GetParams()
 		default:
 			return "[]"
 	}

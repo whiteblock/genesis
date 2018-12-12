@@ -32,7 +32,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 
 	fmt.Println("-------------Setting Up EOS-------------")
 	sem := semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
+	
 
 	masterIP := servers[0].Ips[0]
 	masterServerIP := servers[0].Addr
@@ -71,7 +71,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	util.Write("config.ini", eosconf.GenerateConfig())
 	
 	{
-		
+		ctx := context.TODO()
 		for _, server := range servers {
 			for i,ip := range server.Ips {
 				/**Start keosd**/
@@ -97,12 +97,12 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	passwordNormal := clientPasswords[servers[0].Ips[1]]
 
 	{
-		var wg sync.WaitGroup
+		ctx := context.TODO()
 		node := 0
 		for _, server := range servers {
-			wg.Add(1)
+			sem.Acquire(ctx,1)
 			go func(serverIP string, ips []string){
-				defer wg.Done()
+				defer sem.Release(1)
 				util.Scp(serverIP, "./genesis.json", "/home/appo/genesis.json")
 				util.Scp(serverIP, "./config.ini", "/home/appo/config.ini")
 
@@ -116,7 +116,8 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 				util.SshExec(serverIP,fmt.Sprintf("rm /home/appo/config.ini"))
 			}(server.Addr,server.Ips)
 		}
-		wg.Wait()
+		sem.Acquire(ctx,conf.ThreadLimit)
+		sem.Release(conf.ThreadLimit)
 	}
 	defer func(){
 		util.Rm("./genesis.json")
@@ -139,13 +140,13 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 
 	/**Step 3**/
 	{
-		var wg sync.WaitGroup
+		ctx := context.TODO()
 		util.SshExecIgnore(masterServerIP, fmt.Sprintf("docker exec whiteblock-node0 cleos -u http://%s:8889 wallet unlock --password %s",
 			masterIP, password))
 		for _, account := range contractAccounts {
-			wg.Add(1)
+			sem.Acquire(ctx,1)
 			go func(masterServerIP string,masterIP string,account string,masterKeyPair util.KeyPair,contractKeyPair util.KeyPair){
-				defer wg.Done()
+				defer sem.Release(1)
 				
 				
 				util.SshExec(masterServerIP, fmt.Sprintf("docker exec whiteblock-node0 cleos wallet import --private-key %s", 
@@ -157,7 +158,9 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 			}(masterServerIP,masterIP,account,masterKeyPair,contractKeyPairs[account])
 
 		}
-		wg.Wait()
+		sem.Acquire(ctx,conf.ThreadLimit)
+		sem.Release(conf.ThreadLimit)
+		
 	}
 	/**Steps 4 and 5**/
 	{
@@ -205,6 +208,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 
 	/**Step 10a**/
 	{
+		ctx := context.TODO()
 		node := 0
 		for _, server := range servers {
 			for _, ip := range server.Ips {
@@ -245,6 +249,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	
 	/**Step 11c**/
 	{
+		ctx := context.TODO()
 		node := 0
 		for _, server := range servers {
 			for i, ip := range server.Ips {
@@ -323,7 +328,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 
 	/**Create normal user accounts**/
 	{
-		
+		ctx := context.TODO()
 		for _, name := range accountNames {
 			sem.Acquire(ctx,1)
 			go func(masterServerIP string,name string,masterKeyPair util.KeyPair,accountKeyPair util.KeyPair){
@@ -348,6 +353,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	}
 	/**Vote in block producers**/
 	{	
+		ctx := context.TODO()
 		node := 0
 		for _, server := range servers {
 			for range server.Ips {			
@@ -360,7 +366,6 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 		util.SshExecIgnore(masterServerIP, fmt.Sprintf("docker exec whiteblock-node1 cleos -u http://%s:8889 wallet unlock --password %s",
 				masterIP, passwordNormal))
 		n := 0
-		sem := semaphore.NewWeighted(10)
 		for _, name := range accountNames {
 			prod := 0
 			if n != 0 {
@@ -522,13 +527,14 @@ func eos_getContractKeyPairs(servers []db.Server,contractAccounts []string) map[
 func eos_getUserAccountKeyPairs(masterServerIP string,accountNames []string) map[string]util.KeyPair {
 
 	keyPairs := make(map[string]util.KeyPair)
-	sem := semaphore.NewWeighted(10)
+	sem := semaphore.NewWeighted(conf.ThreadLimit)
 	var mutex = &sync.Mutex{}
 	ctx := context.TODO()
 
 	for _,name := range accountNames {
 		sem.Acquire(ctx,1)
 		go func(serverIP string,name string){
+			defer sem.Release(1)
 			data := util.SshExec(serverIP, "docker exec whiteblock-node0 cleos create key --to-console | awk '{print $3}'")
 			//fmt.Printf("RAW KEY DATA%s\n", data)
 			keyPair := strings.Split(data, "\n")
@@ -539,11 +545,10 @@ func eos_getUserAccountKeyPairs(masterServerIP string,accountNames []string) map
 			mutex.Lock()
 			keyPairs[name] = util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]}
 			mutex.Unlock()
-			sem.Release(1)
 		}(masterServerIP,name)
 	}
-	sem.Acquire(ctx,10)
-	sem.Release(10)
+	sem.Acquire(ctx,conf.ThreadLimit)
+	sem.Release(conf.ThreadLimit)
 	return keyPairs
 }
 

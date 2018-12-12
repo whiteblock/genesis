@@ -390,7 +390,7 @@ func (this *EosConf) GenerateConfig() string {
 		"p2p-listen-endpoint = 0.0.0.0:8999",
 	}
 	for _,plugin := range this.Plugins{
-		out = append(out,plugin)
+		out = append(out,"plugin = " + plugin)
 	}
 	for _,extra := range this.ConfigExtras{
 		out = append(out,extra)
@@ -400,7 +400,7 @@ func (this *EosConf) GenerateConfig() string {
 
 func GetDefaults() string{
 	return `{
-	"userAccounts":100,
+	"userAccounts":200,
 	"blockProducers":21,
 	"maxBlockNetUsage":1048576,
 	"targetBlockNetUsagePct":1000,
@@ -442,4 +442,43 @@ func GetDefaults() string{
 		"eosio::net_api_plugin"
 	]
 }`
+}
+
+
+func GetParams() string{
+	return `[
+	{"userAccounts":"int"},
+	{"blockProducers":"int"},
+	{"maxBlockNetUsage":"int"},
+	{"targetBlockNetUsagePct":"int"},
+	{"maxTransactionNetUsage":"int"},
+	{"basePerTransactionNetUsage":"int"},
+	{"netUsageLeeway":"int"},
+	{"contextFreeDiscountNetUsageNum":"int"},
+	{"contextFreeDiscountNetUsageDen":"int"},
+	{"maxBlockCpuUsage":"int"},
+	{"targetBlockCpuUsagePct":"int"},
+	{"maxTransactionCpuUsage":"int"},
+	{"minTransactionCpuUsage":"int"},
+	{"maxTransactionLifetime":"int"},
+	{"deferredTrxExpirationWindow":"int"},
+	{"maxTransactionDelay":"int"},
+	{"maxInlineActionSize":"int"},
+	{"maxInlineActionDepth":"int"},
+	{"maxAuthorityDepth":"int"},
+	{"initialChainId":"string"},
+	{"chainStateDbSizeMb":"int"},
+	{"reversibleBlocksDbSizeMb":"int"},
+	{"contractsConsole":"bool"},
+	{"p2pMaxNodesPerHost":"int"},
+	{"allowedConnection":"string"},
+	{"maxClients":"int"},
+	{"connectionCleanupPeriod":"int"},
+	{"syncFetchSpan":"int"},
+	{"maxImplicitRequest":"int"},
+	{"pauseOnStartup":"bool"},
+	{"keosdProviderTimeout":"int"},
+	{"txnReferenceBlockLag":"int"},
+	{"plugins":"[]string"}
+]`
 }
