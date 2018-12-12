@@ -320,7 +320,7 @@ func NewConf(data map[string]interface{}) (*EosConf,error){
 func (this *EosConf) GenerateGenesis(masterPublicKey string) string {
 	return fmt.Sprintf (
 `{
-	"initial_timestamp": "2018-10-07T12:11:00.000",
+	"initial_timestamp": "2018-12-07T12:11:00.000",
 	"initial_key": "%s",
 	"initial_configuration": {
 		"max_block_net_usage": %d,
@@ -366,9 +366,13 @@ func (this *EosConf) GenerateGenesis(masterPublicKey string) string {
 
 func (this *EosConf) GenerateConfig() string {
 	out := []string{
+		"bnet-endpoint = 0.0.0.0:4321",
+		"bnet-no-trx = false",
+		"blocks-dir = /datadir/blocks/",
 		fmt.Sprintf("chain-state-db-size-mb = %d",this.ChainStateDbSizeMb),
 		fmt.Sprintf("reversible-blocks-db-size-mb = %d",this.ReversibleBlocksDbSizeMb),
 		fmt.Sprintf("contracts-console = %v",this.ContractsConsole),
+		"https-client-validate-peers = 0",
 		fmt.Sprintf("p2p-max-nodes-per-host = %d",this.P2pMaxNodesPerHost),
 		fmt.Sprintf("allowed-connection = %s",this.AllowedConnection),
 		fmt.Sprintf("max-clients = %d",this.MaxClients),
@@ -381,10 +385,7 @@ func (this *EosConf) GenerateConfig() string {
 		fmt.Sprintf("max-irreversible-block-age = %d",this.MaxIrreversibleBlockAge),
 		fmt.Sprintf("keosd-provider-timeout = %d",this.KeosdProviderTimeout),
 		fmt.Sprintf("txn-reference-block-lag = %d",this.TxnReferenceBlockLag),
-		"bnet-endpoint = 0.0.0.0:4321",
-		"bnet-no-trx = false",
-		"blocks-dir = /datadir/blocks/",
-		"https-client-validate-peers = 0",
+		
 		"access-control-allow-credentials = false",
 		"http-server-address = 0.0.0.0:8889",
 		"p2p-listen-endpoint = 0.0.0.0:8999",
@@ -409,9 +410,9 @@ func GetDefaults() string{
 	"netUsageLeeway":500,
 	"contextFreeDiscountNetUsageNum":20,
 	"contextFreeDiscountNetUsageDen":100,
-	"maxBlockCpuUsage":100000,
+	"maxBlockCpuUsage":1000000,
 	"targetBlockCpuUsagePct":500,
-	"maxTransactionCpuUsage":50000,
+	"maxTransactionCpuUsage":500000,
 	"minTransactionCpuUsage":100,
 	"maxTransactionLifetime":3600,
 	"deferredTrxExpirationWindow":600,
@@ -430,6 +431,8 @@ func GetDefaults() string{
 	"syncFetchSpan":100,
 	"maxImplicitRequest":1500,
 	"pauseOnStartup":false,
+	"maxTransactionTime":100,
+	"maxIrreversibleBlockAge":1000000,
 	"keosdProviderTimeout":5,
 	"txnReferenceBlockLag":0,
 	"plugins":[
@@ -477,6 +480,8 @@ func GetParams() string{
 	{"syncFetchSpan":"int"},
 	{"maxImplicitRequest":"int"},
 	{"pauseOnStartup":"bool"},
+	{"maxTransactionTime":"int"},
+	{"maxIrreversibleBlockAge":"int"},
 	{"keosdProviderTimeout":"int"},
 	{"txnReferenceBlockLag":"int"},
 	{"plugins":"[]string"}

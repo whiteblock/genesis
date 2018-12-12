@@ -32,7 +32,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 
 	fmt.Println("-------------Setting Up EOS-------------")
 	sem := semaphore.NewWeighted(conf.ThreadLimit)
-	
+	ctx := context.TODO()
 
 	masterIP := servers[0].Ips[0]
 	masterServerIP := servers[0].Addr
@@ -71,7 +71,6 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	util.Write("config.ini", eosconf.GenerateConfig())
 	
 	{
-		ctx := context.TODO()
 		for _, server := range servers {
 			for i,ip := range server.Ips {
 				/**Start keosd**/
@@ -97,7 +96,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	passwordNormal := clientPasswords[servers[0].Ips[1]]
 
 	{
-		ctx := context.TODO()
+		
 		node := 0
 		for _, server := range servers {
 			sem.Acquire(ctx,1)
@@ -140,7 +139,6 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 
 	/**Step 3**/
 	{
-		ctx := context.TODO()
 		util.SshExecIgnore(masterServerIP, fmt.Sprintf("docker exec whiteblock-node0 cleos -u http://%s:8889 wallet unlock --password %s",
 			masterIP, password))
 		for _, account := range contractAccounts {
@@ -155,6 +153,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 				util.SshExec(masterServerIP, fmt.Sprintf("docker exec whiteblock-node0 cleos -u http://%s:8889 create account eosio %s %s %s",
 					 masterIP, account,masterKeyPair.PublicKey,contractKeyPair.PublicKey))
 
+				//log.Println("Finished creating account for "+account)
 			}(masterServerIP,masterIP,account,masterKeyPair,contractKeyPairs[account])
 
 		}
@@ -208,7 +207,6 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 
 	/**Step 10a**/
 	{
-		ctx := context.TODO()
 		node := 0
 		for _, server := range servers {
 			for _, ip := range server.Ips {
@@ -249,7 +247,6 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	
 	/**Step 11c**/
 	{
-		ctx := context.TODO()
 		node := 0
 		for _, server := range servers {
 			for i, ip := range server.Ips {
@@ -328,7 +325,6 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 
 	/**Create normal user accounts**/
 	{
-		ctx := context.TODO()
 		for _, name := range accountNames {
 			sem.Acquire(ctx,1)
 			go func(masterServerIP string,name string,masterKeyPair util.KeyPair,accountKeyPair util.KeyPair){
@@ -353,7 +349,6 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	}
 	/**Vote in block producers**/
 	{	
-		ctx := context.TODO()
 		node := 0
 		for _, server := range servers {
 			for range server.Ips {			

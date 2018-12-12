@@ -3,6 +3,7 @@ package syscoin
 import(
 	"errors"
 	"encoding/json"
+	"log"
 )
 
 type SysConf struct {
@@ -61,6 +62,7 @@ func NewConf(data map[string]interface{}) (*SysConf,error) {
 	out.PercOfMNodes = 90
 
 	if data == nil {
+		log.Println("No params given")
 		return out, nil
 	}
 	var err error
@@ -171,7 +173,7 @@ func NewConf(data map[string]interface{}) (*SysConf,error) {
 		}
 	}
 
-	percOfMNodes,exists := data["percOfMNodes"]
+	percOfMNodes,exists := data["percentMasternodes"]
 	if exists && percOfMNodes != nil {
 		switch percOfMNodes.(type){
 			case json.Number:

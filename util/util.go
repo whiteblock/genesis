@@ -92,7 +92,7 @@ func Write(path string,data string){
 		fmt.Printf("Writing to file %s...",path)
 	}
 	
-	err := ioutil.WriteFile(path,[]byte(data),0777)
+	err := ioutil.WriteFile(path,[]byte(data),0664)
 	CheckFatal(err)
 	if conf.Verbose {
 		fmt.Printf("done\n")

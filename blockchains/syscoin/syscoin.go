@@ -40,7 +40,7 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server) ([]strin
 		util.Rm("config.boot")
 		fmt.Printf("done\n")
 	}()
-	state.SetBuildSteps(1+(1*nodes))
+	state.SetBuildSteps(1+(2*nodes))
 
 	fmt.Println("-------------Setting Up Syscoin-------------")
 	
@@ -90,6 +90,7 @@ func handleConf(servers []db.Server, sysconf *SysConf) ([]string,error) {
 	}
 
 	noMasterNodes := int(float64(len(ips)) * (float64(sysconf.PercOfMNodes)/float64(100)))
+	//log.Println(fmt.Sprintf("PERC = %d; NUM = %d;",sysconf.PercOfMNodes,noMasterNodes))
 
 	if (len(ips) - noMasterNodes) == 0 {
 		log.Println("Warning: No sender/receiver nodes availible. Removing 2 master nodes and setting them as sender/receiver")
@@ -151,6 +152,7 @@ func handleConf(servers []db.Server, sysconf *SysConf) ([]string,error) {
 				util.SshExec(server.Addr,fmt.Sprintf("docker cp /home/appo/regtest%d.conf %s:/syscoin/datadir/regtest.conf",node,container))
 				util.Rm(fmt.Sprintf("./regtest%d.conf",node))
 				util.SshExec(server.Addr,fmt.Sprintf("rm /home/appo/regtest%d.conf",node))
+				state.IncrementBuildProgress()
 				sem.Release(1)
 				
 			}(node)
