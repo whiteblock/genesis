@@ -285,7 +285,7 @@ func nodesStatus(w http.ResponseWriter, r *http.Request) {
 
 
 func buildStatus(w http.ResponseWriter,r *http.Request){
-	json.NewEncoder(w).Encode(CheckBuildStatus())
+	w.Write([]byte(CheckBuildStatus()))	
 }
 
 

@@ -34,7 +34,11 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 		return err
 	}
 
-	util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
+	err = util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
+	if err != nil {
+		return err
+	}
+
 	state.SetBuildSteps(8+(4*nodes))
 	defer func(){
 		fmt.Printf("Cleaning up...")
@@ -43,7 +47,10 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 	}()
 	
 	for i := 1; i <= nodes; i++ {
-		util.Mkdir(fmt.Sprintf("./tmp/node%d",i))
+		err = util.Mkdir(fmt.Sprintf("./tmp/node%d",i))
+		if err != nil{
+			return err
+		}
 		//fmt.Printf("---------------------  CREATING pre-allocated accounts for NODE-%d  ---------------------\n",i)
 
 	}
@@ -57,7 +64,10 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 		}
 
 		for i := 1; i <= nodes; i++{
-			util.Write(fmt.Sprintf("tmp/node%d/passwd.file",i),data)
+			err = util.Write(fmt.Sprintf("tmp/node%d/passwd.file",i),data)
+			if err != nil{
+				return err
+			}
 		}
 	}
 	state.IncrementBuildProgress()
@@ -70,9 +80,12 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 
 		node := i
 		//sem.Acquire(ctx,1)
-		gethResults := util.BashExec(
+		gethResults,err := util.BashExec(
 			fmt.Sprintf("geth --datadir tmp/node%d/ --password tmp/node%d/passwd.file account new",
 				node,node))
+		if err != nil {
+			return err
+		}
 		//fmt.Printf("RAW:%s\n",gethResults)
 		addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
 		addresses := addressPattern.FindAllString(gethResults,-1)
@@ -102,17 +115,35 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 
 	state.IncrementBuildProgress()
 
-	createGenesisfile(ethconf,wallets)
+	err = createGenesisfile(ethconf,wallets)
+	if err != nil{
+		return err
+	}
+
 	state.IncrementBuildProgress()
-	initNodeDirectories(nodes,ethconf.NetworkId,servers)
+
+	err = initNodeDirectories(nodes,ethconf.NetworkId,servers)
+	if err != nil {
+		return err
+	}
+
 	state.IncrementBuildProgress()
-	util.Mkdir("tmp/keystore")
-	distributeUTCKeystore(nodes)
+	err = util.Mkdir("tmp/keystore")
+	if err != nil {
+		return err
+	}
+	err = distributeUTCKeystore(nodes)
+	if err != nil {
+		return err
+	}
 
 	state.IncrementBuildProgress()
 
 	for i := 1; i <= nodes; i++ {
-		util.Cp("tmp/static_nodes.json",fmt.Sprintf("tmp/node%d/",i))
+		err = util.Cp("tmp/static_nodes.json",fmt.Sprintf("tmp/node%d/",i))
+		if err != nil{
+			return err
+		}
 	}
 	node := 0
 	for _, server := range servers {
@@ -122,8 +153,16 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 
 			go func(networkId int64,node int,server string,num int,unlock string,nodeIP string){
 				name := fmt.Sprintf("whiteblock-node%d",num)
-				util.SshExec(server,fmt.Sprintf("rm -rf tmp/node%d",node))
-				util.Scpr(server,fmt.Sprintf("tmp/node%d",node))
+				_,err := util.SshExec(server,fmt.Sprintf("rm -rf tmp/node%d",node))
+				if err != nil {
+					state.ReportError(err)
+					return
+				}
+				err = util.Scpr(server,fmt.Sprintf("tmp/node%d",node))
+				if err != nil {
+					state.ReportError(err)
+					return
+				}
 				state.IncrementBuildProgress() 
 				gethCmd := fmt.Sprintf(`geth --datadir /whiteblock/node%d --nodiscover --maxpeers %d --networkid %d --rpc --rpcaddr %s --rpcapi "web3,db,eth,net,personal,miner" --rpccorsdomain "0.0.0.0" --mine --unlock="%s" --password /whiteblock/node%d/passwd.file console`,
 						node,
@@ -133,13 +172,16 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 						unlock,
 						node)
 
-				util.SshMultiExec(server,
+				_,err = util.SshMultiExec(server,
 					fmt.Sprintf("docker exec %s mkdir -p /whiteblock/node%d/",name,node),
 					fmt.Sprintf("docker cp ~/tmp/node%d %s:/whiteblock",node,name),
 					fmt.Sprintf("docker exec -d %s tmux new -s whiteblock -d",name),
 					fmt.Sprintf("docker exec -d %s tmux send-keys -t whiteblock '%s' C-m",name,gethCmd),
 				)
-
+				if err != nil {
+					state.ReportError(err)
+					return
+				}
 				sem.Release(1)
 				state.IncrementBuildProgress() 
 			}(ethconf.NetworkId,node+1,server.Addr,j,unlock,ip)
@@ -147,9 +189,14 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 		}
 	}
 	err = sem.Acquire(ctx,conf.ThreadLimit)
-	util.CheckFatal(err)
+	if err != nil{
+		return err
+	}
 	state.IncrementBuildProgress()
 	sem.Release(conf.ThreadLimit)
+	if !state.ErrorFree(){
+		return state.GetError()
+	}
 	return nil
 	
 }
@@ -163,7 +210,7 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
  * @param  *EthConf	ethconf		The chain configuration
  * @param  []string wallets		The wallets to be allocated a balance
  */
-func createGenesisfile(ethconf *EthConf,wallets []string){
+func createGenesisfile(ethconf *EthConf,wallets []string) error {
 	alloc := "\n"
 	for i,wallet := range wallets {
 		alloc += fmt.Sprintf("\t\t\"%s\":{\"balance\":\"%s\"}",wallet,ethconf.InitBalance)
@@ -193,7 +240,7 @@ func createGenesisfile(ethconf *EthConf,wallets []string){
 	ethconf.GasLimit,
 	alloc)
 
-	util.Write("tmp/CustomGenesis.json",genesis)
+	return util.Write("tmp/CustomGenesis.json",genesis)
 }
 
 /**
@@ -203,9 +250,12 @@ func createGenesisfile(ethconf *EthConf,wallets []string){
  * @param  string	ip			The node's IP address
  * @return string				The node's enode address
  */
-func initNode(node int, networkId int64,ip string) string {
+func initNode(node int, networkId int64,ip string) (string,error) {
 	fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n",node)
-	gethResults := util.BashExec(fmt.Sprintf("echo -e \"admin.nodeInfo.enode\\nexit\\n\" |  geth --rpc --datadir tmp/node%d/ --networkid %d console",node,networkId))
+	gethResults,err := util.BashExec(fmt.Sprintf("echo -e \"admin.nodeInfo.enode\\nexit\\n\" |  geth --rpc --datadir tmp/node%d/ --networkid %d console",node,networkId))
+	if err != nil{
+		return "",nil
+	}
 	//fmt.Printf("RAWWWWWWWWWWWW%s\n\n\n",gethResults)
 	enodePattern := regexp.MustCompile(`enode:\/\/[A-z|0-9]+@(\[\:\:\]|([0-9]|\.)+)\:[0-9]+`)
 	enode := enodePattern.FindAllString(gethResults,1)[0]
@@ -213,8 +263,8 @@ func initNode(node int, networkId int64,ip string) string {
 	enodeAddressPattern := regexp.MustCompile(`\[\:\:\]|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})`)
 	enode = enodeAddressPattern.ReplaceAllString(enode,ip);
 
-	util.Write(fmt.Sprintf("./tmp/node%d/enode",node),fmt.Sprintf("%s\n",enode))
-	return enode
+	err = util.Write(fmt.Sprintf("./tmp/node%d/enode",node),fmt.Sprintf("%s\n",enode))
+	return enode,err
 }
 
 /**
@@ -223,41 +273,59 @@ func initNode(node int, networkId int64,ip string) string {
  * @param  int64	networkId	The test net network id
  * @param  []Server	servers		The list of servers
  */
-func initNodeDirectories(nodes int,networkId int64,servers []db.Server){
+func initNodeDirectories(nodes int,networkId int64,servers []db.Server) error {
 	static_nodes := []string{};
 	node := 1
 	for _,server := range servers{
 		for _,ip := range server.Ips{
 			//fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n",i)
 			//Load the CustomGenesis file
-			util.BashExec(
-				fmt.Sprintf("geth --datadir tmp/node%d --networkid %d init tmp/CustomGenesis.json",node,networkId))
-			
-
-			static_nodes = append(static_nodes,initNode(node,networkId,ip))
+			_,err := util.BashExec(
+							fmt.Sprintf("geth --datadir tmp/node%d --networkid %d init tmp/CustomGenesis.json",node,networkId))
+			if err != nil {
+				return err
+			}
+			static_node,err := initNode(node,networkId,ip)
+			if err != nil {
+				return err
+			}
+			static_nodes = append(static_nodes,static_node)
 			node++;
 		}
 	}
 	out, err := json.Marshal(static_nodes)
 	//fmt.Printf("-----Static Nodes.json------\n%+v\n\n",static_nodes)
-	util.CheckFatal(err)
+	if err != nil {
+		return err
+	}
+
 	for i := 1; i <= nodes; i++ {
-		util.Write(fmt.Sprintf("tmp/node%d/static-nodes.json",i),string(out))
+		err = util.Write(fmt.Sprintf("tmp/node%d/static-nodes.json",i),string(out))
+		if err != nil {
+			return err
+		}
 	}
 	
-		
+	return nil	
 }
 
 /**
  * Distribute the UTC keystore files amongst the nodes
  * @param  int	nodes	The number of nodes
  */
-func distributeUTCKeystore(nodes int){
+func distributeUTCKeystore(nodes int) error {
 	//Copy all UTC keystore files to every Node directory
 	for i := 1; i <= nodes; i++ {
-		util.Cpr(fmt.Sprintf("tmp/node%d/keystore/",i),"tmp/")
+		err := util.Cpr(fmt.Sprintf("tmp/node%d/keystore/",i),"tmp/")
+		if err != nil {
+			return err
+		}
 	}
 	for i := 1; i <= nodes; i++ {
-		util.Cpr("tmp/keystore/",fmt.Sprintf("tmp/node%d/",i))
+		err := util.Cpr("tmp/keystore/",fmt.Sprintf("tmp/node%d/",i))
+		if err != nil{
+			return err
+		}
 	}
+	return nil
 }

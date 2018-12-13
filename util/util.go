@@ -26,32 +26,35 @@ type KeyPair struct {
  * Remove directories or files
  * @param  ...string	directories	The directories and files to delete
  */
-func Rm(directories ...string){
+func Rm(directories ...string) error {
 	for _, directory := range directories {
 		if conf.Verbose {
 			fmt.Printf("Removing  %s...",directory)
 		}
 		
 		cmd := exec.Command("bash","-c",fmt.Sprintf("rm -rf %s",directory))
-		cmd.Run()
+		err := cmd.Run()
 		if conf.Verbose {
 			fmt.Printf("done\n")
 		}
-		
+		if err != nil{
+			return err
+		}
 	}
+	return nil
 }
 
 /**
  * Create a directory
  * @param  string	directory	The directory to create
  */
-func Mkdir(directory string){
+func Mkdir(directory string) error {
 	if conf.Verbose {
 		fmt.Printf("Creating directory %s\n",directory)
 	}
 	
 	cmd := exec.Command("mkdir","-p",directory)
-	cmd.Run()
+	return cmd.Run()
 }
 
 /**
@@ -59,13 +62,13 @@ func Mkdir(directory string){
  * @param  string	src		The source of the file
  * @param  string	dest	The destination for the file
  */
-func Cp(src string, dest string){
+func Cp(src string, dest string) error {
 	if conf.Verbose {
 		fmt.Printf("Copying %s to %s\n",src,dest)
 	}
 	
 	cmd := exec.Command("bash","-c",fmt.Sprintf("cp %s %s",src,dest))
-	cmd.Run()
+	return cmd.Run()
 }
 
 /**
@@ -73,13 +76,13 @@ func Cp(src string, dest string){
  * @param  string	src		The source of the directory
  * @param  string	dest	The destination for the directory
  */
-func Cpr(src string,dest string){
+func Cpr(src string,dest string) error {
 	if conf.Verbose {
 		fmt.Printf("Copying %s to %s\n",src,dest)
 	}
 
 	cmd := exec.Command("cp","-r",src,dest)
-	cmd.Run()
+	return cmd.Run()
 }
 
 /**
@@ -87,17 +90,17 @@ func Cpr(src string,dest string){
  * @param  string	path	The file to write to
  * @param  string	data	The data to write to the file
  */
-func Write(path string,data string){
+func Write(path string,data string) error {
 	if conf.Verbose {
 		fmt.Printf("Writing to file %s...",path)
 	}
 	
 	err := ioutil.WriteFile(path,[]byte(data),0664)
-	CheckFatal(err)
+	
 	if conf.Verbose {
 		fmt.Printf("done\n")
 	}
-	
+	return err
 }
 
 /**
@@ -105,42 +108,54 @@ func Write(path string,data string){
  * @param  string	_dir 	The directory
  * @return []string			List of the contents of the directory
  */
-func Lsr(_dir string) []string {
+func Lsr(_dir string) ([]string,error) {
 	dir := _dir
 	if(dir[len(dir) - 1:] != "/"){
 		dir += "/"
 	}
 	out := []string{}
 	files, err := ioutil.ReadDir(dir)
-	CheckFatal(err)
+	if err != nil {
+		return nil,err
+	}
 	for _, f := range files {
         if(f.IsDir()){
-        	out = append(out,Lsr(fmt.Sprintf("%s%s/",dir,f.Name())) ...)
+        	contents,err := Lsr(fmt.Sprintf("%s%s/",dir,f.Name()))
+        	if err != nil {
+        		return nil,err
+        	}
+        	out = append(out, contents...)
         }else{
         	out = append(out,fmt.Sprintf("%s%s",dir,f.Name()))
         }
     }
-    return out
+    return out,nil
 }
 
 /**
  * List directories in order of construction
  */
-func LsDir(_dir string) []string {
+func LsDir(_dir string) ([]string,error) {
 	dir := _dir
 	if(dir[len(dir) - 1:] != "/"){
 		dir += "/"
 	}
 	out := []string{}
 	files, err := ioutil.ReadDir(dir)
-	CheckFatal(err)
+	if err != nil {
+		return nil,err
+	}
 	for _, f := range files {
         if(f.IsDir()){
         	out = append(out,fmt.Sprintf("%s%s/",dir,f.Name()))
-        	out = append(out,LsDir(fmt.Sprintf("%s%s/",dir,f.Name())) ...)
+        	content,err := LsDir(fmt.Sprintf("%s%s/",dir,f.Name()))
+        	if err != nil {
+        		return nil,err
+        	}
+        	out = append(out,content...)
         }
     }
-    return out
+    return out,nil
 }
 
 /**
@@ -193,7 +208,7 @@ func CombineConfig(entries []string) string {
  * @param  string 	_cmd 	The command to execute
  * @return string 			The result of execution
  */
-func BashExec(_cmd string) string {
+func BashExec(_cmd string) (string,error) {
 	if conf.Verbose {
 		fmt.Printf("Execuing : %s\n",_cmd)
 	}
@@ -203,10 +218,16 @@ func BashExec(_cmd string) string {
 	var resultsRaw bytes.Buffer
 
 	cmd.Stdout = &resultsRaw
-	cmd.Start()
-	cmd.Wait()
+	err := cmd.Start()
+	if err != nil {
+		return "",err
+	}
+	err = cmd.Wait()
+	if err != nil {
+		return "",err
+	}
 
-	return resultsRaw.String()
+	return resultsRaw.String(),nil
 }
 
 func IntArrRemove(op []int,index int) []int {

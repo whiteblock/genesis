@@ -14,15 +14,18 @@ import (
  * @param  ...string	commands	The commands to execute
  * @return []string					The results of the execution of each command
  */
-func SshMultiExec(host string, commands ...string) []string {
+func SshMultiExec(host string, commands ...string) ([]string,error) {
 
-	out := make([]string, 0)
+	out := []string{}
 	for _, command := range commands {
 
-		res := SshExec(host, command)
+		res,err := SshExec(host, command)
+		if err != nil{
+			return nil,err
+		}
 		out = append(out, string(res))
 	}
-	return out
+	return out,nil
 }
 
 /**
@@ -31,7 +34,7 @@ func SshMultiExec(host string, commands ...string) []string {
  * @param  ...string	commands	The commands to execute
  * @return string          			The result of the execution
  */
-func sshFastMultiExec(host string, commands ...string) string {
+func sshFastMultiExec(host string, commands ...string) (string,error) {
 
 	cmd := ""
 	for i, command := range commands {
@@ -44,29 +47,7 @@ func sshFastMultiExec(host string, commands ...string) string {
 	return SshExec(host, cmd)
 }
 
-/**
- * Execute a command on a remote machine
- * @param  string	host	The host to execute the command on
- * @param  string	command	The command to execute
- * @return string			The result of execution
- */
-func SshExec(host string, command string) string {
-	if conf.Verbose {
-		fmt.Printf("Running command on %s : %s\n", host, command)
-	}
-
-	session,client,err := sshConnect(host)
-	
-	CheckAndPrint(err, fmt.Sprintf("Error with command %s:%s\n", host, command))
-	defer session.Close()
-	defer client.Close()
-	out, err := session.CombinedOutput(command)
-	CheckAndPrint(err, fmt.Sprintf("Error with command %s:%s\nResponse:%s\n\n", host, command, string(out)))
-
-	return string(out)
-}
-
-func SshExecCheck(host string, command string) (string, error) {
+func SshExec(host string, command string) (string, error) {
 	if conf.Verbose {
 		fmt.Printf("Running command on %s : %s\n", host, command)
 	}
@@ -110,6 +91,14 @@ func SshExecIgnore(host string, command string) string {
 
 	
 	return string(out)
+}
+
+func DockerExec(host string,node int,command string) (string,error) {
+	return SshExec(host,fmt.Sprintf("docker exec whiteblock-node%d %s",node,command))
+}
+
+func DockerExecd(host string,node int,command string) (string,error) {
+	return SshExec(host,fmt.Sprintf("docker exec -d whiteblock-node%d %s",node,command))
 }
 
 /**
@@ -171,13 +160,17 @@ func sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
 /**
  * DEPRECATED
  */
-func InitSCPR(host string, dir string) {
-	directories := LsDir(dir)
+func InitSCPR(host string, dir string) error {
+	directories,err := LsDir(dir)
+	if err != nil{
+		return err
+	}
 	dirStr := ""
 	for _, dir := range directories {
 		dirStr += " " + dir
 	}
-	SshExec(host, fmt.Sprintf("mkdir -p %s", dirStr))
+	_,err = SshExec(host, fmt.Sprintf("mkdir -p %s", dirStr))
+	return err
 }
 
 /**
@@ -186,21 +179,28 @@ func InitSCPR(host string, dir string) {
  * @param  string	src		The source path of the file
  * @param  string	dest	The destination path of the file
  */
-func Scp(host string, src string, dest string) {
+func Scp(host string, src string, dest string) error {
 	if conf.Verbose {
 		fmt.Printf("Copying %s to %s:%s...", src, host, dest)
 	}
 
 	session,client, err := sshConnect(host)
+	if err != nil {
+		return err
+	}
 	defer session.Close()
 	defer client.Close()
-	CheckFatal(err)
+	
 	err = scp.CopyPath(src, dest, session)
-	CheckAndPrint(err, "SCP failed")
+	if err != nil {
+		return err
+	}
 
 	if conf.Verbose {
 		fmt.Printf("done\n")
 	}
+
+	return nil
 }
 
 /**
@@ -221,15 +221,25 @@ func GetPath(path string) string {
  * @param  string	host	The host to copy the directory to
  * @param  string	dir		The directory to copy over
  */
-func Scpr(host string, dir string) {
+func Scpr(host string, dir string) error {
 
 	path := GetPath(dir)
-	SshExec(host, "mkdir -p "+path)
+	_,err := SshExec(host, "mkdir -p "+path)
+	if err != nil {
+		return err
+	}
 
 	file := fmt.Sprintf("%s.tar.gz", dir)
-	BashExec(fmt.Sprintf("tar cfz %s %s", file, dir))
-	Scp(host, file, file)
-	SshExec(host, fmt.Sprintf("tar xfz %s && rm %s", file, file))
+	_,err = BashExec(fmt.Sprintf("tar cfz %s %s", file, dir))
+	if err != nil {
+		return err
+	}
+	err = Scp(host, file, file)
+	if err != nil{
+		return err
+	}
+	_,err = SshExec(host, fmt.Sprintf("tar xfz %s && rm %s", file, file))
+	return err
 }
 
 /**
@@ -238,11 +248,18 @@ func Scpr(host string, dir string) {
  * @param  string   src		The source of the file/directory
  * @param  string   dest	The destination of the file/directory on the remote machine
  */
-func Scprd(host string, src string, dest string) {
+func Scprd(host string, src string, dest string) error {
 	InitSCPR(host, dest+src)
-	files := Lsr(src)
+	files,err := Lsr(src)
+	if err != nil {
+		return err
+	}
 	//fmt.Printf("Files: %+v\n",files)
 	for _, f := range files {
-		Scp(host, f, dest+f)
+		err = Scp(host, f, dest+f)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }

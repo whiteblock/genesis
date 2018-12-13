@@ -29,7 +29,7 @@ func AddTestNet(details DeploymentDetails) error {
 
 	if err != nil {
 		log.Println(err.Error())
-		state.BuildError = err
+		state.ReportError(err)
 		return err
 	}
 	fmt.Println("Got the Servers")
@@ -40,7 +40,7 @@ func AddTestNet(details DeploymentDetails) error {
 	newServerData,err := deploy.Build(&config,servers,details.Resources) //TODO: Restructure distribution of nodes over servers
 	if err != nil {
 		log.Println(err)
-		state.BuildError = err
+		state.ReportError(err)
 		return err
 	}
 	fmt.Println("Built the docker containers")
@@ -53,21 +53,21 @@ func AddTestNet(details DeploymentDetails) error {
 		case "ethereum":
 			err := eth.Ethereum(details.Params,details.Nodes,newServerData)
 			if err != nil {
+				state.ReportError(err)
 				log.Println(err)
-				state.BuildError = err
 				return err
 			}
 		case "syscoin":
 			labels,err = sys.RegTest(details.Params,details.Nodes,newServerData)
 			if err != nil {
-				state.BuildError = err
+				state.ReportError(err)
 				log.Println(err)
 				return err
 			}
 		case "generic":
 			log.Println("Built in generic mode")
 		default:
-			state.BuildError = errors.New("Unknown blockchain")
+			state.ReportError(errors.New("Unknown blockchain"))
 			return errors.New("Unknown blockchain")
 	}
 

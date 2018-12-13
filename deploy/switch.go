@@ -8,9 +8,12 @@ import (
 	"fmt"
 )
 
-func getConfig(host string) (*vyos.Config, string) {
+func getConfig(host string) (*vyos.Config, string,error) {
 
-	data := util.SshExec(host,"cat /config/config.boot")
+	data,err := util.SshExec(host,"cat /config/config.boot")
+	if err != nil{
+		return nil,"",err
+	}
 	config := vyos.NewConfig(data)
 	metaPattern := regexp.MustCompile(`\/\*[^(*\/)]*\*\/`)
 	metaResults := metaPattern.FindAllString(data,-1)
@@ -18,16 +21,16 @@ func getConfig(host string) (*vyos.Config, string) {
 	for _,met := range metaResults {
 		meta += fmt.Sprintf("%s\n",met)
 	}
-	return config,meta
+	return config,meta,nil
 }
 
-func PrepareSwitches(server db.Server,nodes int){
+func PrepareSwitches(server db.Server,nodes int) error {
 	//Assume one switch per server
 	if server.Switches[0].Brand == util.Hp {
 		setupHPSwitch(server,nodes)
-		return
+		return nil
 	}
-	config,meta := getConfig(server.Switches[0].Addr)
+	config,meta,err := getConfig(server.Switches[0].Addr)
 	gws := util.GetGateways(server.ServerID, nodes)
 	config.RemoveVifs(server.Switches[0].Iface)
 	config.SetIfaceAddr(server.Switches[0].Iface,fmt.Sprintf("%s/%d",server.Iaddr.Gateway,server.Iaddr.Subnet))//Update this later on to be more dynamic
@@ -39,9 +42,23 @@ func PrepareSwitches(server db.Server,nodes int){
 	}
 	//fmt.Printf(config.ToString())
 	//fmt.Printf(meta)
-	util.Write("config.boot",fmt.Sprintf("%s\n%s",config.ToString(),meta))
-	util.Scp(server.Switches[0].Addr,"./config.boot","/config/config.boot")
+	err = util.Write("config.boot",fmt.Sprintf("%s\n%s",config.ToString(),meta))
+	if err != nil{
+		return err
+	}
+	err = util.Scp(server.Switches[0].Addr,"./config.boot","/config/config.boot")
+	if err != nil{
+		return err
+	}
 	util.Scp(server.Switches[0].Addr,"./install.sh",conf.VyosHomeDir+"/install.sh")
-	util.SshExec(server.Switches[0].Addr,"chmod +x ./install.sh && ./install.sh")
+	if err != nil{
+		return err
+	}
+	_,err = util.SshExec(server.Switches[0].Addr,"chmod +x ./install.sh && ./install.sh")
+	if err != nil {
+		return err
+	}
 	util.Rm("config.boot")
+
+	return nil
 }

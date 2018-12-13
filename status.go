@@ -2,6 +2,8 @@ package main
 
 import (
 	"strings"
+	"encoding/json"
+	"fmt"
 	util "./util"
 	db "./db"
 	state "./state"
@@ -13,8 +15,8 @@ type TestNetStatus struct {
 }
 
 type BuildStatus struct {
-	Error		error	`json:"error"`
-	Progress	float64	`json:"progress"`
+	Error		state.CustomError	`json:"error"`
+	Progress	float64				`json:"progress"`
 }
 
 
@@ -44,7 +46,7 @@ func CheckTestNetStatus() ([]TestNetStatus, error) {
 	}
 	out := []TestNetStatus{}
 	for _, server := range servers {
-		res, err := util.SshExecCheck(server.Addr,"docker ps | egrep -o 'whiteblock-node[0-9]*' | sort")
+		res, err := util.SshExec(server.Addr,"docker ps | egrep -o 'whiteblock-node[0-9]*' | sort")
 		if err != nil {
 			return nil, err
 		}
@@ -61,6 +63,11 @@ func CheckTestNetStatus() ([]TestNetStatus, error) {
 }
 
 
-func CheckBuildStatus() BuildStatus {
-	return BuildStatus{ Progress:state.BuildingProgress, Error:state.BuildError }
+func CheckBuildStatus() string {
+	if state.ErrorFree() {
+		return fmt.Sprintf("{\"progress\":%f,\"error\":null}",state.BuildingProgress)
+	}else{
+		out,_ := json.Marshal(BuildStatus{ Progress:state.BuildingProgress, Error:state.BuildError })
+		return string(out)
+	}
 }

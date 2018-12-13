@@ -7,16 +7,21 @@ import(
 /**
  * Packages the global state nicely into an "object"
  */
+type CustomError struct{
+	What	string		`json:"what"`
+	err		error
+}
 
 var (
 	mutex 						=	&sync.Mutex{}
+	errMutex					=	&sync.Mutex{}
 	building			bool	=	false
 	progressIncrement	float64	=	0.00
 )
 
 var (
 	BuildingProgress	float64	=	0.00
-	BuildError			error	=	nil
+	BuildError			CustomError	=	CustomError{What:"",err:nil}
 )
 
 func AcquireBuilding() error {
@@ -29,8 +34,25 @@ func AcquireBuilding() error {
 
 	building = true
 	BuildingProgress = 0.00
-	BuildError = nil
+	BuildError = CustomError{What:"",err:nil}
 	return nil
+}
+
+func ReportError(err error){
+	errMutex.Lock()
+	defer errMutex.Unlock()
+	BuildError = CustomError{What:err.Error(),err:err}
+
+}
+
+func ErrorFree() bool {
+	errMutex.Lock()
+	defer errMutex.Unlock()
+	return BuildError.err == nil
+}
+
+func GetError() error {
+	return BuildError.err
 }
 
 func DoneBuilding(){
