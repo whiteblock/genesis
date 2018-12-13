@@ -97,7 +97,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 		for _, server := range servers {
 			for i,ip := range server.Ips {
 				/**Start keosd**/
-				_,err = util.DockerExec(server.Addr,i,"keosd --http-server-address 0.0.0.0:8900")
+				_,err = util.DockerExecd(server.Addr,i,"keosd --http-server-address 0.0.0.0:8900")
 				if err != nil{
 					log.Println(err)
 					return nil,err
@@ -411,7 +411,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 						println(res)
 					}else{
 
-						res,err := util.DockerExec(serverIP,i,
+						res,err := util.DockerExecd(serverIP,i,
 									fmt.Sprintf(`nodeos --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir -p %s %s %s`,
 										eos_getProducerName(node),
 										eos_getKeyPairFlag(kp),

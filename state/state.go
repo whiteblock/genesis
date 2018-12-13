@@ -3,6 +3,7 @@ package state
 import(
 	"sync"
 	"errors"
+	"log"
 )
 /**
  * Packages the global state nicely into an "object"
@@ -10,6 +11,10 @@ import(
 type CustomError struct{
 	What	string		`json:"what"`
 	err		error
+}
+
+type CustomError struct{
+	What	string		`json:"what"`
 }
 
 var (
@@ -42,6 +47,7 @@ func ReportError(err error){
 	errMutex.Lock()
 	defer errMutex.Unlock()
 	BuildError = CustomError{What:err.Error(),err:err}
+	log.Println("An error has been reported :"+err.Error())
 
 }
 
