@@ -1,6 +1,5 @@
-
+#Genesis
 ##REST API
-__Warning: Do not use any path marked PRIVATE, they will begin to require credentials in the near future__
 
 ###GET /servers/
 Get the current registered servers
