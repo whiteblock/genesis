@@ -300,7 +300,32 @@ Get the build params for a blockchain
 curl -X GET http://localhost:8000/params/ethereum
 ```
 
+###GET /defaults/{blockchain}
+Get the default parameters for a blockchain
+#####RESPONSE
+```
+HTTP/1.1 200 OK
+Date: Mon, 22 Oct 2018 15:31:18 GMT
+{
+	"chainId":15468,
+	"networkId":15468,
+	"difficulty":100000,
+	"initBalance":100000000000000000000,
+	"maxPeers":1000,
+	"gasLimit":4000000,
+	"homesteadBlock":0,
+	"eip155Block":0,
+	"eip158Block":0
+}
+```
+#####EXAMPLE
+```bash
+curl -X GET http://localhost:8000/defaults/ethereum
+```
+
+
 ##Configuration
+Configuration options are located in `config.json` in the same directory as the binary
 
 * __builder__: The application to use to build the nodes
 * __ssh-user__: The default username for ssh

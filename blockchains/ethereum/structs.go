@@ -2,6 +2,8 @@ package eth
 
 import (
 	"encoding/json"
+	util "../../util"
+	"errors"
 )
 
 type EthConf struct {
@@ -37,70 +39,69 @@ func NewConf(data map[string]interface{}) (*EthConf,error) {
 	}
 	var err error
 
-	chainId,exists := data["chainId"]
-	if exists {
-		out.ChainId,err = chainId.(json.Number).Int64()
+	if _,ok := data["chainId"]; ok {
+		out.ChainId,err = util.GetJSONInt64(data,"chainId")
 		if err != nil {
 			return nil,err
 		}
 	}
 
-	networkId,exists := data["networkId"]
-	if exists {
-		out.NetworkId,err = networkId.(json.Number).Int64()
+	if _,ok := data["networkId"]; ok {
+		out.NetworkId,err = util.GetJSONInt64(data,"networkId")
 		if err != nil {
 			return nil,err
 		}
 	}
 
-	difficulty,exists := data["difficulty"]
-	if exists {
-		out.Difficulty,err = difficulty.(json.Number).Int64()
+	if _,ok := data["difficulty"]; ok {
+		out.Difficulty,err = util.GetJSONInt64(data,"difficulty")
 		if err != nil {
 			return nil,err
 		}
 	}
 
 	initBalance,exists := data["initBalance"]
-	if exists {
-		out.InitBalance = initBalance.(json.Number).String()
+	if exists && initBalance != nil {
+		switch initBalance.(type){
+			case json.Number:
+				out.InitBalance = initBalance.(json.Number).String()
+			case string:
+				out.InitBalance = initBalance.(string)
+			default:
+				return nil,errors.New("Incorrect type for initBalance given")
+		}
 	}
 
-	maxPeers,exists := data["maxPeers"]
-	if exists {
-		out.MaxPeers,err = maxPeers.(json.Number).Int64()
+	if _,ok := data["maxPeers"]; ok {
+		out.MaxPeers,err = util.GetJSONInt64(data,"maxPeers")
 		if err != nil {
 			return nil,err
 		}
 	}
 
-	gasLimit,exists := data["gasLimit"]
-	if exists {
-		out.GasLimit,err = gasLimit.(json.Number).Int64()
+	if _,ok := data["gasLimit"]; ok {
+		out.GasLimit,err = util.GetJSONInt64(data,"gasLimit")
 		if err != nil {
 			return nil,err
 		}
 	}
 
-	homesteadBlock,exists := data["homesteadBlock"]
-	if exists {
-		out.HomesteadBlock,err = homesteadBlock.(json.Number).Int64()
+	if _,ok := data["homesteadBlock"]; ok {
+		out.HomesteadBlock,err = util.GetJSONInt64(data,"homesteadBlock")
 		if err != nil {
 			return nil,err
 		}
 	}
 
-	eip155Block,exists := data["eip155Block"]
-	if exists {
-		out.Eip155Block,err = eip155Block.(json.Number).Int64()
+	if _,ok := data["eip155Block"]; ok {
+		out.Eip155Block,err = util.GetJSONInt64(data,"eip155Block")
 		if err != nil {
 			return nil,err
 		}
 	}
 
-	eip158Block,exists := data["eip158Block"]
-	if exists {
-		out.Eip158Block,err = eip158Block.(json.Number).Int64()
+	if _,ok := data["eip158Block"]; ok {
+		out.Eip158Block,err = util.GetJSONInt64(data,"eip158Block")
 		if err != nil {
 			return nil,err
 		}
@@ -122,4 +123,18 @@ func GetParams() string {
 	{"eip155Block":"int"},
 	{"eip158Block":"int"}
 ]`
+}
+
+func GetDefaults() string {
+	return `{
+	"chainId":15468,
+	"networkId":15468,
+	"difficulty":100000,
+	"initBalance":100000000000000000000,
+	"maxPeers":1000,
+	"gasLimit":4000000,
+	"homesteadBlock":0,
+	"eip155Block":0,
+	"eip158Block":0
+}`
 }

@@ -13,10 +13,6 @@ type CustomError struct{
 	err		error
 }
 
-type CustomError struct{
-	What	string		`json:"what"`
-}
-
 var (
 	mutex 						=	&sync.Mutex{}
 	errMutex					=	&sync.Mutex{}

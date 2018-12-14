@@ -2,8 +2,8 @@ package syscoin
 
 import(
 	"errors"
-	"encoding/json"
 	"log"
+	util "../../util"
 )
 
 type SysConf struct {
@@ -55,7 +55,7 @@ func NewConf(data map[string]interface{}) (*SysConf,error) {
 	out.Extras = []string{}
 	out.SenderExtras = []string{}
 	out.ReceiverExtras = []string{}
-	out.MNExtras = []string{}
+	out.MNOptions = []string{}
 
 	out.MasterNodeConns = 25
 	out.NodeConns = 8
@@ -146,45 +146,27 @@ func NewConf(data map[string]interface{}) (*SysConf,error) {
 				return nil,errors.New("Incorrect type for mnExtras given")
 		}
 	}
-	
-	masterNodeConns,exists := data["masterNodeConns"]
-	if exists && masterNodeConns != nil {
-		switch masterNodeConns.(type){
-			case json.Number:
-				out.MasterNodeConns,err = masterNodeConns.(json.Number).Int64()
-				if err != nil {
-					return nil,err
-				}
-			default:
-				return nil,errors.New("Incorrect type for masterNodeConns given")
+
+	if _,ok := data["masterNodeConns"]; ok {
+		out.MasterNodeConns,err = util.GetJSONInt64(data,"masterNodeConns")
+		if err != nil {
+			return nil,err
 		}
 	}
 
-	nodeConns,exists := data["nodeConns"]
-	if exists && nodeConns != nil {
-		switch nodeConns.(type){
-			case json.Number:
-				out.NodeConns,err = nodeConns.(json.Number).Int64()
-				if err != nil {
-					return nil,err
-				}
-			default:
-				return nil,errors.New("Incorrect type for nodeConns given")
+	if _,ok := data["nodeConns"]; ok {
+		out.NodeConns,err = util.GetJSONInt64(data,"nodeConns")
+		if err != nil {
+			return nil,err
 		}
 	}
 
-	percOfMNodes,exists := data["percentMasternodes"]
-	if exists && percOfMNodes != nil {
-		switch percOfMNodes.(type){
-			case json.Number:
-				out.PercOfMNodes,err = percOfMNodes.(json.Number).Int64()
-				if err != nil {
-					return nil,err
-				}
-			default:
-				return nil,errors.New("Incorrect type for percOfMNodes given")
+	if _,ok := data["percentMasternodes"]; ok {
+		out.PercOfMNodes,err = util.GetJSONInt64(data,"percentMasternodes")
+		if err != nil {
+			return nil,err
 		}
-	}		
+	}
 
 	return out, nil
 } 
@@ -258,4 +240,30 @@ func GetParams() string {
 	{"nodeConns":"int"},
 	{"percentMasternodes":"int"}
 ]`
+}
+
+func GetDefaults() string {
+	return `{
+	"options":[
+		"server",
+		"regtest",
+		"listen",
+		"rest"
+	],
+	"extras":[],
+	"senderOptions":[
+		"tpstest",
+		"addressindex"
+	],
+	"receiverOptions":[
+		"tpstest"
+	],
+	"mnOptions":[],
+	"senderExtras":[],
+	"receiverExtras":[],
+	"mnExtras":[],
+	"masterNodeConns":25,
+	"nodeConns":8,
+	"percentMasternodes":90
+}`
 }

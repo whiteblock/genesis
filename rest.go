@@ -39,14 +39,19 @@ func StartServer() {
 	router.HandleFunc("/testnets/{id}", deleteTestNet).Methods("DELETE")
 	router.HandleFunc("/testnets/{id}/", deleteTestNet).Methods("DELETE")
 
+	router.HandleFunc("/testnets/{id}/nodes", getTestNetNodes).Methods("GET")
 	router.HandleFunc("/testnets/{id}/nodes/", getTestNetNodes).Methods("GET")
+
 	router.HandleFunc("/testnets/{id}/node/", addTestNetNode).Methods("POST")
 	router.HandleFunc("/testnets/{id}/node/{nid}",deleteTestNetNode).Methods("DELETE")
 	
 	/**Management Functions**/
-
+	router.HandleFunc("/status/nodes",nodesStatus).Methods("GET")
 	router.HandleFunc("/status/nodes/",nodesStatus).Methods("GET")
+
+	router.HandleFunc("/status/build",buildStatus).Methods("GET")
 	router.HandleFunc("/status/build/",buildStatus).Methods("GET")
+
 	router.HandleFunc("/exec/{server}/{node}",dockerExec).Methods("POST")
 
 	router.HandleFunc("/params/{blockchain}",getBlockChainParams).Methods("GET")
@@ -54,6 +59,9 @@ func StartServer() {
 
 	router.HandleFunc("/state/{blockchain}",getBlockChainState).Methods("GET")
 	router.HandleFunc("/state/{blockchain}/",getBlockChainState).Methods("GET")
+
+	router.HandleFunc("/defaults/{blockchain}",getBlockChainDefaults).Methods("GET")
+	router.HandleFunc("/defaults/{blockchain}/",getBlockChainDefaults).Methods("GET")
 
 	http.ListenAndServe(conf.Listen, router)
 }
@@ -283,11 +291,9 @@ func nodesStatus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(status)
 }
 
-
 func buildStatus(w http.ResponseWriter,r *http.Request){
 	w.Write([]byte(CheckBuildStatus()))	
 }
-
 
 func getBlockChainParams(w http.ResponseWriter,r *http.Request){
 
@@ -309,4 +315,9 @@ func getBlockChainState(w http.ResponseWriter,r *http.Request){
 			return
 	}
 	w.Write([]byte("Unknown blockchain "+ blockchain))
+}
+
+func getBlockChainDefaults(w http.ResponseWriter,r *http.Request){
+	params := mux.Vars(r)
+	w.Write([]byte(GetDefaults(params["blockchain"])))
 }

@@ -8,6 +8,7 @@ import (
 	"regexp"
 	//"sync"
 	"errors"
+	"log"
 	util "../../util"
 	db "../../db"
 	state "../../state"
@@ -31,11 +32,13 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 	ctx := context.TODO()
 	ethconf,err := NewConf(data)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
 	err = util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
@@ -49,6 +52,7 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 	for i := 1; i <= nodes; i++ {
 		err = util.Mkdir(fmt.Sprintf("./tmp/node%d",i))
 		if err != nil{
+			log.Println(err)
 			return err
 		}
 		//fmt.Printf("---------------------  CREATING pre-allocated accounts for NODE-%d  ---------------------\n",i)
@@ -66,6 +70,7 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 		for i := 1; i <= nodes; i++{
 			err = util.Write(fmt.Sprintf("tmp/node%d/passwd.file",i),data)
 			if err != nil{
+				log.Println(err)
 				return err
 			}
 		}
@@ -84,6 +89,7 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 			fmt.Sprintf("geth --datadir tmp/node%d/ --password tmp/node%d/passwd.file account new",
 				node,node))
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 		//fmt.Printf("RAW:%s\n",gethResults)
@@ -117,6 +123,7 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 
 	err = createGenesisfile(ethconf,wallets)
 	if err != nil{
+		log.Println(err)
 		return err
 	}
 
@@ -124,27 +131,31 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 
 	err = initNodeDirectories(nodes,ethconf.NetworkId,servers)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
 	state.IncrementBuildProgress()
 	err = util.Mkdir("tmp/keystore")
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	err = distributeUTCKeystore(nodes)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
 	state.IncrementBuildProgress()
 
-	for i := 1; i <= nodes; i++ {
+	/*for i := 1; i <= nodes; i++ {
 		err = util.Cp("tmp/static_nodes.json",fmt.Sprintf("tmp/node%d/",i))
 		if err != nil{
+			log.Println(err)
 			return err
 		}
-	}
+	}*/
 	node := 0
 	for _, server := range servers {
 		for j, ip := range server.Ips{
@@ -155,11 +166,13 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 				name := fmt.Sprintf("whiteblock-node%d",num)
 				_,err := util.SshExec(server,fmt.Sprintf("rm -rf tmp/node%d",node))
 				if err != nil {
+					log.Println(err)
 					state.ReportError(err)
 					return
 				}
 				err = util.Scpr(server,fmt.Sprintf("tmp/node%d",node))
 				if err != nil {
+					log.Println(err)
 					state.ReportError(err)
 					return
 				}
@@ -179,6 +192,7 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 					fmt.Sprintf("docker exec -d %s tmux send-keys -t whiteblock '%s' C-m",name,gethCmd),
 				)
 				if err != nil {
+					log.Println(err)
 					state.ReportError(err)
 					return
 				}
@@ -190,6 +204,7 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 	}
 	err = sem.Acquire(ctx,conf.ThreadLimit)
 	if err != nil{
+		log.Println(err)
 		return err
 	}
 	state.IncrementBuildProgress()
@@ -254,6 +269,7 @@ func initNode(node int, networkId int64,ip string) (string,error) {
 	fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n",node)
 	gethResults,err := util.BashExec(fmt.Sprintf("echo -e \"admin.nodeInfo.enode\\nexit\\n\" |  geth --rpc --datadir tmp/node%d/ --networkid %d console",node,networkId))
 	if err != nil{
+		log.Println(err)
 		return "",nil
 	}
 	//fmt.Printf("RAWWWWWWWWWWWW%s\n\n\n",gethResults)
@@ -283,10 +299,12 @@ func initNodeDirectories(nodes int,networkId int64,servers []db.Server) error {
 			_,err := util.BashExec(
 							fmt.Sprintf("geth --datadir tmp/node%d --networkid %d init tmp/CustomGenesis.json",node,networkId))
 			if err != nil {
+				log.Println(err)
 				return err
 			}
 			static_node,err := initNode(node,networkId,ip)
 			if err != nil {
+				log.Println(err)
 				return err
 			}
 			static_nodes = append(static_nodes,static_node)
@@ -296,12 +314,14 @@ func initNodeDirectories(nodes int,networkId int64,servers []db.Server) error {
 	out, err := json.Marshal(static_nodes)
 	//fmt.Printf("-----Static Nodes.json------\n%+v\n\n",static_nodes)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
 	for i := 1; i <= nodes; i++ {
 		err = util.Write(fmt.Sprintf("tmp/node%d/static-nodes.json",i),string(out))
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 	}
@@ -318,12 +338,14 @@ func distributeUTCKeystore(nodes int) error {
 	for i := 1; i <= nodes; i++ {
 		err := util.Cpr(fmt.Sprintf("tmp/node%d/keystore/",i),"tmp/")
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 	}
 	for i := 1; i <= nodes; i++ {
 		err := util.Cpr("tmp/keystore/",fmt.Sprintf("tmp/node%d/",i))
 		if err != nil{
+			log.Println(err)
 			return err
 		}
 	}

@@ -140,3 +140,16 @@ func GetParams(blockchain string) string {
 			return "[]"
 	}
 }
+
+func GetDefaults(blockchain string) string {
+	switch blockchain {
+		case "ethereum":
+			return eth.GetDefaults()
+		case "syscoin":
+			return sys.GetDefaults()
+		case "eos":
+			return eos.GetDefaults()
+		default:
+			return "{}"
+	}
+}
