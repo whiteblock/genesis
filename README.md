@@ -75,7 +75,9 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 
 #####EXAMPLE
 ```bash
-curl -X PUT http://localhost:8000/servers/foxtrot -d '{"addr":"172.16.6.5","iaddr":{"ip":"10.254.6.100","gateway":"10.254.6.1","subnet":24},"nodes":0,"max":10,"serverID":6,"id":-1,"iface":"eth0","switches":[{"addr":"172.16.1.1","iface":"eno3","brand":1,"id":5}],"ips":null}}'
+curl -X PUT http://localhost:8000/servers/foxtrot -d \
+'{"addr":"172.16.6.5","iaddr":{"ip":"10.254.6.100","gateway":"10.254.6.1","subnet":24},
+"nodes":0,"max":10,"serverID":6,"id":-1,"iface":"eth0","switches":[{"addr":"172.16.1.1","iface":"eno3","brand":1,"id":5}],"ips":null}}'
 ```
 
 ###GET /servers/{id}
