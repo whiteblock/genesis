@@ -69,6 +69,8 @@ func SshExec(host string, command string) (string, error) {
 	return string(out), nil
 }
 
+
+
 /**
  * Execute a command on a remote machine, and ignore a failed
  * execution
@@ -99,6 +101,18 @@ func DockerExec(host string,node int,command string) (string,error) {
 
 func DockerExecd(host string,node int,command string) (string,error) {
 	return SshExec(host,fmt.Sprintf("docker exec -d whiteblock-node%d %s",node,command))
+}
+
+func DockerExecdLog(host string,node int,command string) error {
+	if strings.Count(command,"'") != strings.Count(command,"\\'"){
+		panic("DockerExecdLog commands cannot contain unescaped ' characters")
+	}
+	_,err := SshExec(host,fmt.Sprintf("docker exec -d whiteblock-node%d bash -c '%s 2>&1 >> %s'",node,command,conf.DockerOutputFile))
+	return err
+}
+
+func DockerRead(host string,node int,file string) (string,error) {
+	return SshExec(host,fmt.Sprintf("docker exec whiteblock-node%d cat %s",node,file))
 }
 
 func DockerMultiExec(host string,node int,commands []string) (string,error){

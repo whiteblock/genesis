@@ -41,7 +41,7 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server) ([]strin
 		util.Rm("config.boot")
 		fmt.Printf("done\n")
 	}()
-	state.SetBuildSteps(1+(2*nodes))
+	state.SetBuildSteps(1+(3*nodes))
 
 	fmt.Println("-------------Setting Up Syscoin-------------")
 	
@@ -60,7 +60,7 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server) ([]strin
 		sem3.Acquire(ctx,1)
 		go func(server db.Server){
 			for j,_ := range server.Ips {
-				_,err = util.DockerExec(server.Addr,j,"syscoind -daemon -conf=\"/syscoin/datadir/regtest.conf\" -datadir=\"/syscoin/datadir/\"")
+				err := util.DockerExecdLog(server.Addr,j,"syscoind -conf=\"/syscoin/datadir/regtest.conf\" -datadir=\"/syscoin/datadir/\"")
 				if err != nil {
 					state.ReportError(err)
 					log.Println(err)
@@ -173,6 +173,7 @@ func handleConf(servers []db.Server, sysconf *SysConf) ([]string,error) {
 					log.Println(err)
 					return
 				}
+				state.IncrementBuildProgress()
 				_,err = util.SshExec(server.Addr,fmt.Sprintf("docker cp /home/appo/regtest%d.conf %s:/syscoin/datadir/regtest.conf",node,container))
 				if err != nil {
 					state.ReportError(err)

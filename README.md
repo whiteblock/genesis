@@ -325,6 +325,21 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 curl -X GET http://localhost:8000/defaults/ethereum
 ```
 
+###POST /log/{server}/{node}
+Get both stdout and stderr from the blockchain process
+
+#####RESPONSE
+```
+HTTP/1.1 200 OK
+Date: Mon, 22 Oct 2018 15:31:18 GMT
+<The contents>
+```
+
+#####EXAMPLE
+```bash
+curl -X POST http://localhost:8000/exec/4/0 -d 'ls'
+```
+
 
 ##Configuration
 Configuration options are located in `config.json` in the same directory as the binary

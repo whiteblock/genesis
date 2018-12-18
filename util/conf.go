@@ -8,21 +8,22 @@ import(
 )
 
 type Config struct {
-	Builder 		string		`json:"builder"`
-	SshUser			string		`json:"ssh-user"`
-	SshPassword		string		`json:"ssh-password"`
-	VyosHomeDir		string		`json:"vyos-home-dir"`
-	Listen			string		`json:"listen"`
-	RsaKey			string		`json:"rsa-key"`
-	RsaUser			string		`json:"rsa-user"`
-	Verbose			bool		`json:"verbose"`
-	ServerBits		uint32		`json:"server-bits"`
-	ClusterBits		uint32		`json:"cluster-bits"`
-	NodeBits		uint32		`json:"node-bits"`
-	ThreadLimit		int64		`json:"thread-limit"`
-	BuildMode		string		`json:"build-mode"`
-	IPPrefix		uint32		`json:"ip-prefix"`
-	AllowExec		bool		`json:"allow-exec"`
+	Builder 			string		`json:"builder"`
+	SshUser				string		`json:"ssh-user"`
+	SshPassword			string		`json:"ssh-password"`
+	VyosHomeDir			string		`json:"vyos-home-dir"`
+	Listen				string		`json:"listen"`
+	RsaKey				string		`json:"rsa-key"`
+	RsaUser				string		`json:"rsa-user"`
+	Verbose				bool		`json:"verbose"`
+	ServerBits			uint32		`json:"server-bits"`
+	ClusterBits			uint32		`json:"cluster-bits"`
+	NodeBits			uint32		`json:"node-bits"`
+	ThreadLimit			int64		`json:"thread-limit"`
+	BuildMode			string		`json:"build-mode"`
+	IPPrefix			uint32		`json:"ip-prefix"`
+	AllowExec			bool		`json:"allow-exec"`
+	DockerOutputFile	string		`json:"docker-output-file"`
 }
 
 func (c *Config) AutoFillMissing() {
@@ -66,6 +67,9 @@ func (c *Config) AutoFillMissing() {
 	}
 	if c.AllowExec {
 		println("Warning: exec call is enabled. This is unsafe!")
+	}
+	if len(c.DockerOutputFile) == 0 {
+		c.DockerOutputFile = "/output.log"
 	}
 }
 

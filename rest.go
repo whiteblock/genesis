@@ -63,6 +63,9 @@ func StartServer() {
 	router.HandleFunc("/defaults/{blockchain}",getBlockChainDefaults).Methods("GET")
 	router.HandleFunc("/defaults/{blockchain}/",getBlockChainDefaults).Methods("GET")
 
+	router.HandleFunc("/log/{server}/{node}",getBlockChainLog).Methods("GET")
+	router.HandleFunc("/log/{server}/{node}/",getBlockChainLog).Methods("GET")
+
 	http.ListenAndServe(conf.Listen, router)
 }
 
@@ -334,4 +337,34 @@ func getBlockChainState(w http.ResponseWriter,r *http.Request){
 func getBlockChainDefaults(w http.ResponseWriter,r *http.Request){
 	params := mux.Vars(r)
 	w.Write([]byte(GetDefaults(params["blockchain"])))
+}
+
+func getBlockChainLog(w http.ResponseWriter,r *http.Request){
+	params := mux.Vars(r)
+	serverId, err := strconv.Atoi(params["server"])
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(err.Error()))
+		return
+	}
+	node,err := strconv.Atoi(params["node"])
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(err.Error()))
+		return
+	}
+	server,_,err := db.GetServer(serverId)
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	res,err := util.DockerRead(server.Addr,node,conf.DockerOutputFile)
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(fmt.Sprintf("%s %s",res,err.Error())))
+		return
+	}
+	w.Write([]byte(res))
 }
