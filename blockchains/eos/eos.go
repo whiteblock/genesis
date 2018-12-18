@@ -58,14 +58,18 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 		"eosio.token",
 		"eosio.vpay",
 	}
-
-	keyPairs,err := eos_getKeyPairs(servers)
+	km,err := NewKeyMaster()
+	if err != nil{
+		log.Println(err)
+		return nil,err
+	}
+	keyPairs,err := km.GetServerKeyPairs(servers)
 	if err != nil{
 		log.Println(err)
 		return nil,err
 	}
 
-	contractKeyPairs,err := eos_getContractKeyPairs(servers,contractAccounts)
+	contractKeyPairs,err := km.GetMappedKeyPairs(contractAccounts)
 	if err != nil {
 		log.Println(err)
 		return nil,err
@@ -77,7 +81,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	for i := 0; i < int(eosconf.UserAccounts); i++{
 		accountNames = append(accountNames,eos_getRegularName(i))
 	}
-	accountKeyPairs,err := eos_getUserAccountKeyPairs(masterServerIP,accountNames)
+	accountKeyPairs,err := km.GetMappedKeyPairs(accountNames)
 	if err != nil {
 		log.Println(err)
 		return nil,err
@@ -92,7 +96,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 		log.Println(err)
 		return nil,err
 	}
-	
+	/**Start keos and add all the key pairs for all the nodes**/
 	{
 		for _, server := range servers {
 			for i,ip := range server.Ips {
@@ -111,9 +115,21 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 
 				go func(serverIP string,accountKeyPairs map[string]util.KeyPair,accountNames []string,i int){
 					defer sem.Release(1)
+					cmds := []string{}
 					for _,name := range accountNames {
-						_,err := util.DockerExec(serverIP,i, fmt.Sprintf("cleos wallet import --private-key %s", 
-												 accountKeyPairs[name].PrivateKey))
+						if len(cmds) > 50 {
+							_,err := util.DockerMultiExec(serverIP,i,cmds)
+							if err != nil {
+								log.Println(err)
+								state.ReportError(err)
+								return
+							}
+							cmds = []string{}
+						}
+						cmds = append(cmds,fmt.Sprintf("cleos wallet import --private-key %s", accountKeyPairs[name].PrivateKey))
+					}
+					if len(cmds) > 0 {
+						_,err := util.DockerMultiExec(serverIP,i,cmds)
 						if err != nil {
 							log.Println(err)
 							state.ReportError(err)
@@ -161,13 +177,9 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 						state.ReportError(err)
 						return
 					}
-					_,err = util.SshExec(serverIP, fmt.Sprintf("docker cp /home/appo/genesis.json whiteblock-node%d:/datadir/", i))
-					if err != nil {
-						log.Println(err)
-						state.ReportError(err)
-						return
-					}
-					_,err = util.SshExec(serverIP, fmt.Sprintf("docker cp /home/appo/config.ini whiteblock-node%d:/datadir/", i))
+					_,err = util.SshFastMultiExec(serverIP, 
+									fmt.Sprintf("docker cp /home/appo/genesis.json whiteblock-node%d:/datadir/", i),
+									fmt.Sprintf("docker cp /home/appo/config.ini whiteblock-node%d:/datadir/", i))
 					if err != nil {
 						log.Println(err)
 						state.ReportError(err)

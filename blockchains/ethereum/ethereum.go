@@ -39,7 +39,6 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 	err = util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
 	if err != nil {
 		log.Println(err)
-		return err
 	}
 
 	state.SetBuildSteps(8+(4*nodes))
@@ -149,13 +148,6 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 
 	state.IncrementBuildProgress()
 
-	/*for i := 1; i <= nodes; i++ {
-		err = util.Cp("tmp/static_nodes.json",fmt.Sprintf("tmp/node%d/",i))
-		if err != nil{
-			log.Println(err)
-			return err
-		}
-	}*/
 	node := 0
 	for _, server := range servers {
 		for j, ip := range server.Ips{

@@ -34,7 +34,7 @@ func SshMultiExec(host string, commands ...string) ([]string,error) {
  * @param  ...string	commands	The commands to execute
  * @return string          			The result of the execution
  */
-func sshFastMultiExec(host string, commands ...string) (string,error) {
+func SshFastMultiExec(host string, commands ...string) (string,error) {
 
 	cmd := ""
 	for i, command := range commands {
@@ -99,6 +99,19 @@ func DockerExec(host string,node int,command string) (string,error) {
 
 func DockerExecd(host string,node int,command string) (string,error) {
 	return SshExec(host,fmt.Sprintf("docker exec -d whiteblock-node%d %s",node,command))
+}
+
+func DockerMultiExec(host string,node int,commands []string) (string,error){
+	merged_command := ""
+
+	for _,command := range commands {
+		if len(merged_command) != 0 {
+			merged_command += "&&"
+		}
+		merged_command += fmt.Sprintf("docker exec -d whiteblock-node%d %s",node,command)
+	}
+
+	return SshExec(host,merged_command)
 }
 
 /**

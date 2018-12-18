@@ -10,6 +10,7 @@ import (
 	eos "./blockchains/eos"
 	eth "./blockchains/ethereum"
 	sys "./blockchains/syscoin"
+	rchain "./blockchains/rchain"
 	state "./state"
 )
 
@@ -59,6 +60,13 @@ func AddTestNet(details DeploymentDetails) error {
 			}
 		case "syscoin":
 			labels,err = sys.RegTest(details.Params,details.Nodes,newServerData)
+			if err != nil {
+				state.ReportError(err)
+				log.Println(err)
+				return err
+			}
+		case "rchain":
+			labels,err = rchain.Build(details.Params,details.Nodes,newServerData)
 			if err != nil {
 				state.ReportError(err)
 				log.Println(err)
