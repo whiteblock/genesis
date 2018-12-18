@@ -125,7 +125,6 @@ func DockerMultiExec(host string,node int,commands []string) (string,error){
 func sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
 	var client *ssh.Client
 	var err error
-	
 
 	sshConfig := &ssh.ClientConfig{
 		User: conf.SshUser,

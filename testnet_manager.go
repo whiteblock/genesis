@@ -79,8 +79,12 @@ func AddTestNet(details DeploymentDetails) error {
 			return errors.New("Unknown blockchain")
 	}
 
-	testNetId := db.InsertTestNet(db.TestNet{Id: -1, Blockchain: details.Blockchain, Nodes: details.Nodes, Image: details.Image})
-
+	testNetId,err := db.InsertTestNet(db.TestNet{Id: -1, Blockchain: details.Blockchain, Nodes: details.Nodes, Image: details.Image})
+	if err != nil{
+		log.Println(err)
+		state.ReportError(err);
+		return err
+	}
 	i := 0
 	for _, server := range newServerData {
 		db.UpdateServerNodes(server.Id,0)
@@ -99,8 +103,11 @@ func AddTestNet(details DeploymentDetails) error {
 	return nil
 }
 
-func GetLastTestNetId() int {
-	testNets := db.GetAllTestNets()
+func GetLastTestNetId() (int,error) {
+	testNets,err := db.GetAllTestNets()
+	if err != nil{
+		return 0,err
+	}
 	highestId := -1
 
 	for _, testNet := range testNets {
@@ -108,12 +115,12 @@ func GetLastTestNetId() int {
 			highestId = testNet.Id
 		}
 	}
-	return highestId
+	return highestId,nil
 }
 
-func GetNextTestNetId() string {
-	highestId := GetLastTestNetId()
-	return fmt.Sprintf("%d",highestId+1)
+func GetNextTestNetId() (string,error) {
+	highestId,err := GetLastTestNetId()
+	return fmt.Sprintf("%d",highestId+1),err
 }
 
 func RebuildTestNet(id int) {
@@ -144,6 +151,8 @@ func GetParams(blockchain string) string {
 			return sys.GetParams()
 		case "eos":
 			return eos.GetParams()
+		case "rchain":
+			return rchain.GetParams()
 		default:
 			return "[]"
 	}
@@ -157,6 +166,8 @@ func GetDefaults(blockchain string) string {
 			return sys.GetDefaults()
 		case "eos":
 			return eos.GetDefaults()
+		case "rchain":
+			return rchain.GetDefaults()
 		default:
 			return "{}"
 	}

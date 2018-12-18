@@ -5,7 +5,7 @@ import(
 	"database/sql"
 	"fmt"
 	"errors"
-	util "../util"
+	"log"
 )
 
 type TestNet struct {
@@ -16,27 +16,29 @@ type TestNet struct {
 }
 
 
-func GetAllTestNets() []TestNet {
-	
-	db := getDB()
-	defer db.Close()
+func GetAllTestNets() ([]TestNet,error) {
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT id, blockchain, nodes, image FROM %s",TestTable ))
-	util.CheckFatal(err)
+	if err != nil{
+		log.Println(err)
+		return nil,err
+	}
 	defer rows.Close()
 	testnets := []TestNet{}
 
 	for rows.Next() {
 		var testnet TestNet
-		util.CheckFatal(rows.Scan(&testnet.Id,&testnet.Blockchain,&testnet.Nodes,&testnet.Image))
+		err = rows.Scan(&testnet.Id,&testnet.Blockchain,&testnet.Nodes,&testnet.Image)
+		if err != nil{
+			log.Println(err)
+			return nil,err
+		}
 		testnets = append(testnets,testnet)
 	}
-	return testnets
+	return testnets,nil
 }
 
 func GetTestNet(id int) (TestNet,error) {
-	db := getDB()
-	defer db.Close()
 
 	row :=  db.QueryRow(fmt.Sprintf("SELECT id,blockchain,nodes,image FROM %s WHERE id = %d",TestTable,id))
 
@@ -49,56 +51,83 @@ func GetTestNet(id int) (TestNet,error) {
 	return testnet, nil
 }
 
-func InsertTestNet(testnet TestNet) int {
-	db := getDB()
-	defer db.Close()
+func InsertTestNet(testnet TestNet) (int,error) {
 
 	tx,err := db.Begin()
-	util.CheckFatal(err)
+	if err != nil{
+		log.Println(err)
+		return -1,err
+	}
 
 	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (blockchain,nodes,image) VALUES (?,?,?)",TestTable))
-	util.CheckFatal(err)
+	if err != nil{
+		log.Println(err)
+		return -1,err
+	}
 
 	defer stmt.Close()
 
 	res,err := stmt.Exec(testnet.Blockchain,testnet.Nodes,testnet.Image)
-	util.CheckFatal(err)
-	tx.Commit()
+	if err != nil{
+		log.Println(err)
+		return -1,err
+	}
+
+	err = tx.Commit()
+	if err != nil{
+		log.Println(err)
+		return -1,err
+	}
 
 	id, err := res.LastInsertId()
-	util.CheckFatal(err)
+	if err != nil{
+		log.Println(err)
+		return -1,err
+	}
 
-	return int(id)
+	return int(id),nil
 }
 
 
-func DeleteTestNet(id int){
-	db := getDB()
-	defer db.Close()
+func DeleteTestNet(id int) error {
 
-	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",TestTable,id))
+	_,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",TestTable,id))
+	if err != nil{
+		log.Println(err)
+		return err
+	}
 	DeleteNodesByTestNet(id)
+	return nil
 }
 
-func UpdateTestNet(id int,testnet TestNet){
-	db := getDB()
-	defer db.Close()
+func UpdateTestNet(id int,testnet TestNet) error {
 
 	tx,err := db.Begin()
-	util.CheckFatal(err)
+	if err != nil{
+		log.Println(err)
+		return err
+	}
 
 	stmt,err := tx.Prepare(fmt.Sprintf("UPDATE %s SET blockchain = ?, nodes = ?, image = ? WHERE id = ? ",TestTable))
-	util.CheckFatal(err)
+	if err != nil{
+		log.Println(err)
+		return err
+	}
+
 	defer stmt.Close()
 
 	_,err = stmt.Exec(testnet.Blockchain,testnet.Nodes,testnet.Image,testnet.Id)
-	util.CheckFatal(err)
-	tx.Commit()
+	if err != nil{
+		log.Println(err)
+		return err
+	}
+
+	return tx.Commit()
+
 }
 
-func UpdateTestNetNodes(id int,nodes int){
-	db := getDB()
-	defer db.Close()
-	db.Exec(fmt.Sprintf("UPDATE %s SET nodes = %d WHERE id = %d",TestTable,id,nodes))
+func UpdateTestNetNodes(id int,nodes int) error {
+	_, err := db.Exec(fmt.Sprintf("UPDATE %s SET nodes = %d WHERE id = %d",TestTable,id,nodes))
+	return err
 }
 

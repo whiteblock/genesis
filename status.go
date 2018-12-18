@@ -21,7 +21,10 @@ type BuildStatus struct {
 
 
 func CheckTestNetStatus() ([]TestNetStatus, error) {
-	testnetId := GetLastTestNetId()
+	testnetId,err := GetLastTestNetId()
+	if err != nil {
+		return nil,err
+	}
 	nodes,err := db.GetAllNodesByTestNet(testnetId)
 
 	if err != nil {

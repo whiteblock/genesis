@@ -158,12 +158,22 @@ func updateServerInfo(w http.ResponseWriter, r *http.Request) {
 
 
 func getAllSwitchesInfo(w http.ResponseWriter, r *http.Request) {
-	switches := db.GetAllSwitches()
+	switches,err := db.GetAllSwitches()
+	if err != nil{
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
 	json.NewEncoder(w).Encode(switches)
 }
 
 func getAllTestNets(w http.ResponseWriter, r *http.Request) {
-	testNets := db.GetAllTestNets()
+	testNets,err := db.GetAllTestNets()
+	if err != nil{
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
 	json.NewEncoder(w).Encode(testNets)
 }
 
@@ -184,7 +194,8 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	w.Write([]byte(GetNextTestNetId()))
+	next,_ := GetNextTestNetId()
+	w.Write([]byte(next))
 
 	go AddTestNet(testnet)
 	

@@ -5,34 +5,31 @@ import(
 	"fmt"
 	"regexp"
 	"errors"
-	util "../util"
+	"log"
 )
 
 type Server struct{
-	Addr		string //IP to access the server
-	Iaddr		Iface //Internal IP of the server for NIC attached to the vyos
-	Nodes 		int
-	Max 		int
-	Id			int
-	ServerID	int
-	Iface		string
-	Switches	[]Switch
-	Ips			[]string
+	Addr		string 		`json:"addr"`//IP to access the server
+	Iaddr		Iface 		`json:"iaddr"`//Internal IP of the server for NIC attached to the vyos
+	Nodes 		int			`json:"nodes"`
+	Max 		int			`json:"max"`
+	Id			int			`json:"id"`
+	ServerID	int			`json:"serverID"`
+	Iface		string		`json:"iface"`
+	Switches	[]Switch	`json:"switches"`
+	Ips			[]string	`json:"ips"`
 }
 
 type Iface struct {
-	Ip 			string
-	Gateway 	string
-	Subnet 		int
+	Ip 			string		`json:"ip"`
+	Gateway 	string		`json:"gateway"`
+	Subnet 		int			`json:"subnet"`
 }
 
 func (s Server) Validate() error {
 	var re = regexp.MustCompile(`(?m)[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}`)
 	if !re.Match([]byte(s.Addr)) {
 		return errors.New("Addr is invalid")
-	}
-	if !re.Match([]byte(s.Iaddr.Ip)) {
-		return errors.New("Iaddr.Ip is invalid")
 	}
 	if s.Nodes < 0 {
 		return errors.New("Nodes is invalid")
@@ -54,9 +51,6 @@ func (s Server) Validate() error {
 }
 
 func GetAllServers() (map[string]Server,error) {
-
-	db := getDB()
-	defer db.Close()
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT id,server_id,addr, iaddr_ip,iaddr_gateway,iaddr_subnet,nodes,max,iface,switch,name FROM %s",ServerTable ))
 	if err != nil {
@@ -105,8 +99,6 @@ func GetServers(ids []int) ([]Server,error) {
 }
 
 func GetServer(id int) (Server, string, error) {
-	db := getDB()
-	defer db.Close()
 	var name string
 	var server Server
 
@@ -124,9 +116,13 @@ func GetServer(id int) (Server, string, error) {
 	defer rows.Close()
 	var switchId int
 	//var subnet string
-	util.CheckFatal(rows.Scan(&server.Id,&server.ServerID,&server.Addr,
+	err = rows.Scan(&server.Id,&server.ServerID,&server.Addr,
 							  &server.Iaddr.Ip, &server.Iaddr.Gateway, &server.Iaddr.Subnet,
-						 	  &server.Nodes,&server.Max,&server.Iface,&switchId,&name))
+						 	  &server.Nodes,&server.Max,&server.Iface,&switchId,&name)
+	if err != nil{
+		log.Println(err)
+		return server,name,err
+	}
 	//fmt.Println(subnet)
 	//fmt.Printf("Switch id is %d\n",switchId)
 	if switchId != -1 {
@@ -140,14 +136,10 @@ func GetServer(id int) (Server, string, error) {
 	}
 	
 
-	
-	
 	return server,name,nil
 }
 
 func _insertServer(name string,server Server,switchId int) (int,error) {
-	db := getDB()
-	defer db.Close()
 
 	tx,err := db.Begin()
 	if err != nil {
@@ -175,12 +167,14 @@ func InsertServer(name string,server Server) (int,error) {
 	if len(server.Switches) == 0 {
 		return _insertServer(name,server,-1)
 	}
-	return _insertServer(name,server,InsertSwitch(server.Switches[0]))
+	switchId,err := InsertSwitch(server.Switches[0])
+	if err != nil {
+		return -1,err
+	}
+	return _insertServer(name,server,switchId)
 }
 
 func DeleteServer(id int) error {
-	db := getDB()
-	defer db.Close()
 
 	_,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",ServerTable,id))
 	return err
@@ -195,7 +189,10 @@ func UpdateServer(id int,server Server) error {
 	if server.Switches == nil || len(server.Switches) == 0 {
 		switchId = -1
 	}else if err != nil {
-		switchId = InsertSwitch(server.Switches[0])
+		switchId,err = InsertSwitch(server.Switches[0])
+		if err != nil {
+			return err
+		}
 	}else{
 		switchId = swtch.Id
 	}
@@ -227,20 +224,15 @@ func UpdateServer(id int,server Server) error {
 	if err != nil {
 		return err
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func UpdateServerNodes(id int,nodes int) error {
-	db := getDB()
-	defer db.Close()
 	_,err := db.Exec(fmt.Sprintf("UPDATE %s SET nodes = %d WHERE id = %d",ServerTable,id,nodes))
 	return err
 }
 
 func GetHostIPsByTestNet(id int) ([]string,error) {
-	db := getDB()
-	defer db.Close()
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT id,server_id,addr,iaddr_ip,iaddr_gateway,iaddr_subnet,nodes,max,iface,switch,name FROM %s INNER JOIN %s ON %s.id == %s.server WHERE %s.id == %d GROUP BY %s.id",
 		ServerTable,
@@ -272,8 +264,6 @@ func GetHostIPsByTestNet(id int) ([]string,error) {
 }
 
 func GetServersByTestNet(id int) ([]Server,error) {
-	db := getDB()
-	defer db.Close()
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT ip FROM %s INNER JOIN %s ON %s.id == %s.server WHERE %s.id == %d GROUP BY %s.id",
 		ServerTable,

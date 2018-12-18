@@ -1,9 +1,9 @@
 package util
 
 import (
+	"os"
 	"os/exec"
 	"fmt"
-	"log"
 	"io/ioutil"
 	"bytes"
 	"errors"
@@ -31,13 +31,11 @@ func Rm(directories ...string) error {
 		if conf.Verbose {
 			fmt.Printf("Removing  %s...",directory)
 		}
-		
-		cmd := exec.Command("bash","-c",fmt.Sprintf("rm -rf %s",directory))
-		err := cmd.Run()
+		err := os.RemoveAll(directory)
 		if conf.Verbose {
 			fmt.Printf("done\n")
 		}
-		if err != nil{
+		if err != nil {
 			return err
 		}
 	}
@@ -52,9 +50,7 @@ func Mkdir(directory string) error {
 	if conf.Verbose {
 		fmt.Printf("Creating directory %s\n",directory)
 	}
-	
-	cmd := exec.Command("mkdir","-p",directory)
-	return cmd.Run()
+	return os.MkdirAll(directory,0755)
 }
 
 /**
@@ -158,39 +154,6 @@ func LsDir(_dir string) ([]string,error) {
     return out,nil
 }
 
-/**
- * Check and exit if error
- * @param  error	err The Error
- */
-func CheckFatal(err error){
-	if err != nil {
-		panic(err)
-	}
-}
-
-
-/**
- * Check and log if error
- * @param  Error 	err 	The Error to check
- */
-func Check(err error){
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-/**
- * Check if there was an error, and if so, print out
- * custom error message
- * @param  error    err       The Potential Error
- * @param  string   msg       The message to show
- */
-func CheckAndPrint(err error,msg string){
-	if err != nil {
-		fmt.Println(msg)
-		panic(err)
-	}
-}
 
 /**
  * Combine an Array with \n as the delimiter

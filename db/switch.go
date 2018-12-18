@@ -6,7 +6,7 @@ import(
 	"fmt"
 	"errors"
 	"regexp"
-	util "../util"
+	"log"
 )
 
 type Switch struct {
@@ -27,26 +27,29 @@ func (s Switch) Validate() error {
 	return nil
 }
 
-func GetAllSwitches() []Switch {
-	db := getDB()
-	defer db.Close()
+func GetAllSwitches() ([]Switch,error) {
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s",SwitchTable ))
-	util.CheckFatal(err)
+	if err != nil{
+		log.Println(err)
+		return nil,err
+	}
 	defer rows.Close()
 	switches := []Switch{}
 
 	for rows.Next() {
 		var swtch Switch
-		util.CheckFatal(rows.Scan(&swtch.Id,&swtch.Addr,&swtch.Iface,&swtch.Brand))
+		err = rows.Scan(&swtch.Id,&swtch.Addr,&swtch.Iface,&swtch.Brand)
+		if err != nil{
+			log.Println(err)
+			return nil,err
+		}
 		switches = append(switches,swtch)
 	}
-	return switches
+	return switches,nil
 }
 
 func GetSwitchById(id int) (Switch, error) {
-	db := getDB()
-	defer db.Close()
 
 	row := db.QueryRow(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s WHERE id = %d",SwitchTable,id))
 
@@ -60,8 +63,6 @@ func GetSwitchById(id int) (Switch, error) {
 }
 
 func GetSwitchByIP(ip string) (Switch, error) {
-	db := getDB()
-	defer db.Close()
 
 	row := db.QueryRow(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s WHERE addr = %s",SwitchTable,ip))
 	
@@ -74,48 +75,70 @@ func GetSwitchByIP(ip string) (Switch, error) {
 	return swtch, nil
 }
 
-func InsertSwitch(swtch Switch) int {
-	db := getDB()
-	defer db.Close()
+func InsertSwitch(swtch Switch) (int,error) {
 
 	tx,err := db.Begin()
-	util.CheckFatal(err)
+
+	if err != nil{
+		log.Println(err)
+		return -1,err
+	}
 
 	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (addr,iface,brand) VALUES (?,?,?)",SwitchTable))
-	util.CheckFatal(err)
+	
+	if err != nil{
+		log.Println(err)
+		return -1,err
+	}
 
 	defer stmt.Close()
 
 	res,err := stmt.Exec(swtch.Addr,swtch.Iface,swtch.Brand)
-	util.CheckFatal(err)
+	
+	if err != nil{
+		log.Println(err)
+		return -1,err
+	}
 
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil{
+		log.Println(err)
+		return -1,err
+	}
 	id, err := res.LastInsertId();
-	//fmt.Printf("id on insert is %v\n",id);
-	util.CheckFatal(err)
+	if err != nil{
+		log.Println(err)
+		return -1,err
+	}
 
-	return int(id)
+	return int(id),nil
 }
 
-func DeleteSwitch(id int){
-	db := getDB()
-	defer db.Close()
+func DeleteSwitch(id int) error {
 
-	db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",SwitchTable,id))
+	_,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",SwitchTable,id))
+	return err
 }
 
-func UpdateSwitch(id int,swtch Switch){
-	db := getDB()
-	defer db.Close()
+func UpdateSwitch(id int,swtch Switch) error {
 
 	tx,err := db.Begin()
-	util.CheckFatal(err)
+	if err != nil{
+		log.Println(err)
+		return err
+	}
 
 	stmt,err := tx.Prepare(fmt.Sprintf("UPDATE %s SET addr = ?, iface = ?, brand = ? WHERE id = ? ",SwitchTable))
-	util.CheckFatal(err)
+	if err != nil{
+		log.Println(err)
+		return err
+	}
 	defer stmt.Close()
 
 	_,err = stmt.Exec(swtch.Addr,swtch.Iface,swtch.Brand,swtch.Id)
-	util.CheckFatal(err)
-	tx.Commit()
+	if err != nil{
+		log.Println(err)
+		return err
+	}
+	return tx.Commit()
 }

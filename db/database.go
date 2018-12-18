@@ -14,13 +14,29 @@ const 	ServerTable		string		= 	"servers"
 const	TestTable		string		= 	"testnets"
 const	NodesTable		string		= 	"nodes"
 
-func dbInit(){
+var db *sql.DB
+
+func init(){
+	db = getDB()
+	db.SetMaxOpenConns(50)
+}
+func getDB() *sql.DB {
+	if _, err := os.Stat(dataLoc); os.IsNotExist(err) {
+	  	dbInit()
+	}
+	d, err := sql.Open("sqlite3", dataLoc)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
+
+func dbInit() {
 	_, err := os.Create(dataLoc)
 	if err != nil {
 		panic(err)
 	}
-	db := getDB()
-	defer db.Close()
+	db = getDB()
 
 	switchSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s,%s);",
 		SwitchTable,
@@ -65,27 +81,26 @@ func dbInit(){
 	
 
 	_,err = db.Exec(switchSchema)
-	util.CheckFatal(err)
+	if err != nil {
+		panic(err)
+	}
 	_,err = db.Exec(serverSchema)
-	util.CheckFatal(err)
+	if err != nil {
+		panic(err)
+	}
 	_,err = db.Exec(testSchema)
-	util.CheckFatal(err)
+	if err != nil {
+		panic(err)
+	}
 	_,err = db.Exec(nodesSchema)
-	util.CheckFatal(err)
+	if err != nil {
+		panic(err)
+	}
 
 	InsertLocalServers(db);
 
 }
 
-
-func getDB() *sql.DB {
-	if _, err := os.Stat(dataLoc); os.IsNotExist(err) {
-	  	dbInit()
-	}
-	db, err := sql.Open("sqlite3", dataLoc)
-	util.CheckFatal(err)
-	return db
-}
 
 func InsertLocalServers(db *sql.DB) {
 	InsertServer("bravo",

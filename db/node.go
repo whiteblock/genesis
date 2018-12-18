@@ -20,8 +20,6 @@ type Node struct {
 
 
 func GetAllNodesByServer(serverId int) ([]Node,error) {
-	db := getDB()
-	defer db.Close()
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE server = %d",NodesTable ))
 	if err != nil {
@@ -42,13 +40,11 @@ func GetAllNodesByServer(serverId int) ([]Node,error) {
 }
 
 func GetAllNodesByTestNet(testId int) ([]Node,error) {
-	db := getDB()
-	defer db.Close()
 	nodes := []Node{}
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE test_net = %d",NodesTable,testId ))
 	if err != nil {
-		return nodes,err
+		return nil,err
 	}
 	defer rows.Close()
 
@@ -57,7 +53,7 @@ func GetAllNodesByTestNet(testId int) ([]Node,error) {
 		var node Node
 		err := rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip,&node.Label)
 		if err != nil {
-			return nodes, err
+			return nil, err
 		}
 		nodes = append(nodes,node)
 	}
@@ -65,9 +61,6 @@ func GetAllNodesByTestNet(testId int) ([]Node,error) {
 }
 
 func GetAllNodes() ([]Node,error) {
-	
-	db := getDB()
-	defer db.Close()
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s",NodesTable ))
 	if err != nil {
@@ -88,8 +81,6 @@ func GetAllNodes() ([]Node,error) {
 }
 
 func GetNode(id int) (Node,error) {
-	db := getDB()
-	defer db.Close()
 
 	row :=  db.QueryRow(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE id = %d",NodesTable,id))
 
@@ -103,8 +94,6 @@ func GetNode(id int) (Node,error) {
 }
 
 func InsertNode(node Node) (int,error) {
-	db := getDB()
-	defer db.Close()
 
 	tx,err := db.Begin()
 	if err != nil {
@@ -131,24 +120,18 @@ func InsertNode(node Node) (int,error) {
 
 
 func DeleteNode(id int) error {
-	db := getDB()
-	defer db.Close()
 
 	_,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",NodesTable,id))
 	return err
 }
 
 func DeleteNodesByTestNet(id int) error {
-	db := getDB()
-	defer db.Close()
 
 	_,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE test_net = %d",NodesTable,id))
 	return err
 }	
 
 func DeleteNodesByServer(id int) error {
-	db := getDB()
-	defer db.Close()
 
 	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE server = %d",NodesTable,id))
 	return err
