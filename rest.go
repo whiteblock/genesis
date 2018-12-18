@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"log"
 	"fmt"
-	//"io/ioutil"
-	//util "./util"
+	"io/ioutil"
+	util "./util"
 	db "./db"
 	state "./state"
 )
@@ -256,9 +256,12 @@ func deleteTestNetNode(w http.ResponseWriter, r *http.Request) {
 }
 
 func dockerExec(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("This function is currently down for security reasons"))
-	return
-	/*params := mux.Vars(r)
+	if !conf.AllowExec {
+		w.Write([]byte("This function is currently disabled"))
+		return
+	}
+	
+	params := mux.Vars(r)
 	serverId, err := strconv.Atoi(params["server"])
 	if err != nil {
 		log.Println(err.Error())
@@ -283,13 +286,13 @@ func dockerExec(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	res,err := util.SshExecCheck(server.Addr,fmt.Sprintf("docker exec whiteblock-node%d %s",node,cmd))
+	res,err := util.DockerExec(server.Addr,node,string(cmd))
 	if err != nil {
 		log.Println(err.Error())
 		w.Write([]byte(fmt.Sprintf("%s %s",res,err.Error())))
 		return
 	}
-	w.Write([]byte(res))*/
+	w.Write([]byte(res))
 }
 
 func nodesStatus(w http.ResponseWriter, r *http.Request) {

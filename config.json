@@ -12,5 +12,6 @@
 	"cluster-bits":14,
 	"node-bits":2,
 	"thread-limit":10,
-	"ip-prefix":10
+	"ip-prefix":10,
+	"allow-exec":true
 }

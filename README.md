@@ -263,7 +263,6 @@ curl -XGET http://localhost:8000/status/nodes/
 
 
 ###POST /exec/{server}/{node}
-###Temporarily disabled
 Execute a command on a given node
 #####BODY
 ```
@@ -341,6 +340,7 @@ Configuration options are located in `config.json` in the same directory as the 
 * __cluster-bits__: The bits given to each clusters's number
 * __node-bits__: The bits given to each nodes's number
 * __thread-limit__: The maximum number of threads that can be used for building
+* __allow-exec__: Set to true to enable the /exec/ calls. __This is an unsafe option to enable__
 
 
 ##Blockchain Specific Parameters

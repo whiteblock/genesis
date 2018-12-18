@@ -3,15 +3,12 @@ package rchain
 import(
 	//"context"
 	"fmt"
-	//"errors"
 	"log"
 	"time"
 	"regexp"
 	util "../../util"
 	db "../../db"
 )
-
-
 
 func Build(data map[string]interface{},nodes int,servers []db.Server) ([]string,error) {
 	util.Rm("./rchain.conf")
@@ -66,7 +63,6 @@ func Build(data map[string]interface{},nodes int,servers []db.Server) ([]string,
 			println("Ready")
 			break
 		}
-		
 
 		
 		log.Println("Got the address for the bootnode: "+enode)

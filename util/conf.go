@@ -22,6 +22,7 @@ type Config struct {
 	ThreadLimit		int64		`json:"thread-limit"`
 	BuildMode		string		`json:"build-mode"`
 	IPPrefix		uint32		`json:"ip-prefix"`
+	AllowExec		bool		`json:"allow-exec"`
 }
 
 func (c *Config) AutoFillMissing() {
@@ -48,20 +49,23 @@ func (c *Config) AutoFillMissing() {
 		c.RsaUser = "appo"
 	}
 	if c.ServerBits <= 0 {
-		log.Println("Warning: Using default server bits")
+		println("Warning: Using default server bits")
 		c.ServerBits = 8
 	}
 	if c.ClusterBits <= 0 {
-		log.Println("Warning: Using default cluster bits")
+		println("Warning: Using default cluster bits")
 		c.ClusterBits = 14
 	}
 	if c.NodeBits <= 0 {
-		log.Println("Warning: Using default node bits")
+		println("Warning: Using default node bits")
 		c.NodeBits = 2
 	}
 	if c.ThreadLimit <= 0 {
-		log.Println("Warning: Using default thread limit")
+		println("Warning: Using default thread limit")
 		c.ThreadLimit = 10
+	}
+	if c.AllowExec {
+		println("Warning: exec call is enabled. This is unsafe!")
 	}
 }
 
