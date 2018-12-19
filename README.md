@@ -325,7 +325,7 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 curl -X GET http://localhost:8000/defaults/ethereum
 ```
 
-###POST /log/{server}/{node}
+###GET /log/{server}/{node}
 Get both stdout and stderr from the blockchain process
 
 #####RESPONSE

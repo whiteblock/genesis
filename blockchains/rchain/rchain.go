@@ -10,7 +10,14 @@ import(
 	db "../../db"
 )
 
-func Build(data map[string]interface{},nodes int,servers []db.Server) ([]string,error) {
+var conf *util.Config
+
+func init(){
+	conf = util.GetConfig()
+}
+
+
+func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient) ([]string,error) {
 	util.Rm("./rchain.conf")
 	rchainConf,err := NewRChainConf(data)
 	if err != nil{
@@ -34,21 +41,60 @@ func Build(data map[string]interface{},nodes int,servers []db.Server) ([]string,
 		log.Println(err)
 		return nil,err
 	}
-	var enode string
-	{
-		_,err = util.DockerExecd(servers[0].Addr,0,
-			fmt.Sprintf("bash -c '%s --config-file /rchain.toml run --standalone --data-dir \"/datadir\" --host 0.0.0.0>> /datadir/rchain.stdout'",
-				rchainConf.Command))
+	
+	km,err := NewKeyMaster()
+	keyPairs := make([]util.KeyPair,nodes)
+
+	for i,_ := range keyPairs {
+		keyPairs[i],err = km.GetKeyPair()
 		if err != nil{
 			log.Println(err)
 			return nil,err
 		}
-		println("Attempting to get the enode address")
+	}
+	/**Setup bonds**/
+	{
+		bonds := make([]string,nodes)
+		for i,keyPair := range keyPairs{
+			bonds[i] = fmt.Sprintf("%s 1000000",keyPair.PublicKey)
+		}
+		err = util.Write("./bonds.txt",util.CombineConfig(bonds))
+		if err != nil{
+			log.Println(err)
+			return nil,err
+		}
+		defer util.Rm("./bonds.txt")
+
+		err = clients[0].Scp("./bonds.txt","/home/appo/bonds.txt")
+		if err != nil{
+			log.Println(err)
+			return nil,err
+		}
+		defer clients[0].Run("rm -f /home/appo/bonds.txt")
 		
-		for i := 0; i < 200; i++ {
-			println("Checking if the boot node is ready...")
+		_,err = clients[0].Run("docker cp /home/appo/bonds.txt whiteblock-node0:/bonds.txt")
+		if err != nil{
+			log.Println(err)
+			return nil,err
+		}
+		
+	}
+
+	var enode string
+	{
+		err = clients[0].DockerExecdLog(0,
+			fmt.Sprintf("%s run --standalone --data-dir \"/datadir\" --host %s --bonds-file /bonds.txt --has-faucet",
+				rchainConf.Command,servers[0].Ips[0]))
+		if err != nil{
+			log.Println(err)
+			return nil,err
+		}
+		fmt.Println("Attempting to get the enode address")
+		
+		for i := 0; i < 1000; i++ {
+			fmt.Println("Checking if the boot node is ready...")
 			time.Sleep(time.Duration(1 * time.Second))
-			output,err := util.DockerExec(servers[0].Addr,0,fmt.Sprintf("cat /datadir/rchain.stdout"))
+			output,err := clients[0].DockerExec(0,fmt.Sprintf("cat %s",conf.DockerOutputFile))
 			if err != nil{
 				log.Println(err)
 				return nil,err
@@ -56,11 +102,11 @@ func Build(data map[string]interface{},nodes int,servers []db.Server) ([]string,
 			re := regexp.MustCompile(`(?m)rnode:\/\/[a-z|0-9]*\@([0-9]{1,3}\.){3}[0-9]{1,3}\?protocol=[0-9]*\&discovery=[0-9]*`)
 			
 			if !re.MatchString(output){
-				println("Not ready")
+				fmt.Println("Not ready")
 				continue
 			}
 			enode = re.FindAllString(output,1)[0]
-			println("Ready")
+			fmt.Println("Ready")
 			break
 		}
 
@@ -83,14 +129,14 @@ func Build(data map[string]interface{},nodes int,servers []db.Server) ([]string,
 			if node == 0 && i == 0 {
 				continue
 			}
-			_,err = util.SshExec(server.Addr,fmt.Sprintf("docker cp /home/appo/rnode.toml whiteblock-node%d:/rnode.toml",node))
+			_,err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/rnode.toml whiteblock-node%d:/rnode.toml",node))
 			if err != nil{
 				log.Println(err)
 				return nil,err
 			}
 			
 		}
-		_,err = util.SshExec(server.Addr,"rm -f ~/rnode.toml")
+		_,err = clients[i].Run("rm -f ~/rnode.toml")
 		if err != nil{
 			log.Println(err)
 			return nil,err
@@ -103,17 +149,20 @@ func Build(data map[string]interface{},nodes int,servers []db.Server) ([]string,
 	}
 
 	/**Start up the rest of the nodes**/
+	node :=0
 	for i,server := range servers{
-		for node,_ := range server.Ips{
+		for j,ip := range server.Ips{
 			if node == 0 && i == 0 {
 				continue
 			}
-			_,err = util.DockerExecd(server.Addr,node,
-				fmt.Sprintf("%s --config-file /rchain.toml run --data-dir \"/datadir\" --bootstrap \"%s\" --host 0.0.0.0",rchainConf.Command,enode))
+			err = clients[i].DockerExecdLog(j,
+				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
+							rchainConf.Command,enode,keyPairs[node].PrivateKey,ip))
 			if err != nil{
 				log.Println(err)
 				return nil,err
 			}
+			node++;
 		}
 	}
 	return nil,nil

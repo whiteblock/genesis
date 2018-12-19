@@ -76,6 +76,9 @@ func (this SshClient) FastMultiRun(commands ...string) (string,error) {
 
 func (this SshClient) Run(command string) (string,error) {
 	session, err := this.getSession()
+	if conf.Verbose {
+		fmt.Printf("Running command: %s\n", command)
+	}
 	
 	if err != nil {
 		log.Println(err)

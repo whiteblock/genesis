@@ -88,7 +88,7 @@ func AddTestNet(details DeploymentDetails) error {
 				return err
 			}
 		case "rchain":
-			labels,err = rchain.Build(details.Params,details.Nodes,newServerData)
+			labels,err = rchain.Build(details.Params,details.Nodes,newServerData,clients)
 			if err != nil {
 				state.ReportError(err)
 				log.Println(err)

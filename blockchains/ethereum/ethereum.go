@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"golang.org/x/sync/semaphore"
 	"regexp"
-	//"sync"
 	"errors"
 	"log"
 	util "../../util"
@@ -44,7 +43,7 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server,clients 
 	state.SetBuildSteps(8+(4*nodes))
 	defer func(){
 		fmt.Printf("Cleaning up...")
-		util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
+		util.Rm("tmp")
 		fmt.Printf("done\n")
 	}()
 	
