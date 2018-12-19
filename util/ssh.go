@@ -103,30 +103,11 @@ func DockerExecd(host string,node int,command string) (string,error) {
 	return SshExec(host,fmt.Sprintf("docker exec -d whiteblock-node%d %s",node,command))
 }
 
-func DockerExecdLog(host string,node int,command string) error {
-	if strings.Count(command,"'") != strings.Count(command,"\\'"){
-		panic("DockerExecdLog commands cannot contain unescaped ' characters")
-	}
-	_,err := SshExec(host,fmt.Sprintf("docker exec -d whiteblock-node%d bash -c '%s 2>&1 >> %s'",node,command,conf.DockerOutputFile))
-	return err
-}
-
 func DockerRead(host string,node int,file string) (string,error) {
 	return SshExec(host,fmt.Sprintf("docker exec whiteblock-node%d cat %s",node,file))
 }
 
-func DockerMultiExec(host string,node int,commands []string) (string,error){
-	merged_command := ""
 
-	for _,command := range commands {
-		if len(merged_command) != 0 {
-			merged_command += "&&"
-		}
-		merged_command += fmt.Sprintf("docker exec -d whiteblock-node%d %s",node,command)
-	}
-
-	return SshExec(host,merged_command)
-}
 
 func _sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
 	client,err := sshConnect(host)
@@ -180,22 +161,6 @@ func sshConnect(host string) (*ssh.Client, error) {
 
 
 	return client, nil
-}
-
-/**
- * DEPRECATED
- */
-func InitSCPR(host string, dir string) error {
-	directories,err := LsDir(dir)
-	if err != nil{
-		return err
-	}
-	dirStr := ""
-	for _, dir := range directories {
-		dirStr += " " + dir
-	}
-	_,err = SshExec(host, fmt.Sprintf("mkdir -p %s", dirStr))
-	return err
 }
 
 /**
@@ -265,26 +230,4 @@ func Scpr(host string, dir string) error {
 	}
 	_,err = SshExec(host, fmt.Sprintf("tar xfz %s && rm %s", file, file))
 	return err
-}
-
-/**
- * Copy over a directory to a specified path
- * @param  string   host	The host to copy the directory to
- * @param  string   src		The source of the file/directory
- * @param  string   dest	The destination of the file/directory on the remote machine
- */
-func Scprd(host string, src string, dest string) error {
-	InitSCPR(host, dest+src)
-	files,err := Lsr(src)
-	if err != nil {
-		return err
-	}
-	//fmt.Printf("Files: %+v\n",files)
-	for _, f := range files {
-		err = Scp(host, f, dest+f)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

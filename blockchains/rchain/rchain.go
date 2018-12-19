@@ -30,9 +30,9 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 	}()
 
 	/**Make the data directories**/
-	for _,server := range servers {
-		for i,_ := range server.Ips{
-			util.DockerExec(server.Addr,i,"bash -c 'mkdir /datadir'")
+	for i,server := range servers {
+		for j,_ := range server.Ips{
+			clients[i].DockerExec(j,"mkdir /datadir")
 		}
 	}
 	/**Setup the first node**/
@@ -120,7 +120,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 	}
 	/**Copy config files to the rest of the nodes**/
 	for i,server := range servers{
-		err = util.Scp(server.Addr,"./rnode.toml","/home/appo/rnode.toml")
+		err = clients[i].Scp("./rnode.toml","/home/appo/rnode.toml")
 		if err != nil{
 			log.Println(err)
 			return nil,err
@@ -165,6 +165,11 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 			}
 			node++;
 		}
+	}
+	err = SetupPrometheus(servers,clients)
+	if err != nil{
+		log.Println(err)
+		return nil,err
 	}
 	return nil,nil
 }
