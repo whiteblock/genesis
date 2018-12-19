@@ -14,8 +14,8 @@ import (
 
 type Config struct{
 	interfaces 		[]*NetInterface
-	services		[]*Service
-	system			*System
+	services		string
+	system			string
 }
 
 func NewConfig(data string) *Config{
@@ -34,8 +34,8 @@ func NewConfig(data string) *Config{
 	//fmt.Printf("Slices are:\n%v\n",parts)
 	conf := new(Config)
 	conf.interfaces = ParseInterfaces(parts[0])
-	conf.services = LoadServices(parts[1])
-	conf.system = LoadSystem(parts[2])
+	conf.services = parts[1]
+	conf.system = parts[2]
 	/*fmt.Printf(IfacesToString(conf.interfaces,4))
 	fmt.Printf("\n%s\n",ServicesToString(conf.services))
 	fmt.Println(conf.system.ToString())*/
@@ -49,9 +49,11 @@ func (this *Config) ToString() string {
 	out += IfacesToString(this.interfaces,4)
 	out += "}\n"
 	out += "service {\n"
-	out += ServicesToString(this.services)
+	out += this.services
 	out += "}\n"
-	out += this.system.ToString()
+	out += "system {\n"
+	out += this.system
+	out += "}\n"
 	return out
 }
 
@@ -93,12 +95,4 @@ func (this *Config) RemoveVif(name string,parent string) {
 			return
 		}
 	} 
-}
-
-func (this *Config) SetGateway(address string) {
-	this.system.gateway_address = address
-}
-
-func (this *Config) SetHostName(name string) {
-	this.system.host_name = name
 }
