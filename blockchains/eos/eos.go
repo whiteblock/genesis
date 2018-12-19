@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"golang.org/x/sync/semaphore"
-	"strings"
+	//"strings"
 	"math/rand"
-	"sync"
-	"errors"
+	//"sync"
+	//"errors"
 	"log"
 	db "../../db"
 	util "../../util"
@@ -170,16 +170,16 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
 					return
 				}
 
-				for i := 0; i < len(ips); i++ {
-					_,err = clients[i].DockerExec(i,"mkdir /datadir/")
+				for j := 0; j < len(ips); j++ {
+					_,err = clients[i].DockerExec(j,"mkdir /datadir/")
 					if err != nil {
 						log.Println(err)
 						state.ReportError(err)
 						return
 					}
 					_,err = clients[i].FastMultiRun(
-									fmt.Sprintf("docker cp /home/appo/genesis.json whiteblock-node%d:/datadir/", i),
-									fmt.Sprintf("docker cp /home/appo/config.ini whiteblock-node%d:/datadir/", i))
+									fmt.Sprintf("docker cp /home/appo/genesis.json whiteblock-node%d:/datadir/", j),
+									fmt.Sprintf("docker cp /home/appo/config.ini whiteblock-node%d:/datadir/", j))
 					if err != nil {
 						log.Println(err)
 						state.ReportError(err)
@@ -702,7 +702,8 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
 
 	return out,nil
 }
-func eos_getKeyPair(serverIP string) (util.KeyPair,error){
+
+/*func eos_getKeyPair(serverIP string) (util.KeyPair,error){
 	data,err := util.SshExec(serverIP, "docker exec whiteblock-node0 cleos create key --to-console | awk '{print $3}'")
 	if err != nil {
 		return util.KeyPair{},err
@@ -714,12 +715,12 @@ func eos_getKeyPair(serverIP string) (util.KeyPair,error){
 		panic(1)
 	}
 	return util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]},nil
-}
+}*/
 
-
+/**
 func eos_getKeyPairs(servers []db.Server,clients []*util.SshClient) (map[string]util.KeyPair,error) {
 	keyPairs := make(map[string]util.KeyPair)
-	/**Get the key pairs for each nodeos account**/
+	//Get the key pairs for each nodeos account
 	
 	var wg sync.WaitGroup
 	var mutex = &sync.Mutex{}
@@ -805,7 +806,7 @@ func eos_getUserAccountKeyPairs(client *util.SshClient,accountNames []string) (m
 	}
 	return keyPairs,nil
 }
-
+*/
 
 func eos_createWallet(client *util.SshClient, node int) (string,error) {
 	data,err := client.DockerExec(node,"cleos wallet create --to-console | tail -n 1")
