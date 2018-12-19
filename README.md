@@ -340,6 +340,33 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 curl -X POST http://localhost:8000/exec/4/0 -d 'ls'
 ```
 
+###GET /nodes
+Get the nodes for the latest testnet
+#####RESPONSE
+```json
+[
+    {
+        "id": 1647,
+        "testNetId": 134,
+        "server": 3,
+        "localId": 0,
+        "ip": "10.6.0.2",
+        "label": ""
+    },
+    {
+        "id": 1648,
+        "testNetId": 134,
+        "server": 3,
+        "localId": 1,
+        "ip": "10.6.0.6",
+        "label": ""
+    }
+]
+```
+#####EXAMPLE
+```bash
+curl -X GET http://localhost:8000/nodes
+```
 
 ##Configuration
 Configuration options are located in `config.json` in the same directory as the binary
