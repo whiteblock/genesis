@@ -14,7 +14,7 @@ var conf *util.Config = util.GetConfig()
  * Builds out the Docker Network on pre-setup servers
  * Returns a string of all of the IP addresses 
  */
-func Build(buildConf *Config,servers []db.Server,resources Resources) ([]db.Server,error) {
+func Build(buildConf *Config,servers []db.Server,resources Resources,clients []*util.SshClient) ([]db.Server,error) {
 	var sem	= semaphore.NewWeighted(conf.ThreadLimit)
 	
 	ctx := context.TODO()
@@ -36,7 +36,7 @@ func Build(buildConf *Config,servers []db.Server,resources Resources) ([]db.Serv
 		for j := 0; j < nodes; j++ {
 			servers[i].Ips = append(servers[i].Ips,util.GetNodeIP(servers[i].ServerID,j))
 		}
-		prepareVlans(servers[i], nodes)
+		prepareVlans(servers[i], nodes,clients[i])
 		var startCmd string
 		
 		fmt.Printf("Creating the docker containers on server %d\n",i)
@@ -87,11 +87,11 @@ func Build(buildConf *Config,servers []db.Server,resources Resources) ([]db.Serv
 		if err != nil {
 			return nil,err
 		}
-		go func(server string,startCmd string){
-			util.SshExec(server,startCmd)
+		go func(server int,startCmd string){
+			clients[server].Run(startCmd)
 			//Release the resource
 			sem.Release(1)
-		}(servers[i].Addr,startCmd)
+		}(i,startCmd)
 
 		n -= nodes
 		i++
@@ -110,23 +110,23 @@ func Build(buildConf *Config,servers []db.Server,resources Resources) ([]db.Serv
 }
 
 
-func prepareVlans(server db.Server, nodes int) {
+func prepareVlans(server db.Server, nodes int,client *util.SshClient) {
 
 	if conf.Builder == "local deploy" {
-		util.SshExecIgnore(server.Addr,"~/local_deploy/deploy -k")
+		client.Run("~/local_deploy/deploy -k")
 		if(conf.BuildMode == "stand alone"){
 			cmd := fmt.Sprintf("cd ~/local_deploy && ./vlan -k && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s --stand-alone", 
 					server.ServerID, nodes, conf.ServerBits, conf.ClusterBits, conf.NodeBits, server.Iface)
-			util.SshExec(server.Addr, cmd)
+			client.Run(cmd)
 		}else{
 			cmd := fmt.Sprintf("cd ~/local_deploy && ./vlan -k && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s", 
 					server.ServerID, nodes, conf.ServerBits, conf.ClusterBits, conf.NodeBits, server.Iface)
-			util.SshExec(server.Addr, cmd)
+			client.Run(cmd)
 		}
 	}else if conf.Builder == "local deploy legacy" {
-		util.SshExecIgnore(server.Addr,"~/local_deploy/whiteblock -k")
+		client.Run("~/local_deploy/whiteblock -k")
 		cmd := fmt.Sprintf("cd ~/local_deploy && ./vlan -B && ./vlan -s %d -n %d -a %d -b %d -c %d -i %s", 
 				server.ServerID, nodes, conf.ServerBits, conf.ClusterBits, conf.NodeBits, server.Iface)
-		util.SshExec(server.Addr, cmd)
+		client.Run(cmd)
 	}
 }

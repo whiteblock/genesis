@@ -34,11 +34,28 @@ func AddTestNet(details DeploymentDetails) error {
 		return err
 	}
 	fmt.Println("Got the Servers")
-	
+
+	clients := make([]*util.SshClient,len(servers))
+
+	defer func(clients []*util.SshClient){
+		for _,client := range clients {
+			client.Close()
+		}
+	}(clients)
+
+	for i,server := range servers {
+		clients[i],err = util.NewSshClient(server.Addr)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+	}
+	/**Got the clients**/
+
 	config := deploy.Config{Nodes: details.Nodes, Image: details.Image, Servers: details.Servers}
 	fmt.Printf("Created the build configuration : %+v \n",config)
 
-	newServerData,err := deploy.Build(&config,servers,details.Resources) //TODO: Restructure distribution of nodes over servers
+	newServerData,err := deploy.Build(&config,servers,details.Resources,clients) //TODO: Restructure distribution of nodes over servers
 	if err != nil {
 		log.Println(err)
 		state.ReportError(err)
@@ -50,16 +67,21 @@ func AddTestNet(details DeploymentDetails) error {
 
 	switch(details.Blockchain){
 		case "eos":
-			eos.Eos(details.Params,details.Nodes,newServerData);
+			labels,err = eos.Eos(details.Params,details.Nodes,newServerData,clients);
+			if err != nil {
+				state.ReportError(err)
+				log.Println(err)
+				return err
+			}
 		case "ethereum":
-			err := eth.Ethereum(details.Params,details.Nodes,newServerData)
+			err := eth.Ethereum(details.Params,details.Nodes,newServerData,clients)
 			if err != nil {
 				state.ReportError(err)
 				log.Println(err)
 				return err
 			}
 		case "syscoin":
-			labels,err = sys.RegTest(details.Params,details.Nodes,newServerData)
+			labels,err = sys.RegTest(details.Params,details.Nodes,newServerData,clients)
 			if err != nil {
 				state.ReportError(err)
 				log.Println(err)

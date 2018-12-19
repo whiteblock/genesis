@@ -24,7 +24,7 @@ func init(){
  * @param {[type]} servers []db.Server) 			The servers to be built on       
  * @return ([]string,error [description]
  */
-func RegTest(data map[string]interface{},nodes int,servers []db.Server) ([]string,error) {
+func RegTest(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient) ([]string,error) {
 	if nodes < 3 {
 		log.Println("Tried to build syscoin with not enough nodes")
 		return nil,errors.New("Tried to build syscoin with not enough nodes")
@@ -43,10 +43,11 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server) ([]strin
 	}()
 	state.SetBuildSteps(1+(3*nodes))
 
+
 	fmt.Println("-------------Setting Up Syscoin-------------")
 	
 	fmt.Printf("Creating the syscoin conf files...")
-	out,err := handleConf(servers,sysconf)
+	out,err := handleConf(servers,clients,sysconf)
 	if err != nil {
 		log.Println(err)
 		return nil,err
@@ -56,11 +57,13 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server) ([]strin
 
 
 	fmt.Printf("Launching the nodes")
-	for _,server := range servers {
+	for i,server := range servers {
 		sem3.Acquire(ctx,1)
-		go func(server db.Server){
+		go func(server db.Server,i int){
+			defer sem3.Release(1)
+
 			for j,_ := range server.Ips {
-				err := util.DockerExecdLog(server.Addr,j,"syscoind -conf=\"/syscoin/datadir/regtest.conf\" -datadir=\"/syscoin/datadir/\"")
+				err := clients[i].DockerExecdLog(j,"syscoind -conf=\"/syscoin/datadir/regtest.conf\" -datadir=\"/syscoin/datadir/\"")
 				if err != nil {
 					state.ReportError(err)
 					log.Println(err)
@@ -68,9 +71,9 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server) ([]strin
 				}
 				state.IncrementBuildProgress()
 			}
-			sem3.Release(1)
+			
 
-		}(server)
+		}(server,i)
 	}
 
 	err = sem3.Acquire(ctx,conf.ThreadLimit)
@@ -89,7 +92,7 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server) ([]strin
 
 
 
-func handleConf(servers []db.Server, sysconf *SysConf) ([]string,error) {
+func handleConf(servers []db.Server,clients []*util.SshClient, sysconf *SysConf) ([]string,error) {
 	ips := []string{}
 	for _,server := range servers {
 		for _, ip := range server.Ips {
@@ -131,7 +134,7 @@ func handleConf(servers []db.Server, sysconf *SysConf) ([]string,error) {
 	ctx := context.TODO()
 	node := 0
 	labels := make([]string,len(ips))
-	for _,server := range servers {
+	for i,server := range servers {
 		for _,_ = range server.Ips{
 			sem.Acquire(ctx,1)
 			go func(node int){
@@ -160,21 +163,21 @@ func handleConf(servers []db.Server, sysconf *SysConf) ([]string,error) {
 					log.Println(err)
 					return
 				}
-				err = util.Scp(server.Addr,fmt.Sprintf("./regtest%d.conf",node),fmt.Sprintf("/home/appo/regtest%d.conf",node))
+				err = clients[i].Scp(fmt.Sprintf("./regtest%d.conf",node),fmt.Sprintf("/home/appo/regtest%d.conf",node))
 				if err != nil {
 					state.ReportError(err)
 					log.Println(err)
 					return
 				}
 				container := fmt.Sprintf("whiteblock-node%d",node)
-				_,err = util.SshExec(server.Addr,fmt.Sprintf("docker exec %s mkdir -p /syscoin/datadir",container))
+				_,err = clients[i].Run(fmt.Sprintf("docker exec %s mkdir -p /syscoin/datadir",container))
 				if err != nil {
 					state.ReportError(err)
 					log.Println(err)
 					return
 				}
 				state.IncrementBuildProgress()
-				_,err = util.SshExec(server.Addr,fmt.Sprintf("docker cp /home/appo/regtest%d.conf %s:/syscoin/datadir/regtest.conf",node,container))
+				_,err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/regtest%d.conf %s:/syscoin/datadir/regtest.conf",node,container))
 				if err != nil {
 					state.ReportError(err)
 					log.Println(err)
@@ -186,7 +189,7 @@ func handleConf(servers []db.Server, sysconf *SysConf) ([]string,error) {
 					log.Println(err)
 					return
 				}
-				_,err = util.SshExec(server.Addr,fmt.Sprintf("rm /home/appo/regtest%d.conf",node))
+				_,err = clients[i].Run(fmt.Sprintf("rm /home/appo/regtest%d.conf",node))
 				if err != nil {
 					state.ReportError(err)
 					log.Println(err)

@@ -26,7 +26,7 @@ func init() {
  * @param  int		nodes		The number of nodes in the network
  * @param  []Server	servers		The list of servers passed from build
  */
-func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
+func Ethereum(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient) error {
 	//var mutex = &sync.Mutex{}
 	var sem = semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
@@ -149,20 +149,21 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 	state.IncrementBuildProgress()
 
 	node := 0
-	for _, server := range servers {
+	for i, server := range servers {
 		for j, ip := range server.Ips{
 			sem.Acquire(ctx,1)
 			fmt.Printf("-----------------------------  Starting NODE-%d  -----------------------------\n",node)
 
-			go func(networkId int64,node int,server string,num int,unlock string,nodeIP string){
+			go func(networkId int64,node int,server string,num int,unlock string,nodeIP string, i int){
+				defer sem.Release(1)
 				name := fmt.Sprintf("whiteblock-node%d",num)
-				_,err := util.SshExec(server,fmt.Sprintf("rm -rf tmp/node%d",node))
+				_,err := clients[i].Run(fmt.Sprintf("rm -rf tmp/node%d",node))
 				if err != nil {
 					log.Println(err)
 					state.ReportError(err)
 					return
 				}
-				err = util.Scpr(server,fmt.Sprintf("tmp/node%d",node))
+				err = clients[i].Scpr(fmt.Sprintf("tmp/node%d",node))
 				if err != nil {
 					log.Println(err)
 					state.ReportError(err)
@@ -176,21 +177,19 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server) error {
 						nodeIP,
 						unlock,
 						node)
-
-				_,err = util.SshMultiExec(server,
-					fmt.Sprintf("docker exec %s mkdir -p /whiteblock/node%d/",name,node),
-					fmt.Sprintf("docker cp ~/tmp/node%d %s:/whiteblock",node,name),
-					fmt.Sprintf("docker exec -d %s tmux new -s whiteblock -d",name),
-					fmt.Sprintf("docker exec -d %s tmux send-keys -t whiteblock '%s' C-m",name,gethCmd),
-				)
+				clients[i].Run(fmt.Sprintf("docker exec %s mkdir -p /whiteblock/node%d/",name,node))
+				clients[i].Run(fmt.Sprintf("docker cp ~/tmp/node%d %s:/whiteblock",node,name))
+				clients[i].Run(fmt.Sprintf("docker exec -d %s tmux new -s whiteblock -d",name))
+				clients[i].Run(fmt.Sprintf("docker exec -d %s tmux send-keys -t whiteblock '%s' C-m",name,gethCmd))
+				
 				if err != nil {
 					log.Println(err)
 					state.ReportError(err)
 					return
 				}
-				sem.Release(1)
+				
 				state.IncrementBuildProgress() 
-			}(ethconf.NetworkId,node+1,server.Addr,j,unlock,ip)
+			}(ethconf.NetworkId,node+1,server.Addr,j,unlock,ip,i)
 			node ++
 		}
 	}

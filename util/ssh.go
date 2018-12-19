@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"github.com/tmc/scp"
 	"golang.org/x/crypto/ssh"
+	"log"
 )
 
 /**
@@ -52,7 +53,7 @@ func SshExec(host string, command string) (string, error) {
 		fmt.Printf("Running command on %s : %s\n", host, command)
 	}
 
-	session,client, err := sshConnect(host)
+	session,client, err := _sshConnect(host)
 	if err != nil {
 		fmt.Printf("Error with command %s:%s\n", host, command)
 		return "", err
@@ -65,7 +66,6 @@ func SshExec(host string, command string) (string, error) {
 		fmt.Printf("Error with command %s:%s\nResponse:%s\n\n", host, command, string(out))
 		return string(out), err
 	}
-	session.Close()
 	return string(out), nil
 }
 
@@ -83,7 +83,7 @@ func SshExecIgnore(host string, command string) string {
 		fmt.Printf("Running command on %s : %s\n", host, command)
 	}
 
-	session, client,err := sshConnect(host)
+	session, client,err := _sshConnect(host)
 	if err != nil{
 		panic(err)
 	}
@@ -128,36 +128,41 @@ func DockerMultiExec(host string,node int,commands []string) (string,error){
 	return SshExec(host,merged_command)
 }
 
-/**
- * Checks to see if a connection to the remote host is established,
- * if not then establish it, and then create a new Session on that
- * connection
- * @param  string		host	The host to get a connection
- * @return *ssh.Session			The new SSH connection
- * @return error				The error, if any occured
- */
-func sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
-	var client *ssh.Client
-	var err error
+func _sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
+	client,err := sshConnect(host)
+	if err != nil {
+		log.Println(err)
+		return nil, nil, err
+	}
+	session, err := client.NewSession()
+	if err != nil {
+		client.Close()
+		log.Println(err)
+		return nil, nil, err
+	}
 
+	return session,client, nil
+}
+
+func sshConnect(host string) (*ssh.Client, error) {
 	sshConfig := &ssh.ClientConfig{
 		User: conf.SshUser,
 		Auth: []ssh.AuthMethod{ssh.Password(conf.SshPassword)},
 	}
 	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 
-	client, err = ssh.Dial("tcp", fmt.Sprintf("%s:22", host), sshConfig)
+	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", host), sshConfig)
 	if err != nil {
 		fmt.Println("First ssh attempt failed: " + err.Error())
 	}
 	if err != nil {//Try to connect using the id_rsa file
 		key, err := ioutil.ReadFile(conf.RsaKey)
 		if err != nil {
-			return nil,nil,err
+			return nil,err
 		}
 		signer, err := ssh.ParsePrivateKey(key)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		sshConfig = &ssh.ClientConfig{
 		    User: conf.RsaUser,
@@ -169,18 +174,12 @@ func sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
 		sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 		client, err = ssh.Dial("tcp", fmt.Sprintf("%s:22", host), sshConfig)
 		if err != nil{
-			return nil,nil,err
+			return nil,err
 		}
 	}
 
-	session, err := client.NewSession()
-	if err != nil {
-		client.Close()
-		return nil, nil, err
-		
-	}
 
-	return session,client, nil
+	return client, nil
 }
 
 /**
@@ -210,7 +209,7 @@ func Scp(host string, src string, dest string) error {
 		fmt.Printf("Copying %s to %s:%s...", src, host, dest)
 	}
 
-	session,client, err := sshConnect(host)
+	session,client, err := _sshConnect(host)
 	if err != nil {
 		return err
 	}

@@ -25,7 +25,7 @@ func init(){
  * @param  int		nodes		The number of producers to make
  * @param  []Server servers		The list of relevant servers
  */
-func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,error) {
+func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient) ([]string,error) {
 	
 	eosconf,err := NewConf(data)
 	if err != nil {
@@ -98,27 +98,27 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	}
 	/**Start keos and add all the key pairs for all the nodes**/
 	{
-		for _, server := range servers {
-			for i,ip := range server.Ips {
+		for i, server := range servers {
+			for localId,ip := range server.Ips {
 				/**Start keosd**/
-				_,err = util.DockerExecd(server.Addr,i,"keosd --http-server-address 0.0.0.0:8900")
+				_,err = clients[i].DockerExecd(localId,"keosd --http-server-address 0.0.0.0:8900")
 				if err != nil{
 					log.Println(err)
 					return nil,err
 				}
-				clientPasswords[ip],err = eos_createWallet(server.Addr, i)
+				clientPasswords[ip],err = eos_createWallet(clients[i], localId)
 				if err != nil {
 					log.Println(err)
 					return nil,err
 				}
 				sem.Acquire(ctx,1)
 
-				go func(serverIP string,accountKeyPairs map[string]util.KeyPair,accountNames []string,i int){
+				go func(accountKeyPairs map[string]util.KeyPair,accountNames []string,localId int,server int){
 					defer sem.Release(1)
 					cmds := []string{}
 					for _,name := range accountNames {
 						if len(cmds) > 50 {
-							_,err := util.DockerMultiExec(serverIP,i,cmds)
+							_,err := clients[server].DockerMultiExec(localId,cmds)
 							if err != nil {
 								log.Println(err)
 								state.ReportError(err)
@@ -129,7 +129,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 						cmds = append(cmds,fmt.Sprintf("cleos wallet import --private-key %s", accountKeyPairs[name].PrivateKey))
 					}
 					if len(cmds) > 0 {
-						_,err := util.DockerMultiExec(serverIP,i,cmds)
+						_,err := clients[server].DockerMultiExec(localId,cmds)
 						if err != nil {
 							log.Println(err)
 							state.ReportError(err)
@@ -137,7 +137,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 						}
 					}
 					
-				}(server.Addr,accountKeyPairs,accountNames,i)
+				}(accountKeyPairs,accountNames,localId,i)
 
 			}
 		}
@@ -153,17 +153,17 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	{
 		
 		node := 0
-		for _, server := range servers {
+		for i, server := range servers {
 			sem.Acquire(ctx,1)
-			go func(serverIP string, ips []string){
+			go func(i int, ips []string){
 				defer sem.Release(1)
-				err := util.Scp(serverIP, "./genesis.json", "/home/appo/genesis.json")
+				err := clients[i].Scp("./genesis.json", "/home/appo/genesis.json")
 				if err != nil {
 					log.Println(err)
 					state.ReportError(err)
 					return
 				}
-				err = util.Scp(serverIP, "./config.ini", "/home/appo/config.ini")
+				err = clients[i].Scp("./config.ini", "/home/appo/config.ini")
 				if err != nil {
 					log.Println(err)
 					state.ReportError(err)
@@ -171,13 +171,13 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 				}
 
 				for i := 0; i < len(ips); i++ {
-					_,err = util.DockerExec(serverIP,i,"mkdir /datadir/")
+					_,err = clients[i].DockerExec(i,"mkdir /datadir/")
 					if err != nil {
 						log.Println(err)
 						state.ReportError(err)
 						return
 					}
-					_,err = util.SshFastMultiExec(serverIP, 
+					_,err = clients[i].FastMultiRun(
 									fmt.Sprintf("docker cp /home/appo/genesis.json whiteblock-node%d:/datadir/", i),
 									fmt.Sprintf("docker cp /home/appo/config.ini whiteblock-node%d:/datadir/", i))
 					if err != nil {
@@ -187,19 +187,19 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 					}
 					node++
 				}
-				_,err = util.SshExec(serverIP,fmt.Sprintf("rm /home/appo/genesis.json"))
+				_,err = clients[i].Run("rm /home/appo/genesis.json")
 				if err != nil {
 					log.Println(err)
 					state.ReportError(err)
 					return
 				}
-				_,err = util.SshExec(serverIP,fmt.Sprintf("rm /home/appo/config.ini"))
+				_,err = clients[i].Run("rm /home/appo/config.ini")
 				if err != nil {
 					log.Println(err)
 					state.ReportError(err)
 					return
 				}
-			}(server.Addr,server.Ips)
+			}(i,server.Ips)
 		}
 		sem.Acquire(ctx,conf.ThreadLimit)
 		sem.Release(conf.ThreadLimit)
@@ -215,7 +215,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	/**Step 2d**/
 	{
 		
-		res,err := util.DockerExec(masterServerIP, 0,fmt.Sprintf("cleos wallet import --private-key %s", 
+		res,err := clients[0].DockerExec(0,fmt.Sprintf("cleos wallet import --private-key %s", 
 				keyPairs[masterIP].PrivateKey))
 
 		if err != nil {
@@ -224,7 +224,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 		}
 		println(res)
 		
-		res,err = util.DockerExecd(masterServerIP,0,
+		res,err = clients[0].DockerExecd(0,
 					fmt.Sprintf(`nodeos -e -p eosio --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s`,
 						eos_getKeyPairFlag(keyPairs[masterIP]),
 						eos_getPTPFlags(servers, 0)))
@@ -238,22 +238,23 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 
 	/**Step 3**/
 	{
-		util.SshExecIgnore(masterServerIP, fmt.Sprintf("docker exec whiteblock-node0 cleos -u http://%s:8889 wallet unlock --password %s",
-			masterIP, password))
+		clients[0].Run(fmt.Sprintf("docker exec whiteblock-node0 cleos -u http://%s:8889 wallet unlock --password %s",
+			masterIP, password))//Can fail
+
 		for _, account := range contractAccounts {
 			sem.Acquire(ctx,1)
-			go func(masterServerIP string,masterIP string,account string,masterKeyPair util.KeyPair,contractKeyPair util.KeyPair){
+			go func(masterIP string,account string,masterKeyPair util.KeyPair,contractKeyPair util.KeyPair){
 				defer sem.Release(1)
 				
 				
-				_,err = util.DockerExec(masterServerIP,0,fmt.Sprintf("cleos wallet import --private-key %s", 
+				_,err = clients[0].DockerExec(0,fmt.Sprintf("cleos wallet import --private-key %s", 
 							contractKeyPair.PrivateKey))
 				if err != nil {
 					state.ReportError(err)
 					log.Println(err)
 					return
 				}
-				_,err = util.DockerExec(masterServerIP,0,fmt.Sprintf("cleos -u http://%s:8889 create account eosio %s %s %s",
+				_,err = clients[0].DockerExec(0,fmt.Sprintf("cleos -u http://%s:8889 create account eosio %s %s %s",
 							masterIP, account,masterKeyPair.PublicKey,contractKeyPair.PublicKey))
 				if err != nil {
 					state.ReportError(err)
@@ -262,7 +263,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 				}
 
 				//log.Println("Finished creating account for "+account)
-			}(masterServerIP,masterIP,account,masterKeyPair,contractKeyPairs[account])
+			}(masterIP,account,masterKeyPair,contractKeyPairs[account])
 
 		}
 		sem.Acquire(ctx,conf.ThreadLimit)
@@ -290,7 +291,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	}
 	/**Step 6**/
 
-	res,err := util.DockerExec(masterServerIP,0, fmt.Sprintf("cleos -u http://%s:8889 push action eosio.token create '[ \"eosio\", \"10000000000.0000 SYS\" ]' -p eosio.token@active",
+	res,err := clients[0].DockerExec(0, fmt.Sprintf("cleos -u http://%s:8889 push action eosio.token create '[ \"eosio\", \"10000000000.0000 SYS\" ]' -p eosio.token@active",
 		masterIP))
 	if err != nil {
 		log.Println(err)
@@ -298,7 +299,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	}
 	println(res)
 
-	res,err = util.DockerExec(masterServerIP,0, fmt.Sprintf("cleos -u http://%s:8889 push action eosio.token issue '[ \"eosio\", \"1000000000.0000 SYS\", \"memo\" ]' -p eosio@active",
+	res,err = clients[0].DockerExec(0, fmt.Sprintf("cleos -u http://%s:8889 push action eosio.token issue '[ \"eosio\", \"1000000000.0000 SYS\", \"memo\" ]' -p eosio@active",
 		masterIP))
 	
 	if err != nil{
@@ -308,13 +309,13 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 
 	println(res)
 
-	util.SshExecIgnore(masterServerIP, fmt.Sprintf("docker exec whiteblock-node0 cleos -u http://%s:8889 wallet unlock --password %s",
-				masterIP, password))
+	clients[0].Run(fmt.Sprintf("docker exec whiteblock-node0 cleos -u http://%s:8889 wallet unlock --password %s",
+				masterIP, password))//Ignore fail
 
 
 	/**Step 7**/
 	for i := 0 ; i < 5; i++{
-		res, err := util.DockerExec(masterServerIP,0, fmt.Sprintf("cleos -u http://%s:8889 set contract -x 1000 eosio /opt/eosio/contracts/eosio.system",
+		res, err := clients[0].DockerExec(0, fmt.Sprintf("cleos -u http://%s:8889 set contract -x 1000 eosio /opt/eosio/contracts/eosio.system",
 		masterIP))
 		if(err == nil){
 			fmt.Println("SUCCESS!!!!!")
@@ -328,7 +329,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	/**Step 8**/
 
 	
-		res,err = util.DockerExec(masterServerIP,0,
+		res,err = clients[0].DockerExec(0,
 			fmt.Sprintf(`cleos -u http://%s:8889 push action eosio setpriv '["eosio.msig", 1]' -p eosio@active`,
 				masterIP))
 		if err != nil{
@@ -350,8 +351,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 				go func(masterServerIP string, masterKeyPair util.KeyPair, keyPair util.KeyPair,node int){
 					defer sem.Release(1)
 					
-					_,err = util.DockerExec(masterServerIP,0,fmt.Sprintf("cleos wallet import --private-key %s",
-									keyPair.PrivateKey))
+					_,err = clients[0].DockerExec(0,fmt.Sprintf("cleos wallet import --private-key %s",keyPair.PrivateKey))
 					if err != nil {
 						log.Println(err)
 						state.ReportError(err)
@@ -359,7 +359,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 					}
 
 					if node < eosconf.BlockProducers {
-						_,err = util.DockerExec(masterServerIP,0,
+						_,err = clients[0].DockerExec(0,
 									fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "1000000.0000 SYS" --stake-cpu "1000000.0000 SYS" --buy-ram "1000000 SYS"`,
 										masterIP,
 										eos_getProducerName(node),
@@ -371,8 +371,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 							return
 						}
 						
-						_,err = util.DockerExec(masterServerIP,0,
-									fmt.Sprintf(`cleos -u http://%s:8889 transfer eosio %s "100000.0000 SYS"`,
+						_,err = clients[0].DockerExec(0,fmt.Sprintf(`cleos -u http://%s:8889 transfer eosio %s "100000.0000 SYS"`,
 										masterIP,
 										eos_getProducerName(node)))
 						if err != nil {
@@ -396,8 +395,8 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	/**Step 11c**/
 	{
 		node := 0
-		for _, server := range servers {
-			for i, ip := range server.Ips {
+		for i, server := range servers {
+			for j, ip := range server.Ips {
 				
 				if node == 0 {
 					node++
@@ -405,13 +404,13 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 				}
 				sem.Acquire(ctx,1)
 
-				go func(serverIP string,servers []db.Server,node int,i int,kp util.KeyPair){
+				go func(server int,servers []db.Server,node int,j int,kp util.KeyPair){
 					defer sem.Release(1)
-					util.SshExecIgnore(serverIP, fmt.Sprintf("docker exec whiteblock-node%d mkdir -p /datadir/blocks", i))
+					clients[server].DockerExec(j,"mkdir -p /datadir/blocks")
 					p2pFlags := eos_getPTPFlags(servers,node)
 					if node > eosconf.BlockProducers {
 		
-						res,err := util.DockerExecd(serverIP,i,
+						res,err := clients[server].DockerExecd(j,
 									fmt.Sprintf(`nodeos --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s`,
 										eos_getKeyPairFlag(kp),
 										p2pFlags))
@@ -423,7 +422,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 						println(res)
 					}else{
 
-						res,err := util.DockerExecd(serverIP,i,
+						res,err := clients[server].DockerExecd(j,
 									fmt.Sprintf(`nodeos --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir -p %s %s %s`,
 										eos_getProducerName(node),
 										eos_getKeyPairFlag(kp),
@@ -436,7 +435,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 						println(res)
 					}
 					
-				}(server.Addr,servers,node,i,keyPairs[ip])
+				}(i,servers,node,j,keyPairs[ip])
 				node++
 			}
 		}
@@ -461,12 +460,12 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 				}
 
 				if node % 5 == 0{
-					util.SshExecIgnore(masterServerIP, fmt.Sprintf("docker exec whiteblock-node0 cleos -u http://%s:8889 wallet unlock --password %s",
-						masterIP, password))
+					clients[0].DockerExec(0,fmt.Sprintf("cleos -u http://%s:8889 wallet unlock --password %s",
+						masterIP, password))//ignore
 				}
 
 				
-				res,err = util.DockerExec(masterServerIP,0,
+				res,err = clients[0].DockerExec(0,
 							fmt.Sprintf("cleos --wallet-url http://%s:8900 -u http://%s:8889 system regproducer %s %s https://whiteblock.io/%s",
 								masterIP,
 								masterIP,
@@ -484,9 +483,8 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 		}
 	}
 	/**Step 11b**/
-	res,err = util.DockerExec(masterServerIP,0,
-						fmt.Sprintf("cleos -u http://%s:8889 system listproducers",
-							masterIP))
+	res,err = clients[0].DockerExec(0,fmt.Sprintf("cleos -u http://%s:8889 system listproducers",
+									masterIP))
 	if err != nil{
 		log.Println(err)
 		return nil,err
@@ -499,12 +497,12 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 			go func(masterServerIP string,name string,masterKeyPair util.KeyPair,accountKeyPair util.KeyPair){
 				defer sem.Release(1)
 				
-					res,err := util.DockerExec(masterServerIP,0,
+					res,err := clients[0].DockerExec(0,
 								fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "500000.0000 SYS" --stake-cpu "2000000.0000 SYS" --buy-ram "2000000 SYS"`,
-									masterIP,
-									name,
-									masterKeyPair.PublicKey,
-									accountKeyPair.PublicKey))
+											masterIP,
+											name,
+											masterKeyPair.PublicKey,
+											accountKeyPair.PublicKey))
 					if err != nil{
 						log.Println(err)
 						state.ReportError(err)
@@ -513,10 +511,10 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 					println(res)
 
 				
-					res,err = util.DockerExec(masterServerIP,0,
+					res,err = clients[0].DockerExec(0,
 							fmt.Sprintf(`cleos -u http://%s:8889 transfer eosio %s "100000.0000 SYS"`,
-								masterIP,
-								name))
+										masterIP,
+										name))
 					if err != nil{
 						log.Println(err)
 						state.ReportError(err)
@@ -543,7 +541,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 		if(node > eosconf.BlockProducers){
 			node = eosconf.BlockProducers
 		}
-		_,err = util.DockerExec(masterServerIP,1, fmt.Sprintf("cleos -u http://%s:8889 wallet unlock --password %s",
+		_,err = clients[0].DockerExec(1, fmt.Sprintf("cleos -u http://%s:8889 wallet unlock --password %s",
 				masterIP, passwordNormal))
 		n := 0
 		for _, name := range accountNames {
@@ -558,11 +556,11 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 			go func(masterServerIP string,masterIP string,name string,prod int){
 				defer sem.Release(1)
 				
-					res,err := util.DockerExec(masterServerIP,1,
+					res,err := clients[0].DockerExec(1,
 							fmt.Sprintf("cleos -u http://%s:8889 system voteproducer prods %s %s",
-								masterIP,
-								name,
-								eos_getProducerName(prod)))
+										masterIP,
+										name,
+										eos_getProducerName(prod)))
 						if err != nil{
 							log.Println(err)
 							state.ReportError(err)
@@ -581,7 +579,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	
 	/**Step 12**/
 	
-	_,err = util.DockerExec(masterServerIP,0,
+	_,err = clients[0].DockerExec(0,
 			fmt.Sprintf(
 				`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio.prods", "permission": "active"}}]}}' -p eosio@owner`,
 				masterIP))
@@ -591,7 +589,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	}
 
 	
-	_,err = util.DockerExec(masterServerIP,0,
+	_,err = clients[0].DockerExec(0,
 			fmt.Sprintf(
 				`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio", "permission": "active", "parent": "owner", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio.prods", "permission": "active"}}]}}' -p eosio@active`,
 				masterIP))
@@ -601,7 +599,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	}
 	
 	
-	_,err = util.DockerExec(masterServerIP,0,
+	_,err = clients[0].DockerExec(0,
 		fmt.Sprintf(
 			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.bpay", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.bpay@owner`,
 			masterIP))
@@ -611,7 +609,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 		return nil,err
 	}
 	
-	_,err = util.DockerExec(masterServerIP,0,
+	_,err = clients[0].DockerExec(0,
 		fmt.Sprintf(
 			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.bpay", "permission": "active", "parent": "owner", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.bpay@active`,
 			masterIP))
@@ -621,7 +619,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 		return nil,err
 	}
 
-	_,err = util.DockerExec(masterServerIP,0,
+	_,err = clients[0].DockerExec(0,
 			fmt.Sprintf(
 				`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.msig", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.msig@owner`,
 				masterIP))
@@ -631,7 +629,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 		return nil,err
 	}
 
-	_,err = util.DockerExec(masterServerIP,0,
+	_,err = clients[0].DockerExec(0,
 			fmt.Sprintf(
 				`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.msig", "permission": "active", "parent": "owner", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.msig@active`,
 				masterIP))
@@ -641,7 +639,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	}
 
 	
-	_,err = util.DockerExec(masterServerIP,0,
+	_,err = clients[0].DockerExec(0,
 			fmt.Sprintf(
 				`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.names", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.names@owner`,
 				masterIP))
@@ -650,7 +648,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 		return nil,err
 	}
 
-	_,err = util.DockerExec(masterServerIP,0,fmt.Sprintf(
+	_,err = clients[0].DockerExec(0,fmt.Sprintf(
 				`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.names", "permission": "active", "parent": "owner", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.names@active`,
 				masterIP))
 
@@ -660,7 +658,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	}
 
 	
-	_,err = util.DockerExec(masterServerIP,0,fmt.Sprintf(
+	_,err = clients[0].DockerExec(0,fmt.Sprintf(
 				`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.ram", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.ram@owner`,
 				masterIP))
 
@@ -669,7 +667,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 		return nil,err
 	}
 
-	_,err = util.DockerExec(masterServerIP,0,fmt.Sprintf(
+	_,err = clients[0].DockerExec(0,fmt.Sprintf(
 				`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.ram", "permission": "active", "parent": "owner", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.ram@active`,
 				masterIP))
 
@@ -677,7 +675,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 		log.Println(err)
 		return nil,err
 	}
-	_,err = util.DockerExec(masterServerIP,0,fmt.Sprintf(
+	_,err = clients[0].DockerExec(0,fmt.Sprintf(
 				`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.ramfee", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.ramfee@owner`,
 				masterIP))
 	if err != nil {
@@ -686,7 +684,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server) ([]string,er
 	}
 
 	
-	_,err = util.DockerExec(masterServerIP,0,fmt.Sprintf(
+	_,err = clients[0].DockerExec(0,fmt.Sprintf(
 				`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.ramfee", "permission": "active", "parent": "owner", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.ramfee@active`,
 				masterIP))
 	if err != nil {
@@ -719,19 +717,19 @@ func eos_getKeyPair(serverIP string) (util.KeyPair,error){
 }
 
 
-func eos_getKeyPairs(servers []db.Server) (map[string]util.KeyPair,error) {
+func eos_getKeyPairs(servers []db.Server,clients []*util.SshClient) (map[string]util.KeyPair,error) {
 	keyPairs := make(map[string]util.KeyPair)
 	/**Get the key pairs for each nodeos account**/
 	
 	var wg sync.WaitGroup
 	var mutex = &sync.Mutex{}
 
-	for _, server := range servers {
+	for i, server := range servers {
 		wg.Add(1)
-		go func(serverIP string,ips []string){
+		go func(server int,ips []string){
 			defer wg.Done()
 			for _, ip := range ips {
-				data,err := util.SshExec(serverIP, "docker exec whiteblock-node0 cleos create key --to-console | awk '{print $3}'")
+				data,err := clients[server].DockerExec(0,"cleos create key --to-console | awk '{print $3}'")
 				if err != nil {
 					state.ReportError(err)
 					return
@@ -747,7 +745,7 @@ func eos_getKeyPairs(servers []db.Server) (map[string]util.KeyPair,error) {
 				keyPairs[ip] = util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]}
 				mutex.Unlock()
 			}
-		}(server.Addr,server.Ips)
+		}(i,server.Ips)
 	}
 	wg.Wait()
 	if !state.ErrorFree() {
@@ -773,7 +771,7 @@ func eos_getContractKeyPairs(servers []db.Server,contractAccounts []string) (map
 	return keyPairs,nil
 }
 
-func eos_getUserAccountKeyPairs(masterServerIP string,accountNames []string) (map[string]util.KeyPair,error) {
+func eos_getUserAccountKeyPairs(client *util.SshClient,accountNames []string) (map[string]util.KeyPair,error) {
 
 	keyPairs := make(map[string]util.KeyPair)
 	sem := semaphore.NewWeighted(conf.ThreadLimit)
@@ -782,9 +780,9 @@ func eos_getUserAccountKeyPairs(masterServerIP string,accountNames []string) (ma
 
 	for _,name := range accountNames {
 		sem.Acquire(ctx,1)
-		go func(serverIP string,name string){
+		go func(name string){
 			defer sem.Release(1)
-			data,err := util.SshExec(serverIP, "docker exec whiteblock-node0 cleos create key --to-console | awk '{print $3}'")
+			data,err := client.DockerExec(0, "cleos create key --to-console | awk '{print $3}'")
 			if err != nil{
 				state.ReportError(err)
 				return
@@ -798,7 +796,7 @@ func eos_getUserAccountKeyPairs(masterServerIP string,accountNames []string) (ma
 			mutex.Lock()
 			keyPairs[name] = util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]}
 			mutex.Unlock()
-		}(masterServerIP,name)
+		}(name)
 	}
 	sem.Acquire(ctx,conf.ThreadLimit)
 	sem.Release(conf.ThreadLimit)
@@ -809,8 +807,8 @@ func eos_getUserAccountKeyPairs(masterServerIP string,accountNames []string) (ma
 }
 
 
-func eos_createWallet(serverIP string, id int) (string,error) {
-	data,err := util.SshExec(serverIP, fmt.Sprintf("docker exec whiteblock-node%d cleos wallet create --to-console | tail -n 1",id))
+func eos_createWallet(client *util.SshClient, node int) (string,error) {
+	data,err := client.DockerExec(node,"cleos wallet create --to-console | tail -n 1")
 	if err != nil{
 		return "",err
 	}
