@@ -33,7 +33,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
 		return nil,err
 	}
 	eosconf.BlockProducers++
-
+	state.SetEOSNumberOfAccounts(eosconf.UserAccounts)
 	fmt.Println("-------------Setting Up EOS-------------")
 	sem := semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()

@@ -17,8 +17,9 @@ import (
 func StartServer() {
 	router := mux.NewRouter()
 
-	router.HandleFunc("/servers/", getAllServerInfo).Methods("GET")
+	
 	router.HandleFunc("/servers", getAllServerInfo).Methods("GET")
+	router.HandleFunc("/servers/", getAllServerInfo).Methods("GET")
 
 	router.HandleFunc("/servers/{name}", addNewServer).Methods("PUT") //Private
 

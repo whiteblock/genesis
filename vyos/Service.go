@@ -3,6 +3,7 @@ package vyos
 import (
 	"regexp"
 	"fmt"
+	"log"
 )
 
 type Service struct{
@@ -18,8 +19,15 @@ func LoadServices(data string) []*Service {
 	//fmt.Printf("Start indexes are %v\n",startIndexes)
 	//fmt.Printf("End index are %v\n",endIndexes)
 	services := []*Service{}
+
 	for i,start := range startIndexes {
-		services = append(services,NewService(data[start[1]:endIndexes[i][0]],data[start[0]:start[1]],8))
+		
+		if len(start) > 1 && len(endIndexes[i]) > 0  {
+			services = append(services,NewService(data[start[1]:endIndexes[i][0]],data[start[0]:start[1]],8))
+		}else{
+			log.Println("Out of range")
+			panic(1)
+		}
 	}
 
 	return services;
@@ -30,7 +38,7 @@ func ServicesToString(services []*Service) string {
 	for _,service := range services {
 		out += service.ToString()
 	}
-	return out;
+	return out
 }
 
 func (this *Service) ToString() string {
@@ -44,7 +52,7 @@ func (this *Service) ToString() string {
 
 	out += fmt.Sprintf("%s}\n",shallowIndent);
 	//fmt.Printf("OutToString:\n%s\n",out)
-	return out;
+	return out
 }
 
 
