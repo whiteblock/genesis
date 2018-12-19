@@ -34,7 +34,10 @@ func GrabPairs(indent int,data string) map[string]string {
 	extractPattern := regexp.MustCompile(`([0-9|A-z]|\.|\/|:|\-|_)+`)
 	for _,line := range initResults {
 		pair := extractPattern.FindAllString(line,2)
-		out[pair[0]] = pair[1]
+		if(len(pair) == 2 ){
+			out[pair[0]] = pair[1]
+		}
+		
 	}
 	return out;
 
