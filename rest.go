@@ -330,6 +330,7 @@ func getBlockChainState(w http.ResponseWriter,r *http.Request){
 			data := state.GetEosState()
 			if data == nil{
 				w.Write([]byte("No state availible for eos"))
+				return
 			}
 			json.NewEncoder(w).Encode(*data)
 			return
