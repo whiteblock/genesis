@@ -66,6 +66,9 @@ func StartServer() {
 	router.HandleFunc("/log/{server}/{node}",getBlockChainLog).Methods("GET")
 	router.HandleFunc("/log/{server}/{node}/",getBlockChainLog).Methods("GET")
 
+	router.HandleFunc("/nodes",getLastNodes).Methods("GET")
+	router.HandleFunc("/nodes/",getLastNodes).Methods("GET")
+
 	http.ListenAndServe(conf.Listen, router)
 }
 
@@ -367,4 +370,21 @@ func getBlockChainLog(w http.ResponseWriter,r *http.Request){
 		return
 	}
 	w.Write([]byte(res))
+}
+
+
+func getLastNodes(w http.ResponseWriter,r *http.Request) {
+	id, err := GetLastTestNetId()
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	nodes,err := db.GetAllNodesByTestNet(id)
+	if err != nil {
+		log.Println(err.Error())
+		w.Write([]byte(err.Error()))
+		return
+	}
+	json.NewEncoder(w).Encode(nodes)
 }

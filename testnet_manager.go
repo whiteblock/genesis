@@ -128,6 +128,7 @@ func AddTestNet(details DeploymentDetails) error {
 func GetLastTestNetId() (int,error) {
 	testNets,err := db.GetAllTestNets()
 	if err != nil{
+		log.Println(err)
 		return 0,err
 	}
 	highestId := -1
@@ -157,6 +158,7 @@ func RemoveTestNet(id int) error {
 	for _, node := range nodes {
 		server, _, err := db.GetServer(node.Server)
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 		util.SshExec(server.Addr, fmt.Sprintf("~/local_deploy/deploy --kill=%d", node.LocalId))
