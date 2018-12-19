@@ -147,12 +147,13 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 		log.Println(err)
 		return nil,err
 	}
-
+	fmt.Println("Starting the rest of the nodes...");
 	/**Start up the rest of the nodes**/
-	node :=0
-	for i,server := range servers{
+	node := 0
+	for i,server := range servers {
 		for j,ip := range server.Ips{
-			if node == 0 && i == 0 {
+			if node == 0 {
+				node++;
 				continue
 			}
 			err = clients[i].DockerExecdLog(j,
