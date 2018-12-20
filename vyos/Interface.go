@@ -26,8 +26,8 @@ func ParseInterfaces(data string) []*NetInterface {
 	endPattern := regexp.MustCompile("(?m)^( ){3,5}}")
 	endIndexes := endPattern.FindAllIndex([]byte(data),-1)
 
-	//fmt.Printf("Start indexes are %v\n",startIndexes)
-	//fmt.Printf("End index are %v\n",endIndexes)
+	fmt.Printf("Start indexes are %v\n",startIndexes)
+	fmt.Printf("End index are %v\n",endIndexes)
 
 	ifaces := []*NetInterface{}
 	for i,start := range startIndexes {
@@ -45,15 +45,15 @@ func ParseViffs(data string) []*NetInterface {
 	endPattern := regexp.MustCompile("(?m)^( ){8}}")
 	endIndexes := endPattern.FindAllIndex([]byte(data),-1)
 
-	//fmt.Printf("Start indexes are %v\n",startIndexes)
-	//fmt.Printf("End index are %v\n",endIndexes)
+	fmt.Printf("Start indexes are %v\n",startIndexes)
+	fmt.Printf("End index are %v\n",endIndexes)
 
 	ifaces := []*NetInterface{}
 	for i,start := range startIndexes {
 		ifaces = append(ifaces,NewNetInterface(data[start[1]:endIndexes[i][0]],data[start[0]:start[1]],12) )
 	}
-	//fmt.Printf("Interfaces : \n\n %#v \n",ifaces);
-	//fmt.Printf(IfacesToString(ifaces,4))
+	fmt.Printf("Interfaces : \n\n %#v \n",ifaces);
+	fmt.Printf(IfacesToString(ifaces,4))
 	return ifaces
 }
 
@@ -62,7 +62,7 @@ func NewNetInterface(data string,name string, indent int) *NetInterface {
 	namePattern := regexp.MustCompile("[A-z|0-9]+")
 	names := namePattern.FindAllString(name,2)
 	out.name = InterfaceName{iType:names[0],name:names[1]}
-	//fmt.Printf("Given:\n%s\n",data)
+	fmt.Printf("Given:\n%s\n",data)
 
 	//Grap address
 	out.address = GrabValue(indent,"address",data)
@@ -71,7 +71,7 @@ func NewNetInterface(data string,name string, indent int) *NetInterface {
 	out.smp_affinity = GrabValue(indent,"smp_affinity",data)
 	out.speed = GrabValue(indent,"speed",data)
 	out.vlans = ParseViffs(data)
-	//fmt.Printf("Out:\n%s\n",out.ToString(indent - 4))
+	fmt.Printf("Out:\n%s\n",out.ToString(indent - 4))
 	return out;
 }
 
