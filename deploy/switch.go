@@ -46,7 +46,6 @@ func PrepareSwitches(server db.Server,nodes int) error {
 	if err != nil{
 		return err
 	}
-	panic(1)
 	err = util.Scp(server.Switches[0].Addr,"./config.boot","/config/config.boot")
 	if err != nil{
 		return err
