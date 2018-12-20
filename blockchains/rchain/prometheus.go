@@ -1,7 +1,6 @@
 package rchain
 
 import(
-	"fmt"
 	"log"
 	util "../../util"
 	db "../../db"
@@ -11,7 +10,7 @@ import(
 func SetupPrometheus(servers []db.Server,clients []*util.SshClient) error {
 	for i,server := range servers{
 		for node,_ := range server.Ips{
-			_,err = clients[i].DockerExecd(node,"prometheus --config.file=\"/prometheus.yml\"")
+			_,err := clients[i].DockerExecd(node,"prometheus --config.file=\"/prometheus.yml\"")
 			if err != nil{
 				log.Println(err)
 				return err
