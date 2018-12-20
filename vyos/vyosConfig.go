@@ -31,7 +31,7 @@ func NewConfig(data string) *Config{
 	//fmt.Printf("Slices are:\n%v\n",parts)
 	conf := new(Config)
 	conf.interfaces = ParseInterfaces(data[startIndexes[0][1]:endIndexes[0][0]])
-	conf.rest = data[endIndexes[0][0]:]
+	conf.rest = data[endIndexes[0][0]+1:]
 	/*fmt.Printf(IfacesToString(conf.interfaces,4))
 	fmt.Printf("\n%s\n",ServicesToString(conf.services))
 	fmt.Println(conf.system.ToString())*/

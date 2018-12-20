@@ -76,7 +76,7 @@ func GetGateway(server int, node int) string {
  * @return []string			A list of gateways for all of the nodes on that server
  */
 func GetGateways(server int, nodes int) []string {
-	clusters := uint32((uint32(nodes) - (uint32(nodes)%NodesPerCluster))/NodesPerCluster) + 1
+	clusters := uint32((uint32(nodes) - (uint32(nodes)%NodesPerCluster))/NodesPerCluster)
 	out := []string{}
 	var i uint32;
 	for i = 0; i < clusters ; i++ {

@@ -134,6 +134,27 @@ interfaces {
         vif 104 {
             address 10.3.0.13/30
         }
+        vif 105 {
+            address 10.3.0.17/30
+        }
+        vif 106 {
+            address 10.3.0.21/30
+        }
+        vif 107 {
+            address 10.3.0.25/30
+        }
+        vif 108 {
+            address 10.3.0.29/30
+        }
+        vif 109 {
+            address 10.3.0.33/30
+        }
+        vif 110 {
+            address 10.3.0.37/30
+        }
+        vif 111 {
+            address 10.3.0.41/30
+        }
     }
     ethernet eth4 {
         address 10.254.4.1/24
@@ -203,12 +224,9 @@ interfaces {
         vif 103 {
             address 10.6.0.9/30
         }
-        vif 104 {
-            address 10.6.0.13/30
-        }
     }
 }
-}
+
 service {
     ssh {
         port 22
