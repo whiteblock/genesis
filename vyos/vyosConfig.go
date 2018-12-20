@@ -14,8 +14,7 @@ import (
 
 type Config struct{
 	interfaces 		[]*NetInterface
-	services		string
-	system			string
+	rest		string
 }
 
 func NewConfig(data string) *Config{
@@ -27,15 +26,11 @@ func NewConfig(data string) *Config{
 	//fmt.Printf("Start indexes are %v\n",startIndexes)
 	//fmt.Printf("End index are %v\n",endIndexes)
 
-	parts := []string{}
-	for i,start := range startIndexes {
-		parts = append(parts,data[start[1]:endIndexes[i][0]])
-	}
+
 	//fmt.Printf("Slices are:\n%v\n",parts)
 	conf := new(Config)
-	conf.interfaces = ParseInterfaces(parts[0])
-	conf.services = parts[1]
-	conf.system = parts[2]
+	conf.interfaces = ParseInterfaces(data[startIndexes[0][1]:endIndexes[0][0]])
+	conf.rest = data[endIndexes[0][0]:]
 	/*fmt.Printf(IfacesToString(conf.interfaces,4))
 	fmt.Printf("\n%s\n",ServicesToString(conf.services))
 	fmt.Println(conf.system.ToString())*/
@@ -48,12 +43,7 @@ func (this *Config) ToString() string {
 	out := "interfaces {\n"
 	out += IfacesToString(this.interfaces,4)
 	out += "}\n"
-	out += "service {\n"
-	out += this.services
-	out += "}\n"
-	out += "system {\n"
-	out += this.system
-	out += "}\n"
+	out += this.rest
 	return out
 }
 

@@ -30,7 +30,7 @@ func PrepareSwitches(server db.Server,nodes int) error {
 		setupHPSwitch(server,nodes)
 		return nil
 	}
-	config,meta,err := getConfig(server.Switches[0].Addr)
+	config,_,err := getConfig(server.Switches[0].Addr)
 	gws := util.GetGateways(server.ServerID, nodes)
 	config.RemoveVifs(server.Switches[0].Iface)
 	config.SetIfaceAddr(server.Switches[0].Iface,fmt.Sprintf("%s/%d",server.Iaddr.Gateway,server.Iaddr.Subnet))//Update this later on to be more dynamic
@@ -42,10 +42,11 @@ func PrepareSwitches(server db.Server,nodes int) error {
 	}
 	//fmt.Printf(config.ToString())
 	//fmt.Printf(meta)
-	err = util.Write("config.boot",fmt.Sprintf("%s\n%s",config.ToString(),meta))
+	err = util.Write("config.boot",fmt.Sprintf("%s\n",config.ToString()))
 	if err != nil{
 		return err
 	}
+	panic(1)
 	err = util.Scp(server.Switches[0].Addr,"./config.boot","/config/config.boot")
 	if err != nil{
 		return err
