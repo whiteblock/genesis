@@ -3,6 +3,7 @@ package vyos
 import (
 	"regexp"
 	//"fmt"
+	"log"
 )
 /**
  * Abstraction of vyos configuration file
@@ -14,7 +15,7 @@ import (
 
 type Config struct{
 	interfaces 		[]*NetInterface
-	rest		string
+	rest			string
 }
 
 func NewConfig(data string) *Config{
@@ -68,7 +69,12 @@ func (this *Config) GetInterfaceByName(name string) *NetInterface {
 
 func (this *Config) RemoveAllVifs() {
 	for i,_ := range this.interfaces {
-		this.interfaces[i].vlans = []*NetInterface{}
+		if this.interfaces[i] == nil {
+			log.Println("interface is null")
+		}else{
+			this.interfaces[i].vlans = []*NetInterface{}
+		}
+		
 	}
 }
 
