@@ -44,7 +44,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
     clientPasswords := make(map[string]string)
 
     fmt.Println("\n*** Get Key Pairs ***")
-
+    state.SetBuildSteps(16+1)
     
 
     contractAccounts := []string{
@@ -74,6 +74,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
         log.Println(err)
         return nil,err
     }
+    state.IncrementBuildProgress()
 
     masterKeyPair := keyPairs[servers[0].Ips[0]]
 
@@ -96,6 +97,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
         log.Println(err)
         return nil,err
     }
+    state.IncrementBuildProgress() 
     /**Start keos and add all the key pairs for all the nodes**/
     {
         for i, server := range servers {
@@ -149,7 +151,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
     }
     password := clientPasswords[servers[0].Ips[0]]
     passwordNormal := clientPasswords[servers[0].Ips[1]]
-
+    state.IncrementBuildProgress() 
     {
         
         node := 0
@@ -211,7 +213,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
         util.Rm("./genesis.json")
         util.Rm("./config.ini")
     }()
-
+    state.IncrementBuildProgress() 
     /**Step 2d**/
     {
         
@@ -235,7 +237,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
         println(res)
     }
     
-
+    state.IncrementBuildProgress() 
     /**Step 3**/
     {
         clients[0].Run(fmt.Sprintf("docker exec whiteblock-node0 cleos -u http://%s:8889 wallet unlock --password %s",
@@ -274,6 +276,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
         }
         
     }
+    state.IncrementBuildProgress() 
     /**Steps 4 and 5**/
     {
         contracts := []string{"eosio.token","eosio.msig"}
@@ -289,6 +292,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
             }
         }
     }
+    state.IncrementBuildProgress() 
     /**Step 6**/
 
     res,err := clients[0].DockerExec(0, fmt.Sprintf("cleos -u http://%s:8889 push action eosio.token create '[ \"eosio\", \"10000000000.0000 SYS\" ]' -p eosio.token@active",
@@ -312,7 +316,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
     clients[0].Run(fmt.Sprintf("docker exec whiteblock-node0 cleos -u http://%s:8889 wallet unlock --password %s",
                 masterIP, password))//Ignore fail
 
-
+    state.IncrementBuildProgress() 
     /**Step 7**/
     for i := 0 ; i < 5; i++{
         res, err := clients[0].DockerExec(0, fmt.Sprintf("cleos -u http://%s:8889 set contract -x 1000 eosio /opt/eosio/contracts/eosio.system",
@@ -325,7 +329,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
         fmt.Println(res)
     }
     
-    
+    state.IncrementBuildProgress() 
     /**Step 8**/
 
     
@@ -336,7 +340,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
             log.Println(err)
             return nil,err
         }
-
+    state.IncrementBuildProgress() 
     /**Step 10a**/
     {
         node := 0
@@ -391,7 +395,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
             return nil,state.GetError()
         }
     }
-    
+    state.IncrementBuildProgress() 
     /**Step 11c**/
     {
         node := 0
@@ -445,7 +449,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
             return nil,state.GetError()
         }
     }
-
+    state.IncrementBuildProgress() 
     /**Step 11a**/
     {
         node := 0
@@ -482,6 +486,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
             }
         }
     }
+    state.IncrementBuildProgress() 
     /**Step 11b**/
     res,err = clients[0].DockerExec(0,fmt.Sprintf("cleos -u http://%s:8889 system listproducers",
                                     masterIP))
@@ -530,6 +535,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
             return nil, state.GetError()
         }
     }
+    state.IncrementBuildProgress() 
     /**Vote in block producers**/
     {   
         node := 0
@@ -576,7 +582,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
             return nil, state.GetError()
         }
     }
-    
+    state.IncrementBuildProgress() 
     /**Step 12**/
     
     _,err = clients[0].DockerExec(0,
@@ -699,7 +705,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
             out = append(out,clientPasswords[ip])
         }
     }
-
+    state.IncrementBuildProgress() 
     return out,nil
 }
 
