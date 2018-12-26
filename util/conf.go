@@ -5,6 +5,8 @@ import(
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
+	"fmt"
 )
 
 type Config struct {
@@ -27,69 +29,94 @@ type Config struct {
 }
 
 func (this *Config) LoadFromEnv() {
+	var err error
 	val,exists := os.LookupEnv("BUILDER")
 	if exists {
 		this.Builder = val
 	}
 	val,exists = os.LookupEnv("SSH_USER")
 	if exists {
-		this.SshUser
+		this.SshUser = val
 	}
 	val,exists = os.LookupEnv("SSH_PASSWORD")
 	if exists {
-		this.
+		this.SshPassword = val
 	}
 	val,exists = os.LookupEnv("VYOS_HOME_DIR")
 	if exists {
-		this.
+		this.VyosHomeDir = val
 	}
 	val,exists = os.LookupEnv("LISTEN")
 	if exists {
-		this.
+		this.Listen = val
 	}
 	val,exists = os.LookupEnv("RSA_KEY")
 	if exists {
-		this.
+		this.RsaKey = val
 	}
 	val,exists = os.LookupEnv("RSA_USER")
 	if exists {
-		this.
+		this.RsaUser = val
 	}
 	_,exists = os.LookupEnv("VERBOSE")
 	if exists {
-		this.
+		this.Verbose = true
 	}
 	val,exists = os.LookupEnv("SERVER_BITS")
 	if exists {
-		this.
+		tmp,err := strconv.ParseUint(val,0,32)
+		this.ServerBits = uint32(tmp)
+		if err != nil{
+			fmt.Println("Invalid ENV value for SERVER_BITS")
+			os.Exit(1)
+		}
 	}
 	val,exists = os.LookupEnv("CLUSTER_BITS")
 	if exists {
-		this.
+		tmp,err := strconv.ParseUint(val,0,32)
+		this.ClusterBits = uint32(tmp)
+		if err != nil{
+			fmt.Println("Invalid ENV value for CLUSTER_BITS")
+			os.Exit(1)
+		}
 	}
 	val,exists = os.LookupEnv("NODE_BITS")
 	if exists {
-		this.
+		tmp,err := strconv.ParseUint(val,0,32)
+		this.NodeBits = uint32(tmp)
+		if err != nil{
+			fmt.Println("Invalid ENV value for NODE_BITS")
+			os.Exit(1)
+		}
 	}
 	val,exists = os.LookupEnv("THREAD_LIMIT")
 	if exists {
-		this.
+		this.ThreadLimit,err = strconv.ParseInt(val,0,64)
+		if err != nil{
+			fmt.Println("Invalid ENV value for THREAD_LIMIT")
+			os.Exit(1)
+		}
 	}
 	val,exists = os.LookupEnv("BUILD_MODE")
 	if exists {
-		this.
+		this.BuildMode = val
 	}
 	val,exists = os.LookupEnv("IP_PREFIX")
 	if exists {
-		this.
+		tmp,err := strconv.ParseUint(val,0,32)
+		this.IPPrefix = uint32(tmp)
+		if err != nil{
+			fmt.Println("Invalid ENV value for IP_PREFIX")
+			os.Exit(1)
+		}
 	}
 	_,exists = os.LookupEnv("ALLOW_EXEC")
 	if exists {
-		this.
+		this.AllowExec = true
 	}
 	val,exists = os.LookupEnv("DOCKER_OUTPUT_FILE")
 	if exists {
-		this.
+		this.DockerOutputFile = val
 	}
 
 }

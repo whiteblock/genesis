@@ -38,13 +38,10 @@ func GetNodeIP(server int,node int) string {
     //fmt.Printf("CLUSTER IS %d\n",cluster)
     ip += cluster << clusterShift
     //set the node bits
-    if(cluster == clusterLast){
-        if(node != 0){
-            ip += uint32(node) % NodesPerCluster + 1
-        }
-    }else{
+    if(cluster != clusterLast){
         ip += uint32(node)%NodesPerCluster + 2
     }
+    
     return InetNtoa(ip)
 }
 

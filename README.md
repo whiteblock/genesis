@@ -61,20 +61,20 @@ The following assumptions will be made
 * Nodes in the same docker network are able to route between each other by default
 
 For simplicity, the following variables will be used
-* `A` = `ip-prefix`
-* `B` = `server-bits`
-* `C` = `cluster-bits`
-* `D` = `node-bits`
+* __A__ = `ip-prefix`
+* __B__ = `server-bits`
+* __C__ = `cluster-bits`
+* __D__ = `node-bits`
 
 Note the following rules
-* `A`,`B`,`C`, and `D` cannot be 0
-* ceil(log2(`A`)) + `B` + `C` + `D` <= 32
-* `D` must be atleast 2
-* (`B`^2) = The maximum number of servers
-* (`C`^2) = The number of cluster in a given server
-* (`D`^2 - 3) = How many nodes are groups together in each cluster
-* (`D`^2 - 3) * (`C`^2) = The max number of nodes on a server
-* (`D`^2 - 3) * (`C`^2) * (`B`^2) = The maximum number of nodes that could be on the platform
+* __A__,__B__,__C__, and __D__ must be greater than 0
+* ceil(log2(__A__)) + __B__ + __C__ + __D__ <= 32
+* __D__ must be atleast 2
+* (2^__B__) = The maximum number of servers
+* (2^__C__) = The number of cluster in a given server
+* (2^__D__ - 3) = How many nodes are groups together in each cluster
+* (2^__D__ - 3) * (2^__C__) = The max number of nodes on a server
+* (2^__D__ - 3) * (2^__C__) * (2^__B__) = The maximum number of nodes that could be on the platform
 
 ###What is a cluster?
 
@@ -83,9 +83,60 @@ Containers in the same cluster will have minimal latency applied to them. In the
 it is best to just have one node per cluster, allowing for latency control between all of the nodes.
 
 ###How is it all calculated?
-Given a node number `X` and a `serverId` of `Y`,
-Let `Z` be the cluster number, and the earlier mentioned variables applied
-`Z`= `X`uint32(uint32(node)/(1 << conf.NodeBits) - ReservedIps)
+
+Given a node number __X__ and a `serverId` of __Y__,
+Let __Z__ be the cluster number,
+__I__ be the generated IP in big-endian,
+and the earlier mentioned variables applied
+
+__Z__ = floor(__X__ / (2^__D__ - 3)))
+__I__ = (__A__ * 2^(__B__+__C__+__D__) ) + ( __Y__ * 2^(__B__+__C__) ) + (__Z__ * 2^__C__) + (__X__ % (2^__D__ - 3) + 2)
+
+if __Z__ == (2^__C__ - 1) then __I__ = __I__ - 2
+
+####Explaination
+First get the cluster the node is in
+Then construct the IP one segment at a time through addition
+Due to the restrictions, each piece will fit neatly into place without overlap
+Finally, check if it is not the last cluster on the server,
+add 1 to the ip address if it is not the last cluster. 
+
+####Example
+Given a node number(__X__) of 2 and a `serverId`(__Y__) of 3
+Given the IP Scheme of __A__ = 10, __B__ = 8, __C__ = 14, __D__ = 2
+__Z__ = floor(2/(2^2 - 3))
+__Z__ = 2
+It is going to be in cluster 2
+Now, for the construction of the IP
+Visually, it can be represented as 
+IP = AAAAAAAA BBBBBBBB CCCCCCCC CCCCCCDD
+The values are simply placed inside the bit space of the IP address as represented,
+with the exception of the __D__ bits, which needs to be calculated
+calculate this number as (2 % (2^2 - 3) + 2) or 2
+Then since (__Z__ != (2^__C__ - 1)) 2 != 16383, the value remains 2
+Finally, construct IP
+Part A = 00001010
+Part B = 00000011
+Part C = 00000000000010
+Part D = 10
+IP = 00001010 00000011 00000000000010 10
+   = 00001010 00000011 00000000 00001010
+   = 10       3        0        10
+
+The gateway is calculated in a similar way, except take Part D to always equal 1
+
+Gateway IP = 00001010 00000011 00000000000010 01
+           = 00001010 00000011 00000000 00001001
+           = 10       3        0        9
+
+Finally the subnet is 32 - __D__
+
+Resulting in
+IP = 10.3.0.10
+Gateway IP = 10.3.0.9
+Subnet = 10.3.0.8/30
+
+
 
 ##REST API
 
@@ -96,28 +147,28 @@ Get the current registered servers
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 {
-	"server_name":{
-		"addr":(string),
-		"iaddr":{
-			"ip":(string),
-			"gateway":(string),
-			"subnet":(int)
-		},
-		"nodes":(int),
-		"max":(int),
-		"id":(int),
-		"serverID":(int),
-		"iface":(string),
-		"switches":[
-			{
-				"addr":(string),
-				"iface":(string),
-				"brand":(int),
-				"id":(int)
-			}
-		]
-	},
-	"server2_name":{...}...
+    "server_name":{
+        "addr":(string),
+        "iaddr":{
+            "ip":(string),
+            "gateway":(string),
+            "subnet":(int)
+        },
+        "nodes":(int),
+        "max":(int),
+        "id":(int),
+        "serverID":(int),
+        "iface":(string),
+        "switches":[
+            {
+                "addr":(string),
+                "iface":(string),
+                "brand":(int),
+                "id":(int)
+            }
+        ]
+    },
+    "server2_name":{...}...
 }
 ```
 #####EXAMPLE
@@ -132,25 +183,25 @@ controlled by the instance
 #####BODY
 ```
 {
-	"addr":(string),
-	"iaddr":{
-		"ip":(string),
-		"gateway":(string),
-		"subnet":(int)
-	},
-	"nodes":(int),
-	"max":(int),
-	"id":-1,
-	"serverID":(int),
-	"iface":(string),
-	"switches":[
-		{
-			"addr":(string),
-			"iface":(string),
-			"brand":(int),
-			"id":(int)
-		}
-	]
+    "addr":(string),
+    "iaddr":{
+        "ip":(string),
+        "gateway":(string),
+        "subnet":(int)
+    },
+    "nodes":(int),
+    "max":(int),
+    "id":-1,
+    "serverID":(int),
+    "iface":(string),
+    "switches":[
+        {
+            "addr":(string),
+            "iface":(string),
+            "brand":(int),
+            "id":(int)
+        }
+    ]
 }
 ```
 #####RESPONSE
@@ -174,25 +225,25 @@ Get a server by id
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 {
-	"addr":(string),
-	"iaddr":{
-		"ip":(string),
-		"gateway":(string),
-		"subnet":(int)
-	},
-	"nodes":(int),
-	"max":(int),
-	"id":(int),
-	"serverID":(int),
-	"iface":(string),
-	"switches":[
-		{
-			"addr":(string),
-			"iface":(string),
-			"brand":(int),
-			"id":(int)
-		}
-	]
+    "addr":(string),
+    "iaddr":{
+        "ip":(string),
+        "gateway":(string),
+        "subnet":(int)
+    },
+    "nodes":(int),
+    "max":(int),
+    "id":(int),
+    "serverID":(int),
+    "iface":(string),
+    "switches":[
+        {
+            "addr":(string),
+            "iface":(string),
+            "brand":(int),
+            "id":(int)
+        }
+    ]
 }
 ```
 
@@ -217,25 +268,25 @@ Update server information
 #####BODY
 ```
 {
-	"addr":(string),
-	"iaddr":{
-		"ip":(string),
-		"gateway":(string),
-		"subnet":(int)
-	},
-	"nodes":(int),
-	"max":(int),
-	"id":(int),
-	"serverID":(int),
-	"iface":(string),
-	"switches":[
-		{
-			"addr":(string),
-			"iface":(string),
-			"brand":(int),
-			"id":(int)
-		}
-	]
+    "addr":(string),
+    "iaddr":{
+        "ip":(string),
+        "gateway":(string),
+        "subnet":(int)
+    },
+    "nodes":(int),
+    "max":(int),
+    "id":(int),
+    "serverID":(int),
+    "iface":(string),
+    "switches":[
+        {
+            "addr":(string),
+            "iface":(string),
+            "brand":(int),
+            "id":(int)
+        }
+    ]
 }
 ```
 #####RESPONSE
@@ -259,12 +310,12 @@ Get all testnets which are currently running
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 [
-	{
-		"id":(int),
-		"blockchain":(string),
-		"nodes":(int),
-		"image":(string)
-	},...
+    {
+        "id":(int),
+        "blockchain":(string),
+        "nodes":(int),
+        "image":(string)
+    },...
 
 ]
 ```
@@ -274,15 +325,15 @@ Add and deploy a new testnet
 #####BODY
 ```
 {
-	"servers":[(int),(int)...],
-	"blockchain":(string),
-	"nodes":(int),
-	"image":(string),
-	"resources":{
-		"cpus":(string),
-		"memory":(string)
-	},
-	"params":(Object containing params specific to the chain/client being built)
+    "servers":[(int),(int)...],
+    "blockchain":(string),
+    "nodes":(int),
+    "image":(string),
+    "resources":{
+        "cpus":(string),
+        "memory":(string)
+    },
+    "params":(Object containing params specific to the chain/client being built)
 }
 ```
 #####RESPONSE
@@ -304,10 +355,10 @@ Get data on a single testnet
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 {
-	"id":(int),
-	"blockchain":(string),
-	"nodes":(int),
-	"image":(string)
+    "id":(int),
+    "blockchain":(string),
+    "nodes":(int),
+    "image":(string)
 }
 ```
 
@@ -319,13 +370,13 @@ Get the nodes in a testnet
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 [
-	{
-		"id":(int),
-		"testNetId":(int),
-		"server":(int),
-		"localId":(int),
-		"ip":(string)
-	},...
+    {
+        "id":(int),
+        "testNetId":(int),
+        "server":(int),
+        "localId":(int),
+        "ip":(string)
+    },...
 ]
 ```
 
@@ -337,10 +388,10 @@ Get the nodes that are running in the latest testnet
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 [
-	{
-		"name":"whiteblock-node0",
-		"server":4
-	},...
+    {
+        "name":"whiteblock-node0",
+        "server":4
+    },...
 ]
 ```
 #####EXAMPLE
@@ -374,15 +425,15 @@ Get the build params for a blockchain
 #####RESPONSE
 ```json
 [
-	{"chainId":"int"},
-	{"networkId":"int"},
-	{"difficulty":"int"},
-	{"initBalance":"string"},
-	{"maxPeers":"int"},
-	{"gasLimit":"int"},
-	{"homesteadBlock":"int"},
-	{"eip155Block":"int"},
-	{"eip158Block":"int"}
+    {"chainId":"int"},
+    {"networkId":"int"},
+    {"difficulty":"int"},
+    {"initBalance":"string"},
+    {"maxPeers":"int"},
+    {"gasLimit":"int"},
+    {"homesteadBlock":"int"},
+    {"eip155Block":"int"},
+    {"eip158Block":"int"}
 ]
 ```
 #####EXAMPLE
@@ -397,15 +448,15 @@ Get the default parameters for a blockchain
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 {
-	"chainId":15468,
-	"networkId":15468,
-	"difficulty":100000,
-	"initBalance":100000000000000000000,
-	"maxPeers":1000,
-	"gasLimit":4000000,
-	"homesteadBlock":0,
-	"eip155Block":0,
-	"eip158Block":0
+    "chainId":15468,
+    "networkId":15468,
+    "difficulty":100000,
+    "initBalance":100000000000000000000,
+    "maxPeers":1000,
+    "gasLimit":4000000,
+    "homesteadBlock":0,
+    "eip155Block":0,
+    "eip158Block":0
 }
 ```
 #####EXAMPLE
@@ -476,15 +527,15 @@ the example contains all of the defaults
 ####Example (using defaults)
 ```json
 {
-	"chainId":15468,
-	"networkId":15468,
-	"difficulty":100000,
-	"initBalance":100000000000000000000,
-	"maxPeers":1000,
-	"gasLimit":4000000,
-	"homesteadBlock":0,
-	"eip155Block":0,
-	"eip158Block":0
+    "chainId":15468,
+    "networkId":15468,
+    "difficulty":100000,
+    "initBalance":100000000000000000000,
+    "maxPeers":1000,
+    "gasLimit":4000000,
+    "homesteadBlock":0,
+    "eip155Block":0,
+    "eip158Block":0
 }
 ```
 ###Syscoin (RegTest)
@@ -509,28 +560,28 @@ the example contains all of the defaults
 ####Example (using defaults)
 ```json
 {
-	"rpcUser":"username",
-	"rpcPass":"password",
-	"masterNodeConns":25,
-	"nodeConns":8,
-	"percentMasternodes":90,
-	"options":[
-		"server",
-		"regtest",
-		"listen",
-		"rest"
-	],
-	"senderOptions":[
-		"tpstest",
-		"addressindex"
-	],
-	"mnOptions":[],
-	"receiverOptions":[
-		"tpstest"
-	],
-	"extras":[],
-	"senderExtras":[],
-	"receiverExtras":[],
-	"mnExtras":[]
+    "rpcUser":"username",
+    "rpcPass":"password",
+    "masterNodeConns":25,
+    "nodeConns":8,
+    "percentMasternodes":90,
+    "options":[
+        "server",
+        "regtest",
+        "listen",
+        "rest"
+    ],
+    "senderOptions":[
+        "tpstest",
+        "addressindex"
+    ],
+    "mnOptions":[],
+    "receiverOptions":[
+        "tpstest"
+    ],
+    "extras":[],
+    "senderExtras":[],
+    "receiverExtras":[],
+    "mnExtras":[]
 }
 ```
