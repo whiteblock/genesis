@@ -41,7 +41,6 @@ func GetNodeIP(server int,node int) string {
     if(cluster != clusterLast){
         ip += uint32(node)%NodesPerCluster + 2
     }
-    
     return InetNtoa(ip)
 }
 
