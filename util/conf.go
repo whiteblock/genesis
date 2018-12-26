@@ -26,6 +26,74 @@ type Config struct {
 	DockerOutputFile	string		`json:"docker-output-file"`
 }
 
+func (this *Config) LoadFromEnv() {
+	val,exists := os.LookupEnv("BUILDER")
+	if exists {
+		this.Builder = val
+	}
+	val,exists = os.LookupEnv("SSH_USER")
+	if exists {
+		this.SshUser
+	}
+	val,exists = os.LookupEnv("SSH_PASSWORD")
+	if exists {
+		this.
+	}
+	val,exists = os.LookupEnv("VYOS_HOME_DIR")
+	if exists {
+		this.
+	}
+	val,exists = os.LookupEnv("LISTEN")
+	if exists {
+		this.
+	}
+	val,exists = os.LookupEnv("RSA_KEY")
+	if exists {
+		this.
+	}
+	val,exists = os.LookupEnv("RSA_USER")
+	if exists {
+		this.
+	}
+	_,exists = os.LookupEnv("VERBOSE")
+	if exists {
+		this.
+	}
+	val,exists = os.LookupEnv("SERVER_BITS")
+	if exists {
+		this.
+	}
+	val,exists = os.LookupEnv("CLUSTER_BITS")
+	if exists {
+		this.
+	}
+	val,exists = os.LookupEnv("NODE_BITS")
+	if exists {
+		this.
+	}
+	val,exists = os.LookupEnv("THREAD_LIMIT")
+	if exists {
+		this.
+	}
+	val,exists = os.LookupEnv("BUILD_MODE")
+	if exists {
+		this.
+	}
+	val,exists = os.LookupEnv("IP_PREFIX")
+	if exists {
+		this.
+	}
+	_,exists = os.LookupEnv("ALLOW_EXEC")
+	if exists {
+		this.
+	}
+	val,exists = os.LookupEnv("DOCKER_OUTPUT_FILE")
+	if exists {
+		this.
+	}
+
+}
+
 func (c *Config) AutoFillMissing() {
 	if len(c.Builder) == 0 {
 		c.Builder = "local deploy"
@@ -80,6 +148,7 @@ var conf *Config = nil
 
 func init() {
 	LoadConfig()
+	conf.LoadFromEnv()
 	conf.AutoFillMissing()
 	NodesPerCluster	= (1 << conf.NodeBits) - ReservedIps
 }

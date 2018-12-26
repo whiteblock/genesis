@@ -1,4 +1,92 @@
 #Genesis
+
+##Installation
+* clone repository
+* `cd router`
+* `go get`
+* `go build`
+
+##Configuration
+Configuration options are located in `config.json` in the same directory as the binary
+
+* __builder__: The application to use to build the nodes
+* __ssh-user__: The default username for ssh
+* __ssh-password__: The default password for ssh
+* __vyos-home-dir__: The location to put the vyos script
+* __listen__: The socket to listen on 
+* __rsa-key__: The location of the ssh private key
+* __rsa-user__: The corresponding username for that private key
+* __verbose__: Enable or disable verbose mode
+* __server-bits__: The bits given to each server's number
+* __cluster-bits__: The bits given to each clusters's number
+* __node-bits__: The bits given to each nodes's number
+* __thread-limit__: The maximum number of threads that can be used for building
+* __build-mode__: Can set the build mode to allow for building in "standalone" mode, for demo purposes
+* __ip-prefix__: Used for the IP Scheme
+* __allow-exec__: Set to true to enable the /exec/ calls. __This is an unsafe option to enable__
+* __docker-output-file__: The location instead the docker containers where the clients stdout and stderr will be captured
+
+###Config Environment Overrides
+These will override what is set in the config.json file, and allow configuration via
+only ENV variables
+* `BUILDER`
+* `SSH_USER`
+* `SSH_PASSWORD`
+* `VYOS_HOME_DIR`
+* `LISTEN`
+* `RSA_KEY`
+* `RSA_USER`
+* `VERBOSE` (only need to set it)
+* `SERVER_BITS`
+* `CLUSTER_BITS`
+* `NODE_BITS`
+* `THREAD_LIMIT`
+* `BUILD_MODE`
+* `IP_PREFIX`
+* ALLOW_EXEC (only need to set it)
+* DOCKER_OUTPUT_FILE
+
+###Additional Information
+* Config order of priority ENV -> config file -> defaults
+* `ssh-user`,`ssh-password` and `rsa-user`, `rsa-key` are both used, starting with pass auth then falling back to key auth
+
+
+##IP Scheme
+We are using ipv4 so each address will have 32 bits.
+
+The following assumptions will be made
+* Each server will have a relatively unique `serverId`
+* This uniqueness need only apply to servers which will contain nodes which communicate with each other
+* There are going to be 3 ip addresses reserved from each subnet
+* Nodes in the same docker network are able to route between each other by default
+
+For simplicity, the following variables will be used
+* `A` = `ip-prefix`
+* `B` = `server-bits`
+* `C` = `cluster-bits`
+* `D` = `node-bits`
+
+Note the following rules
+* `A`,`B`,`C`, and `D` cannot be 0
+* ceil(log2(`A`)) + `B` + `C` + `D` <= 32
+* `D` must be atleast 2
+* (`B`^2) = The maximum number of servers
+* (`C`^2) = The number of cluster in a given server
+* (`D`^2 - 3) = How many nodes are groups together in each cluster
+* (`D`^2 - 3) * (`C`^2) = The max number of nodes on a server
+* (`D`^2 - 3) * (`C`^2) * (`B`^2) = The maximum number of nodes that could be on the platform
+
+###What is a cluster?
+
+Each cluster corresponds to a subnet,docker network,and vlan. 
+Containers in the same cluster will have minimal latency applied to them. In the majority of cases
+it is best to just have one node per cluster, allowing for latency control between all of the nodes.
+
+###How is it all calculated?
+Given a node number `X` and a `serverId` of `Y`,
+Let `Z` be the cluster number, and the earlier mentioned variables applied
+`Z`= `X`uint32(uint32(node)/(1 << conf.NodeBits) - ReservedIps)
+
 ##REST API
 
 ###GET /servers/
@@ -367,23 +455,6 @@ Get the nodes for the latest testnet
 ```bash
 curl -X GET http://localhost:8000/nodes
 ```
-
-##Configuration
-Configuration options are located in `config.json` in the same directory as the binary
-
-* __builder__: The application to use to build the nodes
-* __ssh-user__: The default username for ssh
-* __ssh-password__: The default password for ssh
-* __vyos-home-dir__: The location to put the vyos script
-* __rsa-key__: The location of the ssh private key
-* __rsa-user__: The corresponding username for that private key
-* __verbose__: Enable or disable verbose mode
-* __server-bits__: The bits given to each server's number
-* __cluster-bits__: The bits given to each clusters's number
-* __node-bits__: The bits given to each nodes's number
-* __thread-limit__: The maximum number of threads that can be used for building
-* __allow-exec__: Set to true to enable the /exec/ calls. __This is an unsafe option to enable__
-
 
 ##Blockchain Specific Parameters
 
