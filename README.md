@@ -29,6 +29,7 @@ Configuration options are located in `config.json` in the same directory as the 
 ###Config Environment Overrides
 These will override what is set in the config.json file, and allow configuration via
 only ENV variables
+
 * `BUILDER`
 * `SSH_USER`
 * `SSH_PASSWORD`
@@ -61,12 +62,14 @@ The following assumptions will be made
 * Nodes in the same docker network are able to route between each other by default
 
 For simplicity, the following variables will be used
+
 * __A__ = `ip-prefix`
 * __B__ = `server-bits`
 * __C__ = `cluster-bits`
 * __D__ = `node-bits`
 
 Note the following rules
+
 * __A__,__B__,__C__, and __D__ must be greater than 0
 * ceil(log2(__A__)) + __B__ + __C__ + __D__ <= 32
 * __D__ must be atleast 2
