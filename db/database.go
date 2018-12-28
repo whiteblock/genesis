@@ -8,7 +8,7 @@ import(
 	util "../util"
 )
 
-const 	dataLoc			string		= 	".gdata"
+var 	dataLoc			string		= 	os.Getenv("HOME")+"/.config/whiteblock/.gdata"
 const 	SwitchTable		string		= 	"switches"
 const 	ServerTable		string		= 	"servers"
 const	TestTable		string		= 	"testnets"
