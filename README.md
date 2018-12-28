@@ -44,8 +44,8 @@ only ENV variables
 * `THREAD_LIMIT`
 * `BUILD_MODE`
 * `IP_PREFIX`
-* ALLOW_EXEC (only need to set it)
-* DOCKER_OUTPUT_FILE
+* `ALLOW_EXEC` (only need to set it)
+* `DOCKER_OUTPUT_FILE`
 
 ###Additional Information
 * Config order of priority ENV -> config file -> defaults
@@ -56,6 +56,7 @@ only ENV variables
 We are using ipv4 so each address will have 32 bits.
 
 The following assumptions will be made
+
 * Each server will have a relatively unique `serverId`
 * This uniqueness need only apply to servers which will contain nodes which communicate with each other
 * There are going to be 3 ip addresses reserved from each subnet
