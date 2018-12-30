@@ -100,5 +100,5 @@ func GetNetworkAddress(server int, node int) string {
     //set cluster bits 
     cluster := uint32(uint32(node)/NodesPerCluster)
     ip += cluster << clusterShift
-    return InetNtoa(ip)
+    return fmt.Sprintf("%s/%d",InetNtoa(ip),GetSubnet())
 }
