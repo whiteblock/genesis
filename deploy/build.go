@@ -85,6 +85,7 @@ func Build(buildConf *Config,servers []db.Server,resources Resources,clients []*
 			case "genesis":
 				fallthrough
 			default:
+				DockerKillAll(clients[i])
 				err := DockerRunAll(servers[i],clients[i],resources,nodes,buildConf.Image)
 				if err != nil{
 					log.Println(err)
@@ -158,7 +159,11 @@ func prepareVlans(server db.Server, nodes int,client *util.SshClient) error {
 		case "genesis":
 			fallthrough
 		default:
-			DockerNetworkCreateAll(server,client,nodes)
+			DockerNetworkDestroyAll(client)
+			err := DockerNetworkCreateAll(server,client,nodes)
+			if err != nil {
+				return err
+			}
 	}
 	return nil
 }
