@@ -24,7 +24,7 @@ func DockerKillAll(client *util.SshClient) error {
 
 func DockerNetworkCreate(server db.Server,client *util.SshClient,node int) error {
     command := "docker network create -d macvlan"
-    command += fmt.Sprintf(" --subnet %d",util.GetSubnet())
+    command += fmt.Sprintf(" --subnet %s",util.GetNetworkAddress(server.ServerID,node))
     command += fmt.Sprintf(" --gateway %s",util.GetGateway(server.ServerID,node))
     command += fmt.Sprintf(" -o parent=%s.%d wb_vlan_%d",server.Iface,node+100,node)
     _,err := client.Run(command)

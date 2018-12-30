@@ -89,3 +89,16 @@ func GetGateways(server int, nodes int) []string {
 func GetSubnet() int {
     return 32 - int(conf.NodeBits)
 }
+
+
+func GetNetworkAddress(server int, node int) string {
+    var ip uint32 = conf.IPPrefix << (conf.NodeBits+conf.ClusterBits+conf.ServerBits)
+    clusterShift := conf.NodeBits
+    serverShift := conf.NodeBits + conf.ClusterBits
+    //set server bits
+    ip += uint32(server) << serverShift
+    //set cluster bits 
+    cluster := uint32(uint32(node)/NodesPerCluster)
+    ip += cluster << clusterShift
+    return InetNtoa(ip)
+}
