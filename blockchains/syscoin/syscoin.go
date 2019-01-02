@@ -138,9 +138,9 @@ func handleConf(servers []db.Server,clients []*util.SshClient, sysconf *SysConf)
 		for _,_ = range server.Ips{
 			sem.Acquire(ctx,1)
 			go func(node int){
-				confData := ""
+				confData := "[regtest]\n"
 				maxConns := 1
-				if node < noMasterNodes{//Master Node
+				if node < noMasterNodes {//Master Node
 					confData += sysconf.GenerateMN()
 					labels[node] = "Master Node"
 				}else if node%2 == 0 {//Sender
