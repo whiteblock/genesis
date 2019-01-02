@@ -3,6 +3,7 @@ package deploy
 import(
     "errors"
     "fmt"
+    "log"
     util "../util"
     db "../db"
 )
@@ -56,7 +57,7 @@ func DockerPull(clients []*util.SshClient,image string) error {
     return nil
 }
 
-func DockerRun(server db.Server,client *util.SshClient,resources Resources,node int,image string) error {
+func dockerRunCmd(server db.Server,resources Resources,node int,image string) (string,error) {
     command := "docker run -itd "
     command += fmt.Sprintf("--network wb_vlan_%d",node)
 
@@ -67,7 +68,7 @@ func DockerRun(server db.Server,client *util.SshClient,resources Resources,node 
     if !resources.NoMemoryLimits() {
         mem,err := resources.GetMemory()
         if err != nil {
-            return errors.New("Invalid value for memory")
+            return "",errors.New("Invalid value for memory")
         }
         command += fmt.Sprintf(" --memory %d",mem)
     }
@@ -76,19 +77,42 @@ func DockerRun(server db.Server,client *util.SshClient,resources Resources,node 
     command += fmt.Sprintf(" --hostname whiteblock-node%d",node)
     command += fmt.Sprintf(" --name whiteblock-node%d",node)
     command += " " + image
-    _,err := client.Run(command)
+    return command,nil
+}
+
+func DockerRun(server db.Server,client *util.SshClient,resources Resources,node int,image string) error {
+    command,err := dockerRunCmd(server,resources,node,image)
+    if err != nil{
+        return err
+    }
+    _,err = client.Run(command)
     return err
 }
 
 
 func DockerRunAll(server db.Server,client *util.SshClient,resources Resources,nodes int,image string) error {
+    var command string
     for i := 0; i < nodes; i++ {
-        err := DockerRun(server,client,resources,i,image)
-        if err != nil {
+        tmp,err := dockerRunCmd(server,resources,i,image)
+        if err != nil{
             return err
         }
+
+        if len(command) == 0 {
+            command += tmp
+        }else{
+            command += "&&" + tmp
+        }
+
+        if i % 5 == 4 || i == nodes - 1 {
+            _,err = client.Run(command)
+            command = ""
+            if err != nil {
+                log.Println(err)
+                return err
+            }
+        }
+        
     }
     return nil
 }
-
-
