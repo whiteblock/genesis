@@ -126,7 +126,6 @@ func InsertLocalServers(db *sql.DB) {
 			Iface:"eno3",
 			Ips:[]string{},
 			Switches:[]Switch{ Switch{Addr:"172.16.1.1",Iface:"eth3",Brand:util.Vyos} }})
-
 	InsertServer("foxtrot",
 		Server{
 			Addr:"172.16.6.5",
@@ -138,5 +137,15 @@ func InsertLocalServers(db *sql.DB) {
 			Iface:"eno3",
 			Ips:[]string{},
 			Switches:[]Switch{ Switch{Addr:"172.16.1.1",Iface:"eth6",Brand:util.Vyos} }})
-	
+	InsertServer("cloud",
+		Server{
+			Addr:"127.0.0.1",
+			Iaddr:Iface{Ip:"10.0.0.2",Gateway:"10.0.0.1",Subnet:8},
+			Nodes:0,
+			Max:200,
+			ServerID:1,
+			Id:-1,
+			Iface:"wb_bridge",
+			Ips:[]string{},
+			Switches:[]Switch{Switch{Addr:"192.168.122.240",Iface:"eth1",Brand:util.Vyos}}})
 }

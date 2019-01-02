@@ -85,7 +85,6 @@ func Build(buildConf *Config,servers []db.Server,resources Resources,clients []*
 			case "genesis":
 				fallthrough
 			default:
-				DockerKillAll(clients[i])
 				err := DockerRunAll(servers[i],clients[i],resources,nodes,buildConf.Image)
 				if err != nil{
 					log.Println(err)
@@ -93,14 +92,13 @@ func Build(buildConf *Config,servers []db.Server,resources Resources,clients []*
 				}
 
 		}
-		//Acquire resources
-		err := sem.Acquire(ctx,1)
-		if err != nil {
-			log.Println(err)
-			return nil,err
-		}
-
 		if len(startCmd) > 0 {
+			//Acquire resources
+			err := sem.Acquire(ctx,1)
+			if err != nil {
+				log.Println(err)
+				return nil,err
+			}
 			go func(server int,startCmd string){
 				defer sem.Release(1)
 				clients[server].Run(startCmd)
@@ -159,6 +157,7 @@ func prepareVlans(server db.Server, nodes int,client *util.SshClient) error {
 		case "genesis":
 			fallthrough
 		default:
+			DockerKillAll(client)
 			DockerNetworkDestroyAll(client)
 			err := DockerNetworkCreateAll(server,client,nodes)
 			if err != nil {

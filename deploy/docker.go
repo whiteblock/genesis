@@ -26,7 +26,7 @@ func DockerNetworkCreate(server db.Server,client *util.SshClient,node int) error
     command := "docker network create -d macvlan"
     command += fmt.Sprintf(" --subnet %s",util.GetNetworkAddress(server.ServerID,node))
     command += fmt.Sprintf(" --gateway %s",util.GetGateway(server.ServerID,node))
-    command += fmt.Sprintf(" -o parent=%s.%d wb_vlan_%d",server.Iface,node+100,node)
+    command += fmt.Sprintf(" -o parent=%s.%d wb_vlan_%d",server.Iface,node+101,node)
     _,err := client.Run(command)
     return err
 }
@@ -75,14 +75,14 @@ func DockerRun(server db.Server,client *util.SshClient,resources Resources,node 
     command += fmt.Sprintf(" --ip %s",util.GetNodeIP(server.ServerID,node))
     command += fmt.Sprintf(" --hostname whiteblock-node%d",node)
     command += fmt.Sprintf(" --name whiteblock-node%d",node)
-    command += " " + image
+    command += " " + image + " &"
     _,err := client.Run(command)
     return err
 }
 
 
 func DockerRunAll(server db.Server,client *util.SshClient,resources Resources,nodes int,image string) error {
-    for i := 0; i < nodes; i++{
+    for i := 0; i < nodes; i++ {
         err := DockerRun(server,client,resources,i,image)
         if err != nil {
             return err
