@@ -178,6 +178,7 @@ func init() {
 	conf.LoadFromEnv()
 	conf.AutoFillMissing()
 	NodesPerCluster	= (1 << conf.NodeBits) - ReservedIps
+	
 }
 
 func LoadConfig() *Config {

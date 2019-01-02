@@ -11,6 +11,7 @@ import (
     util "./util"
     db "./db"
     state "./state"
+    status "./status"
 )
 
 
@@ -303,17 +304,17 @@ func dockerExec(w http.ResponseWriter, r *http.Request) {
 }
 
 func nodesStatus(w http.ResponseWriter, r *http.Request) {
-    status, err := CheckTestNetStatus()
+    out, err := status.CheckTestNetStatus()
     if err != nil {
         log.Println(err.Error())
         w.Write([]byte(err.Error()))
         return
     }
-    json.NewEncoder(w).Encode(status)
+    json.NewEncoder(w).Encode(out)
 }
 
 func buildStatus(w http.ResponseWriter,r *http.Request){
-    w.Write([]byte(CheckBuildStatus())) 
+    w.Write([]byte(status.CheckBuildStatus())) 
 }
 
 func getBlockChainParams(w http.ResponseWriter,r *http.Request){

@@ -173,7 +173,7 @@ func CombineConfig(entries []string) string {
  */
 func BashExec(_cmd string) (string,error) {
     if conf.Verbose {
-        fmt.Printf("Execuing : %s\n",_cmd)
+        fmt.Printf("Executing : %s\n",_cmd)
     }
     
     cmd := exec.Command("bash","-c",_cmd)

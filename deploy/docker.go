@@ -75,7 +75,7 @@ func DockerRun(server db.Server,client *util.SshClient,resources Resources,node 
     command += fmt.Sprintf(" --ip %s",util.GetNodeIP(server.ServerID,node))
     command += fmt.Sprintf(" --hostname whiteblock-node%d",node)
     command += fmt.Sprintf(" --name whiteblock-node%d",node)
-    command += " " + image + " &"
+    command += " " + image
     _,err := client.Run(command)
     return err
 }

@@ -35,7 +35,7 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server,clients 
 		return err
 	}
 
-	err = util.Rm("tmp/node*","tmp/all_wallet","tmp/static-nodes.json","tmp/keystore","tmp/CustomGenesis.json")
+	err = util.Rm("tmp")
 	if err != nil {
 		log.Println(err)
 	}
