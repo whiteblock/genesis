@@ -1,5 +1,5 @@
 {
-	"builder":"local deploy",
+	"builder":"genesis",
 	"build-mode":"normal",
 	"ssh-user":"appo",
 	"ssh-password":"w@ntest",
