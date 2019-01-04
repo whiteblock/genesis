@@ -138,7 +138,7 @@ func handleConf(servers []db.Server,clients []*util.SshClient, sysconf *SysConf)
 		for _,_ = range server.Ips{
 			sem.Acquire(ctx,1)
 			go func(node int){
-				confData := "[regtest]\n"
+				confData := ""
 				maxConns := 1
 				if node < noMasterNodes {//Master Node
 					confData += sysconf.GenerateMN()

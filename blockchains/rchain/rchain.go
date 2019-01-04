@@ -6,6 +6,7 @@ import(
     "log"
     "time"
     "regexp"
+    "strings"
     util "../../util"
     db "../../db"
 )
@@ -176,6 +177,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 
 
 func createFirstConfigFile(server db.Server,node int,rchainConf *RChainConf) error {
+    ip_port := strings.Split(conf.Influx,":")
     data := util.CombineConfig([]string{
         "[server]",
         "host = \"0.0.0.0\"",
@@ -203,6 +205,14 @@ func createFirstConfigFile(server db.Server,node int,rchainConf *RChainConf) err
         fmt.Sprintf("sig-algorithm = \"%s\"",rchainConf.SigAlgorithm),
         "bonds-file = \"/root/.rnode/genesis\"",
         "private-key = \"7fa626af8e4b96797888e6fc6884ce7c278c360170b13e4ce4000090c6f2bab\"",
+        "[kamon]",
+        "prometheus = false",
+        "influx-db = true",
+        "[influx-db]",
+        fmt.Sprintf("hostname = \"%s\"",ip_port[0]),
+        fmt.Sprintf("port = %s",ip_port[0]),
+        "database = \"rnode\"",
+
     });
 
     err := util.Write("./rnode.toml",data)
@@ -229,6 +239,7 @@ func createFirstConfigFile(server db.Server,node int,rchainConf *RChainConf) err
 }
 
 func createConfigFile(bootnodeAddr string,rchainConf *RChainConf) error {
+    ip_port := strings.Split(conf.Influx,":")
     data := util.CombineConfig([]string{
         "[server]",
         "host = \"0.0.0.0\"",
@@ -257,6 +268,13 @@ func createConfigFile(bootnodeAddr string,rchainConf *RChainConf) error {
         fmt.Sprintf("sig-algorithm = \"%s\"",rchainConf.SigAlgorithm),
         "bonds-file = \"/root/.rnode/genesis\"",
         "private-key = \"7fa626af8e4b96797888e6fc6884ce7c278c360170b13e4ce4000090c6f2bab\"",
+        "[kamon]",
+        "prometheus = false",
+        "influx-db = true",
+        "[influx-db]",
+        fmt.Sprintf("hostname = \"%s\"",ip_port[0]),
+        fmt.Sprintf("port = %s",ip_port[0]),
+        "database = \"rnode\"",
     });
 
     return util.Write("./rnode.toml",data)  

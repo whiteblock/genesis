@@ -13,5 +13,8 @@
 	"node-bits":2,
 	"thread-limit":10,
 	"ip-prefix":10,
-	"allow-exec":true
+	"allow-exec":true,
+	"influx":"127.0.0.1:8086",
+    "influx-user":"",
+    "influx-password":""
 }

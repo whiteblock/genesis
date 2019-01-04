@@ -25,7 +25,13 @@ Configuration options are located in `config.json` in the same directory as the 
 * __ip-prefix__: Used for the IP Scheme
 * __allow-exec__: Set to true to enable the /exec/ calls. __This is an unsafe option to enable__
 * __docker-output-file__: The location instead the docker containers where the clients stdout and stderr will be captured
+* __influx__: The influxdb endpoint
+* __influx-user__: The influx auth username
+* __influx-passowrd__: The influx auth password
 
+`json:"influx"`
+    InfluxUser          string      `json:"influx-user"`
+    InfluxPassword      string      `json:"influx-password"`
 ###Config Environment Overrides
 These will override what is set in the config.json file, and allow configuration via
 only ENV variables
@@ -46,6 +52,9 @@ only ENV variables
 * `IP_PREFIX`
 * `ALLOW_EXEC` (only need to set it)
 * `DOCKER_OUTPUT_FILE`
+* `INFLUX`
+* `INFLUX_USER`
+* `INFLUX_PASSWORD`
 
 ###Additional Information
 * Config order of priority ENV -> config file -> defaults

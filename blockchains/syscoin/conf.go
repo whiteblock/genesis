@@ -172,13 +172,13 @@ func NewConf(data map[string]interface{}) (*SysConf,error) {
 } 
 
 func (this *SysConf) Generate() string {
-	out := "rpcuser=appo\n"
-	out += "rpcpassword=w@ntest\n"
-	
+	out := ""
 	for _,opt := range this.Options {
 		out += opt +"=1\n"
 	}
-
+	out += "[regtest]\n"
+	out += "rpcuser=user\n"
+	out += "rpcpassword=password\n"
 	for _,extra := range this.Extras {
 		extra += extra +"\n"
 	}
