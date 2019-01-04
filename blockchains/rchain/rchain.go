@@ -44,7 +44,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     }
     
     km,err := NewKeyMaster()
-    keyPairs := make([]util.KeyPair,nodes)
+    keyPairs := make([]util.KeyPair,rchainConf.ValidatorCount)
 
     for i,_ := range keyPairs {
         keyPairs[i],err = km.GetKeyPair()
@@ -151,15 +151,24 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     fmt.Println("Starting the rest of the nodes...");
     /**Start up the rest of the nodes**/
     node := 0
+    var validators int64 = 0
     for i,server := range servers {
         for j,ip := range server.Ips{
             if node == 0 {
                 node++;
                 continue
             }
-            err = clients[i].DockerExecdLog(j,
-                fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
-                            rchainConf.Command,enode,keyPairs[node].PrivateKey,ip))
+            if validators < rchainConf.ValidatorCount {
+                err = clients[i].DockerExecdLog(j,
+                    fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
+                                rchainConf.Command,enode,keyPairs[node].PrivateKey,ip))
+                validators++
+            }else{
+                err = clients[i].DockerExecdLog(j,
+                    fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s",
+                                rchainConf.Command,enode,ip))
+            }
+            
             if err != nil{
                 log.Println(err)
                 return nil,err

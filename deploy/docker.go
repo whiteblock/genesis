@@ -6,6 +6,7 @@ import(
     "log"
     util "../util"
     db "../db"
+    state "../state"
 )
 
 /**Quick naive interface to Docker calls over ssh*/
@@ -20,6 +21,7 @@ func DockerKill(client *util.SshClient,node int) error {
 
 func DockerKillAll(client *util.SshClient) error {
     _,err := client.Run("docker rm -f $(docker ps -aq -f name=whiteblock)");
+    state.IncrementDeployProgress()
     return err
 }
 
@@ -34,6 +36,7 @@ func DockerNetworkCreate(server db.Server,client *util.SshClient,node int) error
 
 func DockerNetworkCreateAll(server db.Server,client *util.SshClient,nodes int) error {
     for i := 0; i < nodes; i++{
+        state.IncrementDeployProgress()
         err := DockerNetworkCreate(server,client,i)
         if err != nil {
             return err
@@ -44,6 +47,7 @@ func DockerNetworkCreateAll(server db.Server,client *util.SshClient,nodes int) e
 
 func DockerNetworkDestroyAll(client *util.SshClient) error {
     _,err := client.Run("for net in $(docker network ls | grep wb_v | awk '{print $1}'); do docker network rm $net; done")
+    state.IncrementDeployProgress()
     return err
 }
 
@@ -93,6 +97,7 @@ func DockerRun(server db.Server,client *util.SshClient,resources Resources,node 
 func DockerRunAll(server db.Server,client *util.SshClient,resources Resources,nodes int,image string) error {
     var command string
     for i := 0; i < nodes; i++ {
+        state.IncrementDeployProgress()
         tmp,err := dockerRunCmd(server,resources,i,image)
         if err != nil{
             return err

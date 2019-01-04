@@ -8,6 +8,7 @@ import (
 	"log"
 	db "../db"
 	util "../util"
+	state "../state"
 )
 
 var conf *util.Config = util.GetConfig()
@@ -16,6 +17,9 @@ var conf *util.Config = util.GetConfig()
  * Returns a string of all of the IP addresses 
  */
 func Build(buildConf *Config,servers []db.Server,resources Resources,clients []*util.SshClient) ([]db.Server,error) {
+	state.SetDeploySteps(2*buildConf.Nodes + 2)
+	defer state.FinishDeploy()
+
 	var sem	= semaphore.NewWeighted(conf.ThreadLimit)
 	
 	ctx := context.TODO()
