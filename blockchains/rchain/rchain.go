@@ -44,7 +44,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     }
     
     km,err := NewKeyMaster()
-    keyPairs := make([]util.KeyPair,rchainConf.ValidatorCount)
+    keyPairs := make([]util.KeyPair,nodes)
 
     for i,_ := range keyPairs {
         keyPairs[i],err = km.GetKeyPair()
