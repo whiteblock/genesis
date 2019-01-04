@@ -41,7 +41,7 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server,clients [
 		util.Rm("config.boot")
 		fmt.Printf("done\n")
 	}()
-	state.SetBuildSteps(1+(3*nodes))
+	state.SetBuildSteps(1+(6*nodes))
 
 
 	fmt.Println("-------------Setting Up Syscoin-------------")
@@ -169,6 +169,7 @@ func handleConf(servers []db.Server,clients []*util.SshClient, sysconf *SysConf)
 					log.Println(err)
 					return
 				}
+				state.IncrementBuildProgress()
 				container := fmt.Sprintf("whiteblock-node%d",node)
 				_,err = clients[i].Run(fmt.Sprintf("docker exec %s mkdir -p /syscoin/datadir",container))
 				if err != nil {
@@ -183,12 +184,14 @@ func handleConf(servers []db.Server,clients []*util.SshClient, sysconf *SysConf)
 					log.Println(err)
 					return
 				}
+				state.IncrementBuildProgress()
 				err = util.Rm(fmt.Sprintf("./regtest%d.conf",node))
 				if err != nil {
 					state.ReportError(err)
 					log.Println(err)
 					return
 				}
+				state.IncrementBuildProgress()
 				_,err = clients[i].Run(fmt.Sprintf("rm /home/appo/regtest%d.conf",node))
 				if err != nil {
 					state.ReportError(err)

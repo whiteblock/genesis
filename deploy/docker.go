@@ -109,7 +109,7 @@ func DockerRunAll(server db.Server,client *util.SshClient,resources Resources,no
             command += "&&" + tmp
         }
 
-        if i % 5 == 4 || i == nodes - 1 {
+        if i % 2 == 0 || i == nodes - 1 {
             _,err = client.Run(command)
             command = ""
             if err != nil {
