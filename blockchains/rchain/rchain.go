@@ -219,7 +219,7 @@ func createFirstConfigFile(server db.Server,node int,rchainConf *RChainConf) err
         "influx-db = true",
         "[influx-db]",
         fmt.Sprintf("hostname = \"%s\"",ip_port[0]),
-        fmt.Sprintf("port = %s",ip_port[0]),
+        fmt.Sprintf("port = %s",ip_port[1]),
         "database = \"rnode\"",
 
     });
@@ -282,7 +282,7 @@ func createConfigFile(bootnodeAddr string,rchainConf *RChainConf) error {
         "influx-db = true",
         "[influx-db]",
         fmt.Sprintf("hostname = \"%s\"",ip_port[0]),
-        fmt.Sprintf("port = %s",ip_port[0]),
+        fmt.Sprintf("port = %s",ip_port[1]),
         "database = \"rnode\"",
     });
 
