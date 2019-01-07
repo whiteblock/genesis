@@ -3,6 +3,7 @@ package eos
 import(
 	"encoding/json"
 	"fmt"
+	"time"
 	util "../../util"
 )
 
@@ -38,7 +39,7 @@ type EosConf struct{
 	ConnectionCleanupPeriod			int64		`json:"connectionCleanupPeriod"`
 	NetworkVersionMatch				int64		`json:"networkVersionMatch"`
 	SyncFetchSpan					int64		`json:"syncFetchSpan"`
-	MaxImplicitRequest				int64		`json:"maxImplicitRequest"`
+//	MaxImplicitRequest				int64		`json:"maxImplicitRequest"`
 	PauseOnStartup					bool		`json:"pauseOnStartup"`
 	MaxTransactionTime				int64		`json:"maxTransactionTime"`
 	MaxIrreversibleBlockAge			int64		`json:"maxIrreversibleBlockAge"`
@@ -258,12 +259,12 @@ func NewConf(data map[string]interface{}) (*EosConf,error){
 		}
 	}
 
-	if _,ok := data["maxImplicitRequest"]; ok {
+/*	if _,ok := data["maxImplicitRequest"]; ok {
 		out.MaxImplicitRequest,err = util.GetJSONInt64(data,"maxImplicitRequest")
 		if err != nil {
 			return nil,err
 		}
-	}
+	}*/
 
 	if _,ok := data["pauseOnStartup"]; ok {
 		out.PauseOnStartup,err = util.GetJSONBool(data,"pauseOnStartup")
@@ -320,7 +321,7 @@ func NewConf(data map[string]interface{}) (*EosConf,error){
 func (this *EosConf) GenerateGenesis(masterPublicKey string) string {
 	return fmt.Sprintf (
 `{
-	"initial_timestamp": "2018-12-07T12:11:00.000",
+	"initial_timestamp": "%s",
 	"initial_key": "%s",
 	"initial_configuration": {
 		"max_block_net_usage": %d,
@@ -343,6 +344,7 @@ func (this *EosConf) GenerateGenesis(masterPublicKey string) string {
 	},
 	"initial_chain_id": "%s"
 }`,
+	time.Now().Format("2006-01-02T15-04-05.000"),
 	masterPublicKey,
 	this.MaxBlockNetUsage,
 	this.TargetBlockNetUsagePct,
@@ -379,7 +381,7 @@ func (this *EosConf) GenerateConfig() string {
 		fmt.Sprintf("connection-cleanup-period = %d",this.ConnectionCleanupPeriod),
 		fmt.Sprintf("network-version-match = %d",this.NetworkVersionMatch),
 		fmt.Sprintf("sync-fetch-span = %d",this.SyncFetchSpan),
-		fmt.Sprintf("max-implicit-request = %d",this.MaxImplicitRequest),
+//		fmt.Sprintf("max-implicit-request = %d",this.MaxImplicitRequest),
 		fmt.Sprintf("pause-on-startup = %v",this.PauseOnStartup),
 		fmt.Sprintf("max-transaction-time = %d",this.MaxTransactionTime),
 		fmt.Sprintf("max-irreversible-block-age = %d",this.MaxIrreversibleBlockAge),
@@ -429,7 +431,6 @@ func GetDefaults() string{
 	"maxClients":0,
 	"connectionCleanupPeriod":30,
 	"syncFetchSpan":100,
-	"maxImplicitRequest":1500,
 	"pauseOnStartup":false,
 	"maxTransactionTime":100,
 	"maxIrreversibleBlockAge":1000000,

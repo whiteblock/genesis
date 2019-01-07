@@ -298,6 +298,7 @@ func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
     res,err := clients[0].DockerExec(0, fmt.Sprintf("cleos -u http://%s:8889 push action eosio.token create '[ \"eosio\", \"10000000000.0000 SYS\" ]' -p eosio.token@active",
         masterIP))
     if err != nil {
+        log.Println(res)
         log.Println(err)
         return nil,err
     }
@@ -831,7 +832,7 @@ func eos_createWallet(client *util.SshClient, node int) (string,error) {
 }
 
 func eos_getKeyPairFlag(keyPair util.KeyPair) string {
-    return fmt.Sprintf("--private-key '[ \"%s\",\"%s\" ]'", keyPair.PublicKey, keyPair.PrivateKey)
+    return fmt.Sprintf("--signature-provider %s=KEY:%s", keyPair.PublicKey, keyPair.PrivateKey)
 }
 
 func eos_getProducerName(num int) string {
