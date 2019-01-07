@@ -42,7 +42,10 @@ func Build(buildConf *Config,servers []db.Server,resources Resources,clients []*
             servers[i].Ips = append(servers[i].Ips,util.GetNodeIP(servers[i].ServerID,j))
         }
 
-        prepareVlans(servers[i], nodes,clients[i])
+        err := prepareVlans(servers[i], nodes,clients[i])
+        if err != nil {
+            return nil,err
+        }
         var startCmd string
         
         fmt.Printf("Creating the docker containers on server %d\n",i)
