@@ -67,14 +67,14 @@ func AddTestNet(details DeploymentDetails) error {
 
     switch(details.Blockchain){
         case "eos":
-            labels,err = eos.Eos(details.Params,details.Nodes,newServerData,clients);
+            labels,err = eos.Build(details.Params,details.Nodes,newServerData,clients);
             if err != nil {
                 state.ReportError(err)
                 log.Println(err)
                 return err
             }
         case "ethereum":
-            err := eth.Ethereum(details.Params,details.Nodes,newServerData,clients)
+            labels,err = eth.Build(details.Params,details.Nodes,newServerData,clients)
             if err != nil {
                 state.ReportError(err)
                 log.Println(err)

@@ -30,8 +30,11 @@ func DockerNetworkCreate(server db.Server,client *util.SshClient,node int) error
     command += fmt.Sprintf(" --subnet %s",util.GetNetworkAddress(server.ServerID,node))
     command += fmt.Sprintf(" --gateway %s",util.GetGateway(server.ServerID,node))
     command += fmt.Sprintf(" -o parent=%s.%d wb_vlan_%d",server.Iface,node+101,node)
-    _,err := client.Run(command)
-    return err
+    res,err := client.Run(command)
+    if err != nil{
+        return errors.New(res)
+    }
+    return nil
 }
 
 func DockerNetworkCreateAll(server db.Server,client *util.SshClient,nodes int) error {

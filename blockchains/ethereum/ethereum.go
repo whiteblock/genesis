@@ -25,14 +25,14 @@ func init() {
  * @param  int      nodes       The number of nodes in the network
  * @param  []Server servers     The list of servers passed from build
  */
-func Ethereum(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient) error {
+func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient) ([]string,error) {
     //var mutex = &sync.Mutex{}
     var sem = semaphore.NewWeighted(conf.ThreadLimit)
     ctx := context.TODO()
     ethconf,err := NewConf(data)
     if err != nil {
         log.Println(err)
-        return err
+        return nil,err
     }
 
     err = util.Rm("tmp")
@@ -51,7 +51,7 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server,clients 
         err = util.Mkdir(fmt.Sprintf("./tmp/node%d",i))
         if err != nil{
             log.Println(err)
-            return err
+            return nil,err
         }
         //fmt.Printf("---------------------  CREATING pre-allocated accounts for NODE-%d  ---------------------\n",i)
 
@@ -69,7 +69,7 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server,clients 
             err = util.Write(fmt.Sprintf("tmp/node%d/passwd.file",i),data)
             if err != nil{
                 log.Println(err)
-                return err
+                return nil,err
             }
         }
     }
@@ -88,13 +88,13 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server,clients 
                 node,node))
         if err != nil {
             log.Println(err)
-            return err
+            return nil,err
         }
         //fmt.Printf("RAW:%s\n",gethResults)
         addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
         addresses := addressPattern.FindAllString(gethResults,-1)
         if len(addresses) < 1 {
-            return errors.New("Unable to get addresses")
+            return nil,errors.New("Unable to get addresses")
         }
         address := addresses[0]
         address = address[1:len(address)-1]
@@ -122,7 +122,7 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server,clients 
     err = createGenesisfile(ethconf,wallets)
     if err != nil{
         log.Println(err)
-        return err
+        return nil,err
     }
 
     state.IncrementBuildProgress()
@@ -130,19 +130,19 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server,clients 
     err = initNodeDirectories(nodes,ethconf.NetworkId,servers)
     if err != nil {
         log.Println(err)
-        return err
+        return nil,err
     }
 
     state.IncrementBuildProgress()
     err = util.Mkdir("tmp/keystore")
     if err != nil {
         log.Println(err)
-        return err
+        return nil,err
     }
     err = distributeUTCKeystore(nodes)
     if err != nil {
         log.Println(err)
-        return err
+        return nil,err
     }
 
     state.IncrementBuildProgress()
@@ -199,14 +199,14 @@ func Ethereum(data map[string]interface{},nodes int,servers []db.Server,clients 
     err = sem.Acquire(ctx,conf.ThreadLimit)
     if err != nil{
         log.Println(err)
-        return err
+        return nil,err
     }
     state.IncrementBuildProgress()
     sem.Release(conf.ThreadLimit)
     if !state.ErrorFree(){
-        return state.GetError()
+        return nil,state.GetError()
     }
-    return nil
+    return nil,nil
     
 }
 /***************************************************************************************************************************/

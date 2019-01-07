@@ -25,7 +25,7 @@ func init(){
  * @param  int      nodes       The number of producers to make
  * @param  []Server servers     The list of relevant servers
  */
-func Eos(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient) ([]string,error) {
+func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient) ([]string,error) {
     
     eosconf,err := NewConf(data)
     if err != nil {
