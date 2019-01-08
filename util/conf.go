@@ -33,6 +33,10 @@ type Config struct {
     ServiceVlan         int         `json:"service-vlan"`
     ServiceNetwork      string      `json:"service-network"`
     ServiceNetworkName  string      `json:"service-network-name`
+    NodePrefix          string      `json:"node-prefix"`
+    NodeNetworkPrefix   string      `json:"node-network-prefix"`
+    ServicePrefix       string      `json:"service-prefix"`
+    NetworkVlanStart    int         `json:"network-vlan-start"`
 }
 
 func (this *Config) LoadFromEnv() {
@@ -154,6 +158,27 @@ func (this *Config) LoadFromEnv() {
     if exists {
         this.ServiceNetworkName = val
     }
+    val,exists = os.LookupEnv("NODE_PREFIX")
+    if exists {
+        this.NodePrefix = val
+    }
+    val,exists = os.LookupEnv("NODE_NETWORK_PREFIX")
+    if exists {
+        this.NodeNetworkPrefix = val
+    }
+    val,exists = os.LookupEnv("SERVICE_PREFIX")
+    if exists {
+        this.ServicePrefix = val
+    }
+    val,exists = os.LookupEnv("NETWORK_VLAN_START")
+    if exists {
+        tmp,err := strconv.ParseInt(val,0,32)
+        this.NetworkVlanStart = int(tmp)
+        if err != nil{
+            fmt.Println("Invalid ENV value for NETWORK_VLAN_START")
+            os.Exit(1)
+        }
+    }
 }
 
 func (c *Config) AutoFillMissing() {
@@ -205,13 +230,27 @@ func (c *Config) AutoFillMissing() {
     if(c.ServiceVlan == 0 ){
         c.ServiceVlan = 4094
     }
-
     if len(c.ServiceNetwork) == 0 {
         c.ServiceNetwork = "172.18.18.1/24"
     }
-
     if len(c.ServiceNetworkName) == 0 {
         c.ServiceNetworkName = "wb_builtin_services"
+    }
+
+    if len(c.NodePrefix) == 0 {
+        c.NodePrefix = "whiteblock-node"
+    }
+
+    if len(c.NodeNetworkPrefix) == 0 {
+        c.NodeNetworkPrefix = "wb_vlan_"
+    }
+
+    if len(c.ServicePrefix) == 0 {
+        c.ServicePrefix = "wb_service"
+    }
+
+    if c.NetworkVlanStart <= 0 {
+        c.NetworkVlanStart = 101
     }
 }
 

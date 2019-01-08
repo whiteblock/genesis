@@ -36,7 +36,7 @@ func PrepareSwitches(server db.Server,nodes int) error {
     config.SetIfaceAddr(server.Switches[0].Iface,fmt.Sprintf("%s/%d",server.Iaddr.Gateway,server.Iaddr.Subnet))//Update this later on to be more dynamic
     for i,gw := range gws {
         config.AddVif(
-            fmt.Sprintf("%d",i+101),
+            fmt.Sprintf("%d",i+conf.NetworkVlanStart),
             fmt.Sprintf("%s/%d",gw,util.GetSubnet()),
             server.Switches[0].Iface)
     }
