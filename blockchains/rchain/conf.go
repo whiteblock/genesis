@@ -101,6 +101,7 @@ func GetServices() []util.Service {
             Env:map[string]string{
                 "BASIC_AUTH_BASE64":base64.StdEncoding.EncodeToString([]byte(conf.InfluxUser+":"+conf.InfluxPassword)),
                 "INFLUXDB_URL":conf.Influx,
+                "BIND_PORT":"8086",
             },
         },
     }

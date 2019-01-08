@@ -6,7 +6,6 @@ import(
     "log"
     "time"
     "regexp"
-    "strings"
     util "../../util"
     db "../../db"
 )
@@ -26,6 +25,12 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         return nil,err
     }
 
+    services,err := util.GetServiceIps(GetServices())
+    if err != nil{
+        log.Println(err)
+        return nil,err
+    }
+
     defer func(){
         util.Rm("./rchain.conf")
     }()
@@ -37,7 +42,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         }
     }
     /**Setup the first node**/
-    err = createFirstConfigFile(servers[0],0,rchainConf)
+    err = createFirstConfigFile(servers[0],0,rchainConf,services["wb_influx_proxy"])
     if err != nil{
         log.Println(err)
         return nil,err
@@ -113,12 +118,13 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 
         
         log.Println("Got the address for the bootnode: "+enode)
-        err = createConfigFile(enode,rchainConf)
+        err = createConfigFile(enode,rchainConf,services["wb_influx_proxy"])
         if err != nil{
             log.Println(err)
             return nil,err
         }
     }
+    defer util.Rm("./rnode.toml")
     /**Copy config files to the rest of the nodes**/
     for i,server := range servers{
         err = clients[i].Scp("./rnode.toml","/home/appo/rnode.toml")
@@ -143,7 +149,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             return nil,err
         }
     }
-    err = util.Rm("./rnode.toml")
+    
     if err != nil{
         log.Println(err)
         return nil,err
@@ -176,17 +182,16 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             node++;
         }
     }
-    err = SetupPrometheus(servers,clients)
+    /*err = SetupPrometheus(servers,clients)
     if err != nil{
         log.Println(err)
         return nil,err
-    }
+    }*/
     return nil,nil
 }
 
 
-func createFirstConfigFile(server db.Server,node int,rchainConf *RChainConf) error {
-    ip_port := strings.Split(conf.Influx,":")
+func createFirstConfigFile(server db.Server,node int,rchainConf *RChainConf,influxIP string) error {
     data := util.CombineConfig([]string{
         "[server]",
         "host = \"0.0.0.0\"",
@@ -201,25 +206,25 @@ func createFirstConfigFile(server db.Server,node int,rchainConf *RChainConf) err
         fmt.Sprintf("casper-block-store-size = %d",rchainConf.CasperBlockStoreSize),
         fmt.Sprintf("in-memory-store = %v",rchainConf.InMemoryStore),
         fmt.Sprintf("max-num-of-connections = %d",rchainConf.MaxNumOfConnections),
-        "[grpc-server]",
+        "\n[grpc-server]",
         "host = \"0.0.0.0\"",
         "port = 40501",
         "port-internal = 40504",
-        "[tls]",
+        "\n[tls]",
         "#certificate = \"/var/lib/rnode/certificate.pem\"",
         "#key = \"/var/lib/rnode/key.pem\"",
-        "[validators]",
+        "\n[validators]",
         fmt.Sprintf("count = %d",rchainConf.ValidatorCount),
         "shard-id = \"wbtest\"",
         fmt.Sprintf("sig-algorithm = \"%s\"",rchainConf.SigAlgorithm),
         "bonds-file = \"/root/.rnode/genesis\"",
         "private-key = \"7fa626af8e4b96797888e6fc6884ce7c278c360170b13e4ce4000090c6f2bab\"",
-        "[kamon]",
+        "\n[kamon]",
         "prometheus = false",
         "influx-db = true",
-        "[influx-db]",
-        fmt.Sprintf("hostname = \"%s\"",ip_port[0]),
-        fmt.Sprintf("port = %s",ip_port[1]),
+        "\n[influx-db]",
+        fmt.Sprintf("hostname = \"%s\"",influxIP),
+        "port = 8086",
         "database = \"rnode\"",
 
     });
@@ -247,10 +252,9 @@ func createFirstConfigFile(server db.Server,node int,rchainConf *RChainConf) err
     return util.Rm("./rnode.toml")
 }
 
-func createConfigFile(bootnodeAddr string,rchainConf *RChainConf) error {
-    ip_port := strings.Split(conf.Influx,":")
+func createConfigFile(bootnodeAddr string,rchainConf *RChainConf,influxIP string) error {
     data := util.CombineConfig([]string{
-        "[server]",
+        "\n[server]",
         "host = \"0.0.0.0\"",
         "port = 40500",
         "http-port = 40502",
@@ -264,25 +268,25 @@ func createConfigFile(bootnodeAddr string,rchainConf *RChainConf) error {
         fmt.Sprintf("casper-block-store-size = %d",rchainConf.CasperBlockStoreSize),
         fmt.Sprintf("in-memory-store = %v",rchainConf.InMemoryStore),
         fmt.Sprintf("max-num-of-connections = %d",rchainConf.MaxNumOfConnections),
-        "[grpc-server]",
+        "\n[grpc-server]",
         "host = \"0.0.0.0\"",
         "port = 40501",
         "port-internal = 40504",
-        "[tls]",
+        "\n[tls]",
         "#certificate = \"/var/lib/rnode/certificate.pem\"",
         "#key = \"/var/lib/rnode/key.pem\"",
-        "[validators]",
+        "\n[validators]",
         fmt.Sprintf("count = %d",rchainConf.ValidatorCount),
         "shard-id = \"wbtest\"",
         fmt.Sprintf("sig-algorithm = \"%s\"",rchainConf.SigAlgorithm),
         "bonds-file = \"/root/.rnode/genesis\"",
         "private-key = \"7fa626af8e4b96797888e6fc6884ce7c278c360170b13e4ce4000090c6f2bab\"",
-        "[kamon]",
+        "\n[kamon]",
         "prometheus = false",
         "influx-db = true",
-        "[influx-db]",
-        fmt.Sprintf("hostname = \"%s\"",ip_port[0]),
-        fmt.Sprintf("port = %s",ip_port[1]),
+        "\n[influx-db]",
+        fmt.Sprintf("hostname = \"%s\"",influxIP),
+        "port = 8086",
         "database = \"rnode\"",
     });
 
