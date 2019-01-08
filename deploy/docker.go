@@ -14,13 +14,13 @@ import(
 
 
 func DockerKill(client *util.SshClient,node int) error {
-    _,err := client.Run(fmt.Sprintf("docker rm -f whiteblock-node%d",node))
+    _,err := client.Run(fmt.Sprintf("docker rm -f %s%d",conf.NodePrefix,node))
     return err
 }
 
 
 func DockerKillAll(client *util.SshClient) error {
-    _,err := client.Run("docker rm -f $(docker ps -aq -f name=whiteblock)");
+    _,err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s\")",conf.NodePrefix));
     state.IncrementDeployProgress()
     return err
 }
@@ -40,7 +40,7 @@ func DockerNetworkCreate(server db.Server,client *util.SshClient,node int) error
                     util.GetGateway(server.ServerID,node),
                     server.Iface,
                     node+conf.NetworkVlanStart,
-                    fmt.Sprintf("%s%d","wb_vlan_",node))
+                    fmt.Sprintf("%s%d",conf.NodeNetworkPrefix,node))
     
     res,err := client.Run(command)
     if err != nil{
@@ -65,7 +65,7 @@ func DockerNetworkCreateAll(server db.Server,client *util.SshClient,nodes int) e
 }
 
 func DockerNetworkDestroyAll(client *util.SshClient) error {
-    _,err := client.Run("for net in $(docker network ls | grep wb_v | awk '{print $1}'); do docker network rm $net; done")
+    _,err := client.Run(fmt.Sprintf("for net in $(docker network ls | grep %s | awk '{print $1}'); do docker network rm $net; done",conf.NodeNetworkPrefix))
     state.IncrementDeployProgress()
     return err
 }
@@ -91,7 +91,7 @@ func simpleDockerRunCmd(network string,ip string,name string,image string) strin
 
 func dockerRunCmd(server db.Server,resources Resources,node int,image string) (string,error) {
     command := "docker run -itd "
-    command += fmt.Sprintf("--network wb_vlan_%d",node)
+    command += fmt.Sprintf("--network %s%d",conf.NodeNetworkPrefix,node)
 
     if !resources.NoCpuLimits() {
         command += fmt.Sprintf(" --cpus %s",resources.Cpus)
@@ -106,8 +106,8 @@ func dockerRunCmd(server db.Server,resources Resources,node int,image string) (s
     }
 
     command += fmt.Sprintf(" --ip %s",util.GetNodeIP(server.ServerID,node))
-    command += fmt.Sprintf(" --hostname whiteblock-node%d",node)
-    command += fmt.Sprintf(" --name whiteblock-node%d",node)
+    command += fmt.Sprintf(" --hostname %s%d",conf.NodePrefix,node)
+    command += fmt.Sprintf(" --name %s%d",conf.NodePrefix,node)
     command += " " + image
     return command,nil
 }
@@ -151,7 +151,7 @@ func DockerRunAll(server db.Server,client *util.SshClient,resources Resources,no
 
 //simpleDockerRunCmd(network string,ip string,name string,image string) string
 func DockerStartServices(server db.Server,client *util.SshClient,services []util.Service) error {
-    _,err := client.Run("docker rm -f $(docker ps -aq -f name=wb_service)");
+    _,err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)",conf.ServicePrefix));
     client.Run("docker network rm "+conf.ServiceNetworkName)
     gateway,subnet,err := util.GetServiceNetwork()
     if err != nil {
@@ -174,7 +174,7 @@ func DockerStartServices(server db.Server,client *util.SshClient,services []util
     for i,service := range services {
         _,err := client.Run(simpleDockerRunCmd(conf.ServiceNetworkName,
                                                ips[service.Name],
-                                               fmt.Sprintf("%s%d","wb_service",i),
+                                               fmt.Sprintf("%s%d",conf.ServicePrefix,i),
                                                service.Image))
         if err != nil {
             return err
