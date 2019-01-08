@@ -52,11 +52,13 @@ func PrepareSwitches(server db.Server,nodes int) error {
         log.Println(err)
         return err
     }
+    defer util.Rm("install.sh")
     err = util.Write("config.boot",fmt.Sprintf("%s\n",config.ToString()))
     if err != nil{
         log.Println(err)
         return err
     }
+    defer util.Rm("config.boot")
     err = util.Scp(server.Switches[0].Addr,"./config.boot","/config/config.boot")
     if err != nil{
         log.Println(err)
@@ -72,7 +74,7 @@ func PrepareSwitches(server db.Server,nodes int) error {
         log.Println(err)
         return err
     }
-    util.Rm("config.boot")
+    
 
     return nil
 }

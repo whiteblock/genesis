@@ -269,7 +269,8 @@ func GetDefaults() string {
 }
 
 func GetServices() []util.Service {
-    return []util.Service{
+	return nil
+    /*return []util.Service{
         util.Service{
             Name:"Alpine",
             Image:"alpine:latest",
@@ -278,5 +279,5 @@ func GetServices() []util.Service {
                 "INFLUXDB_URL":conf.Influx,
             },
         },
-    }
+    }*/
 }
