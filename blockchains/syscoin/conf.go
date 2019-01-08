@@ -267,3 +267,7 @@ func GetDefaults() string {
 	"percentMasternodes":90
 }`
 }
+
+func GetServices() []util.Service {
+	return nil
+}

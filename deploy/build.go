@@ -16,7 +16,7 @@ var conf *util.Config = util.GetConfig()
  * Builds out the Docker Network on pre-setup servers
  * Returns a string of all of the IP addresses 
  */
-func Build(buildConf *Config,servers []db.Server,resources Resources,clients []*util.SshClient) ([]db.Server,error) {
+func Build(buildConf *Config,servers []db.Server,resources Resources,clients []*util.SshClient,services []util.Service) ([]db.Server,error) {
     state.SetDeploySteps(2*buildConf.Nodes + 2)
     defer state.FinishDeploy()
 
@@ -44,6 +44,7 @@ func Build(buildConf *Config,servers []db.Server,resources Resources,clients []*
 
         err := prepareVlans(servers[i], nodes,clients[i])
         if err != nil {
+            log.Println(err)
             return nil,err
         }
         var startCmd string
@@ -118,13 +119,21 @@ func Build(buildConf *Config,servers []db.Server,resources Resources,clients []*
     //Acquire all of the resources here, then release and destroy
     err := sem.Acquire(ctx,conf.ThreadLimit)
     if err != nil {
+        log.Println(err)
         return servers, nil
     }
     sem.Release(conf.ThreadLimit)
     if n != 0 {
         return servers, errors.New(fmt.Sprintf("ERROR: Only able to build %d/%d nodes\n",(buildConf.Nodes - n),buildConf.Nodes))
     }
-
+    if services != nil {
+        err = DockerStartServices(servers[0],clients[0],services)
+    }
+    
+    if err != nil{
+        log.Println(err)
+        return err
+    }
     return servers, nil
 }
 

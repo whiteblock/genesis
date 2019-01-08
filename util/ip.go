@@ -2,6 +2,9 @@ package util
 
 import (
     "fmt"
+    "net"
+    "errors"
+    "log"
 )
 
 /**
@@ -101,4 +104,47 @@ func GetNetworkAddress(server int, node int) string {
     cluster := uint32(uint32(node)/NodesPerCluster)
     ip += cluster << clusterShift
     return fmt.Sprintf("%s/%d",InetNtoa(ip),GetSubnet())
+}
+
+/**Increment ip address by 1**/
+func inc(ip net.IP) {
+    for i := len(ip) - 1; i >= 0; i-- {
+        ip[i]++
+        if ip[i] > 0 {
+            return
+        }
+    }
+}
+
+/**Get a map of the service name to ips**/
+func GetServiceIps(services []Service) (map[string]string,error) {
+    out := make(map[string]string)
+    _, ipnet, err := net.ParseCIDR(conf.ServiceNetwork)
+    ip := ip.Mask(ipnet.Mask)
+    if err != nil {
+        log.Println(err)
+        return nil,err
+    }
+    inc(ip)//skip first ip
+
+    for _,service := range services {
+        inc(ip)
+        if !ipnet.Contains(ip) {
+            return nil,errors.New("CIDR range too small")
+        }
+        out[service.Name] = ip
+    }
+    return out    
+}
+
+/**Get the gateway and the CIDR subnet**/
+func GetServiceNetwork() (string, string, error){
+    ip, _, err := net.ParseCIDR(conf.ServiceNetwork)
+    if err != nil {
+        log.Println(err)
+        return "","",err
+    }
+    inc(ip)
+
+    return ip.String(),conf.ServiceNetwork,nil
 }

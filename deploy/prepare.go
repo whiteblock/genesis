@@ -2,18 +2,12 @@ package deploy
 
 /**
  * Prepare the vlans and the switch
- *
- * 
  */
 import (
     "fmt"
     db "../db"
+    util "../util"
 )
-
-func Prepare(noNodes int,servers []db.Server){
-    fmt.Println("-------------Setting Up Servers-------------")     
-    prepareSwitchesThread(noNodes,servers)
-}
 
 /**
  * Prepare the switches
@@ -21,7 +15,9 @@ func Prepare(noNodes int,servers []db.Server){
  * @param  {[type]} servers []Server      [description]
  * @return {[type]}         [description]
  */
-func prepareSwitchesThread(noNodes int,servers []db.Server){
+func Prepare(noNodes int,servers []db.Server){
+    fmt.Println("-------------Setting Up Servers-------------")
+
     n := noNodes
     i := 0
     

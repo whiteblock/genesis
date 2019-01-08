@@ -2,6 +2,7 @@ package rchain
 
 import (
     "encoding/json"
+    "encoding/base64"
     util "../../util"
 )
 
@@ -92,6 +93,18 @@ func NewRChainConf(data map[string]interface{}) (*RChainConf,error) {
     return out, nil
 }
 
+func GetServices() []util.Service {
+    return []util.Service{
+        util.Service{
+            Name:"wb_influx_proxy",
+            Image:"gcr.io/wb-genesis/bitbucket.org/whiteblockio/influx-proxy:master",
+            Env:map[string]string{
+                "BASIC_AUTH_BASE64":base64.StdEncoding.EncodeToString([]byte(conf.InfluxUser+":"+conf.InfluxPassword)),
+                "INFLUXDB_URL":conf.Influx,
+            },
+        },
+    }
+}
 
 func GetParams() string {
     return `[

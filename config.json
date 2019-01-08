@@ -16,5 +16,8 @@
 	"allow-exec":true,
 	"influx":"127.0.0.1:8086",
     "influx-user":"",
-    "influx-password":""
+    "influx-password":"",
+   	"service-vlan":4094,
+   	"service-network":"172.18.18.1/24",
+   	"service-network-name":"wb_builtin_services"
 }

@@ -25,11 +25,21 @@ func DockerKillAll(client *util.SshClient) error {
     return err
 }
 
+func dockerNetworkCreateCmd(subnet string,gateway string,iface string,vlan int,name string) string {
+    return fmt.Sprintf("docker network create -d macvlan --subnet %s --gateway %s -o parent=%s.%d %s",
+                        subnet,
+                        gateway,
+                        iface,
+                        vlan,
+                        name)
+}
+
 func DockerNetworkCreate(server db.Server,client *util.SshClient,node int) error {
-    command := "docker network create -d macvlan"
-    command += fmt.Sprintf(" --subnet %s",util.GetNetworkAddress(server.ServerID,node))
-    command += fmt.Sprintf(" --gateway %s",util.GetGateway(server.ServerID,node))
-    command += fmt.Sprintf(" -o parent=%s.%d wb_vlan_%d",server.Iface,node+101,node)
+    command := dockerNetworkCreateCmd(
+                    util.GetNetworkAddress(server.ServerID,node),
+                    util.GetGateway(server.ServerID,node),
+                    server.Iface, node+101, node)
+    
     res,err := client.Run(command)
     if err != nil{
         res,err = client.Run(command)//end me
@@ -66,6 +76,15 @@ func DockerPull(clients []*util.SshClient,image string) error {
         }
     }
     return nil
+}
+
+func simpleDockerRunCmd(network string,ip string,name string,image string) string {
+    return fmt.Sprintf("docker run -itd --network %s --ip %s --hostname %s --name %s %s",
+                        network,
+                        ip,
+                        name,
+                        name,
+                        image)
 }
 
 func dockerRunCmd(server db.Server,resources Resources,node int,image string) (string,error) {
@@ -125,6 +144,40 @@ func DockerRunAll(server db.Server,client *util.SshClient,resources Resources,no
             }
         }
         
+    }
+    return nil
+}
+
+//simpleDockerRunCmd(network string,ip string,name string,image string) string
+func DockerStartServices(server db.Server,client *util.SshClient,services []util.Service) error {
+    _,err := client.Run("docker rm -f $(docker ps -aq -f name=wb_service)");
+    client.Run("docker network rm "+conf.ServiceNetworkName)
+    gateway,subnet,err := util.GetServiceNetwork()
+    if err != nil {
+        log.Println(err)
+        return err
+    }
+
+    res,err = client.Run(dockerNetworkCreateCmd(subnet,gateway,server.Iface,conf.ServiceVlan conf.ServiceNetworkName))
+    if err != nil{
+        log.Println(err)
+        log.Println(res)
+        return err
+    }
+    ips,err := GetServiceIps(services)
+    if err != nil{
+        log.Println(err)
+        return err
+    }
+
+    for i,service := range services {
+        _,err := client.Run(simpleDockerRunCmd(conf.ServiceNetworkName,
+                                               ips[service.Name],
+                                               fmt.Sprintf("%s%d","wb_service",i),
+                                               service.Image))
+        if err != nil {
+            return err
+        }
     }
     return nil
 }

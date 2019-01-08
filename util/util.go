@@ -13,11 +13,6 @@ import (
     //"golang.org/x/sys/unix"
 )
 
-/****Standard Data Structures****/
-type KeyPair struct {
-    PrivateKey  string
-    PublicKey   string
-}
 
 
 /****Basic Linux Functions****/

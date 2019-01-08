@@ -488,3 +488,8 @@ func GetParams() string{
     {"plugins":"[]string"}
 ]`
 }
+
+
+func GetServices() []util.Service {
+    return nil
+}

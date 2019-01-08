@@ -4,10 +4,7 @@ import (
     "context"
     "fmt"
     "golang.org/x/sync/semaphore"
-    //"strings"
     "math/rand"
-    //"sync"
-    //"errors"
     "log"
     db "../../db"
     util "../../util"
@@ -256,11 +253,12 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                     log.Println(err)
                     return
                 }
-                _,err = clients[0].DockerExec(0,fmt.Sprintf("cleos -u http://%s:8889 create account eosio %s %s %s",
+                res,err := clients[0].DockerExec(0,fmt.Sprintf("cleos -u http://%s:8889 create account eosio %s %s %s",
                             masterIP, account,masterKeyPair.PublicKey,contractKeyPair.PublicKey))
                 if err != nil {
                     state.ReportError(err)
                     log.Println(err)
+                    log.Println(res)
                     return
                 }
 

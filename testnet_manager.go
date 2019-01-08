@@ -26,8 +26,9 @@ type DeploymentDetails struct {
 
 func AddTestNet(details DeploymentDetails) error {
     defer state.DoneBuilding()
-    servers, err := db.GetServers(details.Servers)
 
+    //STEP 1: FETCH THE SERVERS
+    servers, err := db.GetServers(details.Servers)
     if err != nil {
         log.Println(err.Error())
         state.ReportError(err)
@@ -35,8 +36,8 @@ func AddTestNet(details DeploymentDetails) error {
     }
     fmt.Println("Got the Servers")
 
+    //STEP 2: OPEN UP THE RELEVANT SSH CONNECTIONS
     clients := make([]*util.SshClient,len(servers))
-
     defer func(clients []*util.SshClient){
         for _,client := range clients {
             client.Close()
@@ -50,12 +51,25 @@ func AddTestNet(details DeploymentDetails) error {
             return err
         }
     }
-    /**Got the clients**/
+    
+    //STEP 3: GET THE SERVICES
+    var services []util.Service
+    switch(details.Blockchain){
+        case "ethereum":
+            services = eth.GetServices()
+        case "eos":
+            services = eos.GetServices()
+        case "syscoin": 
+            services = sys.GetServices()
+        case "rchain":
+            services = rchain.GetServices()
+    }
 
+    //STEP 4: BUILD OUT THE DOCKER CONTAINERS AND THE NETWORK
     config := deploy.Config{Nodes: details.Nodes, Image: details.Image, Servers: details.Servers}
     fmt.Printf("Created the build configuration : %+v \n",config)
 
-    newServerData,err := deploy.Build(&config,servers,details.Resources,clients) //TODO: Restructure distribution of nodes over servers
+    newServerData,err := deploy.Build(&config,servers,details.Resources,clients,services) //TODO: Restructure distribution of nodes over servers
     if err != nil {
         log.Println(err)
         state.ReportError(err)

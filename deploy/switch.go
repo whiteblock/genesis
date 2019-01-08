@@ -40,6 +40,10 @@ func PrepareSwitches(server db.Server,nodes int) error {
             fmt.Sprintf("%s/%d",gw,util.GetSubnet()),
             server.Switches[0].Iface)
     }
+    config.AddVif(
+        fmt.Sprintf("%d",conf.ServiceVlan)
+        conf.ServiceNetwork,
+        server.Switches[0].Iface)
     //fmt.Printf(config.ToString())
     //fmt.Printf(meta)
     err = util.Write("config.boot",fmt.Sprintf("%s\n",config.ToString()))

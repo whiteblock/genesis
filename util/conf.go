@@ -7,6 +7,7 @@ import(
     "os"
     "strconv"
     "fmt"
+    "net"
 )
 
 type Config struct {
@@ -26,10 +27,13 @@ type Config struct {
     IPPrefix            uint32      `json:"ip-prefix"`
     AllowExec           bool        `json:"allow-exec"`
     DockerOutputFile    string      `json:"docker-output-file"`
-
     Influx              string      `json:"influx"`
     InfluxUser          string      `json:"influx-user"`
     InfluxPassword      string      `json:"influx-password"`
+
+    ServiceVlan         string      `json:"service-vlan"`
+    ServiceNetwork      string      `json:"service-network"`
+    ServiceNetworkName  string      `json:"service-network-name`
 }
 
 func (this *Config) LoadFromEnv() {
@@ -134,11 +138,23 @@ func (this *Config) LoadFromEnv() {
     if exists {
         this.InfluxPassword = val
     }
+    val,exists = os.LookupEnv("SERVICE_VLAN")
+    if exists {
+        this.ServiceVlan = val
+    }
+    val,exists = os.LookupEnv("SERVICE_NETWORK")
+    if exists {
+        this.ServiceNetwork = val
+    }
+    val,exists = os.LookupEnv("SERVICE_NETWORK_NAME")
+    if exists {
+        this.ServiceNetworkName = val
+    }
 }
 
 func (c *Config) AutoFillMissing() {
     if len(c.Builder) == 0 {
-        c.Builder = "local deploy"
+        c.Builder = "genesis"
     }
     if len(c.SshUser) == 0 {
         c.SshUser = "appo"
@@ -147,7 +163,7 @@ func (c *Config) AutoFillMissing() {
         c.SshPassword = "w@ntest"
     }
     if len(c.VyosHomeDir) == 0 {
-        c.VyosHomeDir = "/home/appo/"
+        c.VyosHomeDir = "/home/appo"
     }
     if len(c.Listen) == 0 {
         c.Listen = "127.0.0.1:8000"
@@ -160,26 +176,38 @@ func (c *Config) AutoFillMissing() {
         c.RsaUser = "appo"
     }
     if c.ServerBits <= 0 {
-        println("Warning: Using default server bits")
+        fmt.Println("Warning: Using default server bits")
         c.ServerBits = 8
     }
     if c.ClusterBits <= 0 {
-        println("Warning: Using default cluster bits")
+        fmt.Println("Warning: Using default cluster bits")
         c.ClusterBits = 14
     }
     if c.NodeBits <= 0 {
-        println("Warning: Using default node bits")
+        fmt.Println("Warning: Using default node bits")
         c.NodeBits = 2
     }
     if c.ThreadLimit <= 0 {
-        println("Warning: Using default thread limit")
+        fmt.Println("Warning: Using default thread limit")
         c.ThreadLimit = 10
     }
     if c.AllowExec {
-        println("Warning: exec call is enabled. This is unsafe!")
+        fmt.Println("Warning: exec call is enabled. This is unsafe!")
     }
     if len(c.DockerOutputFile) == 0 {
         c.DockerOutputFile = "/output.log"
+    }
+
+    if(c.ServiceVlan == 0 ){
+        c.ServiceVlan = 4094
+    }
+
+    if len(c.ServiceNetwork) == 0 {
+        c.ServiceNetwork = "172.18.18.1/24"
+    }
+
+    if len(c.ServiceNetworkName) == 0 {
+        c.ServiceNetworkName = "wb_builtin_services"
     }
 }
 

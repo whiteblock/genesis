@@ -138,3 +138,8 @@ func GetDefaults() string {
 	"eip158Block":0
 }`
 }
+
+
+func GetServices() []util.Service{
+	return nil
+}
