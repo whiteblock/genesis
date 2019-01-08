@@ -18,7 +18,7 @@
     "influx-user":"",
     "influx-password":"",
    	"service-vlan":4094,
-   	"service-network":"172.18.18.1/24",
+   	"service-network":"172.30.0.1/16",
    	"service-network-name":"wb_builtin_services",
    	"node-prefix":"whiteblock-node",
    	"node-network-prefix":"wb_vlan_",

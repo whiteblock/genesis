@@ -269,5 +269,14 @@ func GetDefaults() string {
 }
 
 func GetServices() []util.Service {
-	return nil
+    return []util.Service{
+        util.Service{
+            Name:"Alpine",
+            Image:"alpine:latest",
+            Env:map[string]string{
+                "HELLO":"HI",
+                "INFLUXDB_URL":conf.Influx,
+            },
+        },
+    }
 }

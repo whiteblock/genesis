@@ -80,14 +80,7 @@ func DockerPull(clients []*util.SshClient,image string) error {
     return nil
 }
 
-func simpleDockerRunCmd(network string,ip string,name string,image string) string {
-    return fmt.Sprintf("docker run -itd --network %s --ip %s --hostname %s --name %s %s",
-                        network,
-                        ip,
-                        name,
-                        name,
-                        image)
-}
+
 
 func dockerRunCmd(server db.Server,resources Resources,node int,image string) (string,error) {
     command := "docker run -itd "
@@ -148,7 +141,20 @@ func DockerRunAll(server db.Server,client *util.SshClient,resources Resources,no
     }
     return nil
 }
-
+func serviceDockerRunCmd(network string,ip string,name string,env map[string]string,image string) string {
+    envFlags := ""
+    for k,v := range env{
+        envFlags += fmt.Sprintf("-e \"%s=%s\" ",k,v)
+    }
+    envFlags += fmt.Sprintf("-e \"BIND_ADDR=%s\"",ip)
+    return fmt.Sprintf("docker run -itd --network %s --ip %s --hostname %s --name %s %s %s",
+                        network,
+                        ip,
+                        name,
+                        name,
+                        envFlags,
+                        image)
+}
 //simpleDockerRunCmd(network string,ip string,name string,image string) string
 func DockerStartServices(server db.Server,client *util.SshClient,services []util.Service) error {
     _,err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)",conf.ServicePrefix));
@@ -172,11 +178,14 @@ func DockerStartServices(server db.Server,client *util.SshClient,services []util
     }
 
     for i,service := range services {
-        _,err := client.Run(simpleDockerRunCmd(conf.ServiceNetworkName,
+        res,err := client.Run(serviceDockerRunCmd(conf.ServiceNetworkName,
                                                ips[service.Name],
                                                fmt.Sprintf("%s%d",conf.ServicePrefix,i),
+                                               service.Env,
                                                service.Image))
         if err != nil {
+            log.Println(err)
+            log.Println(res)
             return err
         }
     }

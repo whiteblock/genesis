@@ -93,6 +93,14 @@ func GetSubnet() int {
     return 32 - int(conf.NodeBits)
 }
 
+func GetWholeNetworkIp(server int) string {
+    var ip uint32 = conf.IPPrefix << (conf.NodeBits+conf.ClusterBits+conf.ServerBits)
+    var serverShift uint32 = conf.NodeBits + conf.ClusterBits
+    //set server bits
+    ip += uint32(server) << serverShift
+    return InetNtoa(ip)
+}
+
 
 func GetNetworkAddress(server int, node int) string {
     var ip uint32 = conf.IPPrefix << (conf.NodeBits+conf.ClusterBits+conf.ServerBits)
@@ -139,12 +147,11 @@ func GetServiceIps(services []Service) (map[string]string,error) {
 
 /**Get the gateway and the CIDR subnet**/
 func GetServiceNetwork() (string, string, error){
-    ip, _, err := net.ParseCIDR(conf.ServiceNetwork)
+    ip, ipnet, err := net.ParseCIDR(conf.ServiceNetwork)
     if err != nil {
         log.Println(err)
         return "","",err
     }
-    inc(ip)
 
-    return ip.String(),conf.ServiceNetwork,nil
+    return ip.String(),ipnet.String(),nil
 }
