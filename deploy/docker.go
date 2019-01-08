@@ -32,7 +32,11 @@ func DockerNetworkCreate(server db.Server,client *util.SshClient,node int) error
     command += fmt.Sprintf(" -o parent=%s.%d wb_vlan_%d",server.Iface,node+101,node)
     res,err := client.Run(command)
     if err != nil{
-        return errors.New(res)
+        res,err = client.Run(command)//end me
+        if err != nil{
+            return errors.New(res)
+        }
+        
     }
     return nil
 }
