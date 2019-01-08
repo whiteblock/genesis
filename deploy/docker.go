@@ -38,7 +38,7 @@ func DockerNetworkCreate(server db.Server,client *util.SshClient,node int) error
     command := dockerNetworkCreateCmd(
                     util.GetNetworkAddress(server.ServerID,node),
                     util.GetGateway(server.ServerID,node),
-                    server.Iface, node+101, node)
+                    server.Iface, node+101, fmt.Sprintf("%s%d","wb_vlan_",node))
     
     res,err := client.Run(command)
     if err != nil{
@@ -158,13 +158,13 @@ func DockerStartServices(server db.Server,client *util.SshClient,services []util
         return err
     }
 
-    res,err = client.Run(dockerNetworkCreateCmd(subnet,gateway,server.Iface,conf.ServiceVlan conf.ServiceNetworkName))
+    res,err := client.Run(dockerNetworkCreateCmd(subnet,gateway,server.Iface,conf.ServiceVlan,conf.ServiceNetworkName))
     if err != nil{
         log.Println(err)
         log.Println(res)
         return err
     }
-    ips,err := GetServiceIps(services)
+    ips,err := util.GetServiceIps(services)
     if err != nil{
         log.Println(err)
         return err

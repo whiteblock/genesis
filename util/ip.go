@@ -119,8 +119,8 @@ func inc(ip net.IP) {
 /**Get a map of the service name to ips**/
 func GetServiceIps(services []Service) (map[string]string,error) {
     out := make(map[string]string)
-    _, ipnet, err := net.ParseCIDR(conf.ServiceNetwork)
-    ip := ip.Mask(ipnet.Mask)
+    ip, ipnet, err := net.ParseCIDR(conf.ServiceNetwork)
+    ip = ip.Mask(ipnet.Mask)
     if err != nil {
         log.Println(err)
         return nil,err
@@ -132,9 +132,9 @@ func GetServiceIps(services []Service) (map[string]string,error) {
         if !ipnet.Contains(ip) {
             return nil,errors.New("CIDR range too small")
         }
-        out[service.Name] = ip
+        out[service.Name] = ip.String()
     }
-    return out    
+    return out,nil   
 }
 
 /**Get the gateway and the CIDR subnet**/

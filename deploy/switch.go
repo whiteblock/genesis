@@ -41,7 +41,7 @@ func PrepareSwitches(server db.Server,nodes int) error {
             server.Switches[0].Iface)
     }
     config.AddVif(
-        fmt.Sprintf("%d",conf.ServiceVlan)
+        fmt.Sprintf("%d",conf.ServiceVlan),
         conf.ServiceNetwork,
         server.Switches[0].Iface)
     //fmt.Printf(config.ToString())

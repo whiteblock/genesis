@@ -6,7 +6,6 @@ package deploy
 import (
     "fmt"
     db "../db"
-    util "../util"
 )
 
 /**

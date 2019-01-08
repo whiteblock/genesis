@@ -7,7 +7,6 @@ import(
     "os"
     "strconv"
     "fmt"
-    "net"
 )
 
 type Config struct {
@@ -31,7 +30,7 @@ type Config struct {
     InfluxUser          string      `json:"influx-user"`
     InfluxPassword      string      `json:"influx-password"`
 
-    ServiceVlan         string      `json:"service-vlan"`
+    ServiceVlan         int         `json:"service-vlan"`
     ServiceNetwork      string      `json:"service-network"`
     ServiceNetworkName  string      `json:"service-network-name`
 }
@@ -140,7 +139,12 @@ func (this *Config) LoadFromEnv() {
     }
     val,exists = os.LookupEnv("SERVICE_VLAN")
     if exists {
-        this.ServiceVlan = val
+        tmp,err := strconv.ParseInt(val,0,32)
+        this.ServiceVlan = int(tmp)
+        if err != nil{
+            fmt.Println("Invalid ENV value for SERVICE_VLAN")
+            os.Exit(1)
+        }
     }
     val,exists = os.LookupEnv("SERVICE_NETWORK")
     if exists {

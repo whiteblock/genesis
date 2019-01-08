@@ -128,11 +128,10 @@ func Build(buildConf *Config,servers []db.Server,resources Resources,clients []*
     }
     if services != nil {
         err = DockerStartServices(servers[0],clients[0],services)
-    }
-    
-    if err != nil{
-        log.Println(err)
-        return err
+        if err != nil{
+            log.Println(err)
+            return nil,err
+        }
     }
     return servers, nil
 }
