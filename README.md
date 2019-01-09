@@ -27,11 +27,17 @@ Configuration options are located in `config.json` in the same directory as the 
 * __docker-output-file__: The location instead the docker containers where the clients stdout and stderr will be captured
 * __influx__: The influxdb endpoint
 * __influx-user__: The influx auth username
-* __influx-passowrd__: The influx auth password
+* __influx-password__: The influx auth password
+* __service-vlan__: The vlan for the services network
+* __service-network__: CIDR of the network for the services
+* __service-network-name__: The name for the service network
+* __node-prefix__: The prefix for each node name
+* __node-network-prefix__: The prefix for each cluster network
+* __service-prefix__: The prefix for each service
+* __network-vlan-start__: The vlan to start the build process, aka vlan for net 0
+* __setup-masquerade__: Have genesis setup masquerading in the vyos
 
-`json:"influx"`
-    InfluxUser          string      `json:"influx-user"`
-    InfluxPassword      string      `json:"influx-password"`
+
 ###Config Environment Overrides
 These will override what is set in the config.json file, and allow configuration via
 only ENV variables
@@ -55,6 +61,14 @@ only ENV variables
 * `INFLUX`
 * `INFLUX_USER`
 * `INFLUX_PASSWORD`
+* `SERVICE_VLAN`
+* `SERVICE_NETWORK`
+* `SERVICE_NETWORK_NAME`
+* `NODE_PREFIX`
+* `NODE_NETWORK_PREFIX`
+* `SERVICE_PREFIX`
+* `NETWORK_VLAN_START`
+* `SETUP_MASQUERADE`
 
 ###Additional Information
 * Config order of priority ENV -> config file -> defaults

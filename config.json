@@ -23,5 +23,6 @@
    	"node-prefix":"whiteblock-node",
    	"node-network-prefix":"wb_vlan_",
    	"service-prefix":"wb_service",
-   	"network-vlan-start":101
+   	"network-vlan-start":101,
+    "setup-masquerade":false
 }

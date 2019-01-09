@@ -37,6 +37,7 @@ type Config struct {
     NodeNetworkPrefix   string      `json:"node-network-prefix"`
     ServicePrefix       string      `json:"service-prefix"`
     NetworkVlanStart    int         `json:"network-vlan-start"`
+    SetupMasquerade     bool        `json:"setup-masquerade"`
 }
 
 func (this *Config) LoadFromEnv() {
@@ -179,6 +180,11 @@ func (this *Config) LoadFromEnv() {
             os.Exit(1)
         }
     }
+    _,exists = os.LookupEnv("SETUP_MASQUERADE")
+    if exists {
+        this.SetupMasquerade = true
+    }
+    
 }
 
 func (c *Config) AutoFillMissing() {

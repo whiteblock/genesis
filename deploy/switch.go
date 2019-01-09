@@ -27,7 +27,7 @@ func getConfig(host string) (*vyos.Config, string,error) {
 
 func PrepareSwitches(server db.Server,nodes int) error {
     //Assume one switch per server
-    if server.Switches[0].Brand == util.Hp {
+    if server.Switches[0].Brand & 0x03 == util.Hp {
         setupHPSwitch(server,nodes)
         return nil
     }
@@ -81,12 +81,25 @@ func PrepareSwitches(server db.Server,nodes int) error {
 
 
 func GenerateFile(server db.Server) string {
+    if !conf.SetupMasquerade {
+        return util.CombineConfig([]string{
+            "#!/bin/vbash",
+            "source /opt/vyatta/etc/functions/script-template",
+            "configure",
+            "/bin/cli-shell-api loadFile /config/config.boot",
+            "commit",
+            "save",
+        })
+    }
     _,subnet,err := util.GetServiceNetwork()
     if err != nil{
         log.Println(err)
         panic(err)
     }
     ruleid := server.Id * 2
+
+    eth := server.Switches[0].Brand >> 2
+
     return util.CombineConfig([]string{
         "#!/bin/vbash",
         "source /opt/vyatta/etc/functions/script-template",
@@ -95,12 +108,12 @@ func GenerateFile(server db.Server) string {
         fmt.Sprintf("delete nat source rule %d",ruleid),
         fmt.Sprintf("delete nat source rule %d",ruleid+1),
         fmt.Sprintf("set nat source rule %d source address %s",ruleid,fmt.Sprintf("%s/%d",util.GetWholeNetworkIp(server.ServerID),util.GetSubnet())),
-        fmt.Sprintf("set nat source rule %d outbound-interface %s",ruleid,server.Switches[0].Iface),
+        fmt.Sprintf("set nat source rule %d outbound-interface eth%d",ruleid,eth),
         fmt.Sprintf("set nat source rule %d translation address masquerade",ruleid),
         fmt.Sprintf("set nat source rule %d protocol all",ruleid),
 
         fmt.Sprintf("set nat source rule %d source address %s",ruleid+1,subnet),
-        fmt.Sprintf("set nat source rule %d outbound-interface %s",ruleid+1,server.Switches[0].Iface),
+        fmt.Sprintf("set nat source rule %d outbound-interface eth%d",ruleid+1,eth),
         fmt.Sprintf("set nat source rule %d translation address masquerade",ruleid+1),
         fmt.Sprintf("set nat source rule %d protocol all",ruleid+1),
         
