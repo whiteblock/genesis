@@ -10,7 +10,17 @@ import(
 type EosConf struct{
     UserAccounts                    int64       `json:"userAccounts"`
     BlockProducers                  int         `json:"blockProducers"`
-    
+
+    AccountCPUStake                 int64       `json:"accountCPUStake"`
+    AccountRAMStake                 int64       `json:"accountRAMStake"`
+    AccountNetStake                 int64       `json:"accountNetStake"`
+    AccountFunds                    int64       `json:"accountFunds"`
+
+    BpCpuStake                      int64       `json:"bpCpuStake"`
+    BpNetStake                      int64       `json:"bpNetStake"`
+    BpRamStake                      int64       `json:"bpRamStake"`
+    BpFunds                         int64       `json:"bpFunds"`
+
     MaxBlockNetUsage                int64       `json:"maxBlockNetUsage"`
     TargetBlockNetUsagePct          int64       `json:"targetBlockNetUsagePct"`
     MaxTransactionNetUsage          int64       `json:"maxTransactionNetUsage"`
@@ -315,6 +325,34 @@ func NewConf(data map[string]interface{}) (*EosConf,error){
         }
     }
 
+    if _,ok := data["accountCPUStake"]; ok {
+        out.AccountCPUStake,err = util.GetJSONInt64(data,"accountCPUStake")
+        if err != nil {
+            return nil,err
+        }
+    }
+
+    if _,ok := data["accountRAMStake"]; ok {
+        out.AccountRAMStake,err = util.GetJSONInt64(data,"accountRAMStake")
+        if err != nil {
+            return nil,err
+        }
+    }
+
+    if _,ok := data["accountNetStake"]; ok {
+        out.AccountNetStake,err = util.GetJSONInt64(data,"accountNetStake")
+        if err != nil {
+            return nil,err
+        }
+    }
+
+    if _,ok := data["accountFunds"]; ok {
+        out.AccountFunds,err = util.GetJSONInt64(data,"accountFunds")
+        if err != nil {
+            return nil,err
+        }
+    }
+
     return out,nil
 }
 
@@ -405,6 +443,14 @@ func GetDefaults() string{
     return `{
     "userAccounts":200,
     "blockProducers":21,
+    "accountCPUStake":2000000,
+    "accountRAMStake":2000000,
+    "accountNetStake":500000,
+    "accountFunds":100000,
+    "bpCpuStake":1000000,
+    "bpNetStake":1000000,
+    "bpRamStake":1000000,
+    "BpFunds":100000,
     "maxBlockNetUsage":1048576,
     "targetBlockNetUsagePct":1000,
     "maxTransactionNetUsage":524288,
@@ -448,11 +494,18 @@ func GetDefaults() string{
 }`
 }
 
-
 func GetParams() string{
     return `[
     {"userAccounts":"int"},
     {"blockProducers":"int"},
+    {"accountCPUStake":"int"},
+    {"accountRAMStake":"int"},
+    {"accountNetStake":"int"},
+    {"accountFunds":"int"},
+    {"bpCpuStake":"int"},
+    {"bpNetStake":"int"},
+    {"bpRamStake":"int"},
+    {"bpFunds":"int"},
     {"maxBlockNetUsage":"int"},
     {"targetBlockNetUsagePct":"int"},
     {"maxTransactionNetUsage":"int"},

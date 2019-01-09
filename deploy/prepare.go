@@ -4,7 +4,7 @@ package deploy
  * Prepare the vlans and the switch
  */
 import (
-    "fmt"
+    "fmt" 
     db "../db"
 )
 

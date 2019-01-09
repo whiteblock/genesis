@@ -18,7 +18,6 @@ func DockerKill(client *util.SshClient,node int) error {
     return err
 }
 
-
 func DockerKillAll(client *util.SshClient) error {
     _,err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s\")",conf.NodePrefix));
     state.IncrementDeployProgress()
@@ -79,8 +78,6 @@ func DockerPull(clients []*util.SshClient,image string) error {
     }
     return nil
 }
-
-
 
 func dockerRunCmd(server db.Server,resources Resources,node int,image string) (string,error) {
     command := "docker run -itd "

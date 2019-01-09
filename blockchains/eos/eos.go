@@ -363,20 +363,24 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 
                     if node < eosconf.BlockProducers {
                         _,err = clients[0].DockerExec(0,
-                                    fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "1000000.0000 SYS" --stake-cpu "1000000.0000 SYS" --buy-ram "1000000 SYS"`,
+                                    fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "%d.0000 SYS" --stake-cpu "%d.0000 SYS" --buy-ram "%d SYS"`,
                                         masterIP,
                                         eos_getProducerName(node),
                                         masterKeyPair.PublicKey,
-                                        keyPair.PublicKey))
+                                        keyPair.PublicKey,
+                                        eosconf.BpNetStake,
+                                        eosconf.BpCpuStake,
+                                        eosconf.BpRamStake))
                         if err != nil {
                             log.Println(err)
                             state.ReportError(err)
                             return
                         }
                         
-                        _,err = clients[0].DockerExec(0,fmt.Sprintf(`cleos -u http://%s:8889 transfer eosio %s "100000.0000 SYS"`,
+                        _,err = clients[0].DockerExec(0,fmt.Sprintf(`cleos -u http://%s:8889 transfer eosio %s "%d SYS"`,
                                         masterIP,
-                                        eos_getProducerName(node)))
+                                        eos_getProducerName(node),
+                                        eosconf.BpFunds))
                         if err != nil {
                             log.Println(err)
                             state.ReportError(err)
@@ -502,11 +506,14 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 defer sem.Release(1)
                 
                     res,err := clients[0].DockerExec(0,
-                                fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "500000.0000 SYS" --stake-cpu "2000000.0000 SYS" --buy-ram "2000000 SYS"`,
+                                fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "%d.0000 SYS" --stake-cpu "%d.0000 SYS" --buy-ram "%d SYS"`,
                                             masterIP,
                                             name,
                                             masterKeyPair.PublicKey,
-                                            accountKeyPair.PublicKey))
+                                            accountKeyPair.PublicKey,
+                                            eosconf.AccountNetStake,
+                                            eosconf.AccountCPUStake,
+                                            eosconf.AccountRAMStake))
                     if err != nil{
                         log.Println(err)
                         state.ReportError(err)
