@@ -36,3 +36,23 @@ func NewConf(data map[string]interface{}) (*BeamConf, error) {
 	}
 	return out, nil
 }
+
+func GetParams() string {
+	return `[
+	{"miners":"int"},
+	{"txNodes":"int"},
+	{"nilNodes":"int"},
+]`
+}
+
+func GetDefaults() string {
+	return `{
+		{"miners":10},
+		{"txNodes":2},
+		{"nilNodes":0},
+			}`
+}
+
+func GetServices() []util.Service {
+	return nil
+}
