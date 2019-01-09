@@ -640,6 +640,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 masterIP))
 
     if err != nil {
+        log.Println(err)
         return nil,err
     }
 
@@ -650,6 +651,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 masterIP))
 
     if err != nil {
+        log.Println(err)
         return nil,err
     }
 
