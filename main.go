@@ -1,8 +1,9 @@
 package main
 
 import (
-	util "./util"
 	"log"
+
+	util "./util"
 )
 
 var conf *util.Config
