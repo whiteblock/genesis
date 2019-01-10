@@ -131,6 +131,6 @@ func GetDefaults() string {
     "maxNumOfConnections":500,
     "validatorCount":5,
     "sigAlgorithm":"ed25519",
-    "command":"/rchain/node/target/rnode-0.8.1/usr/share/rnode/bin/rnode"
+    "command":"/opt/docker/bin/rnode"
 }`
 }
