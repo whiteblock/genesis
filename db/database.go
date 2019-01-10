@@ -103,40 +103,6 @@ func dbInit() {
 
 
 func InsertLocalServers(db *sql.DB) {
-	InsertServer("bravo",
-		Server{
-			Addr:"172.16.2.5",
-			Iaddr:Iface{Ip:"10.254.2.100",Gateway:"10.254.2.1",Subnet:24},
-			Nodes:0,
-			Max:30,
-			Id:2,
-			ServerID:2,
-			Iface:"eno4",
-			Ips:[]string{},
-			Switches:[]Switch{ Switch{Addr:"172.16.1.1",Iface:"eth2",Brand:util.Vyos} }})
-
-	InsertServer("charlie",
-		Server{
-			Addr:"172.16.3.5",
-			Iaddr:Iface{Ip:"10.254.3.100",Gateway:"10.254.3.1",Subnet:24},
-			Nodes:0,
-			Max:30,
-			Id:3,
-			ServerID:3,
-			Iface:"eno3",
-			Ips:[]string{},
-			Switches:[]Switch{ Switch{Addr:"172.16.1.1",Iface:"eth3",Brand:util.Vyos} }})
-	InsertServer("foxtrot",
-		Server{
-			Addr:"172.16.6.5",
-			Iaddr:Iface{Ip:"10.254.6.100",Gateway:"10.254.6.1",Subnet:24},
-			Nodes:0,
-			Max:30,
-			Id:6,
-			ServerID:6,
-			Iface:"eno3",
-			Ips:[]string{},
-			Switches:[]Switch{ Switch{Addr:"172.16.1.1",Iface:"eth6",Brand:util.Vyos} }})
 	InsertServer("cloud",
 		Server{
 			Addr:"127.0.0.1",
