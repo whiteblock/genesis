@@ -222,18 +222,38 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 sedCmd3 := fmt.Sprintf(`docker exec %s sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`,relName,nodeIP)
 
                 //sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
-                _,err := clients[i].MultiRun(
-                    fmt.Sprintf("docker exec -d %s tmux new -s ethnet -d",relName),
-                    sedCmd,
-                    sedCmd2,
-                    sedCmd3,
-                    fmt.Sprintf("docker exec -d %s tmux send-keys -t ethnet 'cd /eth-net-intelligence-api && pm2 start app.json' C-m",relName),
-                )
+                res,err := clients[i].DockerExecd(relNum,"tmux new -s ethnet -d")
+                if err != nil {
+                    log.Println(err)
+                    log.Println(res)
+                    state.ReportError(err)
+                    return
+                }
+                _,err = clients[i].Run(sedCmd)
                 if err != nil {
                     log.Println(err)
                     state.ReportError(err)
                     return
                 }
+                _,err = clients[i].Run(sedCmd2)
+                if err != nil {
+                    log.Println(err)
+                    state.ReportError(err)
+                    return
+                }
+                _,err = clients[i].Run(sedCmd3)
+                if err != nil {
+                    log.Println(err)
+                    state.ReportError(err)
+                    return
+                }
+                _,err = clients[i].DockerExecd(relNum,"tmux send-keys -t ethnet 'cd /eth-net-intelligence-api && pm2 start app.json' C-m")
+                if err != nil {
+                    log.Println(err)
+                    state.ReportError(err)
+                    return
+                }  
+                
     
                 sem.Release(1)
                 state.IncrementBuildProgress()
@@ -398,13 +418,14 @@ func distributeUTCKeystore(nodes int) error {
 func setupEthNetStats(client *util.SshClient) error {
     res,err := client.Run("[ -d ~/eth-netstats ] && echo \"success\"")
     if res != "success" || err != nil {
-        log.Println("eth-net stats not found in container!")
+        log.Println("eth-net stats not found in server!")
+        client.Run("rm -rf ~/eth-netstats")//ign
         _,err = client.Run("wget http://whiteblock.io/eth-netstats.tar.gz && tar xf eth-netstats.tar.gz && rm eth-netstats.tar.gz")
         if err != nil {
             log.Println(err)
             return err
         }
-        client.Run("rm -rf eth-netstats")//ign
+       
     }
 
     client.Run("tmux kill-session -t netstats")//ign
