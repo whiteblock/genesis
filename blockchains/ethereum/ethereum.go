@@ -229,15 +229,17 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                     state.ReportError(err)
                     return
                 }
-                _,err = clients[i].Run(sedCmd)
+                res,err = clients[i].Run(sedCmd)
                 if err != nil {
                     log.Println(err)
+                    log.Println(res)
                     state.ReportError(err)
                     return
                 }
-                _,err = clients[i].Run(sedCmd2)
+                res,err = clients[i].Run(sedCmd2)
                 if err != nil {
                     log.Println(err)
+                    log.Println(res)
                     state.ReportError(err)
                     return
                 }
@@ -425,7 +427,6 @@ func setupEthNetStats(client *util.SshClient) error {
             log.Println(err)
             return err
         }
-       
     }
 
     client.Run("tmux kill-session -t netstats")//ign
