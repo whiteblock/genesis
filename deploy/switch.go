@@ -74,8 +74,6 @@ func PrepareSwitches(server db.Server,nodes int) error {
         log.Println(err)
         return err
     }
-    
-
     return nil
 }
 

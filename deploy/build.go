@@ -71,6 +71,7 @@ func Build(buildConf *Config,servers []db.Server,resources Resources,clients []*
     if n != 0 {
         return servers, errors.New(fmt.Sprintf("ERROR: Only able to build %d/%d nodes\n",(buildConf.Nodes - n),buildConf.Nodes))
     }
+    DockerStopServices(clients[0])
     if services != nil {
         err = DockerStartServices(servers[0],clients[0],services)
         if err != nil{

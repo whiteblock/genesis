@@ -152,10 +152,14 @@ func serviceDockerRunCmd(network string,ip string,name string,env map[string]str
                         envFlags,
                         image)
 }
-//simpleDockerRunCmd(network string,ip string,name string,image string) string
-func DockerStartServices(server db.Server,client *util.SshClient,services []util.Service) error {
+
+func DockerStopServices(client *util.SshClient) error {
     _,err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)",conf.ServicePrefix));
     client.Run("docker network rm "+conf.ServiceNetworkName)
+    return err
+}
+
+func DockerStartServices(server db.Server,client *util.SshClient,services []util.Service) error {
     gateway,subnet,err := util.GetServiceNetwork()
     if err != nil {
         log.Println(err)
