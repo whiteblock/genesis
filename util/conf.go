@@ -10,7 +10,6 @@ import(
 )
 
 type Config struct {
-    Builder             string      `json:"builder"`
     SshUser             string      `json:"ssh-user"`
     SshPassword         string      `json:"ssh-password"`
     VyosHomeDir         string      `json:"vyos-home-dir"`
@@ -29,7 +28,6 @@ type Config struct {
     Influx              string      `json:"influx"`
     InfluxUser          string      `json:"influx-user"`
     InfluxPassword      string      `json:"influx-password"`
-
     ServiceVlan         int         `json:"service-vlan"`
     ServiceNetwork      string      `json:"service-network"`
     ServiceNetworkName  string      `json:"service-network-name`
@@ -38,15 +36,15 @@ type Config struct {
     ServicePrefix       string      `json:"service-prefix"`
     NetworkVlanStart    int         `json:"network-vlan-start"`
     SetupMasquerade     bool        `json:"setup-masquerade"`
+
+    NodesPublicKey      string      `json:"nodesPublicKey"`
+    NodesPrivateKey     string      `json:"nodesPrivateKey"`
+    HandleNodeSshKeys   bool        `json:"handleNodeSshKeys"`
 }
 
 func (this *Config) LoadFromEnv() {
     var err error
-    val,exists := os.LookupEnv("BUILDER")
-    if exists {
-        this.Builder = val
-    }
-    val,exists = os.LookupEnv("SSH_USER")
+    val,exists := os.LookupEnv("SSH_USER")
     if exists {
         this.SshUser = val
     }
@@ -184,13 +182,24 @@ func (this *Config) LoadFromEnv() {
     if exists {
         this.SetupMasquerade = true
     }
-    
+
+    val,exists = os.LookupEnv("NODES_PUBLIC_KEY")
+    if exists {
+        this.NodesPublicKey = val
+    }
+
+    val,exists = os.LookupEnv("NODES_PRIVATE_KEY")
+    if exists {
+        this.NodesPrivateKey = val
+    }
+
+    _,exists = os.LookupEnv("HANDLE_NODES_SSH_KEYS")
+    if exists {
+        this.HandleNodeSshKeys = true
+    }
 }
 
 func (c *Config) AutoFillMissing() {
-    if len(c.Builder) == 0 {
-        c.Builder = "genesis"
-    }
     if len(c.SshUser) == 0 {
         c.SshUser = "appo"
     }
@@ -233,11 +242,12 @@ func (c *Config) AutoFillMissing() {
         c.DockerOutputFile = "/output.log"
     }
 
-    if(c.ServiceVlan == 0 ){
+    if c.ServiceVlan == 0 {
         c.ServiceVlan = 4094
     }
+    
     if len(c.ServiceNetwork) == 0 {
-        c.ServiceNetwork = "172.18.18.1/24"
+        c.ServiceNetwork = "172.30.0.0/16"
     }
     if len(c.ServiceNetworkName) == 0 {
         c.ServiceNetworkName = "wb_builtin_services"

@@ -106,7 +106,7 @@ func InsertLocalServers(db *sql.DB) {
 	InsertServer("cloud",
 		Server{
 			Addr:"127.0.0.1",
-			Iaddr:Iface{Ip:"10.0.0.2",Gateway:"10.0.0.1",Subnet:8},
+			Iaddr:Iface{Ip:"192.168.122.1",Gateway:"192.168.122.250",Subnet:24},
 			Nodes:0,
 			Max:200,
 			ServerID:1,
