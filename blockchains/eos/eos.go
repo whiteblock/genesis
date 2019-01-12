@@ -210,7 +210,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         util.Rm("./genesis.json")
         util.Rm("./config.ini")
     }()
-    state.IncrementBuildProgress() 
+    state.IncrementBuildProgress()
     /**Step 2d**/
     {
         
@@ -332,13 +332,23 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     /**Step 8**/
 
     
-        res,err = clients[0].DockerExec(0,
-            fmt.Sprintf(`cleos -u http://%s:8889 push action eosio setpriv '["eosio.msig", 1]' -p eosio@active`,
-                masterIP))
-        if err != nil{
-            log.Println(err)
-            return nil,err
-        }
+    res,err = clients[0].DockerExec(0,
+        fmt.Sprintf(`cleos -u http://%s:8889 push action eosio setpriv '["eosio.msig", 1]' -p eosio@active`,
+            masterIP))
+    if err != nil{
+        log.Println(res)
+        log.Println(err)
+        return nil,err
+    }
+
+    res,err = clients[0].DockerExec(0,
+        fmt.Sprintf(`cleos -u http://%s:8889 push action eosio init '["0", "4,SYS"]' -p eosio@active`,masterIP))
+        
+    if err != nil{
+        log.Println(res)
+        log.Println(err)
+        return nil,err
+    }
     state.IncrementBuildProgress() 
     /**Step 10a**/
     {
@@ -354,7 +364,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 go func(masterServerIP string, masterKeyPair util.KeyPair, keyPair util.KeyPair,node int){
                     defer sem.Release(1)
                     
-                    _,err = clients[0].DockerExec(0,fmt.Sprintf("cleos wallet import --private-key %s",keyPair.PrivateKey))
+                    _,err := clients[0].DockerExec(0,fmt.Sprintf("cleos wallet import --private-key %s",keyPair.PrivateKey))
                     if err != nil {
                         log.Println(err)
                         state.ReportError(err)
@@ -362,16 +372,17 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                     }
 
                     if node < eosconf.BlockProducers {
-                        _,err = clients[0].DockerExec(0,
-                                    fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "%d.0000 SYS" --stake-cpu "%d.0000 SYS" --buy-ram "%d SYS"`,
+                        res,err := clients[0].DockerExec(0,
+                                    fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "%d.0000 SYS" --stake-cpu "%d.0000 SYS" --buy-ram-kbytes %d`,
                                         masterIP,
                                         eos_getProducerName(node),
                                         masterKeyPair.PublicKey,
                                         keyPair.PublicKey,
                                         eosconf.BpNetStake,
                                         eosconf.BpCpuStake,
-                                        eosconf.BpRamStake))
+                                        eosconf.BpRam))
                         if err != nil {
+                            log.Println(res)
                             log.Println(err)
                             state.ReportError(err)
                             return
@@ -506,14 +517,14 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 defer sem.Release(1)
                 
                     res,err := clients[0].DockerExec(0,
-                                fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "%d.0000 SYS" --stake-cpu "%d.0000 SYS" --buy-ram "%d SYS"`,
+                                fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "%d.0000 SYS" --stake-cpu "%d.0000 SYS" --buy-ram-kbytes %d`,
                                             masterIP,
                                             name,
                                             masterKeyPair.PublicKey,
                                             accountKeyPair.PublicKey,
                                             eosconf.AccountNetStake,
-                                            eosconf.AccountCPUStake,
-                                            eosconf.AccountRAMStake))
+                                            eosconf.AccountCpuStake,
+                                            eosconf.AccountRam))
                     if err != nil{
                         log.Println(err)
                         state.ReportError(err)

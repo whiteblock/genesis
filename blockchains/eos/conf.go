@@ -11,14 +11,14 @@ type EosConf struct{
     UserAccounts                    int64       `json:"userAccounts"`
     BlockProducers                  int         `json:"blockProducers"`
 
-    AccountCPUStake                 int64       `json:"accountCPUStake"`
-    AccountRAMStake                 int64       `json:"accountRAMStake"`
+    AccountCpuStake                 int64       `json:"accountCpuStake"`
+    AccountRam                      int64       `json:"accountRam"`
     AccountNetStake                 int64       `json:"accountNetStake"`
     AccountFunds                    int64       `json:"accountFunds"`
 
     BpCpuStake                      int64       `json:"bpCpuStake"`
     BpNetStake                      int64       `json:"bpNetStake"`
-    BpRamStake                      int64       `json:"bpRamStake"`
+    BpRam                           int64       `json:"bpRam"`
     BpFunds                         int64       `json:"bpFunds"`
 
     MaxBlockNetUsage                int64       `json:"maxBlockNetUsage"`
@@ -325,15 +325,15 @@ func NewConf(data map[string]interface{}) (*EosConf,error){
         }
     }
 
-    if _,ok := data["accountCPUStake"]; ok {
-        out.AccountCPUStake,err = util.GetJSONInt64(data,"accountCPUStake")
+    if _,ok := data["accountCpuStake"]; ok {
+        out.AccountCpuStake,err = util.GetJSONInt64(data,"accountCpuStake")
         if err != nil {
             return nil,err
         }
     }
 
-    if _,ok := data["accountRAMStake"]; ok {
-        out.AccountRAMStake,err = util.GetJSONInt64(data,"accountRAMStake")
+    if _,ok := data["accountRam"]; ok {
+        out.AccountRam,err = util.GetJSONInt64(data,"accountRam")
         if err != nil {
             return nil,err
         }
@@ -348,6 +348,37 @@ func NewConf(data map[string]interface{}) (*EosConf,error){
 
     if _,ok := data["accountFunds"]; ok {
         out.AccountFunds,err = util.GetJSONInt64(data,"accountFunds")
+        if err != nil {
+            return nil,err
+        }
+    }
+
+
+
+
+    if _,ok := data["bpCpuStake"]; ok {
+        out.BpCpuStake,err = util.GetJSONInt64(data,"bpCpuStake")
+        if err != nil {
+            return nil,err
+        }
+    }
+
+    if _,ok := data["bpRam"]; ok {
+        out.BpRam,err = util.GetJSONInt64(data,"bpRam")
+        if err != nil {
+            return nil,err
+        }
+    }
+
+    if _,ok := data["bpNetStake"]; ok {
+        out.BpNetStake,err = util.GetJSONInt64(data,"bpNetStake")
+        if err != nil {
+            return nil,err
+        }
+    }
+
+    if _,ok := data["bpFunds"]; ok {
+        out.BpFunds,err = util.GetJSONInt64(data,"bpFunds")
         if err != nil {
             return nil,err
         }
@@ -443,13 +474,13 @@ func GetDefaults() string{
     return `{
     "userAccounts":200,
     "blockProducers":21,
-    "accountCPUStake":2000000,
-    "accountRAMStake":2000000,
+    "accountCpuStake":2000000,
+    "accountRam":8192,
     "accountNetStake":500000,
     "accountFunds":100000,
     "bpCpuStake":1000000,
     "bpNetStake":1000000,
-    "bpRamStake":1000000,
+    "bpRam":8192,
     "BpFunds":100000,
     "maxBlockNetUsage":1048576,
     "targetBlockNetUsagePct":1000,

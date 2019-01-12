@@ -45,21 +45,30 @@ func copyOverSshKeys(servers []db.Server,clients []*util.SshClient) error {
         defer clients[i].Run("rm /home/appo/node_key")
 
         for j,_ := range server.Ips{
-            _,err = clients[i].Run(fmt.Sprintf("docker cp ~/node_key %s%d:/root/.ssh/id_rsa",
+            _,err = clients[i].DockerExec(j,"mkdir -p /root/.ssh/")
+            if err != nil{
+                log.Println(err)
+                return err
+            }
+
+            res,err := clients[i].Run(fmt.Sprintf("docker cp /home/appo/node_key %s%d:/root/.ssh/id_rsa",
                 conf.NodePrefix,j))
             if err != nil {
+                log.Println(res)
                 log.Println(err)
                 return err
             }
 
-            _,err = clients[i].DockerExec(j,fmt.Sprintf(`bash -c 'echo "%s" >> /root/.ssh/authorized_keys'`,pubKey))
+            res,err = clients[i].DockerExec(j,fmt.Sprintf(`bash -c 'echo "%s" >> /root/.ssh/authorized_keys'`,pubKey))
             if err != nil {
+                log.Println(res)
                 log.Println(err)
                 return err
             }
 
-            _,err = clients[i].DockerExecd(j,"service ssh start")
+            res,err = clients[i].DockerExecd(j,"service ssh start")
             if err != nil {
+                log.Println(res)
                 log.Println(err)
                 return err
             }
