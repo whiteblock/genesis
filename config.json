@@ -1,5 +1,4 @@
 {
-	"builder":"genesis",
 	"build-mode":"normal",
 	"ssh-user":"appo",
 	"ssh-password":"w@ntest",
@@ -24,5 +23,8 @@
    	"node-network-prefix":"wb_vlan_",
    	"service-prefix":"wb_service",
    	"network-vlan-start":101,
-    "setup-masquerade":false
+    "setup-masquerade":false,
+    "nodesPublicKey":"/home/appo/.ssh/id_rsa.pub",
+    "nodesPrivateKey":"/home/appo/.ssh/id_rsa",
+    "handleNodeSshKeys":true
 }
