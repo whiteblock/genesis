@@ -189,6 +189,7 @@ func DockerStartServices(server db.Server,client *util.SshClient,services []util
             log.Println(res)
             return err
         }
+        state.IncrementDeployProgress()
     }
     return nil
 }

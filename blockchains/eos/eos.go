@@ -41,7 +41,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     clientPasswords := make(map[string]string)
 
     fmt.Println("\n*** Get Key Pairs ***")
-    state.SetBuildSteps(16+1)
+    state.SetBuildSteps(17 + (nodes*(3)) + (int(eosconf.UserAccounts) * (2)) + ((int(eosconf.UserAccounts)/50)*nodes))
     
 
     contractAccounts := []string{
@@ -60,13 +60,13 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         log.Println(err)
         return nil,err
     }
-    keyPairs,err := km.GetServerKeyPairs(servers)
+    keyPairs,err := km.GetServerKeyPairs(servers,clients)
     if err != nil{
         log.Println(err)
         return nil,err
     }
 
-    contractKeyPairs,err := km.GetMappedKeyPairs(contractAccounts)
+    contractKeyPairs,err := km.GetMappedKeyPairs(contractAccounts,clients[0])
     if err != nil {
         log.Println(err)
         return nil,err
@@ -79,11 +79,12 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     for i := 0; i < int(eosconf.UserAccounts); i++{
         accountNames = append(accountNames,eos_getRegularName(i))
     }
-    accountKeyPairs,err := km.GetMappedKeyPairs(accountNames)
+    accountKeyPairs,err := km.GetMappedKeyPairs(accountNames,clients[0])
     if err != nil {
         log.Println(err)
         return nil,err
     }
+    state.SetBuildStage("Building genesis block")
     err = util.Write("genesis.json", eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey))
     if err != nil{
         log.Println(err)
@@ -97,6 +98,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     state.IncrementBuildProgress() 
     /**Start keos and add all the key pairs for all the nodes**/
     {
+        state.SetBuildStage("Generating key pairs")
         for i, server := range servers {
             for localId,ip := range server.Ips {
                 /**Start keosd**/
@@ -123,8 +125,10 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                                 state.ReportError(err)
                                 return
                             }
+                            state.IncrementBuildProgress()
                             cmds = []string{}
                         }
+                        
                         cmds = append(cmds,fmt.Sprintf("cleos wallet import --private-key %s", accountKeyPairs[name].PrivateKey))
                     }
                     if len(cmds) > 0 {
@@ -135,7 +139,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                             return
                         }
                     }
-                    
+                    state.IncrementBuildProgress()
                 }(accountKeyPairs,accountNames,localId,i)
 
             }
@@ -150,7 +154,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     passwordNormal := clientPasswords[servers[0].Ips[1]]
     state.IncrementBuildProgress() 
     {
-        
+        state.SetBuildStage("Building genesis block")
         node := 0
         for i, server := range servers {
             sem.Acquire(ctx,1)
@@ -185,6 +189,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                         return
                     }
                     node++
+                    state.IncrementBuildProgress()
                 }
                 _,err = clients[i].Run("rm /home/appo/genesis.json")
                 if err != nil {
@@ -212,6 +217,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     }()
     state.IncrementBuildProgress()
     /**Step 2d**/
+    state.SetBuildStage("Starting EOS BIOS boot sequence")
     {
         
         res,err := clients[0].KeepTryDockerExec(0,fmt.Sprintf("cleos wallet import --private-key %s", 
@@ -290,6 +296,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             }
         }
     }
+    state.SetBuildStage("Creating the tokens")
     state.IncrementBuildProgress() 
     /**Step 6**/
 
@@ -313,7 +320,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     }
 
     
-
+    state.SetBuildStage("Setting up the system contract")
     clients[0].DockerExec(0,fmt.Sprintf("cleos -u http://%s:8889 wallet unlock --password %s",masterIP, password))//Ignore fail
 
     state.IncrementBuildProgress() 
@@ -350,7 +357,9 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         log.Println(err)
         return nil,err
     }
+    state.SetBuildStage("Creating the block producers")
     state.IncrementBuildProgress() 
+
     /**Step 10a**/
     {
         node := 0
@@ -364,6 +373,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 go func(masterServerIP string, masterKeyPair util.KeyPair, keyPair util.KeyPair,node int){
                     defer sem.Release(1)
                     if node > eosconf.BlockProducers {
+                        state.IncrementBuildProgress() 
                         return
                     }
                     clients[0].DockerExec(0,fmt.Sprintf("cleos wallet import --private-key %s",keyPair.PrivateKey))//ignore return
@@ -395,7 +405,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                         return
                     }
                     
-                    
+                    state.IncrementBuildProgress() 
                 }(masterServerIP,masterKeyPair,keyPairs[ip],node)
                 node++
             }
@@ -407,6 +417,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         }
     }
     state.IncrementBuildProgress() 
+    state.SetBuildStage("Starting up the candidate block producers")
     /**Step 11c**/
     {
         node := 0
@@ -499,40 +510,39 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     }
     fmt.Println(res)
     /**Create normal user accounts**/
-    
+    state.SetBuildStage("Creating funded accounts")
     for _, name := range accountNames {
         sem.Acquire(ctx,1)
         go func(masterServerIP string,name string,masterKeyPair util.KeyPair,accountKeyPair util.KeyPair){
             defer sem.Release(1)
-            
-                res,err := clients[0].KeepTryDockerExec(0,
-                    fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "%d SYS" --stake-cpu "%d SYS" --buy-ram-kbytes %d`,
+            res,err := clients[0].KeepTryDockerExec(0,
+                fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "%d SYS" --stake-cpu "%d SYS" --buy-ram-kbytes %d`,
+                            masterIP,
+                            name,
+                            masterKeyPair.PublicKey,
+                            accountKeyPair.PublicKey,
+                            eosconf.AccountNetStake,
+                            eosconf.AccountCpuStake,
+                            eosconf.AccountRam))
+            fmt.Println(res)
+            if err != nil{
+                log.Println(err)
+                state.ReportError(err)
+                return
+            }
+        
+            res,err = clients[0].KeepTryDockerExec(0,
+                    fmt.Sprintf(`cleos -u http://%s:8889 transfer eosio %s "%d SYS"`,
                                 masterIP,
                                 name,
-                                masterKeyPair.PublicKey,
-                                accountKeyPair.PublicKey,
-                                eosconf.AccountNetStake,
-                                eosconf.AccountCpuStake,
-                                eosconf.AccountRam))
-                fmt.Println(res)
-                if err != nil{
-                    log.Println(err)
-                    state.ReportError(err)
-                    return
-                }
-            
-                res,err = clients[0].KeepTryDockerExec(0,
-                        fmt.Sprintf(`cleos -u http://%s:8889 transfer eosio %s "%d SYS"`,
-                                    masterIP,
-                                    name,
-                                    eosconf.AccountFunds))
-                fmt.Println(res)
-                if err != nil{
-                    log.Println(err)
-                    state.ReportError(err)
-                    return
-                }
-                
+                                eosconf.AccountFunds))
+            fmt.Println(res)
+            if err != nil{
+                log.Println(err)
+                state.ReportError(err)
+                return
+            }
+            state.IncrementBuildProgress()
 
         }(masterServerIP,name,masterKeyPair,accountKeyPairs[name])
     }
@@ -543,6 +553,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     }
     
     state.IncrementBuildProgress() 
+    state.SetBuildStage("Voting in block producers")
     /**Vote in block producers**/
     {   
         node := 0
@@ -580,6 +591,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                             return
                         }
                     fmt.Println(res)
+                state.IncrementBuildProgress()
             }(masterServerIP,masterIP,name,prod)
             n++;
         }
@@ -589,7 +601,8 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             return nil, state.GetError()
         }
     }
-    state.IncrementBuildProgress() 
+    state.IncrementBuildProgress()
+    state.SetBuildStage("Initializing EOSIO") 
     /**Step 12**/
     
     _,err = clients[0].KeepTryDockerExec(0,

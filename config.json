@@ -24,7 +24,7 @@
    	"service-prefix":"wb_service",
    	"network-vlan-start":101,
     "setup-masquerade":false,
-    "nodesPublicKey":"/home/appo/.ssh/id_rsa.pub",
-    "nodesPrivateKey":"/home/appo/.ssh/id_rsa",
+    "nodesPublicKey":"/home/master-secrets/id.customer.pub",
+    "nodesPrivateKey":"/home/master-secrets/id.customer",
     "handleNodeSshKeys":true
 }

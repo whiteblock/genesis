@@ -7,7 +7,7 @@ import (
     "strings"
     db "../db"
     util "../util"
-    //state "../state"
+    state "../state"
 )
 
 /**
@@ -72,6 +72,7 @@ func copyOverSshKeys(servers []db.Server,clients []*util.SshClient) error {
                 log.Println(err)
                 return err
             }
+            state.IncrementDeployProgress()
         }
     }
     return nil

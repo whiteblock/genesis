@@ -10,13 +10,14 @@ import(
  * Packages the global state nicely into an "object"
  */
 var (
-    mutex                       =   &sync.Mutex{}
-    errMutex                    =   &sync.Mutex{}
-    building            bool    =   false
-    progressIncrement   float64 =   0.00
+    mutex                           =   &sync.Mutex{}
+    errMutex                        =   &sync.Mutex{}
+    building            bool        =   false
+    progressIncrement   float64     =   0.00
 
-    BuildingProgress    float64 =   0.00
+    BuildingProgress    float64     =   0.00
     BuildError          CustomError =   CustomError{What:"",err:nil}
+    BuildStage          string      =   ""     
 )
 
 
@@ -38,6 +39,7 @@ func DoneBuilding(){
     mutex.Lock()
     defer mutex.Unlock()
     BuildingProgress = 100.00
+    BuildStage = "Finished"
     building = false
 }
 
@@ -56,6 +58,8 @@ func ErrorFree() bool {
 }
 
 func GetError() error {
+    errMutex.Lock()
+    defer errMutex.Unlock()
     return BuildError.err
 }
 
@@ -78,5 +82,9 @@ func SetBuildSteps(steps int){
 
 func IncrementBuildProgress(){
     BuildingProgress += progressIncrement
+}
+
+func SetBuildStage(stage string){
+    BuildStage = stage
 }
 
