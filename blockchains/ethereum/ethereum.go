@@ -80,7 +80,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 
     /**Create the wallets**/
     wallets := []string{}
-
+    state.SetBuildStage("Creating the wallets")
     for i := 1; i <= nodes; i++{
 
         node := i
@@ -120,7 +120,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     fmt.Printf("unlock = %s\n%+v\n\n",wallets,unlock)
 
     state.IncrementBuildProgress()
-
+    state.SetBuildStage("Creating the genesis block")
     err = createGenesisfile(ethconf,wallets)
     if err != nil{
         log.Println(err)
@@ -128,7 +128,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     }
 
     state.IncrementBuildProgress()
-
+    state.SetBuildStage("Bootstrapping network")
     err = initNodeDirectories(nodes,ethconf.NetworkId,servers)
     if err != nil {
         log.Println(err)
@@ -141,6 +141,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         log.Println(err)
         return nil,err
     }
+    state.SetBuildStage("Distributing keys")
     err = distributeUTCKeystore(nodes)
     if err != nil {
         log.Println(err)
@@ -148,7 +149,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     }
 
     state.IncrementBuildProgress()
-
+    state.SetBuildStage("Starting geth")
     node := 0
     for i, server := range servers {
         for j, ip := range server.Ips{
