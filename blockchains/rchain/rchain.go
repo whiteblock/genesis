@@ -151,7 +151,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             if node == 0 && i == 0 {
                 continue
             }
-            _,err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/rnode.toml whiteblock-node%d:/rnode.toml",node))
+            _,err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/rnode.toml whiteblock-node%d:/datadir/rnode.toml",node))
             if err != nil{
                 log.Println(err)
                 return nil,err
@@ -256,7 +256,7 @@ func createFirstConfigFile(server db.Server,node int,rchainConf *RChainConf,infl
         log.Println(err)
         return err
     }
-    _,err = util.SshExec(server.Addr,fmt.Sprintf("docker cp /home/appo/rnode.toml whiteblock-node%d:/rnode.toml",node))
+    _,err = util.SshExec(server.Addr,fmt.Sprintf("docker cp /home/appo/rnode.toml whiteblock-node%d:/datadir/rnode.toml",node))
     if err != nil{
         log.Println(err)
         return err

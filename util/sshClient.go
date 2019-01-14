@@ -122,7 +122,7 @@ func (this SshClient) DockerExecdLog(node int,command string) error {
 	if strings.Count(command,"'") != strings.Count(command,"\\'"){
 		panic("DockerExecdLog commands cannot contain unescaped ' characters")
 	}
-	_,err := this.Run(fmt.Sprintf("docker exec -d %s-node%d bash -c '%s 2>&1 >> %s'",conf.NodePrefix,
+	_,err := this.Run(fmt.Sprintf("docker exec -d %s%d bash -c '%s 2>&1 >> %s'",conf.NodePrefix,
 										node,command,conf.DockerOutputFile))
 	return err
 }
