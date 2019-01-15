@@ -71,8 +71,10 @@ func DockerNetworkDestroyAll(client *util.SshClient) error {
 
 func DockerPull(clients []*util.SshClient,image string) error {
     for _,client := range clients {
-        _,err := client.Run("docker pull " + image)
+        res,err := client.Run("docker pull " + image)
         if err != nil {
+            log.Println(err)
+            log.Println(res)
             return err
         }
     }
@@ -107,7 +109,11 @@ func DockerRun(server db.Server,client *util.SshClient,resources Resources,node 
     if err != nil{
         return err
     }
-    _,err = client.Run(command)
+    res,err := client.Run(command)
+    if err != nil{
+        log.Println(err)
+        log.Println(res)
+    }
     return err
 }
 
@@ -127,10 +133,11 @@ func DockerRunAll(server db.Server,client *util.SshClient,resources Resources,no
         }
 
         if i % 2 == 0 || i == nodes - 1 {
-            _,err = client.Run(command)
+            res,err := client.Run(command)
             command = ""
             if err != nil {
                 log.Println(err)
+                log.Println(res)
                 return err
             }
         }
@@ -154,8 +161,11 @@ func serviceDockerRunCmd(network string,ip string,name string,env map[string]str
 }
 
 func DockerStopServices(client *util.SshClient) error {
-    _,err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)",conf.ServicePrefix));
+    res,err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)",conf.ServicePrefix));
     client.Run("docker network rm "+conf.ServiceNetworkName)
+    if err != nil {
+        log.Println(res);
+    }
     return err
 }
 
