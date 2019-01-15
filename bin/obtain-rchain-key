@@ -1,0 +1,19 @@
+#!/bin/bash -eu
+
+PRIVATE_KEYS=$(curl -sL https://raw.githubusercontent.com/rchain/rchain/dev/integration-tests/test/pregenerated_keypairs.py \
+    | grep -Eo "private_key='([^']+)" \
+    | grep -Eo "[a-z0-9]+" \
+    | grep -Ev 'private|key' \
+    | paste -sd "," - \
+    | sed 's|,|", "|g'
+)
+echo -n "[ \"$PRIVATE_KEYS\" ]" > rchain-private-keys.json
+
+PUBLIC_KEYS=$(curl -sL https://raw.githubusercontent.com/rchain/rchain/dev/integration-tests/test/pregenerated_keypairs.py \
+    | grep -Eo "public_key='([^']+)" \
+    | grep -Eo "[a-z0-9]+" \
+    | grep -Ev 'public|key' \
+    | paste -sd "," - \
+    | sed 's|,|", "|g'
+)
+echo -n "[ \"$PUBLIC_KEYS\" ]" > rchain-public-keys.json
