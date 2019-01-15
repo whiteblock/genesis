@@ -176,7 +176,7 @@ func DockerStartServices(server db.Server,client *util.SshClient,services []util
         return err
     }
 
-    res,err := client.Run(dockerNetworkCreateCmd(subnet,gateway,server.Iface,conf.ServiceVlan,conf.ServiceNetworkName))
+    res,err := client.KeepTryRun(dockerNetworkCreateCmd(subnet,gateway,server.Iface,conf.ServiceVlan,conf.ServiceNetworkName))
     if err != nil{
         log.Println(err)
         log.Println(res)
@@ -189,7 +189,7 @@ func DockerStartServices(server db.Server,client *util.SshClient,services []util
     }
 
     for i,service := range services {
-        res,err := client.Run(serviceDockerRunCmd(conf.ServiceNetworkName,
+        res,err := client.KeepTryRun(serviceDockerRunCmd(conf.ServiceNetworkName,
                                                ips[service.Name],
                                                fmt.Sprintf("%s%d",conf.ServicePrefix,i),
                                                service.Env,
