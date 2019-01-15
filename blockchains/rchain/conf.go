@@ -13,6 +13,7 @@ type RChainConf struct {
     CasperBlockStoreSize    int64   `json:"casperBlockStoreSize"`
     InMemoryStore           bool    `json:"inMemoryStore"`
     MaxNumOfConnections     int64   `json:"maxNumOfConnections"`
+    Validators              int64   `json:"validators"`
     ValidatorCount          int64   `json:"validatorCount"`
     SigAlgorithm            string  `json:"sigAlgorithm"`
     Command                 string  `json:"command"`
@@ -69,6 +70,13 @@ func NewRChainConf(data map[string]interface{}) (*RChainConf,error) {
         }
     }
 
+    if _,ok := data["validators"]; ok {
+        out.Validators,err = util.GetJSONInt64(data,"validators")
+        if err != nil {
+            return nil,err
+        }
+    }
+
     if _,ok := data["validatorCount"]; ok {
         out.ValidatorCount,err = util.GetJSONInt64(data,"validatorCount")
         if err != nil {
@@ -116,6 +124,7 @@ func GetParams() string {
     {"inMemoryStore":"bool"},
     {"maxNumOfConnections":"int"},
     {"validatorCount":"int"},
+    {"validators":"int"}
     {"sigAlgorithm":"string"},
     {"command":"string"}
 ]`
@@ -130,6 +139,7 @@ func GetDefaults() string {
     "inMemoryStore":false,
     "maxNumOfConnections":500,
     "validatorCount":5,
+    "validators":0,
     "sigAlgorithm":"ed25519",
     "command":"/opt/docker/bin/rnode"
 }`

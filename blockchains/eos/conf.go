@@ -9,7 +9,7 @@ import(
 
 type EosConf struct{
     UserAccounts                    int64       `json:"userAccounts"`
-    BlockProducers                  int         `json:"blockProducers"`
+    BlockProducers                  int         `json:"validators"`
 
     AccountCpuStake                 int64       `json:"accountCpuStake"`
     AccountRam                      int64       `json:"accountRam"`
@@ -73,8 +73,8 @@ func NewConf(data map[string]interface{}) (*EosConf,error){
         }
     }
     
-    if _,ok := data["blockProducers"]; ok {
-        num,err := util.GetJSONInt64(data,"blockProducers")
+    if _,ok := data["validators"]; ok {
+        num,err := util.GetJSONInt64(data,"validators")
         if err != nil {
             return nil,err
         }

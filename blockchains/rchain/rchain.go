@@ -181,7 +181,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 node++;
                 continue
             }
-            if validators < rchainConf.ValidatorCount {
+            if validators < rchainConf.Validators {
                 err = clients[i].DockerExecdLog(j,
                     fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
                                 rchainConf.Command,enode,keyPairs[node].PrivateKey,ip))
