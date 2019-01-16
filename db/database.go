@@ -14,6 +14,8 @@ const 	ServerTable		string		= 	"servers"
 const	TestTable		string		= 	"testnets"
 const	NodesTable		string		= 	"nodes"
 
+var conf = util.GetConfig()
+
 var db *sql.DB
 
 func init(){
@@ -108,7 +110,7 @@ func InsertLocalServers(db *sql.DB) {
 			Addr:"127.0.0.1",
 			Iaddr:Iface{Ip:"192.168.122.1",Gateway:"192.168.122.250",Subnet:24},
 			Nodes:0,
-			Max:200,
+			Max:conf.MaxNodes,
 			ServerID:1,
 			Id:-1,
 			Iface:"wb_bridge",

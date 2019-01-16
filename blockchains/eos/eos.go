@@ -593,12 +593,13 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                                         masterIP,
                                         name,
                                         eos_getProducerName(prod)))
+                        fmt.Println(res)
                         if err != nil{
                             log.Println(err)
                             state.ReportError(err)
                             return
                         }
-                    fmt.Println(res)
+                    
                 state.IncrementBuildProgress()
             }(masterServerIP,masterIP,name,prod)
             n++;

@@ -40,6 +40,8 @@ type Config struct {
     NodesPublicKey      string      `json:"nodesPublicKey"`
     NodesPrivateKey     string      `json:"nodesPrivateKey"`
     HandleNodeSshKeys   bool        `json:"handleNodeSshKeys"`
+
+    MaxNodes            int         `json:"maxNodes"`
 }
 
 func (this *Config) LoadFromEnv() {
@@ -197,6 +199,16 @@ func (this *Config) LoadFromEnv() {
     if exists {
         this.HandleNodeSshKeys = true
     }
+
+    val,exists = os.LookupEnv("MAX_NODES")
+    if exists {
+        tmp,err := strconv.ParseInt(val,0,32)
+        this.MaxNodes = int(tmp)
+        if err != nil{
+            fmt.Println("Invalid ENV value for MAX_NODES")
+            os.Exit(1)
+        }
+    }
 }
 
 func (c *Config) AutoFillMissing() {
@@ -267,6 +279,11 @@ func (c *Config) AutoFillMissing() {
 
     if c.NetworkVlanStart <= 0 {
         c.NetworkVlanStart = 101
+    }
+
+    if c.MaxNodes <= 0 {
+        log.Println("Warning: No setting given for max nodes, defaulting to 200")
+        c.MaxNodes = 200
     }
 }
 
