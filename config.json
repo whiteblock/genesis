@@ -24,7 +24,10 @@
    	"service-prefix":"wb_service",
    	"network-vlan-start":101,
     "setup-masquerade":false,
-    "nodesPublicKey":"/home/master-secrets/id.customer.pub",
-    "nodesPrivateKey":"/home/master-secrets/id.customer",
-    "handleNodeSshKeys":true
+    "nodes-public-key":"/home/master-secrets/id.master.pub",
+    "nodes-private-key":"/home/master-secrets/id.master",
+    "handle-node-ssh-keys":true,
+
+    "max-node-memory":"4gb",
+    "max-node-cpu":2.5
 }

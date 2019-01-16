@@ -37,11 +37,13 @@ type Config struct {
     NetworkVlanStart    int         `json:"network-vlan-start"`
     SetupMasquerade     bool        `json:"setup-masquerade"`
 
-    NodesPublicKey      string      `json:"nodesPublicKey"`
-    NodesPrivateKey     string      `json:"nodesPrivateKey"`
-    HandleNodeSshKeys   bool        `json:"handleNodeSshKeys"`
+    NodesPublicKey      string      `json:"nodes-public-key"`
+    NodesPrivateKey     string      `json:"nodes-private-key"`
+    HandleNodeSshKeys   bool        `json:"handle-node-ssh-keys"`
 
-    MaxNodes            int         `json:"maxNodes"`
+    MaxNodes            int         `json:"max-nodes"`
+    MaxNodeMemory       string      `json:"max-node-memory"`
+    MaxNodeCpu          float64     `json:"max-node-cpu"`          
 }
 
 func (this *Config) LoadFromEnv() {
@@ -206,6 +208,20 @@ func (this *Config) LoadFromEnv() {
         this.MaxNodes = int(tmp)
         if err != nil{
             fmt.Println("Invalid ENV value for MAX_NODES")
+            os.Exit(1)
+        }
+    }
+
+    val,exists = os.LookupEnv("MAX_NODE_MEMORY")
+    if exists {
+        this.MaxNodeMemory = val
+    }
+
+    val,exists = os.LookupEnv("MAX_NODE_CPU")
+    if exists {
+        this.MaxNodeCpu,err = strconv.ParseFloat(val,64)
+        if err != nil{
+            fmt.Println("Invalid ENV value for MAX_NODE_CPU")
             os.Exit(1)
         }
     }
