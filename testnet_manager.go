@@ -31,9 +31,11 @@ func AddTestNet(details DeploymentDetails) error {
     if err != nil {
         log.Println(err.Error())
         state.ReportError(err)
+        return err
     }
     if details.Nodes > conf.MaxNodes {
         state.ReportError(errors.New("Too many nodes"))
+        return errors.New("Too many nodes")
     }
     //STEP 1: FETCH THE SERVERS
     servers, err := db.GetServers(details.Servers)
