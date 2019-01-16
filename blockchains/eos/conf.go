@@ -473,7 +473,7 @@ func (this *EosConf) GenerateConfig() string {
 func GetDefaults() string{
     return `{
     "userAccounts":200,
-    "blockProducers":21,
+    "validators":21,
     "accountCpuStake":2000000,
     "accountRam":32768,
     "accountNetStake":500000,
@@ -481,7 +481,7 @@ func GetDefaults() string{
     "bpCpuStake":1000000,
     "bpNetStake":1000000,
     "bpRam":32768,
-    "BpFunds":100000,
+    "bpFunds":100000,
     "maxBlockNetUsage":1048576,
     "targetBlockNetUsagePct":1000,
     "maxTransactionNetUsage":524288,
