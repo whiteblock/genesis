@@ -27,10 +27,14 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     if nodes < 2 {
         return nil, errors.New("Cannot build less than 2 nodes")
     }
+
     eosconf,err := NewConf(data)
     if err != nil {
         log.Println(err)
         return nil,err
+    }
+    if eosconf.BlockProducers < 2 {
+        return nil, errors.New("Cannot build eos with only one BP")
     }
     eosconf.BlockProducers++
     state.SetEOSNumberOfAccounts(eosconf.UserAccounts)
@@ -573,6 +577,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         n := 0
         for _, name := range accountNames {
             prod := 0
+            fmt.Printf("name=%sn=%d\n",name,n)
             if n > 0 {
                 prod = rand.Intn(100) % n
             } 
