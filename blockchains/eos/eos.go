@@ -235,7 +235,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             return nil,err
         }
         
-        res,err = clients[0].DockerExecd(0,
+        err = clients[0].DockerExecdLog(0,
                     fmt.Sprintf(`nodeos -e -p eosio --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s`,
                         eos_getKeyPairFlag(keyPairs[masterIP]),
                         eos_getPTPFlags(servers, 0)))
@@ -448,12 +448,12 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                         prodFlags = " -p "+eos_getProducerName(node)+" "
                     }
 
-                    res,err := clients[server].DockerExecd(j,
+                    err := clients[server].DockerExecdLog(j,
                                     fmt.Sprintf(`nodeos --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s %s`,
                                         prodFlags,
                                         eos_getKeyPairFlag(kp),
                                         p2pFlags))
-                    fmt.Println(res)
+                    //fmt.Println(res)
                     if err != nil{
                         log.Println(err)
                         state.ReportError(err)
