@@ -37,6 +37,7 @@ func copyOverSshKeys(servers []db.Server,clients []*util.SshClient) error {
     }
 
     for i,server := range servers {
+        clients[i].Run("rm /home/appo/node_key")
         err = clients[i].Scp(conf.NodesPrivateKey,"/home/appo/node_key")
         if err != nil{
             log.Println(err)
@@ -45,13 +46,14 @@ func copyOverSshKeys(servers []db.Server,clients []*util.SshClient) error {
         defer clients[i].Run("rm /home/appo/node_key")
 
         for j,_ := range server.Ips{
-            _,err = clients[i].DockerExec(j,"mkdir -p /root/.ssh/")
+            res,err := clients[i].DockerExec(j,"mkdir -p /root/.ssh/")
             if err != nil{
+                log.Println(res)
                 log.Println(err)
                 return err
             }
 
-            res,err := clients[i].Run(fmt.Sprintf("docker cp /home/appo/node_key %s%d:/root/.ssh/id_rsa",
+            res,err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/node_key %s%d:/root/.ssh/id_rsa",
                 conf.NodePrefix,j))
             if err != nil {
                 log.Println(res)

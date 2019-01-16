@@ -6,6 +6,7 @@ import (
     "golang.org/x/sync/semaphore"
     "math/rand"
     "log"
+    "errors"
     db "../../db"
     util "../../util"
     state "../../state"
@@ -23,7 +24,9 @@ func init(){
  * @param  []Server servers     The list of relevant servers
  */
 func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient) ([]string,error) {
-    
+    if nodes < 2 {
+        return nil, errors.New("Cannot build less than 2 nodes")
+    }
     eosconf,err := NewConf(data)
     if err != nil {
         log.Println(err)
