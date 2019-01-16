@@ -573,7 +573,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         n := 0
         for _, name := range accountNames {
             prod := 0
-            if n != 0 {
+            if n > 0 {
                 prod = rand.Intn(100) % n
             } 
         
