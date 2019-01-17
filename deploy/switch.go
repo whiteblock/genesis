@@ -74,8 +74,6 @@ func PrepareSwitches(server db.Server,nodes int) error {
         log.Println(err)
         return err
     }
-    
-
     return nil
 }
 
@@ -107,7 +105,9 @@ func GenerateFile(server db.Server) string {
         "/bin/cli-shell-api loadFile /config/config.boot",
         fmt.Sprintf("delete nat source rule %d",ruleid),
         fmt.Sprintf("delete nat source rule %d",ruleid+1),
-        fmt.Sprintf("set nat source rule %d source address %s",ruleid,fmt.Sprintf("%s/%d",util.GetWholeNetworkIp(server.ServerID),util.GetSubnet())),
+        fmt.Sprintf("set nat source rule %d source address %s",ruleid,fmt.Sprintf("%s/%d",util.GetWholeNetworkIp(server.ServerID),
+                        32-(conf.ClusterBits + conf.NodeBits ) )),
+
         fmt.Sprintf("set nat source rule %d outbound-interface eth%d",ruleid,eth),
         fmt.Sprintf("set nat source rule %d translation address masquerade",ruleid),
         fmt.Sprintf("set nat source rule %d protocol all",ruleid),
@@ -116,7 +116,6 @@ func GenerateFile(server db.Server) string {
         fmt.Sprintf("set nat source rule %d outbound-interface eth%d",ruleid+1,eth),
         fmt.Sprintf("set nat source rule %d translation address masquerade",ruleid+1),
         fmt.Sprintf("set nat source rule %d protocol all",ruleid+1),
-        
         "commit",
         "save",
     })

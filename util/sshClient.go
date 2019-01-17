@@ -9,6 +9,9 @@ import (
 	"errors"
 )
 
+
+const maxRunAttempts int = 5
+
 type SshClient struct {
 	clients		[]*ssh.Client
 }
@@ -90,24 +93,42 @@ func (this SshClient) Run(command string) (string,error) {
 }
 
 
+func (this SshClient) KeepTryRun(command string) (string,error) {
+	var res string
+	var err error
+	for i := 0; i < maxRunAttempts; i++ {
+		res,err = this.Run(command)
+		if err == nil{
+			break
+		}
+	}
+	return res,err
+}
+
+
 func (this SshClient) DockerExec(node int,command string) (string,error) {
-	return this.Run(fmt.Sprintf("docker exec whiteblock-node%d %s",node,command))
+	return this.Run(fmt.Sprintf("docker exec %s%d %s",conf.NodePrefix,node,command))
+}
+
+func (this SshClient) KeepTryDockerExec(node int,command string) (string,error) {
+	return this.KeepTryRun(fmt.Sprintf("docker exec %s%d %s",conf.NodePrefix,node,command))
 }
 
 func (this SshClient) DockerExecd(node int,command string) (string,error) {
-	return this.Run(fmt.Sprintf("docker exec -d whiteblock-node%d %s",node,command))
+	return this.Run(fmt.Sprintf("docker exec -d %s%d %s",conf.NodePrefix,node,command))
 }
 
 func (this SshClient) DockerExecdLog(node int,command string) error {
 	if strings.Count(command,"'") != strings.Count(command,"\\'"){
 		panic("DockerExecdLog commands cannot contain unescaped ' characters")
 	}
-	_,err := this.Run(fmt.Sprintf("docker exec -d whiteblock-node%d bash -c '%s 2>&1 >> %s'",node,command,conf.DockerOutputFile))
+	_,err := this.Run(fmt.Sprintf("docker exec -d %s%d bash -c '%s 2>&1 >> %s'",conf.NodePrefix,
+										node,command,conf.DockerOutputFile))
 	return err
 }
 
 func (this SshClient) DockerRead(node int,file string) (string,error) {
-	return this.Run(fmt.Sprintf("docker exec whiteblock-node%d cat %s",node,file))
+	return this.Run(fmt.Sprintf("docker exec %s%d cat %s",conf.NodePrefix,node,file))
 }
 
 func (this SshClient) DockerMultiExec(node int,commands []string) (string,error){
@@ -117,10 +138,23 @@ func (this SshClient) DockerMultiExec(node int,commands []string) (string,error)
 		if len(merged_command) != 0 {
 			merged_command += "&&"
 		}
-		merged_command += fmt.Sprintf("docker exec -d whiteblock-node%d %s",node,command)
+		merged_command += fmt.Sprintf("docker exec -d %s%d %s",conf.NodePrefix,node,command)
 	}
 
 	return this.Run(merged_command)
+}
+
+func (this SshClient) KTDockerMultiExec(node int,commands []string) (string,error){
+	merged_command := ""
+
+	for _,command := range commands {
+		if len(merged_command) != 0 {
+			merged_command += "&&"
+		}
+		merged_command += fmt.Sprintf("docker exec -d %s%d %s",conf.NodePrefix,node,command)
+	}
+
+	return this.KeepTryRun(merged_command)
 }
 
 

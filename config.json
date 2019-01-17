@@ -1,5 +1,4 @@
 {
-	"builder":"genesis",
 	"build-mode":"normal",
 	"ssh-user":"appo",
 	"ssh-password":"w@ntest",
@@ -15,8 +14,8 @@
 	"ip-prefix":10,
 	"allow-exec":true,
 	"influx":"127.0.0.1:8086",
-    "influx-user":"",
-    "influx-password":"",
+    	"influx-user":"",
+    	"influx-password":"",
    	"service-vlan":4094,
    	"service-network":"172.30.0.1/16",
    	"service-network-name":"wb_builtin_services",
@@ -24,5 +23,11 @@
    	"node-network-prefix":"wb_vlan_",
    	"service-prefix":"wb_service",
    	"network-vlan-start":101,
-    "setup-masquerade":false
+    "setup-masquerade":false,
+    "nodes-public-key":"/home/master-secrets/id.master.pub",
+    "nodes-private-key":"/home/master-secrets/id.master",
+    "handle-node-ssh-keys":true,
+
+    "max-node-memory":"4gb",
+    "max-node-cpu":2.5
 }

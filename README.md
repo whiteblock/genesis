@@ -37,6 +37,13 @@ Configuration options are located in `config.json` in the same directory as the 
 * __network-vlan-start__: The vlan to start the build process, aka vlan for net 0
 * __setup-masquerade__: Have genesis setup masquerading in the vyos
 
+* __nodes-public-key__: Location of the public key for the nodes
+* __nodes-private-key__: Location of the private key for the nodes
+* __handle-node-ssh-keys__: Should genesis handle the nodes ssh keys?
+* __max-nodes__: Set a maximum number of nodes that a client can build
+* __max-node-memory__: Set the max memory per node that a client can use
+* __max-node-cpu__: Set the max cpus per node that a client can use
+      
 
 ###Config Environment Overrides
 These will override what is set in the config.json file, and allow configuration via
@@ -69,6 +76,12 @@ only ENV variables
 * `SERVICE_PREFIX`
 * `NETWORK_VLAN_START`
 * `SETUP_MASQUERADE`
+* `NODES_PUBLIC_KEY`
+* `NODES_PRIVATE_KEY`
+* `HANDLE_NODE_SSH_KEYS` (only need to set it)
+* `MAX_NODES`
+* `MAX_NODE_MEMORY`
+* `MAX_NODE_CPU`
 
 ###Additional Information
 * Config order of priority ENV -> config file -> defaults

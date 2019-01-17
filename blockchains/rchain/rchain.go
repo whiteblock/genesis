@@ -8,6 +8,7 @@ import(
     "regexp"
     util "../../util"
     db "../../db"
+    state "../../state"
 )
 
 var conf *util.Config
@@ -24,8 +25,11 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         log.Println(err)
         return nil,err
     }
+    state.SetBuildSteps(9+(len(servers)*2)+(nodes*3))
+    state.SetBuildStage("Setting up data collection")
 
     services,err := util.GetServiceIps(GetServices())
+    state.IncrementBuildProgress()
     if err != nil{
         log.Println(err)
         return nil,err
@@ -38,6 +42,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     /**Make the data directories**/
     for i,server := range servers {
         for j,_ := range server.Ips{
+            state.IncrementBuildProgress()
             clients[i].DockerExec(j,"mkdir /datadir")
         }
     }
@@ -47,7 +52,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         log.Println(err)
         return nil,err
     }
-    
+    state.IncrementBuildProgress()
     km,err := NewKeyMaster()
     keyPairs := make([]util.KeyPair,nodes)
 
@@ -58,17 +63,22 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             return nil,err
         }
     }
+    state.IncrementBuildProgress()
+
+    state.SetBuildStage("Setting up bonds")
     /**Setup bonds**/
     {
         bonds := make([]string,nodes)
         for i,keyPair := range keyPairs{
             bonds[i] = fmt.Sprintf("%s 1000000",keyPair.PublicKey)
         }
+        state.IncrementBuildProgress()
         err = util.Write("./bonds.txt",util.CombineConfig(bonds))
         if err != nil{
             log.Println(err)
             return nil,err
         }
+        state.IncrementBuildProgress()
         defer util.Rm("./bonds.txt")
 
         err = clients[0].Scp("./bonds.txt","/home/appo/bonds.txt")
@@ -76,6 +86,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             log.Println(err)
             return nil,err
         }
+        state.IncrementBuildProgress()
         defer clients[0].Run("rm -f /home/appo/bonds.txt")
         
         _,err = clients[0].Run("docker cp /home/appo/bonds.txt whiteblock-node0:/bonds.txt")
@@ -83,20 +94,22 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             log.Println(err)
             return nil,err
         }
+        state.IncrementBuildProgress()
         
     }
-
+    state.SetBuildStage("Starting the boot node")
     var enode string
     {
         err = clients[0].DockerExecdLog(0,
             fmt.Sprintf("%s run --standalone --data-dir \"/datadir\" --host %s --bonds-file /bonds.txt --has-faucet",
                 rchainConf.Command,servers[0].Ips[0]))
+        state.IncrementBuildProgress()
         if err != nil{
             log.Println(err)
             return nil,err
         }
-        fmt.Println("Attempting to get the enode address")
-        
+        //fmt.Println("Attempting to get the enode address")
+        state.SetBuildStage("Waiting for the boot node's address")
         for i := 0; i < 1000; i++ {
             fmt.Println("Checking if the boot node is ready...")
             time.Sleep(time.Duration(1 * time.Second))
@@ -115,7 +128,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             fmt.Println("Ready")
             break
         }
-
+        state.IncrementBuildProgress()
         
         log.Println("Got the address for the bootnode: "+enode)
         err = createConfigFile(enode,rchainConf,services["wb_influx_proxy"])
@@ -124,6 +137,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             return nil,err
         }
     }
+    state.SetBuildStage("Configuring the other rchain nodes")
     defer util.Rm("./rnode.toml")
     /**Copy config files to the rest of the nodes**/
     for i,server := range servers{
@@ -132,15 +146,17 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             log.Println(err)
             return nil,err
         }
+        state.IncrementBuildProgress()
         for node,_ := range server.Ips{
             if node == 0 && i == 0 {
                 continue
             }
-            _,err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/rnode.toml whiteblock-node%d:/rnode.toml",node))
+            _,err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/rnode.toml whiteblock-node%d:/datadir/rnode.toml",node))
             if err != nil{
                 log.Println(err)
                 return nil,err
             }
+            state.IncrementBuildProgress()
             
         }
         _,err = clients[i].Run("rm -f ~/rnode.toml")
@@ -148,13 +164,14 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             log.Println(err)
             return nil,err
         }
+        state.IncrementBuildProgress()
     }
     
     if err != nil{
         log.Println(err)
         return nil,err
     }
-    fmt.Println("Starting the rest of the nodes...");
+    state.SetBuildStage("Starting the rest of the nodes")
     /**Start up the rest of the nodes**/
     node := 0
     var validators int64 = 0
@@ -164,7 +181,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 node++;
                 continue
             }
-            if validators < rchainConf.ValidatorCount {
+            if validators < rchainConf.Validators {
                 err = clients[i].DockerExecdLog(j,
                     fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
                                 rchainConf.Command,enode,keyPairs[node].PrivateKey,ip))
@@ -174,7 +191,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                     fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s",
                                 rchainConf.Command,enode,ip))
             }
-            
+            state.IncrementBuildProgress()
             if err != nil{
                 log.Println(err)
                 return nil,err
@@ -239,7 +256,7 @@ func createFirstConfigFile(server db.Server,node int,rchainConf *RChainConf,infl
         log.Println(err)
         return err
     }
-    _,err = util.SshExec(server.Addr,fmt.Sprintf("docker cp /home/appo/rnode.toml whiteblock-node%d:/rnode.toml",node))
+    _,err = util.SshExec(server.Addr,fmt.Sprintf("docker cp /home/appo/rnode.toml whiteblock-node%d:/datadir/rnode.toml",node))
     if err != nil{
         log.Println(err)
         return err

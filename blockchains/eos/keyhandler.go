@@ -4,6 +4,8 @@ import(
 	"encoding/json"
 	"io/ioutil"
 	"errors"
+	"strings"
+	"fmt"
 	util "../../util"
 	db "../../db"
 )
@@ -35,10 +37,23 @@ func NewKeyMaster() (*KeyMaster,error) {
 	out.index = 0
 	return out,nil
 }
+func (this *KeyMaster) GenerateKeyPair(client *util.SshClient) (util.KeyPair,error) {
+    data,err := client.DockerExec(0,"cleos create key --to-console | awk '{print $3}'")
+    if err != nil {
+        return util.KeyPair{},err
+    }
+    keyPair := strings.Split(data, "\n")
+    if(len(data) < 10){
+        return util.KeyPair{},errors.New(fmt.Sprintf("Unexpected create key output %s\n",keyPair))
+        panic(1)
+    }
+    return util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]},nil
+}
 
-func (this *KeyMaster) GetKeyPair() (util.KeyPair,error) {
+
+func (this *KeyMaster) GetKeyPair(client *util.SshClient) (util.KeyPair,error) {
 	if this.index >= len(this.PrivateKeys) || this.index >= len(this.PublicKeys) {
-		return util.KeyPair{},errors.New("No more keys left")
+		return this.GenerateKeyPair(client)
 	}
 
 	out := util.KeyPair{PrivateKey: this.PrivateKeys[this.index], PublicKey: this.PublicKeys[this.index]}
@@ -47,11 +62,11 @@ func (this *KeyMaster) GetKeyPair() (util.KeyPair,error) {
 }
 
 
-func (this *KeyMaster) GetMappedKeyPairs(args []string) (map[string]util.KeyPair,error) {
+func (this *KeyMaster) GetMappedKeyPairs(args []string,client *util.SshClient) (map[string]util.KeyPair,error) {
 	keyPairs := make(map[string]util.KeyPair)
 
 	for _, arg := range args{
-		keyPair,err := this.GetKeyPair()
+		keyPair,err := this.GetKeyPair(client)
 		if err != nil {
 			return nil,err
 		}
@@ -60,12 +75,13 @@ func (this *KeyMaster) GetMappedKeyPairs(args []string) (map[string]util.KeyPair
 	return keyPairs,nil
 }
 
-func (this *KeyMaster) GetServerKeyPairs(servers []db.Server) (map[string]util.KeyPair,error){
+func (this *KeyMaster) GetServerKeyPairs(servers []db.Server,clients []*util.SshClient) (map[string]util.KeyPair,error){
 	ips := []string{}
 	for _, server := range servers {
 		for _, ip := range server.Ips {
 			ips = append(ips,ip)
 		}
 	}
-	return this.GetMappedKeyPairs(ips)
+	return this.GetMappedKeyPairs(ips,clients[0])
 }
+
