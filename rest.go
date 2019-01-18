@@ -400,5 +400,5 @@ func stopBuild(w http.ResponseWriter,r *http.Request){
         w.Write([]byte(err.Error()))
         return
     }
-    w.Write([]byte("Stop signal has been sent..."))
+    w.Write([]byte("Stop signal has been sent"))
 }

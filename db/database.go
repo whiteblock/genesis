@@ -105,6 +105,17 @@ func dbInit() {
 
 
 func InsertLocalServers(db *sql.DB) {
+	InsertServer("delta",
+		Server{
+			Addr:"172.16.4.5",
+			Iaddr:Iface{Ip:"10.254.4.100",Gateway:"10.254.4.1",Subnet:24},
+			Nodes:0,
+			Max:conf.MaxNodes,
+			ServerID:4,
+			Id:-1,
+			Iface:"eno3",
+			Ips:[]string{},
+			Switches:[]Switch{Switch{Addr:"172.16.1.1",Iface:"eth4",Brand:util.Vyos}}})
 	InsertServer("cloud",
 		Server{
 			Addr:"127.0.0.1",
