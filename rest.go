@@ -378,7 +378,6 @@ func getBlockChainLog(w http.ResponseWriter,r *http.Request){
     w.Write([]byte(res))
 }
 
-
 func getLastNodes(w http.ResponseWriter,r *http.Request) {
     id, err := GetLastTestNetId()
     if err != nil {
@@ -394,7 +393,6 @@ func getLastNodes(w http.ResponseWriter,r *http.Request) {
     }
     json.NewEncoder(w).Encode(nodes)
 }
-
 
 func stopBuild(w http.ResponseWriter,r *http.Request){
     err := state.SignalStop()

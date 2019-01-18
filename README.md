@@ -547,6 +547,15 @@ Get the nodes for the latest testnet
 curl -X GET http://localhost:8000/nodes
 ```
 
+###DELETE /build
+Stop the current build
+#####RESPONSE
+`Stop signal has been sent...`
+#####EXAMPLE
+```bash
+curl -X DELETE http://localhost:8000/build
+```
+
 ##Blockchain Specific Parameters
 
 ###Geth (Go-Ethereum)
