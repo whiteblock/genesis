@@ -10,7 +10,7 @@ import(
  * Packages the global state nicely into an "object"
  */
 var (
-    mutex                           =   &sync.Mutex{}
+    mutex                           =   &sync.RWMutex{}
     errMutex                        =   &sync.RWMutex{}
     stopMux                         =   &sync.RWMutex{}
 
@@ -60,11 +60,18 @@ func Stop() bool {
     return stopping
 }
 
-func SignalStop(){
+func SignalStop() error {
     stopMux.Lock()
     defer stopMux.Unlock()
-    ReportError(errors.New("Build stopped by user"))
-    stopping = true
+    mutex.RLock()
+    defer mutex.RUnlock()
+    
+    if building{
+        ReportError(errors.New("Build stopped by user"))
+        stopping = true
+        return nil
+    }
+    return errors.New("No build in progress")
 }
 
 func ErrorFree() bool {

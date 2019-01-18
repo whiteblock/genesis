@@ -397,6 +397,10 @@ func getLastNodes(w http.ResponseWriter,r *http.Request) {
 
 
 func stopBuild(w http.ResponseWriter,r *http.Request){
-    state.SignalStop()
+    err := state.SignalStop()
+    if err != nil{
+        w.Write([]byte(err.Error()))
+        return
+    }
     w.Write([]byte("Stop signal has been sent..."))
 }
