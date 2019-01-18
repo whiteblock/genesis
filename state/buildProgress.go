@@ -11,9 +11,12 @@ import(
  */
 var (
     mutex                           =   &sync.Mutex{}
-    errMutex                        =   &sync.Mutex{}
+    errMutex                        =   &sync.RWMutex{}
+    stopMux                         =   &sync.RWMutex{}
+
     building            bool        =   false
     progressIncrement   float64     =   0.00
+    stopping            bool        =   false
 
     BuildingProgress    float64     =   0.00
     BuildError          CustomError =   CustomError{What:"",err:nil}
@@ -41,6 +44,7 @@ func DoneBuilding(){
     BuildingProgress = 100.00
     BuildStage = "Finished"
     building = false
+    stopping = false
 }
 
 func ReportError(err error){
@@ -48,18 +52,30 @@ func ReportError(err error){
     defer errMutex.Unlock()
     BuildError = CustomError{What:err.Error(),err:err}
     log.Println("An error has been reported :"+err.Error())
+}
 
+func Stop() bool {
+    stopMux.RLock()
+    defer stopMux.RUnlock()
+    return stopping
+}
+
+func SignalStop(){
+    stopMux.Lock()
+    defer stopMux.Unlock()
+    ReportError(errors.New("Build stopped by user"))
+    stopping = true
 }
 
 func ErrorFree() bool {
-    errMutex.Lock()
-    defer errMutex.Unlock()
+    errMutex.RLock()
+    defer errMutex.RUnlock()
     return BuildError.err == nil
 }
 
 func GetError() error {
-    errMutex.Lock()
-    defer errMutex.Unlock()
+    errMutex.RLock()
+    defer errMutex.RUnlock()
     return BuildError.err
 }
 

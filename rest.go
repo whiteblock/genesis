@@ -71,6 +71,9 @@ func StartServer() {
     router.HandleFunc("/nodes",getLastNodes).Methods("GET")
     router.HandleFunc("/nodes/",getLastNodes).Methods("GET")
 
+    router.HandleFunc("/build",stopBuild).Methods("DELETE")
+    router.HandleFunc("/build/",stopBuild).Methods("DELETE")
+
     http.ListenAndServe(conf.Listen, router)
 }
 
@@ -390,4 +393,10 @@ func getLastNodes(w http.ResponseWriter,r *http.Request) {
         return
     }
     json.NewEncoder(w).Encode(nodes)
+}
+
+
+func stopBuild(w http.ResponseWriter,r *http.Request){
+    state.SignalStop()
+    w.Write([]byte("Stop signal has been sent..."))
 }

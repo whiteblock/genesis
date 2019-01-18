@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/tmc/scp"
 	"errors"
+	state "../state"
 )
 
 
@@ -82,6 +83,9 @@ func (this SshClient) Run(command string) (string,error) {
 	if conf.Verbose {
 		fmt.Printf("Running command: %s\n", command)
 	}
+	if state.Stop() {
+		return "",state.GetError()
+	}
 	
 	if err != nil {
 		log.Println(err)
@@ -96,6 +100,9 @@ func (this SshClient) Run(command string) (string,error) {
 func (this SshClient) KeepTryRun(command string) (string,error) {
 	var res string
 	var err error
+	if state.Stop() {
+		return "",state.GetError()
+	}
 	for i := 0; i < maxRunAttempts; i++ {
 		res,err = this.Run(command)
 		if err == nil{
