@@ -37,7 +37,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 				return nil, err
 			}
 
-			res, err := clients[i].DockerExecd(localId, "beam-wallet --command key_export --pass password")
+			res, err := clients[i].DockerExecd(localId, "beam-wallet --command export_owner_key --pass password")
 			if err != nil {
 				log.Println(err)
 				return nil, err
@@ -46,7 +46,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 			ownKLine := re.FindAllString(res, -1)[0]
 			ownerKeys = append(ownerKeys, strings.Split(ownKLine, " ")[3])
 
-			res, err = clients[i].DockerExecd(localId, "beam-wallet --command key_export --subkey=1 --pass password")
+			res, err = clients[i].DockerExecd(localId, "beam-wallet --command export_owner_key --subkey=1 --pass password")
 			if err != nil {
 				log.Println(err)
 				return nil, err
