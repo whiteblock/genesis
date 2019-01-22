@@ -31,28 +31,28 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 	secretMinerKeys := []string{}
 	for i, server := range servers {
 		for localId, _ := range server.Ips {
-			_, err := clients[i].DockerExecd(localId, "beam-wallet --command init --pass password")
+			_, err := clients[i].DockerExec(localId, "beam-wallet --command init --pass password")
 			if err != nil {
 				log.Println(err)
-				return nil, err
+				// return nil, err
 			}
 
-			res, err := clients[i].DockerExecd(localId, "beam-wallet --command export_owner_key --pass password")
+			res1, err := clients[i].DockerExec(localId, "beam-wallet --command export_owner_key --pass password")
 			if err != nil {
 				log.Println(err)
-				return nil, err
+				// return nil, err
 			}
 			re := regexp.MustCompile(`(?m)^Owner([A-z|0-9|\s|\:|\/|\+|\=])*$`)
-			ownKLine := re.FindAllString(res, -1)[0]
+			ownKLine := re.FindAllString(res1, -1)[0]
 			ownerKeys = append(ownerKeys, strings.Split(ownKLine, " ")[3])
 
-			res, err = clients[i].DockerExecd(localId, "beam-wallet --command export_owner_key --subkey=1 --pass password")
+			res2, err := clients[i].DockerExec(localId, "beam-wallet --command export_miner_key --subkey=1 --pass password")
 			if err != nil {
 				log.Println(err)
-				return nil, err
+				// return nil, err
 			}
 			re = regexp.MustCompile(`(?m)^Secret([A-z|0-9|\s|\:|\/|\+|\=])*$`)
-			secMLine := re.FindAllString(res, -1)[0]
+			secMLine := re.FindAllString(res2, -1)[0]
 			secretMinerKeys = append(secretMinerKeys, strings.Split(secMLine, " ")[3])
 		}
 	}
