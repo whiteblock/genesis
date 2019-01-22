@@ -137,13 +137,13 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 
 	for i, server := range servers {
 		for localId, _ := range server.Ips {
-			if totNodes < int(beamConf.Miners) {
+			if totNodes < int(beamConf.Validators) {
 				_, err := clients[i].DockerExecd(localId, "beam-node")
 				if err != nil {
 					log.Println(err)
 					return nil, err
 				}
-			} else if totNodes >= int(beamConf.Miners) {
+			} else if totNodes >= int(beamConf.Validators) {
 				_, err := clients[i].DockerExecd(localId, "beam-node --mining_threads 1")
 				if err != nil {
 					log.Println(err)

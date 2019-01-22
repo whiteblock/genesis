@@ -5,9 +5,9 @@ import (
 )
 
 type BeamConf struct {
-	Miners   int64 `json:"miners"`
-	TxNodes  int64 `json:"txNodes"`
-	NilNodes int64 `json:"nilNodes"`
+	Validators int64 `json:"validators"`
+	TxNodes    int64 `json:"txNodes"`
+	NilNodes   int64 `json:"nilNodes"`
 }
 
 func NewConf(data map[string]interface{}) (*BeamConf, error) {
@@ -15,8 +15,8 @@ func NewConf(data map[string]interface{}) (*BeamConf, error) {
 
 	var err error
 
-	if _, ok := data["miners"]; ok {
-		out.Miners, err = util.GetJSONInt64(data, "miners")
+	if _, ok := data["validators"]; ok {
+		out.Validators, err = util.GetJSONInt64(data, "validators")
 		if err != nil {
 			return nil, err
 		}
@@ -39,7 +39,7 @@ func NewConf(data map[string]interface{}) (*BeamConf, error) {
 
 func GetParams() string {
 	return `[
-	{"miners":"int"},
+	{"validators":"int"},
 	{"txNodes":"int"},
 	{"nilNodes":"int"},
 ]`
@@ -47,7 +47,7 @@ func GetParams() string {
 
 func GetDefaults() string {
 	return `{
-		{"miners":10},
+		{"validators":10},
 		{"txNodes":2},
 		{"nilNodes":0},
 			}`
