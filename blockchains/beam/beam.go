@@ -33,13 +33,13 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 		for localId, _ := range server.Ips {
 			_, err := clients[i].DockerExec(localId, "beam-wallet --command init --pass password")
 			if err != nil {
-				log.Println(err)
+				// log.Println(err)
 				// return nil, err
 			}
 
 			res1, err := clients[i].DockerExec(localId, "beam-wallet --command export_owner_key --pass password")
 			if err != nil {
-				log.Println(err)
+				// log.Println(err)
 				// return nil, err
 			}
 			re := regexp.MustCompile(`(?m)^Owner([A-z|0-9|\s|\:|\/|\+|\=])*$`)
@@ -48,7 +48,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 
 			res2, err := clients[i].DockerExec(localId, "beam-wallet --command export_miner_key --subkey=1 --pass password")
 			if err != nil {
-				log.Println(err)
+				// log.Println(err)
 				// return nil, err
 			}
 			re = regexp.MustCompile(`(?m)^Secret([A-z|0-9|\s|\:|\/|\+|\=])*$`)
@@ -79,7 +79,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 				"# storage=node.db",
 				"# history_dir=",
 				"# temp_dir=",
-				"# treasury_path=treasury.mw",
+				"# treasury_path=treasury.bin",
 				"# mining_threads=1",
 				"# miner_type=cpu",
 				"# verification_threads=-1",
@@ -138,13 +138,13 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 	for i, server := range servers {
 		for localId, _ := range server.Ips {
 			if totNodes < int(beamConf.Validators) {
-				_, err := clients[i].DockerExecd(localId, "beam-node")
+				_, err := clients[i].DockerExecd(localId, "beam-node --mining_threads 1")
 				if err != nil {
 					log.Println(err)
 					return nil, err
 				}
 			} else if totNodes >= int(beamConf.Validators) {
-				_, err := clients[i].DockerExecd(localId, "beam-node --mining_threads 1")
+				_, err := clients[i].DockerExecd(localId, "beam-node")
 				if err != nil {
 					log.Println(err)
 					return nil, err
