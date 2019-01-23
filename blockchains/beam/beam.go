@@ -16,7 +16,7 @@ func init() {
 	conf = util.GetConfig()
 }
 
-const port int = 8100
+const port int = 10000
 
 func Build(data map[string]interface{}, nodes int, servers []db.Server, clients []*util.SshClient) ([]string, error) {
 
@@ -79,18 +79,16 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 				"# storage=node.db",
 				"# history_dir=",
 				"# temp_dir=",
-				"# treasury_path=treasury.bin",
+				"treasury_path=treasury.bin",
 				"# mining_threads=1",
 				"# miner_type=cpu",
 				"# verification_threads=-1",
 				"# import=0",
 				"# resync=0",
 				"# crash=0",
-
 				fmt.Sprintf("key_owner=%s", ownerKeys[node]),
 				fmt.Sprintf("key_mine=%s", secretMinerKeys[node]),
 				"pass=password",
-
 				"# EmissionValue0=800000000",
 				"# EmissionDrop0=525600",
 				"# EmissionDrop1=2102400",
@@ -128,7 +126,15 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 				log.Println(err)
 				return nil, err
 			}
-			fmt.Println(config)
+
+			// will copy the treasury binary (taken from beam github). Not sure if this is necessary.
+			_, err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/beam/treasury.bin %s%d:/beam", conf.NodePrefix, node))
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
+
+			// fmt.Println(config)
 			node++
 		}
 	}
