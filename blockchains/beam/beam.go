@@ -123,12 +123,12 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 
 			defer clients[i].Run("rm -f /home/appo/beam-node.cfg")
 
-			_, err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/beam-node.cfg %s%d:/", conf.NodePrefix, node))
+			_, err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/beam-node.cfg %s%d:/beam", conf.NodePrefix, node))
 			if err != nil {
 				log.Println(err)
 				return nil, err
 			}
-
+			fmt.Println(config)
 			node++
 		}
 	}
