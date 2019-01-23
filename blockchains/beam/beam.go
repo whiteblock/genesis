@@ -81,7 +81,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 				"# temp_dir=",
 				"# treasury_path=treasury.mw",
 				"# mining_threads=1",
-				"miner_type=cpu",
+				"# miner_type=cpu",
 				"# verification_threads=-1",
 				"# import=0",
 				"# resync=0",
