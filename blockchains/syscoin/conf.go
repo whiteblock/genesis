@@ -35,7 +35,7 @@ func NewConf(data map[string]interface{}) (*SysConf,error) {
 		"regtest",
 		"listen",
 		"rest",
-		//"debug",
+		"debug",
 		/*"unittest",
 		"addressindex",
 		"assetallocationindex",

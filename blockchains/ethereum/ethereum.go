@@ -152,6 +152,8 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     state.SetBuildStage("Starting geth")
     node := 0
     for i, server := range servers {
+        clients[i].Scp("tmp/CustomGenesis.json","/home/appo/CustomGenesis.json")
+        defer clients[i].Run("rm -f /home/appo/CustomGenesis.json")
         for j, ip := range server.Ips{
             sem.Acquire(ctx,1)
             fmt.Printf("-----------------------------  Starting NODE-%d  -----------------------------\n",node)
@@ -183,6 +185,9 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                             unlock,
                             node,
                             wallets[node-1])
+                
+                clients[i].Run("docker cp /home/appo/CustomGenesis.json whiteblock-node%d:/")
+               
                 clients[i].Run(fmt.Sprintf("docker exec %s mkdir -p /whiteblock/node%d/",name,node))
                 clients[i].Run(fmt.Sprintf("docker cp ~/tmp/node%d %s:/whiteblock",node,name))
                 clients[i].Run(fmt.Sprintf("docker exec -d %s tmux new -s whiteblock -d",name))
