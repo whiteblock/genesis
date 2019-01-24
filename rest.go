@@ -86,7 +86,7 @@ func getAllServerInfo(w http.ResponseWriter, r *http.Request) {
     servers,err := db.GetAllServers()
     if err != nil {
         log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),204)
         return
     }
     json.NewEncoder(w).Encode(servers)
@@ -97,20 +97,19 @@ func addNewServer(w http.ResponseWriter, r *http.Request) {
     var server db.Server
     err := json.NewDecoder(r.Body).Decode(&server)
     if err != nil {
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),400)
         return
     }
     err = server.Validate()
     if err != nil {
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),400)
         return
     }
     log.Println(fmt.Sprintf("Adding server: %+v",server))
     
     id,err := db.InsertServer(params["name"], server)
     if err != nil {
-        log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),500)
         return
     }
     w.Write([]byte(strconv.Itoa(id)))
@@ -139,7 +138,7 @@ func deleteServer(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     id, err := strconv.Atoi(params["id"])
     if err != nil {
-        w.Write([]byte(err.Error()))
+        http.Error(w,"Invalid id",400)
         return
     }
     db.DeleteServer(id)
@@ -153,22 +152,26 @@ func updateServerInfo(w http.ResponseWriter, r *http.Request) {
 
     err := json.NewDecoder(r.Body).Decode(&server)
     if err != nil {
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),400)
         return
     }
     err = server.Validate()
     if err != nil {
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),400)
         return
     }
 
     id, err := strconv.Atoi(params["id"])
     if err != nil {
-        w.Write([]byte("Invalid id"))
+        http.Error(w,"Invalid id",400)
         return
     }
 
-    db.UpdateServer(id, server)
+    err = db.UpdateServer(id, server)
+    if err != nil {
+        http.Error(w,err.Error(),500)
+        return
+    }
     w.Write([]byte("Success"))
 }
 
@@ -177,7 +180,7 @@ func getAllSwitchesInfo(w http.ResponseWriter, r *http.Request) {
     switches,err := db.GetAllSwitches()
     if err != nil{
         log.Println(err)
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),204)
         return
     }
     json.NewEncoder(w).Encode(switches)
@@ -187,7 +190,7 @@ func getAllTestNets(w http.ResponseWriter, r *http.Request) {
     testNets,err := db.GetAllTestNets()
     if err != nil{
         log.Println(err)
-        w.Write([]byte(err.Error()))
+        http.Error(w,"There are no test nets",204)
         return
     }
     json.NewEncoder(w).Encode(testNets)
@@ -201,13 +204,13 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
     err := decoder.Decode(&testnet)
     if err != nil {
         log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),400)
         return
     }
     err = state.AcquireBuilding()
     if err != nil {
         log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),409)
         return
     }
     next,_ := GetNextTestNetId()
@@ -223,14 +226,13 @@ func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
     id, err := strconv.Atoi(params["id"])
     //log.Println("Received raw id \""+params["id"]+"\"")
     if err != nil {
-        w.Write([]byte("Invalid id"))
+        http.Error(w,"Invalid id",400)
         return
     }
     //log.Println(fmt.Sprintf("Attempting to find testnet with id %d",id))
     testNet, err := db.GetTestNet(id)
     if err != nil {
-        //log.Println("Error:",err)
-        w.Write([]byte("Does Not Exist"))
+        http.Error(w,"Test net does not exist",404)
         return
     }
     err = json.NewEncoder(w).Encode(testNet)
@@ -243,20 +245,20 @@ func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
 func deleteTestNet(w http.ResponseWriter, r *http.Request) {
     //params := mux.Vars(r)
     //TODO handle the deletion of the test net
-    w.Write([]byte("Currently not supported"))
+    http.Error(w,"Currently not supported",501)
 }
 
 func getTestNetNodes(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     id, err := strconv.Atoi(params["id"])
     if err != nil {
-        w.Write([]byte("Invalid id"))
+        http.Error(w,"Invalid id",400)
         return
     }
     nodes,err := db.GetAllNodesByTestNet(id)
     if err != nil {
         log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),204)
         return
     }
     json.NewEncoder(w).Encode(nodes)
@@ -264,11 +266,11 @@ func getTestNetNodes(w http.ResponseWriter, r *http.Request) {
 
 
 func addTestNetNode(w http.ResponseWriter, r *http.Request) {
-    w.Write([]byte("Currently not supported"))
+    http.Error(w,"Currently not supported",501)
 }
 
 func deleteTestNetNode(w http.ResponseWriter, r *http.Request) {
-    w.Write([]byte("Currently not supported"))
+    http.Error(w,"Currently not supported",501)
 }
 
 func dockerExec(w http.ResponseWriter, r *http.Request) {
@@ -315,7 +317,7 @@ func nodesStatus(w http.ResponseWriter, r *http.Request) {
     out, err := status.CheckTestNetStatus()
     if err != nil {
         log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),500)
         return
     }
     json.NewEncoder(w).Encode(out)
@@ -407,21 +409,7 @@ func stopBuild(w http.ResponseWriter,r *http.Request){
     }
     w.Write([]byte("Stop signal has been sent"))
 }
-/*
- id, err := GetLastTestNetId()
-    if err != nil {
-        log.Println(err)
-        w.Write([]byte(err.Error()))
-        return
-    }
-    nodes,err := db.GetAllNodesByTestNet(id)
-    if err != nil {
-        log.Println(err.Error())
-        w.Write([]byte(err.Error()))
-        return
-    }
-    netem.RemoveAll(client,nodes)
- */
+
 func handleNet(w http.ResponseWriter,r *http.Request){
     params := mux.Vars(r)
     id, err := strconv.Atoi(params["server"])
@@ -436,19 +424,22 @@ func handleNet(w http.ResponseWriter,r *http.Request){
     if err != nil {
         log.Println(err.Error())
         w.Write([]byte(err.Error()))
+        return
     }
     server := servers[0]
     client,err := util.NewSshClient(server.Addr)
     if err != nil {
         log.Println(err.Error())
         w.Write([]byte(err.Error()))
+        return
     }
     defer client.Close()
-   
+    //fmt.Printf("GIVEN %v\n",net_conf)
     err = netem.ApplyAll(client,net_conf)
     if err != nil {
         log.Println(err.Error())
         w.Write([]byte(err.Error()))
+        return
     }
     w.Write([]byte("Success"))
 }
