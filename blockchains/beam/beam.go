@@ -29,8 +29,9 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 	/**Set up wallets**/
 	ownerKeys := []string{}
 	secretMinerKeys := []string{}
+	// walletIDs := []string{}
 	for i, server := range servers {
-		for localId, _ := range server.Ips {
+		for localId, ip := range server.Ips {
 			_, err := clients[i].DockerExec(localId, "beam-wallet --command init --pass password")
 			if err != nil {
 				// log.Println(err)
@@ -54,6 +55,8 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 			re = regexp.MustCompile(`(?m)^Secret([A-z|0-9|\s|\:|\/|\+|\=])*$`)
 			secMLine := re.FindAllString(res2, -1)[0]
 			secretMinerKeys = append(secretMinerKeys, strings.Split(secMLine, " ")[3])
+
+			clients[i].DockerExecd(localId, fmt.Sprintf("bash -c 'beam-wallet --command listen -n %s:%d --pass password 2>&1 >> /beam/walletID.log'", ip, port))
 		}
 	}
 
@@ -89,16 +92,18 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 				fmt.Sprintf("key_owner=%s", ownerKeys[node]),
 				fmt.Sprintf("key_mine=%s", secretMinerKeys[node]),
 				"pass=password",
-				"# EmissionValue0=800000000",
-				"# EmissionDrop0=525600",
-				"# EmissionDrop1=2102400",
-				"# MaturityCoinbase=240",
-				"# MaturityStd=0",
+				"# Emission.Value0=800000000",
+				"# Emission.Drop0=525600",
+				"# Emission.Drop1=2102400",
+				"Maturity.Coinbase=1",
+				"# Maturity.Std=0",
 				"# MaxBodySize=0x100000",
-				"# DesiredRate_s=60",
-				"# DifficultyReviewWindow=1440",
-				"# TimestampAheadThreshold_s=7200",
-				"# WindowForMedian=25",
+				"DA_Target_s=1",
+				"# DA.MaxAhead_s=900",
+				"# DA.WindowWork=120",
+				"# DA.WindowMedian0=25",
+				"# DA.WindowMedian1=7",
+				"DA.Difficulty0=100",
 				"# AllowPublicUtxos=0",
 				"# FakePoW=0",
 			}
