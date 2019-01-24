@@ -210,7 +210,7 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
     err = state.AcquireBuilding()
     if err != nil {
         log.Println(err.Error())
-        http.Error(w,err.Error(),409)
+        http.Error(w,"There is a build already in progress",409)
         return
     }
     next,_ := GetNextTestNetId()
