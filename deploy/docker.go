@@ -24,13 +24,23 @@ func DockerKillAll(client *util.SshClient) error {
     return err
 }
 
-func dockerNetworkCreateCmd(subnet string,gateway string,iface string,vlan int,name string) string {
-    return fmt.Sprintf("docker network create -d macvlan --subnet %s --gateway %s -o parent=%s.%d %s",
-                        subnet,
-                        gateway,
-                        iface,
-                        vlan,
-                        name)
+func dockerNetworkCreateCmd(subnet string,gateway string,iface string,vlan int,network int,name string) string {
+    if !conf.NeoBuild {
+        return fmt.Sprintf("docker network create -d macvlan --subnet %s --gateway %s -o parent=%s.%d %s",
+                            subnet,
+                            gateway,
+                            iface,
+                            vlan,
+                            name)
+    }
+    return fmt.Sprintf("docker network create --subnet %s --gateway %s -o \"com.docker.network.bridge.name=%s%d\" %s",
+                            subnet,
+                            gateway,
+                            conf.BridgePrefix,
+                            network,
+                            name)
+
+    
 }
 
 func DockerNetworkCreate(server db.Server,client *util.SshClient,node int) error {
@@ -39,6 +49,7 @@ func DockerNetworkCreate(server db.Server,client *util.SshClient,node int) error
                     util.GetGateway(server.ServerID,node),
                     server.Iface,
                     node+conf.NetworkVlanStart,
+                    node,
                     fmt.Sprintf("%s%d",conf.NodeNetworkPrefix,node))
     
     res,err := client.Run(command)
@@ -176,7 +187,7 @@ func DockerStartServices(server db.Server,client *util.SshClient,services []util
         return err
     }
 
-    res,err := client.KeepTryRun(dockerNetworkCreateCmd(subnet,gateway,server.Iface,conf.ServiceVlan,conf.ServiceNetworkName))
+    res,err := client.KeepTryRun(dockerNetworkCreateCmd(subnet,gateway,server.Iface,conf.ServiceVlan,-1,conf.ServiceNetworkName))
     if err != nil{
         log.Println(err)
         log.Println(res)

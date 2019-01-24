@@ -117,16 +117,16 @@ func GetServices() []util.Service {
 
 func GetParams() string {
     return `[
-    {"noUpnp":"bool"},
-    {"defaultTimeout":"int"},
-    {"mapSize":"int"},
-    {"casperBlockStoreSize":"int"},
-    {"inMemoryStore":"bool"},
-    {"maxNumOfConnections":"int"},
-    {"validatorCount":"int"},
-    {"validators":"int"}
-    {"sigAlgorithm":"string"},
-    {"command":"string"}
+    ["noUpnp","bool"],
+    ["defaultTimeout","int"],
+    ["mapSize","int"],
+    ["casperBlockStoreSize","int"],
+    ["inMemoryStore","bool"],
+    ["maxNumOfConnections","int"],
+    ["validatorCount","int"],
+    ["validators","int"],
+    ["sigAlgorithm","string"],
+    ["command","string"]
 ]`
 }
 
