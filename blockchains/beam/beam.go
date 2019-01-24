@@ -16,7 +16,7 @@ func init() {
 	conf = util.GetConfig()
 }
 
-const port int = 8100
+const port int = 10000
 
 func Build(data map[string]interface{}, nodes int, servers []db.Server, clients []*util.SshClient) ([]string, error) {
 
@@ -31,28 +31,28 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 	secretMinerKeys := []string{}
 	for i, server := range servers {
 		for localId, _ := range server.Ips {
-			_, err := clients[i].DockerExecd(localId, "beam-wallet --command init --pass password")
+			_, err := clients[i].DockerExec(localId, "beam-wallet --command init --pass password")
 			if err != nil {
-				log.Println(err)
-				return nil, err
+				// log.Println(err)
+				// return nil, err
 			}
 
-			res, err := clients[i].DockerExecd(localId, "beam-wallet --command key_export --pass password")
+			res1, err := clients[i].DockerExec(localId, "beam-wallet --command export_owner_key --pass password")
 			if err != nil {
-				log.Println(err)
-				return nil, err
+				// log.Println(err)
+				// return nil, err
 			}
 			re := regexp.MustCompile(`(?m)^Owner([A-z|0-9|\s|\:|\/|\+|\=])*$`)
-			ownKLine := re.FindAllString(res, -1)[0]
+			ownKLine := re.FindAllString(res1, -1)[0]
 			ownerKeys = append(ownerKeys, strings.Split(ownKLine, " ")[3])
 
-			res, err = clients[i].DockerExecd(localId, "beam-wallet --command key_export --subkey=1 --pass password")
+			res2, err := clients[i].DockerExec(localId, "beam-wallet --command export_miner_key --subkey=1 --pass password")
 			if err != nil {
-				log.Println(err)
-				return nil, err
+				// log.Println(err)
+				// return nil, err
 			}
 			re = regexp.MustCompile(`(?m)^Secret([A-z|0-9|\s|\:|\/|\+|\=])*$`)
-			secMLine := re.FindAllString(res, -1)[0]
+			secMLine := re.FindAllString(res2, -1)[0]
 			secretMinerKeys = append(secretMinerKeys, strings.Split(secMLine, " ")[3])
 		}
 	}
@@ -79,18 +79,16 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 				"# storage=node.db",
 				"# history_dir=",
 				"# temp_dir=",
-				"# treasury_path=treasury.mw",
+				"treasury_path=treasury.bin",
 				"# mining_threads=1",
-				"miner_type=cpu",
+				"# miner_type=cpu",
 				"# verification_threads=-1",
 				"# import=0",
 				"# resync=0",
 				"# crash=0",
-
 				fmt.Sprintf("key_owner=%s", ownerKeys[node]),
 				fmt.Sprintf("key_mine=%s", secretMinerKeys[node]),
 				"pass=password",
-
 				"# EmissionValue0=800000000",
 				"# EmissionDrop0=525600",
 				"# EmissionDrop1=2102400",
@@ -123,12 +121,20 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 
 			defer clients[i].Run("rm -f /home/appo/beam-node.cfg")
 
-			_, err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/beam-node.cfg %s%d:/", conf.NodePrefix, node))
+			_, err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/beam-node.cfg %s%d:/beam", conf.NodePrefix, node))
 			if err != nil {
 				log.Println(err)
 				return nil, err
 			}
 
+			// will copy the treasury binary (taken from beam github). Not sure if this is necessary.
+			_, err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/beam/treasury.bin %s%d:/beam", conf.NodePrefix, node))
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
+
+			// fmt.Println(config)
 			node++
 		}
 	}
@@ -137,14 +143,14 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 
 	for i, server := range servers {
 		for localId, _ := range server.Ips {
-			if totNodes < int(beamConf.Miners) {
-				_, err := clients[i].DockerExecd(localId, "beam-node")
+			if totNodes < int(beamConf.Validators) {
+				_, err := clients[i].DockerExecd(localId, "beam-node --mining_threads 1")
 				if err != nil {
 					log.Println(err)
 					return nil, err
 				}
-			} else if totNodes >= int(beamConf.Miners) {
-				_, err := clients[i].DockerExecd(localId, "beam-node --mining_threads 1")
+			} else if totNodes >= int(beamConf.Validators) {
+				_, err := clients[i].DockerExecd(localId, "beam-node")
 				if err != nil {
 					log.Println(err)
 					return nil, err
