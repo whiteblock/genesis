@@ -9,6 +9,7 @@ import (
     db "../db"
     util "../util"
     state "../state"
+    netem "../net"
 )
 
 var conf *util.Config = util.GetConfig()
@@ -23,7 +24,10 @@ func Build(buildConf *Config,servers []db.Server,resources Resources,clients []*
     var sem = semaphore.NewWeighted(conf.ThreadLimit)
     
     ctx := context.TODO()
-    Prepare(buildConf.Nodes,servers)
+    if !conf.NeoBuild {
+        Prepare(buildConf.Nodes,servers)
+    }
+    
     fmt.Println("-------------Building The Docker Containers-------------")
     n := buildConf.Nodes
     i := 0
@@ -58,9 +62,14 @@ func Build(buildConf *Config,servers []db.Server,resources Resources,clients []*
         if err != nil{
             log.Println(err)
             return nil,err
+        }
+        if conf.NeoBuild {
+            clients[i].Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
+            netem.RemoveAll(clients[i],nodes)
         }        
         n -= nodes
         i++
+
     }
     //Acquire all of the resources here, then release and destroy
     err := sem.Acquire(ctx,conf.ThreadLimit)

@@ -93,6 +93,9 @@ func (this SshClient) Run(command string) (string,error) {
 	}
 	defer session.Close()
 	out, err := session.CombinedOutput(command)
+	if conf.Verbose {
+		fmt.Println(string(out))
+	}
 	return string(out),err
 }
 

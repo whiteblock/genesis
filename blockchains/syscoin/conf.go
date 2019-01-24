@@ -229,17 +229,17 @@ func (this *SysConf) GenerateMN() string {
 
 func GetParams() string {
 	return `[
-	{"options":"[]string"},
-	{"extras":"[]string"},
-	{"senderOptions":"[]string"},
-	{"receiverOptions":"[]string"},
-	{"mnOptions":"[]string"},
-	{"senderExtras":"[]string"},
-	{"receiverExtras":"[]string"},
-	{"mnExtras":"[]string"},
-	{"masterNodeConns":"int"},
-	{"nodeConns":"int"},
-	{"percentMasternodes":"int"}
+	["options","[]string"],
+	["extras","[]string"],
+	["senderOptions","[]string"],
+	["receiverOptions","[]string"],
+	["mnOptions","[]string"],
+	["senderExtras","[]string"],
+	["receiverExtras","[]string"],
+	["mnExtras","[]string"],
+	["masterNodeConns","int"],
+	["nodeConns","int"],
+	["percentMasternodes","int"]
 ]`
 }
 

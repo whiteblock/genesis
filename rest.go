@@ -12,6 +12,7 @@ import (
     db "./db"
     state "./state"
     status "./status"
+    netem "./net"
 )
 
 
@@ -73,6 +74,10 @@ func StartServer() {
 
     router.HandleFunc("/build",stopBuild).Methods("DELETE")
     router.HandleFunc("/build/",stopBuild).Methods("DELETE")
+
+    router.HandleFunc("/emulate/{server}",stopNet).Methods("DELETE")
+    router.HandleFunc("/emulate/{server}",handleNet).Methods("POST")
+    router.HandleFunc("/emulate/all/{server}",handleNetAll).Methods("POST")
 
     http.ListenAndServe(conf.Listen, router)
 }
@@ -401,4 +406,131 @@ func stopBuild(w http.ResponseWriter,r *http.Request){
         return
     }
     w.Write([]byte("Stop signal has been sent"))
+}
+/*
+ id, err := GetLastTestNetId()
+    if err != nil {
+        log.Println(err)
+        w.Write([]byte(err.Error()))
+        return
+    }
+    nodes,err := db.GetAllNodesByTestNet(id)
+    if err != nil {
+        log.Println(err.Error())
+        w.Write([]byte(err.Error()))
+        return
+    }
+    netem.RemoveAll(client,nodes)
+ */
+func handleNet(w http.ResponseWriter,r *http.Request){
+    params := mux.Vars(r)
+    id, err := strconv.Atoi(params["server"])
+
+    var net_conf []netem.Netconf
+    decoder := json.NewDecoder(r.Body)
+    decoder.UseNumber()
+    err = decoder.Decode(&net_conf)
+
+
+    servers, err := db.GetServers([]int{id})
+    if err != nil {
+        log.Println(err.Error())
+        w.Write([]byte(err.Error()))
+    }
+    server := servers[0]
+    client,err := util.NewSshClient(server.Addr)
+    if err != nil {
+        log.Println(err.Error())
+        w.Write([]byte(err.Error()))
+    }
+    defer client.Close()
+   
+    err = netem.ApplyAll(client,net_conf)
+    if err != nil {
+        log.Println(err.Error())
+        w.Write([]byte(err.Error()))
+    }
+    w.Write([]byte("Success"))
+}
+
+func handleNetAll(w http.ResponseWriter,r *http.Request){
+    params := mux.Vars(r)
+    id, err := strconv.Atoi(params["server"])
+
+    var net_conf netem.Netconf
+    decoder := json.NewDecoder(r.Body)
+    decoder.UseNumber()
+    err = decoder.Decode(&net_conf)
+
+
+    servers, err := db.GetServers([]int{id})
+    if err != nil {
+        log.Println(err.Error())
+        w.Write([]byte(err.Error()))
+    }
+    server := servers[0]
+    client,err := util.NewSshClient(server.Addr)
+    if err != nil {
+        log.Println(err.Error())
+        w.Write([]byte(err.Error()))
+    }
+    defer client.Close()
+
+    id, err = GetLastTestNetId()
+    if err != nil {
+        log.Println(err)
+        w.Write([]byte(err.Error()))
+        return
+    }
+
+    nodes,err := db.GetAllNodesByTestNet(id)
+    if err != nil {
+        log.Println(err.Error())
+        w.Write([]byte(err.Error()))
+        return
+    }
+
+    netem.RemoveAll(client,len(nodes))
+    err = netem.ApplyToAll(client,net_conf,len(nodes))
+    if err != nil {
+        log.Println(err.Error())
+        w.Write([]byte(err.Error()))
+    }
+    w.Write([]byte("Success"))
+}
+
+func stopNet(w http.ResponseWriter,r *http.Request){
+    params := mux.Vars(r)
+    id, err := strconv.Atoi(params["server"])
+
+    servers, err := db.GetServers([]int{id})
+    if err != nil {
+        log.Println(err.Error())
+        w.Write([]byte(err.Error()))
+    }
+    server := servers[0]
+    client,err := util.NewSshClient(server.Addr)
+    if err != nil {
+        log.Println(err.Error())
+        w.Write([]byte(err.Error()))
+    }
+    defer client.Close()
+
+    id, err = GetLastTestNetId()
+    if err != nil {
+        log.Println(err)
+        w.Write([]byte(err.Error()))
+        return
+    }
+
+    nodes,err := db.GetAllNodesByTestNet(id)
+    if err != nil {
+        log.Println(err.Error())
+        w.Write([]byte(err.Error()))
+        return
+    }
+
+    netem.RemoveAll(client,len(nodes))
+    
+    w.Write([]byte("Success"))
 }

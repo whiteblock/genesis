@@ -29,5 +29,6 @@
     "handle-node-ssh-keys":true,
 
     "max-node-memory":"4gb",
-    "max-node-cpu":2.5
+    "max-node-cpu":2.5,
+    "neo-build":true
 }

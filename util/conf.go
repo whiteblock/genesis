@@ -43,7 +43,10 @@ type Config struct {
 
     MaxNodes            int         `json:"max-nodes"`
     MaxNodeMemory       string      `json:"max-node-memory"`
-    MaxNodeCpu          float64     `json:"max-node-cpu"`          
+    MaxNodeCpu          float64     `json:"max-node-cpu"`
+
+    NeoBuild            bool        `json:"neo-build"`
+    BridgePrefix        string      `json:"bridge-prefix"`            
 }
 
 func (this *Config) LoadFromEnv() {
@@ -225,6 +228,16 @@ func (this *Config) LoadFromEnv() {
             os.Exit(1)
         }
     }
+
+    _,exists = os.LookupEnv("NEO_BUILD")
+    if exists {
+        this.NeoBuild = true
+    }
+
+    val,exists = os.LookupEnv("BRIDGE_PREFIX")
+    if exists {
+        this.BridgePrefix = val
+    }
 }
 
 func (c *Config) AutoFillMissing() {
@@ -286,7 +299,7 @@ func (c *Config) AutoFillMissing() {
 	}
 
 	if len(c.NodeNetworkPrefix) == 0 {
-		c.NodeNetworkPrefix = "wb_vlan_"
+		c.NodeNetworkPrefix = "wb_vlan"
 	}
 
 	if len(c.ServicePrefix) == 0 {
@@ -300,6 +313,10 @@ func (c *Config) AutoFillMissing() {
     if c.MaxNodes <= 0 {
         log.Println("Warning: No setting given for max nodes, defaulting to 200")
         c.MaxNodes = 200
+    }
+
+    if len(c.BridgePrefix) == 0 {
+        c.BridgePrefix = "wb_bridge"
     }
 }
 
