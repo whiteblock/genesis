@@ -98,7 +98,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 				"Maturity.Coinbase=1",
 				"# Maturity.Std=0",
 				"# MaxBodySize=0x100000",
-				"DA_Target_s=1",
+				"DA.Target_s=1",
 				"# DA.MaxAhead_s=900",
 				"# DA.WindowWork=120",
 				"# DA.WindowMedian0=25",
