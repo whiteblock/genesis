@@ -186,7 +186,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                             node,
                             wallets[node-1])
                 
-                clients[i].Run("docker cp /home/appo/CustomGenesis.json whiteblock-node%d:/")
+                clients[i].Run("docker cp /home/appo/CustomGenesis.json whiteblock-node%d:/",node)
                
                 clients[i].Run(fmt.Sprintf("docker exec %s mkdir -p /whiteblock/node%d/",name,node))
                 clients[i].Run(fmt.Sprintf("docker cp ~/tmp/node%d %s:/whiteblock",node,name))
