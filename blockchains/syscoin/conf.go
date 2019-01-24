@@ -38,20 +38,19 @@ func NewConf(data map[string]interface{}) (*SysConf,error) {
 		"debug",
 		/*"unittest",
 		"addressindex",
-		"assetallocationindex",
-		"tpstest",*/
+		"assetallocationindex",*/
+		"tpstest",
 	}
 
 	out.SenderOptions = []string{
-		"tpstest",
 		"addressindex",
 	}
 
 	out.ReceiverOptions = []string{
-		"tpstest",
 	}
 
-	out.MNExtras = []string{}
+	out.MNExtras = []string{
+	}
 
 	out.Extras = []string{}
 	out.SenderExtras = []string{}
@@ -259,7 +258,9 @@ func GetDefaults() string {
 	"receiverOptions":[
 		"tpstest"
 	],
-	"mnOptions":[],
+	"mnOptions":[
+		"tpstest"
+	],
 	"senderExtras":[],
 	"receiverExtras":[],
 	"mnExtras":[],

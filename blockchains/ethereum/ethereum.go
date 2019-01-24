@@ -175,7 +175,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 }
                 state.IncrementBuildProgress() 
                 gethCmd := fmt.Sprintf(
-                    `geth --datadir /whiteblock/node%d --nodiscover --maxpeers %d --networkid %d --rpc --rpcaddr %s`+
+                    `geth --datadir /whiteblock/node%d --maxpeers %d --networkid %d --rpc --rpcaddr %s`+
                         ` --rpcapi "web3,db,eth,net,personal,miner" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
                         ` --password /whiteblock/node%d/passwd.file --etherbase %s console`,
                             node,

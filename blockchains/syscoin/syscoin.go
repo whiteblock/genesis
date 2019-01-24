@@ -154,7 +154,7 @@ func handleConf(servers []db.Server,clients []*util.SshClient, sysconf *SysConf)
 					maxConns += 4
 				}
 				confData += "rpcallowip=0.0.0.0/0\n"
-				confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
+				//confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
 				err := util.Write(fmt.Sprintf("./regtest%d.conf",node),confData)
 				if err != nil {
 					state.ReportError(err)
