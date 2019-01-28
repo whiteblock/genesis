@@ -435,7 +435,7 @@ func handleNet(w http.ResponseWriter,r *http.Request){
     }
     defer client.Close()
     //fmt.Printf("GIVEN %v\n",net_conf)
-    err = netem.ApplyAll(client,net_conf)
+    err = netem.ApplyAll(client,net_conf,id)
     if err != nil {
         log.Println(err.Error())
         w.Write([]byte(err.Error()))
@@ -482,7 +482,7 @@ func handleNetAll(w http.ResponseWriter,r *http.Request){
     }
 
     netem.RemoveAll(client,len(nodes))
-    err = netem.ApplyToAll(client,net_conf,len(nodes))
+    err = netem.ApplyToAll(client,net_conf,id,len(nodes))
     if err != nil {
         log.Println(err.Error())
         w.Write([]byte(err.Error()))
