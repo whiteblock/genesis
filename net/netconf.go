@@ -40,7 +40,7 @@ func CreateCommands(netconf Netconf,serverId int) []string {
                     conf.BridgePrefix,netconf.Node,netconf.Node+offset),
 
         fmt.Sprintf("sudo iptables -t mangle -A PREROUTING  ! -d %s -j MARK --set-mark %d",
-            util.GetGateway(serverId,netconf.Node),offset),
+            util.GetGateway(serverId,netconf.Node),netconf.Node+offset),
     }
     
     if netconf.Limit > 0 {
@@ -83,6 +83,7 @@ func Apply(client *util.SshClient,netconf Netconf,serverId int) error {
 
 func ApplyToAll(client *util.SshClient,netconf Netconf,serverId int,nodes int) error {
     for i:=0;i<nodes;i++{
+        netconf.Node = i
         cmds := CreateCommands(netconf,serverId)
         for i,cmd := range cmds {
             res,err := client.Run(cmd)
