@@ -37,10 +37,10 @@ func CreateCommands(netconf Netconf,serverId int) []string {
         fmt.Sprintf("sudo tc qdisc add dev %s%d root handle 1: prio",conf.BridgePrefix,netconf.Node),
         fmt.Sprintf("sudo tc qdisc add dev %s%d parent 1:1 handle 2: netem",conf.BridgePrefix,netconf.Node),//unf
         fmt.Sprintf("sudo tc filter add dev %s%d parent 1:0 protocol ip pref 55 handle %d fw flowid 2:1",
-                    conf.BridgePrefix,netconf.Node,netconf.Node+offset),
+                    conf.BridgePrefix,netconf.Node,offset),
 
         fmt.Sprintf("sudo iptables -t mangle -A PREROUTING  ! -d %s -j MARK --set-mark %d",
-            util.GetGateway(serverId,netconf.Node),netconf.Node+offset),
+            util.GetGateway(serverId,netconf.Node),offset),
     }
     
     if netconf.Limit > 0 {
