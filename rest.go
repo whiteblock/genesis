@@ -15,7 +15,6 @@ import (
     netem "./net"
 )
 
-
 func StartServer() {
     router := mux.NewRouter()
 
@@ -275,6 +274,7 @@ func deleteTestNetNode(w http.ResponseWriter, r *http.Request) {
 
 func dockerExec(w http.ResponseWriter, r *http.Request) {
     if !conf.AllowExec {
+        http.Error(w,"No.",406)
         w.Write([]byte("This function is currently disabled"))
         return
     }
@@ -341,7 +341,7 @@ func getBlockChainState(w http.ResponseWriter,r *http.Request){
         case "eos":
             data := state.GetEosState()
             if data == nil{
-                w.Write([]byte("No state availible for eos"))
+                http.Error(w,"No state availible for eos",410)
                 return
             }
             json.NewEncoder(w).Encode(*data)
@@ -360,26 +360,26 @@ func getBlockChainLog(w http.ResponseWriter,r *http.Request){
     serverId, err := strconv.Atoi(params["server"])
     if err != nil {
         log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),400)
         return
     }
     node,err := strconv.Atoi(params["node"])
     if err != nil {
         log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),400)
         return
     }
     server,_,err := db.GetServer(serverId)
     if err != nil {
         log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),404)
         return
     }
 
     res,err := util.DockerRead(server.Addr,node,conf.DockerOutputFile)
     if err != nil {
         log.Println(err.Error())
-        w.Write([]byte(fmt.Sprintf("%s %s",res,err.Error())))
+        http.Error(w,fmt.Sprintf("%s %s",res,err.Error()),500)
         return
     }
     w.Write([]byte(res))
@@ -389,13 +389,13 @@ func getLastNodes(w http.ResponseWriter,r *http.Request) {
     id, err := GetLastTestNetId()
     if err != nil {
         log.Println(err)
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),404)
         return
     }
     nodes,err := db.GetAllNodesByTestNet(id)
     if err != nil {
-        log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        log.Println(err)
+        http.Error(w,err.Error(),404)
         return
     }
     json.NewEncoder(w).Encode(nodes)
@@ -404,7 +404,7 @@ func getLastNodes(w http.ResponseWriter,r *http.Request) {
 func stopBuild(w http.ResponseWriter,r *http.Request){
     err := state.SignalStop()
     if err != nil{
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),412)
         return
     }
     w.Write([]byte("Stop signal has been sent"))
@@ -413,7 +413,11 @@ func stopBuild(w http.ResponseWriter,r *http.Request){
 func handleNet(w http.ResponseWriter,r *http.Request){
     params := mux.Vars(r)
     id, err := strconv.Atoi(params["server"])
-
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),400)
+        return
+    }
     var net_conf []netem.Netconf
     decoder := json.NewDecoder(r.Body)
     decoder.UseNumber()
@@ -422,15 +426,15 @@ func handleNet(w http.ResponseWriter,r *http.Request){
 
     servers, err := db.GetServers([]int{id})
     if err != nil {
-        log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        log.Println(err)
+        http.Error(w,err.Error(),404)
         return
     }
     server := servers[0]
     client,err := util.NewSshClient(server.Addr)
     if err != nil {
-        log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        log.Println(err)
+        http.Error(w,err.Error(),500)
         return
     }
     defer client.Close()
@@ -438,7 +442,7 @@ func handleNet(w http.ResponseWriter,r *http.Request){
     err = netem.ApplyAll(client,net_conf,server.ServerID)
     if err != nil {
         log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),500)
         return
     }
     w.Write([]byte("Success"))
@@ -457,35 +461,35 @@ func handleNetAll(w http.ResponseWriter,r *http.Request){
     servers, err := db.GetServers([]int{id})
     if err != nil {
         log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),404)
     }
     server := servers[0]
     client,err := util.NewSshClient(server.Addr)
     if err != nil {
-        log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        log.Println(err)
+        http.Error(w,err.Error(),500)
     }
     defer client.Close()
 
     id, err = GetLastTestNetId()
     if err != nil {
         log.Println(err)
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),500)
         return
     }
 
     nodes,err := db.GetAllNodesByTestNet(id)
     if err != nil {
-        log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        log.Println(err)
+        http.Error(w,err.Error(),500)
         return
     }
 
     netem.RemoveAll(client,len(nodes))
     err = netem.ApplyToAll(client,net_conf,server.ServerID,len(nodes))
     if err != nil {
-        log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        log.Println(err)
+        http.Error(w,err.Error(),500)
     }
     w.Write([]byte("Success"))
 }
@@ -493,31 +497,38 @@ func handleNetAll(w http.ResponseWriter,r *http.Request){
 func stopNet(w http.ResponseWriter,r *http.Request){
     params := mux.Vars(r)
     id, err := strconv.Atoi(params["server"])
-
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),400)
+        return
+    }
     servers, err := db.GetServers([]int{id})
     if err != nil {
         log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),404)
+        return
     }
+
     server := servers[0]
     client,err := util.NewSshClient(server.Addr)
     if err != nil {
-        log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        log.Println(err)
+        http.Error(w,err.Error(),500)
+        return
     }
     defer client.Close()
 
     id, err = GetLastTestNetId()
     if err != nil {
         log.Println(err)
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),500)
         return
     }
 
     nodes,err := db.GetAllNodesByTestNet(id)
     if err != nil {
         log.Println(err.Error())
-        w.Write([]byte(err.Error()))
+        http.Error(w,err.Error(),500)
         return
     }
 
