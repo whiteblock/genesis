@@ -98,7 +98,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 				"Maturity.Coinbase=1",
 				"# Maturity.Std=0",
 				"# MaxBodySize=0x100000",
-				"DA.Target_s=1",
+				"DA_Target_s=1",
 				"# DA.MaxAhead_s=900",
 				"# DA.WindowWork=120",
 				"# DA.WindowMedian0=25",
@@ -126,14 +126,15 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 
 			defer clients[i].Run("rm -f /home/appo/beam-node.cfg")
 
-			_, err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/beam-node.cfg %s%d:/beam", conf.NodePrefix, node))
+			// directory for cp is different. change back to just /beam when using the tar dockerfile
+			_, err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/beam-node.cfg %s%d:/beam/beam", conf.NodePrefix, node))
 			if err != nil {
 				log.Println(err)
 				return nil, err
 			}
 
 			// will copy the treasury binary (taken from beam github). Not sure if this is necessary.
-			_, err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/beam/treasury.bin %s%d:/beam", conf.NodePrefix, node))
+			_, err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/beam/treasury.bin %s%d:/beam/beam", conf.NodePrefix, node))
 			if err != nil {
 				log.Println(err)
 				return nil, err
