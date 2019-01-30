@@ -152,6 +152,8 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     state.SetBuildStage("Starting geth")
     node := 0
     for i, server := range servers {
+        clients[i].Scp("tmp/CustomGenesis.json","/home/appo/CustomGenesis.json")
+        defer clients[i].Run("rm -f /home/appo/CustomGenesis.json")
         for j, ip := range server.Ips{
             sem.Acquire(ctx,1)
             fmt.Printf("-----------------------------  Starting NODE-%d  -----------------------------\n",node)
@@ -173,8 +175,8 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 }
                 state.IncrementBuildProgress() 
                 gethCmd := fmt.Sprintf(
-                    `geth --datadir /whiteblock/node%d --nodiscover --maxpeers %d --networkid %d --rpc --rpcaddr %s`+
-                        ` --rpcapi "web3,db,eth,net,personal,miner" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
+                    `geth --datadir /whiteblock/node%d --maxpeers %d --networkid %d --rpc --rpcaddr %s`+
+                        ` --rpcapi "web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
                         ` --password /whiteblock/node%d/passwd.file --etherbase %s console`,
                             node,
                             ethconf.MaxPeers,
@@ -183,6 +185,9 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                             unlock,
                             node,
                             wallets[node-1])
+                
+                clients[i].Run(fmt.Sprintf("docker cp /home/appo/CustomGenesis.json whiteblock-node%d:/",node))
+               
                 clients[i].Run(fmt.Sprintf("docker exec %s mkdir -p /whiteblock/node%d/",name,node))
                 clients[i].Run(fmt.Sprintf("docker cp ~/tmp/node%d %s:/whiteblock",node,name))
                 clients[i].Run(fmt.Sprintf("docker exec -d %s tmux new -s whiteblock -d",name))
