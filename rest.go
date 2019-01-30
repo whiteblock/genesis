@@ -208,7 +208,7 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
     }
     err = state.AcquireBuilding()
     if err != nil {
-        log.Println(err.Error())
+        log.Println(err)
         http.Error(w,"There is a build already in progress",409)
         return
     }
@@ -270,47 +270,6 @@ func addTestNetNode(w http.ResponseWriter, r *http.Request) {
 
 func deleteTestNetNode(w http.ResponseWriter, r *http.Request) {
     http.Error(w,"Currently not supported",501)
-}
-
-func dockerExec(w http.ResponseWriter, r *http.Request) {
-    if !conf.AllowExec {
-        http.Error(w,"No.",406)
-        w.Write([]byte("This function is currently disabled"))
-        return
-    }
-    
-    params := mux.Vars(r)
-    serverId, err := strconv.Atoi(params["server"])
-    if err != nil {
-        log.Println(err.Error())
-        w.Write([]byte(err.Error()))
-        return
-    }
-    node,err := strconv.Atoi(params["node"])
-    if err != nil {
-        log.Println(err.Error())
-        w.Write([]byte(err.Error()))
-        return
-    }
-    server,_,err := db.GetServer(serverId)
-    if err != nil {
-        log.Println(err.Error())
-        w.Write([]byte(err.Error()))
-        return
-    }
-    cmd, err := ioutil.ReadAll(r.Body)
-    if err != nil {
-        log.Println(err.Error())
-        w.Write([]byte(err.Error()))
-        return
-    }
-    res,err := util.DockerExec(server.Addr,node,string(cmd))
-    if err != nil {
-        log.Println(err.Error())
-        w.Write([]byte(fmt.Sprintf("%s %s",res,err.Error())))
-        return
-    }
-    w.Write([]byte(res))
 }
 
 func nodesStatus(w http.ResponseWriter, r *http.Request) {

@@ -23,7 +23,6 @@ type Config struct {
     ThreadLimit         int64       `json:"thread-limit"`
     BuildMode           string      `json:"build-mode"`
     IPPrefix            uint32      `json:"ip-prefix"`
-    AllowExec           bool        `json:"allow-exec"`
     DockerOutputFile    string      `json:"docker-output-file"`
     Influx              string      `json:"influx"`
     InfluxUser          string      `json:"influx-user"`
@@ -126,10 +125,6 @@ func (this *Config) LoadFromEnv() {
             fmt.Println("Invalid ENV value for IP_PREFIX")
             os.Exit(1)
         }
-    }
-    _,exists = os.LookupEnv("ALLOW_EXEC")
-    if exists {
-        this.AllowExec = true
     }
     val,exists = os.LookupEnv("DOCKER_OUTPUT_FILE")
     if exists {
