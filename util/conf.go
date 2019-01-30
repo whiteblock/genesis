@@ -271,9 +271,7 @@ func (c *Config) AutoFillMissing() {
         fmt.Println("Warning: Using default thread limit")
         c.ThreadLimit = 10
     }
-    if c.AllowExec {
-        fmt.Println("Warning: exec call is enabled. This is unsafe!")
-    }
+    
     if len(c.DockerOutputFile) == 0 {
         c.DockerOutputFile = "/output.log"
     }

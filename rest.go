@@ -7,7 +7,6 @@ import (
     "strconv"
     "log"
     "fmt"
-    "io/ioutil"
     util "./util"
     db "./db"
     state "./state"
@@ -53,8 +52,6 @@ func StartServer() {
 
     router.HandleFunc("/status/build",buildStatus).Methods("GET")
     router.HandleFunc("/status/build/",buildStatus).Methods("GET")
-
-    router.HandleFunc("/exec/{server}/{node}",dockerExec).Methods("POST")
 
     router.HandleFunc("/params/{blockchain}",getBlockChainParams).Methods("GET")
     router.HandleFunc("/params/{blockchain}/",getBlockChainParams).Methods("GET")

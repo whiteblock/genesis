@@ -27,7 +27,7 @@ func NewConf(data map[string]interface{}) (*EthConf,error) {
 	out.ChainId = 15468
 	out.NetworkId = 15468
 	out.Difficulty = 100000
-	out.InitBalance = "100000000000000000000"
+	out.InitBalance = "10000000000000000000000000"
 	out.MaxPeers = 1000
 	out.GasLimit = 4000000
 	out.HomesteadBlock = 0
