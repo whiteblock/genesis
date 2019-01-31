@@ -92,7 +92,7 @@ func DockerPull(clients []*util.SshClient,image string) error {
     return nil
 }
 
-func dockerRunCmd(server db.Server,resources Resources,node int,image string) (string,error) {
+func dockerRunCmd(server db.Server,resources util.Resources,node int,image string) (string,error) {
     command := "docker run -itd --entrypoint /bin/sh "
     command += fmt.Sprintf("--network %s%d",conf.NodeNetworkPrefix,node)
 
@@ -115,7 +115,7 @@ func dockerRunCmd(server db.Server,resources Resources,node int,image string) (s
     return command,nil
 }
 
-func DockerRun(server db.Server,client *util.SshClient,resources Resources,node int,image string) error {
+func DockerRun(server db.Server,client *util.SshClient,resources util.Resources,node int,image string) error {
     command,err := dockerRunCmd(server,resources,node,image)
     if err != nil{
         return err
@@ -128,7 +128,7 @@ func DockerRun(server db.Server,client *util.SshClient,resources Resources,node 
     return err
 }
 
-func DockerRunAll(server db.Server,client *util.SshClient,resources Resources,nodes int,image string) error {
+func DockerRunAll(server db.Server,client *util.SshClient,resources util.Resources,nodes int,image string) error {
     var command string
     for i := 0; i < nodes; i++ {
         state.IncrementDeployProgress()
