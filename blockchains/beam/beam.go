@@ -165,13 +165,6 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 				return nil, err
 			}
 
-			// will copy the treasury binary (taken from beam github). Not sure if this is necessary.
-			_, err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/beam/treasury.bin %s%d:/beam", conf.NodePrefix, node))
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-
 			// fmt.Println(config)
 			node++
 		}
