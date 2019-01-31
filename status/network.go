@@ -59,5 +59,21 @@ func GetLatestServers() ([]db.Server,error) {
         }
     }
     
-    return db.GetServers(serverIds)
+    servers,err := db.GetServers(serverIds)
+    if err != nil{
+        log.Println(err)
+        return nil,err
+    }
+    for _,node := range nodes {
+        for i,_ := range servers {
+            if servers[i].Ips == nil {
+                servers[i].Ips = []string{}
+            }
+            if node.Server == servers[i].Id {
+                servers[i].Ips = append(servers[i].Ips,node.Ip)
+            }
+            servers[i].Nodes++
+        }
+    }
+    return servers,nil
 }

@@ -54,8 +54,9 @@ func DockerNetworkCreate(server db.Server,client *util.SshClient,node int) error
     
     res,err := client.Run(command)
     if err != nil{
-        res,err = client.Run(command)//end me
+        res,err = client.Run(command)
         if err != nil{
+            log.Println(err)
             return errors.New(res)
         }
         
@@ -68,6 +69,19 @@ func DockerNetworkCreateAll(server db.Server,client *util.SshClient,nodes int) e
         state.IncrementDeployProgress()
         err := DockerNetworkCreate(server,client,i)
         if err != nil {
+            log.Println(err)
+            return err
+        }
+    }
+    return nil
+}
+
+func DockerNetworkCreateAppendAll(server db.Server,client *util.SshClient,start int,nodes int) error {
+    for i := start; i < start+nodes; i++ {
+        state.IncrementDeployProgress()
+        err := DockerNetworkCreate(server,client,i)
+        if err != nil {
+            log.Println(err)
             return err
         }
     }
@@ -129,8 +143,12 @@ func DockerRun(server db.Server,client *util.SshClient,resources util.Resources,
 }
 
 func DockerRunAll(server db.Server,client *util.SshClient,resources util.Resources,nodes int,image string) error {
+    return DockerRunAppendAll(server,client,resources,0,nodes,image)
+}
+
+func DockerRunAppendAll(server db.Server,client *util.SshClient,resources util.Resources,start int,nodes int,image string) error {
     var command string
-    for i := 0; i < nodes; i++ {
+    for i := start; i < start+nodes; i++ {
         state.IncrementDeployProgress()
         tmp,err := dockerRunCmd(server,resources,i,image)
         if err != nil{
@@ -156,6 +174,18 @@ func DockerRunAll(server db.Server,client *util.SshClient,resources util.Resourc
     }
     return nil
 }
+
+/**
+ * @brief Start a service container
+ * @details [long description]
+ * 
+ * @param string [description]
+ * @param string [description]
+ * @param string [description]
+ * @param mapstring [description]
+ * @param string [description]
+ * @return [description]
+ */
 func serviceDockerRunCmd(network string,ip string,name string,env map[string]string,image string) string {
     envFlags := ""
     for k,v := range env{

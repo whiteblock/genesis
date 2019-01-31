@@ -140,7 +140,11 @@ func AddTestNet(details db.DeploymentDetails) error {
     }
     i := 0
     for _, server := range newServerData {
-        db.UpdateServerNodes(server.Id,0)
+        err = db.UpdateServerNodes(server.Id,0)
+        if err != nil{
+            log.Println(err)
+            panic(err)
+        }
         for _, ip := range server.Ips {
             node := db.Node{Id: -1, TestNetId: testNetId, Server: server.Id, LocalId: i, Ip: ip}
             if labels != nil {

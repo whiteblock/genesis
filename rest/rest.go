@@ -59,6 +59,9 @@ func StartServer() {
     router.HandleFunc("/status/build",buildStatus).Methods("GET")
     router.HandleFunc("/status/build/",buildStatus).Methods("GET")
 
+    router.HandleFunc("/status/servers",GetLatestServers).Methods("GET")
+    router.HandleFunc("/status/servers/",GetLatestServers).Methods("GET")
+
     router.HandleFunc("/params/{blockchain}",getBlockChainParams).Methods("GET")
     router.HandleFunc("/params/{blockchain}/",getBlockChainParams).Methods("GET")
 
@@ -89,9 +92,6 @@ func StartServer() {
 
     http.ListenAndServe(conf.Listen, router)
 }
-
-
-
 
 func nodesStatus(w http.ResponseWriter, r *http.Request) {
     out, err := status.CheckTestNetStatus()
@@ -184,10 +184,21 @@ func stopBuild(w http.ResponseWriter,r *http.Request){
     w.Write([]byte("Stop signal has been sent"))
 }
 
+
+func GetLatestServers(w http.ResponseWriter, r *http.Request) {
+    servers,err := status.GetLatestServers()
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),404)
+        return
+    }
+    json.NewEncoder(w).Encode(servers)
+}
+
 func getAllBuilds(w http.ResponseWriter, r *http.Request) {
     builds,err := db.GetAllBuilds()
     if err != nil {
-        log.Println(err.Error())
+        log.Println(err)
         http.Error(w,err.Error(),404)
         return
     }

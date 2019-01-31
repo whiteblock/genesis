@@ -14,9 +14,12 @@ type DeploymentDetails struct {
     Nodes      int                    `json:"nodes"`
     Image      string                 `json:"image"`
     Params     map[string]interface{} `json:"params"`
-    Resources  util.Resources       `json:"resources"`
+    Resources  util.Resources         `json:"resources"`
 }
 
+/**
+ * Get all of the builds done by a user
+ */
 func GetAllBuilds() ([]DeploymentDetails,error) {
     rows, err :=  db.Query(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources FROM %s",BuildsTable ))
     if err != nil{
@@ -58,6 +61,9 @@ func GetAllBuilds() ([]DeploymentDetails,error) {
     return builds,nil
 }
 
+/**
+ * Get the build paramters based off testnet id
+ */
 func GetBuildByTestnet(id int) (DeploymentDetails, error) {
 
     row := db.QueryRow(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources FROM %s WHERE testnet = %d",BuildsTable,id))
@@ -91,7 +97,9 @@ func GetBuildByTestnet(id int) (DeploymentDetails, error) {
     return build, nil
 }
 
-
+/**
+ * Insert a build
+ */
 func InsertBuild(dd DeploymentDetails,testnetId int) error {
 
     tx,err := db.Begin()
@@ -109,7 +117,6 @@ func InsertBuild(dd DeploymentDetails,testnetId int) error {
     }
 
     defer stmt.Close()
-
 
     servers,_ := json.Marshal(dd.Servers)
     params,_ := json.Marshal(dd.Params)
