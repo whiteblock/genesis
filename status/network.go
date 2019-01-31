@@ -11,7 +11,7 @@ func GetLastTestNetId() (int,error) {
         log.Println(err)
         return 0,err
     }
-    highestId := -1
+    highestId := 0
 
     for _, testNet := range testNets {
         if testNet.Id > highestId {

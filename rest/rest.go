@@ -77,6 +77,12 @@ func StartServer() {
     router.HandleFunc("/build",stopBuild).Methods("DELETE")
     router.HandleFunc("/build/",stopBuild).Methods("DELETE")
 
+    router.HandleFunc("/build",getAllBuilds).Methods("GET")
+    router.HandleFunc("/build/",getAllBuilds).Methods("GET")
+
+    router.HandleFunc("/build/{id}",getBuild).Methods("GET")
+    router.HandleFunc("/build/{id}/",getBuild).Methods("GET")
+
     router.HandleFunc("/emulate/{server}",stopNet).Methods("DELETE")
     router.HandleFunc("/emulate/{server}",handleNet).Methods("POST")
     router.HandleFunc("/emulate/all/{server}",handleNetAll).Methods("POST")
@@ -176,4 +182,33 @@ func stopBuild(w http.ResponseWriter,r *http.Request){
         return
     }
     w.Write([]byte("Stop signal has been sent"))
+}
+
+func getAllBuilds(w http.ResponseWriter, r *http.Request) {
+    builds,err := db.GetAllBuilds()
+    if err != nil {
+        log.Println(err.Error())
+        http.Error(w,err.Error(),404)
+        return
+    }
+    json.NewEncoder(w).Encode(builds)
+}
+
+func getBuild(w http.ResponseWriter,r *http.Request){
+    params := mux.Vars(r)
+
+    id, err := strconv.Atoi(params["id"])
+    if err != nil {
+        json.NewEncoder(w).Encode(err)
+        return
+    }
+    build, err := db.GetBuildByTestnet(id)
+    if err != nil {
+        http.Error(w,err.Error(),404)
+        return
+    }
+    err = json.NewEncoder(w).Encode(build)
+    if err != nil {
+        log.Println(err.Error())
+    }
 }
