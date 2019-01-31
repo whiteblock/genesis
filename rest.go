@@ -17,7 +17,6 @@ import (
 func StartServer() {
     router := mux.NewRouter()
 
-    
     router.HandleFunc("/servers", getAllServerInfo).Methods("GET")
     router.HandleFunc("/servers/", getAllServerInfo).Methods("GET")
 
@@ -37,6 +36,7 @@ func StartServer() {
 
     router.HandleFunc("/testnets/{id}", getTestNetInfo).Methods("GET")
     router.HandleFunc("/testnets/{id}/", getTestNetInfo).Methods("GET")
+
     router.HandleFunc("/testnets/{id}", deleteTestNet).Methods("DELETE")
     router.HandleFunc("/testnets/{id}/", deleteTestNet).Methods("DELETE")
 
@@ -235,7 +235,6 @@ func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         log.Println(err)
     }
-
 }
 
 func deleteTestNet(w http.ResponseWriter, r *http.Request) {
@@ -315,26 +314,26 @@ func getBlockChainLog(w http.ResponseWriter,r *http.Request){
     params := mux.Vars(r)
     serverId, err := strconv.Atoi(params["server"])
     if err != nil {
-        log.Println(err.Error())
+        log.Println(err)
         http.Error(w,err.Error(),400)
         return
     }
     node,err := strconv.Atoi(params["node"])
     if err != nil {
-        log.Println(err.Error())
+        log.Println(err)
         http.Error(w,err.Error(),400)
         return
     }
     server,_,err := db.GetServer(serverId)
     if err != nil {
-        log.Println(err.Error())
+        log.Println(err)
         http.Error(w,err.Error(),404)
         return
     }
 
     res,err := util.DockerRead(server.Addr,node,conf.DockerOutputFile)
     if err != nil {
-        log.Println(err.Error())
+        log.Println(err)
         http.Error(w,fmt.Sprintf("%s %s",res,err.Error()),500)
         return
     }
@@ -378,7 +377,11 @@ func handleNet(w http.ResponseWriter,r *http.Request){
     decoder := json.NewDecoder(r.Body)
     decoder.UseNumber()
     err = decoder.Decode(&net_conf)
-
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),400)
+        return
+    }
 
     servers, err := db.GetServers([]int{id})
     if err != nil {
@@ -397,7 +400,7 @@ func handleNet(w http.ResponseWriter,r *http.Request){
     //fmt.Printf("GIVEN %v\n",net_conf)
     err = netem.ApplyAll(client,net_conf,server.ServerID)
     if err != nil {
-        log.Println(err.Error())
+        log.Println(err)
         http.Error(w,err.Error(),500)
         return
     }
@@ -407,12 +410,22 @@ func handleNet(w http.ResponseWriter,r *http.Request){
 func handleNetAll(w http.ResponseWriter,r *http.Request){
     params := mux.Vars(r)
     id, err := strconv.Atoi(params["server"])
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),400)
+        return
+    }
 
     var net_conf netem.Netconf
     decoder := json.NewDecoder(r.Body)
     decoder.UseNumber()
-    err = decoder.Decode(&net_conf)
 
+    err = decoder.Decode(&net_conf)
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),400)
+        return
+    }
 
     servers, err := db.GetServers([]int{id})
     if err != nil {

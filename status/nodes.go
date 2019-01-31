@@ -25,22 +25,6 @@ func FindNodeIndex(status []TestNetStatus,name string,serverId int) int {
     return -1
 }
 
-func GetLastTestNetId() (int,error) {
-    testNets,err := db.GetAllTestNets()
-    if err != nil{
-        log.Println(err)
-        return 0,err
-    }
-    highestId := -1
-
-    for _, testNet := range testNets {
-        if testNet.Id > highestId {
-            highestId = testNet.Id
-        }
-    }
-    return highestId,nil
-}
-
 func SumCpuUsage(c *util.SshClient,name string) (float64,error) {
     res,err := c.Run(fmt.Sprintf("docker exec %s ps aux --no-headers | awk '{print $3}'",name))
     if err != nil {
