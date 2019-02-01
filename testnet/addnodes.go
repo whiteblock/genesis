@@ -13,9 +13,14 @@ import(
     deploy "../deploy"
     state "../state"
     status "../status"
-    //util "../util"
 )
 
+/* 
+    AddNodes allows for nodes to be added to the network. 
+    The nodes don't need to be of the same type of the original build.
+    It is worth noting that any missing information from the given
+    deployment details will be filled in from the origin build.
+*/
 func AddNodes(details db.DeploymentDetails) error {
     defer state.DoneBuilding()
 

@@ -11,7 +11,11 @@ import(
 
 var _clients = map[int]*util.SshClient{}
 
-
+/*
+    GetClient retrieves the ssh client for running a command
+    on a remote server based on server id. It will create one if it
+    does not exist. 
+ */
 func GetClient(id int)(*util.SshClient,error) {
     cli,ok := _clients[id]
     if !ok || cli == nil{
@@ -30,6 +34,10 @@ func GetClient(id int)(*util.SshClient,error) {
     return cli,nil
 }
 
+/*
+    GetClients functions similar to GetClient, except that it takes in 
+    an array of server ids and outputs an array of clients
+ */
 func GetClients(servers []int) ([]*util.SshClient,error) {
 
     out := make([]*util.SshClient,len(servers))

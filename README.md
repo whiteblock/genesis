@@ -556,6 +556,51 @@ Stop the current build
 curl -X DELETE http://localhost:8000/build
 ```
 
+###POST /nodes/{num}
+Add {num} nodes to the current test net (Body is optional)
+#####BODY
+```
+{
+    "servers":[(int),(int)...],
+    "blockchain":(string),
+    "nodes":(int),
+    "image":(string),
+    "resources":{
+        "cpus":(string),
+        "memory":(string)
+    },
+    "params":(Object containing params specific to the chain/client being built)
+}
+```
+#####RESPONSE
+```
+HTTP/1.1 200 OK
+Date: Mon, 22 Oct 2018 15:31:18 GMT
+Success
+```
+#####EXAMPLE
+```bash
+curl -X POST http://localhost:8000/nodes/3 -d '{"servers":[3],"blockchain":"ethereum","nodes":3,"image":"ethereum:latest",
+"resources":{"cpus":"2.0","memory":"10gb"},"params":null}'
+```
+
+router.HandleFunc("/nodes/{num}",delNodes).Methods("DELETE")
+    router.HandleFunc("/nodes/{num}/",delNodes).Methods("DELETE")
+
+###DELETE /nodes/{num}
+Delete {num} nodes from the testnet
+#####BODY
+#####RESPONSE
+```
+HTTP/1.1 200 OK
+Date: Mon, 22 Oct 2018 15:31:18 GMT
+Success
+```
+#####EXAMPLE
+```bash
+curl -X DELETE http://localhost:8000/nodes/5 
+```
+
 ##Blockchain Specific Parameters
 
 ###Geth (Go-Ethereum)
@@ -634,5 +679,3 @@ the example contains all of the defaults
     "mnExtras":[]
 }
 ```
-
-.

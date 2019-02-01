@@ -1,3 +1,8 @@
+/*
+    Contains functions for managing the testnets. 
+    Handles creating test nets, adding/removing nodes from testnets, and keeps track of the
+    ssh clients for each server
+*/
 package testnet
 
 import (
@@ -24,6 +29,8 @@ func init() {
 }
 
 
+// AddTestNet implements the build command. All blockchains Build command must be 
+// implemented here, other it will not be called during the build process. 
 func AddTestNet(details db.DeploymentDetails) error {
     defer state.DoneBuilding()
     //STEP 0: VALIDATE
@@ -160,32 +167,21 @@ func AddTestNet(details db.DeploymentDetails) error {
     return nil
 }
 
-
+/*
+    GetNextTestNetId gets the next testnet id. Used for
+    getting the id of a testnet that is in progress of being built
+ */
 func GetNextTestNetId() (string, error) {
     highestId, err := status.GetLastTestNetId()
     return fmt.Sprintf("%d", highestId+1), err
 }
 
-func RebuildTestNet(id int) {
-    panic("Not Implemented")
-}
-
-func RemoveTestNet(id int) error {
-    nodes, err := db.GetAllNodesByTestNet(id)
-    if err != nil {
-        return err
-    }
-    for _, node := range nodes {
-        server, _, err := db.GetServer(node.Server)
-        if err != nil {
-            log.Println(err)
-            return err
-        }
-        util.SshExec(server.Addr, fmt.Sprintf("~/local_deploy/deploy --kill=%d", node.LocalId))
-    }
-    return nil
-}
-
+/*
+    GetParams fetches the name and type of each availible
+    blockchain specific parameter for the given blockchain. 
+    Ensure that the blockchain you have implemented is included 
+    in the switch statement.
+ */
 func GetParams(blockchain string) string {
     switch blockchain {
     case "ethereum":
@@ -196,11 +192,18 @@ func GetParams(blockchain string) string {
         return eos.GetParams()
     case "rchain":
         return rchain.GetParams()
+    case "beam":
+        return beam.GetParams()
     default:
         return "[]"
     }
 }
 
+/*
+    GetDefaults gets the default parameters for a blockchain. Ensure that 
+    the blockchain you have implemented is included in the switch
+    statement.
+ */
 func GetDefaults(blockchain string) string {
     switch blockchain {
     case "ethereum":
@@ -211,6 +214,8 @@ func GetDefaults(blockchain string) string {
         return eos.GetDefaults()
     case "rchain":
         return rchain.GetDefaults()
+    case "beam":
+        return beam.GetDefaults()
     default:
         return "{}"
     }

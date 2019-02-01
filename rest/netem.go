@@ -8,8 +8,9 @@ import(
     "github.com/gorilla/mux"
     netem "../net"
     db "../db"
-    util "../util"
+    //util "../util"
     status "../status"
+    testnet "../testnet"
 )
 
 
@@ -38,13 +39,12 @@ func handleNet(w http.ResponseWriter,r *http.Request){
         return
     }
     server := servers[0]
-    client,err := util.NewSshClient(server.Addr)
+    client,err := testnet.GetClient(id)
     if err != nil {
         log.Println(err)
-        http.Error(w,err.Error(),500)
+        http.Error(w,err.Error(),404)
         return
     }
-    defer client.Close()
     //fmt.Printf("GIVEN %v\n",net_conf)
     err = netem.ApplyAll(client,net_conf,server.ServerID)
     if err != nil {
@@ -81,12 +81,11 @@ func handleNetAll(w http.ResponseWriter,r *http.Request){
         http.Error(w,err.Error(),404)
     }
     server := servers[0]
-    client,err := util.NewSshClient(server.Addr)
+    client,err := testnet.GetClient(id)
     if err != nil {
         log.Println(err)
         http.Error(w,err.Error(),500)
     }
-    defer client.Close()
 
     nodes,err := status.GetLatestTestnetNodes()
     if err != nil {
@@ -112,21 +111,13 @@ func stopNet(w http.ResponseWriter,r *http.Request){
         http.Error(w,err.Error(),400)
         return
     }
-    servers, err := db.GetServers([]int{id})
-    if err != nil {
-        log.Println(err.Error())
-        http.Error(w,err.Error(),404)
-        return
-    }
 
-    server := servers[0]
-    client,err := util.NewSshClient(server.Addr)
+    client,err := testnet.GetClient(id)
     if err != nil {
         log.Println(err)
         http.Error(w,err.Error(),500)
         return
     }
-    defer client.Close()
 
     nodes,err := status.GetLatestTestnetNodes()
     if err != nil {

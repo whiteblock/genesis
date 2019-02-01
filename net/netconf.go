@@ -1,3 +1,6 @@
+/*
+    Allows the ability for the simulation of network conditions accross nodes.
+ */
 package netconf
 
 import(
@@ -29,7 +32,10 @@ type Netconf struct {
     Rate    string  `json:"rate"`
 }
 
-
+/*
+    CreateCommands generates the commands needed to obtain the desired
+    network conditions
+ */
 func CreateCommands(netconf Netconf,serverId int) []string {
     const offset int = 6
     out := []string{
@@ -63,7 +69,9 @@ func CreateCommands(netconf Netconf,serverId int) []string {
 
 
 
-
+/*
+    Apply applies the given network config. 
+ */
 func Apply(client *util.SshClient,netconf Netconf,serverId int) error {
     cmds := CreateCommands(netconf,serverId)
     for i,cmd := range cmds {
@@ -81,6 +89,9 @@ func Apply(client *util.SshClient,netconf Netconf,serverId int) error {
     return nil
 }
 
+/*
+    ApplyToAll applies the given netconf to `nodes` nodes in the network on the given server
+ */
 func ApplyToAll(client *util.SshClient,netconf Netconf,serverId int,nodes int) error {
     for i:=0;i<nodes;i++{
         netconf.Node = i
@@ -101,6 +112,9 @@ func ApplyToAll(client *util.SshClient,netconf Netconf,serverId int,nodes int) e
     return nil   
 }
 
+/*
+    ApplyAll applies all of the given netconfs
+ */
 func ApplyAll(client *util.SshClient,netconfs []Netconf,serverId int) error {
     for _,netconf := range netconfs {
         err := Apply(client,netconf,serverId)
@@ -112,7 +126,9 @@ func ApplyAll(client *util.SshClient,netconfs []Netconf,serverId int) error {
     return nil
 }
 
-
+/*
+    RemoveAll removes network conditions from the given number of nodes
+ */
 func RemoveAll(client *util.SshClient,nodes int){
     for i := 0; i < nodes; i++ {
          client.Run(fmt.Sprintf("sudo tc qdisc del dev %s%d root netem",

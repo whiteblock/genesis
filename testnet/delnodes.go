@@ -9,7 +9,10 @@ import(
     deploy "../deploy"
 )
 
-
+/*
+    DelNodes simply attempts to remove the given number of nodes from the
+    network.
+ */
 func DelNodes(num int) error {
     defer state.DoneBuilding()
 
@@ -48,7 +51,7 @@ func DelNodes(num int) error {
                 state.ReportError(err)
                 return err
             }
-            
+
             err = deploy.DockerNetworkDestroy(client,i)
             if err != nil {
                 log.Println(err.Error())

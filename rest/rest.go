@@ -48,9 +48,6 @@ func StartServer() {
 
     router.HandleFunc("/testnets/{id}/nodes", getTestNetNodes).Methods("GET")
     router.HandleFunc("/testnets/{id}/nodes/", getTestNetNodes).Methods("GET")
-
-    //router.HandleFunc("/testnets/{id}/node/", addTestNetNodes).Methods("POST")
-    //router.HandleFunc("/testnets/{id}/node/{nid}",deleteTestNetNode).Methods("DELETE")
     
     /**Management Functions**/
     router.HandleFunc("/status/nodes",nodesStatus).Methods("GET")
