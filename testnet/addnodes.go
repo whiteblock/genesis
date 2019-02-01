@@ -122,6 +122,7 @@ func AddNodes(details db.DeploymentDetails) error {
             state.ReportError(errors.New("Unknown blockchain"))
             return errors.New("Unknown blockchain")
     }
+    
     testNetId,err := status.GetLastTestNetId()
     i := 0
     for serverId,ips := range nodes {
