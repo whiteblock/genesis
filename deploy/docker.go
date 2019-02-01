@@ -12,7 +12,6 @@ import(
 /**Quick naive interface to Docker calls over ssh*/
 
 
-
 func DockerKill(client *util.SshClient,node int) error {
     _,err := client.Run(fmt.Sprintf("docker rm -f %s%d",conf.NodePrefix,node))
     return err
@@ -84,6 +83,16 @@ func DockerNetworkCreateAppendAll(server db.Server,client *util.SshClient,start 
             log.Println(err)
             return err
         }
+    }
+    return nil
+}
+
+func DockerNetworkDestroy(client *util.SshClient, node int ) error {
+    res,err := client.Run(fmt.Sprintf("docker network rm %s%d",conf.NodeNetworkPrefix,node))
+    if err != nil {
+        log.Println(err)
+        log.Println(res)
+        return err
     }
     return nil
 }

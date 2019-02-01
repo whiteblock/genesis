@@ -50,7 +50,7 @@ func StartServer() {
     router.HandleFunc("/testnets/{id}/nodes/", getTestNetNodes).Methods("GET")
 
     //router.HandleFunc("/testnets/{id}/node/", addTestNetNodes).Methods("POST")
-    router.HandleFunc("/testnets/{id}/node/{nid}",deleteTestNetNode).Methods("DELETE")
+    //router.HandleFunc("/testnets/{id}/node/{nid}",deleteTestNetNode).Methods("DELETE")
     
     /**Management Functions**/
     router.HandleFunc("/status/nodes",nodesStatus).Methods("GET")
@@ -79,6 +79,9 @@ func StartServer() {
 
     router.HandleFunc("/nodes/{num}",addNodes).Methods("POST")
     router.HandleFunc("/nodes/{num}/",addNodes).Methods("POST")
+
+    router.HandleFunc("/nodes/{num}",delNodes).Methods("DELETE")
+    router.HandleFunc("/nodes/{num}/",delNodes).Methods("DELETE")
 
     router.HandleFunc("/build",stopBuild).Methods("DELETE")
     router.HandleFunc("/build/",stopBuild).Methods("DELETE")
