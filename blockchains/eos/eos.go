@@ -740,6 +740,10 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     return out,nil
 }
 
+func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,newNodes map[int][]string) ([]string,error) {
+    return nil,nil
+}
+
 /*func eos_getKeyPair(serverIP string) (util.KeyPair,error){
     data,err := util.SshExec(serverIP, "docker exec whiteblock-node0 cleos create key --to-console | awk '{print $3}'")
     if err != nil {

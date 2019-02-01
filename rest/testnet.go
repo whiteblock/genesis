@@ -89,8 +89,31 @@ func getTestNetNodes(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func addTestNetNode(w http.ResponseWriter, r *http.Request) {
-    http.Error(w,"Currently not supported",501)
+func addNodes(w http.ResponseWriter, r *http.Request) {
+    params := mux.Vars(r)
+    num, err := strconv.Atoi(params["num"])
+    if err != nil {
+        http.Error(w,"Invalid id",400)
+        return
+    }
+    var tn db.DeploymentDetails
+    tn.Nodes = num
+    decoder := json.NewDecoder(r.Body)
+    decoder.UseNumber()
+    err = decoder.Decode(&tn)
+    if err != nil {
+        log.Println(err)
+        //http.Error(w,err.Error(),400)
+        //return
+    }
+    err = state.AcquireBuilding()
+    if err != nil {
+        log.Println(err)
+        http.Error(w,"There is a build in progress",409)
+        return
+    }
+    w.Write([]byte("Adding the nodes"))
+    go testnet.AddNodes(tn)
 }
 
 func deleteTestNetNode(w http.ResponseWriter, r *http.Request) {

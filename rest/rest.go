@@ -49,7 +49,7 @@ func StartServer() {
     router.HandleFunc("/testnets/{id}/nodes", getTestNetNodes).Methods("GET")
     router.HandleFunc("/testnets/{id}/nodes/", getTestNetNodes).Methods("GET")
 
-    router.HandleFunc("/testnets/{id}/node/", addTestNetNode).Methods("POST")
+    //router.HandleFunc("/testnets/{id}/node/", addTestNetNodes).Methods("POST")
     router.HandleFunc("/testnets/{id}/node/{nid}",deleteTestNetNode).Methods("DELETE")
     
     /**Management Functions**/
@@ -59,8 +59,8 @@ func StartServer() {
     router.HandleFunc("/status/build",buildStatus).Methods("GET")
     router.HandleFunc("/status/build/",buildStatus).Methods("GET")
 
-    router.HandleFunc("/status/servers",GetLatestServers).Methods("GET")
-    router.HandleFunc("/status/servers/",GetLatestServers).Methods("GET")
+    router.HandleFunc("/status/servers",getLatestServers).Methods("GET")
+    router.HandleFunc("/status/servers/",getLatestServers).Methods("GET")
 
     router.HandleFunc("/params/{blockchain}",getBlockChainParams).Methods("GET")
     router.HandleFunc("/params/{blockchain}/",getBlockChainParams).Methods("GET")
@@ -76,6 +76,9 @@ func StartServer() {
 
     router.HandleFunc("/nodes",getLastNodes).Methods("GET")
     router.HandleFunc("/nodes/",getLastNodes).Methods("GET")
+
+    router.HandleFunc("/nodes/{num}",addNodes).Methods("POST")
+    router.HandleFunc("/nodes/{num}/",addNodes).Methods("POST")
 
     router.HandleFunc("/build",stopBuild).Methods("DELETE")
     router.HandleFunc("/build/",stopBuild).Methods("DELETE")
@@ -185,7 +188,7 @@ func stopBuild(w http.ResponseWriter,r *http.Request){
 }
 
 
-func GetLatestServers(w http.ResponseWriter, r *http.Request) {
+func getLatestServers(w http.ResponseWriter, r *http.Request) {
     servers,err := status.GetLatestServers()
     if err != nil {
         log.Println(err)

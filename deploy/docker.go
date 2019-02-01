@@ -149,7 +149,7 @@ func DockerRunAll(server db.Server,client *util.SshClient,resources util.Resourc
 func DockerRunAppendAll(server db.Server,client *util.SshClient,resources util.Resources,start int,nodes int,image string) error {
     var command string
     for i := start; i < start+nodes; i++ {
-        state.IncrementDeployProgress()
+        //state.IncrementDeployProgress()
         tmp,err := dockerRunCmd(server,resources,i,image)
         if err != nil{
             return err
@@ -161,7 +161,7 @@ func DockerRunAppendAll(server db.Server,client *util.SshClient,resources util.R
             command += "&&" + tmp
         }
 
-        if i % 2 == 0 || i == nodes - 1 {
+        if i % 2 == 0 || i == (start+nodes) - 1 {
             res,err := client.Run(command)
             command = ""
             if err != nil {

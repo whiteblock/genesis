@@ -77,3 +77,12 @@ func GetLatestServers() ([]db.Server,error) {
     }
     return servers,nil
 }
+
+func GetLatestBuild() (db.DeploymentDetails,error) {
+    testnetId,err := GetLastTestNetId()
+    if err != nil {
+        log.Println(err)
+        return db.DeploymentDetails{},err
+    }
+    return db.GetBuildByTestnet(testnetId)
+}

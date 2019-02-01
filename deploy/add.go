@@ -9,7 +9,6 @@ import(
     db "../db"
     util "../util"
     state "../state"
-    netem "../net"
 )
 /**
  * @brief Add nodes to the network instead of building independently
@@ -62,10 +61,6 @@ func AddNodes(buildConf *Config, servers []db.Server,resources util.Resources,cl
             log.Println(err)
             return nil,err
         }
-        if conf.NeoBuild {
-            clients[i].Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
-            netem.RemoveAll(clients[i],nodes)
-        }        
         n -= nodes
         i++
 
