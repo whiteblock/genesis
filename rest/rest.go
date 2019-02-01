@@ -1,3 +1,6 @@
+/*
+    Implements the REST interface which is used to communicate with this module
+ */
 package rest
 
 import (
@@ -20,6 +23,9 @@ func init() {
     conf = util.GetConfig()
 }
 
+/*
+    Starts the rest server, blocking the calling thread from returning
+ */
 func StartServer() {
     router := mux.NewRouter()
 
@@ -97,7 +103,7 @@ func StartServer() {
 }
 
 func nodesStatus(w http.ResponseWriter, r *http.Request) {
-    out, err := status.CheckTestNetStatus()
+    out, err := status.CheckNodeStatus()
     if err != nil {
         log.Println(err.Error())
         http.Error(w,err.Error(),500)

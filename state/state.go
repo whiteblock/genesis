@@ -1,3 +1,6 @@
+/*
+    Handles global state that can be changed
+ */
 package state
 
 /*
