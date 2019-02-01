@@ -1,31 +1,30 @@
-package main
+package testnet
 
 import (
-	"errors"
-	"fmt"
-	"log"
+    "errors"
+    "fmt"
+    "log"
 
-	beam "./blockchains/beam"
-	eos "./blockchains/eos"
-	eth "./blockchains/ethereum"
-	rchain "./blockchains/rchain"
-	sys "./blockchains/syscoin"
-	db "./db"
-	deploy "./deploy"
-	state "./state"
-	util "./util"
+    beam "../blockchains/beam"
+    eos "../blockchains/eos"
+    eth "../blockchains/ethereum"
+    rchain "../blockchains/rchain"
+    sys "../blockchains/syscoin"
+    db "../db"
+    deploy "../deploy"
+    state "../state"
+    status "../status"
+    util "../util"
 )
 
-type DeploymentDetails struct {
-	Servers    []int                  `json:"servers"`
-	Blockchain string                 `json:"blockchain"`
-	Nodes      int                    `json:"nodes"`
-	Image      string                 `json:"image"`
-	Params     map[string]interface{} `json:"params"`
-	Resources  deploy.Resources       `json:"resources"`
+var conf *util.Config
+
+func init() {
+    conf = util.GetConfig()
 }
 
-func AddTestNet(details DeploymentDetails) error {
+
+func AddTestNet(details db.DeploymentDetails) error {
     defer state.DoneBuilding()
     //STEP 0: VALIDATE
     err := details.Resources.ValidateAndSetDefaults()
@@ -48,19 +47,11 @@ func AddTestNet(details DeploymentDetails) error {
     fmt.Println("Got the Servers")
 
     //STEP 2: OPEN UP THE RELEVANT SSH CONNECTIONS
-    clients := make([]*util.SshClient,len(servers))
-    defer func(clients []*util.SshClient){
-        for _,client := range clients {
-            client.Close()
-        }
-    }(clients)
-
-    for i,server := range servers {
-        clients[i],err = util.NewSshClient(server.Addr)
-        if err != nil {
-            log.Println(err)
-            return err
-        }
+    clients,err :=  GetClients(details.Servers) 
+    if err != nil {
+        log.Println(err)
+        state.ReportError(err)
+        return err
     }
     
     //STEP 3: GET THE SERVICES
@@ -141,9 +132,19 @@ func AddTestNet(details DeploymentDetails) error {
         state.ReportError(err);
         return err
     }
+    err = db.InsertBuild(details,testNetId)
+    if err != nil{
+        log.Println(err)
+        state.ReportError(err);
+        return err
+    }
     i := 0
     for _, server := range newServerData {
-        db.UpdateServerNodes(server.Id,0)
+        err = db.UpdateServerNodes(server.Id,0)
+        if err != nil{
+            log.Println(err)
+            panic(err)
+        }
         for _, ip := range server.Ips {
             node := db.Node{Id: -1, TestNetId: testNetId, Server: server.Id, LocalId: i, Ip: ip}
             if labels != nil {
@@ -159,73 +160,58 @@ func AddTestNet(details DeploymentDetails) error {
     return nil
 }
 
-func GetLastTestNetId() (int, error) {
-	testNets, err := db.GetAllTestNets()
-	if err != nil {
-		log.Println(err)
-		return 0, err
-	}
-	highestId := 0
-
-	for _, testNet := range testNets {
-		if testNet.Id > highestId {
-			highestId = testNet.Id
-		}
-	}
-	return highestId, nil
-}
 
 func GetNextTestNetId() (string, error) {
-	highestId, err := GetLastTestNetId()
-	return fmt.Sprintf("%d", highestId+1), err
+    highestId, err := status.GetLastTestNetId()
+    return fmt.Sprintf("%d", highestId+1), err
 }
 
 func RebuildTestNet(id int) {
-	panic("Not Implemented")
+    panic("Not Implemented")
 }
 
 func RemoveTestNet(id int) error {
-	nodes, err := db.GetAllNodesByTestNet(id)
-	if err != nil {
-		return err
-	}
-	for _, node := range nodes {
-		server, _, err := db.GetServer(node.Server)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		util.SshExec(server.Addr, fmt.Sprintf("~/local_deploy/deploy --kill=%d", node.LocalId))
-	}
-	return nil
+    nodes, err := db.GetAllNodesByTestNet(id)
+    if err != nil {
+        return err
+    }
+    for _, node := range nodes {
+        server, _, err := db.GetServer(node.Server)
+        if err != nil {
+            log.Println(err)
+            return err
+        }
+        util.SshExec(server.Addr, fmt.Sprintf("~/local_deploy/deploy --kill=%d", node.LocalId))
+    }
+    return nil
 }
 
 func GetParams(blockchain string) string {
-	switch blockchain {
-	case "ethereum":
-		return eth.GetParams()
-	case "syscoin":
-		return sys.GetParams()
-	case "eos":
-		return eos.GetParams()
-	case "rchain":
-		return rchain.GetParams()
-	default:
-		return "[]"
-	}
+    switch blockchain {
+    case "ethereum":
+        return eth.GetParams()
+    case "syscoin":
+        return sys.GetParams()
+    case "eos":
+        return eos.GetParams()
+    case "rchain":
+        return rchain.GetParams()
+    default:
+        return "[]"
+    }
 }
 
 func GetDefaults(blockchain string) string {
-	switch blockchain {
-	case "ethereum":
-		return eth.GetDefaults()
-	case "syscoin":
-		return sys.GetDefaults()
-	case "eos":
-		return eos.GetDefaults()
-	case "rchain":
-		return rchain.GetDefaults()
-	default:
-		return "{}"
-	}
+    switch blockchain {
+    case "ethereum":
+        return eth.GetDefaults()
+    case "syscoin":
+        return sys.GetDefaults()
+    case "eos":
+        return eos.GetDefaults()
+    case "rchain":
+        return rchain.GetDefaults()
+    default:
+        return "{}"
+    }
 }

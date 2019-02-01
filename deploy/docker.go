@@ -54,8 +54,9 @@ func DockerNetworkCreate(server db.Server,client *util.SshClient,node int) error
     
     res,err := client.Run(command)
     if err != nil{
-        res,err = client.Run(command)//end me
+        res,err = client.Run(command)
         if err != nil{
+            log.Println(err)
             return errors.New(res)
         }
         
@@ -68,6 +69,19 @@ func DockerNetworkCreateAll(server db.Server,client *util.SshClient,nodes int) e
         state.IncrementDeployProgress()
         err := DockerNetworkCreate(server,client,i)
         if err != nil {
+            log.Println(err)
+            return err
+        }
+    }
+    return nil
+}
+
+func DockerNetworkCreateAppendAll(server db.Server,client *util.SshClient,start int,nodes int) error {
+    for i := start; i < start+nodes; i++ {
+        state.IncrementDeployProgress()
+        err := DockerNetworkCreate(server,client,i)
+        if err != nil {
+            log.Println(err)
             return err
         }
     }
@@ -92,7 +106,7 @@ func DockerPull(clients []*util.SshClient,image string) error {
     return nil
 }
 
-func dockerRunCmd(server db.Server,resources Resources,node int,image string) (string,error) {
+func dockerRunCmd(server db.Server,resources util.Resources,node int,image string) (string,error) {
     command := "docker run -itd --entrypoint /bin/sh "
     command += fmt.Sprintf("--network %s%d",conf.NodeNetworkPrefix,node)
 
@@ -115,7 +129,7 @@ func dockerRunCmd(server db.Server,resources Resources,node int,image string) (s
     return command,nil
 }
 
-func DockerRun(server db.Server,client *util.SshClient,resources Resources,node int,image string) error {
+func DockerRun(server db.Server,client *util.SshClient,resources util.Resources,node int,image string) error {
     command,err := dockerRunCmd(server,resources,node,image)
     if err != nil{
         return err
@@ -128,10 +142,14 @@ func DockerRun(server db.Server,client *util.SshClient,resources Resources,node 
     return err
 }
 
-func DockerRunAll(server db.Server,client *util.SshClient,resources Resources,nodes int,image string) error {
+func DockerRunAll(server db.Server,client *util.SshClient,resources util.Resources,nodes int,image string) error {
+    return DockerRunAppendAll(server,client,resources,0,nodes,image)
+}
+
+func DockerRunAppendAll(server db.Server,client *util.SshClient,resources util.Resources,start int,nodes int,image string) error {
     var command string
-    for i := 0; i < nodes; i++ {
-        state.IncrementDeployProgress()
+    for i := start; i < start+nodes; i++ {
+        //state.IncrementDeployProgress()
         tmp,err := dockerRunCmd(server,resources,i,image)
         if err != nil{
             return err
@@ -143,7 +161,7 @@ func DockerRunAll(server db.Server,client *util.SshClient,resources Resources,no
             command += "&&" + tmp
         }
 
-        if i % 2 == 0 || i == nodes - 1 {
+        if i % 2 == 0 || i == (start+nodes) - 1 {
             res,err := client.Run(command)
             command = ""
             if err != nil {
@@ -156,6 +174,18 @@ func DockerRunAll(server db.Server,client *util.SshClient,resources Resources,no
     }
     return nil
 }
+
+/**
+ * @brief Start a service container
+ * @details [long description]
+ * 
+ * @param string [description]
+ * @param string [description]
+ * @param string [description]
+ * @param mapstring [description]
+ * @param string [description]
+ * @return [description]
+ */
 func serviceDockerRunCmd(network string,ip string,name string,env map[string]string,image string) string {
     envFlags := ""
     for k,v := range env{

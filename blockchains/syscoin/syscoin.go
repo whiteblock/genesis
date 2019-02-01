@@ -88,6 +88,10 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server,clients [
     return out,nil 
 }
 
+func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,newNodes map[int][]string) ([]string,error) {
+    return nil,nil
+}
+
 func handleConf(servers []db.Server,clients []*util.SshClient, sysconf *SysConf) ([]string,error) {
     ips := []string{}
     for _,server := range servers {

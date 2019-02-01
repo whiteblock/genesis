@@ -1,23 +1,10 @@
 package deploy
 
-import (
-    "context"
-    "fmt"
-    "golang.org/x/sync/semaphore"
-    "errors"
-    "log"
-    db "../db"
-    util "../util"
-    state "../state"
-    netem "../net"
-)
+/*
+func AddNodes(buildConf *Config, servers []db.Server,resources Resources,clients []*util.SshClient) ([]db.Server,[][]int,error)
 
-var conf *util.Config = util.GetConfig()
-/**
- * Builds out the Docker Network on pre-setup servers
- * Returns a string of all of the IP addresses 
- */
-func Build(buildConf *Config,servers []db.Server,resources util.Resources,clients []*util.SshClient,services []util.Service) ([]db.Server,error) {
+
+func Build(buildConf *Config,servers []db.Server,resources Resources,clients []*util.SshClient,services []util.Service) ([]db.Server,error) {
     state.SetDeploySteps(3*buildConf.Nodes + 2 + len(services) )
     defer state.FinishDeploy()
 
@@ -92,4 +79,4 @@ func Build(buildConf *Config,servers []db.Server,resources util.Resources,client
     }
     err = finalize(servers,clients)
     return servers, err
-}
+}*/

@@ -269,6 +269,10 @@ func createFirstConfigFile(server db.Server,node int,rchainConf *RChainConf,infl
     return util.Rm("./rnode.toml")
 }
 
+func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,newNodes map[int][]string) ([]string,error) {
+    return nil,nil
+}
+
 func createConfigFile(bootnodeAddr string,rchainConf *RChainConf,influxIP string) error {
     data := util.CombineConfig([]string{
         "\n[server]",

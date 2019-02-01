@@ -228,8 +228,28 @@ func UpdateServer(id int,server Server) error {
 }
 
 func UpdateServerNodes(id int,nodes int) error {
-    _,err := db.Exec(fmt.Sprintf("UPDATE %s SET nodes = %d WHERE id = %d",ServerTable,id,nodes))
-    return err
+
+    db := getDB()
+    defer db.Close()
+
+    tx,err := db.Begin()
+    if err != nil {
+        return err
+    }
+
+    stmt,err := tx.Prepare(fmt.Sprintf("UPDATE %s SET nodes = ? WHERE id = ?",ServerTable))
+
+    if err != nil {
+        return err
+    }
+    defer stmt.Close()
+
+    _,err = stmt.Exec(nodes,id)
+    if err != nil {
+        return err
+    }
+    return tx.Commit()
+
 }
 
 func GetHostIPsByTestNet(id int) ([]string,error) {
