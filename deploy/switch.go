@@ -9,10 +9,11 @@ import (
     "log"
 )
 
-func getConfig(host string) (*vyos.Config, string,error) {
+func getConfig(client *util.SshClient) (*vyos.Config, string,error) {
 
-    data,err := util.SshExec(host,"cat /config/config.boot")
+    data,err := client.Run("cat /config/config.boot")
     if err != nil{
+        log.Println(err)
         return nil,"",err
     }
     config := vyos.NewConfig(data)
@@ -31,7 +32,19 @@ func PrepareSwitches(server db.Server,nodes int) error {
         setupHPSwitch(server,nodes)
         return nil
     }
-    config,_,err := getConfig(server.Switches[0].Addr)
+    client,err := util.NewSshClient(server.Switches[0].Addr)
+    if err != nil{
+        log.Println(err)
+        return err
+    }
+    defer client.Close()
+
+    config,_,err := getConfig(client)
+    if err != nil{
+        log.Println(err)
+        return err
+    }
+
     gws := util.GetGateways(server.ServerID, nodes)
     config.RemoveVifs(server.Switches[0].Iface)
     config.SetIfaceAddr(server.Switches[0].Iface,fmt.Sprintf("%s/%d",server.Iaddr.Gateway,server.Iaddr.Subnet))//Update this later on to be more dynamic
@@ -59,17 +72,17 @@ func PrepareSwitches(server db.Server,nodes int) error {
         return err
     }
     defer util.Rm("config.boot")
-    err = util.Scp(server.Switches[0].Addr,"./config.boot","/config/config.boot")
+    err = client.Scp("./config.boot","/config/config.boot")
     if err != nil{
         log.Println(err)
         return err
     }
-    util.Scp(server.Switches[0].Addr,"./install.sh",conf.VyosHomeDir+"/install.sh")
+    client.Scp("./install.sh",conf.VyosHomeDir+"/install.sh")
     if err != nil{
         log.Println(err)
         return err
     }
-    _,err = util.SshExec(server.Switches[0].Addr,"chmod +x ./install.sh && ./install.sh")
+    _,err = client.Run("chmod +x ./install.sh && ./install.sh")
     if err != nil {
         log.Println(err)
         return err

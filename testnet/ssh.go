@@ -2,6 +2,7 @@ package testnet
 
 
 import(
+    "sync"
     "log"
     util "../util"
     db "../db"
@@ -11,6 +12,8 @@ import(
 
 var _clients = map[int]*util.SshClient{}
 
+var _mux = sync.Mutex{}
+
 /*
     GetClient retrieves the ssh client for running a command
     on a remote server based on server id. It will create one if it
@@ -19,6 +22,8 @@ var _clients = map[int]*util.SshClient{}
 func GetClient(id int)(*util.SshClient,error) {
     cli,ok := _clients[id]
     if !ok || cli == nil{
+        _mux.Lock()
+        defer _mux.Unlock()
         server,_,err := db.GetServer(id)
         if err != nil {
             log.Println(err)

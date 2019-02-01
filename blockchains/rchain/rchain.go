@@ -47,7 +47,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         }
     }
     /**Setup the first node**/
-    err = createFirstConfigFile(servers[0],0,rchainConf,services["wb_influx_proxy"])
+    err = createFirstConfigFile(clients[0],0,rchainConf,services["wb_influx_proxy"])
     if err != nil{
         log.Println(err)
         return nil,err
@@ -208,7 +208,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 }
 
 
-func createFirstConfigFile(server db.Server,node int,rchainConf *RChainConf,influxIP string) error {
+func createFirstConfigFile(client *util.SshClient,node int,rchainConf *RChainConf,influxIP string) error {
     data := util.CombineConfig([]string{
         "[server]",
         "host = \"0.0.0.0\"",
@@ -251,17 +251,17 @@ func createFirstConfigFile(server db.Server,node int,rchainConf *RChainConf,infl
         log.Println(err)
         return err
     }
-    err = util.Scp(server.Addr,"./rnode.toml","/home/appo/rnode.toml")
+    err = client.Scp("./rnode.toml","/home/appo/rnode.toml")
     if err != nil{
         log.Println(err)
         return err
     }
-    _,err = util.SshExec(server.Addr,fmt.Sprintf("docker cp /home/appo/rnode.toml whiteblock-node%d:/datadir/rnode.toml",node))
+    _,err = client.Run(fmt.Sprintf("docker cp /home/appo/rnode.toml whiteblock-node%d:/datadir/rnode.toml",node))
     if err != nil{
         log.Println(err)
         return err
     }
-    _,err = util.SshExec(server.Addr,"rm -f ~/rnode.toml")
+    _,err = client.Run("rm -f ~/rnode.toml")
     if err != nil{
         log.Println(err)
         return err
