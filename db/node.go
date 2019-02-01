@@ -8,17 +8,36 @@ import(
     util "../util"
 )
 
-//TODO: Fix broken naming convention
+/*
+    Node represents a node within the network
+ */
 type Node struct {  
     Id          int     `json:"id"`
+    /*
+        TestNetId is the id of the testnet to which the node belongs to
+     */
     TestNetId   int     `json:"testNetId"`
+    /*
+        Server is the id of the server on which the node resides
+     */
     Server      int     `json:"server"`
+    /*
+        LocalId is the number of the node in the testnet
+     */
     LocalId     int     `json:"localId"`
+    /*
+        Ip is the ip address of the node
+     */
     Ip          string  `json:"ip"`
+    /*
+        Label is the string given to the node by the build process
+     */
     Label       string  `json:"label"`
 }
 
-
+/*
+    GetAllNodesByServer gets all nodes that have ever existed on a server
+ */
 func GetAllNodesByServer(serverId int) ([]Node,error) {
 
     rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE server = %d",NodesTable ))
@@ -39,6 +58,9 @@ func GetAllNodesByServer(serverId int) ([]Node,error) {
     return nodes,nil
 }
 
+/*
+    GetAllNodesByTestNet gets all the nodes which are in the given testnet
+ */
 func GetAllNodesByTestNet(testId int) ([]Node,error) {
     nodes := []Node{}
 
@@ -60,6 +82,9 @@ func GetAllNodesByTestNet(testId int) ([]Node,error) {
     return nodes, nil
 }
 
+/*
+    GetAllNodes gets every node that has ever existed.
+ */
 func GetAllNodes() ([]Node,error) {
 
     rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s",NodesTable ))
@@ -80,6 +105,9 @@ func GetAllNodes() ([]Node,error) {
     return nodes,nil
 }
 
+/*
+    GetNode fetches a node by id
+ */
 func GetNode(id int) (Node,error) {
 
     row :=  db.QueryRow(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE id = %d",NodesTable,id))
@@ -93,6 +121,9 @@ func GetNode(id int) (Node,error) {
     return node, nil
 }
 
+/*
+    InsertNode inserts a node into the database
+ */
 func InsertNode(node Node) (int,error) {
 
     tx,err := db.Begin()
@@ -118,19 +149,29 @@ func InsertNode(node Node) (int,error) {
     return int(id), err
 }
 
-
+/*
+    DeleteNode removes a node from the database
+    (Deprecated)
+ */
 func DeleteNode(id int) error {
 
     _,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",NodesTable,id))
     return err
 }
 
+/*
+    DeleteNodesByTestNet removes all nodes in a testnet from the database. 
+    (Deprecated)
+ */
 func DeleteNodesByTestNet(id int) error {
 
     _,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE test_net = %d",NodesTable,id))
     return err
 }   
 
+/*
+    DeleteNodesByServer delete all nodes which have ever been on a given server.
+ */
 func DeleteNodesByServer(id int) error {
 
     _, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE server = %d",NodesTable,id))
@@ -140,6 +181,11 @@ func DeleteNodesByServer(id int) error {
 
 /*******COMMON QUERY FUNCTIONS********/
 
+/*
+    GetAvailibleNodes gets the node numbers which are availible on a server,
+    up to nodesRequested. 
+    (Deprecated)
+ */
 func GetAvailibleNodes(serverId int, nodesRequested int) ([]int,error){
 
     nodes,err := GetAllNodesByServer(serverId)

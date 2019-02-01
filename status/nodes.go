@@ -9,14 +9,20 @@ import (
     db "../db"
 )
 
-type TestNetStatus struct {
+/*
+    Represents the status of the node
+ */
+type NodeStatus struct {
     Name        string  `json:"name"`
     Server      int     `json:"server"`
     Up          bool    `json:"up"`
     Cpu         float64 `json:"cpu"`
 }
 
-func FindNodeIndex(status []TestNetStatus,name string,serverId int) int {
+/*
+    Finds the index of a node by name and server id
+ */
+func FindNodeIndex(status []NodeStatus,name string,serverId int) int {
     for i,stat := range status {
         if stat.Name == name && serverId == stat.Server {
             return i
@@ -25,6 +31,9 @@ func FindNodeIndex(status []TestNetStatus,name string,serverId int) int {
     return -1
 }
 
+/*
+    Gets the cpu usage of a node
+ */
 func SumCpuUsage(c *util.SshClient,name string) (float64,error) {
     res,err := c.Run(fmt.Sprintf("docker exec %s ps aux --no-headers | awk '{print $3}'",name))
     if err != nil {
@@ -46,7 +55,10 @@ func SumCpuUsage(c *util.SshClient,name string) (float64,error) {
     return out, nil
 }
 
-func CheckTestNetStatus() ([]TestNetStatus, error) {
+/*
+    Checks the status of the nodes in the current testnet
+ */
+func CheckNodeStatus() ([]NodeStatus, error) {
     testnetId,err := GetLastTestNetId()
     if err != nil {
         return nil,err
@@ -58,7 +70,7 @@ func CheckTestNetStatus() ([]TestNetStatus, error) {
     }
 
     serverIds := []int{}
-    out := []TestNetStatus{}
+    out := []NodeStatus{}
 
     for _, node := range nodes {
         push := true
@@ -70,7 +82,7 @@ func CheckTestNetStatus() ([]TestNetStatus, error) {
         if push {
             serverIds = append(serverIds,node.Server)
         }
-        initStatus := TestNetStatus{
+        initStatus := NodeStatus{
                             Name:fmt.Sprintf("whiteblock-node%d",node.LocalId),
                             Server:node.Server,
                             Up:false,

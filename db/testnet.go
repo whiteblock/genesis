@@ -15,7 +15,9 @@ type TestNet struct {
 	Image		string	`json:"image"`
 }
 
-
+/*
+	Get all of the testnets
+ */
 func GetAllTestNets() ([]TestNet,error) {
 
 	rows, err :=  db.Query(fmt.Sprintf("SELECT id, blockchain, nodes, image FROM %s",TestTable ))
@@ -38,6 +40,9 @@ func GetAllTestNets() ([]TestNet,error) {
 	return testnets,nil
 }
 
+/*
+	Get a testnet by id
+ */
 func GetTestNet(id int) (TestNet,error) {
 
 	row :=  db.QueryRow(fmt.Sprintf("SELECT id,blockchain,nodes,image FROM %s WHERE id = %d",TestTable,id))
@@ -51,6 +56,9 @@ func GetTestNet(id int) (TestNet,error) {
 	return testnet, nil
 }
 
+/*
+	Insert a testnet into the database
+ */
 func InsertTestNet(testnet TestNet) (int,error) {
 
 	tx,err := db.Begin()
@@ -88,7 +96,9 @@ func InsertTestNet(testnet TestNet) (int,error) {
 	return int(id),nil
 }
 
-
+/*
+	Delete a testnet by id
+*/
 func DeleteTestNet(id int) error {
 
 	_,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",TestTable,id))
@@ -100,6 +110,9 @@ func DeleteTestNet(id int) error {
 	return nil
 }
 
+/*
+	Update a testnet by id
+*/
 func UpdateTestNet(id int,testnet TestNet) error {
 
 	tx,err := db.Begin()
@@ -126,6 +139,9 @@ func UpdateTestNet(id int,testnet TestNet) error {
 
 }
 
+/*
+	Update the number of nodes in a testnet
+*/
 func UpdateTestNetNodes(id int,nodes int) error {
 	_, err := db.Exec(fmt.Sprintf("UPDATE %s SET nodes = %d WHERE id = %d",TestTable,id,nodes))
 	return err

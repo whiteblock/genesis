@@ -1,3 +1,6 @@
+/*
+Handles functions related to the current state of the network
+ */
 package status
 
 import(
@@ -14,6 +17,9 @@ type BuildStatus struct {
 }
 
 
+/*
+    Check the current status of the build
+ */
 func CheckBuildStatus() string {
     if state.ErrorFree() {
         return fmt.Sprintf("{\"progress\":%f,\"error\":null,\"stage\":\"%s\"}",state.BuildingProgress,state.BuildStage)

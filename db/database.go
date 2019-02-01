@@ -1,4 +1,7 @@
-package db;
+/*
+    Manages persistent state and keeps track of previous and current builds.
+ */
+package db
 
 import(
     _ "github.com/mattn/go-sqlite3"
@@ -119,7 +122,10 @@ func dbInit() {
 
 }
 
-
+/*
+    InsertLocalServers adds the default server(s) to the servers database, allowing immediate use of the application
+    without having to register a server
+ */
 func InsertLocalServers(db *sql.DB) {
     InsertServer("cloud",
         Server{

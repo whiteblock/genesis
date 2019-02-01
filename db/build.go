@@ -8,17 +8,38 @@ import(
     util "../util"
 )
 
+/*
+    DeploymentDetails represents the data for the construction of a testnet.
+ */
 type DeploymentDetails struct {
+    /*
+        Servers: The ids of the servers to build on 
+    */
     Servers    []int                  `json:"servers"`
+    /*
+        Blockchain: The blockchain to build.
+     */
     Blockchain string                 `json:"blockchain"`
+    /*
+        Nodes:  The number of nodes to build
+     */
     Nodes      int                    `json:"nodes"`
+    /*
+        Image: The docker image to build off of
+     */
     Image      string                 `json:"image"`
+    /*
+        Params: The blockchain specific parameters
+     */
     Params     map[string]interface{} `json:"params"`
+    /*
+        Resources: The resources per node
+     */
     Resources  util.Resources         `json:"resources"`
 }
 
-/**
- * Get all of the builds done by a user
+/*
+    Get all of the builds done by a user
  */
 func GetAllBuilds() ([]DeploymentDetails,error) {
     rows, err :=  db.Query(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources FROM %s",BuildsTable ))
@@ -61,8 +82,8 @@ func GetAllBuilds() ([]DeploymentDetails,error) {
     return builds,nil
 }
 
-/**
- * Get the build paramters based off testnet id
+/*
+    Get the build paramters based off testnet id
  */
 func GetBuildByTestnet(id int) (DeploymentDetails, error) {
 
@@ -97,8 +118,8 @@ func GetBuildByTestnet(id int) (DeploymentDetails, error) {
     return build, nil
 }
 
-/**
- * Insert a build
+/*
+    Insert a build
  */
 func InsertBuild(dd DeploymentDetails,testnetId int) error {
 

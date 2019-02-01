@@ -9,6 +9,9 @@ import(
     "log"
 )
 
+/*
+    Represents the switch which will manage the networking for a server
+ */
 type Switch struct {
     Addr    string  `json:"addr"`
     Iface   string  `json:"iface"`
@@ -16,6 +19,9 @@ type Switch struct {
     Id      int     `json:"id"`
 }
 
+/*
+    Validate ensures that the switch is given in a correct format.
+ */
 func (s Switch) Validate() error {
     var re = regexp.MustCompile(`(?m)[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}`)
     if !re.Match([]byte(s.Addr)) {
@@ -27,6 +33,9 @@ func (s Switch) Validate() error {
     return nil
 }
 
+/*
+    GetAllSwitches fetches all switches in the database
+ */
 func GetAllSwitches() ([]Switch,error) {
 
     rows, err :=  db.Query(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s",SwitchTable ))
@@ -49,6 +58,9 @@ func GetAllSwitches() ([]Switch,error) {
     return switches,nil
 }
 
+/*
+    GetSwitchById fetches a switch based off of its id
+ */
 func GetSwitchById(id int) (Switch, error) {
 
     row := db.QueryRow(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s WHERE id = %d",SwitchTable,id))
@@ -62,6 +74,10 @@ func GetSwitchById(id int) (Switch, error) {
     return swtch, nil
 }
 
+/*
+    GetSwitchByIP fetches a switch based off of its management ip. If there are multiple switches with
+    the same management ip, which switch will be returned is undefined.
+ */
 func GetSwitchByIP(ip string) (Switch, error) {
 
     row := db.QueryRow(fmt.Sprintf("SELECT id,addr,iface,brand FROM %s WHERE addr = %s",SwitchTable,ip))
@@ -75,6 +91,9 @@ func GetSwitchByIP(ip string) (Switch, error) {
     return swtch, nil
 }
 
+/*
+    InsertSwitch inserts a switch into the database
+ */
 func InsertSwitch(swtch Switch) (int,error) {
 
     tx,err := db.Begin()
@@ -114,12 +133,18 @@ func InsertSwitch(swtch Switch) (int,error) {
     return int(id),nil
 }
 
+/*
+    DeleteSwitch deletes a switch from the database by id
+ */
 func DeleteSwitch(id int) error {
 
     _,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",SwitchTable,id))
     return err
 }
 
+/*
+    UpdateSwitch updates data on a switch by id
+ */
 func UpdateSwitch(id int,swtch Switch) error {
 
     tx,err := db.Begin()

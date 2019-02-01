@@ -5,6 +5,9 @@ import(
     db "../db"
 )
 
+/*
+    Get the id of the latest testnet
+ */
 func GetLastTestNetId() (int,error) {
     testNets,err := db.GetAllTestNets()
     if err != nil{
@@ -21,6 +24,9 @@ func GetLastTestNetId() (int,error) {
     return highestId,nil
 }
 
+/*
+    Get the latest testnet
+ */
 func GetLatestTestnet() (db.TestNet,error) {
     testnetId,err := GetLastTestNetId()
     if err != nil {
@@ -30,6 +36,9 @@ func GetLatestTestnet() (db.TestNet,error) {
     return db.GetTestNet(testnetId)
 }
 
+/*
+    Get all of the nodes in the latest testnet
+ */
 func GetLatestTestnetNodes() ([]db.Node,error){
     testnetId,err := GetLastTestNetId()
     if err != nil {
@@ -39,7 +48,10 @@ func GetLatestTestnetNodes() ([]db.Node,error){
     return db.GetAllNodesByTestNet(testnetId)
 }
 
-
+/*
+    Get the servers used in the latest testnet, populated with the 
+    ips of all the nodes
+ */
 func GetLatestServers() ([]db.Server,error) {
     nodes,err := GetLatestTestnetNodes()
     if err != nil {
@@ -78,6 +90,9 @@ func GetLatestServers() ([]db.Server,error) {
     return servers,nil
 }
 
+/*
+    Get the last successful build parameters
+ */
 func GetLatestBuild() (db.DeploymentDetails,error) {
     testnetId,err := GetLastTestNetId()
     if err != nil {

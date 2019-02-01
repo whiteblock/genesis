@@ -5,7 +5,6 @@ import (
     "strings"
     "io/ioutil"
     "golang.org/x/crypto/ssh"
-    "log"
 )
 
 func sshConnect(host string) (*ssh.Client, error) {
@@ -16,9 +15,7 @@ func sshConnect(host string) (*ssh.Client, error) {
     sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 
     client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", host), sshConfig)
-    /*if err != nil {
-        fmt.Println("First ssh attempt failed: " + err.Error())
-    }*/
+
     if err != nil {//Try to connect using the id_rsa file
         key, err := ioutil.ReadFile(conf.RsaKey)
         if err != nil {
