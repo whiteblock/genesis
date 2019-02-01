@@ -8,23 +8,6 @@ import (
     "log"
 )
 
-
-func _sshConnect(host string) (*ssh.Session,*ssh.Client, error) {
-    client,err := sshConnect(host)
-    if err != nil {
-        log.Println(err)
-        return nil, nil, err
-    }
-    session, err := client.NewSession()
-    if err != nil {
-        client.Close()
-        log.Println(err)
-        return nil, nil, err
-    }
-
-    return session,client, nil
-}
-
 func sshConnect(host string) (*ssh.Client, error) {
     sshConfig := &ssh.ClientConfig{
         User: conf.SshUser,
@@ -58,16 +41,11 @@ func sshConnect(host string) (*ssh.Client, error) {
             return nil,err
         }
     }
-
-
     return client, nil
 }
 
-
-/**
- * The base path of the given path
- * @param  string   path    The absolute path
- * @return string           The path up to the last dir/file
+/*
+    GetPath extracts the base path of the given path
  */
 func GetPath(path string) string {
     index := strings.LastIndex(path, "/")

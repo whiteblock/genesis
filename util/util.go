@@ -1,3 +1,8 @@
+/*
+    Provides a multitude of support functions to 
+    help make development easier. Use of these functions should be prefered,
+    as it allows for easier maintainence.
+ */
 package util
 
 import (
@@ -17,10 +22,9 @@ import (
 
 /****Basic Linux Functions****/
 
-/**
- * Remove directories or files
- * @param  ...string    directories The directories and files to delete
- */
+/*
+    Rm removes all of the given directories or files
+*/
 func Rm(directories ...string) error {
     for _, directory := range directories {
         if conf.Verbose {
@@ -37,9 +41,8 @@ func Rm(directories ...string) error {
     return nil
 }
 
-/**
- * Create a directory
- * @param  string   directory   The directory to create
+/*
+    Mkdir creates a directory
  */
 func Mkdir(directory string) error {
     if conf.Verbose {
@@ -48,10 +51,8 @@ func Mkdir(directory string) error {
     return os.MkdirAll(directory,0755)
 }
 
-/**
- * Copy a file
- * @param  string   src     The source of the file
- * @param  string   dest    The destination for the file
+/*
+    Cp copies a file
  */
 func Cp(src string, dest string) error {
     if conf.Verbose {
@@ -62,10 +63,8 @@ func Cp(src string, dest string) error {
     return cmd.Run()
 }
 
-/**
- * Copy a directory
- * @param  string   src     The source of the directory
- * @param  string   dest    The destination for the directory
+/*
+    Cpr copies a directory
  */
 func Cpr(src string,dest string) error {
     if conf.Verbose {
@@ -76,11 +75,11 @@ func Cpr(src string,dest string) error {
     return cmd.Run()
 }
 
-/**
- * Write data to a file
- * @param  string   path    The file to write to
- * @param  string   data    The data to write to the file
- */
+
+ /*
+    Write writes data to a file, creating it if it doesn't exist,
+    deleting and recreating it if it does.
+  */
 func Write(path string,data string) error {
     if conf.Verbose {
         fmt.Printf("Writing to file %s...",path)
@@ -94,10 +93,8 @@ func Write(path string,data string) error {
     return err
 }
 
-/**
- * Lists the contents of a directory recursively
- * @param  string   _dir    The directory
- * @return []string         List of the contents of the directory
+/*
+    Lsr lists the contents of a directory recursively
  */
 func Lsr(_dir string) ([]string,error) {
     dir := _dir
@@ -123,8 +120,8 @@ func Lsr(_dir string) ([]string,error) {
     return out,nil
 }
 
-/**
- * List directories in order of construction
+/*
+   LsDir lists directories in order of construction
  */
 func LsDir(_dir string) ([]string,error) {
     dir := _dir
@@ -150,9 +147,10 @@ func LsDir(_dir string) ([]string,error) {
 }
 
 
-/**
- * Combine an Array with \n as the delimiter
- */
+/*
+    CombineConfig combines an Array with \n as the delimiter.
+    Useful for generating configuration files.
+*/
 func CombineConfig(entries []string) string {
     out := ""
     for _,entry := range entries {
@@ -161,11 +159,9 @@ func CombineConfig(entries []string) string {
     return out
 }
 
-/**
- * Execute _cmd in bash then return the result
- * @param  string   _cmd    The command to execute
- * @return string           The result of execution
- */
+/*
+    BashExec executes _cmd in bash then return the result
+*/
 func BashExec(_cmd string) (string,error) {
     if conf.Verbose {
         fmt.Printf("Executing : %s\n",_cmd)
@@ -188,10 +184,18 @@ func BashExec(_cmd string) (string,error) {
     return resultsRaw.String(),nil
 }
 
+/*
+    IntArrRemove removes an element from an array of ints
+ */
 func IntArrRemove(op []int,index int) []int {
     return append(op[:index],op[index+1:]...)
 }
 
+/*
+    IntArrFill fills the elements of an array according the given 
+    function, and then returns it.
+    f takes in the index and returns the value to place at that index.
+ */
 func IntArrFill(size int, f func(int) int) []int {
     out := make([]int,size)
     for i := 0; i < size; i++ {
@@ -200,7 +204,10 @@ func IntArrFill(size int, f func(int) int) []int {
     return out
 }
 
-
+/*
+    Distribute generates a roughly uniform random distribution for connections
+    among nodes. 
+ */
 func Distribute(nodes []string,dist []int) ([][]string,error){
     if len(nodes) < 2 {
         return nil,errors.New("Cannot distribute a series smaller than 1")
@@ -242,7 +249,10 @@ func Distribute(nodes []string,dist []int) ([][]string,error){
     return out,nil
 }
 
-
+/*
+    GetJSONNumber checks and extracts a json.Number from data[field].
+    Will return an error if data[field] does not exist or is of the wrong type.
+ */
 func GetJSONNumber(data map[string]interface{},field string) (json.Number,error){
     rawValue,exists := data[field]
     if exists && rawValue != nil {
@@ -259,7 +269,10 @@ func GetJSONNumber(data map[string]interface{},field string) (json.Number,error)
     return "",errors.New("Incorrect type for "+field+" given")
 }
 
-
+/*
+    GetJSONInt64 checks and extracts a int64 from data[field].
+    Will return an error if data[field] does not exist or is of the wrong type.
+ */
 func GetJSONInt64(data map[string]interface{},field string) (int64,error){
     rawValue,exists := data[field]
     if exists && rawValue != nil {
@@ -276,6 +289,10 @@ func GetJSONInt64(data map[string]interface{},field string) (int64,error){
     return 0,errors.New("Incorrect type for "+field+" given")
 }
 
+/*
+    GetJSONInt64 checks and extracts a []string from data[field].
+    Will return an error if data[field] does not exist or is of the wrong type.
+ */
 func GetJSONStringArr(data map[string]interface{},field string) ([]string,error){
     rawValue,exists := data[field]
     if exists && rawValue != nil {
@@ -292,6 +309,10 @@ func GetJSONStringArr(data map[string]interface{},field string) ([]string,error)
     return nil,errors.New("Incorrect type for "+field+" given")
 }
 
+/*
+    GetJSONInt64 checks and extracts a string from data[field].
+    Will return an error if data[field] does not exist or is of the wrong type.
+ */
 func GetJSONString(data map[string]interface{},field string) (string,error){
     rawValue,exists := data[field]
     if exists && rawValue != nil {
@@ -308,6 +329,10 @@ func GetJSONString(data map[string]interface{},field string) (string,error){
     return "",errors.New("Incorrect type for "+field+" given")
 }
 
+/*
+    GetJSONInt64 checks and extracts a bool from data[field].
+    Will return an error if data[field] does not exist or is of the wrong type.
+ */
 func GetJSONBool(data map[string]interface{},field string) (bool,error){
     rawValue,exists := data[field]
     if exists && rawValue != nil {

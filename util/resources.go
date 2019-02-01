@@ -7,8 +7,22 @@ import(
     "fmt"
 )
 
+/*
+    Resources represents the maximum amount of resources 
+    that a node can use. 
+ */
 type Resources struct{
+    /*
+        Cpus should be a floating point value represented as a string, and
+        is  equivalent to the percentage of a single cores time which can be used
+        by a node. Can be more than 1.0, meaning the node can use multiple cores at 
+        a time.
+     */
     Cpus    string  `json:"cpus"`
+    /*
+        Memory supports values up to Terrabytes (tb). If the unit is ommited, then it
+        is assumed to be bytes. This is not case sensitive.
+     */
     Memory  string  `json:"memory"`
 }
 
@@ -40,13 +54,17 @@ func memconv(mem string) (int64,error){
     }
     return i*multiplier,nil
 }
-/**
- * Return the memory value as an integer
+/*
+    GetMemory gets the memory value as an integer.
  */
 func (this Resources) GetMemory() (int64,error) {
     return memconv(this.Memory)
 }
 
+/*
+    Validate ensures that the given resource object is valid, and
+    allowable.
+ */
 func (this Resources) Validate() error {
     if this.NoLimits() {
         return nil
@@ -80,6 +98,10 @@ func (this Resources) Validate() error {
     return nil
 }
 
+/*
+    ValidateAndSetDefaults calls Validate, and if it is valid, fills any missing
+    information. Helps to ensure that the Maximum limits are enforced.
+ */
 func (this Resources) ValidateAndSetDefaults() error {
     err := this.Validate()
     if err != nil {
@@ -94,14 +116,23 @@ func (this Resources) ValidateAndSetDefaults() error {
     return nil
 }
 
+/*
+    NoLimits checks if the resources object doesn't specify any limits
+ */
 func (this Resources) NoLimits() bool{
     return len(this.Memory) == 0 && len(this.Cpus) == 0
 }
 
+/*
+    NoCpuLimits checks if the resources object doesn't specify any cpu limits
+ */
 func (this Resources) NoCpuLimits() bool {
     return len(this.Cpus) == 0
 }
 
+/*
+    NoMemoryLimits checks if the resources object doesn't specify any memory limits
+ */
 func (this Resources) NoMemoryLimits() bool {
     return len(this.Memory) == 0
 }
