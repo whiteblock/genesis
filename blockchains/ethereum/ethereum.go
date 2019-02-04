@@ -316,6 +316,9 @@ func createGenesisfile(ethconf *EthConf,wallets []string) error {
         }
         alloc += "\n"
     }
+    if ethconf.ExtraAccounts > 0 {
+        alloc += ","
+    }
     for i,wallet := range MakeFakeAccounts(int(ethconf.ExtraAccounts)) {
         alloc += fmt.Sprintf("\t\t\"%s\":{\"balance\":\"%s\"}",wallet,ethconf.InitBalance)
         if len(wallets) - 1 != i {
