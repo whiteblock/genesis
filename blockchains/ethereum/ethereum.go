@@ -287,6 +287,18 @@ func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
     return nil,nil
 }
 
+func MakeFakeAccounts(accs int) []string {  
+    out := []string{}
+    for i := 1; i <= accs; i++ {
+        acc := fmt.Sprintf("%X",i)
+        for j := len(acc); j < 40; j++ {
+                acc = "0"+acc
+            }
+        acc = "0x"+acc
+        out = append(out,acc)
+    }
+    return out
+}
 
 
 /**
@@ -294,9 +306,17 @@ func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
  * @param  *EthConf ethconf     The chain configuration
  * @param  []string wallets     The wallets to be allocated a balance
  */
+
 func createGenesisfile(ethconf *EthConf,wallets []string) error {
     alloc := "\n"
     for i,wallet := range wallets {
+        alloc += fmt.Sprintf("\t\t\"%s\":{\"balance\":\"%s\"}",wallet,ethconf.InitBalance)
+        if len(wallets) - 1 != i {
+            alloc += ","
+        }
+        alloc += "\n"
+    }
+    for i,wallet := range MakeFakeAccounts(int(ethconf.ExtraAccounts)) {
         alloc += fmt.Sprintf("\t\t\"%s\":{\"balance\":\"%s\"}",wallet,ethconf.InitBalance)
         if len(wallets) - 1 != i {
             alloc += ","
