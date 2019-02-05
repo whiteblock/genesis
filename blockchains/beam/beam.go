@@ -202,3 +202,8 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 	}
 	return nil, nil
 }
+
+
+func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,newNodes map[int][]string) ([]string,error) {
+    return nil,nil
+}
