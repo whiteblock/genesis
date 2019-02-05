@@ -8,6 +8,7 @@ import (
     "regexp"
     "errors"
     "log"
+    "os"
     util "../../util"
     db "../../db"
     state "../../state"
@@ -308,28 +309,16 @@ func MakeFakeAccounts(accs int) []string {
  */
 
 func createGenesisfile(ethconf *EthConf,wallets []string) error {
-    alloc := "\n"
-    for i,wallet := range wallets {
-        alloc += fmt.Sprintf("\t\t\"%s\":{\"balance\":\"%s\"}",wallet,ethconf.InitBalance)
-        if len(wallets) - 1 != i {
-            alloc += ","
-        }
-        alloc += "\n"
+   
+
+
+
+    file,err := os.Create("tmp/CustomGenesis.json")
+    if err != nil {
+        log.Println(err)
+        return err
     }
-    if ethconf.ExtraAccounts > 0 {
-        alloc += ","
-    }
-    accs := MakeFakeAccounts(int(ethconf.ExtraAccounts))
-    lenAccs := len(accs)
-    for i,wallet := range accs {
-        alloc += fmt.Sprintf("\t\t\"%s\":{\"balance\":\"%s\"}",wallet,ethconf.InitBalance)
-        if lenAccs - 1 != i {
-            alloc += ",\n"
-        }else{
-            alloc += "\n"
-        }
-        
-    }
+    defer file.Close()
 
     genesis := fmt.Sprintf(
 `{
@@ -341,17 +330,85 @@ func createGenesisfile(ethconf *EthConf,wallets []string) error {
     },
     "difficulty": "0x0%X",
     "gasLimit": "0x0%X",
-    "alloc": {%s    }
-}`,
+    "alloc": {`,
     ethconf.ChainId,
     ethconf.HomesteadBlock,
     ethconf.Eip155Block,
     ethconf.Eip158Block,
     ethconf.Difficulty,
-    ethconf.GasLimit,
-    alloc)
+    ethconf.GasLimit)
 
-    return util.Write("tmp/CustomGenesis.json",genesis)
+    _,err = file.Write([]byte(genesis))
+    if err != nil {
+        log.Println(err)
+        return err
+    }
+
+    //Fund the accounts
+    _,err = file.Write([]byte("\n"))
+    if err != nil {
+        log.Println(err)
+        return err
+    }
+    for i,wallet := range wallets {
+        _,err = file.Write([]byte(fmt.Sprintf("\t\t\"%s\":{\"balance\":\"%s\"}",wallet,ethconf.InitBalance)))
+        if err != nil {
+            log.Println(err)
+            return err
+        }
+        if len(wallets) - 1 != i {
+            _,err = file.Write([]byte(","))
+            if err != nil {
+                log.Println(err)
+                return err
+            }
+        }
+        _,err = file.Write([]byte("\n"))
+        if err != nil {
+            log.Println(err)
+            return err
+        }
+    }
+    if ethconf.ExtraAccounts > 0 {
+        _,err = file.Write([]byte(","))
+        if err != nil {
+            log.Println(err)
+            return err
+        }
+    }
+    accs := MakeFakeAccounts(int(ethconf.ExtraAccounts))
+    log.Println("Finished making fake accounts")
+    lenAccs := len(accs)
+    for i,wallet := range accs {
+        _,err = file.Write([]byte(fmt.Sprintf("\t\t\"%s\":{\"balance\":\"%s\"}",wallet,ethconf.InitBalance)))
+        if err != nil {
+            log.Println(err)
+            return err
+        }
+
+        if lenAccs - 1 != i {
+            _,err = file.Write([]byte(",\n"))
+            if err != nil {
+                log.Println(err)
+                return err
+            }
+        }else{
+            _,err = file.Write([]byte("\n"))
+            if err != nil {
+                log.Println(err)
+                return err
+            }
+        }
+        
+    }
+
+
+    _,err = file.Write([]byte("\n\t}\n}"))
+    if err != nil {
+        log.Println(err)
+        return err
+    }
+    return nil
 }
 
 /**
