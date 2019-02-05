@@ -289,14 +289,14 @@ func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
 }
 
 func MakeFakeAccounts(accs int) []string {  
-    out := []string{}
+    out := make([]string,accs)
     for i := 1; i <= accs; i++ {
         acc := fmt.Sprintf("%X",i)
         for j := len(acc); j < 40; j++ {
                 acc = "0"+acc
             }
         acc = "0x"+acc
-        out = append(out,acc)
+        out[i-1] = acc
     }
     return out
 }
