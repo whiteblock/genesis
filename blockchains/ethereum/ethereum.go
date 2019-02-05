@@ -449,9 +449,10 @@ func initNodeDirectories(nodes int,networkId int64,servers []db.Server) error {
         for _,ip := range server.Ips{
             //fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n",i)
             //Load the CustomGenesis file
-            _,err := util.BashExec(
+            res,err := util.BashExec(
                             fmt.Sprintf("geth --datadir tmp/node%d --networkid %d init tmp/CustomGenesis.json",node,networkId))
             if err != nil {
+                log.Println(res)
                 log.Println(err)
                 return err
             }
