@@ -15,6 +15,9 @@ import (
     eth "../blockchains/ethereum"
     rchain "../blockchains/rchain"
     sys "../blockchains/syscoin"
+    tendermint "../blockchains/tendermint"
+
+
     db "../db"
     deploy "../deploy"
     state "../state"
@@ -74,6 +77,8 @@ func AddTestNet(details db.DeploymentDetails) error {
             services = rchain.GetServices()
         case "beam":
             services = beam.GetServices()
+        case "tendermint":
+            services = tendermint.GetServices()
     }
 
     //STEP 4: BUILD OUT THE DOCKER CONTAINERS AND THE NETWORK
@@ -100,39 +105,25 @@ func AddTestNet(details db.DeploymentDetails) error {
             }
         case "ethereum":
             labels,err = eth.Build(details.Params,details.Nodes,newServerData,clients)
-            if err != nil {
-                state.ReportError(err)
-                log.Println(err)
-                return err
-            }
         case "syscoin":
             labels,err = sys.RegTest(details.Params,details.Nodes,newServerData,clients)
-            if err != nil {
-                state.ReportError(err)
-                log.Println(err)
-                return err
-            }
         case "rchain":
             labels,err = rchain.Build(details.Params,details.Nodes,newServerData,clients)
-            if err != nil {
-                state.ReportError(err)
-                log.Println(err)
-                return err
-            }
         case "beam":
             labels, err = beam.Build(details.Params, details.Nodes, newServerData, clients)
-            if err != nil {
-                state.ReportError(err)
-                log.Println(err)
-                return err
-            }
+        case "tendermint":
+            labels, err = tendermint.Build(details.Params, details.Nodes, newServerData, clients)
         case "generic":
             log.Println("Built in generic mode")
         default:
             state.ReportError(errors.New("Unknown blockchain"))
             return errors.New("Unknown blockchain")
     }
-
+    if err != nil {
+        state.ReportError(err)
+        log.Println(err)
+        return err
+    }
     testNetId,err := db.InsertTestNet(db.TestNet{Id: -1, Blockchain: details.Blockchain, Nodes: details.Nodes, Image: details.Image})
     if err != nil{
         log.Println(err)
@@ -194,6 +185,8 @@ func GetParams(blockchain string) string {
         return rchain.GetParams()
     case "beam":
         return beam.GetParams()
+    case "tendermint":
+        return tendermint.GetParams()
     default:
         return "[]"
     }
@@ -216,6 +209,8 @@ func GetDefaults(blockchain string) string {
         return rchain.GetDefaults()
     case "beam":
         return beam.GetDefaults()
+    case "tendermint":
+        return tendermint.GetDefaults()
     default:
         return "{}"
     }
