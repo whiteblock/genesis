@@ -16,7 +16,7 @@ import (
     rchain "../blockchains/rchain"
     sys "../blockchains/syscoin"
     tendermint "../blockchains/tendermint"
-
+    cosmos "../blockchains/cosmos"
 
     db "../db"
     deploy "../deploy"
@@ -79,6 +79,8 @@ func AddTestNet(details db.DeploymentDetails) error {
             services = beam.GetServices()
         case "tendermint":
             services = tendermint.GetServices()
+        case "cosmos":
+            services = cosmos.GetServices()
     }
 
     //STEP 4: BUILD OUT THE DOCKER CONTAINERS AND THE NETWORK
@@ -113,6 +115,8 @@ func AddTestNet(details db.DeploymentDetails) error {
             labels, err = beam.Build(details.Params, details.Nodes, newServerData, clients)
         case "tendermint":
             labels, err = tendermint.Build(details.Params, details.Nodes, newServerData, clients)
+        case "cosmos":
+            labels, err = cosmos.Build(details.Params, details.Nodes, newServerData, clients)
         case "generic":
             log.Println("Built in generic mode")
         default:
@@ -187,6 +191,8 @@ func GetParams(blockchain string) string {
         return beam.GetParams()
     case "tendermint":
         return tendermint.GetParams()
+    case "cosmos":
+        return cosmos.GetParams()
     default:
         return "[]"
     }
@@ -211,6 +217,8 @@ func GetDefaults(blockchain string) string {
         return beam.GetDefaults()
     case "tendermint":
         return tendermint.GetDefaults()
+    case "cosmos":
+        return cosmos.GetDefaults()
     default:
         return "{}"
     }

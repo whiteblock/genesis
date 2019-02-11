@@ -1,0 +1,167 @@
+package cosmos
+
+import(
+    "fmt"
+    "log"
+    "strings"
+    util "../../util"
+    db "../../db"
+    //state "../../state"
+)
+
+
+
+var conf *util.Config
+
+func init(){
+    conf = util.GetConfig()
+}
+/**
+ * gaiad init --chain-id=whiteblock whiteblock
+ */
+/**
+ * echo "password\n" | gaiacli keys add validator -ojson
+ * {"name":"validator","type":"local","address":"cosmos1l20qmy2a646sdqrk8ze2753gzgegeufuyndf8a",
+ *     "pub_key":"cosmospub1addwnpepq0hqsrky85fn4s23hdua2x6vvn8sgpg77ucuc2epe0k65r6gal00cmp2us0",
+ *     "mnemonic":"easily physical draft access fox also popular regret ready shed tumble rocket edge vapor slab verify inherit expose quantum essay penalty shuffle auto amazing"}
+ */
+
+//gaiad add-genesis-account $(gaiacli keys show validator -a) 100000000stake,100000000validatortoken
+//echo "password\n" | gaiad gentx --name validator
+
+func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient) ([]string,error){
+
+    peers := []string{}
+    
+    /**
+     * Set up first node
+     */
+    res,err := clients[0].DockerExec(0,"gaiad init --chain-id=whiteblock whiteblock");
+    if err != nil{
+        log.Println(res)
+        log.Println(err)
+        return nil,err
+    }
+
+    res,err = clients[0].DockerExec(0,"bash -c 'echo \"password\\n\" | gaiacli keys add validator -ojson'")
+    if err != nil{
+        log.Println(res)
+        log.Println(err)
+        return nil,err
+    }
+
+
+    res,err = clients[0].DockerExec(0,"gaiacli keys show validator -a")
+    if err != nil{
+        log.Println(res)
+        log.Println(err)
+        return nil,err
+    }
+
+    res,err = clients[0].DockerExec(0,fmt.Sprintf("gaiad add-genesis-account %s 100000000stake,100000000validatortoken",res[:len(res) -1]))
+    if err != nil{
+        log.Println(res)
+        log.Println(err)
+        return nil,err
+    }
+
+    res,err = clients[0].DockerExec(0,"bash -c 'echo \"password\\n\" | gaiad gentx --name validator'")
+    if err != nil{
+        log.Println(res)
+        log.Println(err)
+        return nil,err
+    }
+
+    res,err = clients[0].DockerExec(0,"gaiad collect-gentxs")
+    if err != nil{
+        log.Println(res)
+        log.Println(err)
+        return nil,err
+    }
+    genesisFile,err := clients[0].DockerExec(0,"cat /root/.gaiad/config/genesis.json")
+    if err != nil{
+        log.Println(res)
+        log.Println(err)
+        return nil,err
+    }
+
+    node := 0
+    for i, server := range servers {
+        for j, ip := range server.Ips{
+            if node != 0 {
+                //init everything
+                res,err = clients[i].DockerExec(j,"gaiad init --chain-id=whiteblock whiteblock");
+                if err != nil{
+                    log.Println(res)
+                    log.Println(err)
+                    return nil,err
+                }
+            }
+           
+
+            //Get the node id
+            res,err = clients[i].DockerExec(j,"gaiad tendermint show-node-id")
+            if err != nil{
+                log.Println(res)
+                log.Println(err)
+                return nil,err
+            }
+            nodeId := res[:len(res)-1]
+            peers = append(peers,fmt.Sprintf("%s@%s:26656",nodeId,ip))
+
+            
+            node++
+        }
+    }
+
+
+    err = util.Write("./genesis.json",genesisFile)
+    if err != nil {
+        log.Println(err)
+        return nil,err
+    }
+    defer util.Rm("./genesis.json")
+    //distribute the created genensis file among the nodes
+    for i, server := range servers {
+        err := clients[i].Scp("./genesis.json", "/home/appo/genesis.json")
+        if err != nil {
+            log.Println(err)
+            return nil,err
+        }
+        defer clients[i].Run("rm /home/appo/genesis.json")
+
+        for j, _ := range server.Ips{
+            if i == 0 && j == 0 {
+                continue
+            }
+            res,err := clients[i].DockerExec(j,"rm /root/.gaiad/config/genesis.json")
+            if err != nil{
+                log.Println(res)
+                log.Println(err)
+                return nil,err
+            }
+            res,err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/genesis.json whiteblock-node%d:/root/.gaiad/config/", j))
+            if err != nil{
+                log.Println(res)
+                log.Println(err)
+                return nil,err
+            }
+        }
+    }
+    log.Printf("%v",peers)
+    node = 0
+    for i, server := range servers {
+        for j, _ := range server.Ips{
+            cmd := fmt.Sprintf("gaiad start --p2p.persistent_peers=%s",
+                                strings.Join(append(peers[:node],peers[node+1:]...),","))
+            res,err := clients[i].DockerExecd(j,cmd)
+            if err != nil{
+                log.Println(res)
+                log.Println(err)
+                return nil,err
+            }
+            node++
+        }
+    }
+    return nil,nil
+}
