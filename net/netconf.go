@@ -58,7 +58,7 @@ func CreateCommands(netconf Netconf,serverId int) []string {
     }
 
     if netconf.Delay > 0 {
-        out[2] += fmt.Sprintf(" delay %dms",netconf.Delay)
+        out[2] += fmt.Sprintf(" delay %dus",netconf.Delay)
     }
 
     if len(netconf.Rate) > 0 {
