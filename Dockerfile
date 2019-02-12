@@ -18,7 +18,7 @@ WORKDIR /genesis
 
 FROM ubuntu:latest as final
 
-RUN mkdir -p /genesis
+RUN mkdir -p /genesis && apt update && apt install scp
 
 COPY --from=built /genesis/blockchains /genesis/blockchains
 cOPY --from=built /genesis/config.json /genesis/config.json
