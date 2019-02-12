@@ -9,25 +9,11 @@ import(
     state "../../state"
 )
 
-
-
 var conf *util.Config
 
 func init(){
     conf = util.GetConfig()
 }
-/**
- * gaiad init --chain-id=whiteblock whiteblock
- */
-/**
- * echo "password\n" | gaiacli keys add validator -ojson
- * {"name":"validator","type":"local","address":"cosmos1l20qmy2a646sdqrk8ze2753gzgegeufuyndf8a",
- *     "pub_key":"cosmospub1addwnpepq0hqsrky85fn4s23hdua2x6vvn8sgpg77ucuc2epe0k65r6gal00cmp2us0",
- *     "mnemonic":"easily physical draft access fox also popular regret ready shed tumble rocket edge vapor slab verify inherit expose quantum essay penalty shuffle auto amazing"}
- */
-
-//gaiad add-genesis-account $(gaiacli keys show validator -a) 100000000stake,100000000validatortoken
-//echo "password\n" | gaiad gentx --name validator
 
 func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient) ([]string,error){
 
