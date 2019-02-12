@@ -16,14 +16,14 @@ RUN cd /genesis &&\
 WORKDIR /genesis
 
 
-FROM ubuntu:latest as final
+#FROM ubuntu:latest as final
 
-RUN mkdir -p /genesis && apt update && apt install scp
+#RUN mkdir -p /genesis && apt update && apt install scp
 
-COPY --from=built /genesis/blockchains /genesis/blockchains
-cOPY --from=built /genesis/config.json /genesis/config.json
-COPY --from=built /genesis/genesis /genesis/genesis
-COPY --from=built /bin/geth /bin/geth
+#COPY --from=built /genesis/blockchains /genesis/blockchains
+#cOPY --from=built /genesis/config.json /genesis/config.json
+#COPY --from=built /genesis/genesis /genesis/genesis
+#COPY --from=built /bin/geth /bin/geth
 
 
 
