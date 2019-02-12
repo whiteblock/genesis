@@ -8,7 +8,7 @@ import(
     "time"
     util "../../util"
     db "../../db"
-    //state "../../state"
+    state "../../state"
 )
 
 type ValidatorPubKey struct{
@@ -35,7 +35,8 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     //Ensure that genesis file has same chain_id
     peers := []string{}
     validators := []Validator{}
-    
+    state.SetBuildSteps(0+(nodes*3))
+    state.SetBuildStage("Initializing the nodes")
     for i, server := range servers {
         for j, ip := range server.Ips{
             //init everything
@@ -63,6 +64,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 log.Println(err)
                 return nil,err
             }
+            state.IncrementBuildProgress()
             var genesis map[string]interface{}
             err = json.Unmarshal([]byte(res),&genesis)
 
@@ -97,8 +99,10 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 }
                 validators = append(validators,validator)
             }
+            state.IncrementBuildProgress()
         }
     }
+    state.SetBuildStage("Propogating the genesis file")
     err := util.Write("./genesis.json",GetGenesisFile(validators))
     if err != nil {
         log.Println(err)
@@ -127,8 +131,10 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 log.Println(err)
                 return nil,err
             }
+            state.IncrementBuildProgress()
         }
     }
+    state.SetBuildStage("Starting tendermint")
     node := 0
     for i, server := range servers {
         for j, _ := range server.Ips{
@@ -140,6 +146,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 log.Println(err)
                 return nil,err
             }
+            state.IncrementBuildProgress()
             node++
         }
     }
