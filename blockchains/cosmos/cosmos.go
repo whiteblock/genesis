@@ -103,7 +103,6 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         }
     }
 
-
     state.SetBuildStage("Copying the genesis file to each node")
     err = util.Write("./genesis.json",genesisFile)
     if err != nil {
