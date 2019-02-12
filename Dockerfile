@@ -18,7 +18,7 @@ WORKDIR /genesis
 
 FROM ubuntu:latest as final
 
-RUN mkdir -p /genesis && apt-get update && apt-get install openssh-client
+RUN mkdir -p /genesis && apt-get update && apt-get install -y openssh-client
 
 COPY --from=built /genesis/blockchains /genesis/blockchains
 COPY --from=built /genesis/config.json /genesis/config.json
