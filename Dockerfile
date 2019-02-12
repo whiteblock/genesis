@@ -20,6 +20,8 @@ FROM ubuntu:latest as final
 
 RUN mkdir -p /genesis
 
+COPY --from=built /genesis/blockchains /genesis/blockchains
+cOPY --from=built /genesis/config.json /genesis/config.json
 COPY --from=built /genesis/genesis /genesis/genesis
 COPY --from=built /bin/geth /bin/geth
 
