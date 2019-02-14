@@ -16,42 +16,27 @@ type BuildState struct{
     building            bool
     progressIncrement   float64
     stopping            bool
+
+    Servers             []int
     BuildingProgress    float64
     BuildError          CustomError
     BuildStage          string
 }
 
 
-func NewBuildState() *BuildState {
+func NewBuildState(servers []int) *BuildState {
     out := new(BuildState)
     out.building = false
     out.progressIncrement = 0.00
     out.stopping = false
 
+    out.Servers = servers
     out.BuildingProgress = 0.00
     out.BuildError = CustomError{What:"",err:nil}
     out.BuildStage = ""    
     return out 
 }
 
-/*
-    acquires a build lock. Any function which modifies 
-    the nodes in a testnet should only do so after calling this function 
-    and ensuring that the returned value is nil
- */
-func (this *BuildState) AcquireBuilding() error {
-    this.mutex.Lock()
-    defer this.mutex.Unlock()
-
-    if this.building {
-        return errors.New("Error: Build in progress")
-    }
-
-    this.building = true
-    this.BuildingProgress = 0.00
-    this.BuildError = CustomError{What:"",err:nil}
-    return nil
-}
 
 /*
     DoneBuilding signals that the building process has finished and releases the
@@ -64,6 +49,10 @@ func (this *BuildState) DoneBuilding(){
     this.BuildStage = "Finished"
     this.building = false
     this.stopping = false
+}
+
+func (this *BuildState) Done() bool {
+    return !this.building
 }
 
 /*
@@ -98,7 +87,7 @@ func (this *BuildState) SignalStop() error {
     defer this.mutex.RUnlock()
     
     if this.building {
-        ReportError(errors.New("Build stopped by user"))
+        this.ReportError(errors.New("Build stopped by user"))
         this.stopping = true
         return nil
     }

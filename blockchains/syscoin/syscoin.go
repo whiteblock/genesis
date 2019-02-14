@@ -24,7 +24,7 @@ func init(){
  * @param {[type]} servers []db.Server)             The servers to be built on       
  * @return ([]string,error [description]
  */
-func RegTest(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient) ([]string,error) {
+func RegTest(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,buildState *state.BuildState) ([]string,error) {
     if nodes < 3 {
         log.Println("Tried to build syscoin with not enough nodes")
         return nil,errors.New("Tried to build syscoin with not enough nodes")
@@ -41,7 +41,7 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server,clients [
         util.Rm("config.boot")
         fmt.Printf("done\n")
     }()
-    state.SetBuildSteps(1+(6*nodes))
+    buildState.SetBuildSteps(1+(6*nodes))
 
 
     fmt.Println("-------------Setting Up Syscoin-------------")
@@ -52,7 +52,7 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server,clients [
         log.Println(err)
         return nil,err
     }
-    state.IncrementBuildProgress()
+    buildState.IncrementBuildProgress()
     fmt.Printf("done\n")
 
 
@@ -65,11 +65,11 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server,clients [
             for j,_ := range server.Ips {
                 err := clients[i].DockerExecdLog(j,"syscoind -conf=\"/syscoin/datadir/regtest.conf\" -datadir=\"/syscoin/datadir/\"")
                 if err != nil {
-                    state.ReportError(err)
+                    buildState.ReportError(err)
                     log.Println(err)
                     return
                 }
-                state.IncrementBuildProgress()
+                buildState.IncrementBuildProgress()
             }
         }(server,i)
     }
@@ -82,17 +82,19 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server,clients [
     fmt.Printf("done\n")
     sem3.Release(conf.ThreadLimit)
 
-    if !state.ErrorFree() {
-        return nil,state.GetError()
+    if !buildState.ErrorFree() {
+        return nil,buildState.GetError()
     }
     return out,nil 
 }
 
-func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,newNodes map[int][]string) ([]string,error) {
+func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,
+         newNodes map[int][]string,buildState *state.BuildState) ([]string,error) {
     return nil,nil
 }
 
 func handleConf(servers []db.Server,clients []*util.SshClient, sysconf *SysConf) ([]string,error) {
+    buildState := state.GetBuildStateByServerId(servers[0].Id)
     ips := []string{}
     for _,server := range servers {
         for _, ip := range server.Ips {
@@ -159,46 +161,46 @@ func handleConf(servers []db.Server,clients []*util.SshClient, sysconf *SysConf)
                 //confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
                 err := util.Write(fmt.Sprintf("./regtest%d.conf",node),confData)
                 if err != nil {
-                    state.ReportError(err)
+                    buildState.ReportError(err)
                     log.Println(err)
                     return
                 }
                 err = clients[i].Scp(fmt.Sprintf("./regtest%d.conf",node),fmt.Sprintf("/home/appo/regtest%d.conf",node))
                 if err != nil {
-                    state.ReportError(err)
+                    buildState.ReportError(err)
                     log.Println(err)
                     return
                 }
-                state.IncrementBuildProgress()
+                buildState.IncrementBuildProgress()
                 container := fmt.Sprintf("whiteblock-node%d",node)
                 _,err = clients[i].Run(fmt.Sprintf("docker exec %s mkdir -p /syscoin/datadir",container))
                 if err != nil {
-                    state.ReportError(err)
+                    buildState.ReportError(err)
                     log.Println(err)
                     return
                 }
-                state.IncrementBuildProgress()
+                buildState.IncrementBuildProgress()
                 _,err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/regtest%d.conf %s:/syscoin/datadir/regtest.conf",node,container))
                 if err != nil {
-                    state.ReportError(err)
+                    buildState.ReportError(err)
                     log.Println(err)
                     return
                 }
-                state.IncrementBuildProgress()
+                buildState.IncrementBuildProgress()
                 err = util.Rm(fmt.Sprintf("./regtest%d.conf",node))
                 if err != nil {
-                    state.ReportError(err)
+                    buildState.ReportError(err)
                     log.Println(err)
                     return
                 }
-                state.IncrementBuildProgress()
+                buildState.IncrementBuildProgress()
                 _,err = clients[i].Run(fmt.Sprintf("rm /home/appo/regtest%d.conf",node))
                 if err != nil {
-                    state.ReportError(err)
+                    buildState.ReportError(err)
                     log.Println(err)
                     return
                 }
-                state.IncrementBuildProgress()
+                buildState.IncrementBuildProgress()
                 sem.Release(1)
                 
             }(node)
@@ -207,8 +209,8 @@ func handleConf(servers []db.Server,clients []*util.SshClient, sysconf *SysConf)
     }
     sem.Acquire(ctx,conf.ThreadLimit)
     sem.Release(conf.ThreadLimit)
-    if !state.ErrorFree() {
-        return nil,state.GetError()
+    if !buildState.ErrorFree() {
+        return nil,buildState.GetError()
     }
     return labels,nil
 }

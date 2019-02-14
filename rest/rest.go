@@ -86,8 +86,11 @@ func StartServer() {
     router.HandleFunc("/nodes/{num}",delNodes).Methods("DELETE")
     router.HandleFunc("/nodes/{num}/",delNodes).Methods("DELETE")
 
-    router.HandleFunc("/build",stopBuild).Methods("DELETE")
-    router.HandleFunc("/build/",stopBuild).Methods("DELETE")
+    router.HandleFunc("/build/{id}",stopBuild).Methods("DELETE")
+    router.HandleFunc("/build/{id}/",stopBuild).Methods("DELETE")
+
+    router.HandleFunc("/build",stopDefaultBuild).Methods("DELETE")
+    router.HandleFunc("/build/",stopDefaultBuild).Methods("DELETE")
 
     router.HandleFunc("/build",getAllBuilds).Methods("GET")
     router.HandleFunc("/build/",getAllBuilds).Methods("GET")
@@ -184,8 +187,21 @@ func getLastNodes(w http.ResponseWriter,r *http.Request) {
     json.NewEncoder(w).Encode(nodes)
 }
 
+
+
+func stopDefaultBuild(w http.ResponseWriter,r *http.Request){
+    err := state.SignalStop(0)
+    if err != nil{
+        http.Error(w,err.Error(),412)
+        return
+    }
+    w.Write([]byte("Stop signal has been sent"))
+}
+
 func stopBuild(w http.ResponseWriter,r *http.Request){
-    err := state.SignalStop()
+    params := mux.Vars(r)
+    buildId, err := strconv.Atoi(params["id"])
+    err = state.SignalStop(buildId)
     if err != nil{
         http.Error(w,err.Error(),412)
         return

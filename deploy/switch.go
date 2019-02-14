@@ -32,7 +32,7 @@ func PrepareSwitches(server db.Server,nodes int) error {
         setupHPSwitch(server,nodes)
         return nil
     }
-    client,err := util.NewSshClient(server.Switches[0].Addr)
+    client,err := util.NewSshClient(server.Switches[0].Addr,-1)
     if err != nil{
         log.Println(err)
         return err

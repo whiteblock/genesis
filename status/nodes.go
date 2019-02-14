@@ -97,7 +97,7 @@ func CheckNodeStatus() ([]NodeStatus, error) {
     }
     
     for _, server := range servers {
-        client,err := util.NewSshClient(server.Addr)
+        client,err := util.NewSshClient(server.Addr,server.Id)
         defer client.Close()
         if err != nil {
             return nil,err

@@ -17,9 +17,10 @@ var conf *util.Config = util.GetConfig()
  * Builds out the Docker Network on pre-setup servers
  * Returns a string of all of the IP addresses 
  */
-func Build(buildConf *Config,servers []db.Server,resources util.Resources,clients []*util.SshClient,services []util.Service) ([]db.Server,error) {
-    state.SetDeploySteps(3*buildConf.Nodes + 2 + len(services) )
-    defer state.FinishDeploy()
+func Build(buildConf *Config,servers []db.Server,resources util.Resources,clients []*util.SshClient,
+           services []util.Service,buildState *state.BuildState) ([]db.Server,error) {
+    buildState.SetDeploySteps(3*buildConf.Nodes + 2 + len(services) )
+    defer buildState.FinishDeploy()
 
     var sem = semaphore.NewWeighted(conf.ThreadLimit)
     
@@ -46,19 +47,19 @@ func Build(buildConf *Config,servers []db.Server,resources util.Resources,client
             servers[i].Ips = append(servers[i].Ips,util.GetNodeIP(servers[i].ServerID,j))
         }
         //Kill all the nodes on the server
-        DockerKillAll(clients[i])
-        state.SetBuildStage("Provisioning Nodes")
+        DockerKillAll(clients[i],buildState)
+        buildState.SetBuildStage("Provisioning Nodes")
         //Destroy all the networks on the server
-        DockerNetworkDestroyAll(clients[i])
-        err := DockerNetworkCreateAll(servers[i],clients[i],nodes)
+        DockerNetworkDestroyAll(clients[i],buildState)
+        err := DockerNetworkCreateAll(servers[i],clients[i],nodes,buildState)
         if err != nil {
             log.Println(err)
             return nil,err
         }
         
         fmt.Printf("Creating the docker containers on server %d\n",i)
-        state.SetBuildStage("Configuring Network")
-        err = DockerRunAll(servers[i],clients[i],resources,nodes,buildConf.Image)
+        buildState.SetBuildStage("Configuring Network")
+        err = DockerRunAll(servers[i],clients[i],resources,nodes,buildConf.Image,buildState)
         if err != nil{
             log.Println(err)
             return nil,err
@@ -81,15 +82,15 @@ func Build(buildConf *Config,servers []db.Server,resources util.Resources,client
     if n != 0 {
         return servers, errors.New(fmt.Sprintf("ERROR: Only able to build %d/%d nodes\n",(buildConf.Nodes - n),buildConf.Nodes))
     }
-    state.SetBuildStage("Setting up services")
+    buildState.SetBuildStage("Setting up services")
     DockerStopServices(clients[0])
     if services != nil {
-        err = DockerStartServices(servers[0],clients[0],services)
+        err = DockerStartServices(servers[0],clients[0],services,buildState)
         if err != nil{
             log.Println(err)
             return nil,err
         }
     }
-    err = finalize(servers,clients)
+    err = finalize(servers,clients,buildState)
     return servers, err
 }

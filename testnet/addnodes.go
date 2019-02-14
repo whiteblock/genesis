@@ -23,13 +23,14 @@ import(
     deployment details will be filled in from the origin build.
 */
 func AddNodes(details db.DeploymentDetails) error {
-    defer state.DoneBuilding()
+    buildState := state.GetBuildStateByServerId(details.Servers[0])
+    defer buildState.DoneBuilding()
 
     //STEP 1: MERGE IN MISSING INFO FROM ORIGINAL BUILD
     prevDetails,err := status.GetLatestBuild()
     if err != nil {
         log.Println(err.Error())
-        state.ReportError(err)
+        buildState.ReportError(err)
         return err
     }
     if details.Servers == nil || len(details.Servers) == 0 {
@@ -52,18 +53,18 @@ func AddNodes(details db.DeploymentDetails) error {
     err = details.Resources.ValidateAndSetDefaults()
     if err != nil {
         log.Println(err.Error())
-        state.ReportError(err)
+        buildState.ReportError(err)
         return err
     }
     if details.Nodes > conf.MaxNodes {
-        state.ReportError(errors.New("Too many nodes"))
+        buildState.ReportError(errors.New("Too many nodes"))
         return errors.New("Too many nodes")
     }
     //STEP 3: FETCH THE SERVERS
     servers, err := status.GetLatestServers()
     if err != nil {
         log.Println(err)
-        state.ReportError(err)
+        buildState.ReportError(err)
         return err
     }
     fmt.Println("Got the Servers")
@@ -72,60 +73,60 @@ func AddNodes(details db.DeploymentDetails) error {
     clients,err :=  GetClients(details.Servers) 
     if err != nil {
         log.Println(err)
-        state.ReportError(err)
+        buildState.ReportError(err)
         return err
     }
 
     config := deploy.Config{Nodes: details.Nodes, Image: details.Image, Servers: details.Servers}
 
 
-    nodes,err := deploy.AddNodes(&config, servers,details.Resources,clients)
+    nodes,err := deploy.AddNodes(&config, servers,details.Resources,clients,buildState)
     if err != nil {
         log.Println(err)
-        state.ReportError(err)
+        buildState.ReportError(err)
         return err
     }
     var labels []string = nil
     switch(details.Blockchain){
         case "eos":
-            labels,err = eos.Add(details.Params,details.Nodes,servers,clients,nodes);
+            labels,err = eos.Add(details.Params,details.Nodes,servers,clients,nodes,buildState);
             if err != nil {
-                state.ReportError(err)
+                buildState.ReportError(err)
                 log.Println(err)
                 return err
             }
         case "ethereum":
-            labels,err = eth.Add(details.Params,details.Nodes,servers,clients,nodes)
+            labels,err = eth.Add(details.Params,details.Nodes,servers,clients,nodes,buildState)
             if err != nil {
-                state.ReportError(err)
+                buildState.ReportError(err)
                 log.Println(err)
                 return err
             }
         case "syscoin":
-            labels,err = sys.Add(details.Params,details.Nodes,servers,clients,nodes)
+            labels,err = sys.Add(details.Params,details.Nodes,servers,clients,nodes,buildState)
             if err != nil {
-                state.ReportError(err)
+                buildState.ReportError(err)
                 log.Println(err)
                 return err
             }
         case "rchain":
-            labels,err = rchain.Add(details.Params,details.Nodes,servers,clients,nodes)
+            labels,err = rchain.Add(details.Params,details.Nodes,servers,clients,nodes,buildState)
             if err != nil {
-                state.ReportError(err)
+                buildState.ReportError(err)
                 log.Println(err)
                 return err
             }
         case "beam":
-            labels, err = beam.Add(details.Params, details.Nodes, servers, clients,nodes)
+            labels, err = beam.Add(details.Params, details.Nodes, servers, clients,nodes,buildState)
             if err != nil {
-                state.ReportError(err)
+                buildState.ReportError(err)
                 log.Println(err)
                 return err
             }
         case "generic":
             log.Println("Built in generic mode")
         default:
-            state.ReportError(errors.New("Unknown blockchain"))
+            buildState.ReportError(errors.New("Unknown blockchain"))
             return errors.New("Unknown blockchain")
     }
     

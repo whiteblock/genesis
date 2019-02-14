@@ -15,12 +15,13 @@ func init(){
     conf = util.GetConfig()
 }
 
-func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient) ([]string,error){
-
+func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,
+           buildState *state.BuildState) ([]string,error){
+    
     peers := []string{}
-    state.SetBuildSteps(4+(nodes*3))
+    buildState.SetBuildSteps(4+(nodes*3))
 
-    state.SetBuildStage("Setting up the first node")
+    buildState.SetBuildStage("Setting up the first node")
     /**
      * Set up first node
      */
@@ -30,7 +31,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         log.Println(err)
         return nil,err
     }
-    state.IncrementBuildProgress()
+    buildState.IncrementBuildProgress()
     res,err = clients[0].DockerExec(0,"bash -c 'echo \"password\\n\" | gaiacli keys add validator -ojson'")
     if err != nil{
         log.Println(res)
@@ -45,7 +46,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         log.Println(err)
         return nil,err
     }
-    state.IncrementBuildProgress()
+    buildState.IncrementBuildProgress()
     res,err = clients[0].DockerExec(0,fmt.Sprintf("gaiad add-genesis-account %s 100000000stake,100000000validatortoken",res[:len(res) -1]))
     if err != nil{
         log.Println(res)
@@ -59,7 +60,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         log.Println(err)
         return nil,err
     }
-    state.IncrementBuildProgress()
+    buildState.IncrementBuildProgress()
     res,err = clients[0].DockerExec(0,"gaiad collect-gentxs")
     if err != nil{
         log.Println(res)
@@ -72,8 +73,8 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         log.Println(err)
         return nil,err
     }
-    state.IncrementBuildProgress()
-    state.SetBuildStage("Initializing the rest of the nodes")
+    buildState.IncrementBuildProgress()
+    buildState.SetBuildStage("Initializing the rest of the nodes")
     node := 0
     for i, server := range servers {
         for j, ip := range server.Ips{
@@ -98,12 +99,12 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             nodeId := res[:len(res)-1]
             peers = append(peers,fmt.Sprintf("%s@%s:26656",nodeId,ip))
 
-            state.IncrementBuildProgress()
+            buildState.IncrementBuildProgress()
             node++
         }
     }
 
-    state.SetBuildStage("Copying the genesis file to each node")
+    buildState.SetBuildStage("Copying the genesis file to each node")
     err = util.Write("./genesis.json",genesisFile)
     if err != nil {
         log.Println(err)
@@ -121,7 +122,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 
         for j, _ := range server.Ips{
             if i == 0 && j == 0 {
-                state.IncrementBuildProgress()
+                buildState.IncrementBuildProgress()
                 continue
             }
             res,err := clients[i].DockerExec(j,"rm /root/.gaiad/config/genesis.json")
@@ -136,11 +137,11 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 log.Println(err)
                 return nil,err
             }
-            state.IncrementBuildProgress()
+            buildState.IncrementBuildProgress()
         }
     }
     log.Printf("%v",peers)
-    state.SetBuildStage("Starting cosmos")
+    buildState.SetBuildStage("Starting cosmos")
     node = 0
     for i, server := range servers {
         for j, _ := range server.Ips{
@@ -153,8 +154,15 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 return nil,err
             }
             node++
-            state.IncrementBuildProgress()
+            buildState.IncrementBuildProgress()
         }
     }
+    return nil,nil
+}
+//,buildState *state.BuildState
+//
+//
+func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,
+         newNodes map[int][]string,buildState *state.BuildState) ([]string,error) {
     return nil,nil
 }

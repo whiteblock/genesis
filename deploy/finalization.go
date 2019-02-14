@@ -13,9 +13,9 @@ import (
 /**
  * Finalization methods for the docker build process. Will be run immediately following their deployment
  */
-func finalize(servers []db.Server,clients []*util.SshClient) error {
+func finalize(servers []db.Server,clients []*util.SshClient,buildState *state.BuildState) error {
     if(conf.HandleNodeSshKeys){
-        err := copyOverSshKeys(servers,clients)
+        err := copyOverSshKeys(servers,clients,buildState)
         if err != nil {
             log.Println(err)
             return err
@@ -27,7 +27,7 @@ func finalize(servers []db.Server,clients []*util.SshClient) error {
 }
 
 
-func copyOverSshKeys(servers []db.Server,clients []*util.SshClient) error {
+func copyOverSshKeys(servers []db.Server,clients []*util.SshClient,buildState *state.BuildState) error {
     tmp, err := ioutil.ReadFile(conf.NodesPublicKey)
     pubKey := string(tmp)
     pubKey = strings.Trim(pubKey,"\t\n\v\r")
@@ -74,7 +74,7 @@ func copyOverSshKeys(servers []db.Server,clients []*util.SshClient) error {
                 log.Println(err)
                 return err
             }
-            state.IncrementDeployProgress()
+            buildState.IncrementDeployProgress()
         }
     }
     return nil

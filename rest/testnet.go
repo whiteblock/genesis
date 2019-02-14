@@ -33,7 +33,7 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
         http.Error(w,err.Error(),400)
         return
     }
-    err = state.AcquireBuilding()
+    err = state.AcquireBuilding(tn.Servers)
     if err != nil {
         log.Println(err)
         http.Error(w,"There is a build already in progress",409)
@@ -106,7 +106,7 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
         //http.Error(w,err.Error(),400)
         //return
     }
-    err = state.AcquireBuilding()
+    err = state.AcquireBuilding(tn.Servers)
     if err != nil {
         log.Println(err)
         http.Error(w,"There is a build in progress",409)
@@ -124,7 +124,7 @@ func delNodes(w http.ResponseWriter, r *http.Request) {
         return
     }
     
-    err = state.AcquireBuilding()
+    err = state.AcquireBuilding([]int{0})//TODO: THIS IS WRONG
     if err != nil {
         log.Println(err)
         http.Error(w,"There is a build in progress",409)

@@ -19,9 +19,11 @@ import(
  * @param r [description]
  * @return [description]
  */
-func AddNodes(buildConf *Config, servers []db.Server,resources util.Resources,clients []*util.SshClient) (map[int][]string,error){
-    state.SetDeploySteps(3*buildConf.Nodes + 2 )
-    defer state.FinishDeploy()
+func AddNodes(buildConf *Config, servers []db.Server,resources util.Resources,
+              clients []*util.SshClient,buildState *state.BuildState) (map[int][]string,error){
+    
+    buildState.SetDeploySteps(3*buildConf.Nodes + 2 )
+    defer buildState.FinishDeploy()
 
     var sem = semaphore.NewWeighted(conf.ThreadLimit)
     
@@ -46,17 +48,17 @@ func AddNodes(buildConf *Config, servers []db.Server,resources util.Resources,cl
             out[servers[i].Id] = append(out[servers[i].Id],util.GetNodeIP(servers[i].ServerID,j))
         }
         
-        state.SetBuildStage("Provisioning Nodes")
+        buildState.SetBuildStage("Provisioning Nodes")
        
-        err := DockerNetworkCreateAppendAll(servers[i],clients[i],servers[i].Nodes,nodes)
+        err := DockerNetworkCreateAppendAll(servers[i],clients[i],servers[i].Nodes,nodes,buildState)
         if err != nil {
             log.Println(err)
             return nil,err
         }
         
         fmt.Printf("Creating the docker containers on server %d\n",i)
-        state.SetBuildStage("Configuring Network")
-        err = DockerRunAppendAll(servers[i],clients[i],resources,servers[i].Nodes,nodes,buildConf.Image)
+        buildState.SetBuildStage("Configuring Network")
+        err = DockerRunAppendAll(servers[i],clients[i],resources,servers[i].Nodes,nodes,buildConf.Image,buildState)
         if err != nil{
             log.Println(err)
             return nil,err

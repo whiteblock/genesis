@@ -18,12 +18,14 @@ const maxRunAttempts int = 5
  */
 type SshClient struct {
     clients     []*ssh.Client
+    host        string
+    serverId    int
 }
 /*
     NewSshClient creates an instance of SshClient, with a connection to the 
     host server given. 
  */
-func NewSshClient(host string) (*SshClient,error){
+func NewSshClient(host string,serverId int) (*SshClient,error){
     out := new(SshClient)
     for i := conf.ThreadLimit; i > 0; i -= 5 {
         client,err := sshConnect(host)
@@ -33,6 +35,8 @@ func NewSshClient(host string) (*SshClient,error){
         }
         out.clients = append(out.clients,client)
     }
+    out.host = host
+    out.serverId = serverId
     return out,nil
 }
 
@@ -89,8 +93,9 @@ func (this SshClient) Run(command string) (string,error) {
     if conf.Verbose {
         fmt.Printf("Running command: %s\n", command)
     }
-    if state.Stop() {
-        return "",state.GetError()
+    bs := state.GetBuildStateByServerId(this.serverId)
+    if bs.Stop() {
+        return "",bs.GetError()
     }
     
     if err != nil {
@@ -112,8 +117,9 @@ func (this SshClient) Run(command string) (string,error) {
 func (this SshClient) KeepTryRun(command string) (string,error) {
     var res string
     var err error
-    if state.Stop() {
-        return "",state.GetError()
+    bs := state.GetBuildStateByServerId(this.serverId)
+    if bs.Stop() {
+        return "",bs.GetError()
     }
     for i := 0; i < maxRunAttempts; i++ {
         res,err = this.Run(command)

@@ -29,7 +29,7 @@ func GetClient(id int)(*util.SshClient,error) {
             log.Println(err)
             return nil,err
         }
-        cli,err = util.NewSshClient(server.Addr)
+        cli,err = util.NewSshClient(server.Addr,id)
         if err != nil {
             log.Println(err)
             return nil,err

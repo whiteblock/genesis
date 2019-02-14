@@ -35,23 +35,25 @@ func init() {
 // AddTestNet implements the build command. All blockchains Build command must be 
 // implemented here, other it will not be called during the build process. 
 func AddTestNet(details db.DeploymentDetails) error {
-    defer state.DoneBuilding()
+    buildState := state.GetBuildStateByServerId(details.Servers[0])
+    buildState.SetDeploySteps(3*details.Nodes + 2 )
+    defer buildState.DoneBuilding()
     //STEP 0: VALIDATE
     err := details.Resources.ValidateAndSetDefaults()
     if err != nil {
         log.Println(err.Error())
-        state.ReportError(err)
+        buildState.ReportError(err)
         return err
     }
     if details.Nodes > conf.MaxNodes {
-        state.ReportError(errors.New("Too many nodes"))
+        buildState.ReportError(errors.New("Too many nodes"))
         return errors.New("Too many nodes")
     }
     //STEP 1: FETCH THE SERVERS
     servers, err := db.GetServers(details.Servers)
     if err != nil {
         log.Println(err.Error())
-        state.ReportError(err)
+        buildState.ReportError(err)
         return err
     }
     fmt.Println("Got the Servers")
@@ -60,7 +62,7 @@ func AddTestNet(details db.DeploymentDetails) error {
     clients,err :=  GetClients(details.Servers) 
     if err != nil {
         log.Println(err)
-        state.ReportError(err)
+        buildState.ReportError(err)
         return err
     }
     
@@ -87,10 +89,10 @@ func AddTestNet(details db.DeploymentDetails) error {
     config := deploy.Config{Nodes: details.Nodes, Image: details.Image, Servers: details.Servers}
     fmt.Printf("Created the build configuration : %+v \n",config)
 
-    newServerData,err := deploy.Build(&config,servers,details.Resources,clients,services) //TODO: Restructure distribution of nodes over servers
+    newServerData,err := deploy.Build(&config,servers,details.Resources,clients,services,buildState) //TODO: Restructure distribution of nodes over servers
     if err != nil {
         log.Println(err)
-        state.ReportError(err)
+        buildState.ReportError(err)
         return err
     }
     fmt.Println("Built the docker containers")
@@ -99,45 +101,40 @@ func AddTestNet(details db.DeploymentDetails) error {
 
     switch(details.Blockchain){
         case "eos":
-            labels,err = eos.Build(details.Params,details.Nodes,newServerData,clients);
-            if err != nil {
-                state.ReportError(err)
-                log.Println(err)
-                return err
-            }
+            labels,err = eos.Build(details.Params,details.Nodes,newServerData,clients,buildState);
         case "ethereum":
-            labels,err = eth.Build(details.Params,details.Nodes,newServerData,clients)
+            labels,err = eth.Build(details.Params,details.Nodes,newServerData,clients,buildState)
         case "syscoin":
-            labels,err = sys.RegTest(details.Params,details.Nodes,newServerData,clients)
+            labels,err = sys.RegTest(details.Params,details.Nodes,newServerData,clients,buildState)
         case "rchain":
-            labels,err = rchain.Build(details.Params,details.Nodes,newServerData,clients)
+            labels,err = rchain.Build(details.Params,details.Nodes,newServerData,clients,buildState)
         case "beam":
-            labels, err = beam.Build(details.Params, details.Nodes, newServerData, clients)
+            labels, err = beam.Build(details.Params, details.Nodes, newServerData, clients,buildState)
         case "tendermint":
-            labels, err = tendermint.Build(details.Params, details.Nodes, newServerData, clients)
+            labels, err = tendermint.Build(details.Params, details.Nodes, newServerData, clients,buildState)
         case "cosmos":
-            labels, err = cosmos.Build(details.Params, details.Nodes, newServerData, clients)
+            labels, err = cosmos.Build(details.Params, details.Nodes, newServerData, clients,buildState)
         case "generic":
             log.Println("Built in generic mode")
         default:
-            state.ReportError(errors.New("Unknown blockchain"))
+            buildState.ReportError(errors.New("Unknown blockchain"))
             return errors.New("Unknown blockchain")
     }
     if err != nil {
-        state.ReportError(err)
+        buildState.ReportError(err)
         log.Println(err)
         return err
     }
     testNetId,err := db.InsertTestNet(db.TestNet{Id: -1, Blockchain: details.Blockchain, Nodes: details.Nodes, Image: details.Image})
     if err != nil{
         log.Println(err)
-        state.ReportError(err);
+        buildState.ReportError(err);
         return err
     }
     err = db.InsertBuild(details,testNetId)
     if err != nil{
         log.Println(err)
-        state.ReportError(err);
+        buildState.ReportError(err);
         return err
     }
     i := 0

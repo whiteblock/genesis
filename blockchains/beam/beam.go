@@ -19,16 +19,17 @@ func init() {
 
 const port int = 10000
 
-func Build(data map[string]interface{}, nodes int, servers []db.Server, clients []*util.SshClient) ([]string, error) {
+func Build(data map[string]interface{}, nodes int, servers []db.Server, clients []*util.SshClient,
+		   buildState *state.BuildState) ([]string, error) {
 
 	beamConf, err := NewConf(data)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	state.SetBuildSteps(0+(nodes*4))
+	buildState.SetBuildSteps(0+(nodes*4))
 
-    state.SetBuildStage("Setting up the wallets")
+    buildState.SetBuildStage("Setting up the wallets")
 	/**Set up wallets**/
 	ownerKeys := []string{}
 	secretMinerKeys := []string{}
@@ -46,7 +47,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 				// log.Println(err)
 				// return nil, err
 			}
-			state.IncrementBuildProgress()
+			buildState.IncrementBuildProgress()
 
 			re := regexp.MustCompile(`(?m)^Owner([A-z|0-9|\s|\:|\/|\+|\=])*$`)
 			ownKLine := re.FindAllString(res1, -1)[0]
@@ -60,7 +61,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 			re = regexp.MustCompile(`(?m)^Secret([A-z|0-9|\s|\:|\/|\+|\=])*$`)
 			secMLine := re.FindAllString(res2, -1)[0]
 			secretMinerKeys = append(secretMinerKeys, strings.Split(secMLine, " ")[3])
-            state.IncrementBuildProgress()
+            buildState.IncrementBuildProgress()
 		}
 	}
 
@@ -70,7 +71,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 			ips = append(ips, ip)
 		}
 	}
-    state.SetBuildStage("Creating node configuration files")
+    buildState.SetBuildStage("Creating node configuration files")
 	/**Create node config files**/
 	node := 0
 	for i, server := range servers {
@@ -173,12 +174,12 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 
 			// fmt.Println(config)
 			node++
-            state.IncrementBuildProgress()
+            buildState.IncrementBuildProgress()
 		}
 	}
 
 	totNodes := 0
-    state.SetBuildStage("Starting beam")
+    buildState.SetBuildStage("Starting beam")
 	for i, server := range servers {
 		for localId, ip := range server.Ips {
 			if totNodes >= int(beamConf.Validators) {
@@ -204,14 +205,14 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 					return nil, err
 				}
 			}
-            state.IncrementBuildProgress()
+            buildState.IncrementBuildProgress()
 			totNodes++
 		}
 	}
 	return nil, nil
 }
 
-
-func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,newNodes map[int][]string) ([]string,error) {
+func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,
+         newNodes map[int][]string,buildState *state.BuildState) ([]string,error) {
     return nil,nil
 }

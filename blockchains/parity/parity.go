@@ -27,7 +27,8 @@ func init() {
  * @param  int      nodes       The number of nodes in the network
  * @param  []Server servers     The list of servers passed from build
  */
-func Build(data map[string]interface{}, nodes int, servers []db.Server, clients []*util.SshClient) ([]string, error) {
+func Build(data map[string]interface{}, nodes int, servers []db.Server, clients []*util.SshClient,
+		   buildState *state.BuildState) ([]string, error) {
 	//var mutex = &sync.Mutex{}
 	var sem = semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
@@ -217,8 +218,9 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 
 /***************************************************************************************************************************/
 
-func Add(data map[string]interface{}, nodes int, servers []db.Server, clients []*util.SshClient, newNodes map[int][]string) ([]string, error) {
-	return nil, nil
+func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,
+         newNodes map[int][]string,buildState *state.BuildState) ([]string,error) {
+    return nil,nil
 }
 
 func MakeFakeAccounts(accs int) []string {

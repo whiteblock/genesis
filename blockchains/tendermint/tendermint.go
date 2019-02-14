@@ -30,13 +30,13 @@ func init(){
 }
 
 //ExecStart=/usr/bin/tendermint node --proxy_app=kvstore --p2p.persistent_peers=167b80242c300bf0ccfb3ced3dec60dc2a81776e@165.227.41.206:26656,3c7a5920811550c04bf7a0b2f1e02ab52317b5e6@165.227.43.146:26656,303a1a4312c30525c99ba66522dd81cca56a361a@159.89.115.32:26656,b686c2a7f4b1b46dca96af3a0f31a6a7beae0be4@159.89.119.125:26656
-func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient) ([]string,error){
-
+func Build(data map[string]interface{},nodes int,servers []db.Server,
+           clients []*util.SshClient,buildState *state.BuildState) ([]string,error){
     //Ensure that genesis file has same chain_id
     peers := []string{}
     validators := []Validator{}
-    state.SetBuildSteps(0+(nodes*3))
-    state.SetBuildStage("Initializing the nodes")
+    buildState.SetBuildSteps(0+(nodes*3))
+    buildState.SetBuildStage("Initializing the nodes")
     for i, server := range servers {
         for j, ip := range server.Ips{
             //init everything
@@ -64,7 +64,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 log.Println(err)
                 return nil,err
             }
-            state.IncrementBuildProgress()
+            buildState.IncrementBuildProgress()
             var genesis map[string]interface{}
             err = json.Unmarshal([]byte(res),&genesis)
 
@@ -99,10 +99,10 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 }
                 validators = append(validators,validator)
             }
-            state.IncrementBuildProgress()
+            buildState.IncrementBuildProgress()
         }
     }
-    state.SetBuildStage("Propogating the genesis file")
+    buildState.SetBuildStage("Propogating the genesis file")
     err := util.Write("./genesis.json",GetGenesisFile(validators))
     if err != nil {
         log.Println(err)
@@ -131,10 +131,10 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 log.Println(err)
                 return nil,err
             }
-            state.IncrementBuildProgress()
+            buildState.IncrementBuildProgress()
         }
     }
-    state.SetBuildStage("Starting tendermint")
+    buildState.SetBuildStage("Starting tendermint")
     node := 0
     for i, server := range servers {
         for j, _ := range server.Ips{
@@ -146,7 +146,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 log.Println(err)
                 return nil,err
             }
-            state.IncrementBuildProgress()
+            buildState.IncrementBuildProgress()
             node++
         }
     }
@@ -179,3 +179,5 @@ func GetGenesisFile(validators []Validator) string {
     }`,time.Now().Format("2006-01-02T15:04:05.000000000Z"),
     validatorsStr)
 }
+
+//,buildState *state.BuildState

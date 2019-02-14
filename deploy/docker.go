@@ -17,9 +17,9 @@ func DockerKill(client *util.SshClient,node int) error {
     return err
 }
 
-func DockerKillAll(client *util.SshClient) error {
+func DockerKillAll(client *util.SshClient,buildState *state.BuildState) error {
     _,err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s\")",conf.NodePrefix));
-    state.IncrementDeployProgress()
+    buildState.IncrementDeployProgress()
     return err
 }
 
@@ -63,9 +63,9 @@ func DockerNetworkCreate(server db.Server,client *util.SshClient,node int) error
     return nil
 }
 
-func DockerNetworkCreateAll(server db.Server,client *util.SshClient,nodes int) error {
+func DockerNetworkCreateAll(server db.Server,client *util.SshClient,nodes int,buildState *state.BuildState) error {
     for i := 0; i < nodes; i++{
-        state.IncrementDeployProgress()
+        buildState.IncrementDeployProgress()
         err := DockerNetworkCreate(server,client,i)
         if err != nil {
             log.Println(err)
@@ -75,9 +75,10 @@ func DockerNetworkCreateAll(server db.Server,client *util.SshClient,nodes int) e
     return nil
 }
 
-func DockerNetworkCreateAppendAll(server db.Server,client *util.SshClient,start int,nodes int) error {
+func DockerNetworkCreateAppendAll(server db.Server,client *util.SshClient,start int,
+                                  nodes int,buildState *state.BuildState) error {
     for i := start; i < start+nodes; i++ {
-        state.IncrementDeployProgress()
+        buildState.IncrementDeployProgress()
         err := DockerNetworkCreate(server,client,i)
         if err != nil {
             log.Println(err)
@@ -97,9 +98,9 @@ func DockerNetworkDestroy(client *util.SshClient, node int ) error {
     return nil
 }
 
-func DockerNetworkDestroyAll(client *util.SshClient) error {
+func DockerNetworkDestroyAll(client *util.SshClient,buildState *state.BuildState) error {
     _,err := client.Run(fmt.Sprintf("for net in $(docker network ls | grep %s | awk '{print $1}'); do docker network rm $net; done",conf.NodeNetworkPrefix))
-    state.IncrementDeployProgress()
+    buildState.IncrementDeployProgress()
     return err
 }
 
@@ -151,11 +152,12 @@ func DockerRun(server db.Server,client *util.SshClient,resources util.Resources,
     return err
 }
 
-func DockerRunAll(server db.Server,client *util.SshClient,resources util.Resources,nodes int,image string) error {
-    return DockerRunAppendAll(server,client,resources,0,nodes,image)
+func DockerRunAll(server db.Server,client *util.SshClient,resources util.Resources,nodes int,image string,buildState *state.BuildState) error {
+    return DockerRunAppendAll(server,client,resources,0,nodes,image,buildState)
 }
 
-func DockerRunAppendAll(server db.Server,client *util.SshClient,resources util.Resources,start int,nodes int,image string) error {
+func DockerRunAppendAll(server db.Server,client *util.SshClient,resources util.Resources,start int,
+                        nodes int,image string,buildState *state.BuildState) error {
     var command string
     for i := start; i < start+nodes; i++ {
         //state.IncrementDeployProgress()
@@ -219,7 +221,7 @@ func DockerStopServices(client *util.SshClient) error {
     return err
 }
 
-func DockerStartServices(server db.Server,client *util.SshClient,services []util.Service) error {
+func DockerStartServices(server db.Server,client *util.SshClient,services []util.Service,buildState *state.BuildState) error {
     gateway,subnet,err := util.GetServiceNetwork()
     if err != nil {
         log.Println(err)
@@ -249,7 +251,7 @@ func DockerStartServices(server db.Server,client *util.SshClient,services []util
             log.Println(res)
             return err
         }
-        state.IncrementDeployProgress()
+        buildState.IncrementDeployProgress()
     }
     return nil
 }

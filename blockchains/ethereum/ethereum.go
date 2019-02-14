@@ -28,7 +28,8 @@ const ETH_NET_STATS_PORT = 3338
  * @param  int      nodes       The number of nodes in the network
  * @param  []Server servers     The list of servers passed from build
  */
-func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient) ([]string,error) {
+func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,
+           buildState *state.BuildState) ([]string,error) {
     //var mutex = &sync.Mutex{}
     var sem = semaphore.NewWeighted(conf.ThreadLimit)
     ctx := context.TODO()
@@ -43,7 +44,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         log.Println(err)
     }
 
-    state.SetBuildSteps(8+(5*nodes))
+    buildState.SetBuildSteps(8+(5*nodes))
     defer func(){
         fmt.Printf("Cleaning up...")
         util.Rm("tmp")
@@ -59,7 +60,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         //fmt.Printf("---------------------  CREATING pre-allocated accounts for NODE-%d  ---------------------\n",i)
 
     }
-    state.IncrementBuildProgress() 
+    buildState.IncrementBuildProgress() 
 
     /**Create the Password files**/
     {
@@ -76,12 +77,12 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             }
         }
     }
-    state.IncrementBuildProgress()
+    buildState.IncrementBuildProgress()
 
 
     /**Create the wallets**/
     wallets := []string{}
-    state.SetBuildStage("Creating the wallets")
+    buildState.SetBuildStage("Creating the wallets")
     for i := 1; i <= nodes; i++{
 
         node := i
@@ -106,10 +107,10 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         //mutex.Lock()
         wallets = append(wallets,address)
         //mutex.Unlock()
-        state.IncrementBuildProgress() 
+        buildState.IncrementBuildProgress() 
         
     }
-    state.IncrementBuildProgress()
+    buildState.IncrementBuildProgress()
     unlock := ""
 
     for i,wallet := range wallets {
@@ -120,37 +121,37 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     }
     fmt.Printf("unlock = %s\n%+v\n\n",wallets,unlock)
 
-    state.IncrementBuildProgress()
-    state.SetBuildStage("Creating the genesis block")
+    buildState.IncrementBuildProgress()
+    buildState.SetBuildStage("Creating the genesis block")
     err = createGenesisfile(ethconf,wallets)
     if err != nil{
         log.Println(err)
         return nil,err
     }
 
-    state.IncrementBuildProgress()
-    state.SetBuildStage("Bootstrapping network")
+    buildState.IncrementBuildProgress()
+    buildState.SetBuildStage("Bootstrapping network")
     err = initNodeDirectories(nodes,ethconf.NetworkId,servers)
     if err != nil {
         log.Println(err)
         return nil,err
     }
 
-    state.IncrementBuildProgress()
+    buildState.IncrementBuildProgress()
     err = util.Mkdir("tmp/keystore")
     if err != nil {
         log.Println(err)
         return nil,err
     }
-    state.SetBuildStage("Distributing keys")
+    buildState.SetBuildStage("Distributing keys")
     err = distributeUTCKeystore(nodes)
     if err != nil {
         log.Println(err)
         return nil,err
     }
 
-    state.IncrementBuildProgress()
-    state.SetBuildStage("Starting geth")
+    buildState.IncrementBuildProgress()
+    buildState.SetBuildStage("Starting geth")
     node := 0
     for i, server := range servers {
         clients[i].Scp("tmp/CustomGenesis.json","/home/appo/CustomGenesis.json")
@@ -165,16 +166,16 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 _,err := clients[i].Run(fmt.Sprintf("rm -rf tmp/node%d",node))
                 if err != nil {
                     log.Println(err)
-                    state.ReportError(err)
+                    buildState.ReportError(err)
                     return
                 }
                 err = clients[i].Scpr(fmt.Sprintf("tmp/node%d",node))
                 if err != nil {
                     log.Println(err)
-                    state.ReportError(err)
+                    buildState.ReportError(err)
                     return
                 }
-                state.IncrementBuildProgress() 
+                buildState.IncrementBuildProgress() 
                 gethCmd := fmt.Sprintf(
                     `geth --datadir /whiteblock/node%d --maxpeers %d --networkid %d --rpc --rpcaddr %s`+
                         ` --rpcapi "web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
@@ -196,11 +197,11 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 
                 if err != nil {
                     log.Println(err)
-                    state.ReportError(err)
+                    buildState.ReportError(err)
                     return
                 }
                 
-                state.IncrementBuildProgress() 
+                buildState.IncrementBuildProgress() 
             }(ethconf.NetworkId,node+1,server.Addr,j,unlock,ip,i)
             node ++
         }
@@ -210,10 +211,10 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         log.Println(err)
         return nil,err
     }
-    state.IncrementBuildProgress()
+    buildState.IncrementBuildProgress()
     sem.Release(conf.ThreadLimit)
-    if !state.ErrorFree(){
-        return nil,state.GetError()
+    if !buildState.ErrorFree(){
+        return nil,buildState.GetError()
     }
 
     err = setupEthNetStats(clients[0])
@@ -233,39 +234,39 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 if err != nil {
                     log.Println(err)
                     log.Println(res)
-                    state.ReportError(err)
+                    buildState.ReportError(err)
                     return
                 }
                 res,err = clients[i].Run(sedCmd)
                 if err != nil {
                     log.Println(err)
                     log.Println(res)
-                    state.ReportError(err)
+                    buildState.ReportError(err)
                     return
                 }
                 res,err = clients[i].Run(sedCmd2)
                 if err != nil {
                     log.Println(err)
                     log.Println(res)
-                    state.ReportError(err)
+                    buildState.ReportError(err)
                     return
                 }
                 _,err = clients[i].Run(sedCmd3)
                 if err != nil {
                     log.Println(err)
-                    state.ReportError(err)
+                    buildState.ReportError(err)
                     return
                 }
                 _,err = clients[i].DockerExecd(relNum,"tmux send-keys -t ethnet 'cd /eth-net-intelligence-api && pm2 start app.json' C-m")
                 if err != nil {
                     log.Println(err)
-                    state.ReportError(err)
+                    buildState.ReportError(err)
                     return
                 }  
                 
     
                 sem.Release(1)
-                state.IncrementBuildProgress()
+                buildState.IncrementBuildProgress()
             }(i,ip,servers[0].Iaddr.Ip,node,j)
             node++
         }
@@ -284,7 +285,8 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 /***************************************************************************************************************************/
 
 
-func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,newNodes map[int][]string) ([]string,error) {
+func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,
+         newNodes map[int][]string,buildState *state.BuildState) ([]string,error) {
     return nil,nil
 }
 
