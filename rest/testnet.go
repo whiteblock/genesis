@@ -93,18 +93,31 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     num, err := strconv.Atoi(params["num"])
     if err != nil {
+        log.Println(err)
+        http.Error(w,"Invalid number of nodes",400)
+        return
+    }
+
+    testnetId, err := strconv.Atoi(params["id"])
+    if err != nil {
+        log.Println(err)
         http.Error(w,"Invalid id",400)
         return
     }
-    var tn db.DeploymentDetails
+    tn,err := db.GetBuildByTestnet(testnetId)
+    if err != nil{
+        log.Println(err)
+        http.Error(w,"Could not find the given testnet id",400)
+        return
+    }
+
     tn.Nodes = num
     decoder := json.NewDecoder(r.Body)
     decoder.UseNumber()
     err = decoder.Decode(&tn)
     if err != nil {
         log.Println(err)
-        //http.Error(w,err.Error(),400)
-        //return
+        //Ignore error and continue
     }
     err = state.AcquireBuilding(tn.Servers)
     if err != nil {
@@ -120,11 +133,25 @@ func delNodes(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     num, err := strconv.Atoi(params["num"])
     if err != nil {
+        log.Println(err)
         http.Error(w,"Invalid id",400)
         return
     }
     
-    err = state.AcquireBuilding([]int{0})//TODO: THIS IS WRONG
+    testnetId, err := strconv.Atoi(params["id"])
+    if err != nil {
+        log.Println(err)
+        http.Error(w,"Invalid id",400)
+        return
+    }
+    tn,err := db.GetBuildByTestnet(testnetId)
+    if err != nil{
+        log.Println(err)
+        http.Error(w,"Could not find the given testnet id",400)
+        return
+    }
+
+    err = state.AcquireBuilding(tn.Servers)//TODO: THIS IS WRONG
     if err != nil {
         log.Println(err)
         http.Error(w,"There is a build in progress",409)

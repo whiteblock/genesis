@@ -71,6 +71,9 @@ func (this *BuildState) ReportError(err error){
     a building process should return. The ssh client checks this for you. 
  */
 func (this *BuildState) Stop() bool {
+    if this == nil{ //golang allows for nil.Stop() to be a thing...
+        return false
+    }
     this.stopMux.RLock()
     defer this.stopMux.RUnlock()
     return this.stopping

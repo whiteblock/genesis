@@ -15,6 +15,14 @@ var mux = sync.RWMutex{}
 func cleanBuildStates() {
     for i := 0; i < len(buildStates);i++ {
         if buildStates[i].Done() {
+            for _,serverId1 := range buildStates[i].Servers {
+                for j := 0; j < len(serversInUse); j++{
+                    if serverId1 == serversInUse[j] {
+                        serversInUse = append(serversInUse[:i],serversInUse[i+1:]...)
+                        j--
+                    }
+                }
+            }
             buildStates = append(buildStates[:i],buildStates[i+1:]...)
             i--
         }
