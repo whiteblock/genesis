@@ -26,9 +26,12 @@ type Link struct {
     Reorder         float64 `json:"reorder"`
 }
 
-func GetDefaultCalculator() *Calculator {
+func GetDefaultCalculator() *Calculator {//TODO: improve the equations
     return &Calculator{
         Loss: func(dist float64) (float64) {
+            if dist == 0 {
+                return 0
+            }
             return math.Min(math.Log(dist),100.0)
         },
         Delay: func(dist float64) (int) {
@@ -38,12 +41,21 @@ func GetDefaultCalculator() *Calculator {
             return ""
         },
         Duplication: func(dist float64) (float64) {
+            if dist == 0 {
+                return 0
+            }
             return math.Min(math.Log10(dist),100.0)
         },
         Corrupt: func(dist float64) (float64) {
+            if dist == 0 {
+                return 0
+            }
             return math.Min(math.Log10(dist),100.0)
         },
         Reorder: func(dist float64) (float64) {
+            if dist == 0 {
+                return 0
+            }
             return math.Min(math.Log10(dist),100.0)
         },
     }
