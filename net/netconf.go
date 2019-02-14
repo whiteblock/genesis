@@ -25,11 +25,14 @@ import(
 var conf *util.Config = util.GetConfig()
 
 type Netconf struct {
-    Node    int     `json:"node"`  
-    Limit   int     `json:"limit"`
-    Loss    float64 `json:"loss"`
-    Delay   int     `json:"delay"`
-    Rate    string  `json:"rate"`
+    Node            int     `json:"node"`  
+    Limit           int     `json:"limit"`
+    Loss            float64 `json:"loss"`//Loss % ie 100% = 100
+    Delay           int     `json:"delay"`
+    Rate            string  `json:"rate"`
+    Duplication     float64 `json:"duplicate"`
+    Corrupt         float64 `json:"corrupt"`
+    Reorder         float64 `json:"reorder"`
 }
 
 /*
@@ -44,7 +47,6 @@ func CreateCommands(netconf Netconf,serverId int) []string {
         fmt.Sprintf("sudo tc qdisc add dev %s%d parent 1:1 handle 2: netem",conf.BridgePrefix,netconf.Node),//unf
         fmt.Sprintf("sudo tc filter add dev %s%d parent 1:0 protocol ip pref 55 handle %d fw flowid 2:1",
                     conf.BridgePrefix,netconf.Node,offset),
-
         fmt.Sprintf("sudo iptables -t mangle -A PREROUTING  ! -d %s -j MARK --set-mark %d",
             util.GetGateway(serverId,netconf.Node),offset),
     }
@@ -64,6 +66,19 @@ func CreateCommands(netconf Netconf,serverId int) []string {
     if len(netconf.Rate) > 0 {
         out[2] += fmt.Sprintf(" rate %s",netconf.Rate)
     }
+
+    if netconf.Duplication > 0 {
+        out[2] += fmt.Sprintf(" duplicate %.4f",netconf.Duplication)
+    }
+
+    if netconf.Corrupt > 0 {
+        out[2] += fmt.Sprintf(" corrupt %.4f",netconf.Duplication)
+    }
+
+    if netconf.Reorder > 0 {
+        out[2] += fmt.Sprintf(" reorder %.4f",netconf.Reorder)
+    }
+
     return out
 }
 
