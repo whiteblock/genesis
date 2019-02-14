@@ -1,45 +1,23 @@
 package state
 
-
 import(
-    "sync"
-    "errors"
-    "log"
-)
-/**
- * Packages the global state nicely into an "object"
- */
-var (
-    mutex                           =   &sync.RWMutex{}
-    errMutex                        =   &sync.RWMutex{}
-    stopMux                         =   &sync.RWMutex{}
+    //"sync"
 
-    building            bool        =   false
-    progressIncrement   float64     =   0.00
-    stopping            bool        =   false
-
-    BuildingProgress    float64     =   0.00
-    BuildError          CustomError =   CustomError{What:"",err:nil}
-    BuildStage          string      =   ""     
 )
 
+var bs = NewBuildState()
+var buildStates = []*BuildState{}
+
+func GetBuildState(i int) *BuildState {
+    return bs
+}
 /*
     AcquireBuilding acquires a build lock. Any function which modifies 
     the nodes in a testnet should only do so after calling this function 
     and ensuring that the returned value is nil
  */
 func AcquireBuilding() error {
-    mutex.Lock()
-    defer mutex.Unlock()
-
-    if building {
-        return errors.New("Error: Build in progress")
-    }
-
-    building = true
-    BuildingProgress = 0.00
-    BuildError = CustomError{What:"",err:nil}
-    return nil
+    return bs.AcquireBuilding()
 }
 
 /*
@@ -47,12 +25,7 @@ func AcquireBuilding() error {
     build lock.
  */
 func DoneBuilding(){
-    mutex.Lock()
-    defer mutex.Unlock()
-    BuildingProgress = 100.00
-    BuildStage = "Finished"
-    building = false
-    stopping = false
+    bs.DoneBuilding()
 }
 
 /*
@@ -60,10 +33,7 @@ func DoneBuilding(){
     who query the build status. 
  */
 func ReportError(err error){
-    errMutex.Lock()
-    defer errMutex.Unlock()
-    BuildError = CustomError{What:err.Error(),err:err}
-    log.Println("An error has been reported :"+err.Error())
+    bs.ReportError(err)
 }
 
 /*
@@ -71,9 +41,7 @@ func ReportError(err error){
     a building process should return. The ssh client checks this for you. 
  */
 func Stop() bool {
-    stopMux.RLock()
-    defer stopMux.RUnlock()
-    return stopping
+    return bs.Stop()
 }
 
 /*
@@ -81,17 +49,7 @@ func Stop() bool {
     a current build. Returns an error if there is no build in progress
  */
 func SignalStop() error {
-    stopMux.Lock()
-    defer stopMux.Unlock()
-    mutex.RLock()
-    defer mutex.RUnlock()
-    
-    if building{
-        ReportError(errors.New("Build stopped by user"))
-        stopping = true
-        return nil
-    }
-    return errors.New("No build in progress")
+    return bs.SignalStop()
 }
 
 /*
@@ -99,18 +57,14 @@ func SignalStop() error {
     ReportError
  */
 func ErrorFree() bool {
-    errMutex.RLock()
-    defer errMutex.RUnlock()
-    return BuildError.err == nil
+    return bs.ErrorFree()
 }
 
 /*
     GetError gets the currently stored error
 */
 func GetError() error {
-    errMutex.RLock()
-    defer errMutex.RUnlock()
-    return BuildError.err
+    return bs.GetError()
 }
 
 /*
@@ -119,14 +73,14 @@ func GetError() error {
     IncrementDeployProgress will be called.
 */
 func SetDeploySteps(steps int){
-    progressIncrement = 25.00 / float64(steps)
+    bs.SetDeploySteps(steps)
 }
 
 /*
     IncrementDeployProgress increments the deploy process by one step.
 */
 func IncrementDeployProgress(){
-    BuildingProgress += progressIncrement
+    bs.IncrementDeployProgress()
 }
 
 /*
@@ -134,7 +88,7 @@ func IncrementDeployProgress(){
     blockchain specific process will begin.
  */
 func FinishDeploy(){
-    BuildingProgress = 25.00
+    bs.FinishDeploy()
 }
 
 /*
@@ -143,14 +97,14 @@ func FinishDeploy(){
     will be called. 
  */
 func SetBuildSteps(steps int){
-    progressIncrement = 75.00 / float64(steps)
+    bs.SetBuildSteps(steps)
 }
 
 /*
     IncrementBuildProgress increments the build progress by one step.
  */
 func IncrementBuildProgress(){
-    BuildingProgress += progressIncrement
+    bs.IncrementBuildProgress()
 }
 
 /*
@@ -158,6 +112,6 @@ func IncrementBuildProgress(){
     build progress percentage when the status of the build is queried.
  */
 func SetBuildStage(stage string){
-    BuildStage = stage
+    bs.SetBuildStage(stage)
 }
 

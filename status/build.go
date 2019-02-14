@@ -21,10 +21,11 @@ type BuildStatus struct {
     Check the current status of the build
  */
 func CheckBuildStatus() string {
-    if state.ErrorFree() {
-        return fmt.Sprintf("{\"progress\":%f,\"error\":null,\"stage\":\"%s\"}",state.BuildingProgress,state.BuildStage)
+    bs := state.GetBuildState(0)
+    if bs.ErrorFree() {
+        return fmt.Sprintf("{\"progress\":%f,\"error\":null,\"stage\":\"%s\"}",bs.BuildingProgress,bs.BuildStage)
     }else{
-        out,_ := json.Marshal(BuildStatus{ Progress:state.BuildingProgress, Error:state.BuildError,Stage:state.BuildStage })
+        out,_ := json.Marshal(BuildStatus{ Progress:bs.BuildingProgress, Error:bs.BuildError,Stage:bs.BuildStage })
         return string(out)
     }
 }
