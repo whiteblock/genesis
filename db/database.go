@@ -22,9 +22,12 @@ var conf = util.GetConfig()
 
 var db *sql.DB
 
+const Version = "2.0.0"
+
 func init(){
     db = getDB()
     db.SetMaxOpenConns(50)
+    CheckAndUpdate()
 }
 func getDB() *sql.DB {
     if _, err := os.Stat(dataLoc); os.IsNotExist(err) {
@@ -95,7 +98,10 @@ func dbInit() {
         "params TEXT",
         "resources TEXT")
 
-
+    versionSchema := fmt.Sprintf("CREATE TABLE meta (%s,%s);",
+        "key TEXT",
+        "value TEXT",
+        )
 
     _,err = db.Exec(switchSchema)
     if err != nil {
@@ -117,9 +123,12 @@ func dbInit() {
     if err != nil {
         panic(err)
     }
-
+    _,err = db.Exec(versionSchema)
+    if err != nil {
+        panic(err)
+    }
     InsertLocalServers(db);
-
+    SetVersion(Version)
 }
 
 /*
