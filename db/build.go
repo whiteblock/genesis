@@ -35,7 +35,7 @@ type DeploymentDetails struct {
     /*
         Resources: The resources per node
      */
-    Resources  util.Resources         `json:"resources"`
+    Resources  []util.Resources         `json:"resources"`
 }
 
 /*

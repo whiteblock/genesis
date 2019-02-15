@@ -50,12 +50,16 @@ func AddNodes(details db.DeploymentDetails) error {
     }
     
     //STEP 2: VALIDATE
-    err = details.Resources.ValidateAndSetDefaults()
-    if err != nil {
-        log.Println(err.Error())
-        buildState.ReportError(err)
-        return err
+    for i,res := range details.Resources {
+        err = res.ValidateAndSetDefaults()
+        if err != nil {
+            log.Println(err.Error())
+            err = errors.New(fmt.Sprintf("%s. For node %d",err.Error(),i))
+            buildState.ReportError(err)
+            return err
+        }
     }
+        
     if details.Nodes > conf.MaxNodes {
         buildState.ReportError(errors.New("Too many nodes"))
         return errors.New("Too many nodes")
