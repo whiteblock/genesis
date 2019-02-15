@@ -21,7 +21,7 @@ import (
     db "../db"
     deploy "../deploy"
     state "../state"
-    status "../status"
+    //status "../status"
     util "../util"
 )
 
@@ -34,7 +34,8 @@ func init() {
 
 // AddTestNet implements the build command. All blockchains Build command must be 
 // implemented here, other it will not be called during the build process. 
-func AddTestNet(details db.DeploymentDetails) error {
+func AddTestNet(details db.DeploymentDetails,testNetId string) error {
+
     buildState := state.GetBuildStateByServerId(details.Servers[0])
     buildState.SetDeploySteps(3*details.Nodes + 2 )
     defer buildState.DoneBuilding()
@@ -129,7 +130,7 @@ func AddTestNet(details db.DeploymentDetails) error {
         log.Println(err)
         return err
     }
-    testNetId,err := db.InsertTestNet(db.TestNet{Id: -1, Blockchain: details.Blockchain, Nodes: details.Nodes, Image: details.Image})
+    err = db.InsertTestNet(db.TestNet{Id: testNetId, Blockchain: details.Blockchain, Nodes: details.Nodes, Image: details.Image})
     if err != nil{
         log.Println(err)
         buildState.ReportError(err);
@@ -163,14 +164,6 @@ func AddTestNet(details db.DeploymentDetails) error {
     return nil
 }
 
-/*
-    GetNextTestNetId gets the next testnet id. Used for
-    getting the id of a testnet that is in progress of being built
- */
-func GetNextTestNetId() (string, error) {
-    highestId, err := status.GetLastTestNetId()
-    return fmt.Sprintf("%d", highestId+1), err
-}
 
 /*
     GetParams fetches the name and type of each availible

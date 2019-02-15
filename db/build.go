@@ -85,9 +85,9 @@ func GetAllBuilds() ([]DeploymentDetails,error) {
 /*
     Get the build paramters based off testnet id
  */
-func GetBuildByTestnet(id int) (DeploymentDetails, error) {
+func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 
-    row := db.QueryRow(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources FROM %s WHERE testnet = %d",BuildsTable,id))
+    row := db.QueryRow(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources FROM %s WHERE testnet = %s",BuildsTable,id))
     var build DeploymentDetails
     var servers []byte
     var params []byte
@@ -121,7 +121,7 @@ func GetBuildByTestnet(id int) (DeploymentDetails, error) {
 /*
     Insert a build
  */
-func InsertBuild(dd DeploymentDetails,testnetId int) error {
+func InsertBuild(dd DeploymentDetails,testnetId string) error {
 
     tx,err := db.Begin()
 

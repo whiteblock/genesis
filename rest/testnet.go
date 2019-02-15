@@ -6,6 +6,7 @@ import(
     "encoding/json"
     "strconv"
     "github.com/gorilla/mux"
+    status "../status"
     state "../state"
     db "../db"
     testnet "../testnet"
@@ -39,23 +40,26 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
         http.Error(w,"There is a build already in progress",409)
         return
     }
-    next,_ := testnet.GetNextTestNetId()
-    w.Write([]byte(next))
+    id,err := status.GetNextTestNetId()
+    if err != nil {
+        log.Println(err)
+        http.Error(w,"There is a build already in progress",409)
+        return
+    }
 
-    go testnet.AddTestNet(tn)
+    go testnet.AddTestNet(tn,id)
+    w.Write([]byte(id))
+
+    
     
     //log.Println("Created a test net successfully!");
 }
 
 func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
-    id, err := strconv.Atoi(params["id"])
-    if err != nil {
-        http.Error(w,"Invalid id",400)
-        return
-    }
+
     //log.Println(fmt.Sprintf("Attempting to find tn with id %d",id))
-    testNet, err := db.GetTestNet(id)
+    testNet, err := db.GetTestNet(params["id"])
     if err != nil {
         http.Error(w,"Test net does not exist",404)
         return
@@ -74,12 +78,8 @@ func deleteTestNet(w http.ResponseWriter, r *http.Request) {
 
 func getTestNetNodes(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
-    id, err := strconv.Atoi(params["id"])
-    if err != nil {
-        http.Error(w,"Invalid id",400)
-        return
-    }
-    nodes,err := db.GetAllNodesByTestNet(id)
+
+    nodes,err := db.GetAllNodesByTestNet(params["id"])
     if err != nil {
         log.Println(err.Error())
         http.Error(w,err.Error(),204)
@@ -98,12 +98,8 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    testnetId, err := strconv.Atoi(params["id"])
-    if err != nil {
-        log.Println(err)
-        http.Error(w,"Invalid id",400)
-        return
-    }
+    testnetId := params["id"]
+
     tn,err := db.GetBuildByTestnet(testnetId)
     if err != nil{
         log.Println(err)
@@ -126,7 +122,7 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
         return
     }
     w.Write([]byte("Adding the nodes"))
-    go testnet.AddNodes(tn)
+    go testnet.AddNodes(tn,testnetId)
 }
 
 func delNodes(w http.ResponseWriter, r *http.Request) {
@@ -138,12 +134,8 @@ func delNodes(w http.ResponseWriter, r *http.Request) {
         return
     }
     
-    testnetId, err := strconv.Atoi(params["id"])
-    if err != nil {
-        log.Println(err)
-        http.Error(w,"Invalid id",400)
-        return
-    }
+    testnetId := params["id"]
+    
     tn,err := db.GetBuildByTestnet(testnetId)
     if err != nil{
         log.Println(err)

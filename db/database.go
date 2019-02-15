@@ -22,8 +22,6 @@ var conf = util.GetConfig()
 
 var db *sql.DB
 
-const Version = "2.0.0"
-
 func init(){
     db = getDB()
     db.SetMaxOpenConns(50)
@@ -71,17 +69,18 @@ func dbInit() {
         "switch INTEGER",
         "name TEXT")
 
-    testSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s,%s);",
+    testSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s,%s,%s);",
         TestTable,
-        "id INTEGER PRIMARY KEY AUTOINCREMENT",
+        "id TEXT",
         "blockchain TEXT NOT NULL",
         "nodes INTERGER",
-        "image TEXT NOT NULL")
+        "image TEXT NOT NULL",
+        "ts INTEGER")
 
     nodesSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s);",
         NodesTable,
         "id INTEGER PRIMARY KEY AUTOINCREMENT",
-        "test_net INTEGER",
+        "test_net TEXT",
         "server INTEGER",
         "local_id INTEGER",
         "ip TEXT NOT NULL",
@@ -90,7 +89,7 @@ func dbInit() {
     buildSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s, %s,%s,%s, %s,%s,%s);",
         BuildsTable,
         "id INTEGER PRIMARY KEY AUTOINCREMENT",
-        "testnet INTEGER",
+        "testnet TEXT",
         "servers TEXT",
         "blockchain TEXT",
         "nodes INTEGER",

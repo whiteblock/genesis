@@ -9,10 +9,11 @@ import(
 )
 
 type TestNet struct {
-	Id			int		`json:"id"`
+	Id			string  `json:"id"`
 	Blockchain	string	`json:"blockchain"`
 	Nodes		int		`json:"nodes"`
 	Image		string	`json:"image"`
+	Ts			int64 	`json:"timestamp"`
 }
 
 /*
@@ -20,7 +21,7 @@ type TestNet struct {
  */
 func GetAllTestNets() ([]TestNet,error) {
 
-	rows, err :=  db.Query(fmt.Sprintf("SELECT id, blockchain, nodes, image FROM %s",TestTable ))
+	rows, err :=  db.Query(fmt.Sprintf("SELECT id, blockchain, nodes, image, ts FROM %s",TestTable ))
 	if err != nil{
 		log.Println(err)
 		return nil,err
@@ -30,7 +31,7 @@ func GetAllTestNets() ([]TestNet,error) {
 
 	for rows.Next() {
 		var testnet TestNet
-		err = rows.Scan(&testnet.Id,&testnet.Blockchain,&testnet.Nodes,&testnet.Image)
+		err = rows.Scan(&testnet.Id,&testnet.Blockchain,&testnet.Nodes,&testnet.Image,&testnet.Ts)
 		if err != nil{
 			log.Println(err)
 			return nil,err
@@ -43,13 +44,13 @@ func GetAllTestNets() ([]TestNet,error) {
 /*
 	Get a testnet by id
  */
-func GetTestNet(id int) (TestNet,error) {
+func GetTestNet(id string) (TestNet,error) {
 
-	row :=  db.QueryRow(fmt.Sprintf("SELECT id,blockchain,nodes,image FROM %s WHERE id = %d",TestTable,id))
+	row :=  db.QueryRow(fmt.Sprintf("SELECT id,blockchain,nodes,image FROM %s WHERE id = \"%s\"",TestTable,id))
 
 	var testnet TestNet
 
-	if row.Scan(&testnet.Id,&testnet.Blockchain,&testnet.Nodes,&testnet.Image) == sql.ErrNoRows {
+	if row.Scan(&testnet.Id,&testnet.Blockchain,&testnet.Nodes,&testnet.Image,&testnet.Ts) == sql.ErrNoRows {
 		return testnet, errors.New("Not Found")
 	}
 
@@ -59,41 +60,35 @@ func GetTestNet(id int) (TestNet,error) {
 /*
 	Insert a testnet into the database
  */
-func InsertTestNet(testnet TestNet) (int,error) {
+func InsertTestNet(testnet TestNet) (error) {
 
 	tx,err := db.Begin()
 	if err != nil{
 		log.Println(err)
-		return -1,err
+		return err
 	}
 
-	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (blockchain,nodes,image) VALUES (?,?,?)",TestTable))
+	stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (id,blockchain,nodes,image,ts) VALUES (?,?,?,?,?)",TestTable))
 	if err != nil{
 		log.Println(err)
-		return -1,err
+		return err
 	}
 
 	defer stmt.Close()
 
-	res,err := stmt.Exec(testnet.Blockchain,testnet.Nodes,testnet.Image)
+	_,err = stmt.Exec(testnet.Id,testnet.Blockchain,testnet.Nodes,testnet.Image,testnet.Ts)
 	if err != nil{
 		log.Println(err)
-		return -1,err
+		return err
 	}
 
 	err = tx.Commit()
 	if err != nil{
 		log.Println(err)
-		return -1,err
+		return err
 	}
 
-	id, err := res.LastInsertId()
-	if err != nil{
-		log.Println(err)
-		return -1,err
-	}
-
-	return int(id),nil
+	return nil
 }
 
 /*

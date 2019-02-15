@@ -22,7 +22,7 @@ import(
     It is worth noting that any missing information from the given
     deployment details will be filled in from the origin build.
 */
-func AddNodes(details db.DeploymentDetails) error {
+func AddNodes(details db.DeploymentDetails,testnetId string) error {
     buildState := state.GetBuildStateByServerId(details.Servers[0])
     defer buildState.DoneBuilding()
 
@@ -134,11 +134,10 @@ func AddNodes(details db.DeploymentDetails) error {
             return errors.New("Unknown blockchain")
     }
     
-    testNetId,err := status.GetLastTestNetId()
     i := 0
     for serverId,ips := range nodes {
         for _,ip := range ips{
-            node := db.Node{Id: -1, TestNetId: testNetId, Server: serverId, LocalId: i, Ip: ip}
+            node := db.Node{Id:-1 , TestNetId: testnetId, Server: serverId, LocalId: i, Ip: ip}
             if labels != nil {
                 node.Label = labels[i]
             }

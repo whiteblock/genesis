@@ -233,11 +233,8 @@ func getAllBuilds(w http.ResponseWriter, r *http.Request) {
 func getBuild(w http.ResponseWriter,r *http.Request){
     params := mux.Vars(r)
 
-    id, err := strconv.Atoi(params["id"])
-    if err != nil {
-        json.NewEncoder(w).Encode(err)
-        return
-    }
+    id := params["id"]
+ 
     build, err := db.GetBuildByTestnet(id)
     if err != nil {
         http.Error(w,err.Error(),404)

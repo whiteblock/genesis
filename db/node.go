@@ -16,7 +16,7 @@ type Node struct {
     /*
         TestNetId is the id of the testnet to which the node belongs to
      */
-    TestNetId   int     `json:"testNetId"`
+    TestNetId   string  `json:"testNetId"`
     /*
         Server is the id of the server on which the node resides
      */
@@ -61,10 +61,10 @@ func GetAllNodesByServer(serverId int) ([]Node,error) {
 /*
     GetAllNodesByTestNet gets all the nodes which are in the given testnet
  */
-func GetAllNodesByTestNet(testId int) ([]Node,error) {
+func GetAllNodesByTestNet(testId string) ([]Node,error) {
     nodes := []Node{}
 
-    rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE test_net = %d",NodesTable,testId ))
+    rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE test_net = \"%s\"",NodesTable,testId ))
     if err != nil {
         return nil,err
     }

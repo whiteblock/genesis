@@ -2,23 +2,39 @@ package status
 
 import(
     "log"
+    "github.com/satori/go.uuid"
+
     db "../db"
 )
+
+
+/*
+    GetNextTestNetId gets the next testnet id. Used for
+    getting the id of a testnet that is in progress of being built
+ */
+func GetNextTestNetId() (string, error) {
+    uid,err := uuid.NewV4()
+
+    return uid.String(),err
+}
+
 
 /*
     Get the id of the latest testnet
  */
-func GetLastTestNetId() (int,error) {
+func GetLastTestNetId() (string,error) {
     testNets,err := db.GetAllTestNets()
     if err != nil{
         log.Println(err)
-        return 0,err
+        return "",err
     }
-    highestId := 0
+    var highestTS int64 = 0
+    highestId := ""
 
     for _, testNet := range testNets {
-        if testNet.Id > highestId {
+        if testNet.Ts > highestTS {
             highestId = testNet.Id
+            highestTS = testNet.Ts
         }
     }
     return highestId,nil
