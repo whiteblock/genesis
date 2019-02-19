@@ -3,7 +3,7 @@ package status
 import(
     "log"
     "github.com/satori/go.uuid"
-
+    "strings"
     db "../db"
 )
 
@@ -14,8 +14,8 @@ import(
  */
 func GetNextTestNetId() (string, error) {
     uid,err := uuid.NewV4()
-
-    return uid.String(),err
+    str := strings.Replace(uid.String(),"-","_",-1)
+    return str,err
 }
 
 

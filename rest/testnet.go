@@ -61,6 +61,7 @@ func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
     //log.Println(fmt.Sprintf("Attempting to find tn with id %d",id))
     testNet, err := db.GetTestNet(params["id"])
     if err != nil {
+        log.Println(err)
         http.Error(w,"Test net does not exist",404)
         return
     }

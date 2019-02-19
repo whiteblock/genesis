@@ -46,15 +46,17 @@ func GetAllTestNets() ([]TestNet,error) {
  */
 func GetTestNet(id string) (TestNet,error) {
 
-	row :=  db.QueryRow(fmt.Sprintf("SELECT id,blockchain,nodes,image FROM %s WHERE id = \"%s\"",TestTable,id))
+	row :=  db.QueryRow(fmt.Sprintf("SELECT id,blockchain,nodes,image,ts FROM %s WHERE id = '%s'",TestTable,id))
 
 	var testnet TestNet
 
-	if row.Scan(&testnet.Id,&testnet.Blockchain,&testnet.Nodes,&testnet.Image,&testnet.Ts) == sql.ErrNoRows {
+	err := row.Scan(&testnet.Id,&testnet.Blockchain,&testnet.Nodes,&testnet.Image,&testnet.Ts)
+
+	if  err == sql.ErrNoRows {
 		return testnet, errors.New("Not Found")
 	}
 
-	return testnet, nil
+	return testnet, err
 }
 
 /*
@@ -88,20 +90,6 @@ func InsertTestNet(testnet TestNet) (error) {
 		return err
 	}
 
-	return nil
-}
-
-/*
-	Delete a testnet by id
-*/
-func DeleteTestNet(id int) error {
-
-	_,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",TestTable,id))
-	if err != nil{
-		log.Println(err)
-		return err
-	}
-	DeleteNodesByTestNet(id)
 	return nil
 }
 
