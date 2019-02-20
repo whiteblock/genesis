@@ -301,3 +301,54 @@ func GetJSONBool(data map[string]interface{},field string) (bool,error){
     }
     return false,errors.New("Incorrect type for "+field+" given")
 }
+
+
+func MergeStringMaps(m1 map[string]string, m2 map[string]string) map[string]string {
+    out := make(map[string]string)
+    for k1,v1 := range m1 {
+        out[k1] = v1
+    }
+
+    for k2,v2 := range m2 {
+        out[k2] = v2
+    }
+    return out
+}
+
+func ConvertToStringMap(in interface{}) map[string]string {
+
+    data := in.(map[string]interface{})
+    out := make(map[string]string)
+
+    for key,value := range data {
+        strval,_ := json.Marshal(value);
+        /*switch v := i.(type) {
+            case int:
+                fallthrough
+            case int8:
+                fallthrough
+            case int16:
+                fallthrough
+            case int32:
+                fallthrough
+            case int64:
+                strval = string(strconv.AppendInt(nil, int64(v), 10))
+
+            case float:
+                fallthrough
+            case float32:
+                fallthrough
+            case float64:
+                b64 = strconv.AppendFloat(nil,float64(v), 'f', -1, 64)
+                fmt.Println("the reciprocal of i is", 1/v)
+            case string:
+                strval = v
+            case []byte:
+
+            default:
+                // i isn't one of the types above
+        }*/
+        out[key] = string(strval)
+    }
+    return out
+}

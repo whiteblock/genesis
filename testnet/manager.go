@@ -17,6 +17,7 @@ import (
     sys "../blockchains/syscoin"
     tendermint "../blockchains/tendermint"
     cosmos "../blockchains/cosmos"
+    parity "../blockchains/parity"
 
     db "../db"
     deploy "../deploy"
@@ -88,6 +89,8 @@ func AddTestNet(details db.DeploymentDetails,testNetId string) error {
             services = tendermint.GetServices()
         case "cosmos":
             services = cosmos.GetServices()
+        case "parity":
+            services = parity.GetServices()
     }
 
     //STEP 4: BUILD OUT THE DOCKER CONTAINERS AND THE NETWORK
@@ -119,6 +122,8 @@ func AddTestNet(details db.DeploymentDetails,testNetId string) error {
             labels, err = tendermint.Build(details.Params, details.Nodes, newServerData, clients,buildState)
         case "cosmos":
             labels, err = cosmos.Build(details.Params, details.Nodes, newServerData, clients,buildState)
+        case "parity":
+            labels, err = parity.Build(details.Params, details.Nodes, newServerData, clients,buildState)
         case "generic":
             log.Println("Built in generic mode")
         default:
