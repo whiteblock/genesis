@@ -32,6 +32,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
     var sem = semaphore.NewWeighted(conf.ThreadLimit)
     ctx := context.TODO()
     pconf, err := NewConf(data)
+    fmt.Printf("%#v\n",*pconf)
     if err != nil {
         log.Println(err)
         return nil, err

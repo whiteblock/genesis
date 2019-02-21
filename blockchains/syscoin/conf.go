@@ -1,8 +1,8 @@
 package syscoin
 
 import(
-	"errors"
 	"log"
+	"encoding/json"
 	util "../../util"
 )
 
@@ -29,145 +29,73 @@ type SysConf struct {
 
 func NewConf(data map[string]interface{}) (*SysConf,error) {
 	out := new(SysConf)
-
-	out.Options = []string{
-		"server",
-		"regtest",
-		"listen",
-		"rest",
-		//"debug",
-		/*"unittest",
-		"addressindex",
-		"assetallocationindex",*/
-		"tpstest",
-	}
-
-	out.SenderOptions = []string{
-		"addressindex",
-	}
-
-	out.ReceiverOptions = []string{
-	}
-
-	out.MNExtras = []string{
-	}
-
-	out.Extras = []string{}
-	out.SenderExtras = []string{}
-	out.ReceiverExtras = []string{}
-	out.MNOptions = []string{}
-
-	out.MasterNodeConns = 25
-	out.NodeConns = 8
-	out.PercOfMNodes = 90
+	err := json.Unmarshal([]byte(GetDefaults()),out)
 
 	if data == nil {
 		log.Println("No params given")
 		return out, nil
 	}
-	var err error
 
-
-	options,exists := data["options"]
-	if exists && options != nil {
-		switch options.(type){
-			case []string:
-				out.Options = options.([]string)
-			default:
-				return nil,errors.New("Incorrect type for options given")
-		}
+	err = util.GetJSONStringArr(data,"options",&out.Options)
+	if err != nil {
+		return nil,err
 	}
 
-	extras,exists := data["extras"]
-	if exists && extras != nil {
-		switch extras.(type){
-			case []string:
-				out.Extras = extras.([]string)
-			default:
-				return nil,errors.New("Incorrect type for extras given")
-		}
+	err = util.GetJSONStringArr(data,"extras",&out.Extras)
+	if err != nil {
+		return nil,err
 	}
 
-	senderOptions,exists := data["senderOptions"]
-	if exists && senderOptions != nil {
-		switch senderOptions.(type){
-			case []string:
-				out.SenderOptions = senderOptions.([]string)
-			default:
-				return nil,errors.New("Incorrect type for senderOptions given")
-		}
+	err = util.GetJSONStringArr(data,"senderOptions",&out.SenderOptions)
+	if err != nil {
+		return nil,err
 	}
 
-	senderExtras,exists := data["senderExtras"]
-	if exists && senderExtras != nil {
-		switch senderExtras.(type){
-			case []string:
-				out.SenderExtras = senderExtras.([]string)
-			default:
-				return nil,errors.New("Incorrect type for senderExtras given")
-		}
+	err = util.GetJSONStringArr(data,"senderExtras",&out.SenderExtras)
+	if err != nil {
+		return nil,err
 	}
 
-	receiverOptions,exists := data["receiverOptions"]
-	if exists && receiverOptions != nil {
-		switch receiverOptions.(type){
-			case []string:
-				out.ReceiverOptions = receiverOptions.([]string)
-			default:
-				return nil,errors.New("Incorrect type for receiverOptions given")
-		}
+	err = util.GetJSONStringArr(data,"senderExtras",&out.SenderExtras)
+	if err != nil {
+		return nil,err
+	}
+
+	err = util.GetJSONStringArr(data,"receiverOptions",&out.ReceiverOptions)
+	if err != nil {
+		return nil,err
+	}
+
+	err = util.GetJSONStringArr(data,"receiverExtras",&out.ReceiverExtras)
+	if err != nil {
+		return nil,err
+	}
+
+	err = util.GetJSONStringArr(data,"mnOptions",&out.MNOptions)
+	if err != nil {
+		return nil,err
+	}
+
+	err = util.GetJSONStringArr(data,"mnExtras",&out.MNExtras)
+	if err != nil {
+		return nil,err
+	}
+
+	err = util.GetJSONInt64(data,"masterNodeConns",&out.MasterNodeConns)
+	if err != nil {
+		return nil,err
+	}
+
+	err = util.GetJSONInt64(data,"nodeConns",&out.NodeConns)
+	if err != nil {
+		return nil,err
+	}
+
+	err = util.GetJSONInt64(data,"percentMasternodes",&out.PercOfMNodes)
+	if err != nil {
+		return nil,err
 	}
 	
-	receiverExtras,exists := data["receiverExtras"]
-	if exists && receiverExtras != nil {
-		switch receiverExtras.(type){
-			case []string:
-				out.ReceiverExtras = receiverExtras.([]string)
-			default:
-				return nil,errors.New("Incorrect type for receiverExtras given")
-		}
-	}
-
-	mnOptions,exists := data["mnOptions"]
-	if exists && mnOptions != nil {
-		switch mnOptions.(type){
-			case []string:
-				out.MNOptions = mnOptions.([]string)
-			default:
-				return nil,errors.New("Incorrect type for mnOptions given")
-		}
-	}
-	mnExtras,exists := data["mnExtras"]
-	if exists && mnExtras != nil {
-		switch mnExtras.(type){
-			case []string:
-				out.MNExtras = mnExtras.([]string)
-			default:
-				return nil,errors.New("Incorrect type for mnExtras given")
-		}
-	}
-
-	if _,ok := data["masterNodeConns"]; ok {
-		out.MasterNodeConns,err = util.GetJSONInt64(data,"masterNodeConns")
-		if err != nil {
-			return nil,err
-		}
-	}
-
-	if _,ok := data["nodeConns"]; ok {
-		out.NodeConns,err = util.GetJSONInt64(data,"nodeConns")
-		if err != nil {
-			return nil,err
-		}
-	}
-
-	if _,ok := data["percentMasternodes"]; ok {
-		out.PercOfMNodes,err = util.GetJSONInt64(data,"percentMasternodes")
-		if err != nil {
-			return nil,err
-		}
-	}
-
 	return out, nil
 } 
 
@@ -248,20 +176,18 @@ func GetDefaults() string {
 		"server",
 		"regtest",
 		"listen",
-		"rest"
+		"rest",
+		"tpstest"
 	],
 	"extras":[],
 	"senderOptions":[
-		"tpstest",
 		"addressindex"
 	],
-	"receiverOptions":[
-		"tpstest"
+	"receiverOptions":[],
+	"mnOptions":[],
+	"senderExtras":[
+		"addressindex"
 	],
-	"mnOptions":[
-		"tpstest"
-	],
-	"senderExtras":[],
 	"receiverExtras":[],
 	"mnExtras":[],
 	"masterNodeConns":25,

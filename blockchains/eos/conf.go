@@ -9,7 +9,7 @@ import(
 
 type EosConf struct{
     UserAccounts                    int64       `json:"userAccounts"`
-    BlockProducers                  int         `json:"validators"`
+    BlockProducers                  int64       `json:"validators"`
 
     AccountCpuStake                 int64       `json:"accountCpuStake"`
     AccountRam                      int64       `json:"accountRam"`
@@ -65,208 +65,225 @@ func NewConf(data map[string]interface{}) (*EosConf,error){
     if data == nil {
         return out,nil
     }
-    var err error
-    if _,ok := data["userAccounts"]; ok {
-        out.UserAccounts,err = util.GetJSONInt64(data,"userAccounts")
-        if err != nil {
-            return nil,err
-        }
+
+    err := util.GetJSONInt64(data,"userAccounts",&out.UserAccounts)
+    if err != nil {
+        return nil,err
     }
     
-    if _,ok := data["validators"]; ok {
-        num,err := util.GetJSONInt64(data,"validators")
-        if err != nil {
-            return nil,err
-        }
-        out.BlockProducers = int(num)
+    err = util.GetJSONInt64(data,"validators",&out.BlockProducers)
+    if err != nil {
+        return nil,err
     }
 
-    if _,ok := data["maxBlockNetUsage"]; ok {
-        out.MaxBlockNetUsage,err = util.GetJSONInt64(data,"maxBlockNetUsage")
-        if err != nil {
-            return nil,err
-        }
-    }
-    if _,ok := data["targetBlockNetUsagePct"]; ok {
-        out.TargetBlockNetUsagePct,err = util.GetJSONInt64(data,"targetBlockNetUsagePct")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"maxBlockNetUsage",&out.MaxBlockNetUsage)
+    if err != nil {
+        return nil,err
     }
 
-    if _,ok := data["maxTransactionNetUsage"]; ok {
-        out.MaxTransactionNetUsage,err = util.GetJSONInt64(data,"maxTransactionNetUsage")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"targetBlockNetUsagePct",&out.TargetBlockNetUsagePct)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["basePerTransactionNetUsage"]; ok {
-        out.BasePerTransactionNetUsage,err = util.GetJSONInt64(data,"basePerTransactionNetUsage")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"maxTransactionNetUsage",&out.MaxTransactionNetUsage)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["netUsageLeeway"]; ok {
-        out.NetUsageLeeway,err = util.GetJSONInt64(data,"netUsageLeeway")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"basePerTransactionNetUsage",&out.BasePerTransactionNetUsage)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["contextFreeDiscountNetUsageNum"]; ok {
-        out.ContextFreeDiscountNetUsageNum,err = util.GetJSONInt64(data,"contextFreeDiscountNetUsageNum")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"netUsageLeeway",&out.NetUsageLeeway)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["contextFreeDiscountNetUsageDen"]; ok {
-        out.ContextFreeDiscountNetUsageDen,err = util.GetJSONInt64(data,"contextFreeDiscountNetUsageDen")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"contextFreeDiscountNetUsageNum",&out.ContextFreeDiscountNetUsageNum)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["maxBlockCpuUsage"]; ok {
-        out.MaxBlockCpuUsage,err = util.GetJSONInt64(data,"maxBlockCpuUsage")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"contextFreeDiscountNetUsageDen",&out.ContextFreeDiscountNetUsageDen)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["targetBlockCpuUsagePct"]; ok {
-        out.TargetBlockCpuUsagePct,err = util.GetJSONInt64(data,"targetBlockCpuUsagePct")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"maxBlockCpuUsage",&out.MaxBlockCpuUsage)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["maxTransactionCpuUsage"]; ok {
-        out.MaxTransactionCpuUsage,err = util.GetJSONInt64(data,"maxTransactionCpuUsage")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"targetBlockCpuUsagePct",&out.TargetBlockCpuUsagePct)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["minTransactionCpuUsage"]; ok {
-        out.MinTransactionCpuUsage,err = util.GetJSONInt64(data,"minTransactionCpuUsage")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"maxTransactionCpuUsage",&out.MaxTransactionCpuUsage)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["maxTransactionLifetime"]; ok {
-        out.MaxTransactionLifetime,err = util.GetJSONInt64(data,"maxTransactionLifetime")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"minTransactionCpuUsage",&out.MinTransactionCpuUsage)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["deferredTrxExpirationWindow"]; ok {
-        out.DeferredTrxExpirationWindow,err = util.GetJSONInt64(data,"deferredTrxExpirationWindow")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"maxTransactionLifetime",&out.MaxTransactionLifetime)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["maxTransactionDelay"]; ok {
-        out.MaxTransactionDelay,err = util.GetJSONInt64(data,"maxTransactionDelay")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"deferredTrxExpirationWindow",&out.DeferredTrxExpirationWindow)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["maxInlineActionSize"]; ok {
-        out.MaxInlineActionSize,err = util.GetJSONInt64(data,"maxInlineActionSize")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"maxTransactionDelay",&out.MaxTransactionDelay)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["maxInlineActionDepth"]; ok {
-        out.MaxInlineActionDepth,err = util.GetJSONInt64(data,"maxInlineActionDepth")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"maxInlineActionSize",&out.MaxInlineActionSize)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["maxAuthorityDepth"]; ok {
-        out.MaxAuthorityDepth,err = util.GetJSONInt64(data,"maxAuthorityDepth")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"maxInlineActionDepth",&out.MaxInlineActionDepth)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["initialChainId"]; ok {
-        out.InitialChainId,err = util.GetJSONString(data,"initialChainId")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"maxAuthorityDepth",&out.MaxAuthorityDepth)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["chainStateDbSizeMb"]; ok {
-        out.ChainStateDbSizeMb,err = util.GetJSONInt64(data,"chainStateDbSizeMb")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONString(data,"initialChainId",&out.InitialChainId)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["reversibleBlocksDbSizeMb"]; ok {
-        out.ReversibleBlocksDbSizeMb,err = util.GetJSONInt64(data,"reversibleBlocksDbSizeMb")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"chainStateDbSizeMb",&out.ChainStateDbSizeMb)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["contractsConsole"]; ok {
-        out.ContractsConsole,err = util.GetJSONBool(data,"contractsConsole")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"reversibleBlocksDbSizeMb",&out.ReversibleBlocksDbSizeMb)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["p2pMaxNodesPerHost"]; ok {
-        out.P2pMaxNodesPerHost,err = util.GetJSONInt64(data,"p2pMaxNodesPerHost")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONBool(data,"contractsConsole",&out.ContractsConsole)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["allowedConnection"]; ok {
-        out.AllowedConnection,err = util.GetJSONString(data,"allowedConnection")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"p2pMaxNodesPerHost",&out.P2pMaxNodesPerHost)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["maxClients"]; ok {
-        out.MaxClients,err = util.GetJSONInt64(data,"maxClients")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONString(data,"allowedConnection",&out.AllowedConnection)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["connectionCleanupPeriod"]; ok {
-        out.ConnectionCleanupPeriod,err = util.GetJSONInt64(data,"connectionCleanupPeriod")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"maxClients",&out.MaxClients)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["networkVersionMatch"]; ok {
-        out.NetworkVersionMatch,err = util.GetJSONInt64(data,"networkVersionMatch")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"connectionCleanupPeriod",&out.ConnectionCleanupPeriod)
+    if err != nil {
+        return nil, err
     }
 
-    if _,ok := data["syncFetchSpan"]; ok {
-        out.SyncFetchSpan,err = util.GetJSONInt64(data,"syncFetchSpan")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"networkVersionMatch",&out.NetworkVersionMatch)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONInt64(data,"syncFetchSpan",&out.SyncFetchSpan)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONBool(data,"pauseOnStartup",&out.PauseOnStartup)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONInt64(data,"maxTransactionTime",&out.MaxTransactionTime)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONInt64(data,"maxIrreversibleBlockAge",&out.MaxIrreversibleBlockAge)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONInt64(data,"keosdProviderTimeout",&out.KeosdProviderTimeout)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONInt64(data,"txnReferenceBlockLag",&out.TxnReferenceBlockLag)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONStringArr(data,"plugins",&out.Plugins)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONStringArr(data,"configExtras",&out.ConfigExtras)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONInt64(data,"accountCpuStake",&out.AccountCpuStake)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONInt64(data,"accountRam",&out.AccountRam)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONInt64(data,"accountNetStake",&out.AccountNetStake)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONInt64(data,"accountFunds",&out.AccountFunds)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONInt64(data,"bpCpuStake",&out.BpCpuStake)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONInt64(data,"bpRam",&out.BpRam)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONInt64(data,"bpNetStake",&out.BpNetStake)
+    if err != nil {
+        return nil, err
+    }
+
+    err = util.GetJSONInt64(data,"bpFunds",&out.BpFunds)
+    if err != nil {
+        return nil, err
     }
 
 /*  if _,ok := data["maxImplicitRequest"]; ok {
@@ -276,113 +293,6 @@ func NewConf(data map[string]interface{}) (*EosConf,error){
         }
     }*/
 
-    if _,ok := data["pauseOnStartup"]; ok {
-        out.PauseOnStartup,err = util.GetJSONBool(data,"pauseOnStartup")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["maxTransactionTime"]; ok {
-        out.MaxTransactionTime,err = util.GetJSONInt64(data,"maxTransactionTime")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["maxIrreversibleBlockAge"]; ok {
-        out.MaxIrreversibleBlockAge,err = util.GetJSONInt64(data,"maxIrreversibleBlockAge")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["keosdProviderTimeout"]; ok {
-        out.KeosdProviderTimeout,err = util.GetJSONInt64(data,"keosdProviderTimeout")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["txnReferenceBlockLag"]; ok {
-        out.TxnReferenceBlockLag,err = util.GetJSONInt64(data,"txnReferenceBlockLag")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["plugins"]; ok {
-        out.Plugins,err = util.GetJSONStringArr(data,"plugins")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["configExtras"]; ok {
-        out.ConfigExtras,err = util.GetJSONStringArr(data,"configExtras")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["accountCpuStake"]; ok {
-        out.AccountCpuStake,err = util.GetJSONInt64(data,"accountCpuStake")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["accountRam"]; ok {
-        out.AccountRam,err = util.GetJSONInt64(data,"accountRam")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["accountNetStake"]; ok {
-        out.AccountNetStake,err = util.GetJSONInt64(data,"accountNetStake")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["accountFunds"]; ok {
-        out.AccountFunds,err = util.GetJSONInt64(data,"accountFunds")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-
-
-
-    if _,ok := data["bpCpuStake"]; ok {
-        out.BpCpuStake,err = util.GetJSONInt64(data,"bpCpuStake")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["bpRam"]; ok {
-        out.BpRam,err = util.GetJSONInt64(data,"bpRam")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["bpNetStake"]; ok {
-        out.BpNetStake,err = util.GetJSONInt64(data,"bpNetStake")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["bpFunds"]; ok {
-        out.BpFunds,err = util.GetJSONInt64(data,"bpFunds")
-        if err != nil {
-            return nil,err
-        }
-    }
 
     return out,nil
 }

@@ -24,49 +24,55 @@ type EthConf struct {
  */
 func NewConf(data map[string]interface{}) (*EthConf,error) {
 	out := new(EthConf)
-
-	out.ExtraAccounts = 0
-	out.ChainId = 15468
-	out.NetworkId = 15468
-	out.Difficulty = 100000
-	out.InitBalance = "10000000000000000000000000"
-	out.MaxPeers = 1000
-	out.GasLimit = 4000000
-	out.HomesteadBlock = 0
-	out.Eip155Block = 0
-	out.Eip158Block = 0
+	err := json.Unmarshal([]byte(GetDefaults()),out)
 
 	if data == nil {
 		return out,nil
 	}
-	var err error
 
-	if _,ok := data["extraAccounts"]; ok {
-		out.ExtraAccounts,err = util.GetJSONInt64(data,"extraAccounts")
-		if err != nil {
-			return nil,err
-		}
+	err = util.GetJSONInt64(data,"extraAccounts",&out.ExtraAccounts)
+	if err != nil {
+		return nil,err
 	}
 
-	if _,ok := data["chainId"]; ok {
-		out.ChainId,err = util.GetJSONInt64(data,"chainId")
-		if err != nil {
-			return nil,err
-		}
+	err = util.GetJSONInt64(data,"chainId",&out.ChainId)
+	if err != nil {
+		return nil,err
 	}
 
-	if _,ok := data["networkId"]; ok {
-		out.NetworkId,err = util.GetJSONInt64(data,"networkId")
-		if err != nil {
-			return nil,err
-		}
+	err = util.GetJSONInt64(data,"networkId",&out.NetworkId)
+	if err != nil {
+		return nil,err
 	}
 
-	if _,ok := data["difficulty"]; ok {
-		out.Difficulty,err = util.GetJSONInt64(data,"difficulty")
-		if err != nil {
-			return nil,err
-		}
+	err = util.GetJSONInt64(data,"difficulty",&out.Difficulty)
+	if err != nil {
+		return nil,err
+	}
+
+	err = util.GetJSONInt64(data,"maxPeers",&out.MaxPeers)
+	if err != nil {
+		return nil,err
+	}
+
+	err = util.GetJSONInt64(data,"gasLimit",&out.GasLimit)
+	if err != nil {
+		return nil,err
+	}
+
+	err = util.GetJSONInt64(data,"eip155Block",&out.Eip155Block)
+	if err != nil {
+		return nil,err
+	}
+
+	err = util.GetJSONInt64(data,"homesteadBlock",&out.HomesteadBlock)
+	if err != nil {
+		return nil,err
+	}
+
+	err = util.GetJSONInt64(data,"eip158Block",&out.Eip158Block)
+	if err != nil {
+		return nil,err
 	}
 
 	initBalance,exists := data["initBalance"]
@@ -80,42 +86,7 @@ func NewConf(data map[string]interface{}) (*EthConf,error) {
 				return nil,errors.New("Incorrect type for initBalance given")
 		}
 	}
-
-	if _,ok := data["maxPeers"]; ok {
-		out.MaxPeers,err = util.GetJSONInt64(data,"maxPeers")
-		if err != nil {
-			return nil,err
-		}
-	}
-
-	if _,ok := data["gasLimit"]; ok {
-		out.GasLimit,err = util.GetJSONInt64(data,"gasLimit")
-		if err != nil {
-			return nil,err
-		}
-	}
-
-	if _,ok := data["homesteadBlock"]; ok {
-		out.HomesteadBlock,err = util.GetJSONInt64(data,"homesteadBlock")
-		if err != nil {
-			return nil,err
-		}
-	}
-
-	if _,ok := data["eip155Block"]; ok {
-		out.Eip155Block,err = util.GetJSONInt64(data,"eip155Block")
-		if err != nil {
-			return nil,err
-		}
-	}
-
-	if _,ok := data["eip158Block"]; ok {
-		out.Eip158Block,err = util.GetJSONInt64(data,"eip158Block")
-		if err != nil {
-			return nil,err
-		}
-	}
-
+	
 	return out,nil
 }
 

@@ -21,83 +21,61 @@ type RChainConf struct {
 
 func NewRChainConf(data map[string]interface{}) (*RChainConf,error) {
     out := new(RChainConf)
-    json.Unmarshal([]byte(GetDefaults()),out)
+    err := json.Unmarshal([]byte(GetDefaults()),out)
     if data == nil {
-        return out,nil
+        return out,err
     }
 
-    var err error
+    err = util.GetJSONBool(data,"noUpnp",&out.NoUpnp)
+    if err != nil {
+        return nil,err
+    }
 
-    if _,ok := data["noUpnp"]; ok {
-        out.NoUpnp,err = util.GetJSONBool(data,"noUpnp")
-        if err != nil {
-            return nil,err
-        }
+    err = util.GetJSONInt64(data,"defaultTimeout",&out.DefaultTimeout)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data,"mapSize",&out.MapSize)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data,"casperBlockStoreSize",&out.CasperBlockStoreSize)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONBool(data,"inMemoryStore",&out.InMemoryStore)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data,"maxNumOfConnections",&out.MaxNumOfConnections)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data,"validators",&out.Validators)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data,"validatorCount",&out.ValidatorCount)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONString(data,"sigAlgorithm",&out.SigAlgorithm)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONString(data,"command",&out.Command)
+    if err != nil {
+        return nil,err
     }
     
-    if _,ok := data["defaultTimeout"]; ok {
-        out.DefaultTimeout,err = util.GetJSONInt64(data,"defaultTimeout")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["mapSize"]; ok {
-        out.MapSize,err = util.GetJSONInt64(data,"mapSize")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["casperBlockStoreSize"]; ok {
-        out.CasperBlockStoreSize,err = util.GetJSONInt64(data,"casperBlockStoreSize")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["inMemoryStore"]; ok {
-        out.InMemoryStore,err = util.GetJSONBool(data,"inMemoryStore")
-        if err != nil {
-            return nil,err
-        }
-    }
-    
-    if _,ok := data["maxNumOfConnections"]; ok {
-        out.MaxNumOfConnections,err = util.GetJSONInt64(data,"maxNumOfConnections")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["validators"]; ok {
-        out.Validators,err = util.GetJSONInt64(data,"validators")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["validatorCount"]; ok {
-        out.ValidatorCount,err = util.GetJSONInt64(data,"validatorCount")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["sigAlgorithm"]; ok {
-        out.SigAlgorithm,err = util.GetJSONString(data,"sigAlgorithm")
-        if err != nil {
-            return nil,err
-        }
-    }
-
-    if _,ok := data["command"]; ok {
-        out.Command,err = util.GetJSONString(data,"command")
-        if err != nil {
-            return nil,err
-        }
-    }
-
     return out, nil
 }
 

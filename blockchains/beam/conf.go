@@ -13,26 +13,19 @@ type BeamConf struct {
 func NewConf(data map[string]interface{}) (*BeamConf, error) {
 	out := new(BeamConf)
 
-	var err error
-
-	if _, ok := data["validators"]; ok {
-		out.Validators, err = util.GetJSONInt64(data, "validators")
-		if err != nil {
-			return nil, err
-		}
+	err := util.GetJSONInt64(data, "validators",&out.Validators)
+	if err != nil {
+		return nil, err
 	}
 
-	if _, ok := data["txNodes"]; ok {
-		out.TxNodes, err = util.GetJSONInt64(data, "txNodes")
-		if err != nil {
-			return nil, err
-		}
+	err = util.GetJSONInt64(data, "txNodes",&out.TxNodes)
+	if err != nil {
+		return nil, err
 	}
-	if _, ok := data["nilNodes"]; ok {
-		out.NilNodes, err = util.GetJSONInt64(data, "nilNodes")
-		if err != nil {
-			return nil, err
-		}
+
+	err = util.GetJSONInt64(data, "nilNodes",&out.NilNodes)
+	if err != nil {
+		return nil, err
 	}
 	return out, nil
 }

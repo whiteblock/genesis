@@ -75,7 +75,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,
 
                 validatorData := validatorRaw.(map[string]interface{})
 
-                validator.Address,err = util.GetJSONString(validatorData,"address")
+                err = util.GetJSONString(validatorData,"address",&validator.Address)
                 if err != nil {
                     log.Println(err)
                     return nil,err
@@ -83,16 +83,16 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,
 
                 validatorPubKeyData := validatorData["pub_key"].(map[string]interface{})
 
-                validator.PubKey.Type,err = util.GetJSONString(validatorPubKeyData,"type")
-                validator.PubKey.Value,err = util.GetJSONString(validatorPubKeyData,"value")
+                err = util.GetJSONString(validatorPubKeyData,"type",&validator.PubKey.Type)
+                err = util.GetJSONString(validatorPubKeyData,"value",&validator.PubKey.Value)
 
-                validator.Power,err = util.GetJSONString(validatorData,"power")
+                err = util.GetJSONString(validatorData,"power",&validator.Power)
                 if err != nil {
                     log.Println(err)
                     return nil,err
                 }
 
-                validator.Name,err = util.GetJSONString(validatorData,"name")
+                err = util.GetJSONString(validatorData,"name",&validator.Name)
                 if err != nil {
                     log.Println(err)
                     return nil,err

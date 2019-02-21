@@ -36,7 +36,7 @@ max_pending_peers = 64
 no_serve_light = false
 
 reserved_only = false
-reserved_peers = "./path_to_file"
+#reserved_peers = "./path_to_file"
 
 [rpc]
 disable = false
@@ -61,7 +61,6 @@ apis = ["web3", "eth", "pubsub", "net", "parity", "parity_pubsub", "parity_accou
 
 [dapps]
 disable = false
-path = "$HOME/.local/share/io.parity.ethereum/dapps"
 
 [secretstore]
 disable = false
@@ -94,10 +93,8 @@ price_update_period = {{{priceUpdatePeriod}}}
 gas_floor_target = {{{gasFloorTarget}}}
 gas_cap = {{{gasCap}}}
 tx_queue_size = {{{txQueueSize}}}
-tx_queue_gas = {{{txQueueGas}}}
+#tx_queue_gas = {{{txQueueGas}}}
 tx_queue_strategy = {{{txQueueStrategy}}}
-tx_queue_ban_count = {{{txQueueBanCount}}}
-tx_queue_ban_time = {{{txQueueBanTime}}}
 tx_gas_limit = {{{txGasLimit}}}
 tx_time_limit = {{{txTimeLimit}}}
 extra_data = "Whiteblock"
@@ -123,9 +120,6 @@ num_verifiers = 6
 
 [snapshots]
 disable_periodic = false
-
-[vm]
-jit = false
 
 [misc]
 logging = "own_tx=trace"

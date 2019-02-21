@@ -226,80 +226,89 @@ func GetJSONNumber(data map[string]interface{},field string) (json.Number,error)
     GetJSONInt64 checks and extracts a int64 from data[field].
     Will return an error if data[field] does not exist or is of the wrong type.
  */
-func GetJSONInt64(data map[string]interface{},field string) (int64,error){
+func GetJSONInt64(data map[string]interface{},field string,out *int64) error {
     rawValue,exists := data[field]
     if exists && rawValue != nil {
         switch rawValue.(type){
             case json.Number:
                 value,err := rawValue.(json.Number).Int64()
                 if err != nil {
-                    return 0,err
+                    return err
                 }
-                return value,nil
-                
+                *out = value
+                return nil
+            default:
+                return errors.New("Incorrect type for "+field+" given")    
         }
     }
-    return 0,errors.New("Incorrect type for "+field+" given")
+    return nil
 }
 
 /*
     GetJSONInt64 checks and extracts a []string from data[field].
     Will return an error if data[field] does not exist or is of the wrong type.
  */
-func GetJSONStringArr(data map[string]interface{},field string) ([]string,error){
+func GetJSONStringArr(data map[string]interface{},field string,out *[]string) error {
     rawValue,exists := data[field]
     if exists && rawValue != nil {
         switch rawValue.(type){
             case []string:
                 value,valid := rawValue.([]string)
                 if !valid {
-                    return nil,errors.New("Invalid string array")
+                    return errors.New("Invalid string array")
                 }
-                return value,nil
-                
+                *out = value
+                return nil
+            default:
+                return errors.New("Incorrect type for "+field+" given")    
         }
     }
-    return nil,errors.New("Incorrect type for "+field+" given")
+    return nil
 }
 
 /*
     GetJSONInt64 checks and extracts a string from data[field].
     Will return an error if data[field] does not exist or is of the wrong type.
  */
-func GetJSONString(data map[string]interface{},field string) (string,error){
+func GetJSONString(data map[string]interface{},field string,out *string) error {
     rawValue,exists := data[field]
     if exists && rawValue != nil {
         switch rawValue.(type){
             case string:
                 value,valid := rawValue.(string)
                 if !valid {
-                    return "",errors.New("Invalid string")
+                    return errors.New("Invalid string")
                 }
-                return value,nil
+                *out = value
+                return nil
+            default:
+                return errors.New("Incorrect type for "+field+" given")
                 
         }
     }
-    return "",errors.New("Incorrect type for "+field+" given")
+    return nil
 }
 
 /*
     GetJSONInt64 checks and extracts a bool from data[field].
     Will return an error if data[field] does not exist or is of the wrong type.
  */
-func GetJSONBool(data map[string]interface{},field string) (bool,error){
+func GetJSONBool(data map[string]interface{},field string,out *bool) error{
     rawValue,exists := data[field]
     if exists && rawValue != nil {
         switch rawValue.(type){
             case bool:
                 value,valid := rawValue.(bool)
                 if !valid {
-                    return false,errors.New("Invalid bool")
+                    return errors.New("Invalid bool")
                 }
-                return value,nil
-                
+                *out = value
+                return nil
+            default:
+                return errors.New("Incorrect type for "+field+" given")     
         }
     }
-    return false,errors.New("Incorrect type for "+field+" given")
+    return nil
 }
 
 

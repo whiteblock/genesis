@@ -12,7 +12,7 @@ import (
 
 type ParityConf struct {
     ForceSealing                bool    `json:"forceSealing"`
-    ResealOnTxs                 string   `json:"resealOnTxs"`
+    ResealOnTxs                 string  `json:"resealOnTxs"`
     ResealMinPeriod             int64   `json:"resealMinPeriod"`
     ResealMaxPeriod             int64   `json:"resealMaxPeriod"`
     WorkQueueSize               int64   `json:"workQueueSize"`
@@ -25,8 +25,6 @@ type ParityConf struct {
     TxQueueSize                 int64   `json:"txQueueSize"`
     TxQueueGas                  string  `json:"txQueueGas"`
     TxQueueStrategy             string  `json:"txQueueStrategy"`
-    TxQueueBanCount             int64   `json:"txQueueBanCount"`
-    TxQueueBanTime              int64   `json:"txQueueBanTime"`
     TxGasLimit                  string  `json:"txGasLimit"`
     TxTimeLimit                 int64   `json:"txTimeLimit"`
     RemoveSolved                bool    `json:"removeSolved"`
@@ -47,14 +45,9 @@ type ParityConf struct {
     DifficultyBoundDivisor      int64   `json:"difficultyBoundDivisor"`
     DurationLimit               int64   `json:"durationLimit"`
     BlockReward                 int64   `json:"blockReward"`
-    HomesteadTransition         int64   `json:"homesteadTransition"`
-    Eip150Transition            int64   `json:"eip150Transition"`
-    Eip160Transition            int64   `json:"eip160Transition"`
-    Eip161abcTransition         int64   `json:"eip161abcTransition"`
-    Eip161dTransition           int64   `json:"eip161dTransition"`
-    MaxCodeSize                 int64   `json:"maxCodeSize"`
     MaximumExtraDataSize        int64   `json:"maximumExtraDataSize"`
     MinGasLimit                 int64   `json:"minGasLimit"`
+    GasLimitBoundDivisor        int64   `json:"gasLimitBoundDivisor"`
 }
 
 /**
@@ -66,53 +59,191 @@ func NewConf(data map[string]interface{}) (*ParityConf, error) {
     if data == nil {
         return out,err
     }
-    rawjson,err := json.Marshal(data)
-    err = json.Unmarshal(rawjson,out)
-    /*out.ForceSealing, err = util.GetJSONBool(data, "forceSealing")
-    out.ResealOnTxs, err = util.GetJSONString(data, "resealOnTxs")
-    out.ResealMinPeriod, err = util.GetJSONInt64(data, "resealMinPeriod")
-    out.ResealMaxPeriod, err = util.GetJSONInt64(data, "resealMaxPeriod")
-    out.WorkQueueSize, err = util.GetJSONInt64(data, "workQueueSize")
-    out.RelaySet, err = util.GetJSONString(data, "relaySet")
-    out.UsdPerTx, err = util.GetJSONString(data, "usdPerTx")
-    out.UsdPerEth, err = util.GetJSONString(data, "usdPerEth")
-    out.PriceUpdatePeriod, err = util.GetJSONString(data, "priceUpdatePeriod")
-    out.GasFloorTarget, err = util.GetJSONString(data, "gasFloorTarget")
-    out.GasCap, err = util.GetJSONString(data, "gasCap")
-    out.TxQueueSize, err = util.GetJSONInt64(data, "txQueueSize")
-    out.TxQueueGas, err = util.GetJSONString(data, "txQueueGas")
-    out.TxQueueStrategy, err = util.GetJSONString(data, "txQueueStrategy")
-    out.TxQueueBanCount, err = util.GetJSONInt64(data, "txQueueBanCount")
-    out.TxQueueBanTime, err = util.GetJSONInt64(data, "txQueueBanTime")
-    out.TxGasLimit, err = util.GetJSONString(data, "txGasLimit")
-    out.TxTimeLimit, err = util.GetJSONInt64(data, "txTimeLimit")
-    out.RemoveSolved, err = util.GetJSONBool(data, "removeSolved")
-    out.RefuseServiceTransactions, err = util.GetJSONBool(data, "refuseServiceTransactions")
-    out.EnableIPFS, err = util.GetJSONBool(data, "enableIPFS")
-    out.NetworkDiscovery, err = util.GetJSONBool(data, "networkDiscovery")
-    out.ExtraAccounts, err = util.GetJSONInt64(data, "extraAccounts")
-    out.ChainId, err = util.GetJSONInt64(data, "chainId")
-    out.NetworkId, err = util.GetJSONInt64(data, "networkId")
-    out.Difficulty, err = util.GetJSONInt64(data, "difficulty")
-    out.InitBalance, err = util.GetJSONString(data, "initBalance")
-    out.MaxPeers, err = util.GetJSONInt64(data, "maxPeers")
-    out.GasLimit, err = util.GetJSONInt64(data, "gasLimit")
-    out.HomesteadBlock, err = util.GetJSONInt64(data, "homesteadBlock")
-    out.Eip155Block, err = util.GetJSONInt64(data, "eip155Block")
-    out.Eip158Block, err = util.GetJSONInt64(data, "eip158Block")
-    out.MinimumDifficulty, err = util.GetJSONInt64(data, "minimumDifficulty")
-    out.DifficultyBoundDivisor, err = util.GetJSONInt64(data, "difficultyBoundDivisor")
-    out.DurationLimit, err = util.GetJSONInt64(data, "durationLimit")
-    out.BlockReward, err = util.GetJSONInt64(data, "blockReward")
-    out.HomesteadTransition, err = util.GetJSONInt64(data, "homesteadTransition")
-    out.Eip150Transition, err = util.GetJSONInt64(data, "eip150Transition")
-    out.Eip160Transition, err = util.GetJSONInt64(data, "eip160Transition")
-    out.Eip161abcTransition, err = util.GetJSONInt64(data, "eip161abcTransition")
-    out.Eip161dTransition, err = util.GetJSONInt64(data, "eip161dTransition")
-    out.MaxCodeSize, err = util.GetJSONInt64(data, "maxCodeSize")
-    out.MaximumExtraDataSize, err = util.GetJSONInt64(data, "maximumExtraDataSize")
-    out.MinGasLimit, err = util.GetJSONInt64(data, "minGasLimit")*/
+    err = util.GetJSONBool(data, "forceSealing", &out.ForceSealing)
+    if err != nil {
+        return nil,err
+    }
 
+    err = util.GetJSONString(data, "resealOnTxs",&out.ResealOnTxs)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "resealMinPeriod",&out.ResealMinPeriod)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "resealMaxPeriod",&out.ResealMaxPeriod)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "workQueueSize",&out.WorkQueueSize)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONString(data, "relaySet",&out.RelaySet)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONString(data, "usdPerTx",&out.UsdPerTx)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONString(data, "usdPerEth",&out.UsdPerEth)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONString(data, "priceUpdatePeriod",&out.PriceUpdatePeriod)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONString(data, "gasFloorTarget",&out.GasFloorTarget)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONString(data, "gasCap",&out.GasCap)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "txQueueSize",&out.TxQueueSize)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONString(data, "txQueueGas",&out.TxQueueGas)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONString(data, "txQueueStrategy",&out.TxQueueStrategy)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONString(data, "txGasLimit",&out.TxGasLimit)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "txTimeLimit",&out.TxTimeLimit)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONBool(data, "removeSolved",&out.RemoveSolved)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONBool(data, "refuseServiceTransactions",&out.RefuseServiceTransactions)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONBool(data, "enableIPFS",&out.EnableIPFS)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONBool(data, "networkDiscovery",&out.NetworkDiscovery)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "extraAccounts",&out.ExtraAccounts)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "chainId",&out.ChainId)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "networkId",&out.NetworkId)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "difficulty",&out.Difficulty)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONString(data, "initBalance",&out.InitBalance)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "maxPeers",&out.MaxPeers)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "gasLimit",&out.GasLimit)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "homesteadBlock",&out.HomesteadBlock)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "eip155Block",&out.Eip155Block)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "eip158Block",&out.Eip158Block)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "minimumDifficulty",&out.MinimumDifficulty)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "difficultyBoundDivisor",&out.DifficultyBoundDivisor)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "durationLimit",&out.DurationLimit)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "blockReward",&out.BlockReward)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "maximumExtraDataSize",&out.MaximumExtraDataSize)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "minGasLimit",&out.MinGasLimit)
+    if err != nil {
+        return nil,err
+    }
+
+    err = util.GetJSONInt64(data, "gasLimitBoundDivisor",&out.GasLimitBoundDivisor)
+    if err != nil {
+        return nil,err
+    }
+    
     return out, nil
 }
 
@@ -132,8 +263,6 @@ func GetParams() string {
     ["txQueueSize","int"],
     ["txQueueGas","string"],
     ["txQueueStrategy","string"],
-    ["txQueueBanCount","int"],
-    ["txQueueBanTime","int"],
     ["txGasLimit","string"],
     ["txTimeLimit","int"],
     ["removeSolved","bool"],
@@ -150,22 +279,15 @@ func GetParams() string {
     ["homesteadBlock","int"],
     ["eip155Block","int"],
     ["eip158Block","int"],
-
     ["minimumDifficulty","int"],
     ["difficultyBoundDivisor","int"],
     ["durationLimit","int"],
     ["blockReward","int"],
-    ["homesteadTransition","int"],
-    ["eip150Transition","int"],
-    ["eip160Transition","int"],
-    ["eip161abcTransition","int"],
-    ["eip161dTransition","int"],
-    ["maxCodeSize","int"],
     ["maximumExtraDataSize","int"],
     ["minGasLimit","int"],
+    ["gasLimitBoundDivisor","int"]
 ]`
 }
-
 func GetDefaults() string {
     return `{
     "forceSealing":true,
@@ -181,9 +303,7 @@ func GetDefaults() string {
     "gasCap":"6283184",
     "txQueueSize":8192,
     "txQueueGas":"off",
-    "txQueueStrategy":"gas_factor",
-    "txQueueBanCount":1,
-    "txQueueBanTime":180,
+    "txQueueStrategy":"gas_price",
     "txGasLimit":"6283184",
     "txTimeLimit":100,
     "removeSolved":false,
@@ -204,14 +324,9 @@ func GetDefaults() string {
     "difficultyBoundDivisor":2048,
     "durationLimit":13,
     "blockReward":5000000000000000000,
-    "homesteadTransition":0,
-    "eip150Transition":0,
-    "eip160Transition":10,
-    "eip161abcTransition":10,
-    "eip161dTransition":10,
-    "maxCodeSize":24576,
     "maximumExtraDataSize":32,
-    "minGasLimit":5000
+    "minGasLimit":5000,
+    "gasLimitBoundDivisor":1024,
 }`
 }
 
@@ -270,17 +385,12 @@ func BuildSpec(pconf *ParityConf, wallets []string) (string,error) {
         "difficultyBoundDivisor":fmt.Sprintf("0x%x",pconf.DifficultyBoundDivisor),
         "durationLimit":fmt.Sprintf("0x%x",pconf.DurationLimit),
         "blockReward":fmt.Sprintf("0x%x",pconf.BlockReward),
-        "homesteadTransition":pconf.HomesteadTransition,
-        "eip150Transition":pconf.Eip150Transition,
-        "eip160Transition":pconf.Eip160Transition,
-        "eip161abcTransition":pconf.Eip161abcTransition,
-        "eip161dTransition":pconf.Eip161dTransition,
-        "maxCodeSize":pconf.MaxCodeSize,
         "difficulty":fmt.Sprintf("0x%x",pconf.Difficulty),
         "gasLimit":fmt.Sprintf("0x%x",pconf.GasLimit),
-        "networkID":fmt.Sprintf("0x%x",pconf.NetworkId),
+        "networkId":fmt.Sprintf("0x%x",pconf.NetworkId),
         "maximumExtraDataSize":fmt.Sprintf("0x%x",pconf.MaximumExtraDataSize),
         "minGasLimit":fmt.Sprintf("0x%x",pconf.MinGasLimit),
+        "gasLimitBoundDivisor":fmt.Sprintf("0x%x",pconf.GasLimitBoundDivisor),
         "accounts":accounts,
     }
     filler := util.ConvertToStringMap(tmp)

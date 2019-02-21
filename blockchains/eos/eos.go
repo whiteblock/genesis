@@ -380,7 +380,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 sem.Acquire(ctx,1)
                 go func(masterServerIP string, masterKeyPair util.KeyPair, keyPair util.KeyPair,node int){
                     defer sem.Release(1)
-                    if node > eosconf.BlockProducers {
+                    if node > int(eosconf.BlockProducers) {
                         buildState.IncrementBuildProgress() 
                         return
                     }
@@ -445,7 +445,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                     p2pFlags := eos_getPTPFlags(servers,node)
                     prodFlags := ""
 
-                    if node <= eosconf.BlockProducers {
+                    if node <= int(eosconf.BlockProducers) {
                         prodFlags = " -p "+eos_getProducerName(node)+" "
                     }
 
@@ -482,7 +482,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 if node == 0 {
                     node++
                     continue
-                }else if node > eosconf.BlockProducers {
+                }else if node > int(eosconf.BlockProducers) {
                     break
                 }
 
@@ -570,8 +570,8 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 node++
             }
         }
-        if(node > eosconf.BlockProducers){
-            node = eosconf.BlockProducers
+        if(node > int(eosconf.BlockProducers)){
+            node = int(eosconf.BlockProducers)
         }
         clients[0].DockerExec(1, fmt.Sprintf("cleos -u http://%s:8889 wallet unlock --password %s",
                 masterIP, passwordNormal))
