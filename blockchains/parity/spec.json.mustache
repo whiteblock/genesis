@@ -1,0 +1,35 @@
+{
+    "name": "whiteblock_test_chain",
+    "engine": {
+        "ethash": {
+            "params": {
+              "minimumDifficulty": {{{minimumDifficulty}}},
+              "difficultyBoundDivisor": {{{difficultyBoundDivisor}}},
+              "durationLimit": {{{difficultyBoundDivisor}}},
+              "blockReward": {{{blockReward}}},
+              "homesteadTransition": {{{homesteadTransition}}},
+              "eip150Transition": {{{eip150Transition}}},
+              "eip160Transition": {{{eip160Transition}}},
+              "eip161abcTransition": {{{eip161abcTransition}}},
+              "eip161dTransition": {{{eip161dTransition}}} ,
+              "maxCodeSize": {{{maxCodeSize}}}
+            }
+        }
+    },
+    "genesis": {
+        "seal": {
+            "ethereum": {
+                "nonce": "0x0000000000000042",
+                "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
+            }
+        },
+        "difficulty": {{{difficulty}}},
+        "gasLimit": {{{gasLimit}}}
+    },
+    "params": {
+            "networkID" : {{networkID}},
+            "maximumExtraDataSize": {{{maximumExtraDataSize}}},
+            "minGasLimit": {{{minGasLimit}}}
+    },
+    "accounts": {{accounts}}
+}

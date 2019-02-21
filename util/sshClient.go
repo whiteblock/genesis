@@ -137,6 +137,11 @@ func (this SshClient) DockerExec(node int,command string) (string,error) {
     return this.Run(fmt.Sprintf("docker exec %s%d %s",conf.NodePrefix,node,command))
 }
 
+func (this SshClient) DockerCp(node int,source string,dest string) error {
+    _,err := this.Run(fmt.Sprintf("docker cp %s %s%d:%s",source,conf.NodePrefix,node,dest))
+    return err
+}
+
 /*
     KeepTryDockerExec is like KeepTryRun for nodes
  */
