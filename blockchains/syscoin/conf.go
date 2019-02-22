@@ -95,7 +95,7 @@ func NewConf(data map[string]interface{}) (*SysConf,error) {
 	if err != nil {
 		return nil,err
 	}
-	
+	log.Printf("%+v\n",*out)
 	return out, nil
 } 
 
