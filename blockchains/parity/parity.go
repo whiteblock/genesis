@@ -4,10 +4,11 @@ import (
     "context"
     "errors"
     "fmt"
+    "time"
     "log"
     "regexp"
     "strings"
-
+    "encoding/json"
     db "../../db"
     state "../../state"
     util "../../util"
@@ -70,6 +71,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
             }
         }
     }
+
     /**Create the Password file**/
     {
         var data string
@@ -138,6 +140,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
         log.Println(err)
         return nil,err
     }
+
     err = util.Write("./spec.json",spec)
     if err != nil {
         log.Println(err)
@@ -190,9 +193,6 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
             }
             
             for k,rawWallet := range rawWallets {
-                if k == node {
-                    continue
-                }
 
                 _,err = clients[i].DockerExec(node,fmt.Sprintf("bash -c 'echo \"%s\">>/parity/account%d'",rawWallet,k))
                 if err != nil {
@@ -202,7 +202,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
                 defer clients[i].DockerExec(node,fmt.Sprintf("rm /parity/account%d",k))
 
                 res,err := clients[i].DockerExec(j,
-                    fmt.Sprintf("parity --base-path=/parity/ --password=/parity/passwd account import /parity/account%d",k))
+                    fmt.Sprintf("parity --base-path=/parity/ --chain /parity/spec.json --password=/parity/passwd account import /parity/account%d",k))
                 if err != nil{
                     log.Println(res)
                     log.Println(err)
@@ -212,93 +212,96 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
             node++
         }
     }
-    return nil,nil
-    buildState.SetBuildStage("Bootstrapping network")
-    err = initNodeDirectories(nodes, pconf.NetworkId, servers)
-    if err != nil {
-        log.Println(err)
-        return nil, err
-    }
-
-    buildState.IncrementBuildProgress()
-    err = util.Mkdir("tmp/keystore")
-    if err != nil {
-        log.Println(err)
-        return nil, err
-    }
-    buildState.SetBuildStage("Distributing keys")
-    err = distributeUTCKeystore(nodes)
-    if err != nil {
-        log.Println(err)
-        return nil, err
-    }
-
-    buildState.IncrementBuildProgress()
-    buildState.SetBuildStage("Starting Parity")
-
     
     util.Write("tmp/config.toml",configToml)
     node = 0
     for i, server := range servers {
-        clients[i].Scp("tmp/config.toml", "/home/appo/config.toml")
-        clients[i].Scp("tmp/spec.json", "/home/appo/spec.json")
-        defer clients[i].Run("rm -f /home/appo/config.toml")
-        defer clients[i].Run("rm -f /home/appo/spec.json")
-        for j, ip := range server.Ips {
+        for j, _ := range server.Ips {
             sem.Acquire(ctx, 1)
-            fmt.Printf("-----------------------------  Starting NODE-%d  -----------------------------\n", node)
+            //fmt.Printf("-----------------------------  Starting NODE-%d  -----------------------------\n", node)
 
-            go func(networkId int64, node int, server string, num int, nodeIP string, i int) {
+            go func(node int, i int,localNum int) {
                 defer sem.Release(1)
 
-                clients[i].Run(fmt.Sprintf("docker cp /home/appo/config.toml whiteblock-node%d:/", node))
-                clients[i].Run(fmt.Sprintf("docker cp /home/appo/spec.json whiteblock-node%d:/", node))
-
-                name := fmt.Sprintf("whiteblock-node%d", num)
-
-                err = clients[i].Scpr(fmt.Sprintf("tmp/node%d", node))
-                if err != nil {
-                    log.Println(err)
-                    buildState.ReportError(err)
-                    return
-                }
-                defer clients[i].Run(fmt.Sprintf("rm -rf tmp/node%d", node))
-
                 buildState.IncrementBuildProgress()
 
-                parityCmd := fmt.Sprintf(
-                    `parity --base-path=/whiteblock/node%d --network-id=%d`+
-                        `--jsonrpc-apis="all" --jsonrpc-cors="all" `+
-                        ` --password /whiteblock/node%d/passwd.file --author=%s
-                        --reserved-peers -c /config.toml --chain=/spec.json`,
-                    node,
-                    networkId,
-                    node,
-                    wallets[node-1])
+                parityCmd := fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`,
+                        wallets[node])
 
-                
-
-                clients[i].DockerExec(num,fmt.Sprintf("mkdir -p /whiteblock/node%d/", node))
-                clients[i].Run(fmt.Sprintf("docker cp ~/tmp/node%d %s:/whiteblock", node, name))
-                clients[i].DockerExecd(num,fmt.Sprintf("tmux new -s whiteblock -d", name))
-                clients[i].DockerExecd(num,fmt.Sprintf("%s tmux send-keys -t whiteblock '%s' C-m", name, parityCmd))
+                res,err := clients[i].DockerExecd(localNum,parityCmd)
 
                 if err != nil {
+                    log.Println(res)
                     log.Println(err)
                     buildState.ReportError(err)
                     return
                 }
 
                 buildState.IncrementBuildProgress()
-            }(pconf.NetworkId, node+1, server.Addr, j, ip, i)
+            }(node,i,j)
             node++
         }
     }
+
     err = sem.Acquire(ctx, conf.ThreadLimit)
     if err != nil {
         log.Println(err)
         return nil, err
     }
+    //Start peering via curl
+    time.Sleep(time.Duration(5 * time.Second))
+    //Get the enode addresses
+    enodes := []string{}
+    for i, server := range servers {
+        for _, ip := range server.Ips{
+            res,err := clients[i].KeepTryRun(
+                fmt.Sprintf(
+                    `curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d '{ "method": "parity_enode", "params": [], "id": 1, "jsonrpc": "2.0" }'`,
+                    ip))
+            if err != nil {
+                log.Println(err)
+                return nil, err
+            }
+            var result map[string]interface{}
+
+            err = json.Unmarshal([]byte(res),&result)
+            if err != nil {
+                log.Println(err)
+                return nil, err
+            }
+            var enode string
+            err = util.GetJSONString(data, "result",&enode)
+            if err != nil {
+                log.Println(err)
+                return nil, err
+            }
+            enodes = append(enodes,enode)
+        }
+    }
+    node = 0
+    for i, server := range servers {
+        for _, ip := range server.Ips {
+            for k,enode := range enodes {
+                if k == node {
+                    continue
+                }
+                res,err := clients[i].KeepTryRun(
+                    fmt.Sprintf(
+                        `curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d '{ "method": "parity_addReservedPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
+                        ip,
+                        enode))
+                if err != nil {
+                    log.Println(res)
+                    log.Println(err)
+                    return nil, err
+                }
+            }
+            node++
+        }
+    }
+    
+    
+
     buildState.IncrementBuildProgress()
     sem.Release(conf.ThreadLimit)
     if !buildState.ErrorFree() {
@@ -349,68 +352,4 @@ func initNode(node int, networkId int64, ip string) (string, error) {
 
     err = util.Write(fmt.Sprintf("./tmp/node%d/enode", node), fmt.Sprintf("%s\n", enode))
     return enode, err
-}
-
-/**
- * Initialize the chain from the configuration file
- * @param  int      nodes       The number of nodes
- * @param  int64    networkId   The test net network id
- * @param  []Server servers     The list of servers
- */
-func initNodeDirectories(nodes int, networkId int64, servers []db.Server) error {
-    static_nodes := []string{}
-    node := 1
-    for _, server := range servers {
-        for _, ip := range server.Ips {
-            res, err := util.BashExec(
-                fmt.Sprintf("parity --config tmp/node%d", node))
-            if err != nil {
-                log.Println(res)
-                log.Println(err)
-                return err
-            }
-            static_node, err := initNode(node, networkId, ip)
-            if err != nil {
-                log.Println(err)
-                return err
-            }
-            static_nodes = append(static_nodes, static_node)
-            node++
-        }
-    }
-
-    snodes := strings.Join(static_nodes, ",")
-
-    for i := 1; i <= nodes; i++ {
-        err := util.Write(fmt.Sprintf("tmp/node%d/peers.txt", i), snodes)
-        if err != nil {
-            log.Println(err)
-            return err
-        }
-    }
-
-    return nil
-}
-
-/**
- * Distribute the UTC keystore files amongst the nodes
- * @param  int  nodes   The number of nodes
- */
-func distributeUTCKeystore(nodes int) error {
-    //Copy all UTC keystore files to every Node directory
-    for i := 1; i <= nodes; i++ {
-        err := util.Cpr(fmt.Sprintf("tmp/node%d/keystore/", i), "tmp/")
-        if err != nil {
-            log.Println(err)
-            return err
-        }
-    }
-    for i := 1; i <= nodes; i++ {
-        err := util.Cpr("tmp/keystore/", fmt.Sprintf("tmp/node%d/", i))
-        if err != nil {
-            log.Println(err)
-            return err
-        }
-    }
-    return nil
 }

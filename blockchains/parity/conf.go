@@ -56,7 +56,9 @@ type ParityConf struct {
 func NewConf(data map[string]interface{}) (*ParityConf, error) {
     out := new(ParityConf)
     err := json.Unmarshal([]byte(GetDefaults()),out)
+    fmt.Printf("%+v\n",*out)
     if data == nil {
+        log.Println(err)
         return out,err
     }
     err = util.GetJSONBool(data, "forceSealing", &out.ForceSealing)
@@ -326,7 +328,7 @@ func GetDefaults() string {
     "blockReward":5000000000000000000,
     "maximumExtraDataSize":32,
     "minGasLimit":5000,
-    "gasLimitBoundDivisor":1024,
+    "gasLimitBoundDivisor":1024
 }`
 }
 

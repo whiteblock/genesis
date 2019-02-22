@@ -10,7 +10,7 @@ import (
     state "../state"
 )
 
-const maxRunAttempts int = 5
+const maxRunAttempts int = 20
 
 /*
     SshClient maintains a persistent connect with a server,

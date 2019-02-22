@@ -9,7 +9,7 @@ import (
     "errors"
     "fmt"
     "log"
-
+    "time"
     beam "../blockchains/beam"
     eos "../blockchains/eos"
     eth "../blockchains/ethereum"
@@ -135,7 +135,10 @@ func AddTestNet(details db.DeploymentDetails,testNetId string) error {
         log.Println(err)
         return err
     }
-    err = db.InsertTestNet(db.TestNet{Id: testNetId, Blockchain: details.Blockchain, Nodes: details.Nodes, Image: details.Image})
+    err = db.InsertTestNet(db.TestNet{
+                Id: testNetId, Blockchain: details.Blockchain, 
+                Nodes: details.Nodes, Image: details.Image,
+                Ts:time.Now().Unix()})
     if err != nil{
         log.Println(err)
         buildState.ReportError(err);
