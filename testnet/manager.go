@@ -141,13 +141,13 @@ func AddTestNet(details db.DeploymentDetails,testNetId string) error {
                 Ts:time.Now().Unix()})
     if err != nil{
         log.Println(err)
-        buildState.ReportError(err);
+        buildState.ReportError(err)
         return err
     }
     err = db.InsertBuild(details,testNetId)
     if err != nil{
         log.Println(err)
-        buildState.ReportError(err);
+        buildState.ReportError(err)
         return err
     }
     i := 0
@@ -158,11 +158,17 @@ func AddTestNet(details db.DeploymentDetails,testNetId string) error {
             panic(err)
         }
         for _, ip := range server.Ips {
-            node := db.Node{Id: -1, TestNetId: testNetId, Server: server.Id, LocalId: i, Ip: ip}
+            id,err := util.GetUUIDString()
+            if err != nil {
+                log.Println(err.Error())
+                buildState.ReportError(err)
+                return err
+            }
+            node := db.Node{Id:id, TestNetId: testNetId, Server: server.Id, LocalId: i, Ip: ip}
             if labels != nil {
                 node.Label = labels[i]
             }
-            _,err := db.InsertNode(node)
+            _,err = db.InsertNode(node)
             if err != nil {
                 log.Println(err.Error())
             }
@@ -195,6 +201,8 @@ func GetParams(blockchain string) string {
         return tendermint.GetParams()
     case "cosmos":
         return cosmos.GetParams()
+    case "parity":
+        return parity.GetParams()
     default:
         return "[]"
     }

@@ -5,14 +5,14 @@ import(
     "database/sql"
     "fmt"
     "errors"
-    util "../util"
+    "log"
 )
 
 /*
     Node represents a node within the network
  */
 type Node struct {  
-    Id          int     `json:"id"`
+    Id          string     `json:"id"`
     /*
         TestNetId is the id of the testnet to which the node belongs to
      */
@@ -66,6 +66,7 @@ func GetAllNodesByTestNet(testId string) ([]Node,error) {
 
     rows, err :=  db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE test_net = \"%s\"",NodesTable,testId ))
     if err != nil {
+        log.Println(err)
         return nil,err
     }
     defer rows.Close()
@@ -75,6 +76,7 @@ func GetAllNodesByTestNet(testId string) ([]Node,error) {
         var node Node
         err := rows.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip,&node.Label)
         if err != nil {
+            log.Println(err)
             return nil, err
         }
         nodes = append(nodes,node)
@@ -108,9 +110,9 @@ func GetAllNodes() ([]Node,error) {
 /*
     GetNode fetches a node by id
  */
-func GetNode(id int) (Node,error) {
+func GetNode(id string) (Node,error) {
 
-    row :=  db.QueryRow(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE id = %d",NodesTable,id))
+    row :=  db.QueryRow(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE id = %s",NodesTable,id))
 
     var node Node
 
@@ -131,7 +133,7 @@ func InsertNode(node Node) (int,error) {
         return -1, err
     }
 
-    stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (test_net,server,local_id,ip,label) VALUES (?,?,?,?,?)",NodesTable))
+    stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (id,test_net,server,local_id,ip,label) VALUES (?,?,?,?,?,?)",NodesTable))
     
     if err != nil {
         return -1, err
@@ -139,7 +141,7 @@ func InsertNode(node Node) (int,error) {
 
     defer stmt.Close()
 
-    res,err := stmt.Exec(node.TestNetId,node.Server,node.LocalId,node.Ip,node.Label)
+    res,err := stmt.Exec(node.Id,node.TestNetId,node.Server,node.LocalId,node.Ip,node.Label)
     if err != nil {
         return -1, nil
     }
@@ -153,9 +155,9 @@ func InsertNode(node Node) (int,error) {
     DeleteNode removes a node from the database
     (Deprecated)
  */
-func DeleteNode(id int) error {
+func DeleteNode(id string) error {
 
-    _,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",NodesTable,id))
+    _,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %s",NodesTable,id))
     return err
 }
 
@@ -163,45 +165,17 @@ func DeleteNode(id int) error {
     DeleteNodesByTestNet removes all nodes in a testnet from the database. 
     (Deprecated)
  */
-func DeleteNodesByTestNet(id int) error {
+func DeleteNodesByTestNet(id string) error {
 
-    _,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE test_net = %d",NodesTable,id))
+    _,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE test_net = %s",NodesTable,id))
     return err
 }   
 
 /*
     DeleteNodesByServer delete all nodes which have ever been on a given server.
  */
-func DeleteNodesByServer(id int) error {
+func DeleteNodesByServer(id string) error {
 
-    _, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE server = %d",NodesTable,id))
+    _, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE server = %s",NodesTable,id))
     return err
-}
-
-
-/*******COMMON QUERY FUNCTIONS********/
-
-/*
-    GetAvailibleNodes gets the node numbers which are availible on a server,
-    up to nodesRequested. 
-    (Deprecated)
- */
-func GetAvailibleNodes(serverId int, nodesRequested int) ([]int,error){
-
-    nodes,err := GetAllNodesByServer(serverId)
-    if err != nil {
-        return nil,err
-    }
-    server,_,err := GetServer(serverId)
-    if err != nil {
-        return nil,err
-    }
-    out := util.IntArrFill(server.Max,func(index int) int{
-        return index
-    })
-
-    for _,node := range nodes {
-        out = util.IntArrRemove(out,node.Id)
-    }
-    return out,nil
 }

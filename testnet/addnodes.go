@@ -9,7 +9,7 @@ import(
     eth "../blockchains/ethereum"
     rchain "../blockchains/rchain"
     sys "../blockchains/syscoin"
-    
+    util "../util"
     db "../db"
     deploy "../deploy"
     state "../state"
@@ -137,11 +137,17 @@ func AddNodes(details db.DeploymentDetails,testnetId string) error {
     i := 0
     for serverId,ips := range nodes {
         for _,ip := range ips{
-            node := db.Node{Id:-1 , TestNetId: testnetId, Server: serverId, LocalId: i, Ip: ip}
+            id,err := util.GetUUIDString()
+            if err != nil {
+                log.Println(err.Error())
+                buildState.ReportError(err)
+                return err
+            }
+            node := db.Node{Id:id, TestNetId: testnetId, Server: serverId, LocalId: i, Ip: ip}
             if labels != nil {
                 node.Label = labels[i]
             }
-            _,err := db.InsertNode(node)
+            _,err = db.InsertNode(node)
             if err != nil {
                 log.Println(err.Error())
             }

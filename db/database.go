@@ -79,7 +79,7 @@ func dbInit() {
 
     nodesSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s);",
         NodesTable,
-        "id INTEGER PRIMARY KEY AUTOINCREMENT",
+        "id TEXT",
         "test_net TEXT",
         "server INTEGER",
         "local_id INTEGER",

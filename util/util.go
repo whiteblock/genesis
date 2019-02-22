@@ -12,10 +12,17 @@ import (
     "io/ioutil"
     "bytes"
     "errors"
+    "strings"
     "encoding/json"
+    "github.com/satori/go.uuid"
     //"golang.org/x/sys/unix"
 )
 
+func GetUUIDString() (string,error) {
+    uid,err := uuid.NewV4()
+    str := strings.Replace(uid.String(),"-","_",-1)
+    return str,err
+}
 
 
 /****Basic Linux Functions****/

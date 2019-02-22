@@ -10,7 +10,7 @@
 	"server-bits":8,
 	"cluster-bits":14,
 	"node-bits":2,
-	"thread-limit":10,
+	"thread-limit":20,
 	"ip-prefix":10,
 	"allow-exec":true,
 	"influx":"127.0.0.1:8086",
