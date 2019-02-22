@@ -254,31 +254,31 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
     enodes := []string{}
     for i, server := range servers {
         for _, ip := range server.Ips{
-try:
-            res,err := clients[i].KeepTryRun(
-                fmt.Sprintf(
-                    `curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d '{ "method": "parity_enode", "params": [], "id": 1, "jsonrpc": "2.0" }'`,
-                    ip))
-            if err != nil {
-                log.Println(err)
-                return nil, err
-            }
-            var result map[string]interface{}
-
-            err = json.Unmarshal([]byte(res),&result)
-            if err != nil {
-                log.Println(err)
-                return nil, err
-            }
-            fmt.Println(result)
             var enode string
-            err = util.GetJSONString(result, "result",&enode)
-            if err != nil {
-                log.Println(err)
-                return nil, err
-            }
-            if len(enode) == 0 {
-                goto try
+            for len(enode) == 0 {
+
+                res,err := clients[i].KeepTryRun(
+                    fmt.Sprintf(
+                        `curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d '{ "method": "parity_enode", "params": [], "id": 1, "jsonrpc": "2.0" }'`,
+                        ip))
+                if err != nil {
+                    log.Println(err)
+                    return nil, err
+                }
+                var result map[string]interface{}
+
+                err = json.Unmarshal([]byte(res),&result)
+                if err != nil {
+                    log.Println(err)
+                    return nil, err
+                }
+                fmt.Println(result)
+                
+                err = util.GetJSONString(result, "result",&enode)
+                if err != nil {
+                    log.Println(err)
+                    return nil, err
+                }
             }
             enodes = append(enodes,enode)
         }
