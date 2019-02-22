@@ -26,7 +26,7 @@ type BuildState struct{
 
 func NewBuildState(servers []int) *BuildState {
     out := new(BuildState)
-    out.building = false
+    out.building = true
     out.progressIncrement = 0.00
     out.stopping = false
 

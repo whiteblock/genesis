@@ -112,5 +112,6 @@ func SignalStop(i int) error {
     if bs == nil {
         return errors.New("Build does not exist")
     }
+    log.Printf("Sending stop signal to %d\n",i)
     return bs.SignalStop()
 }

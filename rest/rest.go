@@ -192,6 +192,7 @@ func getLastNodes(w http.ResponseWriter,r *http.Request) {
 func stopDefaultBuild(w http.ResponseWriter,r *http.Request){
     err := state.SignalStop(0)
     if err != nil{
+        log.Println(err)
         http.Error(w,err.Error(),412)
         return
     }
