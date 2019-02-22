@@ -60,6 +60,7 @@ func SumCpuUsage(c *util.SshClient,name string) (float64,error) {
  */
 func CheckNodeStatus() ([]NodeStatus, error) {
     testnetId,err := GetLastTestNetId()
+    log.Println(err)
     if err != nil {
         return nil,err
     }
