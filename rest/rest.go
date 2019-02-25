@@ -164,6 +164,16 @@ func getBlockChainLog(w http.ResponseWriter,r *http.Request){
         http.Error(w,err.Error(),400)
         return
     }
+    lines := -1
+    _,ok := params["lines"]
+    if ok {
+        lines,err = strconv.Atoi(params["lines"])
+        if err != nil {
+            log.Println(err)
+            http.Error(w,err.Error(),400)
+            return
+        }
+    }
   
     client,err := testnet.GetClient(serverId)
     if err != nil {
@@ -171,7 +181,7 @@ func getBlockChainLog(w http.ResponseWriter,r *http.Request){
         http.Error(w,err.Error(),404)
         return
     }
-    res,err := client.DockerRead(node,conf.DockerOutputFile)
+    res,err := client.DockerRead(node,conf.DockerOutputFile,lines)
     if err != nil {
         log.Println(err)
         http.Error(w,fmt.Sprintf("%s %s",res,err.Error()),500)

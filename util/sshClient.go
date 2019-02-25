@@ -175,7 +175,10 @@ func (this SshClient) DockerExecdLog(node int,command string) error {
     DockerRead will read the current output of the command ran with DockerExecdLog. Must be called 
     after DockerExecdLog
  */
-func (this SshClient) DockerRead(node int,file string) (string,error) {
+func (this SshClient) DockerRead(node int,file string,lines int) (string,error) {
+    if lines > -1 {
+        return this.Run(fmt.Sprintf("docker exec %s%d tail -n %d %s",conf.NodePrefix,node,lines,file))
+    }
     return this.Run(fmt.Sprintf("docker exec %s%d cat %s",conf.NodePrefix,node,file))
 }
 
