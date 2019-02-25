@@ -179,7 +179,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 gethCmd := fmt.Sprintf(
                     `geth --datadir /whiteblock/node%d --maxpeers %d --networkid %d --rpc --rpcaddr %s`+
                         ` --rpcapi "web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
-                        ` --password /whiteblock/node%d/passwd.file --etherbase %s console`,
+                        ` --password /whiteblock/node%d/passwd.file --etherbase %s console  2>&1 | tee output.log`,
                             node,
                             ethconf.MaxPeers,
                             networkId,

@@ -316,7 +316,7 @@ func GetDefaults() string {
     "chainId":15468,
     "networkId":15468,
     "difficulty":100000,
-    "initBalance":100000000000000000000,
+    "initBalance":"100000000000000000000",
     "maxPeers":1000,
     "gasLimit":4000000,
     "homesteadBlock":0,

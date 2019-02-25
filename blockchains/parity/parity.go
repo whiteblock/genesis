@@ -6,7 +6,6 @@ import (
     "fmt"
     "time"
     "log"
-    "regexp"
     "strings"
     "encoding/json"
     db "../../db"
@@ -333,28 +332,4 @@ func MakeFakeAccounts(accs int) []string {
         out[i-1] = acc
     }
     return out
-}
-
-/**
- * Creates the datadir for a node and returns the enode address
- * @param  int      node        The nodes number
- * @param  int64    networkId   The test net network id
- * @param  string   ip          The node's IP address
- * @return string               The node's enode address
- */
-func initNode(node int, networkId int64, ip string) (string, error) {
-    fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n", node)
-    parityResults, err := util.BashExec(fmt.Sprintf("echo -e \"admin.nodeInfo.enode\\nexit\\n\" |  parity --rpc --datadir tmp/node%d/ --networkid %d console", node, networkId))
-    if err != nil {
-        log.Println(err)
-        return "", nil
-    }
-    enodePattern := regexp.MustCompile(`enode:\/\/[A-z|0-9]+@(\[\:\:\]|([0-9]|\.)+)\:[0-9]+`)
-    enode := enodePattern.FindAllString(parityResults, 1)[0]
-    fmt.Printf("ENODE fetched is: %s\n", enode)
-    enodeAddressPattern := regexp.MustCompile(`\[\:\:\]|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})`)
-    enode = enodeAddressPattern.ReplaceAllString(enode, ip)
-
-    err = util.Write(fmt.Sprintf("./tmp/node%d/enode", node), fmt.Sprintf("%s\n", enode))
-    return enode, err
 }
