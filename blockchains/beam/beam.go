@@ -5,7 +5,6 @@ import (
 	"log"
 	"regexp"
 	"strings"
-
 	db "../../db"
 	util "../../util"
 	state "../../state"

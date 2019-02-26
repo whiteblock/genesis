@@ -1,0 +1,30 @@
+{
+    "name": "whiteblock",
+    "engine": {
+        "Ethash": {
+            "params": {
+              "minimumDifficulty": "0x20000",
+              "difficultyBoundDivisor": "0x800",
+              "durationLimit": "0x800",
+              "blockReward": "0x4563918244f40000"
+            }
+        }
+    },
+    "genesis": {
+        "seal": {
+            "ethereum": {
+                "nonce": "0x0000000000000042",
+                "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
+            }
+        },
+        "difficulty": "0x186a0",
+        "gasLimit": "0x3d0900"
+    },
+    "params": {
+            "networkID" : "0x3c6c",
+            "maximumExtraDataSize": "0x20",
+            "minGasLimit": "0x1388",
+            "gasLimitBoundDivisor": "0x400"
+    },
+    "accounts": {"0x01e8a3013cd952a84083e10f1a00b1ffce56dece":{"balance":"100000000000000000000"},"0x2467f2dfac00a8a46103fe7c4c780bb0474a4bb7":{"balance":"100000000000000000000"},"0x33f41303d51d3bbe43c5d596754c01de2593326d":{"balance":"100000000000000000000"},"0x8440b274e0bf3dc7840feef80f57cdc876dbc6e7":{"balance":"100000000000000000000"},"0xbd01ffc0beb1fb311c07faa2b9d6b095533ff130":{"balance":"100000000000000000000"},"0xcabebe3e949d1346fd70e28366c1c3c9cc5e757b":{"balance":"100000000000000000000"},"0xd74092e70baaf1e48070045819ecc09863d83716":{"balance":"100000000000000000000"},"0xffdabe6dcb14148a2b3ccae0f58647b0f4933d46":{"balance":"100000000000000000000"}}
+}
