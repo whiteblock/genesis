@@ -1,11 +1,12 @@
 package rchain
 
 import(
-    //"context"
     "fmt"
     "log"
     "time"
     "regexp"
+    "io/ioutil"
+    "github.com/Whiteblock/mustache"
     util "../../util"
     db "../../db"
     state "../../state"
@@ -131,7 +132,10 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             break
         }
         buildState.IncrementBuildProgress()
-        
+        /*
+            influxIp
+            validators
+         */
         log.Println("Got the address for the bootnode: "+enode)
         err = createConfigFile(enode,rchainConf,services["wb_influx_proxy"])
         if err != nil{
@@ -141,20 +145,20 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     }
 
     buildState.SetBuildStage("Configuring the other rchain nodes")
-    defer util.Rm("./rnode.toml")
+    defer util.Rm("./rnode.conf")
     /**Copy config files to the rest of the nodes**/
     for i,server := range servers{
-        err = clients[i].Scp("./rnode.toml","/home/appo/rnode.toml")
+        err = clients[i].Scp("./rnode.conf","/home/appo/rnode.conf")
         if err != nil{
             log.Println(err)
             return nil,err
         }
         buildState.IncrementBuildProgress()
-        for node,_ := range server.Ips{
+        for node,_ := range server.Ips {
             if node == 0 && i == 0 {
                 continue
             }
-            _,err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/rnode.toml whiteblock-node%d:/datadir/rnode.toml",node))
+            _,err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/rnode.conf whiteblock-node%d:/datadir/rnode.conf",node))
             if err != nil{
                 log.Println(err)
                 return nil,err
@@ -162,7 +166,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
             buildState.IncrementBuildProgress()
             
         }
-        _,err = clients[i].Run("rm -f ~/rnode.toml")
+        _,err = clients[i].Run("rm -f ~/rnode.conf")
         if err != nil{
             log.Println(err)
             return nil,err
@@ -179,7 +183,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     node := 0
     var validators int64 = 0
     for i,server := range servers {
-        for j,ip := range server.Ips{
+        for j,ip := range server.Ips {
             if node == 0 {
                 node++;
                 continue
@@ -212,64 +216,38 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 
 
 func createFirstConfigFile(client *util.SshClient,node int,rchainConf *RChainConf,influxIP string) error {
-    data := util.CombineConfig([]string{
-        "[server]",
-        "host = \"0.0.0.0\"",
-        "port = 40500",
-        "http-port = 40502",
-        "metrics-port = 40503",
-        fmt.Sprintf("no-upnp = %v",rchainConf.NoUpnp),
-        fmt.Sprintf("default-timeout = %d",rchainConf.DefaultTimeout),
-        "standalone = true",
-        //"data-dir = \"/datadir\"",
-        fmt.Sprintf("map-size = %d",rchainConf.MapSize),
-        fmt.Sprintf("casper-block-store-size = %d",rchainConf.CasperBlockStoreSize),
-        fmt.Sprintf("in-memory-store = %v",rchainConf.InMemoryStore),
-        fmt.Sprintf("max-num-of-connections = %d",rchainConf.MaxNumOfConnections),
-        "\n[grpc-server]",
-        "host = \"0.0.0.0\"",
-        "port = 40501",
-        "port-internal = 40504",
-        "\n[tls]",
-        "#certificate = \"/var/lib/rnode/certificate.pem\"",
-        "#key = \"/var/lib/rnode/key.pem\"",
-        "\n[validators]",
-        fmt.Sprintf("count = %d",rchainConf.ValidatorCount),
-        "shard-id = \"wbtest\"",
-        fmt.Sprintf("sig-algorithm = \"%s\"",rchainConf.SigAlgorithm),
-        "bonds-file = \"/root/.rnode/genesis\"",
-        "private-key = \"7fa626af8e4b96797888e6fc6884ce7c278c360170b13e4ce4000090c6f2bab\"",
-        "\n[kamon]",
-        "prometheus = false",
-        "influx-db = true",
-        "\n[influx-db]",
-        fmt.Sprintf("hostname = \"%s\"",influxIP),
-        "port = 8086",
-        "database = \"rnode\"",
+    filler := util.ConvertToStringMap(map[string]interface{}{
+        "influxIp":influxIP,
+        "validatorCount":rchainConf.ValidatorCount,
+        "standalone":false,
+    })
+    dat, err := ioutil.ReadFile("./resources/rchain/rchain.conf.mustache")
+    if err != nil {
+        return err
+    }
+    data, err := mustache.Render(string(dat), filler)
 
-    });
-
-    err := util.Write("./rnode.toml",data)
+    err = util.Write("./rnode.conf",data)
     if err != nil{
         log.Println(err)
         return err
     }
-    err = client.Scp("./rnode.toml","/home/appo/rnode.toml")
+    err = client.Scp("./rnode.conf","/home/appo/rnode.conf")
     if err != nil{
         log.Println(err)
         return err
     }
-    _,err = client.Run(fmt.Sprintf("docker cp /home/appo/rnode.toml whiteblock-node%d:/datadir/rnode.toml",node))
+    _,err = client.Run(fmt.Sprintf("docker cp /home/appo/rnode.conf whiteblock-node%d:/datadir/rnode.conf",node))
     if err != nil{
         log.Println(err)
         return err
     }
-    _,err = client.Run("rm -f ~/rnode.toml")
+    _,err = client.Run("rm -f ~/rnode.conf")
     if err != nil{
         log.Println(err)
         return err
     }
-    return util.Rm("./rnode.toml")
+    return util.Rm("./rnode.conf")
 }
 
 func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,
@@ -278,42 +256,16 @@ func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*ut
 }
 
 func createConfigFile(bootnodeAddr string,rchainConf *RChainConf,influxIP string) error {
-    data := util.CombineConfig([]string{
-        "\n[server]",
-        "host = \"0.0.0.0\"",
-        "port = 40500",
-        "http-port = 40502",
-        "metrics-port = 40503",
-        fmt.Sprintf("no-upnp = %v",rchainConf.NoUpnp),
-        fmt.Sprintf("default-timeout = %d",rchainConf.DefaultTimeout),
-        fmt.Sprintf("bootstrap = \"%s\"",bootnodeAddr),
-        "standalone = false",
-        //"data-dir = \"/datadir\"",
-        fmt.Sprintf("map-size = %d",rchainConf.MapSize),
-        fmt.Sprintf("casper-block-store-size = %d",rchainConf.CasperBlockStoreSize),
-        fmt.Sprintf("in-memory-store = %v",rchainConf.InMemoryStore),
-        fmt.Sprintf("max-num-of-connections = %d",rchainConf.MaxNumOfConnections),
-        "\n[grpc-server]",
-        "host = \"0.0.0.0\"",
-        "port = 40501",
-        "port-internal = 40504",
-        "\n[tls]",
-        "#certificate = \"/var/lib/rnode/certificate.pem\"",
-        "#key = \"/var/lib/rnode/key.pem\"",
-        "\n[validators]",
-        fmt.Sprintf("count = %d",rchainConf.ValidatorCount),
-        "shard-id = \"wbtest\"",
-        fmt.Sprintf("sig-algorithm = \"%s\"",rchainConf.SigAlgorithm),
-        "bonds-file = \"/root/.rnode/genesis\"",
-        "private-key = \"7fa626af8e4b96797888e6fc6884ce7c278c360170b13e4ce4000090c6f2bab\"",
-        "\n[kamon]",
-        "prometheus = false",
-        "influx-db = true",
-        "\n[influx-db]",
-        fmt.Sprintf("hostname = \"%s\"",influxIP),
-        "port = 8086",
-        "database = \"rnode\"",
-    });
-
-    return util.Write("./rnode.toml",data)  
+    filler := util.ConvertToStringMap(map[string]interface{}{
+        "influxIp":influxIP,
+        "validatorCount":rchainConf.ValidatorCount,
+        "standalone":false,
+        "bootstrap":fmt.Sprintf("bootstrap = \"%s\"",bootnodeAddr),
+    })
+    dat, err := ioutil.ReadFile("./resources/rchain/rchain.conf.mustache")
+    if err != nil {
+        return err
+    }
+    data, err := mustache.Render(string(dat), filler)
+    return util.Write("./rnode.conf",data)  
 }

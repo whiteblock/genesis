@@ -19,6 +19,7 @@ RUN mkdir -p /genesis && apt-get update && apt-get install -y openssh-client
 WORKDIR /genesis
 
 COPY --from=built /genesis/blockchains /genesis/blockchains
+COPY --from=built /genesis/resources /genesis/resources
 COPY --from=built /genesis/config.json /genesis/config.json
 COPY --from=built /genesis/genesis /genesis/genesis
 COPY --from=built /bin/geth /bin/geth

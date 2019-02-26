@@ -119,6 +119,6 @@ func GetDefaults() string {
     "validatorCount":5,
     "validators":0,
     "sigAlgorithm":"ed25519",
-    "command":"/rchain/node/target/rnode-0.8.2/usr/share/rnode/bin/rnode"
+    "command":"/rchain/node/target/rnode*/usr/share/rnode/bin/rnode"
 }`
 }
