@@ -342,7 +342,7 @@ func GetServices() []util.Service {
  */
 func BuildConfig(pconf *ParityConf,wallets []string,passwordFile string) (string,error) {
 
-    dat, err := ioutil.ReadFile("./blockchains/parity/config.toml.template")
+    dat, err := ioutil.ReadFile("./resources/parity/config.toml.template")
     if err != nil {
         log.Println(err)
         return "",err
@@ -396,7 +396,7 @@ func BuildSpec(pconf *ParityConf, wallets []string) (string,error) {
         "accounts":accounts,
     }
     filler := util.ConvertToStringMap(tmp)
-    dat, err := ioutil.ReadFile("./blockchains/parity/spec.json.mustache")
+    dat, err := ioutil.ReadFile("./resources/parity/spec.json.mustache")
     if err != nil {
         return "",err
     }
