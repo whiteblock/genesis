@@ -1,6 +1,8 @@
 package beam
 
 import (
+	"io/ioutil"
+	"github.com/Whiteblock/mustache"
 	util "../../util"
 )
 
@@ -43,9 +45,28 @@ func GetDefaults() string {
 		{"validators":10},
 		{"txNodes":2},
 		{"nilNodes":0},
-			}`
+}`
 }
 
 func GetServices() []util.Service {
 	return nil
+}
+/*
+	{{{keyOwner}}}
+	{{{secretMinerKeys}}}
+ */
+
+func makeNodeConfig(bconf *BeamConf,keyOwner string,keyMine string) (string,error){
+
+    filler := util.ConvertToStringMap(map[string]interface{}{
+        "keyOwner":keyOwner,
+        "keyMine":keyMine,
+        
+    })
+    dat, err := ioutil.ReadFile("./resources/beam/beam-node.cfg.mustache")
+    if err != nil {
+        return "",err
+    }
+    data, err := mustache.Render(string(dat), filler)
+    return data,err
 }

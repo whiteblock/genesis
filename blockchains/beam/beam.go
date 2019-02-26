@@ -75,42 +75,8 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 	node := 0
 	for i, server := range servers {
 		for range server.Ips {
-			beam_node_config := []string{
-				"# port=10000",
-				"# stratum_port=0",
-				"# stratum_secrets_path=.",
-				"# wallet_seed=some_secret_string",
-				"# wallet_phrase=",
-				"# log_level=verbose",
-				"# file_log_level=verbose",
-				"# storage=node.db",
-				"# history_dir=",
-				"# temp_dir=",
-				"treasury_path=treasury.bin",
-				"# mining_threads=1",
-				"# miner_type=cpu",
-				"# verification_threads=-1",
-				"# import=0",
-				"# resync=0",
-				"# crash=0",
-				fmt.Sprintf("key_owner=%s", ownerKeys[node]),
-				fmt.Sprintf("key_mine=%s", secretMinerKeys[node]),
-				"pass=password",
-				"# Emission.Value0=800000000",
-				"# Emission.Drop0=525600",
-				"# Emission.Drop1=2102400",
-				"Maturity.Coinbase=1",
-				"# Maturity.Std=0",
-				"# MaxBodySize=0x100000",
-				"DA.Target_s=1",
-				"# DA.MaxAhead_s=900",
-				"# DA.WindowWork=120",
-				"# DA.WindowMedian0=25",
-				"# DA.WindowMedian1=7",
-				"DA.Difficulty0=100",
-				"# AllowPublicUtxos=0",
-				"# FakePoW=0",
-			}
+			beam_node_config,err := makeNodeConfig(beamConf,ownerKeys[node],secretMinerKeys[node]) 
+
 			beam_wallet_config := []string{
 				"# Emission.Value0=800000000",
 				"# Emission.Drop0=525600",
@@ -128,9 +94,9 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 				"# FakePoW=0",
 			}
 			for _, ip := range append(ips[:node], ips[node+1:]...) {
-				beam_node_config = append(beam_node_config, fmt.Sprintf("peer=%s:%d", ip, port))
+				beam_node_config += fmt.Sprintf("peer=%s:%d\n", ip, port)
 			}
-			err := util.Write("./beam-node.cfg", util.CombineConfig(beam_node_config))
+			err = util.Write("./beam-node.cfg", beam_node_config)
 			if err != nil {
 				log.Println(err)
 				return nil, err

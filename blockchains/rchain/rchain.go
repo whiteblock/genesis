@@ -23,7 +23,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 
     util.Rm("./rchain.conf")
     rchainConf,err := NewRChainConf(data)
-    if err != nil{
+    if err != nil {
         log.Println(err)
         return nil,err
     }
@@ -32,7 +32,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 
     services,err := util.GetServiceIps(GetServices())
     buildState.IncrementBuildProgress()
-    if err != nil{
+    if err != nil {
         log.Println(err)
         return nil,err
     }
@@ -43,7 +43,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 
     /**Make the data directories**/
     for i,server := range servers {
-        for j,_ := range server.Ips{
+        for j,_ := range server.Ips {
             buildState.IncrementBuildProgress()
             clients[i].DockerExec(j,"mkdir /datadir")
         }
