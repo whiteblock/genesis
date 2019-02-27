@@ -368,7 +368,7 @@ func BuildConfig(pconf *ParityConf,wallets []string,passwordFile string) (string
         return "",err
     }
     mp["unlock"] = string(raw)
-    mp["passwordFile"] = fmt.Sprintf("[\"%s\"]",passwordFile);;
+    mp["passwordFile"] = fmt.Sprintf("[\"%s\"]",passwordFile)
     data, err := mustache.Render(string(dat),mp)
     return data,err
 }

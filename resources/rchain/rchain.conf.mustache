@@ -64,14 +64,6 @@ rnode {
     }
   }
 
-  kamon.influxdb {
-    hostname = {{{influxIp}}}
-    port = 8086
-    database = "rnode"
-    protocol = "http"
-  }
-
-
   # gRPC API settings
   grpc {
     # Hostname or IP of node on which gRPC service is running
@@ -152,3 +144,10 @@ rnode {
     # deploy-timestamp = 0
   }
 }
+
+kamon.influxdb {
+    hostname = {{{influxIp}}}
+    port = 8086
+    database = "rnode"
+    protocol = "http"
+  }
