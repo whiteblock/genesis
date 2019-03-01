@@ -12,7 +12,7 @@ import (
     "time"
     beam "../blockchains/beam"
     eos "../blockchains/eos"
-    eth "../blockchains/ethereum"
+    geth "../blockchains/geth"
     rchain "../blockchains/rchain"
     sys "../blockchains/syscoin"
     tendermint "../blockchains/tendermint"
@@ -76,7 +76,9 @@ func AddTestNet(details db.DeploymentDetails,testNetId string) error {
     var services []util.Service
     switch(details.Blockchain){
         case "ethereum":
-            services = eth.GetServices()
+            fallthrough
+        case "geth":
+            services = geth.GetServices()
         case "eos":
             services = eos.GetServices()
         case "syscoin": 
@@ -111,7 +113,9 @@ func AddTestNet(details db.DeploymentDetails,testNetId string) error {
         case "eos":
             labels,err = eos.Build(details.Params,details.Nodes,newServerData,clients,buildState);
         case "ethereum":
-            labels,err = eth.Build(details.Params,details.Nodes,newServerData,clients,buildState)
+            fallthrough
+        case "geth":
+            labels,err = geth.Build(details.Params,details.Nodes,newServerData,clients,buildState)
         case "syscoin":
             labels,err = sys.RegTest(details.Params,details.Nodes,newServerData,clients,buildState)
         case "rchain":
@@ -187,25 +191,27 @@ func AddTestNet(details db.DeploymentDetails,testNetId string) error {
  */
 func GetParams(blockchain string) string {
     switch blockchain {
-    case "ethereum":
-        return eth.GetParams()
-    case "syscoin":
-        return sys.GetParams()
-    case "eos":
-        return eos.GetParams()
-    case "rchain":
-        return rchain.GetParams()
-    case "beam":
-        return beam.GetParams()
-    case "tendermint":
-        return tendermint.GetParams()
-    case "cosmos":
-        return cosmos.GetParams()
-    case "parity":
-        return parity.GetParams()
-    default:
-        return "[]"
-    }
+        case "ethereum":
+            fallthrough
+        case "geth":
+            return geth.GetParams()
+        case "syscoin":
+            return sys.GetParams()
+        case "eos":
+            return eos.GetParams()
+        case "rchain":
+            return rchain.GetParams()
+        case "beam":
+            return beam.GetParams()
+        case "tendermint":
+            return tendermint.GetParams()
+        case "cosmos":
+            return cosmos.GetParams()
+        case "parity":
+            return parity.GetParams()
+        default:
+            return "[]"
+        }
 }
 
 /*
@@ -215,21 +221,25 @@ func GetParams(blockchain string) string {
  */
 func GetDefaults(blockchain string) string {
     switch blockchain {
-    case "ethereum":
-        return eth.GetDefaults()
-    case "syscoin":
-        return sys.GetDefaults()
-    case "eos":
-        return eos.GetDefaults()
-    case "rchain":
-        return rchain.GetDefaults()
-    case "beam":
-        return beam.GetDefaults()
-    case "tendermint":
-        return tendermint.GetDefaults()
-    case "cosmos":
-        return cosmos.GetDefaults()
-    default:
-        return "{}"
-    }
+        case "ethereum":
+            fallthrough
+        case "geth":
+            return geth.GetDefaults()
+        case "syscoin":
+            return sys.GetDefaults()
+        case "eos":
+            return eos.GetDefaults()
+        case "rchain":
+            return rchain.GetDefaults()
+        case "beam":
+            return beam.GetDefaults()
+        case "tendermint":
+            return tendermint.GetDefaults()
+        case "cosmos":
+            return cosmos.GetDefaults()
+        case "parity":
+            return parity.GetDefaults()
+        default:
+            return "{}"
+        }
 }

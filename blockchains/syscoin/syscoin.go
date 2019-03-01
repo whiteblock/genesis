@@ -173,7 +173,7 @@ func handleConf(servers []db.Server,clients []*util.SshClient, sysconf *SysConf)
                 }
                 buildState.IncrementBuildProgress()
                 container := fmt.Sprintf("whiteblock-node%d",node)
-                _,err = clients[i].Run(fmt.Sprintf("docker exec %s mkdir -p /syscoin/datadir",container))
+                _,err = clients[i].DockerExec(node,"mkdir -p /syscoin/datadir")
                 if err != nil {
                     buildState.ReportError(err)
                     log.Println(err)

@@ -1,4 +1,4 @@
-package eth
+package geth
 
 import (
     "encoding/json"
@@ -188,7 +188,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                             node,
                             wallets[node-1])
                 clients[i].DockerCp(num,"/home/appo/CustomGenesis.json","/")
-                               
+
                 clients[i].DockerExec(num,fmt.Sprintf("mkdir -p /whiteblock/node%d/",node))
                 clients[i].Run(fmt.Sprintf("docker cp ~/tmp/node%d %s:/whiteblock",node,name))
                 clients[i].DockerExecd(num,"tmux new -s whiteblock -d")
@@ -428,7 +428,7 @@ func initNode(node int, networkId int64,ip string) (string,error) {
     //fmt.Printf("RAWWWWWWWWWWWW%s\n\n\n",gethResults)
     enodePattern := regexp.MustCompile(`enode:\/\/[A-z|0-9]+@(\[\:\:\]|([0-9]|\.)+)\:[0-9]+`)
     enode := enodePattern.FindAllString(gethResults,1)[0]
-    fmt.Printf("ENODE fetched is: %s\n",enode)
+    //fmt.Printf("ENODE fetched is: %s\n",enode)
     enodeAddressPattern := regexp.MustCompile(`\[\:\:\]|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})`)
     enode = enodeAddressPattern.ReplaceAllString(enode,ip);
 

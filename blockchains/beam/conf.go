@@ -33,28 +33,24 @@ func NewConf(data map[string]interface{}) (*BeamConf, error) {
 }
 
 func GetParams() string {
-	return `[
-	{"validators":"int"},
-	{"txNodes":"int"},
-	{"nilNodes":"int"},
-]`
+    dat, err := ioutil.ReadFile("./resources/beam/params.json")
+    if err != nil {
+        panic(err)//Missing required files is a fatal error
+    }
+    return string(dat)
 }
 
 func GetDefaults() string {
-	return `{
-		{"validators":10},
-		{"txNodes":2},
-		{"nilNodes":0},
-}`
+    dat, err := ioutil.ReadFile("./resources/beam/defaults.json")
+    if err != nil {
+        panic(err)//Missing required files is a fatal error
+    }
+    return string(dat)
 }
 
 func GetServices() []util.Service {
 	return nil
 }
-/*
-	{{{keyOwner}}}
-	{{{secretMinerKeys}}}
- */
 
 func makeNodeConfig(bconf *BeamConf,keyOwner string,keyMine string) (string,error){
 

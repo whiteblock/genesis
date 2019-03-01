@@ -6,7 +6,7 @@ import(
     "fmt"
     beam "../blockchains/beam"
     eos "../blockchains/eos"
-    eth "../blockchains/ethereum"
+    geth "../blockchains/geth"
     rchain "../blockchains/rchain"
     sys "../blockchains/syscoin"
     util "../util"
@@ -100,7 +100,9 @@ func AddNodes(details db.DeploymentDetails,testnetId string) error {
                 return err
             }
         case "ethereum":
-            labels,err = eth.Add(details.Params,details.Nodes,servers,clients,nodes,buildState)
+            fallthrough
+        case "geth":
+            labels,err = geth.Add(details.Params,details.Nodes,servers,clients,nodes,buildState)
             if err != nil {
                 buildState.ReportError(err)
                 log.Println(err)

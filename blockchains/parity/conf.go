@@ -250,86 +250,18 @@ func NewConf(data map[string]interface{}) (*ParityConf, error) {
 }
 
 func GetParams() string {
-    return `[
-    ["forceSealing","bool"],
-    ["resealOnTxs","string"],
-    ["resealMinPeriod","int"],
-    ["resealMaxPeriod","int"],
-    ["workQueueSize","int"],
-    ["relaySet","string"],
-    ["usdPerTx","string"],
-    ["usdPerEth","string"],
-    ["priceUpdatePeriod","string"],
-    ["gasFloorTarget","string"],
-    ["gasCap","string"],
-    ["txQueueSize","int"],
-    ["txQueueGas","string"],
-    ["txQueueStrategy","string"],
-    ["txGasLimit","string"],
-    ["txTimeLimit","int"],
-    ["removeSolved","bool"],
-    ["refuseServiceTransactions","bool"],
-    ["enableIPFS","bool"],
-    ["networkDiscovery","bool"],
-    ["extraAccounts","int"],
-    ["chainId","int"],
-    ["networkId","int"],
-    ["difficulty","int"],
-    ["initBalance","string"],
-    ["maxPeers","int"],
-    ["gasLimit","int"],
-    ["homesteadBlock","int"],
-    ["eip155Block","int"],
-    ["eip158Block","int"],
-    ["minimumDifficulty","int"],
-    ["difficultyBoundDivisor","int"],
-    ["durationLimit","int"],
-    ["blockReward","int"],
-    ["maximumExtraDataSize","int"],
-    ["minGasLimit","int"],
-    ["gasLimitBoundDivisor","int"]
-]`
+    dat, err := ioutil.ReadFile("./resources/parity/params.json")
+    if err != nil {
+        panic(err)//Missing required files is a fatal error
+    }
+    return string(dat)
 }
 func GetDefaults() string {
-    return `{
-    "forceSealing":true,
-    "resealOnTxs":"all",
-    "resealMinPeriod":4000,
-    "resealMaxPeriod":60000,
-    "workQueueSize":20,
-    "relaySet":"cheap",
-    "usdPerTx":"0.0025",
-    "usdPerEth":"auto",
-    "priceUpdatePeriod":"hourly",
-    "gasFloorTarget":"4700000",
-    "gasCap":"6283184",
-    "txQueueSize":8192,
-    "txQueueGas":"off",
-    "txQueueStrategy":"gas_price",
-    "txGasLimit":"6283184",
-    "txTimeLimit":100,
-    "removeSolved":false,
-    "refuseServiceTransactions":false,
-    "enableIPFS":false,
-    "networkDiscovery":true,
-    "extraAccounts":0,
-    "chainId":15468,
-    "networkId":15468,
-    "difficulty":100000,
-    "initBalance":"100000000000000000000",
-    "maxPeers":1000,
-    "gasLimit":4000000,
-    "homesteadBlock":0,
-    "eip155Block":0,
-    "eip158Block":0,
-    "minimumDifficulty":131072,
-    "difficultyBoundDivisor":2048,
-    "durationLimit":13,
-    "blockReward":5000000000000000000,
-    "maximumExtraDataSize":32,
-    "minGasLimit":5000,
-    "gasLimitBoundDivisor":1024
-}`
+    dat, err := ioutil.ReadFile("./resources/parity/defaults.json")
+    if err != nil {
+        panic(err)//Missing required files is a fatal error
+    }
+    return string(dat)
 }
 
 func GetServices() []util.Service {

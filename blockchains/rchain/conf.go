@@ -1,6 +1,7 @@
 package rchain
 
 import (
+    "io/ioutil"
     "encoding/json"
     "encoding/base64"
     util "../../util"
@@ -94,31 +95,17 @@ func GetServices() []util.Service {
 }
 
 func GetParams() string {
-    return `[
-    ["noUpnp","bool"],
-    ["defaultTimeout","int"],
-    ["mapSize","int"],
-    ["casperBlockStoreSize","int"],
-    ["inMemoryStore","bool"],
-    ["maxNumOfConnections","int"],
-    ["validatorCount","int"],
-    ["validators","int"],
-    ["sigAlgorithm","string"],
-    ["command","string"]
-]`
+    dat, err := ioutil.ReadFile("./resources/rchain/params.json")
+    if err != nil {
+        panic(err)//Missing required files is a fatal error
+    }
+    return string(dat)
 }
 
 func GetDefaults() string {
-    return `{
-    "noUpnp":true,
-    "defaultTimeout":2000,
-    "mapSize":1073741824,
-    "casperBlockStoreSize":1073741824,
-    "inMemoryStore":false,
-    "maxNumOfConnections":500,
-    "validatorCount":5,
-    "validators":0,
-    "sigAlgorithm":"ed25519",
-    "command":"/rchain/node/target/rnode*/usr/share/rnode/bin/rnode"
-}`
+    dat, err := ioutil.ReadFile("./resources/rchain/defaults.json")
+    if err != nil {
+        panic(err)//Missing required files is a fatal error
+    }
+    return string(dat)
 }

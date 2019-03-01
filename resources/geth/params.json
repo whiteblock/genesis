@@ -1,0 +1,12 @@
+[
+    ["extraAccounts","int"],
+    ["chainId","int"],
+    ["networkId","int"],
+    ["difficulty","int"],
+    ["initBalance","string"],
+    ["maxPeers","int"],
+    ["gasLimit","int"],
+    ["homesteadBlock","int"],
+    ["eip155Block","int"],
+    ["eip158Block","int"]
+]

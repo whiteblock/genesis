@@ -1,9 +1,10 @@
-package eth
+package geth
 
 import (
 	"encoding/json"
-	util "../../util"
+	"io/ioutil"
 	"errors"
+	util "../../util"
 )
 
 type EthConf struct {
@@ -90,37 +91,21 @@ func NewConf(data map[string]interface{}) (*EthConf,error) {
 	return out,nil
 }
 
-
 func GetParams() string {
-	return `[
-	["extraAccounts","int"],
-	["chainId","int"],
-	["networkId","int"],
-	["difficulty","int"],
-	["initBalance","string"],
-	["maxPeers","int"],
-	["gasLimit","int"],
-	["homesteadBlock","int"],
-	["eip155Block","int"],
-	["eip158Block","int"]
-]`
+	dat, err := ioutil.ReadFile("./resources/geth/params.json")
+    if err != nil {
+        panic(err)//Missing required files is a fatal error
+    }
+    return string(dat)
 }
 
 func GetDefaults() string {
-	return `{
-	"extraAccounts":0,
-	"chainId":15468,
-	"networkId":15468,
-	"difficulty":100000,
-	"initBalance":100000000000000000000,
-	"maxPeers":1000,
-	"gasLimit":4000000,
-	"homesteadBlock":0,
-	"eip155Block":0,
-	"eip158Block":0
-}`
+	dat, err := ioutil.ReadFile("./resources/geth/defaults.json")
+    if err != nil {
+        panic(err)//Missing required files is a fatal error
+    }
+    return string(dat)
 }
-
 
 func GetServices() []util.Service{
 	return nil
