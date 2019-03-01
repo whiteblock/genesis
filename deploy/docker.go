@@ -203,9 +203,13 @@ func serviceDockerRunCmd(network string,ip string,name string,env map[string]str
         envFlags += fmt.Sprintf("-e \"%s=%s\" ",k,v)
     }
     envFlags += fmt.Sprintf("-e \"BIND_ADDR=%s\"",ip)
-    return fmt.Sprintf("docker run -itd --network %s --ip %s --hostname %s --name %s %s %s",
+    ipFlag := ""
+    if len(ip) > 0 {
+        ipFlag = fmt.Sprintf("--ip %s")
+    }
+    return fmt.Sprintf("docker run -itd --network %s %s --hostname %s --name %s %s %s",
                         network,
-                        ip,
+                        ipFlag,
                         name,
                         name,
                         envFlags,
@@ -241,8 +245,13 @@ func DockerStartServices(server db.Server,client *util.SshClient,services []util
     }
 
     for i,service := range services {
-        res,err := client.KeepTryRun(serviceDockerRunCmd(conf.ServiceNetworkName,
-                                               ips[service.Name],
+        net := conf.ServiceNetworkName
+        ip := ips[service.Name]
+        if len(service.Network) != 0 {
+            net = service.Network
+            ip = ""
+        }
+        res,err := client.KeepTryRun(serviceDockerRunCmd(net,ip,
                                                fmt.Sprintf("%s%d",conf.ServicePrefix,i),
                                                service.Env,
                                                service.Image))

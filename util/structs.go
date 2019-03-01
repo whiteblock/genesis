@@ -18,6 +18,7 @@ type Service struct {
     Name    string              `json:"name"`
     Image   string              `json:"image"`
     Env     map[string]string   `json:"env"`
+    Network string              `json:"network"`
 }
 
 type EndPoint struct {

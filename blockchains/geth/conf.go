@@ -108,5 +108,12 @@ func GetDefaults() string {
 }
 
 func GetServices() []util.Service{
-	return nil
+	return []util.Service{
+		util.Service{
+			Name:"ethNetStats",
+			Image:"ethnet:latest",
+			Env:nil,
+			Network:"host",
+		},
+	}
 }

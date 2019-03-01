@@ -265,7 +265,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     
                 sem.Release(1)
                 buildState.IncrementBuildProgress()
-            }(i,ip,util.GetGateway(i,node),node,j)
+            }(i,ip,util.GetGateway(server.ServerID,node),node,j)
             node++
         }
     }
@@ -513,26 +513,8 @@ func distributeUTCKeystore(nodes int) error {
  * @param  string    ip     The servers config
  */
 func setupEthNetStats(client *util.SshClient) error {
-    res,err := client.Run("[ -d ~/eth-netstats ] && echo \"success\"")
-    if res != "success" || err != nil {
-        log.Println("eth-net stats not found in server!")
-        client.Run("rm -rf ~/eth-netstats")//ign
-        _,err = client.Run("wget http://whiteblock.io/eth-netstats.tar.gz && tar xf eth-netstats.tar.gz && rm eth-netstats.tar.gz")
-        if err != nil {
-            log.Println(err)
-            return err
-        }
-    }
-
-    client.Run("tmux kill-session -t netstats")//ign
-    
-    _,err = client.Run("tmux new -s netstats -d")
-    if err != nil {
-        log.Println(err)
-        return err
-    }
-    _,err = client.Run(fmt.Sprintf(
-        "tmux send-keys -t netstats 'cd /home/appo/eth-netstats && npm install && grunt && WS_SECRET=second PORT=%d npm start' C-m",ETH_NET_STATS_PORT))
+    _,err := client.Run(fmt.Sprintf(
+        "docker exec -d wb_service0 bash -c 'cd /eth-netstats && WS_SECRET=second PORT=%d npm start'",ETH_NET_STATS_PORT))
     if err != nil {
         log.Println(err)
         return err
