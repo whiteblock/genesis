@@ -115,7 +115,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
                 log.Println(err)
                 return nil, err
             }
-            if len(res) == 0{
+            if len(res) == 0 {
                 return nil,errors.New("account new returned an empty response")
             }
 
@@ -123,7 +123,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
             wallets = append(wallets,address)
 
             res,err = clients[i].DockerExec(j,"bash -c 'cat /parity/keys/ethereum/*'")
-            if err != nil{
+            if err != nil {
                 log.Println(res)
                 log.Println(err)
                 return nil, err

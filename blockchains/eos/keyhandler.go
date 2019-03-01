@@ -18,7 +18,7 @@ type KeyMaster struct {
 
 func NewKeyMaster() (*KeyMaster,error) {
 	out := new(KeyMaster)
-	dat, err := ioutil.ReadFile("./blockchains/eos/privatekeys.json")
+	dat, err := ioutil.ReadFile("./resources/eos/privatekeys.json")
 	if err != nil {
 		return nil,err
 	}
@@ -26,7 +26,7 @@ func NewKeyMaster() (*KeyMaster,error) {
 	if err != nil {
 		return nil,err
 	}
-	dat, err = ioutil.ReadFile("./blockchains/eos/publickeys.json")
+	dat, err = ioutil.ReadFile("./resources/eos/publickeys.json")
 	if err != nil {
 		return nil,err
 	}
