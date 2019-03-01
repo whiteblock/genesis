@@ -93,7 +93,12 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         return nil,err
     }
     buildState.SetBuildStage("Building genesis block")
-    err = util.Write("genesis.json", eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey))
+    genesis,err := eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey)
+    if err != nil {
+        log.Println(err)
+        return nil,err
+    }
+    err = util.Write("genesis.json",genesis)
     if err != nil{
         log.Println(err)
         return nil,err

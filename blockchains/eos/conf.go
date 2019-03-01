@@ -4,6 +4,8 @@ import(
     "encoding/json"
     "fmt"
     "time"
+    "io/ioutil"
+    "github.com/Whiteblock/mustache"
     util "../../util"
 )
 
@@ -297,55 +299,40 @@ func NewConf(data map[string]interface{}) (*EosConf,error){
     return out,nil
 }
 
-func (this *EosConf) GenerateGenesis(masterPublicKey string) string {
-    return fmt.Sprintf (
-`{
-    "initial_timestamp": "%s",
-    "initial_key": "%s",
-    "initial_configuration": {
-        "max_block_net_usage": %d,
-        "target_block_net_usage_pct": %d,
-        "max_transaction_net_usage": %d,
-        "base_per_transaction_net_usage": %d,
-        "net_usage_leeway": %d,
-        "context_free_discount_net_usage_num": %d,
-        "context_free_discount_net_usage_den": %d,
-        "max_block_cpu_usage": %d,
-        "target_block_cpu_usage_pct": %d,
-        "max_transaction_cpu_usage": %d,
-        "min_transaction_cpu_usage": %d,
-        "max_transaction_lifetime": %d,
-        "deferred_trx_expiration_window": %d,
-        "max_transaction_delay": %d,
-        "max_inline_action_size": %d,
-        "max_inline_action_depth": %d,
-        "max_authority_depth": %d
-    },
-    "initial_chain_id": "%s"
-}`,
-    time.Now().Format("2006-01-02T15-04-05.000"),
-    masterPublicKey,
-    this.MaxBlockNetUsage,
-    this.TargetBlockNetUsagePct,
-    this.MaxTransactionNetUsage,
-    this.BasePerTransactionNetUsage,
-    this.NetUsageLeeway,
-    this.ContextFreeDiscountNetUsageNum,
-    this.ContextFreeDiscountNetUsageDen,
-    this.MaxBlockCpuUsage,
-    this.TargetBlockCpuUsagePct,
-    this.MaxTransactionCpuUsage,
-    this.MinTransactionCpuUsage,
-    this.MaxTransactionLifetime,
-    this.DeferredTrxExpirationWindow,
-    this.MaxTransactionDelay,
-    this.MaxInlineActionSize,
-    this.MaxInlineActionDepth,
-    this.MaxAuthorityDepth,
-    this.InitialChainId)
+func (this *EosConf) GenerateGenesis(masterPublicKey string) (string,error) {
+
+    filler := util.ConvertToStringMap(map[string]interface{}{
+        "initialTimestamp": time.Now().Format("2006-01-02T15-04-05.000"),
+        "initialKey":masterPublicKey,
+        "maxBlockNetUsage":this.MaxBlockNetUsage,
+        "targetBlockNetUsagePct":this.TargetBlockNetUsagePct,
+        "maxTransactionNetUsage":this.MaxTransactionNetUsage,
+        "basePerTransactionNetUsage":this.BasePerTransactionNetUsage,
+        "netUsageLeeway":this.NetUsageLeeway,
+        "contextFreeDiscountNetUsageNum":this.ContextFreeDiscountNetUsageNum,
+        "contextFreeDiscountNetUsageDen":this.ContextFreeDiscountNetUsageDen,
+        "maxBlockCpuUsage":this.MaxBlockCpuUsage,
+        "targetBlockCpuUsagePct":this.TargetBlockCpuUsagePct,
+        "maxTransactionCpuUsage":this.MaxTransactionCpuUsage,
+        "minTransactionCpuUsage":this.MinTransactionCpuUsage,
+        "maxTransactionLifetime":this.MaxTransactionLifetime,
+        "deferredTrxExpirationWindow":this.DeferredTrxExpirationWindow,
+        "maxTransactionDelay":this.MaxTransactionDelay,
+        "maxInlineActionSize":this.MaxInlineActionSize,
+        "maxInlineActionDepth":this.MaxInlineActionDepth,
+        "maxAuthorityDepth":this.MaxAuthorityDepth,
+        "initialChainId":this.InitialChainId,
+    })
+    dat, err := ioutil.ReadFile("./resources/eos/genesis.json.mustache")
+    if err != nil {
+        return "",err
+    }
+    data, err := mustache.Render(string(dat), filler)
+    return data,err
 }
 
 func (this *EosConf) GenerateConfig() string {
+
     out := []string{
         "bnet-endpoint = 0.0.0.0:4321",
         "bnet-no-trx = false",
@@ -371,116 +358,30 @@ func (this *EosConf) GenerateConfig() string {
         "http-server-address = 0.0.0.0:8889",
         "p2p-listen-endpoint = 0.0.0.0:8999",
     }
-    for _,plugin := range this.Plugins{
+    for _,plugin := range this.Plugins {
         out = append(out,"plugin = " + plugin)
     }
-    for _,extra := range this.ConfigExtras{
+    for _,extra := range this.ConfigExtras {
         out = append(out,extra)
     }
     return util.CombineConfig(out)
 }
 
-func GetDefaults() string{
-    return `{
-    "userAccounts":200,
-    "validators":21,
-    "accountCpuStake":2000000,
-    "accountRam":32768,
-    "accountNetStake":500000,
-    "accountFunds":100000,
-    "bpCpuStake":1000000,
-    "bpNetStake":1000000,
-    "bpRam":32768,
-    "bpFunds":100000,
-    "maxBlockNetUsage":1048576,
-    "targetBlockNetUsagePct":1000,
-    "maxTransactionNetUsage":524288,
-    "basePerTransactionNetUsage":12,
-    "netUsageLeeway":500,
-    "contextFreeDiscountNetUsageNum":20,
-    "contextFreeDiscountNetUsageDen":100,
-    "maxBlockCpuUsage":10000000,
-    "targetBlockCpuUsagePct":500,
-    "maxTransactionCpuUsage":5000000,
-    "minTransactionCpuUsage":100,
-    "maxTransactionLifetime":36000,
-    "deferredTrxExpirationWindow":1000,
-    "maxTransactionDelay":3888000,
-    "maxInlineActionSize":4096,
-    "maxInlineActionDepth":4,
-    "maxAuthorityDepth":6,
-    "initialChainId":"6469636b627574740a",
-    "chainStateDbSizeMb":8192,
-    "reversibleBlocksDbSizeMb":340,
-    "contractsConsole":false,
-    "p2pMaxNodesPerHost":4,
-    "allowedConnection":"any",
-    "maxClients":0,
-    "connectionCleanupPeriod":30,
-    "syncFetchSpan":100,
-    "pauseOnStartup":false,
-    "maxTransactionTime":100,
-    "maxIrreversibleBlockAge":1000000,
-    "keosdProviderTimeout":5,
-    "txnReferenceBlockLag":0,
-    "plugins":[
-        "eosio::chain_plugin",
-        "eosio::chain_api_plugin",
-        "eosio::producer_plugin",
-        "eosio::http_plugin",
-        "eosio::history_api_plugin",
-        "eosio::net_plugin",
-        "eosio::net_api_plugin"
-    ]
-}`
+func GetDefaults() string {
+
+    dat, err := ioutil.ReadFile("./resources/eos/defaults.json")
+    if err != nil {
+        panic(err)//Missing required files is a fatal error
+    }
+    return string(dat)
 }
 
-func GetParams() string{
-    return `[
-    {"userAccounts":"int"},
-    {"blockProducers":"int"},
-    {"accountCPUStake":"int"},
-    {"accountRAMStake":"int"},
-    {"accountNetStake":"int"},
-    {"accountFunds":"int"},
-    {"bpCpuStake":"int"},
-    {"bpNetStake":"int"},
-    {"bpRamStake":"int"},
-    {"bpFunds":"int"},
-    {"maxBlockNetUsage":"int"},
-    {"targetBlockNetUsagePct":"int"},
-    {"maxTransactionNetUsage":"int"},
-    {"basePerTransactionNetUsage":"int"},
-    {"netUsageLeeway":"int"},
-    {"contextFreeDiscountNetUsageNum":"int"},
-    {"contextFreeDiscountNetUsageDen":"int"},
-    {"maxBlockCpuUsage":"int"},
-    {"targetBlockCpuUsagePct":"int"},
-    {"maxTransactionCpuUsage":"int"},
-    {"minTransactionCpuUsage":"int"},
-    {"maxTransactionLifetime":"int"},
-    {"deferredTrxExpirationWindow":"int"},
-    {"maxTransactionDelay":"int"},
-    {"maxInlineActionSize":"int"},
-    {"maxInlineActionDepth":"int"},
-    {"maxAuthorityDepth":"int"},
-    {"initialChainId":"string"},
-    {"chainStateDbSizeMb":"int"},
-    {"reversibleBlocksDbSizeMb":"int"},
-    {"contractsConsole":"bool"},
-    {"p2pMaxNodesPerHost":"int"},
-    {"allowedConnection":"string"},
-    {"maxClients":"int"},
-    {"connectionCleanupPeriod":"int"},
-    {"syncFetchSpan":"int"},
-    {"maxImplicitRequest":"int"},
-    {"pauseOnStartup":"bool"},
-    {"maxTransactionTime":"int"},
-    {"maxIrreversibleBlockAge":"int"},
-    {"keosdProviderTimeout":"int"},
-    {"txnReferenceBlockLag":"int"},
-    {"plugins":"[]string"}
-]`
+func GetParams() string {
+    dat, err := ioutil.ReadFile("./resources/eos/params.json")
+    if err != nil {
+        panic(err)//Missing required files is a fatal error
+    }
+    return string(dat)
 }
 
 

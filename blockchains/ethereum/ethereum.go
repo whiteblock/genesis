@@ -187,13 +187,12 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                             unlock,
                             node,
                             wallets[node-1])
-                
-                clients[i].Run(fmt.Sprintf("docker cp /home/appo/CustomGenesis.json whiteblock-node%d:/",node))
-               
-                clients[i].Run(fmt.Sprintf("docker exec %s mkdir -p /whiteblock/node%d/",name,node))
+                clients[i].DockerCp(num,"/home/appo/CustomGenesis.json","/")
+                               
+                clients[i].DockerExec(num,fmt.Sprintf("mkdir -p /whiteblock/node%d/",node))
                 clients[i].Run(fmt.Sprintf("docker cp ~/tmp/node%d %s:/whiteblock",node,name))
-                clients[i].Run(fmt.Sprintf("docker exec -d %s tmux new -s whiteblock -d",name))
-                clients[i].Run(fmt.Sprintf("docker exec -d %s tmux send-keys -t whiteblock '%s' C-m",name,gethCmd))
+                clients[i].DockerExecd(num,"tmux new -s whiteblock -d")
+                clients[i].DockerExecd(num,fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m",gethCmd))
                 
                 if err != nil {
                     log.Println(err)
@@ -223,11 +222,10 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         for j,ip := range server.Ips{
             sem.Acquire(ctx,1)
             go func(i int,nodeIP string,ethnetIP string,absNum int,relNum int){
-                relName := fmt.Sprintf("whiteblock-node%d",relNum)
                 absName := fmt.Sprintf("whiteblock-node%d",absNum)
-                sedCmd := fmt.Sprintf(`docker exec %s sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`,relName,absName)
-                sedCmd2 := fmt.Sprintf(`docker exec %s sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:%d"/g' /eth-net-intelligence-api/app.json`,relName,ethnetIP,ETH_NET_STATS_PORT)
-                sedCmd3 := fmt.Sprintf(`docker exec %s sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`,relName,nodeIP)
+                sedCmd := fmt.Sprintf(`sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`,absName)
+                sedCmd2 := fmt.Sprintf(`sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:%d"/g' /eth-net-intelligence-api/app.json`,ethnetIP,ETH_NET_STATS_PORT)
+                sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`,nodeIP)
 
                 //sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
                 res,err := clients[i].DockerExecd(relNum,"tmux new -s ethnet -d")
@@ -237,21 +235,21 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                     buildState.ReportError(err)
                     return
                 }
-                res,err = clients[i].Run(sedCmd)
+                res,err = clients[i].DockerExec(relNum,sedCmd)
                 if err != nil {
                     log.Println(err)
                     log.Println(res)
                     buildState.ReportError(err)
                     return
                 }
-                res,err = clients[i].Run(sedCmd2)
+                res,err = clients[i].DockerExec(relNum,sedCmd2)
                 if err != nil {
                     log.Println(err)
                     log.Println(res)
                     buildState.ReportError(err)
                     return
                 }
-                _,err = clients[i].Run(sedCmd3)
+                _,err = clients[i].DockerExec(relNum,sedCmd3)
                 if err != nil {
                     log.Println(err)
                     buildState.ReportError(err)
@@ -267,7 +265,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     
                 sem.Release(1)
                 buildState.IncrementBuildProgress()
-            }(i,ip,servers[0].Iaddr.Ip,node,j)
+            }(i,ip,util.GetGateway(i,node),node,j)
             node++
         }
     }
