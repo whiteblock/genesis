@@ -304,8 +304,6 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
         }
     }
     
-    
-
     buildState.IncrementBuildProgress()
     sem.Release(conf.ThreadLimit)
     if !buildState.ErrorFree() {
