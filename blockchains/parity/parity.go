@@ -193,12 +193,12 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
             
             for k,rawWallet := range rawWallets {
 
-                _,err = clients[i].DockerExec(node,fmt.Sprintf("bash -c 'echo \"%s\">>/parity/account%d'",rawWallet,k))
+                _,err = clients[i].DockerExec(j,fmt.Sprintf("bash -c 'echo \"%s\">>/parity/account%d'",rawWallet,k))
                 if err != nil {
                     log.Println(err)
                     return nil, err
                 }
-                defer clients[i].DockerExec(node,fmt.Sprintf("rm /parity/account%d",k))
+                defer clients[i].DockerExec(j,fmt.Sprintf("rm /parity/account%d",k))
 
                 res,err := clients[i].DockerExec(j,
                     fmt.Sprintf("parity --base-path=/parity/ --chain /parity/spec.json --password=/parity/passwd account import /parity/account%d",k))
@@ -212,7 +212,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
         }
     }
     
-    util.Write("tmp/config.toml",configToml)
+    //util.Write("tmp/config.toml",configToml)
     node = 0
     for i, server := range servers {
         for j, _ := range server.Ips {
