@@ -57,6 +57,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         }
     }
     defer util.Rm("./passwd")
+    buildState.SetBuildStage("Distributing secrets")
     /**Copy over the password file**/
     for i, server := range servers {
         err = clients[i].Scp("./passwd", "/home/appo/passwd")
@@ -80,8 +81,9 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
                 return nil, err
             }
         }
+        buildState.IncrementBuildProgress()
     }
-    buildState.IncrementBuildProgress()
+    
 
 
     /**Create the wallets**/

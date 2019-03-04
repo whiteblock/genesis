@@ -205,7 +205,7 @@ func serviceDockerRunCmd(network string,ip string,name string,env map[string]str
     envFlags += fmt.Sprintf("-e \"BIND_ADDR=%s\"",ip)
     ipFlag := ""
     if len(ip) > 0 {
-        ipFlag = fmt.Sprintf("--ip %s")
+        ipFlag = fmt.Sprintf("--ip %s",ip)
     }
     return fmt.Sprintf("docker run -itd --network %s %s --hostname %s --name %s %s %s",
                         network,
