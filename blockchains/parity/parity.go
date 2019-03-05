@@ -39,27 +39,15 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
         return nil, err
     }
 
-    err = util.Rm("tmp")
-    if err != nil {
-        log.Println(err)
-    }
-
-    buildState.SetBuildSteps(8 + (5 * nodes))
+    
+    buildState.SetBuildSteps(8 + (10 * nodes))
     defer func() {
         fmt.Printf("Cleaning up...")
         util.Rm("tmp")
         fmt.Printf("done\n")
     }()
 
-    for i := 1; i <= nodes; i++ {
-        err = util.Mkdir(fmt.Sprintf("./tmp/node%d", i))
-        if err != nil {
-            log.Println(err)
-            return nil, err
-        }
-        //fmt.Printf("---------------------  CREATING pre-allocated accounts for NODE-%d  ---------------------\n",i)
-    }
-
+ 
     //Make the data directories
     for i, server := range servers {
         for j, _ := range server.Ips {
@@ -71,6 +59,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
             }
         }
     }
+    buildState.IncrementBuildProgress()
 
     /**Create the Password file**/
     {
@@ -84,6 +73,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
             return nil, err
         }
     }
+    buildState.IncrementBuildProgress()
     defer util.Rm("./passwd")
     /**Copy over the password file**/
     for i, server := range servers {
@@ -100,6 +90,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
                 log.Println(err)
                 return nil, err
             }
+            buildState.IncrementBuildProgress()
         }
     }
     
@@ -129,10 +120,99 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
                 log.Println(err)
                 return nil, err
             }
-
+            buildState.IncrementBuildProgress()
             rawWallets = append(rawWallets,strings.Replace(res,"\"","\\\"",-1)) 
         }
     }
+    //Start up the geth node
+    {
+        gethConf,err := GethSpec(pconf,wallets)
+        if err != nil {
+            log.Println(err)
+            return nil, err
+        }
+
+        err = util.Write("genesis.json",gethConf)
+        if err != nil {
+            log.Println(err)
+            return nil, err
+        }
+        defer util.Rm("genesis.json")
+
+        err = clients[0].Scp("./genesis.json","/home/appo/genesis.json")
+        if err != nil {
+            log.Println(err)
+            return nil, err
+        }
+        defer clients[0].Run("rm /home/appo/genesis.json")
+
+        buildState.IncrementBuildProgress()
+
+        res,err := clients[0].Run("docker exec wb_service0 mkdir -p /geth")
+        if err != nil {
+            log.Println(res)
+            log.Println(err)
+            return nil, err
+        }
+
+        res,err = clients[0].Run("docker cp /home/appo/genesis.json wb_service0:/geth/")
+        if err != nil {
+            log.Println(res)
+            log.Println(err)
+            return nil, err
+        }
+        res,err = clients[0].Run("docker exec wb_service0 bash -c 'echo second >> /geth/passwd'")
+        if err != nil {
+            log.Println(res)
+            log.Println(err)
+            return nil, err
+        }
+
+        buildState.IncrementBuildProgress()
+
+        res,err = clients[0].Run("docker exec wb_service0 geth --datadir /geth/ --password /geth/passwd account new")
+        if err != nil {
+            log.Println(res)
+            log.Println(err)
+            return nil, err
+        }
+
+        addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
+        addresses := addressPattern.FindAllString(res,-1)
+        if len(addresses) < 1 {
+            return nil,errors.New("Unable to get addresses")
+        }
+        address := addresses[0]
+        address = address[1:len(address)-1]
+
+        res,err = clients[0].Run(
+            fmt.Sprintf("docker exec wb_service0 geth --datadir /geth/ --networkid %d init /geth/genesis.json",pconf.NetworkId))
+        if err != nil {
+            log.Println(res)
+            log.Println(err)
+            return nil, err
+        }
+
+        buildState.IncrementBuildProgress()
+
+        res,err = clients[0].Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --networkid %d --rpc --rpcaddr 0.0.0.0`+
+                            ` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
+                            ` --password /geth/passwd --etherbase %s`,pconf.NetworkId,address,address))
+        if err != nil {
+            log.Println(res)
+            log.Println(err)
+            return nil, err
+        }
+        res,err = clients[0].KeepTryRun(
+            `curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json"  -d '{ "method": "miner_start", "params": [8], "id": 3, "jsonrpc": "2.0" }'`)
+        
+        if err != nil {
+            log.Println(res)
+            log.Println(err)
+            return nil, err
+        }
+    }
+    buildState.IncrementBuildProgress()
 
     //Create the chain spec files
     spec,err := BuildSpec(pconf,wallets);
@@ -186,12 +266,16 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
                 return nil, err
             }
 
+            buildState.IncrementBuildProgress()
+
             err = clients[i].DockerCp(j,"/home/appo/config.toml","/parity/")
             if err != nil {
                 log.Println(err)
                 return nil, err
             }
-            
+
+            buildState.IncrementBuildProgress()
+
             for k,rawWallet := range rawWallets {
 
                 _,err = clients[i].DockerExec(j,fmt.Sprintf("bash -c 'echo \"%s\">>/parity/account%d'",rawWallet,k))
@@ -209,6 +293,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
                     return nil, err
                 }
             }
+            buildState.IncrementBuildProgress()
             node++
         }
     }
@@ -222,8 +307,6 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
 
             go func(node int, i int,localNum int) {
                 defer sem.Release(1)
-
-                buildState.IncrementBuildProgress()
 
                 parityCmd := fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`,
                         wallets[node])
@@ -261,6 +344,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
                     fmt.Sprintf(
                         `curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d '{ "method": "parity_enode", "params": [], "id": 1, "jsonrpc": "2.0" }'`,
                         ip))
+
                 if err != nil {
                     log.Println(err)
                     return nil, err
@@ -280,6 +364,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
                     return nil, err
                 }
             }
+            buildState.IncrementBuildProgress()
             enodes = append(enodes,enode)
         }
     }
@@ -301,6 +386,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
                     return nil, err
                 }
             }
+            buildState.IncrementBuildProgress()
             node++
         }
     }
@@ -310,95 +396,29 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
     if !buildState.ErrorFree() {
         return nil, buildState.GetError()
     }
-    gethConf,err := GethSpec(pconf,wallets)
-    if err != nil {
-        log.Println(err)
-        return nil, err
-    }
-
-    err = util.Write("genesis.json",gethConf)
-    if err != nil {
-        log.Println(err)
-        return nil, err
-    }
-    defer util.Rm("genesis.json")
-
-    err = clients[0].Scp("./genesis.json","/home/appo/genesis.json")
-    if err != nil {
-        log.Println(err)
-        return nil, err
-    }
-    defer clients[0].Run("rm /home/appo/genesis.json")
-
-    res,err := clients[0].Run("docker exec wb_service0 mkdir -p /geth")
-    if err != nil {
-        log.Println(res)
-        log.Println(err)
-        return nil, err
-    }
-
-    res,err = clients[0].Run("docker cp /home/appo/genesis.json wb_service0:/geth/")
-    if err != nil {
-        log.Println(res)
-        log.Println(err)
-        return nil, err
-    }
-    res,err = clients[0].Run("docker exec wb_service0 bash -c 'echo second >> /geth/passwd'")
-    if err != nil {
-        log.Println(res)
-        log.Println(err)
-        return nil, err
-    }
-
-    res,err = clients[0].Run("docker exec wb_service0 geth --datadir /geth/ --password /geth/passwd account new")
-    if err != nil {
-        log.Println(res)
-        log.Println(err)
-        return nil, err
-    }
-
-    addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
-    addresses := addressPattern.FindAllString(res,-1)
-    if len(addresses) < 1 {
-        return nil,errors.New("Unable to get addresses")
-    }
-    address := addresses[0]
-    address = address[1:len(address)-1]
-
-    res,err = clients[0].Run(
-        fmt.Sprintf("docker exec wb_service0 geth --datadir /geth/ --networkid %d init /geth/genesis.json",pconf.NetworkId))
-    if err != nil {
-        log.Println(res)
-        log.Println(err)
-        return nil, err
-    }
-    res,err = clients[0].Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --networkid %d --rpc --rpcaddr 0.0.0.0`+
-                        ` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
-                        ` --password /geth/passwd --etherbase %s`,pconf.NetworkId,address,address))
-    if err != nil {
-        log.Println(res)
-        log.Println(err)
-        return nil, err
-    }
-
-    for _,enode := range enodes {
+    
+    {
+        for _,enode := range enodes {
+            res,err := clients[0].KeepTryRun(
+                fmt.Sprintf(
+                    `curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json"  -d '{ "method": "admin_addPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
+                    enode))
+            buildState.IncrementBuildProgress()
+            if err != nil {
+                log.Println(res)
+                log.Println(err)
+                return nil, err
+            }
+        }
         res,err := clients[0].KeepTryRun(
-            fmt.Sprintf(
-                `curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json"  -d '{ "method": "admin_addPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
-                enode))
+            `curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json"  -d '{ "method": "miner_start", "params": [8], "id": 4, "jsonrpc": "2.0" }'`)
+        
         if err != nil {
             log.Println(res)
             log.Println(err)
             return nil, err
         }
-    }
-     res,err = clients[0].KeepTryRun(
-        `curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json"  -d '{ "method": "miner_start", "params": [], "id": 1, "jsonrpc": "2.0" }'`)
-    
-    if err != nil {
-        log.Println(res)
-        log.Println(err)
-        return nil, err
+        buildState.IncrementBuildProgress()
     }
     return nil, nil
 }
