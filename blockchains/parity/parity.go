@@ -311,10 +311,9 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
                 parityCmd := fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`,
                         wallets[node])
 
-                res,err := clients[i].DockerExecd(localNum,parityCmd)
+                err := clients[i].DockerExecdLog(localNum,parityCmd)
 
                 if err != nil {
-                    log.Println(res)
                     log.Println(err)
                     buildState.ReportError(err)
                     return

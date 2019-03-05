@@ -1,0 +1,137 @@
+package rest
+
+import(
+    "fmt"
+    "encoding/json"
+    "log"
+    "net/http"
+    "strconv"
+    "github.com/gorilla/mux"
+    util "../util"
+    state "../state"
+    testnet "../testnet"
+)
+
+func getConfFiles(w http.ResponseWriter,r *http.Request) {
+    params := mux.Vars(r)
+    
+    err := util.ValidateFilePath(params["blockchain"])
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),400)
+        return
+    }
+
+    files,err := util.Lsr(fmt.Sprintf("./resources/"))//TODO 
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),500)
+        return
+    }
+
+    json.NewEncoder(w).Encode(files)
+}
+
+func getConfFile(w http.ResponseWriter,r *http.Request) {
+    params := mux.Vars(r)
+
+    err := util.ValidateFilePath(params["blockchain"])
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),400)
+        return
+    }
+    err = util.ValidateFilePath(params["file"])
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),400)
+        return
+    }
+    //TODO
+}
+
+func setConfFile(w http.ResponseWriter,r *http.Request) {
+    params := mux.Vars(r)
+
+    err := util.ValidateFilePath(params["blockchain"])
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),400)
+        return
+    }
+    err = util.ValidateFilePath(params["file"])
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),400)
+        return
+    }
+    //TODO
+}
+
+func getBlockChainParams(w http.ResponseWriter,r *http.Request){
+
+    params := mux.Vars(r)
+    log.Println("GET PARAMS : "+params["blockchain"])
+    w.Write([]byte(testnet.GetParams(params["blockchain"])))
+}
+
+func getBlockChainState(w http.ResponseWriter,r *http.Request){
+    params := mux.Vars(r)
+    blockchain := params["blockchain"]
+    switch blockchain {
+        case "eos":
+            data := state.GetEosState()
+            if data == nil{
+                http.Error(w,"No state availible for eos",410)
+                return
+            }
+            json.NewEncoder(w).Encode(*data)
+            return
+    }
+    w.Write([]byte("Unknown blockchain "+ blockchain))
+}
+
+func getBlockChainDefaults(w http.ResponseWriter,r *http.Request){
+    params := mux.Vars(r)
+    w.Write([]byte(testnet.GetDefaults(params["blockchain"])))
+}
+
+func getBlockChainLog(w http.ResponseWriter,r *http.Request){
+    params := mux.Vars(r)
+    serverId, err := strconv.Atoi(params["server"])
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),400)
+        return
+    }
+    node,err := strconv.Atoi(params["node"])
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),400)
+        return
+    }
+    lines := -1
+    _,ok := params["lines"]
+    if ok {
+        lines,err = strconv.Atoi(params["lines"])
+        if err != nil {
+            log.Println(err)
+            http.Error(w,err.Error(),400)
+            return
+        }
+    }
+  
+    client,err := testnet.GetClient(serverId)
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),404)
+        return
+    }
+    res,err := client.DockerRead(node,conf.DockerOutputFile,lines)
+    if err != nil {
+        log.Println(err)
+        http.Error(w,fmt.Sprintf("%s %s",res,err.Error()),500)
+        return
+    }
+    w.Write([]byte(res))
+}

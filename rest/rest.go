@@ -9,12 +9,10 @@ import (
     "net/http"
     "strconv"
     "log"
-    "fmt"
     util "../util"
     db "../db"
     state "../state"
     status "../status"
-    testnet "../testnet"
 )
 
 var conf *util.Config
@@ -105,6 +103,10 @@ func StartServer() {
     router.HandleFunc("/emulate/{server}",handleNet).Methods("POST")
     router.HandleFunc("/emulate/all/{server}",handleNetAll).Methods("POST")
 
+    router.HandleFunc("/resources/{blockchain}",getConfFiles).Methods("GET")
+    router.HandleFunc("/resources/{blockchain}/{file}",getConfFile).Methods("GET")
+    router.HandleFunc("/resources/{blockchain}/{file}",setConfFile).Methods("POST")
+
     http.ListenAndServe(conf.Listen, router)
 }
 
@@ -122,73 +124,6 @@ func buildStatus(w http.ResponseWriter,r *http.Request){
     w.Write([]byte(status.CheckBuildStatus())) 
 }
 
-func getBlockChainParams(w http.ResponseWriter,r *http.Request){
-
-    params := mux.Vars(r)
-    log.Println("GET PARAMS : "+params["blockchain"])
-    w.Write([]byte(testnet.GetParams(params["blockchain"])))
-}
-
-func getBlockChainState(w http.ResponseWriter,r *http.Request){
-    params := mux.Vars(r)
-    blockchain := params["blockchain"]
-    switch blockchain {
-        case "eos":
-            data := state.GetEosState()
-            if data == nil{
-                http.Error(w,"No state availible for eos",410)
-                return
-            }
-            json.NewEncoder(w).Encode(*data)
-            return
-    }
-    w.Write([]byte("Unknown blockchain "+ blockchain))
-}
-
-func getBlockChainDefaults(w http.ResponseWriter,r *http.Request){
-    params := mux.Vars(r)
-    w.Write([]byte(testnet.GetDefaults(params["blockchain"])))
-}
-
-func getBlockChainLog(w http.ResponseWriter,r *http.Request){
-    params := mux.Vars(r)
-    serverId, err := strconv.Atoi(params["server"])
-    if err != nil {
-        log.Println(err)
-        http.Error(w,err.Error(),400)
-        return
-    }
-    node,err := strconv.Atoi(params["node"])
-    if err != nil {
-        log.Println(err)
-        http.Error(w,err.Error(),400)
-        return
-    }
-    lines := -1
-    _,ok := params["lines"]
-    if ok {
-        lines,err = strconv.Atoi(params["lines"])
-        if err != nil {
-            log.Println(err)
-            http.Error(w,err.Error(),400)
-            return
-        }
-    }
-  
-    client,err := testnet.GetClient(serverId)
-    if err != nil {
-        log.Println(err)
-        http.Error(w,err.Error(),404)
-        return
-    }
-    res,err := client.DockerRead(node,conf.DockerOutputFile,lines)
-    if err != nil {
-        log.Println(err)
-        http.Error(w,fmt.Sprintf("%s %s",res,err.Error()),500)
-        return
-    }
-    w.Write([]byte(res))
-}
 
 func getLastNodes(w http.ResponseWriter,r *http.Request) {
     nodes,err := status.GetLatestTestnetNodes()
