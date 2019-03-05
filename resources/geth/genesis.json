@@ -1,0 +1,10 @@
+{
+    "config": {
+        "chainId": {{{chainId}}}
+    },
+    "nonce": "0x0000000000000042",
+    "difficulty": {{{difficulty}}},
+    "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "gasLimit": {{{gasLimit}}},
+    "alloc":{{{alloc}}}
+}

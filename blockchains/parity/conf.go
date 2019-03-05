@@ -265,7 +265,13 @@ func GetDefaults() string {
 }
 
 func GetServices() []util.Service {
-    return nil
+    return []util.Service{
+        util.Service{
+            Name: "Geth",
+            Image:"gcr.io/whiteblock/ethereum:latest",
+            Env:nil,
+        },
+    }
 }
 
 /*
@@ -301,6 +307,7 @@ func BuildConfig(pconf *ParityConf,wallets []string,passwordFile string) (string
     }
     mp["unlock"] = string(raw)
     mp["passwordFile"] = fmt.Sprintf("[\"%s\"]",passwordFile)
+    mp["networkId"] = fmt.Sprintf("%d",pconf.NetworkId)
     data, err := mustache.Render(string(dat),mp)
     return data,err
 }
@@ -329,6 +336,29 @@ func BuildSpec(pconf *ParityConf, wallets []string) (string,error) {
     }
     filler := util.ConvertToStringMap(tmp)
     dat, err := ioutil.ReadFile("./resources/parity/spec.json.mustache")
+    if err != nil {
+        return "",err
+    }
+    data, err := mustache.Render(string(dat), filler)
+    return data,err
+}
+
+func GethSpec(pconf *ParityConf,wallets []string) (string,error) {
+    accounts := make(map[string]interface{})
+    for _,wallet := range wallets {
+        accounts[wallet] = map[string]interface{}{
+            "balance": pconf.InitBalance,
+        }
+    }
+
+    tmp := map[string]interface{}{
+        "chainId":pconf.NetworkId,
+        "difficulty":fmt.Sprintf("0x%x",pconf.Difficulty),
+        "gasLimit":fmt.Sprintf("0x%x",pconf.GasLimit),
+        "alloc":accounts,       
+    }
+    filler := util.ConvertToStringMap(tmp)
+    dat, err := ioutil.ReadFile("./resources/geth/genesis.json")
     if err != nil {
         return "",err
     }

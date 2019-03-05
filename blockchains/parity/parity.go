@@ -1,6 +1,7 @@
 package parity
 
 import (
+    "regexp"
     "context"
     "errors"
     "fmt"
@@ -308,6 +309,96 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
     sem.Release(conf.ThreadLimit)
     if !buildState.ErrorFree() {
         return nil, buildState.GetError()
+    }
+    gethConf,err := GethSpec(pconf,wallets)
+    if err != nil {
+        log.Println(err)
+        return nil, err
+    }
+
+    err = util.Write("genesis.json",gethConf)
+    if err != nil {
+        log.Println(err)
+        return nil, err
+    }
+    defer util.Rm("genesis.json")
+
+    err = clients[0].Scp("./genesis.json","/home/appo/genesis.json")
+    if err != nil {
+        log.Println(err)
+        return nil, err
+    }
+    defer clients[0].Run("rm /home/appo/genesis.json")
+
+    res,err := clients[0].Run("docker exec wb_service0 mkdir -p /geth")
+    if err != nil {
+        log.Println(res)
+        log.Println(err)
+        return nil, err
+    }
+
+    res,err = clients[0].Run("docker cp /home/appo/genesis.json wb_service0:/geth/")
+    if err != nil {
+        log.Println(res)
+        log.Println(err)
+        return nil, err
+    }
+    res,err = clients[0].Run("docker exec wb_service0 bash -c 'echo second >> /geth/passwd'")
+    if err != nil {
+        log.Println(res)
+        log.Println(err)
+        return nil, err
+    }
+
+    res,err = clients[0].Run("docker exec wb_service0 geth --datadir /geth/ --password /geth/passwd account new")
+    if err != nil {
+        log.Println(res)
+        log.Println(err)
+        return nil, err
+    }
+
+    addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
+    addresses := addressPattern.FindAllString(res,-1)
+    if len(addresses) < 1 {
+        return nil,errors.New("Unable to get addresses")
+    }
+    address := addresses[0]
+    address = address[1:len(address)-1]
+
+    res,err = clients[0].Run(
+        fmt.Sprintf("docker exec wb_service0 geth --datadir /geth/ --networkid %d init /geth/genesis.json",pconf.NetworkId))
+    if err != nil {
+        log.Println(res)
+        log.Println(err)
+        return nil, err
+    }
+    res,err = clients[0].Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --networkid %d --rpc --rpcaddr 0.0.0.0`+
+                        ` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
+                        ` --password /geth/passwd --etherbase %s`,pconf.NetworkId,address,address))
+    if err != nil {
+        log.Println(res)
+        log.Println(err)
+        return nil, err
+    }
+
+    for _,enode := range enodes {
+        res,err := clients[0].KeepTryRun(
+            fmt.Sprintf(
+                `curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json"  -d '{ "method": "admin_addPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
+                enode))
+        if err != nil {
+            log.Println(res)
+            log.Println(err)
+            return nil, err
+        }
+    }
+     res,err = clients[0].KeepTryRun(
+        `curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json"  -d '{ "method": "miner_start", "params": [], "id": 1, "jsonrpc": "2.0" }'`)
+    
+    if err != nil {
+        log.Println(res)
+        log.Println(err)
+        return nil, err
     }
     return nil, nil
 }

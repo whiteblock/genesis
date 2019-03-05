@@ -382,7 +382,13 @@ func createGenesisfile(ethconf *EthConf,wallets []string) error {
         "eip155Block": %d,
         "eip158Block": %d
     },
+    "nonce": "0x0000000000000042",
     "difficulty": "0x0%X",
+    "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "coinbase": "0x0000000000000000000000000000000000000000",
+    "timestamp": "0x00",
+    "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "extraData": "0x1100000000000000000000000000000000000000000000000000000000000000",
     "gasLimit": "0x0%X",
     "alloc": {`,
     ethconf.ChainId,
