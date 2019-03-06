@@ -111,7 +111,7 @@ func GetServices() []util.Service{
 	return []util.Service{
 		util.Service{
 			Name:"ethNetStats",
-			Image:"gcr.io/whiteblock/ethnetstats:latest",
+			Image:"gcr.io/whiteblock/ethnetstats:dev",
 			Env:nil,
 			Network:"host",
 		},
