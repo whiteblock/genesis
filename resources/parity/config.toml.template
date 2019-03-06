@@ -99,7 +99,7 @@ tx_gas_limit = {{{txGasLimit}}}
 tx_time_limit = {{{txTimeLimit}}}
 extra_data = "Whiteblock"
 remove_solved = {{{removeSolved}}}
-notify_work = ["http://localhost:3001"]
+#notify_work = []
 refuse_service_transactions = {{{refuseServiceTransactions}}}
 
 [footprint]
@@ -123,5 +123,5 @@ disable_periodic = false
 
 [misc]
 logging = "own_tx=trace"
-log_file = "/var/log/parity.log"
+log_file = "/output.log"
 color = true

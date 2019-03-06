@@ -6,7 +6,8 @@
               "minimumDifficulty": {{{minimumDifficulty}}},
               "difficultyBoundDivisor": {{{difficultyBoundDivisor}}},
               "durationLimit": {{{durationLimit}}},
-              "blockReward": {{{blockReward}}}
+              "blockReward": {{{blockReward}}},
+              "homesteadTransition": 0
             }
         }
     },
@@ -17,6 +18,10 @@
                 "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
             }
         },
+        "author": "0x0000000000000000000000000000000000000000",
+        "timestamp": "0x00",
+        "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "extraData": "0x3535353535353535353535353535353535353535353535353535353535353535",
         "difficulty": {{{difficulty}}},
         "gasLimit": {{{gasLimit}}}
     },
@@ -24,7 +29,9 @@
             "networkID" : {{{networkId}}},
             "maximumExtraDataSize": {{{maximumExtraDataSize}}},
             "minGasLimit": {{{minGasLimit}}},
-            "gasLimitBoundDivisor": {{{gasLimitBoundDivisor}}}
+            "gasLimitBoundDivisor": {{{gasLimitBoundDivisor}}},
+            "accountStartNonce": "0x0",
+            "eip98Transition": 9223372036854775807
     },
     "accounts": {{{accounts}}}
 }
