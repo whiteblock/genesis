@@ -108,13 +108,12 @@ func GetDefaults() string {
 }
 
 func GetServices() []util.Service{
-	return nil
-	/*return []util.Service{
+	return []util.Service{
 		util.Service{
 			Name:"ethNetStats",
-			Image:"ethnet:latest",
+			Image:"gcr.io/whiteblock/ethnetstats:latest",
 			Env:nil,
 			Network:"host",
 		},
-	}*/
+	}
 }
