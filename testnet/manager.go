@@ -96,10 +96,8 @@ func AddTestNet(details db.DeploymentDetails,testNetId string) error {
     }
 
     //STEP 4: BUILD OUT THE DOCKER CONTAINERS AND THE NETWORK
-    config := deploy.Config{Nodes: details.Nodes, Image: details.Image, Servers: details.Servers}
-    fmt.Printf("Created the build configuration : %+v \n",config)
 
-    newServerData,err := deploy.Build(&config,servers,details.Resources,clients,services,buildState) //TODO: Restructure distribution of nodes over servers
+    newServerData,err := deploy.Build(&details,servers,clients,services,buildState) //TODO: Restructure distribution of nodes over servers
     if err != nil {
         log.Println(err)
         buildState.ReportError(err)

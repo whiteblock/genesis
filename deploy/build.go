@@ -15,10 +15,7 @@ import (
 var conf *util.Config = util.GetConfig()
 
 
-
-
-
-func Build(buildConf *Config,servers []db.Server,resources []util.Resources,clients []*util.SshClient,
+func Build(buildConf *db.DeploymentDetails,servers []db.Server,clients []*util.SshClient,
            services []util.Service,buildState *state.BuildState) ([]db.Server,error) {
     
     buildState.SetDeploySteps(3*buildConf.Nodes + 2 + len(services) )
@@ -81,12 +78,17 @@ func Build(buildConf *Config,servers []db.Server,resources []util.Resources,clie
             }
             buildState.IncrementDeployProgress()
 
-            resource := resources[0]
-            if len(resources) > i {
-                resource = resources[i]
+            resource := buildConf.Resources[0]
+            var env map[string]string = nil
+
+            if len(buildConf.Resources) > i {
+                resource = buildConf.Resources[i]
+            }
+            if buildConf.Environments != nil && len(buildConf.Environments) > i && buildConf.Environments[i] != nil {
+                env = buildConf.Environments[i]
             }
 
-            err = DockerRun(servers[serverIndex],clients[serverIndex],resource,i,buildConf.Image)
+            err = DockerRun(servers[serverIndex],clients[serverIndex],resource,i,buildConf.Image,env)
             if err != nil {
                 log.Println(err)
                 buildState.ReportError(err)
@@ -162,7 +164,7 @@ func Build(buildConf *Config,servers []db.Server,resources []util.Resources,clie
  * Builds out the Docker Network on pre-setup servers
  * Returns a string of all of the IP addresses 
  */
-func Build_legacy(buildConf *Config,servers []db.Server,resources util.Resources,clients []*util.SshClient,
+func Build_legacy(buildConf *db.DeploymentDetails,servers []db.Server,clients []*util.SshClient,
            services []util.Service,buildState *state.BuildState) ([]db.Server,error) {
     buildState.SetDeploySteps(3*buildConf.Nodes + 2 + len(services) )
     defer buildState.FinishDeploy()
@@ -204,7 +206,7 @@ func Build_legacy(buildConf *Config,servers []db.Server,resources util.Resources
         
         fmt.Printf("Creating the docker containers on server %d\n",i)
         buildState.SetBuildStage("Configuring Network")
-        err = DockerRunAll(servers[i],clients[i],resources,nodes,buildConf.Image,buildState)
+        err = DockerRunAll(servers[i],clients[i],buildConf.Resources,nodes,buildConf.Image,buildState,buildConf.Environments)
         if err != nil{
             log.Println(err)
             return nil,err

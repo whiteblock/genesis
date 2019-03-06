@@ -19,7 +19,7 @@ import(
  * @param r [description]
  * @return [description]
  */
-func AddNodes(buildConf *Config,servers []db.Server,resources []util.Resources,clients []*util.SshClient,
+func AddNodes(buildConf *db.DeploymentDetails,servers []db.Server,clients []*util.SshClient,
               buildState *state.BuildState) (map[int][]string,error) {
     
     buildState.SetDeploySteps(2*buildConf.Nodes )
@@ -64,12 +64,17 @@ func AddNodes(buildConf *Config,servers []db.Server,resources []util.Resources,c
             }
             buildState.IncrementDeployProgress()
 
-            resource := resources[0]
-            if len(resources) > i {
-                resource = resources[i]
+            resource := buildConf.Resources[0]
+            if len(buildConf.Resources) > i {
+                resource = buildConf.Resources[i]
             }
 
-            err = DockerRun(servers[serverIndex],clients[serverIndex],resource,i,buildConf.Image)
+            var env map[string]string = nil
+            if buildConf.Environments != nil && len(buildConf.Environments) > i && buildConf.Environments[i] != nil {
+                env = buildConf.Environments[i]
+            }
+
+            err = DockerRun(servers[serverIndex],clients[serverIndex],resource,i,buildConf.Image,env)
             if err != nil {
                 log.Println(err)
                 buildState.ReportError(err)

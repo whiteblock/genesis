@@ -116,7 +116,7 @@ func DockerPull(clients []*util.SshClient,image string) error {
     return nil
 }
 
-func dockerRunCmd(server db.Server,resources util.Resources,node int,image string) (string,error) {
+func dockerRunCmd(server db.Server,resources util.Resources,node int,image string,env map[string]string) (string,error) {
     command := "docker run -itd --entrypoint /bin/sh "
     command += fmt.Sprintf("--network %s%d",conf.NodeNetworkPrefix,node)
 
@@ -131,7 +131,9 @@ func dockerRunCmd(server db.Server,resources util.Resources,node int,image strin
         }
         command += fmt.Sprintf(" --memory %d",mem)
     }
-
+    for key,value := range env {
+        command += fmt.Sprintf(" -e \"%s=%s\"",key,value)
+    }
     command += fmt.Sprintf(" --ip %s",util.GetNodeIP(server.ServerID,node))
     command += fmt.Sprintf(" --hostname %s%d",conf.NodePrefix,node)
     command += fmt.Sprintf(" --name %s%d",conf.NodePrefix,node)
@@ -139,8 +141,8 @@ func dockerRunCmd(server db.Server,resources util.Resources,node int,image strin
     return command,nil
 }
 
-func DockerRun(server db.Server,client *util.SshClient,resources util.Resources,node int,image string) error {
-    command,err := dockerRunCmd(server,resources,node,image)
+func DockerRun(server db.Server,client *util.SshClient,resources util.Resources,node int,image string,env map[string]string) error {
+    command,err := dockerRunCmd(server,resources,node,image,env)
     if err != nil{
         return err
     }
@@ -152,16 +154,26 @@ func DockerRun(server db.Server,client *util.SshClient,resources util.Resources,
     return err
 }
 
-func DockerRunAll(server db.Server,client *util.SshClient,resources util.Resources,nodes int,image string,buildState *state.BuildState) error {
-    return DockerRunAppendAll(server,client,resources,0,nodes,image,buildState)
+func DockerRunAll(server db.Server,client *util.SshClient,resources []util.Resources,nodes int,
+                  image string,buildState *state.BuildState,envs []map[string]string) error {
+    return DockerRunAppendAll(server,client,resources,0,nodes,image,buildState,envs)
 }
 
-func DockerRunAppendAll(server db.Server,client *util.SshClient,resources util.Resources,start int,
-                        nodes int,image string,buildState *state.BuildState) error {
+func DockerRunAppendAll(server db.Server,client *util.SshClient,resources []util.Resources,start int,
+                        nodes int,image string,buildState *state.BuildState,envs []map[string]string) error {
     var command string
     for i := start; i < start+nodes; i++ {
         //state.IncrementDeployProgress()
-        tmp,err := dockerRunCmd(server,resources,i,image)
+        resource := resources[0]
+        var env map[string]string = nil
+
+        if len(resources) > i {
+            resource = resources[i]
+        }
+        if envs != nil && len(envs) > i && envs[i] != nil {
+            env = envs[i]
+        }
+        tmp,err := dockerRunCmd(server,resource,i,image,env)
         if err != nil{
             return err
         }

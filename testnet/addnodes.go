@@ -81,10 +81,7 @@ func AddNodes(details db.DeploymentDetails,testnetId string) error {
         return err
     }
 
-    config := deploy.Config{Nodes: details.Nodes, Image: details.Image, Servers: details.Servers}
-
-
-    nodes,err := deploy.AddNodes(&config, servers,details.Resources,clients,buildState)
+    nodes,err := deploy.AddNodes(&details, servers,clients,buildState)
     if err != nil {
         log.Println(err)
         buildState.ReportError(err)
