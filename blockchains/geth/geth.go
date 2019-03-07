@@ -391,7 +391,7 @@ func createGenesisfile(ethconf *EthConf,wallets []string) error {
     "extraData": "0x1100000000000000000000000000000000000000000000000000000000000000",
     "gasLimit": "0x0%X",
     "alloc": {`,
-    ethconf.ChainId,
+    ethconf.NetworkId,
     ethconf.HomesteadBlock,
     ethconf.Eip155Block,
     ethconf.Eip158Block,

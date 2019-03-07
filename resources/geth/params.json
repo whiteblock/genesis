@@ -1,6 +1,5 @@
 [
     ["extraAccounts","int"],
-    ["chainId","int"],
     ["networkId","int"],
     ["difficulty","int"],
     ["initBalance","string"],

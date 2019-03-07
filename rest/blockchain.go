@@ -7,6 +7,8 @@ import(
     "net/http"
     "strconv"
     "github.com/gorilla/mux"
+    "strings"
+    "io/ioutil"
     util "../util"
     state "../state"
     testnet "../testnet"
@@ -22,11 +24,16 @@ func getConfFiles(w http.ResponseWriter,r *http.Request) {
         return
     }
 
-    files,err := util.Lsr(fmt.Sprintf("./resources/"))//TODO 
+    files,err := util.Lsr(fmt.Sprintf("./resources/"+params["blockchain"]))//TODO 
     if err != nil {
         log.Println(err)
         http.Error(w,err.Error(),500)
         return
+    }
+
+    for i,file := range files {
+        index := strings.LastIndex(file,"/")
+        files[i] = file[index+1:]
     }
 
     json.NewEncoder(w).Encode(files)
@@ -47,7 +54,22 @@ func getConfFile(w http.ResponseWriter,r *http.Request) {
         http.Error(w,err.Error(),400)
         return
     }
-    //TODO
+    if strings.Contains(params["blockchain"],"..") || strings.Contains(params["file"],"..") {
+        http.Error(w,"relative path operators not allowed",401)
+        return
+    }
+    if !strings.HasSuffix(params["file"],"mustache") && !strings.HasSuffix(params["file"],"json") {
+        http.Error(w,"Cannot read non mustache/json files",403)
+        return
+    }
+    path := "./resources/"+params["blockchain"]+"/"+params["file"]
+    fmt.Println(path)
+    data,err := ioutil.ReadFile(path)
+    if err != nil{
+        http.Error(w,"File not found",404)
+        return
+    }
+    w.Write(data)
 }
 
 func setConfFile(w http.ResponseWriter,r *http.Request) {

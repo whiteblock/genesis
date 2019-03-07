@@ -9,7 +9,6 @@ import (
 
 type EthConf struct {
 	ExtraAccounts   int64	`json:"extraAccounts"`
-	ChainId			int64	`json:"chainId"`
 	NetworkId		int64	`json:"networkId"`
 	Difficulty		int64	`json:"difficulty"`
 	InitBalance		string	`json:"initBalance"`
@@ -32,11 +31,6 @@ func NewConf(data map[string]interface{}) (*EthConf,error) {
 	}
 
 	err = util.GetJSONInt64(data,"extraAccounts",&out.ExtraAccounts)
-	if err != nil {
-		return nil,err
-	}
-
-	err = util.GetJSONInt64(data,"chainId",&out.ChainId)
 	if err != nil {
 		return nil,err
 	}

@@ -124,6 +124,22 @@ func GetNode(id string) (Node,error) {
 }
 
 /*
+    GetNode fetches a node by id
+ */
+func GetNodeByTestNetAndId(testnet string,id string) (Node,error) {
+
+    row :=  db.QueryRow(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE id = %s AND test_net = %s",NodesTable,id,testnet))
+
+    var node Node
+
+    if row.Scan(&node.Id,&node.TestNetId,&node.Server,&node.LocalId,&node.Ip,&node.Label) == sql.ErrNoRows {
+        return node, errors.New("Not Found")
+    }
+
+    return node, nil
+}
+
+/*
     InsertNode inserts a node into the database
  */
 func InsertNode(node Node) (int,error) {

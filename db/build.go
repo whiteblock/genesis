@@ -37,7 +37,9 @@ type DeploymentDetails struct {
      */
     Resources       []util.Resources        `json:"resources"`
     
-    Environments     []map[string]string     `json:"environments"`
+    Environments    []map[string]string     `json:"environments"`
+
+    Files           map[string]string       `json:"files"`
 }
 
 /*
