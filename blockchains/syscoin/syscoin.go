@@ -24,14 +24,14 @@ func init(){
  * @param {[type]} servers []db.Server)             The servers to be built on       
  * @return ([]string,error [description]
  */
-func RegTest(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,buildState *state.BuildState) ([]string,error) {
-    if nodes < 3 {
+func RegTest(details db.DeploymentDetails,servers []db.Server,clients []*util.SshClient,buildState *state.BuildState) ([]string,error) {
+    if details.Nodes < 3 {
         log.Println("Tried to build syscoin with not enough nodes")
         return nil,errors.New("Tried to build syscoin with not enough nodes")
     }
     sem3 := semaphore.NewWeighted(conf.ThreadLimit)
     ctx := context.TODO()
-    sysconf,err := NewConf(data)
+    sysconf,err := NewConf(details.Params)
     if err != nil {
         log.Println(err)
         return nil,err
@@ -41,7 +41,7 @@ func RegTest(data map[string]interface{},nodes int,servers []db.Server,clients [
         util.Rm("config.boot")
         fmt.Printf("done\n")
     }()
-    buildState.SetBuildSteps(1+(6*nodes))
+    buildState.SetBuildSteps(1+(6*details.Nodes))
 
 
     fmt.Println("-------------Setting Up Syscoin-------------")

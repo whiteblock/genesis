@@ -355,6 +355,9 @@ func GethSpec(pconf *ParityConf,wallets []string) (string,error) {
         "chainId":pconf.NetworkId,
         "difficulty":fmt.Sprintf("0x%x",pconf.Difficulty),
         "gasLimit":fmt.Sprintf("0x%x",pconf.GasLimit),
+        "homesteadBlock":0,
+        "eip155Block":10,
+        "eip158Block":10,
         "alloc":accounts,       
     }
     filler := util.ConvertToStringMap(tmp)

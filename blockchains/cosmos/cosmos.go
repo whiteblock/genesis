@@ -15,11 +15,11 @@ func init(){
     conf = util.GetConfig()
 }
 
-func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,
+func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshClient,
            buildState *state.BuildState) ([]string,error){
     
     peers := []string{}
-    buildState.SetBuildSteps(4+(nodes*3))
+    buildState.SetBuildSteps(4+(details.Nodes*3))
 
     buildState.SetBuildStage("Setting up the first node")
     /**

@@ -19,15 +19,15 @@ func init(){
 }
 
 
-func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,buildState *state.BuildState) ([]string,error) {
+func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshClient,buildState *state.BuildState) ([]string,error) {
 
     util.Rm("./rchain.conf")
-    rchainConf,err := NewRChainConf(data)
+    rchainConf,err := NewRChainConf(details.Params)
     if err != nil {
         log.Println(err)
         return nil,err
     }
-    buildState.SetBuildSteps(9+(len(servers)*2)+(nodes*3))
+    buildState.SetBuildSteps(9+(len(servers)*2)+(details.Nodes*3))
     buildState.SetBuildStage("Setting up data collection")
 
     services,err := util.GetServiceIps(GetServices())
@@ -56,7 +56,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     }
     buildState.IncrementBuildProgress()
     km,err := NewKeyMaster()
-    keyPairs := make([]util.KeyPair,nodes)
+    keyPairs := make([]util.KeyPair,details.Nodes)
 
     for i,_ := range keyPairs {
         keyPairs[i],err = km.GetKeyPair()
@@ -70,7 +70,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     buildState.SetBuildStage("Setting up bonds")
     /**Setup bonds**/
     {
-        bonds := make([]string,nodes)
+        bonds := make([]string,details.Nodes)
         for i,keyPair := range keyPairs{
             bonds[i] = fmt.Sprintf("%s 1000000",keyPair.PublicKey)
         }

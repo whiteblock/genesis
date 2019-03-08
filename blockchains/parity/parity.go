@@ -27,12 +27,12 @@ func init() {
  * @param  int      nodes       The number of nodes in the network
  * @param  []Server servers     The list of servers passed from build
  */
-func Build(data map[string]interface{}, nodes int, servers []db.Server, clients []*util.SshClient,
+func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
            buildState *state.BuildState) ([]string, error) {
     //var mutex = &sync.Mutex{}
     var sem = semaphore.NewWeighted(conf.ThreadLimit)
     ctx := context.TODO()
-    pconf, err := NewConf(data)
+    pconf, err := NewConf(details.Params)
     fmt.Printf("%#v\n",*pconf)
     if err != nil {
         log.Println(err)
@@ -40,7 +40,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
     }
 
     
-    buildState.SetBuildSteps(8 + (10 * nodes))
+    buildState.SetBuildSteps(8 + (10 * details.Nodes))
     defer func() {
         fmt.Printf("Cleaning up...")
         util.Rm("tmp")
@@ -64,7 +64,7 @@ func Build(data map[string]interface{}, nodes int, servers []db.Server, clients 
     /**Create the Password file**/
     {
         var data string
-        for i := 1; i <= nodes; i++ {
+        for i := 1; i <= details.Nodes; i++ {
             data += "second\n"
         }
         err = util.Write("./passwd", data)

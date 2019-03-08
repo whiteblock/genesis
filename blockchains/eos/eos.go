@@ -23,13 +23,13 @@ func init(){
  * @param  int      nodes       The number of producers to make
  * @param  []Server servers     The list of relevant servers
  */
-func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,buildState *state.BuildState) ([]string,error) {
+func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshClient,buildState *state.BuildState) ([]string,error) {
 
-    if nodes < 2 {
+    if details.Nodes < 2 {
         return nil, errors.New("Cannot build less than 2 nodes")
     }
 
-    eosconf,err := NewConf(data)
+    eosconf,err := NewConf(details.Params)
     if err != nil {
         log.Println(err)
         return nil,err
@@ -49,7 +49,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
     clientPasswords := make(map[string]string)
 
     fmt.Println("\n*** Get Key Pairs ***")
-    buildState.SetBuildSteps(17 + (nodes*(3)) + (int(eosconf.UserAccounts) * (2)) + ((int(eosconf.UserAccounts)/50)*nodes))
+    buildState.SetBuildSteps(17 + (details.Nodes*(3)) + (int(eosconf.UserAccounts) * (2)) + ((int(eosconf.UserAccounts)/50)*details.Nodes))
     
 
     contractAccounts := []string{

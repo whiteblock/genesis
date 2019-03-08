@@ -2,14 +2,16 @@ package geth
 
 import (
     "encoding/json"
+    "encoding/base64"
     "context"
     "fmt"
+    "github.com/Whiteblock/mustache"
     "golang.org/x/sync/semaphore"
     "regexp"
     "errors"
     "strings"
+    "io/ioutil"
     "log"
-    "os"
     util "../../util"
     db "../../db"
     state "../../state"
@@ -29,25 +31,25 @@ const ETH_NET_STATS_PORT = 3338
  * @param  int      nodes       The number of nodes in the network
  * @param  []Server servers     The list of servers passed from build
  */
-func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,
+func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshClient,
            buildState *state.BuildState) ([]string,error) {
     //var mutex = &sync.Mutex{}
     var sem = semaphore.NewWeighted(conf.ThreadLimit)
     ctx := context.TODO()
-    ethconf,err := NewConf(data)
+    ethconf,err := NewConf(details.Params)
     if err != nil {
         log.Println(err)
         return nil,err
     }
 
-    buildState.SetBuildSteps(8+(5*nodes))
+    buildState.SetBuildSteps(8+(5*details.Nodes))
     
     buildState.IncrementBuildProgress() 
 
     /**Create the Password files**/
     {
         var data string
-        for i := 1; i <= nodes; i++ {
+        for i := 1; i <= details.Nodes; i++ {
             data += "second\n"
         }
         err = util.Write("./passwd", data)
@@ -137,7 +139,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
 
     buildState.IncrementBuildProgress()
     buildState.SetBuildStage("Creating the genesis block")
-    err = createGenesisfile(ethconf,wallets)
+    err = createGenesisfile(ethconf,details,wallets)
     if err != nil{
         log.Println(err)
         return nil,err
@@ -366,110 +368,60 @@ func MakeFakeAccounts(accs int) []string {
  * @param  []string wallets     The wallets to be allocated a balance
  */
 
-func createGenesisfile(ethconf *EthConf,wallets []string) error {
+func createGenesisfile(ethconf *EthConf,details db.DeploymentDetails,wallets []string) error {
 
-    file,err := os.Create("CustomGenesis.json")
-    if err != nil {
-        log.Println(err)
-        return err
+    genesis := map[string]interface{}{
+        "chainId":ethconf.NetworkId,
+        "homesteadBlock":ethconf.HomesteadBlock,
+        "eip155Block":ethconf.Eip155Block,
+        "eip158Block":ethconf.Eip158Block,
+        "difficulty":fmt.Sprintf("0x0%X",ethconf.Difficulty),
+        "gasLimit":fmt.Sprintf("0x0%X",ethconf.GasLimit),
     }
-    defer file.Close()
-
-    genesis := fmt.Sprintf(
-`{
-    "config": {
-        "chainId": %d,
-        "homesteadBlock": %d,
-        "eip155Block": %d,
-        "eip158Block": %d
-    },
-    "nonce": "0x0000000000000042",
-    "difficulty": "0x0%X",
-    "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "coinbase": "0x0000000000000000000000000000000000000000",
-    "timestamp": "0x00",
-    "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "extraData": "0x1100000000000000000000000000000000000000000000000000000000000000",
-    "gasLimit": "0x0%X",
-    "alloc": {`,
-    ethconf.NetworkId,
-    ethconf.HomesteadBlock,
-    ethconf.Eip155Block,
-    ethconf.Eip158Block,
-    ethconf.Difficulty,
-    ethconf.GasLimit)
-
-    _,err = file.Write([]byte(genesis))
-    if err != nil {
-        log.Println(err)
-        return err
-    }
-
-    //Fund the accounts
-    _,err = file.Write([]byte("\n"))
-    if err != nil {
-        log.Println(err)
-        return err
-    }
-    for i,wallet := range wallets {
-        _,err = file.Write([]byte(fmt.Sprintf("\t\t\"%s\":{\"balance\":\"%s\"}",wallet,ethconf.InitBalance)))
-        if err != nil {
-            log.Println(err)
-            return err
-        }
-        if len(wallets) - 1 != i {
-            _,err = file.Write([]byte(","))
-            if err != nil {
-                log.Println(err)
-                return err
-            }
-        }
-        _,err = file.Write([]byte("\n"))
-        if err != nil {
-            log.Println(err)
-            return err
+    alloc := map[string]map[string]string{}
+    for _,wallet := range wallets {
+        alloc[wallet] = map[string]string{
+            "balance":ethconf.InitBalance,
         }
     }
-    if ethconf.ExtraAccounts > 0 {
-        _,err = file.Write([]byte(","))
-        if err != nil {
-            log.Println(err)
-            return err
-        }
-    }
+  
     accs := MakeFakeAccounts(int(ethconf.ExtraAccounts))
     log.Println("Finished making fake accounts")
-    lenAccs := len(accs)
-    for i,wallet := range accs {
-        _,err = file.Write([]byte(fmt.Sprintf("\t\t\"%s\":{\"balance\":\"%s\"}",wallet,ethconf.InitBalance)))
-        if err != nil {
-            log.Println(err)
-            return err
+   
+    for _,wallet := range accs {
+        alloc[wallet] = map[string]string{
+            "balance": ethconf.InitBalance,
+        }        
+    }
+    genesis["alloc"] =  alloc
+    var dat string
+    custom := false
+    if details.Files != nil {
+        res,exists := details.Files["genesis.json"]; 
+        if exists {
+            dat = base64.StdEncoding.EncodeToString([]byte(res))
+            custom = true
         }
-
-        if lenAccs - 1 != i {
-            _,err = file.Write([]byte(",\n"))
-            if err != nil {
-                log.Println(err)
-                return err
-            }
-        }else{
-            _,err = file.Write([]byte("\n"))
-            if err != nil {
-                log.Println(err)
-                return err
-            }
-        }
+        
         
     }
 
-
-    _,err = file.Write([]byte("\n\t}\n}"))
+    if !custom {
+        tmp, err := ioutil.ReadFile("./resources/geth/genesis.json")
+        if err != nil {
+            log.Println(err)
+            return err
+        }
+        dat = string(tmp)
+    }
+    
+    data, err := mustache.Render(dat, util.ConvertToStringMap(genesis))
     if err != nil {
         log.Println(err)
         return err
     }
-    return nil
+    return util.Write("CustomGenesis.json",data)
+
 }
 
 /**

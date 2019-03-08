@@ -109,23 +109,23 @@ func AddTestNet(details db.DeploymentDetails,testNetId string) error {
 
     switch(details.Blockchain){
         case "eos":
-            labels,err = eos.Build(details.Params,details.Nodes,newServerData,clients,buildState);
+            labels,err = eos.Build(details,newServerData,clients,buildState);
         case "ethereum":
             fallthrough
         case "geth":
-            labels,err = geth.Build(details.Params,details.Nodes,newServerData,clients,buildState)
+            labels,err = geth.Build(details,newServerData,clients,buildState)
         case "syscoin":
-            labels,err = sys.RegTest(details.Params,details.Nodes,newServerData,clients,buildState)
+            labels,err = sys.RegTest(details,newServerData,clients,buildState)
         case "rchain":
-            labels,err = rchain.Build(details.Params,details.Nodes,newServerData,clients,buildState)
+            labels,err = rchain.Build(details,newServerData,clients,buildState)
         case "beam":
-            labels, err = beam.Build(details.Params, details.Nodes, newServerData, clients,buildState)
+            labels, err = beam.Build(details, newServerData, clients,buildState)
         case "tendermint":
-            labels, err = tendermint.Build(details.Params, details.Nodes, newServerData, clients,buildState)
+            labels, err = tendermint.Build(details, newServerData, clients,buildState)
         case "cosmos":
-            labels, err = cosmos.Build(details.Params, details.Nodes, newServerData, clients,buildState)
+            labels, err = cosmos.Build(details, newServerData, clients,buildState)
         case "parity":
-            labels, err = parity.Build(details.Params, details.Nodes, newServerData, clients,buildState)
+            labels, err = parity.Build(details, newServerData, clients,buildState)
         case "generic":
             log.Println("Built in generic mode")
         default:

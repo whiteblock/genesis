@@ -30,12 +30,12 @@ func init(){
 }
 
 //ExecStart=/usr/bin/tendermint node --proxy_app=kvstore --p2p.persistent_peers=167b80242c300bf0ccfb3ced3dec60dc2a81776e@165.227.41.206:26656,3c7a5920811550c04bf7a0b2f1e02ab52317b5e6@165.227.43.146:26656,303a1a4312c30525c99ba66522dd81cca56a361a@159.89.115.32:26656,b686c2a7f4b1b46dca96af3a0f31a6a7beae0be4@159.89.119.125:26656
-func Build(data map[string]interface{},nodes int,servers []db.Server,
+func Build(details db.DeploymentDetails,servers []db.Server,
            clients []*util.SshClient,buildState *state.BuildState) ([]string,error){
     //Ensure that genesis file has same chain_id
     peers := []string{}
     validators := []Validator{}
-    buildState.SetBuildSteps(0+(nodes*3))
+    buildState.SetBuildSteps(0+(details.Nodes*3))
     buildState.SetBuildStage("Initializing the nodes")
     for i, server := range servers {
         for j, ip := range server.Ips{
@@ -125,7 +125,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,
                 log.Println(err)
                 return nil,err
             }
-            res,err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/genesis.json whiteblock-node%d:/root/.tendermint/config/", j))
+            err = clients[i].DockerCp(j,"/home/appo/genesis.json","/root/.tendermint/config/")
             if err != nil{
                 log.Println(res)
                 log.Println(err)

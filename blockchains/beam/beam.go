@@ -18,15 +18,15 @@ func init() {
 
 const port int = 10000
 
-func Build(data map[string]interface{}, nodes int, servers []db.Server, clients []*util.SshClient,
+func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 		   buildState *state.BuildState) ([]string, error) {
 
-	beamConf, err := NewConf(data)
+	beamConf, err := NewConf(details.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	buildState.SetBuildSteps(0+(nodes*4))
+	buildState.SetBuildSteps(0+(details.Nodes*4))
 
     buildState.SetBuildStage("Setting up the wallets")
 	/**Set up wallets**/
