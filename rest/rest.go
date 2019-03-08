@@ -104,8 +104,14 @@ func StartServer() {
     router.HandleFunc("/emulate/all/{server}",handleNetAll).Methods("POST")
 
     router.HandleFunc("/resources/{blockchain}",getConfFiles).Methods("GET")
+    router.HandleFunc("/resources/{blockchain}/",getConfFiles).Methods("GET")
+
     router.HandleFunc("/resources/{blockchain}/{file}",getConfFile).Methods("GET")
+    router.HandleFunc("/resources/{blockchain}/{file}/",getConfFile).Methods("GET")
+
     router.HandleFunc("/resources/{blockchain}/{file}",setConfFile).Methods("POST")
+    router.HandleFunc("/resources/{blockchain}/{file}/",setConfFile).Methods("POST")
+
 
     http.ListenAndServe(conf.Listen, router)
 }

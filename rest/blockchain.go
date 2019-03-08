@@ -69,7 +69,7 @@ func getConfFile(w http.ResponseWriter,r *http.Request) {
         http.Error(w,"File not found",404)
         return
     }
-    w.Write(data)
+    json.NewEncoder(w).Encode(string(data))
 }
 
 func setConfFile(w http.ResponseWriter,r *http.Request) {
