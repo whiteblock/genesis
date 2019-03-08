@@ -278,9 +278,9 @@ func GetServices() []util.Service {
     passwordFile
     unlock
  */
-func BuildConfig(pconf *ParityConf,wallets []string,passwordFile string) (string,error) {
+func BuildConfig(pconf *ParityConf,files map[string]string,wallets []string,passwordFile string) (string,error) {
 
-    dat, err := ioutil.ReadFile("./resources/parity/config.toml.template")
+    dat, err := util.GetBlockchainConfig("parity","config.toml.template",files)
     if err != nil {
         log.Println(err)
         return "",err
@@ -308,11 +308,10 @@ func BuildConfig(pconf *ParityConf,wallets []string,passwordFile string) (string
     mp["unlock"] = string(raw)
     mp["passwordFile"] = fmt.Sprintf("[\"%s\"]",passwordFile)
     mp["networkId"] = fmt.Sprintf("%d",pconf.NetworkId)
-    data, err := mustache.Render(string(dat),mp)
-    return data,err
+    return mustache.Render(string(dat),mp)
 }
 
-func BuildSpec(pconf *ParityConf, wallets []string) (string,error) {
+func BuildSpec(pconf *ParityConf,files map[string]string,wallets []string) (string,error) {
 
     accounts := make(map[string]interface{})
     for _,wallet := range wallets {
@@ -335,12 +334,11 @@ func BuildSpec(pconf *ParityConf, wallets []string) (string,error) {
         "accounts":accounts,
     }
     filler := util.ConvertToStringMap(tmp)
-    dat, err := ioutil.ReadFile("./resources/parity/spec.json.mustache")
+    dat, err := util.GetBlockchainConfig("parity","spec.json.mustache",files)
     if err != nil {
         return "",err
     }
-    data, err := mustache.Render(string(dat), filler)
-    return data,err
+    return mustache.Render(string(dat), filler)
 }
 
 func GethSpec(pconf *ParityConf,wallets []string) (string,error) {

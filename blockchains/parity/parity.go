@@ -215,7 +215,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
     buildState.IncrementBuildProgress()
 
     //Create the chain spec files
-    spec,err := BuildSpec(pconf,wallets);
+    spec,err := BuildSpec(pconf,details.Files,wallets);
     if err != nil {
         log.Println(err)
         return nil,err
@@ -229,7 +229,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
     defer util.Rm("./spec.json")
 
     //create config file
-    configToml,err := BuildConfig(pconf,wallets,"/parity/passwd")
+    configToml,err := BuildConfig(pconf,details.Files,wallets,"/parity/passwd")
     if err != nil {
         log.Println(err)
         return nil, err

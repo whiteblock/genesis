@@ -2,7 +2,6 @@ package geth
 
 import (
     "encoding/json"
-    "encoding/base64"
     "context"
     "fmt"
     "github.com/Whiteblock/mustache"
@@ -10,7 +9,6 @@ import (
     "regexp"
     "errors"
     "strings"
-    "io/ioutil"
     "log"
     util "../../util"
     db "../../db"
@@ -205,10 +203,10 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
             enode = enodeAddressPattern.ReplaceAllString(enode,ip)
             static_nodes = append(static_nodes,enode)
             node++
+            buildState.IncrementBuildProgress()
         }
     }
     out, err := json.Marshal(static_nodes)
-    //fmt.Printf("-----Static Nodes.json------\n%+v\n\n",static_nodes)
     if err != nil {
         log.Println(err)
         return nil,err
@@ -252,7 +250,12 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
                             unlock,
                             wallets[node])
                 
-                clients[i].DockerCp(num,"/home/appo/static-nodes.json","/geth/")
+                err = clients[i].DockerCp(num,"/home/appo/static-nodes.json","/geth/")
+                if err != nil {
+                    log.Println(err)
+                    buildState.ReportError(err)
+                    return
+                }
                 clients[i].DockerExecd(num,"tmux new -s whiteblock -d")
                 clients[i].DockerExecd(num,fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m",gethCmd))
                 
@@ -394,26 +397,10 @@ func createGenesisfile(ethconf *EthConf,details db.DeploymentDetails,wallets []s
         }        
     }
     genesis["alloc"] =  alloc
-    var dat []byte
-    var err error
-    custom := false
-    if details.Files != nil {
-        res,exists := details.Files["genesis.json"]; 
-        if exists {
-            dat, err = base64.StdEncoding.DecodeString(res)
-            if err != nil {
-                return err
-            }
-            custom = true
-        }        
-    }
-
-    if !custom {
-        dat, err = ioutil.ReadFile("./resources/geth/genesis.json")
-        if err != nil {
-            log.Println(err)
-            return err
-        }
+    dat,err := util.GetBlockchainConfig("geth","genesis.json",details.Files)
+    if err!= nil {
+        log.Println(err)
+        return err
     }
     
     data, err := mustache.Render(string(dat), util.ConvertToStringMap(genesis))

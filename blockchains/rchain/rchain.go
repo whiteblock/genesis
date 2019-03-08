@@ -5,7 +5,6 @@ import(
     "log"
     "time"
     "regexp"
-    "io/ioutil"
     "github.com/Whiteblock/mustache"
     util "../../util"
     db "../../db"
@@ -49,7 +48,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
         }
     }
     /**Setup the first node**/
-    err = createFirstConfigFile(clients[0],0,rchainConf,services["wb_influx_proxy"])
+    err = createFirstConfigFile(details,clients[0],0,rchainConf,services["wb_influx_proxy"])
     if err != nil{
         log.Println(err)
         return nil,err
@@ -137,7 +136,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
             validators
          */
         log.Println("Got the address for the bootnode: "+enode)
-        err = createConfigFile(enode,rchainConf,services["wb_influx_proxy"])
+        err = createConfigFile(details,enode,rchainConf,services["wb_influx_proxy"])
         if err != nil{
             log.Println(err)
             return nil,err
@@ -215,13 +214,13 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
 }
 
 
-func createFirstConfigFile(client *util.SshClient,node int,rchainConf *RChainConf,influxIP string) error {
+func createFirstConfigFile(details db.DeploymentDetails,client *util.SshClient,node int,rchainConf *RChainConf,influxIP string) error {
     filler := util.ConvertToStringMap(map[string]interface{}{
         "influxIp":influxIP,
         "validatorCount":rchainConf.ValidatorCount,
         "standalone":false,
     })
-    dat, err := ioutil.ReadFile("./resources/rchain/rchain.conf.mustache")
+    dat, err := util.GetBlockchainConfig("rchain","rchain.conf.mustache",details.Files)
     if err != nil {
         log.Println(err)
         return err
@@ -259,14 +258,14 @@ func Add(details db.DeploymentDetails,servers []db.Server,clients []*util.SshCli
     return nil,nil
 }
 
-func createConfigFile(bootnodeAddr string,rchainConf *RChainConf,influxIP string) error {
+func createConfigFile(details db.DeploymentDetails,bootnodeAddr string,rchainConf *RChainConf,influxIP string) error {
     filler := util.ConvertToStringMap(map[string]interface{}{
         "influxIp":influxIP,
         "validatorCount":rchainConf.ValidatorCount,
         "standalone":false,
         "bootstrap":fmt.Sprintf("bootstrap = \"%s\"",bootnodeAddr),
     })
-    dat, err := ioutil.ReadFile("./resources/rchain/rchain.conf.mustache")
+    dat, err := util.GetBlockchainConfig("rchain","rchain.conf.mustache",details.Files)
     if err != nil {
         log.Println(err)
         return err

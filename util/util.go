@@ -14,6 +14,7 @@ import (
     "errors"
     "strings"
     "encoding/json"
+    "encoding/base64"
     "github.com/satori/go.uuid"
     //"golang.org/x/sys/unix"
 )
@@ -367,4 +368,16 @@ func ConvertToStringMap(in interface{}) map[string]string {
         out[key] = string(strval)
     }
     return out
+}
+
+
+func GetBlockchainConfig(blockchain string,file string,files map[string]string) ([]byte,error){
+    if files != nil {
+        res,exists := files["genesis.json"]; 
+        if exists {
+            return base64.StdEncoding.DecodeString(res)
+        }        
+    }    
+    return ioutil.ReadFile(fmt.Sprintf("./resources/%s/%s",blockchain,file))
+
 }
