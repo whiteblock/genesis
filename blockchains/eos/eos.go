@@ -103,7 +103,12 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         log.Println(err)
         return nil,err
     }
-    err = util.Write("config.ini", eosconf.GenerateConfig())
+    eosConfigIni,err := eosconf.GenerateConfig()
+    if err != nil {
+        log.Println(err)
+        return nil,err
+    }
+    err = util.Write("config.ini",eosConfigIni )
     if err != nil{
         log.Println(err)
         return nil,err

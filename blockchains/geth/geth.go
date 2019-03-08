@@ -142,6 +142,7 @@ func Build(data map[string]interface{},nodes int,servers []db.Server,clients []*
         log.Println(err)
         return nil,err
     }
+    defer util.Rm("./CustomGenesis.json")
 
     buildState.IncrementBuildProgress()
     buildState.SetBuildStage("Bootstrapping network")

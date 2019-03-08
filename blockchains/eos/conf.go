@@ -327,44 +327,44 @@ func (this *EosConf) GenerateGenesis(masterPublicKey string) (string,error) {
     if err != nil {
         return "",err
     }
-    data, err := mustache.Render(string(dat), filler)
-    return data,err
+    return mustache.Render(string(dat), filler)
 }
 
-func (this *EosConf) GenerateConfig() string {
-
-    out := []string{
-        "bnet-endpoint = 0.0.0.0:4321",
-        "bnet-no-trx = false",
-        "blocks-dir = /datadir/blocks/",
-        fmt.Sprintf("chain-state-db-size-mb = %d",this.ChainStateDbSizeMb),
-        fmt.Sprintf("reversible-blocks-db-size-mb = %d",this.ReversibleBlocksDbSizeMb),
-        fmt.Sprintf("contracts-console = %v",this.ContractsConsole),
-        "https-client-validate-peers = 0",
-        fmt.Sprintf("p2p-max-nodes-per-host = %d",this.P2pMaxNodesPerHost),
-        fmt.Sprintf("allowed-connection = %s",this.AllowedConnection),
-        fmt.Sprintf("max-clients = %d",this.MaxClients),
-        fmt.Sprintf("connection-cleanup-period = %d",this.ConnectionCleanupPeriod),
-        fmt.Sprintf("network-version-match = %d",this.NetworkVersionMatch),
-        fmt.Sprintf("sync-fetch-span = %d",this.SyncFetchSpan),
-//      fmt.Sprintf("max-implicit-request = %d",this.MaxImplicitRequest),
-        fmt.Sprintf("pause-on-startup = %v",this.PauseOnStartup),
-        fmt.Sprintf("max-transaction-time = %d",this.MaxTransactionTime),
-        fmt.Sprintf("max-irreversible-block-age = %d",this.MaxIrreversibleBlockAge),
-        fmt.Sprintf("keosd-provider-timeout = %d",this.KeosdProviderTimeout),
-        fmt.Sprintf("txn-reference-block-lag = %d",this.TxnReferenceBlockLag),
-        
-        "access-control-allow-credentials = false",
-        "http-server-address = 0.0.0.0:8889",
-        "p2p-listen-endpoint = 0.0.0.0:8999",
-    }
+func (this *EosConf) GenerateConfig() (string,error) {
+    plugins := ""
     for _,plugin := range this.Plugins {
-        out = append(out,"plugin = " + plugin)
+        plugins += fmt.Sprintf("plugin = %s\n",plugin)
     }
+    extras := ""
     for _,extra := range this.ConfigExtras {
-        out = append(out,extra)
+        extras += extra + "\n"
     }
-    return util.CombineConfig(out)
+
+    filler := util.ConvertToStringMap(map[string]interface{}{
+        "chainStateDbSizeMb":this.ChainStateDbSizeMb,
+        "reversibleBlocksDbSizeMb":this.ReversibleBlocksDbSizeMb,
+        "contractsConsole":this.ContractsConsole,
+        "httpsClientValidatePeers":0,
+        "p2pMaxNodesPerHost":this.P2pMaxNodesPerHost,
+        "allowedConnection":this.AllowedConnection,
+        "maxClients":this.MaxClients,
+        "connectionCleanupPeriod":this.ConnectionCleanupPeriod,
+        "networkVersionMatch":this.NetworkVersionMatch,
+        "syncFetchSpan":this.SyncFetchSpan,
+        "pauseOnStartup":this.PauseOnStartup,
+        "maxTransactionTime":this.MaxTransactionTime,
+        "maxIrreversibleBlockAge":this.MaxIrreversibleBlockAge,
+        "keosdProviderTimeout":this.KeosdProviderTimeout,
+        "txnReferenceBlockLag":this.TxnReferenceBlockLag,
+        "accessControlAllowCredentials":false,
+    })
+    filler["plugins"] = plugins
+    filler["extras"] = extras
+    dat, err := ioutil.ReadFile("./resources/eos/config.ini.mustache")
+    if err != nil {
+        return "",err
+    }
+    return mustache.Render(string(dat), filler)
 }
 
 func GetDefaults() string {
