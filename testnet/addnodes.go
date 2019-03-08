@@ -90,7 +90,7 @@ func AddNodes(details db.DeploymentDetails,testnetId string) error {
     var labels []string = nil
     switch(details.Blockchain){
         case "eos":
-            labels,err = eos.Add(details.Params,details.Nodes,servers,clients,nodes,buildState);
+            labels,err = eos.Add(details,servers,clients,nodes,buildState);
             if err != nil {
                 buildState.ReportError(err)
                 log.Println(err)
@@ -99,28 +99,28 @@ func AddNodes(details db.DeploymentDetails,testnetId string) error {
         case "ethereum":
             fallthrough
         case "geth":
-            labels,err = geth.Add(details.Params,details.Nodes,servers,clients,nodes,buildState)
+            labels,err = geth.Add(details,servers,clients,nodes,buildState)
             if err != nil {
                 buildState.ReportError(err)
                 log.Println(err)
                 return err
             }
         case "syscoin":
-            labels,err = sys.Add(details.Params,details.Nodes,servers,clients,nodes,buildState)
+            labels,err = sys.Add(details,servers,clients,nodes,buildState)
             if err != nil {
                 buildState.ReportError(err)
                 log.Println(err)
                 return err
             }
         case "rchain":
-            labels,err = rchain.Add(details.Params,details.Nodes,servers,clients,nodes,buildState)
+            labels,err = rchain.Add(details,servers,clients,nodes,buildState)
             if err != nil {
                 buildState.ReportError(err)
                 log.Println(err)
                 return err
             }
         case "beam":
-            labels, err = beam.Add(details.Params, details.Nodes, servers, clients,nodes,buildState)
+            labels, err = beam.Add(details, servers, clients,nodes,buildState)
             if err != nil {
                 buildState.ReportError(err)
                 log.Println(err)

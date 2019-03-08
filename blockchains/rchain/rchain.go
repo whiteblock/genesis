@@ -91,7 +91,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
         buildState.IncrementBuildProgress()
         defer clients[0].Run("rm -f /home/appo/bonds.txt")
         
-        _,err = clients[0].Run("docker cp /home/appo/bonds.txt whiteblock-node0:/bonds.txt")
+        err = clients[0].DockerCp(0,"/home/appo/bonds.txt","/bonds.txt")
         if err != nil{
             log.Println(err)
             return nil,err
@@ -158,7 +158,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
             if node == 0 && i == 0 {
                 continue
             }
-            _,err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/rnode.conf whiteblock-node%d:/datadir/rnode.conf",node))
+            err = clients[i].DockerCp(node,"/home/appo/rnode.conf","/datadir/rnode.conf")
             if err != nil{
                 log.Println(err)
                 return nil,err
@@ -185,7 +185,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
     for i,server := range servers {
         for j,ip := range server.Ips {
             if node == 0 {
-                node++;
+                node++
                 continue
             }
             if validators < rchainConf.Validators {
@@ -203,7 +203,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
                 log.Println(err)
                 return nil,err
             }
-            node++;
+            node++
         }
     }
     /*err = SetupPrometheus(servers,clients)
@@ -223,10 +223,14 @@ func createFirstConfigFile(client *util.SshClient,node int,rchainConf *RChainCon
     })
     dat, err := ioutil.ReadFile("./resources/rchain/rchain.conf.mustache")
     if err != nil {
+        log.Println(err)
         return err
     }
     data, err := mustache.Render(string(dat), filler)
-
+    if err != nil{
+        log.Println(err)
+        return nil
+    }
     err = util.Write("./rnode.conf",data)
     if err != nil{
         log.Println(err)
@@ -237,7 +241,7 @@ func createFirstConfigFile(client *util.SshClient,node int,rchainConf *RChainCon
         log.Println(err)
         return err
     }
-    _,err = client.Run(fmt.Sprintf("docker cp /home/appo/rnode.conf whiteblock-node%d:/datadir/rnode.conf",node))
+    err = client.DockerCp(node,"/home/appo/rnode.conf","/datadir/rnode.conf")
     if err != nil{
         log.Println(err)
         return err
@@ -250,7 +254,7 @@ func createFirstConfigFile(client *util.SshClient,node int,rchainConf *RChainCon
     return util.Rm("./rnode.conf")
 }
 
-func Add(data map[string]interface{},nodes int,servers []db.Server,clients []*util.SshClient,
+func Add(details db.DeploymentDetails,servers []db.Server,clients []*util.SshClient,
          newNodes map[int][]string,buildState *state.BuildState) ([]string,error) {
     return nil,nil
 }
@@ -264,8 +268,13 @@ func createConfigFile(bootnodeAddr string,rchainConf *RChainConf,influxIP string
     })
     dat, err := ioutil.ReadFile("./resources/rchain/rchain.conf.mustache")
     if err != nil {
+        log.Println(err)
         return err
     }
     data, err := mustache.Render(string(dat), filler)
+    if err != nil{
+        log.Println(err)
+        return err
+    }
     return util.Write("./rnode.conf",data)  
 }
