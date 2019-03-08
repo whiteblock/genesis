@@ -394,28 +394,29 @@ func createGenesisfile(ethconf *EthConf,details db.DeploymentDetails,wallets []s
         }        
     }
     genesis["alloc"] =  alloc
-    var dat string
+    var dat []byte
+    var err error
     custom := false
     if details.Files != nil {
         res,exists := details.Files["genesis.json"]; 
         if exists {
-            dat = base64.StdEncoding.EncodeToString([]byte(res))
+            dat, err = base64.StdEncoding.DecodeString(res)
+            if err != nil {
+                return err
+            }
             custom = true
-        }
-        
-        
+        }        
     }
 
     if !custom {
-        tmp, err := ioutil.ReadFile("./resources/geth/genesis.json")
+        dat, err = ioutil.ReadFile("./resources/geth/genesis.json")
         if err != nil {
             log.Println(err)
             return err
         }
-        dat = string(tmp)
     }
     
-    data, err := mustache.Render(dat, util.ConvertToStringMap(genesis))
+    data, err := mustache.Render(string(dat), util.ConvertToStringMap(genesis))
     if err != nil {
         log.Println(err)
         return err
