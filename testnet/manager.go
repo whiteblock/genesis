@@ -55,6 +55,13 @@ func AddTestNet(details db.DeploymentDetails,testNetId string) error {
         buildState.ReportError(errors.New("Too many nodes"))
         return errors.New("Too many nodes")
     }
+
+    if details.Nodes < 1 {
+        buildState.ReportError(errors.New("You must have atleast 1 node"))
+        return errors.New("You must have atleast 1 node")
+    }
+
+
     //STEP 1: FETCH THE SERVERS
     servers, err := db.GetServers(details.Servers)
     if err != nil {

@@ -144,14 +144,16 @@ func dockerRunCmd(server db.Server,resources util.Resources,node int,image strin
 func DockerRun(server db.Server,client *util.SshClient,resources util.Resources,node int,image string,env map[string]string) error {
     command,err := dockerRunCmd(server,resources,node,image,env)
     if err != nil{
+        log.Println(err)
         return err
     }
     res,err := client.Run(command)
     if err != nil{
         log.Println(err)
         log.Println(res)
+        return errors.New(res)
     }
-    return err
+    return nil
 }
 
 func DockerRunAll(server db.Server,client *util.SshClient,resources []util.Resources,nodes int,
