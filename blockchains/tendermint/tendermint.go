@@ -35,7 +35,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,
     //Ensure that genesis file has same chain_id
     peers := []string{}
     validators := []Validator{}
-    buildState.SetBuildSteps(0+(details.Nodes*3))
+    buildState.SetBuildSteps(1+(details.Nodes*4))
     buildState.SetBuildStage("Initializing the nodes")
     for i, server := range servers {
         for j, ip := range server.Ips{
