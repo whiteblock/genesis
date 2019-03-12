@@ -198,9 +198,14 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
                         buildState.ReportError(err)
                         return
                     }
-                    _,err = clients[i].FastMultiRun(
-                                    fmt.Sprintf("docker cp /home/appo/genesis.json whiteblock-node%d:/datadir/", j),
-                                    fmt.Sprintf("docker cp /home/appo/config.ini whiteblock-node%d:/datadir/", j))
+                    err = clients[i].DockerCp(j,"/home/appo/genesis.json","/datadir/")
+                    if err != nil {
+                        log.Println(err)
+                        buildState.ReportError(err)
+                        return
+                    }
+
+                    err = clients[i].DockerCp(j,"/home/appo/config.ini","/datadir/")
                     if err != nil {
                         log.Println(err)
                         buildState.ReportError(err)
@@ -261,7 +266,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
     buildState.IncrementBuildProgress() 
     /**Step 3**/
     {
-        clients[0].Run(fmt.Sprintf("docker exec whiteblock-node0 cleos -u http://%s:8889 wallet unlock --password %s",
+        clients[0].DockerExec(0,fmt.Sprintf("cleos -u http://%s:8889 wallet unlock --password %s",
             masterIP, password))//Can fail
 
         for _, account := range contractAccounts {
@@ -756,8 +761,8 @@ func Add(details db.DeploymentDetails,servers []db.Server,clients []*util.SshCli
     return nil,nil
 }
 
-/*func eos_getKeyPair(serverIP string) (util.KeyPair,error){
-    data,err := util.SshExec(serverIP, "docker exec whiteblock-node0 cleos create key --to-console | awk '{print $3}'")
+/*func eos_getKeyPair(server int,clients []*util.SshClient) (util.KeyPair,error){
+    data,err := clients[server].DockerExec(0,"cleos create key --to-console | awk '{print $3}'")
     if err != nil {
         return util.KeyPair{},err
     }

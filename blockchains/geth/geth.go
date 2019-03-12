@@ -235,8 +235,6 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
 
             go func(networkId int64,node int,server string,num int,unlock string,nodeIP string, i int){
                 defer sem.Release(1)
-
-                //name := fmt.Sprintf("whiteblock-node%d",num)
                 
                 buildState.IncrementBuildProgress() 
 
@@ -287,7 +285,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
         for j,ip := range server.Ips{
             sem.Acquire(ctx,1)
             go func(i int,nodeIP string,ethnetIP string,absNum int,relNum int){
-                absName := fmt.Sprintf("whiteblock-node%d",absNum)
+                absName := fmt.Sprintf("%s%d",conf.NodePrefix,absNum)
                 sedCmd := fmt.Sprintf(`sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`,absName)
                 sedCmd2 := fmt.Sprintf(`sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:%d"/g' /eth-net-intelligence-api/app.json`,ethnetIP,ETH_NET_STATS_PORT)
                 sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`,nodeIP)

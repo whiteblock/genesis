@@ -172,7 +172,6 @@ func handleConf(servers []db.Server,clients []*util.SshClient, sysconf *SysConf)
                     return
                 }
                 buildState.IncrementBuildProgress()
-                container := fmt.Sprintf("whiteblock-node%d",node)
                 _,err = clients[i].DockerExec(node,"mkdir -p /syscoin/datadir")
                 if err != nil {
                     buildState.ReportError(err)
@@ -180,7 +179,7 @@ func handleConf(servers []db.Server,clients []*util.SshClient, sysconf *SysConf)
                     return
                 }
                 buildState.IncrementBuildProgress()
-                _,err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/regtest%d.conf %s:/syscoin/datadir/regtest.conf",node,container))
+                err = clients[i].DockerCp(node,fmt.Sprintf("/home/appo/regtest%d.conf"),"/syscoin/datadir/regtest.conf")
                 if err != nil {
                     buildState.ReportError(err)
                     log.Println(err)

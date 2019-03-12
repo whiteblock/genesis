@@ -9,6 +9,13 @@ import (
     db "../db"
 )
 
+var conf *util.Config
+
+func init() {
+    conf = util.GetConfig()
+}
+
+
 /*
     Represents the status of the node
  */
@@ -83,7 +90,7 @@ func CheckNodeStatus() ([]NodeStatus, error) {
             serverIds = append(serverIds,node.Server)
         }
         initStatus := NodeStatus{
-                            Name:fmt.Sprintf("whiteblock-node%d",node.LocalId),
+                            Name:fmt.Sprintf("%s%d",conf.NodePrefix,node.LocalId),
                             Server:node.Server,
                             Up:false,
                             Cpu:-1}
@@ -102,7 +109,8 @@ func CheckNodeStatus() ([]NodeStatus, error) {
         if err != nil {
             return nil,err
         }
-        res, err := client.Run("docker ps | egrep -o 'whiteblock-node[0-9]*' | sort")
+        res, err := client.Run(
+            fmt.Sprintf("docker ps | egrep -o '%s[0-9]*' | sort",conf.NodePrefix))
         if err != nil {
             return nil, err
         }

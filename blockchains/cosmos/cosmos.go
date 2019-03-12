@@ -131,9 +131,8 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
                 log.Println(err)
                 return nil,err
             }
-            res,err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/genesis.json whiteblock-node%d:/root/.gaiad/config/", j))
+            err = clients[i].DockerCp(j,"/home/appo/genesis.json","/root/.gaiad/config/")
             if err != nil{
-                log.Println(res)
                 log.Println(err)
                 return nil,err
             }
