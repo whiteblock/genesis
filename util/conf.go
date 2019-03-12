@@ -12,7 +12,6 @@ import (
 type Config struct {
     SshUser             string      `json:"ssh-user"`
     SshPassword         string      `json:"ssh-password"`
-    VyosHomeDir         string      `json:"vyos-home-dir"`
     Listen              string      `json:"listen"`
     RsaKey              string      `json:"rsa-key"`
     RsaUser             string      `json:"rsa-user"`
@@ -21,7 +20,6 @@ type Config struct {
     ClusterBits         uint32      `json:"cluster-bits"`
     NodeBits            uint32      `json:"node-bits"`
     ThreadLimit         int64       `json:"thread-limit"`
-    BuildMode           string      `json:"build-mode"`
     IPPrefix            uint32      `json:"ip-prefix"`
     DockerOutputFile    string      `json:"docker-output-file"`
     Influx              string      `json:"influx"`
@@ -34,7 +32,6 @@ type Config struct {
     NodeNetworkPrefix   string      `json:"node-network-prefix"`
     ServicePrefix       string      `json:"service-prefix"`
     NetworkVlanStart    int         `json:"network-vlan-start"`
-    SetupMasquerade     bool        `json:"setup-masquerade"`
 
     NodesPublicKey      string      `json:"nodes-public-key"`
     NodesPrivateKey     string      `json:"nodes-private-key"`
@@ -43,8 +40,6 @@ type Config struct {
     MaxNodes            int         `json:"max-nodes"`
     MaxNodeMemory       string      `json:"max-node-memory"`
     MaxNodeCpu          float64     `json:"max-node-cpu"`
-
-    NeoBuild            bool        `json:"neo-build"`
     BridgePrefix        string      `json:"bridge-prefix"`            
 }
 
@@ -57,10 +52,6 @@ func (this *Config) LoadFromEnv() {
     val,exists = os.LookupEnv("SSH_PASSWORD")
     if exists {
         this.SshPassword = val
-    }
-    val,exists = os.LookupEnv("VYOS_HOME_DIR")
-    if exists {
-        this.VyosHomeDir = val
     }
     val,exists = os.LookupEnv("LISTEN")
     if exists {
@@ -112,10 +103,6 @@ func (this *Config) LoadFromEnv() {
             fmt.Println("Invalid ENV value for THREAD_LIMIT")
             os.Exit(1)
         }
-    }
-    val,exists = os.LookupEnv("BUILD_MODE")
-    if exists {
-        this.BuildMode = val
     }
     val,exists = os.LookupEnv("IP_PREFIX")
     if exists {
@@ -180,10 +167,6 @@ func (this *Config) LoadFromEnv() {
             os.Exit(1)
         }
     }
-    _,exists = os.LookupEnv("SETUP_MASQUERADE")
-    if exists {
-        this.SetupMasquerade = true
-    }
 
     val,exists = os.LookupEnv("NODES_PUBLIC_KEY")
     if exists {
@@ -223,12 +206,6 @@ func (this *Config) LoadFromEnv() {
             os.Exit(1)
         }
     }
-
-    _,exists = os.LookupEnv("NEO_BUILD")
-    if exists {
-        this.NeoBuild = true
-    }
-
     val,exists = os.LookupEnv("BRIDGE_PREFIX")
     if exists {
         this.BridgePrefix = val
@@ -241,9 +218,6 @@ func (c *Config) AutoFillMissing() {
     }
     if len(c.SshPassword) == 0 {
         c.SshPassword = "w@ntest"
-    }
-    if len(c.VyosHomeDir) == 0 {
-        c.VyosHomeDir = "/home/appo"
     }
     if len(c.Listen) == 0 {
         c.Listen = "127.0.0.1:8000"
