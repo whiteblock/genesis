@@ -15,4 +15,6 @@ COPY --from=built /genesis/resources /genesis/resources
 COPY --from=built /genesis/config.json /genesis/config.json
 COPY --from=built /genesis/genesis /genesis/genesis
 
+RUN ln -s /genesis/resources/geth/ /genesis/resources/ethereum
+
 ENTRYPOINT ["/genesis/genesis"]
