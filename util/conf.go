@@ -12,26 +12,27 @@ import (
 type Config struct {
     SshUser             string      `json:"ssh-user"`
     SshPassword         string      `json:"ssh-password"`
-    Listen              string      `json:"listen"`
     RsaKey              string      `json:"rsa-key"`
     RsaUser             string      `json:"rsa-user"`
-    Verbose             bool        `json:"verbose"`
+
     ServerBits          uint32      `json:"server-bits"`
     ClusterBits         uint32      `json:"cluster-bits"`
     NodeBits            uint32      `json:"node-bits"`
-    ThreadLimit         int64       `json:"thread-limit"`
     IPPrefix            uint32      `json:"ip-prefix"`
+
+    Listen              string      `json:"listen"`
+    Verbose             bool        `json:"verbose"`
+    ThreadLimit         int64       `json:"thread-limit"`
+    
     DockerOutputFile    string      `json:"docker-output-file"`
     Influx              string      `json:"influx"`
     InfluxUser          string      `json:"influx-user"`
     InfluxPassword      string      `json:"influx-password"`
-    ServiceVlan         int         `json:"service-vlan"`
     ServiceNetwork      string      `json:"service-network"`
     ServiceNetworkName  string      `json:"service-network-name`
     NodePrefix          string      `json:"node-prefix"`
     NodeNetworkPrefix   string      `json:"node-network-prefix"`
     ServicePrefix       string      `json:"service-prefix"`
-    NetworkVlanStart    int         `json:"network-vlan-start"`
 
     NodesPublicKey      string      `json:"nodes-public-key"`
     NodesPrivateKey     string      `json:"nodes-private-key"`
@@ -129,15 +130,6 @@ func (this *Config) LoadFromEnv() {
     if exists {
         this.InfluxPassword = val
     }
-    val,exists = os.LookupEnv("SERVICE_VLAN")
-    if exists {
-        tmp,err := strconv.ParseInt(val,0,32)
-        this.ServiceVlan = int(tmp)
-        if err != nil{
-            fmt.Println("Invalid ENV value for SERVICE_VLAN")
-            os.Exit(1)
-        }
-    }
     val,exists = os.LookupEnv("SERVICE_NETWORK")
     if exists {
         this.ServiceNetwork = val
@@ -157,15 +149,6 @@ func (this *Config) LoadFromEnv() {
     val,exists = os.LookupEnv("SERVICE_PREFIX")
     if exists {
         this.ServicePrefix = val
-    }
-    val,exists = os.LookupEnv("NETWORK_VLAN_START")
-    if exists {
-        tmp,err := strconv.ParseInt(val,0,32)
-        this.NetworkVlanStart = int(tmp)
-        if err != nil{
-            fmt.Println("Invalid ENV value for NETWORK_VLAN_START")
-            os.Exit(1)
-        }
     }
 
     val,exists = os.LookupEnv("NODES_PUBLIC_KEY")
@@ -249,10 +232,6 @@ func (c *Config) AutoFillMissing() {
     if len(c.DockerOutputFile) == 0 {
         c.DockerOutputFile = "/output.log"
     }
-
-    if c.ServiceVlan == 0 {
-        c.ServiceVlan = 4094
-    }
     
     if len(c.ServiceNetwork) == 0 {
         c.ServiceNetwork = "172.30.0.0/16"
@@ -272,10 +251,6 @@ func (c *Config) AutoFillMissing() {
 	if len(c.ServicePrefix) == 0 {
 		c.ServicePrefix = "wb_service"
 	}
-
-    if c.NetworkVlanStart <= 0 {
-        c.NetworkVlanStart = 101
-    }
 
     if c.MaxNodes <= 0 {
         log.Println("Warning: No setting given for max nodes, defaulting to 200")

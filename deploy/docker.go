@@ -23,23 +23,19 @@ func DockerKillAll(client *util.SshClient,buildState *state.BuildState) error {
     return err
 }
 
-func dockerNetworkCreateCmd(subnet string,gateway string,iface string,vlan int,network int,name string) string {
+func dockerNetworkCreateCmd(subnet string,gateway string,network int,name string) string {
     return fmt.Sprintf("docker network create --subnet %s --gateway %s -o \"com.docker.network.bridge.name=%s%d\" %s",
                             subnet,
                             gateway,
                             conf.BridgePrefix,
                             network,
                             name)
-
-    
 }
 
 func DockerNetworkCreate(server db.Server,client *util.SshClient,node int) error {
     command := dockerNetworkCreateCmd(
                     util.GetNetworkAddress(server.ServerID,node),
                     util.GetGateway(server.ServerID,node),
-                    server.Iface,
-                    node+conf.NetworkVlanStart,
                     node,
                     fmt.Sprintf("%s%d",conf.NodeNetworkPrefix,node))
     
@@ -238,7 +234,7 @@ func DockerStartServices(server db.Server,client *util.SshClient,services []util
         return err
     }
 
-    res,err := client.KeepTryRun(dockerNetworkCreateCmd(subnet,gateway,server.Iface,conf.ServiceVlan,-1,conf.ServiceNetworkName))
+    res,err := client.KeepTryRun(dockerNetworkCreateCmd(subnet,gateway,-1,conf.ServiceNetworkName))
     if err != nil{
         log.Println(err)
         log.Println(res)
