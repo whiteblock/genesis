@@ -2,6 +2,7 @@ package syscoin
 
 import(
 	"log"
+	"io/ioutil"
 	"encoding/json"
 	util "../../util"
 )
@@ -155,45 +156,19 @@ func (this *SysConf) GenerateMN() string {
 
 
 func GetParams() string {
-	return `[
-	["options","[]string"],
-	["extras","[]string"],
-	["senderOptions","[]string"],
-	["receiverOptions","[]string"],
-	["mnOptions","[]string"],
-	["senderExtras","[]string"],
-	["receiverExtras","[]string"],
-	["mnExtras","[]string"],
-	["masterNodeConns","int"],
-	["nodeConns","int"],
-	["percentMasternodes","int"]
-]`
+    dat, err := ioutil.ReadFile("./resources/syscoin/params.json")
+    if err != nil {
+        panic(err)//Missing required files is a fatal error
+    }
+    return string(dat)
 }
 
 func GetDefaults() string {
-	return `{
-	"options":[
-		"server",
-		"regtest",
-		"listen",
-		"rest",
-		"tpstest"
-	],
-	"extras":[],
-	"senderOptions":[
-		"addressindex"
-	],
-	"receiverOptions":[],
-	"mnOptions":[],
-	"senderExtras":[
-		"addressindex"
-	],
-	"receiverExtras":[],
-	"mnExtras":[],
-	"masterNodeConns":25,
-	"nodeConns":8,
-	"percentMasternodes":90
-}`
+    dat, err := ioutil.ReadFile("./resources/syscoin/defaults.json")
+    if err != nil {
+        panic(err)//Missing required files is a fatal error
+    }
+    return string(dat)
 }
 
 func GetServices() []util.Service {
