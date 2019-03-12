@@ -23,8 +23,6 @@ type SysConf struct {
 	NodeConns		int64		`json:"nodeConns"`
 	PercOfMNodes	int64		`json:"percentMasternodes"`
 	Validators		int64		`json:"validators"`
-
-	
 }
 
 

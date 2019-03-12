@@ -146,7 +146,7 @@ func ApplyAll(client *util.SshClient,netconfs []Netconf,serverId int) error {
  */
 func RemoveAll(client *util.SshClient,nodes int){
     for i := 0; i < nodes; i++ {
-         client.Run(fmt.Sprintf("sudo tc qdisc del dev %s%d root netem",
+         client.Run(fmt.Sprintf("sudo tc qdisc del dev %s%d root prio",
                                 conf.BridgePrefix,
                                 i))
     }
