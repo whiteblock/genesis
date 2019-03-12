@@ -9,10 +9,8 @@
 ##Configuration
 Configuration options are located in `config.json` in the same directory as the binary
 
-* __builder__: The application to use to build the nodes
 * __ssh-user__: The default username for ssh
 * __ssh-password__: The default password for ssh
-* __vyos-home-dir__: The location to put the vyos script
 * __listen__: The socket to listen on 
 * __rsa-key__: The location of the ssh private key
 * __rsa-user__: The corresponding username for that private key
@@ -21,21 +19,16 @@ Configuration options are located in `config.json` in the same directory as the 
 * __cluster-bits__: The bits given to each clusters's number
 * __node-bits__: The bits given to each nodes's number
 * __thread-limit__: The maximum number of threads that can be used for building
-* __build-mode__: Can set the build mode to allow for building in "standalone" mode, for demo purposes
 * __ip-prefix__: Used for the IP Scheme
-* __allow-exec__: Set to true to enable the /exec/ calls. __This is an unsafe option to enable__
 * __docker-output-file__: The location instead the docker containers where the clients stdout and stderr will be captured
 * __influx__: The influxdb endpoint
 * __influx-user__: The influx auth username
 * __influx-password__: The influx auth password
-* __service-vlan__: The vlan for the services network
 * __service-network__: CIDR of the network for the services
 * __service-network-name__: The name for the service network
 * __node-prefix__: The prefix for each node name
 * __node-network-prefix__: The prefix for each cluster network
 * __service-prefix__: The prefix for each service
-* __network-vlan-start__: The vlan to start the build process, aka vlan for net 0
-* __setup-masquerade__: Have genesis setup masquerading in the vyos
 
 * __nodes-public-key__: Location of the public key for the nodes
 * __nodes-private-key__: Location of the private key for the nodes
@@ -49,10 +42,8 @@ Configuration options are located in `config.json` in the same directory as the 
 These will override what is set in the config.json file, and allow configuration via
 only ENV variables
 
-* `BUILDER`
 * `SSH_USER`
 * `SSH_PASSWORD`
-* `VYOS_HOME_DIR`
 * `LISTEN`
 * `RSA_KEY`
 * `RSA_USER`
@@ -61,21 +52,16 @@ only ENV variables
 * `CLUSTER_BITS`
 * `NODE_BITS`
 * `THREAD_LIMIT`
-* `BUILD_MODE`
 * `IP_PREFIX`
-* `ALLOW_EXEC` (only need to set it)
 * `DOCKER_OUTPUT_FILE`
 * `INFLUX`
 * `INFLUX_USER`
 * `INFLUX_PASSWORD`
-* `SERVICE_VLAN`
 * `SERVICE_NETWORK`
 * `SERVICE_NETWORK_NAME`
 * `NODE_PREFIX`
 * `NODE_NETWORK_PREFIX`
 * `SERVICE_PREFIX`
-* `NETWORK_VLAN_START`
-* `SETUP_MASQUERADE`
 * `NODES_PUBLIC_KEY`
 * `NODES_PRIVATE_KEY`
 * `HANDLE_NODE_SSH_KEYS` (only need to set it)
