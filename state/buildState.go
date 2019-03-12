@@ -154,6 +154,9 @@ func (this *BuildState) SetBuildSteps(steps int){
  */
 func (this *BuildState) IncrementBuildProgress(){
     this.BuildingProgress += this.progressIncrement
+    if this.BuildingProgress >= 100.00 {
+        this.BuildingProgress = 99.99
+    }
 }
 
 /*
