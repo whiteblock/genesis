@@ -21,8 +21,6 @@
     "nodes-public-key":"/home/master-secrets/id.master.pub",
     "nodes-private-key":"/home/master-secrets/id.master",
     "handle-node-ssh-keys":true,
-
     "max-node-memory":"16gb",
-    "max-node-cpu":16,
-    "neo-build":true
+    "max-node-cpu":16
 }
