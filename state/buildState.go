@@ -146,7 +146,7 @@ func (this *BuildState) FinishDeploy(){
     will be called. 
  */
 func (this *BuildState) SetBuildSteps(steps int){
-    this.progressIncrement = 75.00 / float64(steps)
+    this.progressIncrement = 75.00 / float64(steps+1)
 }
 
 /*
@@ -154,6 +154,9 @@ func (this *BuildState) SetBuildSteps(steps int){
  */
 func (this *BuildState) IncrementBuildProgress(){
     this.BuildingProgress += this.progressIncrement
+    if this.BuildingProgress >= 100.00 {
+        this.BuildingProgress = 99.99
+    }
 }
 
 /*
