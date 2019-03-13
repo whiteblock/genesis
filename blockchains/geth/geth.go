@@ -6,6 +6,7 @@ import (
     "fmt"
     "github.com/Whiteblock/mustache"
     "golang.org/x/sync/semaphore"
+    "sync"
     "regexp"
     "errors"
     "strings"
@@ -87,43 +88,65 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
 
 
     /**Create the wallets**/
-    wallets := []string{}
-    rawWallets := []string{}
+    wallets := make([]string,details.Nodes)
+    rawWallets := make([]string,details.Nodes)
     buildState.SetBuildStage("Creating the wallets")
+    {
+        mutex := sync.Mutex{}
+        node := 0
+        for i, server := range servers {
+            for j, _ := range server.Ips {
+                sem.Acquire(ctx,1)
+                go func(index int,node int){
+                    defer sem.Release(1)
+                    gethResults,err := clients[i].DockerExec(node,"geth --datadir /geth/ --password /geth/passwd account new")
+                    if err != nil {
+                        buildState.ReportError(err)
+                        log.Println(gethResults)
+                        log.Println(err)
+                        return
+                    }
 
-    for i, server := range servers {
-        for j, _ := range server.Ips {
-            gethResults,err := clients[i].DockerExec(j,"geth --datadir /geth/ --password /geth/passwd account new")
-            if err != nil {
-                log.Println(gethResults)
-                log.Println(err)
-                return nil,err
-            }
+                    addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
+                    addresses := addressPattern.FindAllString(gethResults,-1)
+                    if len(addresses) < 1 {
+                        buildState.ReportError(errors.New("Unable to get addresses"))
+                    }
+                    address := addresses[0]
+                    address = address[1:len(address)-1]
 
-            addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
-            addresses := addressPattern.FindAllString(gethResults,-1)
-            if len(addresses) < 1 {
-                return nil,errors.New("Unable to get addresses")
-            }
-            address := addresses[0]
-            address = address[1:len(address)-1]
-            //sem.Release(1)
-            //fmt.Printf("Created wallet with address: %s\n",address)
-            //mutex.Lock()
-            wallets = append(wallets,address)
-            //mutex.Unlock()
-            buildState.IncrementBuildProgress() 
+                    //fmt.Printf("Created wallet with address: %s\n",address)
+                    mutex.Lock()
+                    wallets[index] = address
+                    mutex.Unlock()
 
-            res,err := clients[i].DockerExec(j,"bash -c 'cat /geth/keystore/*'")
-            if err != nil {
-                log.Println(res)
-                log.Println(err)
-                return nil, err
+                    buildState.IncrementBuildProgress() 
+
+                    res,err := clients[i].DockerExec(node,"bash -c 'cat /geth/keystore/*'")
+                    if err != nil {
+                        buildState.ReportError(err)
+                        log.Println(res)
+                        log.Println(err)
+                        return
+                    }
+                    mutex.Lock()
+                    rawWallets[index] = strings.Replace(res,"\"","\\\"",-1)
+                    mutex.Unlock()
+                }(node,j)
+                node++
             }
-            rawWallets = append(rawWallets,strings.Replace(res,"\"","\\\"",-1)) 
         }
-    }
 
+        err = sem.Acquire(ctx,conf.ThreadLimit)
+        if err != nil {
+            log.Println(err)
+            return nil,err
+        }
+
+        sem.Release(conf.ThreadLimit)
+    }
+    fmt.Printf("%v\n",wallets)
+    fmt.Printf("%v\n",rawWallets)
     buildState.IncrementBuildProgress()
     unlock := ""
 
