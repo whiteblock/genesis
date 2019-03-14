@@ -39,9 +39,5 @@ func ValidateFilePath(path string) error {
         return errors.New("Cannot contain \"..\"")
     }
 
-    err := ValidateNormalAscii(path) 
-
-
-    return err
-
+    return ValidateNormalAscii(path) 
 }

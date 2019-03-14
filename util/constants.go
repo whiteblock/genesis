@@ -19,7 +19,3 @@ const	ReservedIps uint32				= 	3
     Vyos is the constant representing a Vyos switch
  */
 const	Vyos	int						=   1
-/*
-    Hp is the constant representing a HP switch
- */
-const	Hp		int						=	2

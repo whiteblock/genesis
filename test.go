@@ -40,12 +40,3 @@ func testIP() {
 	fmt.Printf("Gateways for Server 100		with 2 nodes :\n %+v \n", gateways3)
 
 }
-
-/*func testEthereum(){
-	fmt.Println("---------------Init Node----------------")
-	fmt.Printf("%s\n",eth_initNode(2, 1755,"10.2.0.4"))
-	fmt.Printf("%s\n",eth_initNode(1, 1755,"10.2.0.3"))
-	fmt.Println("---------------Get Wallet----------------")
-	fmt.Printf("%s\n",eth_getWallet(2))
-	fmt.Printf("%s\n",eth_getWallet(1))
-}*/
