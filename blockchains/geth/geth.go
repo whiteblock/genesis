@@ -35,6 +35,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
     //var mutex = &sync.Mutex{}
     var sem = semaphore.NewWeighted(conf.ThreadLimit)
     ctx := context.TODO()
+    mux := sync.Mutex{}
     ethconf,err := NewConf(details.Params)
     if err != nil {
         log.Println(err)
@@ -92,7 +93,6 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
     rawWallets := make([]string,details.Nodes)
     buildState.SetBuildStage("Creating the wallets")
     {
-        mutex := sync.Mutex{}
         node := 0
         for i, server := range servers {
             for j, _ := range server.Ips {
@@ -116,9 +116,9 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
                     address = address[1:len(address)-1]
 
                     //fmt.Printf("Created wallet with address: %s\n",address)
-                    mutex.Lock()
+                    mux.Lock()
                     wallets[index] = address
-                    mutex.Unlock()
+                    mux.Unlock()
 
                     buildState.IncrementBuildProgress() 
 
@@ -129,9 +129,9 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
                         log.Println(err)
                         return
                     }
-                    mutex.Lock()
+                    mux.Lock()
                     rawWallets[index] = strings.Replace(res,"\"","\\\"",-1)
-                    mutex.Unlock()
+                    mux.Unlock()
                 }(node,j)
                 node++
             }
@@ -197,39 +197,64 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
             node++
         }
     }
-
-    static_nodes := []string{}
+    
+    staticNodes := make([]string,details.Nodes)
     node = 0
     for i,server := range servers {
         for j,ip := range server.Ips {
-            //fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n",i)
-            //Load the CustomGenesis file
-            res,err := clients[i].DockerExec(j,
-                            fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/CustomGenesis.json",ethconf.NetworkId))
-            if err != nil {
-                log.Println(res)
-                log.Println(err)
-                return nil,err
-            }
-            fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n",node)
-            gethResults,err := clients[i].DockerExec(j,
-                fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" |  geth --rpc --datadir /geth/ --networkid %d console'",ethconf.NetworkId))
-            if err != nil{
-                log.Println(err)
-                return nil,err
-            }
-            //fmt.Printf("RAWWWWWWWWWWWW%s\n\n\n",gethResults)
-            enodePattern := regexp.MustCompile(`enode:\/\/[A-z|0-9]+@(\[\:\:\]|([0-9]|\.)+)\:[0-9]+`)
-            enode := enodePattern.FindAllString(gethResults,1)[0]
-            //fmt.Printf("ENODE fetched is: %s\n",enode)
-            enodeAddressPattern := regexp.MustCompile(`\[\:\:\]|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})`)
-            enode = enodeAddressPattern.ReplaceAllString(enode,ip)
-            static_nodes = append(static_nodes,enode)
+            sem.Acquire(ctx,1)
+            go func(i int,j int,node int,ip string){
+                defer sem.Release(1)
+                //fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n",i)
+                //Load the CustomGenesis file
+                res,err := clients[i].DockerExec(j,
+                                fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/CustomGenesis.json",ethconf.NetworkId))
+                if err != nil {
+                    log.Println(res)
+                    log.Println(err)
+                    buildState.ReportError(err)
+                    return
+                }
+                fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n",node)
+                gethResults,err := clients[i].DockerExec(j,
+                    fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" |  geth --rpc --datadir /geth/ --networkid %d console'",ethconf.NetworkId))
+                if err != nil{
+                    log.Println(err)
+                    buildState.ReportError(err)
+                    return
+                }
+                //fmt.Printf("RAWWWWWWWWWWWW%s\n\n\n",gethResults)
+                enodePattern := regexp.MustCompile(`enode:\/\/[A-z|0-9]+@(\[\:\:\]|([0-9]|\.)+)\:[0-9]+`)
+                enode := enodePattern.FindAllString(gethResults,1)[0]
+                //fmt.Printf("ENODE fetched is: %s\n",enode)
+                enodeAddressPattern := regexp.MustCompile(`\[\:\:\]|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})`)
+
+                
+                enode = enodeAddressPattern.ReplaceAllString(enode,ip)
+                
+                mux.Lock()
+                staticNodes[node] = enode
+                mux.Unlock()
+
+                buildState.IncrementBuildProgress()
+            }(i,j,node,ip)
             node++
-            buildState.IncrementBuildProgress()
+            
         }
     }
-    out, err := json.Marshal(static_nodes)
+
+    err = sem.Acquire(ctx,conf.ThreadLimit)
+    if err != nil{
+        log.Println(err)
+        return nil,err
+    }
+    sem.Release(conf.ThreadLimit)
+
+    if !buildState.ErrorFree(){
+        return nil,buildState.GetError()
+    }
+
+    out, err := json.Marshal(staticNodes)
     if err != nil {
         log.Println(err)
         return nil,err
@@ -296,8 +321,9 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
         log.Println(err)
         return nil,err
     }
-    buildState.IncrementBuildProgress()
     sem.Release(conf.ThreadLimit)
+
+    buildState.IncrementBuildProgress()
     if !buildState.ErrorFree(){
         return nil,buildState.GetError()
     }
