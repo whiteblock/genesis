@@ -371,7 +371,7 @@ Success
 #####EXAMPLE
 ```bash
 curl -X POST http://localhost:8000/testnets/ -d '{"servers":[3],"blockchain":"ethereum","nodes":3,"image":"ethereum:latest",
-"resources":{"cpus":"2.0","memory":"10gb"},"params":null}'
+"resources":[{"cpus":"2.0","memory":"10gb"}],"environments"{"BLAH":"blah"},"files":{"config.json":"base64 of file"},"params":null}'
 ```
 
 ###GET /testnets/{id}
@@ -397,7 +397,7 @@ HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 [
     {
-        "id":(int),
+        "id":(string),
         "testNetId":(int),
         "server":(int),
         "localId":(int),
@@ -424,27 +424,6 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 ```bash
 curl -XGET http://localhost:8000/status/nodes/
 ```
-
-
-
-###POST /exec/{server}/{node}
-Execute a command on a given node
-#####BODY
-```
-<bash command>
-```
-#####RESPONSE
-```
-HTTP/1.1 200 OK
-Date: Mon, 22 Oct 2018 15:31:18 GMT
-<command results>
-```
-
-#####EXAMPLE
-```bash
-curl -X POST http://localhost:8000/exec/4/0 -d 'ls'
-```
-
 
 ###GET /params/{blockchain}/
 Get the build params for a blockchain
@@ -570,8 +549,6 @@ curl -X POST http://localhost:8000/nodes/3 -d '{"servers":[3],"blockchain":"ethe
 "resources":{"cpus":"2.0","memory":"10gb"},"params":null}'
 ```
 
-router.HandleFunc("/nodes/{num}",delNodes).Methods("DELETE")
-    router.HandleFunc("/nodes/{num}/",delNodes).Methods("DELETE")
 
 ###DELETE /nodes/{num}
 Delete {num} nodes from the testnet
@@ -586,6 +563,63 @@ Success
 ```bash
 curl -X DELETE http://localhost:8000/nodes/5 
 ```
+
+
+###DELETE /emulate/{testnetId}
+Turn off emulate for a whole testnet 
+####BODY
+
+####EXAMPLE
+```bash
+curl -X DELETE http://localhost:8000/emulate/9e09efe8_d7a3_4429_832c_447d876194c8
+```
+
+###POST /emulate/{testnetId}
+Set emulation for a node or nodes
+####BODY
+TODO
+####EXAMPLE
+```bash
+curl -X POST http://localhost:8000/emulate/9e09efe8_d7a3_4429_832c_447d876194c8
+```
+
+###POST /emulate/all/{testnetId}
+Set emulation for a whole testnet
+####BODY
+TODO
+####EXAMPLE
+```bash
+curl -X POST http://localhost:8000/emulate/all/9e09efe8_d7a3_4429_832c_447d876194c8
+```
+
+###GET /resources/{blockchain}
+
+####BODY
+TODO
+####EXAMPLE
+```bash
+curl -X POST http://localhost:8000/resources/geth
+```
+
+###GET /resources/{blockchain}/{file}
+
+####BODY
+TODO
+####EXAMPLE
+```bash
+curl -X GET http://localhost:8000/resources/geth/genesis.json
+```
+
+###POST /resources/{blockchain}/{file}
+
+####BODY
+TODO
+####EXAMPLE
+```bash
+curl -X POST http://localhost:8000/resources/geth/genesis.json
+```
+
+
 
 ##Blockchain Specific Parameters
 
