@@ -101,7 +101,7 @@ func StartServer() {
 
     router.HandleFunc("/emulate/{testnetId}",stopNet).Methods("DELETE")
     router.HandleFunc("/emulate/{server}",handleNet).Methods("POST")
-    router.HandleFunc("/emulate/all/{server}",handleNetAll).Methods("POST")
+    router.HandleFunc("/emulate/all/{testnetId}",handleNetAll).Methods("POST")
 
     router.HandleFunc("/resources/{blockchain}",getConfFiles).Methods("GET")
     router.HandleFunc("/resources/{blockchain}/",getConfFiles).Methods("GET")

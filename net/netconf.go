@@ -106,28 +106,6 @@ func Apply(client *util.SshClient,netconf Netconf,serverId int) error {
     return nil
 }
 
-/*
-    ApplyToAll applies the given netconf to `nodes` nodes in the network on the given server
- */
-func ApplyToAll(client *util.SshClient,netconf Netconf,serverId int,nodes int) error {
-    for i := 0;i < nodes;i++{
-        netconf.Node = i
-        cmds := CreateCommands(netconf,serverId)
-        for i,cmd := range cmds {
-            res,err := client.Run(cmd)
-            if i == 0 {
-                //Don't check the success of the first command which clears
-                continue
-            }
-            if err != nil {
-                log.Println(res)
-                log.Println(err)
-                return err
-            }
-        }
-    }
-    return nil   
-}
 
 /*
     ApplyAll applies all of the given netconfs
@@ -141,6 +119,35 @@ func ApplyAll(client *util.SshClient,netconfs []Netconf,serverId int) error {
         }
     }
     return nil
+}
+
+
+/*
+    ApplyToAll applies the given netconf to `nodes` nodes in the network on the given server
+ */
+func ApplyToAll(netconf Netconf,nodes []db.Node) error {
+    for _,node := range nodes {
+        netconf.Node = node.LocalId
+        cmds := CreateCommands(netconf,node.Server)    
+        for i,cmd := range cmds {
+            client,err :=  status.GetClient(node.Server)
+            if err != nil{
+                log.Println(err)
+                return err
+            }
+            res,err := client.Run(cmd)
+            if i == 0 {
+                //Don't check the success of the first command which clears
+                continue
+            }
+            if err != nil {
+                log.Println(res)
+                log.Println(err)
+                return err
+            }
+        }
+    }
+    return nil   
 }
 
 /*

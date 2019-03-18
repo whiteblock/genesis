@@ -56,45 +56,26 @@ func handleNet(w http.ResponseWriter,r *http.Request){
 
 func handleNetAll(w http.ResponseWriter,r *http.Request){
     params := mux.Vars(r)
-    id, err := strconv.Atoi(params["server"])
-    if err != nil {
-        log.Println(err)
-        http.Error(w,err.Error(),400)
-        return
-    }
-
-    var net_conf netem.Netconf
+    
+    var netConf netem.Netconf
     decoder := json.NewDecoder(r.Body)
     decoder.UseNumber()
 
-    err = decoder.Decode(&net_conf)
+    err := decoder.Decode(&netConf)
     if err != nil {
         log.Println(err)
         http.Error(w,err.Error(),400)
         return
     }
 
-    servers, err := db.GetServers([]int{id})
+    nodes,err := db.GetAllNodesByTestNet(params["testnetId"])
     if err != nil {
         log.Println(err.Error())
-        http.Error(w,err.Error(),404)
-    }
-    server := servers[0]
-    client,err := status.GetClient(id)
-    if err != nil {
-        log.Println(err)
-        http.Error(w,err.Error(),500)
-    }
-
-    nodes,err := status.GetLatestTestnetNodes()
-    if err != nil {
-        log.Println(err)
         http.Error(w,err.Error(),500)
         return
     }
-
-    netem.RemoveAllOnServer(client,len(nodes))
-    err = netem.ApplyToAll(client,net_conf,server.ServerID,len(nodes))
+    netem.RemoveAll(nodes)
+    err = netem.ApplyToAll(netConf,nodes)
     if err != nil {
         log.Println(err)
         http.Error(w,err.Error(),500)
@@ -104,9 +85,8 @@ func handleNetAll(w http.ResponseWriter,r *http.Request){
 
 func stopNet(w http.ResponseWriter,r *http.Request){
     params := mux.Vars(r)
-    testnetId := params["testnetId"]
 
-    nodes,err := db.GetAllNodesByTestNet(testnetId)
+    nodes,err := db.GetAllNodesByTestNet(params["testnetId"])
     if err != nil {
         log.Println(err.Error())
         http.Error(w,err.Error(),500)
