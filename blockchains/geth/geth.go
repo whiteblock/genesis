@@ -179,23 +179,40 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
         defer clients[i].Run("rm /home/appo/CustomGenesis.json")
 
         for j, _ := range server.Ips {
-            err = clients[i].DockerCp(j,"/home/appo/CustomGenesis.json","/geth/")
-            if err != nil {
-                log.Println(err)
-                return nil, err
-            }
-            for k,rawWallet := range rawWallets {
-                if k == node {
-                    continue
-                }
-                _,err = clients[i].DockerExec(j,fmt.Sprintf("bash -c 'echo \"%s\">>/geth/keystore/account%d'",rawWallet,k))
+            sem.Acquire(ctx,1)
+            go func(i int, j int,node int){
+                defer sem.Release(1)
+                err := clients[i].DockerCp(j,"/home/appo/CustomGenesis.json","/geth/")
                 if err != nil {
                     log.Println(err)
-                    return nil, err
+                    buildState.ReportError(err)
+                    return
                 }
-            }
+                for k,rawWallet := range rawWallets {
+                    if k == node {
+                        continue
+                    }
+                    _,err = clients[i].DockerExec(j,fmt.Sprintf("bash -c 'echo \"%s\">>/geth/keystore/account%d'",rawWallet,k))
+                    if err != nil {
+                        log.Println(err)
+                        buildState.ReportError(err)
+                        return
+                    }
+                }
+            }(i,j,node)
             node++
         }
+    }
+
+    err = sem.Acquire(ctx,conf.ThreadLimit)
+    if err != nil{
+        log.Println(err)
+        return nil,err
+    }
+    sem.Release(conf.ThreadLimit)
+
+    if !buildState.ErrorFree(){
+        return nil,buildState.GetError()
     }
     
     staticNodes := make([]string,details.Nodes)
