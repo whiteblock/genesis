@@ -10,7 +10,6 @@ import(
     db "../db"
     //util "../util"
     status "../status"
-    testnet "../testnet"
 )
 
 
@@ -39,7 +38,7 @@ func handleNet(w http.ResponseWriter,r *http.Request){
         return
     }
     server := servers[0]
-    client,err := testnet.GetClient(id)
+    client,err := status.GetClient(id)
     if err != nil {
         log.Println(err)
         http.Error(w,err.Error(),404)
@@ -81,7 +80,7 @@ func handleNetAll(w http.ResponseWriter,r *http.Request){
         http.Error(w,err.Error(),404)
     }
     server := servers[0]
-    client,err := testnet.GetClient(id)
+    client,err := status.GetClient(id)
     if err != nil {
         log.Println(err)
         http.Error(w,err.Error(),500)
@@ -94,7 +93,7 @@ func handleNetAll(w http.ResponseWriter,r *http.Request){
         return
     }
 
-    netem.RemoveAll(client,len(nodes))
+    netem.RemoveAllOnServer(client,len(nodes))
     err = netem.ApplyToAll(client,net_conf,server.ServerID,len(nodes))
     if err != nil {
         log.Println(err)
@@ -105,28 +104,16 @@ func handleNetAll(w http.ResponseWriter,r *http.Request){
 
 func stopNet(w http.ResponseWriter,r *http.Request){
     params := mux.Vars(r)
-    id, err := strconv.Atoi(params["server"])
-    if err != nil {
-        log.Println(err)
-        http.Error(w,err.Error(),400)
-        return
-    }
+    testnetId := params["testnetId"]
 
-    client,err := testnet.GetClient(id)
-    if err != nil {
-        log.Println(err)
-        http.Error(w,err.Error(),500)
-        return
-    }
-
-    nodes,err := status.GetLatestTestnetNodes()
+    nodes,err := db.GetAllNodesByTestNet(testnetId)
     if err != nil {
         log.Println(err.Error())
         http.Error(w,err.Error(),500)
         return
     }
 
-    netem.RemoveAll(client,len(nodes))
+    netem.RemoveAll(nodes)
     
     w.Write([]byte("Success"))
 }

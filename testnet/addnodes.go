@@ -74,7 +74,7 @@ func AddNodes(details db.DeploymentDetails,testnetId string) error {
     fmt.Println("Got the Servers")
 
     //STEP 4: OPEN UP THE RELEVANT SSH CONNECTIONS
-    clients,err :=  GetClients(details.Servers) 
+    clients,err :=  status.GetClients(details.Servers) 
     if err != nil {
         log.Println(err)
         buildState.ReportError(err)

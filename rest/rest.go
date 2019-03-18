@@ -99,7 +99,7 @@ func StartServer() {
     router.HandleFunc("/build/{id}",getBuild).Methods("GET")
     router.HandleFunc("/build/{id}/",getBuild).Methods("GET")
 
-    router.HandleFunc("/emulate/{server}",stopNet).Methods("DELETE")
+    router.HandleFunc("/emulate/{testnetId}",stopNet).Methods("DELETE")
     router.HandleFunc("/emulate/{server}",handleNet).Methods("POST")
     router.HandleFunc("/emulate/all/{server}",handleNetAll).Methods("POST")
 

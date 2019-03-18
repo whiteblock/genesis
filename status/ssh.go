@@ -1,5 +1,4 @@
-package testnet
-
+package status 
 
 import(
     "sync"
@@ -7,8 +6,6 @@ import(
     util "../util"
     db "../db"
 )
-
-
 
 var _clients = map[int]*util.SshClient{}
 
@@ -56,4 +53,3 @@ func GetClients(servers []int) ([]*util.SshClient,error) {
     }
     return out,nil
 }
-    

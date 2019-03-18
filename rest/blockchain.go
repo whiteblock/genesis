@@ -11,6 +11,7 @@ import(
     "io/ioutil"
     util "../util"
     state "../state"
+    status "../status"
     testnet "../testnet"
 )
 
@@ -143,7 +144,7 @@ func getBlockChainLog(w http.ResponseWriter,r *http.Request){
         }
     }
   
-    client,err := testnet.GetClient(serverId)
+    client,err := status.GetClient(serverId)
     if err != nil {
         log.Println(err)
         http.Error(w,err.Error(),404)

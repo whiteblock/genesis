@@ -22,7 +22,7 @@ import (
     db "../db"
     deploy "../deploy"
     state "../state"
-    //status "../status"
+    status "../status"
     util "../util"
 )
 
@@ -72,7 +72,7 @@ func AddTestNet(details db.DeploymentDetails,testNetId string) error {
     fmt.Println("Got the Servers")
 
     //STEP 2: OPEN UP THE RELEVANT SSH CONNECTIONS
-    clients,err :=  GetClients(details.Servers) 
+    clients,err :=  status.GetClients(details.Servers) 
     if err != nil {
         log.Println(err)
         buildState.ReportError(err)

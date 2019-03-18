@@ -127,7 +127,7 @@ func Build(buildConf *db.DeploymentDetails,servers []db.Server,clients []*util.S
         sem.Acquire(ctx,1)
         go func(i int){
             defer sem.Release(1)
-            netem.RemoveAll(clients[i],servers[i].Nodes)
+            netem.RemoveAllOnServer(clients[i],servers[i].Nodes)
         }(i)
     }
 

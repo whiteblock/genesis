@@ -7,6 +7,8 @@ import(
     "fmt"
     "log"
     util "../util"
+    db "../db"
+    status "../status"
 )
 /**
  [ limit PACKETS ]
@@ -108,7 +110,7 @@ func Apply(client *util.SshClient,netconf Netconf,serverId int) error {
     ApplyToAll applies the given netconf to `nodes` nodes in the network on the given server
  */
 func ApplyToAll(client *util.SshClient,netconf Netconf,serverId int,nodes int) error {
-    for i:=0;i<nodes;i++{
+    for i := 0;i < nodes;i++{
         netconf.Node = i
         cmds := CreateCommands(netconf,serverId)
         for i,cmd := range cmds {
@@ -144,10 +146,26 @@ func ApplyAll(client *util.SshClient,netconfs []Netconf,serverId int) error {
 /*
     RemoveAll removes network conditions from the given number of nodes
  */
-func RemoveAll(client *util.SshClient,nodes int){
+func RemoveAll(nodes []db.Node) error {
+    for _,node := range nodes {
+        client,err :=  status.GetClient(node.Server)
+        if err != nil{
+            log.Println(err)
+            return err
+        }
+        client.Run(
+            fmt.Sprintf("sudo tc qdisc del dev %s%d root",conf.BridgePrefix,node.LocalId))
+    }
+    return nil
+}
+
+/*
+    RemoveAll removes network conditions from the given number of nodes
+ */
+func RemoveAllOnServer(client *util.SshClient, nodes int){
     for i := 0; i < nodes; i++ {
-         client.Run(fmt.Sprintf("sudo tc qdisc del dev %s%d root prio",
-                                conf.BridgePrefix,
-                                i))
+       
+        client.Run(
+            fmt.Sprintf("sudo tc qdisc del dev %s%d root",conf.BridgePrefix,i))
     }
 }

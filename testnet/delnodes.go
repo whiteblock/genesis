@@ -39,7 +39,7 @@ func DelNodes(num int) error {
 
     toRemove := num
     for _,server := range servers{
-        client,err := GetClient(server.Id)
+        client,err := status.GetClient(server.Id)
         if err != nil {
             log.Println(err.Error())
             //buildState.ReportError(err)
