@@ -73,24 +73,6 @@ func getConfFile(w http.ResponseWriter,r *http.Request) {
     json.NewEncoder(w).Encode(string(data))
 }
 
-func setConfFile(w http.ResponseWriter,r *http.Request) {
-    params := mux.Vars(r)
-
-    err := util.ValidateFilePath(params["blockchain"])
-    if err != nil {
-        log.Println(err)
-        http.Error(w,err.Error(),400)
-        return
-    }
-    err = util.ValidateFilePath(params["file"])
-    if err != nil {
-        log.Println(err)
-        http.Error(w,err.Error(),400)
-        return
-    }
-    //TODO
-}
-
 func getBlockChainParams(w http.ResponseWriter,r *http.Request){
 
     params := mux.Vars(r)

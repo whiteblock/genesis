@@ -42,8 +42,6 @@ func StartServer() {
     router.HandleFunc("/testnets/", createTestNet).Methods("POST") //Create new test net
     router.HandleFunc("/testnets", createTestNet).Methods("POST") //Create new test net
 
-    router.HandleFunc("/switches/", getAllSwitchesInfo).Methods("GET")
-
     router.HandleFunc("/testnets/{id}", getTestNetInfo).Methods("GET")
     router.HandleFunc("/testnets/{id}/", getTestNetInfo).Methods("GET")
 
@@ -103,6 +101,7 @@ func StartServer() {
     router.HandleFunc("/emulate/{testnetId}/",stopNet).Methods("DELETE")
 
     router.HandleFunc("/emulate/{testnetId}",handleNet).Methods("POST")
+    router.HandleFunc("/emulate/{testnetId}/",handleNet).Methods("POST")
 
     router.HandleFunc("/emulate/all/{testnetId}",handleNetAll).Methods("POST")
     router.HandleFunc("/emulate/all/{testnetId}/",handleNetAll).Methods("POST")
@@ -112,10 +111,6 @@ func StartServer() {
 
     router.HandleFunc("/resources/{blockchain}/{file}",getConfFile).Methods("GET")
     router.HandleFunc("/resources/{blockchain}/{file}/",getConfFile).Methods("GET")
-
-    router.HandleFunc("/resources/{blockchain}/{file}",setConfFile).Methods("POST")
-    router.HandleFunc("/resources/{blockchain}/{file}/",setConfFile).Methods("POST")
-
 
     http.ListenAndServe(conf.Listen, router)
 }

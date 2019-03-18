@@ -101,13 +101,3 @@ func updateServerInfo(w http.ResponseWriter, r *http.Request) {
     }
     w.Write([]byte("Success"))
 }
-
-func getAllSwitchesInfo(w http.ResponseWriter, r *http.Request) {
-    switches,err := db.GetAllSwitches()
-    if err != nil{
-        log.Println(err)
-        http.Error(w,err.Error(),204)
-        return
-    }
-    json.NewEncoder(w).Encode(switches)
-}
