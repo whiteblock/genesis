@@ -4,48 +4,34 @@ import(
     "log"
     "net/http"
     "encoding/json"
-    "strconv"
     "github.com/gorilla/mux"
     netem "../net"
     db "../db"
-    //util "../util"
-    status "../status"
 )
 
 
 func handleNet(w http.ResponseWriter,r *http.Request){
     params := mux.Vars(r)
-    id, err := strconv.Atoi(params["server"])
-    if err != nil {
-        log.Println(err)
-        http.Error(w,err.Error(),400)
-        return
-    }
-    var net_conf []netem.Netconf
+   
+    var netConf []netem.Netconf
     decoder := json.NewDecoder(r.Body)
     decoder.UseNumber()
-    err = decoder.Decode(&net_conf)
+    err := decoder.Decode(&netConf)
     if err != nil {
         log.Println(err)
         http.Error(w,err.Error(),400)
         return
     }
 
-    servers, err := db.GetServers([]int{id})
+    nodes,err := db.GetAllNodesByTestNet(params["testnetId"])
     if err != nil {
-        log.Println(err)
-        http.Error(w,err.Error(),404)
+        log.Println(err.Error())
+        http.Error(w,err.Error(),500)
         return
     }
-    server := servers[0]
-    client,err := status.GetClient(id)
-    if err != nil {
-        log.Println(err)
-        http.Error(w,err.Error(),404)
-        return
-    }
-    //fmt.Printf("GIVEN %v\n",net_conf)
-    err = netem.ApplyAll(client,net_conf,server.ServerID)
+
+    //fmt.Printf("GIVEN %v\n",netConf)
+    err = netem.ApplyAll(netConf,nodes)
     if err != nil {
         log.Println(err)
         http.Error(w,err.Error(),500)
@@ -74,6 +60,7 @@ func handleNetAll(w http.ResponseWriter,r *http.Request){
         http.Error(w,err.Error(),500)
         return
     }
+
     netem.RemoveAll(nodes)
     err = netem.ApplyToAll(netConf,nodes)
     if err != nil {

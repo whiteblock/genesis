@@ -100,8 +100,12 @@ func StartServer() {
     router.HandleFunc("/build/{id}/",getBuild).Methods("GET")
 
     router.HandleFunc("/emulate/{testnetId}",stopNet).Methods("DELETE")
-    router.HandleFunc("/emulate/{server}",handleNet).Methods("POST")
+    router.HandleFunc("/emulate/{testnetId}/",stopNet).Methods("DELETE")
+
+    router.HandleFunc("/emulate/{testnetId}",handleNet).Methods("POST")
+
     router.HandleFunc("/emulate/all/{testnetId}",handleNetAll).Methods("POST")
+    router.HandleFunc("/emulate/all/{testnetId}/",handleNetAll).Methods("POST")
 
     router.HandleFunc("/resources/{blockchain}",getConfFiles).Methods("GET")
     router.HandleFunc("/resources/{blockchain}/",getConfFiles).Methods("GET")
@@ -130,7 +134,6 @@ func buildStatus(w http.ResponseWriter,r *http.Request){
     w.Write([]byte(status.CheckBuildStatus())) 
 }
 
-
 func getLastNodes(w http.ResponseWriter,r *http.Request) {
     nodes,err := status.GetLatestTestnetNodes()
     if err != nil {
@@ -140,8 +143,6 @@ func getLastNodes(w http.ResponseWriter,r *http.Request) {
     }
     json.NewEncoder(w).Encode(nodes)
 }
-
-
 
 func stopDefaultBuild(w http.ResponseWriter,r *http.Request){
     err := state.SignalStop(0)

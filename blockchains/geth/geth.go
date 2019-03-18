@@ -85,7 +85,6 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
         }
         buildState.IncrementBuildProgress()
     }
-    
 
 
     /**Create the wallets**/
@@ -145,8 +144,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
 
         sem.Release(conf.ThreadLimit)
     }
-    fmt.Printf("%v\n",wallets)
-    fmt.Printf("%v\n",rawWallets)
+    fmt.Printf("%v\n%v\n",wallets,rawWallets)
     buildState.IncrementBuildProgress()
     unlock := ""
 

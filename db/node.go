@@ -195,3 +195,16 @@ func DeleteNodesByServer(id string) error {
     _, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE server = %s",NodesTable,id))
     return err
 }
+/**
+ * Helper functions which do not query the database
+ */
+
+func GetNodeByLocalId(nodes []Node, localId int) (Node,error) {
+    for _,node := range nodes{
+        if node.LocalId == localId {
+            return node,nil
+        }
+    }
+
+    return Node{},errors.New("Couldn't find the given node")
+}
