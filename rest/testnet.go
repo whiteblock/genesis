@@ -85,7 +85,7 @@ func getTestNetNodes(w http.ResponseWriter, r *http.Request) {
     nodes,err := db.GetAllNodesByTestNet(params["id"])
     if err != nil {
         log.Println(err.Error())
-        http.Error(w,err.Error(),204)
+        http.Error(w,err.Error(),404)
         return
     }
     json.NewEncoder(w).Encode(nodes)

@@ -72,8 +72,8 @@ func StartServer() {
     router.HandleFunc("/log/{testnetId}/{node}/{lines}",getBlockChainLog).Methods("GET")
     router.HandleFunc("/log/{testnetId}/{node}/{lines}/",getBlockChainLog).Methods("GET")
 
-    router.HandleFunc("/nodes/{testnetId}",getLastNodes).Methods("GET")
-    router.HandleFunc("/nodes/{testnetId}/",getLastNodes).Methods("GET")
+    router.HandleFunc("/nodes/{id}",getTestNetNodes).Methods("GET")
+    router.HandleFunc("/nodes/{id}/",getTestNetNodes).Methods("GET")
 
     router.HandleFunc("/nodes/{id}/{num}",addNodes).Methods("POST")
     router.HandleFunc("/nodes/{id}/{num}/",addNodes).Methods("POST")
@@ -146,17 +146,6 @@ func buildStatus(w http.ResponseWriter,r *http.Request){
         return
     }
     w.Write([]byte(res)) 
-}
-
-func getLastNodes(w http.ResponseWriter,r *http.Request) {
-    params := mux.Vars(r)
-    nodes,err := db.GetAllNodesByTestNet(params["testnetId"])
-    if err != nil {
-        log.Println(err)
-        http.Error(w,err.Error(),404)
-        return
-    }
-    json.NewEncoder(w).Encode(nodes)
 }
 
 func stopBuild(w http.ResponseWriter,r *http.Request){
