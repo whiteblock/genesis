@@ -51,14 +51,14 @@ func StartServer() {
     router.HandleFunc("/testnets/{id}/nodes/", getTestNetNodes).Methods("GET")
     
     /**Management Functions**/
-    router.HandleFunc("/status/nodes",nodesStatus).Methods("GET")
-    router.HandleFunc("/status/nodes/",nodesStatus).Methods("GET")
+    router.HandleFunc("/status/nodes/{testnetId}",nodesStatus).Methods("GET")
+    router.HandleFunc("/status/nodes/{testnetId}/",nodesStatus).Methods("GET")
 
     router.HandleFunc("/status/build/{id}",buildStatus).Methods("GET")
     router.HandleFunc("/status/build/{id}/",buildStatus).Methods("GET")
 
-    router.HandleFunc("/status/servers",getLatestServers).Methods("GET")
-    router.HandleFunc("/status/servers/",getLatestServers).Methods("GET")
+    /*router.HandleFunc("/status/servers",getLatestServers).Methods("GET")
+    router.HandleFunc("/status/servers/",getLatestServers).Methods("GET")*/
 
     router.HandleFunc("/params/{blockchain}",getBlockChainParams).Methods("GET")
     router.HandleFunc("/params/{blockchain}/",getBlockChainParams).Methods("GET")
@@ -76,7 +76,7 @@ func StartServer() {
     router.HandleFunc("/log/{testnetId}/{node}/{lines}/",getBlockChainLog).Methods("GET")
 
     router.HandleFunc("/nodes",getLastNodes).Methods("GET")
-    router.HandleFunc("/nodes/",getLastNodes).Methods("GET")
+    router.HandleFunc("/nodes/",getLastNodes).Methods("GET")//by testnetid
 
     router.HandleFunc("/nodes/{id}/{num}",addNodes).Methods("POST")
     router.HandleFunc("/nodes/{id}/{num}/",addNodes).Methods("POST")
@@ -112,7 +112,21 @@ func StartServer() {
 }
 
 func nodesStatus(w http.ResponseWriter, r *http.Request) {
-    out, err := status.CheckNodeStatus()
+    params := mux.Vars(r)
+    testnetId, ok := params["testnetId"]
+    if !ok {
+        http.Error(w,"Missing testnet id",400)
+        return
+    }
+
+    nodes,err := db.GetAllNodesByTestNet(testnetId)
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),400)
+        return
+    }
+
+    out, err := status.CheckNodeStatus(nodes)
     if err != nil {
         log.Println(err.Error())
         http.Error(w,err.Error(),500)
@@ -161,7 +175,7 @@ func stopBuild(w http.ResponseWriter,r *http.Request){
     w.Write([]byte("Stop signal has been sent"))
 }
 
-
+/*
 func getLatestServers(w http.ResponseWriter, r *http.Request) {
     servers,err := status.GetLatestServers()
     if err != nil {
@@ -170,7 +184,7 @@ func getLatestServers(w http.ResponseWriter, r *http.Request) {
         return
     }
     json.NewEncoder(w).Encode(servers)
-}
+}*/
 
 func getAllBuilds(w http.ResponseWriter, r *http.Request) {
     builds,err := db.GetAllBuilds()

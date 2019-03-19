@@ -65,19 +65,10 @@ func SumCpuUsage(c *util.SshClient,name string) (float64,error) {
 /*
     Checks the status of the nodes in the current testnet
  */
-func CheckNodeStatus() ([]NodeStatus, error) {
-    testnetId,err := GetLastTestNetId()
-    if err != nil {
-        return nil,err
-    }
-    nodes,err := db.GetAllNodesByTestNet(testnetId)
-
-    if err != nil {
-        return nil, err
-    }
+func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 
     serverIds := []int{}
-    out := []NodeStatus{}
+    out := make([]NodeStatus,len(nodes))
 
     for _, node := range nodes {
         push := true
@@ -89,12 +80,13 @@ func CheckNodeStatus() ([]NodeStatus, error) {
         if push {
             serverIds = append(serverIds,node.Server)
         }
-        initStatus := NodeStatus{
-                            Name:fmt.Sprintf("%s%d",conf.NodePrefix,node.LocalId),
-                            Server:node.Server,
-                            Up:false,
-                            Cpu:-1}
-        out = append(out,initStatus)
+        fmt.Printf("%d ",node.LocalId)
+        out[node.LocalId] = NodeStatus{
+                                Name:fmt.Sprintf("%s%d",conf.NodePrefix,node.LocalId),
+                                Server:node.Server,
+                                Up:false,
+                                Cpu:-1,
+                            }//local id to testnet
 
     }
     servers, err := db.GetServers(serverIds)
@@ -121,7 +113,9 @@ func CheckNodeStatus() ([]NodeStatus, error) {
             }
             
             index := FindNodeIndex(out,name,server.Id)
-
+            if index == -1 {
+                log.Printf("name=\"%s\",server=%d\n",name,server.Id)
+            }
             out[index].Up = true
             out[index].Cpu,err = SumCpuUsage(client,name)
             if err != nil {
