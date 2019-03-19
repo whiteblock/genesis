@@ -27,7 +27,7 @@ func AddNodes(details db.DeploymentDetails,testnetId string) error {
     defer buildState.DoneBuilding()
 
     //STEP 1: MERGE IN MISSING INFO FROM ORIGINAL BUILD
-    prevDetails,err := status.GetLatestBuild()
+    prevDetails,err := db.GetBuildByTestnet(testnetId)
     if err != nil {
         log.Println(err.Error())
         buildState.ReportError(err)
@@ -65,7 +65,7 @@ func AddNodes(details db.DeploymentDetails,testnetId string) error {
         return errors.New("Too many nodes")
     }
     //STEP 3: FETCH THE SERVERS
-    servers, err := status.GetLatestServers()
+    servers,err  := db.GetServers(prevDetails.Servers)
     if err != nil {
         log.Println(err)
         buildState.ReportError(err)

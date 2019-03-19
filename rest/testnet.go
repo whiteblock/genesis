@@ -48,13 +48,9 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
         return
     }
     
-
     go testnet.AddTestNet(tn,id)
     w.Write([]byte(id))
 
-    
-    
-    //log.Println("Created a test net successfully!");
 }
 
 func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
@@ -74,7 +70,6 @@ func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteTestNet(w http.ResponseWriter, r *http.Request) {
-    //params := mux.Vars(r)
     //TODO handle the deletion of the test net
     http.Error(w,"Currently not supported",501)
 }
@@ -153,5 +148,5 @@ func delNodes(w http.ResponseWriter, r *http.Request) {
         return
     }
     w.Write([]byte("Deleting the nodes"))
-    go testnet.DelNodes(num)
+    go testnet.DelNodes(num,testnetId)
 }

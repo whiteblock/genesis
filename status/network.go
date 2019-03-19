@@ -17,7 +17,6 @@ func GetNextTestNetId() (string, error) {
     return str,err
 }
 
-
 /*
     Get the id of the latest testnet
  */
@@ -67,8 +66,8 @@ func GetLatestTestnetNodes() ([]db.Node,error){
     Get the servers used in the latest testnet, populated with the 
     ips of all the nodes
  */
-func GetLatestServers() ([]db.Server,error) {
-    nodes,err := GetLatestTestnetNodes()
+func GetLatestServers(testnetId string) ([]db.Server,error) {
+    nodes,err := db.GetAllNodesByTestNet(testnetId)
     if err != nil {
         log.Println(err)
         return nil,err
@@ -103,16 +102,4 @@ func GetLatestServers() ([]db.Server,error) {
         }
     }
     return servers,nil
-}
-
-/*
-    Get the last successful build parameters
- */
-func GetLatestBuild() (db.DeploymentDetails,error) {
-    testnetId,err := GetLastTestNetId()
-    if err != nil {
-        log.Println(err)
-        return db.DeploymentDetails{},err
-    }
-    return db.GetBuildByTestnet(testnetId)
 }

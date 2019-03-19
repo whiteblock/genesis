@@ -4,8 +4,8 @@ package testnet
 import(
     "log"
     "errors"
+    db "../db"
     status "../status"
-    //state "../state"
     deploy "../deploy"
 )
 
@@ -13,11 +13,11 @@ import(
     DelNodes simply attempts to remove the given number of nodes from the
     network.
  */
-func DelNodes(num int) error {
+func DelNodes(num int,testnetId string) error {
     //buildState := state.GetBuildStateByServerId(details.Servers[0])
     //defer buildState.DoneBuilding()
 
-    nodes,err := status.GetLatestTestnetNodes()
+    nodes,err := db.GetAllNodesByTestNet(testnetId)
     if err != nil {
         log.Println(err)
         //buildState.ReportError(err)
@@ -28,9 +28,9 @@ func DelNodes(num int) error {
         err = errors.New("Can't remove more than all the nodes in the network")
         //buildState.ReportError(err)
         return err
-    }
+    }    
 
-    servers,err := status.GetLatestServers()
+    servers,err := status.GetLatestServers(testnetId)
     if err != nil {
         log.Println(err)
         //buildState.ReportError(err)
