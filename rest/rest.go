@@ -70,11 +70,11 @@ func StartServer() {
     router.HandleFunc("/defaults/{blockchain}",getBlockChainDefaults).Methods("GET")
     router.HandleFunc("/defaults/{blockchain}/",getBlockChainDefaults).Methods("GET")
 
-    router.HandleFunc("/log/{server}/{node}",getBlockChainLog).Methods("GET")
-    router.HandleFunc("/log/{server}/{node}/",getBlockChainLog).Methods("GET")
+    router.HandleFunc("/log/{testnetId}/{node}",getBlockChainLog).Methods("GET")
+    router.HandleFunc("/log/{testnetId}/{node}/",getBlockChainLog).Methods("GET")
 
-    router.HandleFunc("/log/{server}/{node}/{lines}",getBlockChainLog).Methods("GET")
-    router.HandleFunc("/log/{server}/{node}/{lines}/",getBlockChainLog).Methods("GET")
+    router.HandleFunc("/log/{testnetId}/{node}/{lines}",getBlockChainLog).Methods("GET")
+    router.HandleFunc("/log/{testnetId}/{node}/{lines}/",getBlockChainLog).Methods("GET")
 
     router.HandleFunc("/nodes",getLastNodes).Methods("GET")
     router.HandleFunc("/nodes/",getLastNodes).Methods("GET")

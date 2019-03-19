@@ -9,6 +9,7 @@ import(
     "github.com/gorilla/mux"
     "strings"
     "io/ioutil"
+    db "../db"
     util "../util"
     state "../state"
     status "../status"
@@ -103,13 +104,8 @@ func getBlockChainDefaults(w http.ResponseWriter,r *http.Request){
 
 func getBlockChainLog(w http.ResponseWriter,r *http.Request){
     params := mux.Vars(r)
-    serverId, err := strconv.Atoi(params["server"])
-    if err != nil {
-        log.Println(err)
-        http.Error(w,err.Error(),400)
-        return
-    }
-    node,err := strconv.Atoi(params["node"])
+    
+    nodeNum,err := strconv.Atoi(params["node"])
     if err != nil {
         log.Println(err)
         http.Error(w,err.Error(),400)
@@ -125,14 +121,27 @@ func getBlockChainLog(w http.ResponseWriter,r *http.Request){
             return
         }
     }
-  
-    client,err := status.GetClient(serverId)
+    nodes,err := db.GetAllNodesByTestNet(params["testnetId"])
     if err != nil {
         log.Println(err)
         http.Error(w,err.Error(),404)
         return
     }
-    res,err := client.DockerRead(node,conf.DockerOutputFile,lines)
+
+    node,err := db.GetNodeByLocalId(nodes,nodeNum)
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),404)
+        return
+    }
+  
+    client,err := status.GetClient(node.Server)
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),404)
+        return
+    }
+    res,err := client.DockerRead(node.LocalId,conf.DockerOutputFile,lines)
     if err != nil {
         log.Println(err)
         http.Error(w,fmt.Sprintf("%s %s",res,err.Error()),500)
