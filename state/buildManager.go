@@ -54,12 +54,25 @@ func GetBuildStateByServerId(serverId int) *BuildState {
     return nil
 }
 
+func GetBuildStateById(buildId string) (*BuildState,error) {
+    mux.RLock()
+    defer mux.RUnlock()
+
+    for _, bs := range buildStates {
+        if bs.BuildId == buildId {
+            return bs,nil
+        }
+    }
+
+    return nil,errors.New("Couldn't find the request build")
+}
+
 /*
     AcquireBuilding acquires a build lock. Any function which modifies 
     the nodes in a testnet should only do so after calling this function 
     and ensuring that the returned value is nil
  */
-func AcquireBuilding(servers []int) error {
+func AcquireBuilding(servers []int,buildId string) error {
     mux.Lock()
     defer mux.Unlock()
 
@@ -71,7 +84,7 @@ func AcquireBuilding(servers []int) error {
             }
         }
     }
-    buildStates = append(buildStates,NewBuildState(servers))
+    buildStates = append(buildStates,NewBuildState(servers,buildId))
     serversInUse = append(serversInUse,servers...)
     return nil
 }

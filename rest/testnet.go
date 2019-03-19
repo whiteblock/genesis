@@ -34,18 +34,20 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
         http.Error(w,err.Error(),400)
         return
     }
-    err = state.AcquireBuilding(tn.Servers)
-    if err != nil {
-        log.Println(err)
-        http.Error(w,"There is a build already in progress",409)
-        return
-    }
     id,err := status.GetNextTestNetId()
     if err != nil {
         log.Println(err)
+        http.Error(w,"Error Generating a new UUID",500)
+        return
+    }
+
+    err = state.AcquireBuilding(tn.Servers,id)
+    if err != nil {
+        log.Println(err)
         http.Error(w,"There is a build already in progress",409)
         return
     }
+    
 
     go testnet.AddTestNet(tn,id)
     w.Write([]byte(id))
@@ -116,7 +118,7 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
         log.Println(err)
         //Ignore error and continue
     }
-    err = state.AcquireBuilding(tn.Servers)
+    err = state.AcquireBuilding(tn.Servers,testnetId)
     if err != nil {
         log.Println(err)
         http.Error(w,"There is a build in progress",409)
@@ -144,7 +146,7 @@ func delNodes(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    err = state.AcquireBuilding(tn.Servers)//TODO: THIS IS WRONG
+    err = state.AcquireBuilding(tn.Servers,testnetId)//TODO: THIS IS WRONG
     if err != nil {
         log.Println(err)
         http.Error(w,"There is a build in progress",409)

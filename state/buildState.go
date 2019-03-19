@@ -18,19 +18,21 @@ type BuildState struct{
     stopping            bool
 
     Servers             []int
+    BuildId             string
     BuildingProgress    float64
     BuildError          CustomError
     BuildStage          string
 }
 
 
-func NewBuildState(servers []int) *BuildState {
+func NewBuildState(servers []int,buildId string) *BuildState {
     out := new(BuildState)
     out.building = true
     out.progressIncrement = 0.00
     out.stopping = false
 
     out.Servers = servers
+    out.BuildId = buildId
     out.BuildingProgress = 0.00
     out.BuildError = CustomError{What:"",err:nil}
     out.BuildStage = ""    

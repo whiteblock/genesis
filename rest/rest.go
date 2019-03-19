@@ -55,8 +55,8 @@ func StartServer() {
     router.HandleFunc("/status/nodes",nodesStatus).Methods("GET")
     router.HandleFunc("/status/nodes/",nodesStatus).Methods("GET")
 
-    router.HandleFunc("/status/build",buildStatus).Methods("GET")
-    router.HandleFunc("/status/build/",buildStatus).Methods("GET")
+    router.HandleFunc("/status/build/{id}",buildStatus).Methods("GET")
+    router.HandleFunc("/status/build/{id}/",buildStatus).Methods("GET")
 
     router.HandleFunc("/status/servers",getLatestServers).Methods("GET")
     router.HandleFunc("/status/servers/",getLatestServers).Methods("GET")
@@ -126,7 +126,19 @@ func nodesStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func buildStatus(w http.ResponseWriter,r *http.Request){
-    w.Write([]byte(status.CheckBuildStatus())) 
+    params := mux.Vars(r)
+    buildId, ok := params["id"]
+    if !ok {
+        http.Error(w,"Missing build id",400)
+        return
+    }
+    res,err := status.CheckBuildStatus(buildId)
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),404)
+        return
+    }
+    w.Write([]byte(res)) 
 }
 
 func getLastNodes(w http.ResponseWriter,r *http.Request) {
@@ -151,7 +163,7 @@ func stopDefaultBuild(w http.ResponseWriter,r *http.Request){
 
 func stopBuild(w http.ResponseWriter,r *http.Request){
     params := mux.Vars(r)
-    buildId, err := strconv.Atoi(params["id"])
+    buildId, err := strconv.Atoi(params["id"])//TODO use actual build id
     err = state.SignalStop(buildId)
     if err != nil{
         http.Error(w,err.Error(),412)
