@@ -407,8 +407,8 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 ```
 
 
-###GET /status/nodes/
-Get the nodes that are running in the latest testnet
+###GET /status/nodes/{testnetid}
+Get the nodes that are running in the given testnet
 #####RESPONSE
 ```
 HTTP/1.1 200 OK
@@ -416,7 +416,9 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 [
     {
         "name":"whiteblock-node0",
-        "server":4
+        "server":4,
+        "cpu":1.4,
+        "up":true
     },...
 ]
 ```
@@ -484,7 +486,7 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 curl -X POST http://localhost:8000/exec/4/0 -d 'ls'
 ```
 
-###GET /nodes
+###GET /nodes/{testnetid}
 Get the nodes for the latest testnet
 #####RESPONSE
 ```json
@@ -512,8 +514,8 @@ Get the nodes for the latest testnet
 curl -X GET http://localhost:8000/nodes
 ```
 
-###DELETE /build
-Stop the current build
+###DELETE /build/{buildid}
+Stop the given build
 #####RESPONSE
 `Stop signal has been sent...`
 #####EXAMPLE
