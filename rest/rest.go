@@ -57,9 +57,6 @@ func StartServer() {
     router.HandleFunc("/status/build/{id}",buildStatus).Methods("GET")
     router.HandleFunc("/status/build/{id}/",buildStatus).Methods("GET")
 
-    /*router.HandleFunc("/status/servers",getLatestServers).Methods("GET")
-    router.HandleFunc("/status/servers/",getLatestServers).Methods("GET")*/
-
     router.HandleFunc("/params/{blockchain}",getBlockChainParams).Methods("GET")
     router.HandleFunc("/params/{blockchain}/",getBlockChainParams).Methods("GET")
 
@@ -75,8 +72,8 @@ func StartServer() {
     router.HandleFunc("/log/{testnetId}/{node}/{lines}",getBlockChainLog).Methods("GET")
     router.HandleFunc("/log/{testnetId}/{node}/{lines}/",getBlockChainLog).Methods("GET")
 
-    router.HandleFunc("/nodes",getLastNodes).Methods("GET")
-    router.HandleFunc("/nodes/",getLastNodes).Methods("GET")//by testnetid
+    router.HandleFunc("/nodes/{testnetId}",getLastNodes).Methods("GET")
+    router.HandleFunc("/nodes/{testnetId}/",getLastNodes).Methods("GET")
 
     router.HandleFunc("/nodes/{id}/{num}",addNodes).Methods("POST")
     router.HandleFunc("/nodes/{id}/{num}/",addNodes).Methods("POST")
@@ -152,7 +149,8 @@ func buildStatus(w http.ResponseWriter,r *http.Request){
 }
 
 func getLastNodes(w http.ResponseWriter,r *http.Request) {
-    nodes,err := status.GetLatestTestnetNodes()
+    params := mux.Vars(r)
+    nodes,err := db.GetAllNodesByTestNet(params["testnetId"])
     if err != nil {
         log.Println(err)
         http.Error(w,err.Error(),404)
@@ -174,17 +172,6 @@ func stopBuild(w http.ResponseWriter,r *http.Request){
     }
     w.Write([]byte("Stop signal has been sent"))
 }
-
-/*
-func getLatestServers(w http.ResponseWriter, r *http.Request) {
-    servers,err := status.GetLatestServers()
-    if err != nil {
-        log.Println(err)
-        http.Error(w,err.Error(),404)
-        return
-    }
-    json.NewEncoder(w).Encode(servers)
-}*/
 
 func getAllBuilds(w http.ResponseWriter, r *http.Request) {
     builds,err := db.GetAllBuilds()
