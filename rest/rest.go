@@ -125,7 +125,7 @@ func nodesStatus(w http.ResponseWriter, r *http.Request) {
 
     out, err := status.CheckNodeStatus(nodes)
     if err != nil {
-        log.Println(err.Error())
+        log.Println(err)
         http.Error(w,err.Error(),500)
         return
     }
@@ -153,6 +153,7 @@ func stopBuild(w http.ResponseWriter,r *http.Request){
     buildId, ok := params["id"]
     if !ok {
         http.Error(w,"Missing build id",400)
+        return
     }
     err := state.SignalStopByBuildId(buildId)
     if err != nil{
@@ -184,6 +185,6 @@ func getBuild(w http.ResponseWriter,r *http.Request){
     }
     err = json.NewEncoder(w).Encode(build)
     if err != nil {
-        log.Println(err.Error())
+        log.Println(err)
     }
 }
