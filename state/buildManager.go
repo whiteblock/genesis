@@ -128,3 +128,16 @@ func SignalStop(i int) error {
     log.Printf("Sending stop signal to %d\n",i)
     return bs.SignalStop()
 }
+
+func SignalStopByBuildId(buildId string) error {
+    bs,err := GetBuildStateById(buildId)
+    if err != nil {
+        log.Println(err)
+        return err
+    }
+    if bs == nil {
+        return errors.New("Build does not exist")
+    }
+    log.Printf("Sending stop signal to build:%s\n",buildId)
+    return bs.SignalStop()
+}

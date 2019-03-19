@@ -7,7 +7,6 @@ import (
     "encoding/json"
     "github.com/gorilla/mux"
     "net/http"
-    "strconv"
     "log"
     util "../util"
     db "../db"
@@ -88,9 +87,6 @@ func StartServer() {
     router.HandleFunc("/build/{id}",stopBuild).Methods("DELETE")
     router.HandleFunc("/build/{id}/",stopBuild).Methods("DELETE")
 
-    router.HandleFunc("/build",stopDefaultBuild).Methods("DELETE")
-    router.HandleFunc("/build/",stopDefaultBuild).Methods("DELETE")
-
     router.HandleFunc("/build",getAllBuilds).Methods("GET")
     router.HandleFunc("/build/",getAllBuilds).Methods("GET")
 
@@ -151,20 +147,13 @@ func getLastNodes(w http.ResponseWriter,r *http.Request) {
     json.NewEncoder(w).Encode(nodes)
 }
 
-func stopDefaultBuild(w http.ResponseWriter,r *http.Request){
-    err := state.SignalStop(0)
-    if err != nil{
-        log.Println(err)
-        http.Error(w,err.Error(),412)
-        return
-    }
-    w.Write([]byte("Stop signal has been sent"))
-}
-
 func stopBuild(w http.ResponseWriter,r *http.Request){
     params := mux.Vars(r)
-    buildId, err := strconv.Atoi(params["id"])//TODO use actual build id
-    err = state.SignalStop(buildId)
+    buildId, ok := params["id"]
+    if !ok {
+        http.Error(w,"Missing build id",400)
+    }
+    err := state.SignalStopByBuildId(buildId)
     if err != nil{
         http.Error(w,err.Error(),412)
         return
