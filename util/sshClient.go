@@ -137,6 +137,9 @@ func (this SshClient) DockerExec(node int,command string) (string,error) {
     return this.Run(fmt.Sprintf("docker exec %s%d %s",conf.NodePrefix,node,command))
 }
 
+/*
+    Run docker cp on a remote machine, coping a file from source to dest in the node
+ */
 func (this SshClient) DockerCp(node int,source string,dest string) error {
     _,err := this.Run(fmt.Sprintf("docker cp %s %s%d:%s",source,conf.NodePrefix,node,dest))
     return err
@@ -271,6 +274,9 @@ func (this SshClient) Scpr(dir string) error {
     return err
 }
 
+/*
+    Clean up the resources used by this object
+ */
 func (this SshClient) Close(){
     for _,client := range this.clients {
         if client == nil {

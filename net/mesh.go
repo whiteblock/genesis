@@ -26,6 +26,9 @@ type Link struct {
     Reorder         float64 `json:"reorder"`
 }
 
+/*
+    Create a calculator which can be used to calculate latency
+ */
 func GetDefaultCalculator() *Calculator {//TODO: improve the equations
     return &Calculator{
         Loss: func(dist float64) (float64) {

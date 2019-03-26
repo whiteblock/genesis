@@ -16,6 +16,9 @@ import(
     testnet "../testnet"
 )
 
+/*
+    Returns a list of the commands in the response
+ */
 func getConfFiles(w http.ResponseWriter,r *http.Request) {
     params := mux.Vars(r)
     
@@ -40,7 +43,9 @@ func getConfFiles(w http.ResponseWriter,r *http.Request) {
 
     json.NewEncoder(w).Encode(files)
 }
-
+/*
+    Get a configuration file by blockchain and file name
+ */
 func getConfFile(w http.ResponseWriter,r *http.Request) {
     params := mux.Vars(r)
 

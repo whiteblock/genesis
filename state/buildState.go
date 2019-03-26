@@ -1,4 +1,8 @@
+/*
+    Handles global state that can be changed
+ */
 package state
+
 
 import(
     "sync"
@@ -6,8 +10,17 @@ import(
     "log"
 )
 
-/**
- * Packages the build state nicely into an object
+/*
+    CustomError is a custom wrapper for a go error, which 
+    has What containing error.Error()
+ */
+type CustomError struct{
+    What    string      `json:"what"`
+    err     error
+}
+
+/*
+    Packages the build state nicely into an object
  */
 type BuildState struct{
     mutex               sync.RWMutex

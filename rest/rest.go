@@ -155,7 +155,7 @@ func stopBuild(w http.ResponseWriter,r *http.Request){
         http.Error(w,"Missing build id",400)
         return
     }
-    err := state.SignalStopByBuildId(buildId)
+    err := state.SignalStop(buildId)
     if err != nil{
         http.Error(w,err.Error(),412)
         return

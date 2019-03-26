@@ -6,6 +6,10 @@ import(
     "errors"
 )
 
+/*
+    Check if the given string only contains standard ASCII characters, which can fit
+    in a signed char
+ */
 func ValidateAscii(str string) error {
     for _,c := range str {
         if c > 127 {
@@ -15,6 +19,10 @@ func ValidateAscii(str string) error {
     return nil
 }
 
+/*
+    Similar to ValidateAscii, except that it excludes control characters from the set of acceptable characters.
+    Any character 128 > c > 31 is considered valid
+ */
 func ValidateNormalAscii(str string) error {
     for _,c := range str {
         if c > 127  || c < 32 {

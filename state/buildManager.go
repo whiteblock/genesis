@@ -12,6 +12,10 @@ var serversInUse = []int{}
 
 var mux = sync.RWMutex{}
 
+/*
+    Remove all of the finished build states
+
+ */
 func cleanBuildStates() {
     for i := 0; i < len(buildStates);i++ {
         if buildStates[i].Done() {
@@ -29,17 +33,9 @@ func cleanBuildStates() {
     }
 }
 
-func GetBuildState(i int) *BuildState {
-    mux.RLock()
-    defer mux.RUnlock()
-
-    if i >= len(buildStates) {
-        log.Println("Requested an invalid build state")
-        return nil
-    }
-    return buildStates[i]
-}
-
+/*
+    Get the current build state for a server. 
+ */
 func GetBuildStateByServerId(serverId int) *BuildState {
     mux.RLock()
     defer mux.RUnlock()
@@ -54,6 +50,10 @@ func GetBuildStateByServerId(serverId int) *BuildState {
     return nil
 }
 
+/*
+    Get the current build state based off the build id. 
+    Will given an error if the build is not found
+ */
 func GetBuildStateById(buildId string) (*BuildState,error) {
     mux.RLock()
     defer mux.RUnlock()
@@ -90,19 +90,6 @@ func AcquireBuilding(servers []int,buildId string) error {
 }
 
 /*
-    DoneBuilding signals that the building process has finished and releases the
-    build lock.
- */
-func DoneBuilding(i int){
-    bs := GetBuildState(i)
-    if bs == nil {
-        return
-    }
-    bs.DoneBuilding()
-}
-
-
-/*
     Stop checks if the stop signal has been sent. If this returns true,
     a building process should return. The ssh client checks this for you. 
  */
@@ -118,18 +105,10 @@ func Stop(serverId int) bool {
 
 /*
     SignalStop flags that the current build should be stopped, if there is
-    a current build. Returns an error if there is no build in progress
+    a current build. Returns an error if there is no build in progress. Signal 
+    the build to stop by the build id.
  */
-func SignalStop(i int) error {
-    bs := GetBuildState(i)
-    if bs == nil {
-        return errors.New("Build does not exist")
-    }
-    log.Printf("Sending stop signal to %d\n",i)
-    return bs.SignalStop()
-}
-
-func SignalStopByBuildId(buildId string) error {
+func SignalStop(buildId string) error {
     bs,err := GetBuildStateById(buildId)
     if err != nil {
         log.Println(err)

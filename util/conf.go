@@ -44,6 +44,9 @@ type Config struct {
     BridgePrefix        string      `json:"bridge-prefix"`            
 }
 
+/*
+    Load the configuration from the Environment
+ */
 func (this *Config) LoadFromEnv() {
     var err error
     val,exists := os.LookupEnv("SSH_USER")
@@ -195,6 +198,9 @@ func (this *Config) LoadFromEnv() {
     }
 }
 
+/*
+    Fill in the missing essential values with the defaults.
+ */
 func (c *Config) AutoFillMissing() {
     if len(c.SshUser) == 0 {
         c.SshUser = "appo"
@@ -273,6 +279,9 @@ func init() {
 	NodesPerCluster = (1 << conf.NodeBits) - ReservedIps
 }
 
+/*
+    The config from a file
+ */
 func LoadConfig() *Config {
 
 	conf = new(Config)
@@ -287,6 +296,10 @@ func LoadConfig() *Config {
 	return conf
 }
 
+/*
+    Get a pointer to the global config object.
+    Do not modify this object
+ */
 func GetConfig() *Config {
 	if conf == nil {
 		LoadConfig()
