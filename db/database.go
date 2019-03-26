@@ -44,20 +44,14 @@ func dbInit() {
     }
     db = getDB()
 
-    serverSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s,%s,%s, %s);",
+    serverSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s);",
         ServerTable,
         
         "id INTEGER PRIMARY KEY AUTOINCREMENT",
         "server_id INTEGER",
         "addr TEXT NOT NULL",
-        "iaddr_ip TEXT NOT NULL",
-
-        "iaddr_gateway TEXT NOT NULL",
-        "iaddr_subnet INTEGER",
         "nodes INTEGER DEFAULT 0",
-
         "max INTEGER",
-        "iface TEXT NOT NULL",
         "name TEXT")
 
     testSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s,%s,%s);",
@@ -126,11 +120,9 @@ func InsertLocalServers(db *sql.DB) {
     InsertServer("cloud",
         Server{
             Addr:"127.0.0.1",
-            Iaddr:Iface{Ip:"192.168.122.1",Gateway:"192.168.122.250",Subnet:24},
             Nodes:0,
             Max:conf.MaxNodes,
-            ServerID:1,
+            SubnetID:1,
             Id:-1,
-            Iface:"wb_bridge",
             Ips:[]string{}})
 }

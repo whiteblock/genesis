@@ -64,7 +64,7 @@ func Build(buildConf *db.DeploymentDetails,servers []db.Server,clients []*util.S
             continue
         }
 
-        servers[serverIndex].Ips = append(servers[serverIndex].Ips,util.GetNodeIP(servers[serverIndex].ServerID,i))
+        servers[serverIndex].Ips = append(servers[serverIndex].Ips,util.GetNodeIP(servers[serverIndex].SubnetID,i))
         servers[serverIndex].Nodes++;
 
         sem.Acquire(ctx,1)

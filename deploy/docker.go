@@ -34,8 +34,8 @@ func dockerNetworkCreateCmd(subnet string,gateway string,network int,name string
 
 func DockerNetworkCreate(server db.Server,client *util.SshClient,node int) error {
     command := dockerNetworkCreateCmd(
-                    util.GetNetworkAddress(server.ServerID,node),
-                    util.GetGateway(server.ServerID,node),
+                    util.GetNetworkAddress(server.SubnetID,node),
+                    util.GetGateway(server.SubnetID,node),
                     node,
                     fmt.Sprintf("%s%d",conf.NodeNetworkPrefix,node))
     
@@ -122,7 +122,7 @@ func dockerRunCmd(server db.Server,resources util.Resources,node int,image strin
     for key,value := range env {
         command += fmt.Sprintf(" -e \"%s=%s\"",key,value)
     }
-    command += fmt.Sprintf(" --ip %s",util.GetNodeIP(server.ServerID,node))
+    command += fmt.Sprintf(" --ip %s",util.GetNodeIP(server.SubnetID,node))
     command += fmt.Sprintf(" --hostname %s%d",conf.NodePrefix,node)
     command += fmt.Sprintf(" --name %s%d",conf.NodePrefix,node)
     command += " " + image

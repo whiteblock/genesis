@@ -15,7 +15,6 @@ func init() {
     conf = util.GetConfig()
 }
 
-
 /*
     Represents the status of the node
  */
@@ -44,6 +43,7 @@ func FindNodeIndex(status []NodeStatus,name string,serverId int) int {
 func SumCpuUsage(c *util.SshClient,name string) (float64,error) {
     res,err := c.Run(fmt.Sprintf("docker exec %s ps aux --no-headers | awk '{print $3}'",name))
     if err != nil {
+        log.Println(err)
         return -1,err
     }
     values := strings.Split(res,"\n")
@@ -55,6 +55,7 @@ func SumCpuUsage(c *util.SshClient,name string) (float64,error) {
         }
         parsed,err := strconv.ParseFloat(value, 64)
         if err != nil {
+            log.Println(err)
             return -1,err
         }
         out += parsed;
@@ -80,7 +81,6 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
         if push {
             serverIds = append(serverIds,node.Server)
         }
-        fmt.Printf("%d ",node.LocalId)
         out[node.LocalId] = NodeStatus{
                                 Name:fmt.Sprintf("%s%d",conf.NodePrefix,node.LocalId),
                                 Server:node.Server,
@@ -90,8 +90,8 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 
     }
     servers, err := db.GetServers(serverIds)
-
     if err != nil {
+        log.Println(err)
         return nil, err
     }
     
@@ -99,11 +99,13 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
         client,err := util.NewSshClient(server.Addr,server.Id)
         defer client.Close()
         if err != nil {
+            log.Println(err)
             return nil,err
         }
         res, err := client.Run(
             fmt.Sprintf("docker ps | egrep -o '%s[0-9]*' | sort",conf.NodePrefix))
         if err != nil {
+            log.Println(err)
             return nil, err
         }
         names := strings.Split(res,"\n")

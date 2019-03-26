@@ -390,7 +390,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
                 }
                 sem.Release(1)
                 buildState.IncrementBuildProgress()
-            }(i,ip,util.GetGateway(server.ServerID,node),node,j)
+            }(i,ip,util.GetGateway(server.SubnetID,node),node,j)
             node++
         }
     }

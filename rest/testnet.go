@@ -24,13 +24,12 @@ func getAllTestNets(w http.ResponseWriter, r *http.Request) {
 }
 
 func createTestNet(w http.ResponseWriter, r *http.Request) {
-    //params := mux.Vars(r)
     var tn db.DeploymentDetails
     decoder := json.NewDecoder(r.Body)
     decoder.UseNumber()
     err := decoder.Decode(&tn)
     if err != nil {
-        log.Println(err.Error())
+        log.Println(err)
         http.Error(w,err.Error(),400)
         return
     }

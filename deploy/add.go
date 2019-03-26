@@ -51,7 +51,7 @@ func AddNodes(buildConf *db.DeploymentDetails,servers []db.Server,clients []*uti
             index = index % len(availibleServers)
             continue
         }
-        out[servers[serverIndex].Id] = append(out[servers[serverIndex].Id],util.GetNodeIP(servers[serverIndex].ServerID,nodeNum))
+        out[servers[serverIndex].Id] = append(out[servers[serverIndex].Id],util.GetNodeIP(servers[serverIndex].SubnetID,nodeNum))
 
         sem.Acquire(ctx,1)
         go func(serverIndex int,i int){
