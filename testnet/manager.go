@@ -235,6 +235,8 @@ func GetDefaults(blockchain string) string {
         fallthrough
     case "geth":
         return geth.GetDefaults()
+    case "pantheon":
+        return pantheon.GetDefaults()
     case "syscoin":
         return sys.GetDefaults()
     case "eos":
