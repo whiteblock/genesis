@@ -12,7 +12,6 @@ import(
 )
 
 var     dataLoc         string      =   os.Getenv("HOME")+"/.config/whiteblock/.gdata"
-const   SwitchTable     string      =   "switches"
 const   ServerTable     string      =   "servers"
 const   TestTable       string      =   "testnets"
 const   NodesTable      string      =   "nodes"
@@ -45,14 +44,7 @@ func dbInit() {
     }
     db = getDB()
 
-    switchSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s,%s);",
-        SwitchTable,
-        "id INTEGER PRIMARY KEY AUTOINCREMENT",
-        "addr TEXT NOT NULL",
-        "iface TEXT NOT NULL",
-        "brand INTEGER")
-
-    serverSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s);",
+    serverSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s,%s,%s, %s);",
         ServerTable,
         
         "id INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -66,7 +58,6 @@ func dbInit() {
 
         "max INTEGER",
         "iface TEXT NOT NULL",
-        "switch INTEGER",
         "name TEXT")
 
     testSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s,%s,%s);",
@@ -103,10 +94,6 @@ func dbInit() {
         "value TEXT",
         )
 
-    _,err = db.Exec(switchSchema)
-    if err != nil {
-        panic(err)
-    }
     _,err = db.Exec(serverSchema)
     if err != nil {
         panic(err)
@@ -145,6 +132,5 @@ func InsertLocalServers(db *sql.DB) {
             ServerID:1,
             Id:-1,
             Iface:"wb_bridge",
-            Ips:[]string{},
-            Switches:[]Switch{Switch{Addr:"192.168.122.240",Iface:"eth1",Brand:util.Vyos}}})
+            Ips:[]string{}})
 }

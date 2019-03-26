@@ -8,6 +8,12 @@ import (
 )
 
 /*
+    ReservedIps indicates the number of ip addresses reserved in 
+    a cluster's subnet
+ */
+const   ReservedIps uint32              =   3
+
+/*
     InetNtoa converts the IP address, given in network byte order,
     to a string in IPv4 dotted-decimal notation.
 */
