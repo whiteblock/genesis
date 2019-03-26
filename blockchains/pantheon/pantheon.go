@@ -96,7 +96,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 				sem.Acquire(ctx, 1)
 				go func(index int, node int) {
 					defer sem.Release(1)
-					pantheonResults, err := clients[i].DockerExec(node, "pantheon --datadir /pantheon/ --password /pantheon/passwd account new")
+					pantheonResults, err := clients[i].DockerExec(node, "pantheon --data-path /pantheon/ --password /pantheon/passwd account new")
 					if err != nil {
 						buildState.ReportError(err)
 						log.Println(pantheonResults)
@@ -218,7 +218,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			go func(i int, j int, node int, ip string) {
 				defer sem.Release(1)
 				res, err := clients[i].DockerExec(j,
-					fmt.Sprintf("pantheon --datadir /pantheon/ --networkid %d --genesis /pantheon/genesis.json", ethconf.NetworkId))
+					fmt.Sprintf("pantheon --data-path /pantheon/ --networkid %d --genesis /pantheon/genesis.json", ethconf.NetworkId))
 				if err != nil {
 					log.Println(res)
 					log.Println(err)
@@ -227,7 +227,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 				}
 				fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n", node)
 				pantheonResults, err := clients[i].DockerExec(j,
-					fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" |  pantheon --rpc --datadir /pantheon/ --networkid %d console'", ethconf.NetworkId))
+					fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" |  pantheon --rpc --data-path /pantheon/ --networkid %d console'", ethconf.NetworkId))
 				if err != nil {
 					log.Println(err)
 					buildState.ReportError(err)
@@ -292,7 +292,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 				buildState.IncrementBuildProgress()
 
 				pantheonCmd := fmt.Sprintf(
-					`pantheon --datadir /pantheon/ --maxpeers %d --networkid %d --rpc --rpcaddr %s`+
+					`pantheon --data-path /pantheon/ --maxpeers %d --networkid %d --rpc --rpcaddr %s`+
 						` --rpcapi "web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --miner-enabled --unlock="%s"`+
 						` --password /pantheon/passwd --miner-etherbase %s console  2>&1 | tee output.log`,
 					ethconf.MaxPeers,
