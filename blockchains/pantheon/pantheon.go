@@ -218,7 +218,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			go func(i int, j int, node int, ip string) {
 				defer sem.Release(1)
 				res, err := clients[i].DockerExec(j,
-					fmt.Sprintf("pantheon --data-path /pantheon/ --networkid %d --genesis /pantheon/genesis.json", ethconf.NetworkId))
+					fmt.Sprintf("pantheon --data-path /pantheon/ --networkid %d --genesis-file /pantheon/genesis.json", ethconf.NetworkId))
 				if err != nil {
 					log.Println(res)
 					log.Println(err)
