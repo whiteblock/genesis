@@ -14,7 +14,10 @@ import (
 
 var conf *util.Config = util.GetConfig()
 
-
+/*
+    Build out the given docker network infrastructure according to the given parameters, and return 
+    the given array of servers, with ips updated for the nodes added to that server
+ */
 func Build(buildConf *db.DeploymentDetails,servers []db.Server,clients []*util.SshClient,
            services []util.Service,buildState *state.BuildState) ([]db.Server,error) {
     

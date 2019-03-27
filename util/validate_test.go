@@ -19,8 +19,7 @@ func TestValidateAscii(t *testing.T) {
 				t.Errorf("ValidateAscii(\"%s\") passed when should have failed",test)
 			}else{
 				t.Errorf("ValidateAscii(\"%s\") failed when should have passed",test)
-			}
-			
+			}	
 		}
 	}
 	
