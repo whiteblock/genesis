@@ -214,7 +214,6 @@ func DockerRunAppendAll(server db.Server,client *util.SshClient,resources []util
                 return err
             }
         }
-        
     }
     return nil
 }

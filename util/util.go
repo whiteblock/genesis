@@ -9,6 +9,7 @@ import (
     "os"
     "os/exec"
     "fmt"
+    "net/http"
     "io/ioutil"
     "bytes"
     "errors"
@@ -18,6 +19,39 @@ import (
     "github.com/satori/go.uuid"
     //"golang.org/x/sys/unix"
 )
+
+
+/*
+    Sends an http request and returns the body. Gives an error if the http request failed
+    or returned a non success code.
+ */
+func HttpRequest(method string, url string, bodyData string) (string, error) {
+    //log.Println("URL IS "+url)
+    body := strings.NewReader(bodyData)
+    req, err := http.NewRequest(method, url,body)
+    if err != nil {
+        return "",err
+    }
+    req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+    req.Close = true
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+        return "",err
+    }
+
+    defer resp.Body.Close()
+    buf := new(bytes.Buffer)
+    
+    _, err = buf.ReadFrom(resp.Body)
+    if err != nil {
+        return "", err
+    }
+    if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+        return "",errors.New(buf.String())
+    }
+    return buf.String(), nil
+}
 
 func GetUUIDString() (string,error) {
     uid,err := uuid.NewV4()
