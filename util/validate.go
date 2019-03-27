@@ -13,7 +13,7 @@ import(
 func ValidateAscii(str string) error {
     for _,c := range str {
         if c > 127 {
-            return errors.New(fmt.Sprintf("Character %s is not ASCII",c))
+            return errors.New(fmt.Sprintf("Character %c is not ASCII",c))
         }
     }
     return nil
@@ -21,12 +21,12 @@ func ValidateAscii(str string) error {
 
 /*
     Similar to ValidateAscii, except that it excludes control characters from the set of acceptable characters.
-    Any character 128 > c > 31 is considered valid
+    Any character 127 > c > 31 is considered valid
  */
 func ValidateNormalAscii(str string) error {
     for _,c := range str {
-        if c > 127  || c < 32 {
-            return errors.New(fmt.Sprintf("Character %s is not allowed",c))
+        if c > 126  || c < 32 {
+            return errors.New(fmt.Sprintf("Character %c is not allowed",c))
         }
     }
     return nil
@@ -45,6 +45,9 @@ func ValidateFilePath(path string) error {
     }
     if strings.Contains(path,"..") {
         return errors.New("Cannot contain \"..\"")
+    }
+    if strings.ContainsAny(path,";\\*$#") {
+        return errors.New("Given path contains unusual path characters.")
     }
 
     return ValidateNormalAscii(path) 
