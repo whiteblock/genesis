@@ -34,7 +34,8 @@ func Build(buildConf *db.DeploymentDetails,servers []db.Server,clients []*util.S
         sem.Acquire(ctx,1)
         go func(i int){
             defer sem.Release(1)
-            DockerKillAll(clients[i],buildState)
+            DockerKillAll(clients[i])
+            buildState.IncrementDeployProgress()
             DockerNetworkDestroyAll(clients[i],buildState)
         }(i)
     }
