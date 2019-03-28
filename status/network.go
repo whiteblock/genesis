@@ -12,8 +12,12 @@ import(
  */
 func GetNextTestNetId() (string, error) {
     uid,err := uuid.NewV4()
-    str := uid.String()//strings.Replace(uid.String(),"-","_",-1)
-    return str,err
+    if err != nil {
+        log.Println(err)
+        return "",err
+    }
+    str := uid.String()
+    return str,nil
 }
 
 /*

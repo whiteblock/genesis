@@ -25,7 +25,7 @@ func init() {
  */
 func StartServer() {
     router := mux.NewRouter()
-
+    router.Use(AuthN)
     router.HandleFunc("/servers", getAllServerInfo).Methods("GET")
     router.HandleFunc("/servers/", getAllServerInfo).Methods("GET")
 

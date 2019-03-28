@@ -10,8 +10,8 @@ import (
     state "../state"
 )
 
-/**
- * Finalization methods for the docker build process. Will be run immediately following their deployment
+/*
+    Finalization methods for the docker build process. Will be run immediately following their deployment
  */
 func finalize(servers []db.Server,clients []*util.SshClient,buildState *state.BuildState) error {
     if(conf.HandleNodeSshKeys){
@@ -26,8 +26,8 @@ func finalize(servers []db.Server,clients []*util.SshClient,buildState *state.Bu
     return nil
 }
 
-/**
- * Finalization methods for the docker build process. Will be run immediately following their deployment
+/*
+    Finalization methods for the docker build process. Will be run immediately following their deployment
  */
 func finalizeNewNodes(servers []db.Server,clients []*util.SshClient,newNodes map[int][]string,buildState *state.BuildState) error {
     if(conf.HandleNodeSshKeys){
@@ -40,7 +40,10 @@ func finalizeNewNodes(servers []db.Server,clients []*util.SshClient,newNodes map
     return nil
 }
 
-
+/*
+    Copy over the ssh public key to each node to allow for the user to ssh into each node.
+    The public key comes from the nodes public key specified in the configuration
+ */
 func copyOverSshKeys(servers []db.Server,clients []*util.SshClient,buildState *state.BuildState) error {
     tmp, err := ioutil.ReadFile(conf.NodesPublicKey)
     pubKey := string(tmp)
@@ -95,7 +98,9 @@ func copyOverSshKeys(servers []db.Server,clients []*util.SshClient,buildState *s
 }
 
 
-
+/*
+    Functions like copyOverSshKeys, but with the add nodes format.
+*/
 func copyOverSshKeysToNewNodes(servers []db.Server,clients []*util.SshClient,newNodes map[int][]string,buildState *state.BuildState) error {
     tmp, err := ioutil.ReadFile(conf.NodesPublicKey)
     pubKey := string(tmp)

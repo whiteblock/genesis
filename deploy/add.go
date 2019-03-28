@@ -10,14 +10,9 @@ import(
     util "../util"
     state "../state"
 )
-/**
- * @brief Add nodes to the network instead of building independently
- * @details [long description]
- * 
- * @param Config The configuration to build
- * @param string [description]
- * @param r [description]
- * @return [description]
+/*
+    Add nodes to the network instead of building independently. Functions similarly to build, except that it 
+    does not destroy the previous network when building. 
  */
 func AddNodes(buildConf *db.DeploymentDetails,servers []db.Server,clients []*util.SshClient,
               buildState *state.BuildState) (map[int][]string,error) {

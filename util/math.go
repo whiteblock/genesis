@@ -12,6 +12,9 @@ type Point struct{
     Y   int     `json:"y"`
 }
 
+/*
+    Create a distance matrix, of all the distances between the given points
+ */
 func Distances(pnts []Point) [][]float64 {
     out := make([][]float64,len(pnts))
     for i,_ := range pnts{
@@ -76,8 +79,8 @@ func Distribute(nodes []string,dist []int) ([][]string,error){
     return out,nil
 }
 
-/**
- * @brief Generates a random path through all nodes
+/*
+    Generates a random path through all nodes
  */
 func GenerateworstCaseNetwork(nodes int) [][]int {
     out := make([][]int,nodes)
@@ -101,6 +104,9 @@ func GenerateworstCaseNetwork(nodes int) [][]int {
     return out
 }
 
+/*
+    Generate a random mesh network that ensures that there is always a path between all the nodes
+ */
 func GenerateUniformRandMeshNetwork(nodes int,conns int) ([][]int,error) {
     if conns < 1 {
         return nil,errors.New("Each node must have atleast one connection")

@@ -3,7 +3,6 @@ package util
 import(
     "fmt"
     "strings"
-    "errors"
 )
 
 /*
@@ -13,7 +12,7 @@ import(
 func ValidateAscii(str string) error {
     for _,c := range str {
         if c > 127 {
-            return errors.New(fmt.Sprintf("Character %s is not ASCII",c))
+            return fmt.Errorf("Character %c is not ASCII",c)
         }
     }
     return nil
@@ -21,12 +20,12 @@ func ValidateAscii(str string) error {
 
 /*
     Similar to ValidateAscii, except that it excludes control characters from the set of acceptable characters.
-    Any character 128 > c > 31 is considered valid
+    Any character 127 > c > 31 is considered valid
  */
 func ValidateNormalAscii(str string) error {
     for _,c := range str {
-        if c > 127  || c < 32 {
-            return errors.New(fmt.Sprintf("Character %s is not allowed",c))
+        if c > 126  || c < 32 {
+            return fmt.Errorf("Character %c is not allowed",c)
         }
     }
     return nil
@@ -37,14 +36,17 @@ func ValidateNormalAscii(str string) error {
  */
 func ValidateFilePath(path string) error {
     if len(path) == 0 {
-        return errors.New("Cannot be empty")
+        return fmt.Errorf("Cannot be empty")
     }
     trimmedPath := strings.Trim(path," \n\t\v\r\"\\/")
     if len(trimmedPath) == 0 {
-        return errors.New("Effective cannot be empty")
+        return fmt.Errorf("Effective cannot be empty")
     }
     if strings.Contains(path,"..") {
-        return errors.New("Cannot contain \"..\"")
+        return fmt.Errorf("Cannot contain \"..\"")
+    }
+    if strings.ContainsAny(path,";\\*$#") {
+        return fmt.Errorf("Given path contains unusual path characters.")
     }
 
     return ValidateNormalAscii(path) 
