@@ -20,6 +20,7 @@ import (
     rchain "../blockchains/rchain"
     sys "../blockchains/syscoin"
     tendermint "../blockchains/tendermint"
+    artemis "../blockchains/artemis"
 
     db "../db"
     deploy "../deploy"
@@ -90,6 +91,8 @@ func AddTestNet(details db.DeploymentDetails, testNetId string) error {
         services = parity.GetServices()
     case "pantheon":
         services = pantheon.GetServices()
+    case "artemis":
+        services = artemis.GetServices()
     case "eos":
         services = eos.GetServices()
     case "syscoin":
@@ -125,6 +128,8 @@ func AddTestNet(details db.DeploymentDetails, testNetId string) error {
         labels, err = geth.Build(details, newServerData, clients, buildState)
     case "parity":
         labels, err = parity.Build(details, newServerData, clients, buildState)
+    case "artemis":
+        labels, err = artemis.Build(details, newServerData, clients, buildState)
     case "pantheon":
         labels, err = pantheon.Build(details, newServerData, clients, buildState)
     case "syscoin":
@@ -207,6 +212,8 @@ func GetParams(blockchain string) string {
         return parity.GetParams()
     case "pantheon":
         return pantheon.GetParams()
+    case "artemis":
+        return artemis.GetParams()
     case "syscoin":
         return sys.GetParams()
     case "eos":
@@ -237,6 +244,8 @@ func GetDefaults(blockchain string) string {
         return geth.GetDefaults()
     case "pantheon":
         return pantheon.GetDefaults()
+    case "artemis":
+        return artemis.GetDefaults()
     case "syscoin":
         return sys.GetDefaults()
     case "eos":
