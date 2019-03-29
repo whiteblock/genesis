@@ -8,6 +8,7 @@ package util
 import (
     "os"
     "os/exec"
+    "log"
     "fmt"
     "net/http"
     "io/ioutil"
@@ -17,7 +18,6 @@ import (
     "encoding/json"
     "encoding/base64"
     "github.com/satori/go.uuid"
-    //"golang.org/x/sys/unix"
 )
 
 
@@ -30,6 +30,7 @@ func HttpRequest(method string, url string, bodyData string) (string, error) {
     body := strings.NewReader(bodyData)
     req, err := http.NewRequest(method, url,body)
     if err != nil {
+        log.Println(err)
         return "",err
     }
     req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -37,6 +38,7 @@ func HttpRequest(method string, url string, bodyData string) (string, error) {
     req.Close = true
     resp, err := http.DefaultClient.Do(req)
     if err != nil {
+        log.Println(err)
         return "",err
     }
 
@@ -45,6 +47,7 @@ func HttpRequest(method string, url string, bodyData string) (string, error) {
     
     _, err = buf.ReadFrom(resp.Body)
     if err != nil {
+        log.Println(err)
         return "", err
     }
     if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -55,8 +58,7 @@ func HttpRequest(method string, url string, bodyData string) (string, error) {
 
 func GetUUIDString() (string,error) {
     uid,err := uuid.NewV4()
-    str := strings.Replace(uid.String(),"-","_",-1)
-    return str,err
+    return uid.String(),err
 }
 
 
@@ -75,6 +77,7 @@ func Rm(directories ...string) error {
             fmt.Printf("done\n")
         }
         if err != nil {
+            log.Println(err)
             return err
         }
     }
@@ -214,10 +217,12 @@ func BashExec(_cmd string) (string,error) {
     cmd.Stdout = &resultsRaw
     err := cmd.Start()
     if err != nil {
+        log.Println(err)
         return "",err
     }
     err = cmd.Wait()
     if err != nil {
+        log.Println(err)
         return "",err
     }
 
