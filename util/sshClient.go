@@ -3,10 +3,10 @@ package util
 import (
     "strings"
     "log"
-    "golang.org/x/crypto/ssh"
+    
     "fmt"
     "github.com/tmc/scp"
-    "errors"
+    "golang.org/x/crypto/ssh"
     state "../state"
 )
 
@@ -48,7 +48,7 @@ func (this SshClient) getSession() (*ssh.Session,error) {
         }
         return session,nil
     }
-    return nil,errors.New("Unable to get a session")
+    return nil,fmt.Errorf("Unable to get a session")
 }
 
 /*

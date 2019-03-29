@@ -5,6 +5,9 @@ import (
     "strings"
     "fmt"
     "strconv"
+    "sync"
+    "context"
+    "golang.org/x/sync/semaphore"
     util "../util"
     db "../db"
 )
@@ -94,7 +97,10 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
         log.Println(err)
         return nil, err
     }
-    
+    mux := sync.Mutex{}
+    sem := semaphore.NewWeighted(conf.ThreadLimit)
+    ctx := context.TODO()
+
     for _, server := range servers {
         client,err := util.NewSshClient(server.Addr,server.Id)
         defer client.Close()
@@ -118,13 +124,27 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
             if index == -1 {
                 log.Printf("name=\"%s\",server=%d\n",name,server.Id)
             }
-            out[index].Up = true
-            out[index].Cpu,err = SumCpuUsage(client,name)
-            if err != nil {
-                log.Println(err)
-            }
+            sem.Acquire(ctx,1)
+            go func(client *util.SshClient,name string,index int){
+                defer sem.Release(1)
+                cpuUsage,err := SumCpuUsage(client,name)
+                if err != nil {
+                    log.Println(err)
+                }
+                mux.Lock()
+                out[index].Up = true
+                out[index].Cpu = cpuUsage
+                mux.Unlock()
+            }(client,name,index)
         }
     }
+    err = sem.Acquire(ctx,conf.ThreadLimit)
+    if err != nil {
+        log.Println(err)
+        return nil,err
+    }
+
+    sem.Release(conf.ThreadLimit)
     return out, nil
 }
 

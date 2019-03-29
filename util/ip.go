@@ -3,7 +3,6 @@ package util
 import (
     "fmt"
     "net"
-    "errors"
     "log"
 )
 
@@ -141,7 +140,7 @@ func GetServiceIps(services []Service) (map[string]string,error) {
     for _,service := range services {
         inc(ip)
         if !ipnet.Contains(ip) {
-            return nil,errors.New("CIDR range too small")
+            return nil,fmt.Errorf("CIDR range too small")
         }
         out[service.Name] = ip.String()
     }

@@ -8,16 +8,15 @@ package util
 import (
     "os"
     "os/exec"
+    "log"
     "fmt"
     "net/http"
     "io/ioutil"
     "bytes"
-    "errors"
     "strings"
     "encoding/json"
     "encoding/base64"
     "github.com/satori/go.uuid"
-    //"golang.org/x/sys/unix"
 )
 
 
@@ -30,6 +29,7 @@ func HttpRequest(method string, url string, bodyData string) (string, error) {
     body := strings.NewReader(bodyData)
     req, err := http.NewRequest(method, url,body)
     if err != nil {
+        log.Println(err)
         return "",err
     }
     req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -37,6 +37,7 @@ func HttpRequest(method string, url string, bodyData string) (string, error) {
     req.Close = true
     resp, err := http.DefaultClient.Do(req)
     if err != nil {
+        log.Println(err)
         return "",err
     }
 
@@ -45,18 +46,18 @@ func HttpRequest(method string, url string, bodyData string) (string, error) {
     
     _, err = buf.ReadFrom(resp.Body)
     if err != nil {
+        log.Println(err)
         return "", err
     }
     if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-        return "",errors.New(buf.String())
+        return "",fmt.Errorf(buf.String())
     }
     return buf.String(), nil
 }
 
 func GetUUIDString() (string,error) {
     uid,err := uuid.NewV4()
-    str := strings.Replace(uid.String(),"-","_",-1)
-    return str,err
+    return uid.String(),err
 }
 
 
@@ -75,6 +76,7 @@ func Rm(directories ...string) error {
             fmt.Printf("done\n")
         }
         if err != nil {
+            log.Println(err)
             return err
         }
     }
@@ -171,6 +173,7 @@ func LsDir(_dir string) ([]string,error) {
     out := []string{}
     files, err := ioutil.ReadDir(dir)
     if err != nil {
+        log.Println(err)
         return nil,err
     }
     for _, f := range files {
@@ -178,6 +181,7 @@ func LsDir(_dir string) ([]string,error) {
             out = append(out,fmt.Sprintf("%s%s/",dir,f.Name()))
             content,err := LsDir(fmt.Sprintf("%s%s/",dir,f.Name()))
             if err != nil {
+                log.Println(err)
                 return nil,err
             }
             out = append(out,content...)
@@ -214,10 +218,12 @@ func BashExec(_cmd string) (string,error) {
     cmd.Stdout = &resultsRaw
     err := cmd.Start()
     if err != nil {
+        log.Println(err)
         return "",err
     }
     err = cmd.Wait()
     if err != nil {
+        log.Println(err)
         return "",err
     }
 
@@ -255,13 +261,13 @@ func GetJSONNumber(data map[string]interface{},field string) (json.Number,error)
             case json.Number:
                 value,valid := rawValue.(json.Number)
                 if !valid {
-                    return "",errors.New("Invalid json number")
+                    return "",fmt.Errorf("Invalid json number")
                 }
                 return value,nil
                 
         }
     }
-    return "",errors.New("Incorrect type for "+field+" given")
+    return "",fmt.Errorf("Incorrect type for %s given",field)
 }
 
 /*
@@ -280,7 +286,7 @@ func GetJSONInt64(data map[string]interface{},field string,out *int64) error {
                 *out = value
                 return nil
             default:
-                return errors.New("Incorrect type for "+field+" given")    
+                return fmt.Errorf("Incorrect type for %s given",field)    
         }
     }
     return nil
@@ -297,12 +303,12 @@ func GetJSONStringArr(data map[string]interface{},field string,out *[]string) er
             case []string:
                 value,valid := rawValue.([]string)
                 if !valid {
-                    return errors.New("Invalid string array")
+                    return fmt.Errorf("Invalid string array")
                 }
                 *out = value
                 return nil
             default:
-                return errors.New("Incorrect type for "+field+" given")    
+                return fmt.Errorf("Incorrect type for %s given",field)    
         }
     }
     return nil
@@ -319,13 +325,12 @@ func GetJSONString(data map[string]interface{},field string,out *string) error {
             case string:
                 value,valid := rawValue.(string)
                 if !valid {
-                    return errors.New("Invalid string")
+                    return fmt.Errorf("Invalid string")
                 }
                 *out = value
                 return nil
             default:
-                return errors.New("Incorrect type for "+field+" given")
-                
+                return fmt.Errorf("Incorrect type for %s given",field)
         }
     }
     return nil
@@ -342,20 +347,20 @@ func GetJSONBool(data map[string]interface{},field string,out *bool) error{
             case bool:
                 value,valid := rawValue.(bool)
                 if !valid {
-                    return errors.New("Invalid bool")
+                    return fmt.Errorf("Invalid bool")
                 }
                 *out = value
                 return nil
             default:
-                return errors.New("Incorrect type for "+field+" given")     
+                return fmt.Errorf("Incorrect type for %s given",field)     
         }
     }
     return nil
 }
 
 
-func MergeStringMaps(m1 map[string]string, m2 map[string]string) map[string]string {
-    out := make(map[string]string)
+func MergeStringMaps(m1 map[string]interface{}, m2 map[string]interface{}) map[string]interface{} {
+    out := make(map[string]interface{})
     for k1,v1 := range m1 {
         out[k1] = v1
     }

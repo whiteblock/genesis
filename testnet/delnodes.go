@@ -1,8 +1,8 @@
 package testnet
 
 import(
+    "fmt"
     "log"
-    "errors"
     db "../db"
     status "../status"
     deploy "../deploy"
@@ -24,7 +24,7 @@ func DelNodes(num int,testnetId string) error {
     }
 
     if num >= len(nodes) {
-        err = errors.New("Can't remove more than all the nodes in the network")
+        err = fmt.Errorf("Can't remove more than all the nodes in the network")
         //buildState.ReportError(err)
         return err
     }    

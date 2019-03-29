@@ -4,7 +4,6 @@ import (
     "context"
     "fmt"
     "golang.org/x/sync/semaphore"
-    "errors"
     "log"
     db "../db"
     util "../util"
@@ -59,7 +58,7 @@ func Build(buildConf *db.DeploymentDetails,servers []db.Server,clients []*util.S
         serverIndex := availibleServers[index]
         if servers[serverIndex].Max <= servers[serverIndex].Nodes {
             if len(availibleServers) == 1 {
-                return nil,errors.New("Cannot build that many nodes with the availible resources")
+                return nil,fmt.Errorf("Cannot build that many nodes with the availible resources")
             }
             availibleServers = append(availibleServers[:serverIndex],availibleServers[serverIndex+1:]...) 
             i--
