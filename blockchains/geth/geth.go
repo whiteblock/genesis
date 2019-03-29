@@ -302,7 +302,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
                 buildState.IncrementBuildProgress() 
 
                 gethCmd := fmt.Sprintf(
-                    `geth --datadir /geth/ --maxpeers %d --networkid %d --rpc --rpcaddr %s`+
+                    `geth --datadir /geth/ --maxpeers %d --networkid %d --rpc --nodiscover --rpcaddr %s`+
                         ` --rpcapi "web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
                         ` --password /geth/passwd --etherbase %s console  2>&1 | tee output.log`,
                             ethconf.MaxPeers,
