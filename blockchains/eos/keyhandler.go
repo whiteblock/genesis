@@ -3,7 +3,6 @@ package eos
 import(
 	"encoding/json"
 	"io/ioutil"
-	"errors"
 	"strings"
 	"fmt"
 	util "../../util"
@@ -44,7 +43,7 @@ func (this *KeyMaster) GenerateKeyPair(client *util.SshClient) (util.KeyPair,err
     }
     keyPair := strings.Split(data, "\n")
     if(len(data) < 10){
-        return util.KeyPair{},errors.New(fmt.Sprintf("Unexpected create key output %s\n",keyPair))
+        return util.KeyPair{},fmt.Errorf("Unexpected create key output %s\n",keyPair)
         panic(1)
     }
     return util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]},nil

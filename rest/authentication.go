@@ -4,7 +4,6 @@ import(
 	"fmt"
 	"log"
 	"net/http"
-	"errors"
 	"encoding/json"
 	"strings"
 	
@@ -17,19 +16,6 @@ import(
 const allowNoKeyAcess = true
 
 func GetKey(kid string) (map[string]string,error) {
-	/*return map[string]string{
-		"kid":kid,
-		"alg":"RS256",
-		"pem":`-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArUwqKV2XsFPDPqvIGrrt
-wuzSKqh1ByVmDgZTWH3GyizXYwy434doiigoOzdBtpnRGybNxKaZJyfzqBcSX2zP
-sXM0jxY+zcqY+m2YG3lYZnbcVKJLdX3/G42SlTKSjlY92XNs5MPP1YzjO0K0cf7b
-O/6nv9grO5Pht+q9/pnuR6k6+5K+O6rqH0GUNuIjpK8ujWxCGgwmBB6f8xY0PRnC
-EGaJ7PBpIZW2Q2NnmjDsXr4MnVKB3usQibR9kmQQm9tCVaqlA0IdbboKAOZtq5vc
-gup5hWRwzJvkL66p0U1aaA9T08W7yKz++PK/ol56gud6YNX+njrVzDZIJcnhorYI
-+QIDAQAB
------END PUBLIC KEY-----`,
-	},nil*/
 	res,err := util.HttpRequest("GET","https://api.whiteblock.io/public/jwt-keys","")
 	if err != nil{
 		log.Println(err)
@@ -47,7 +33,7 @@ gup5hWRwzJvkL66p0U1aaA9T08W7yKz++PK/ol56gud6YNX+njrVzDZIJcnhorYI
 			return keys[i],nil
 		}
 	}
-	return nil, errors.New("Could not find a matching entry for the kid")
+	return nil, fmt.Errorf("Could not find a matching entry for the kid")
 }
 
 func AuthN(next http.Handler) http.Handler {

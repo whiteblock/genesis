@@ -8,7 +8,6 @@ import (
     "golang.org/x/sync/semaphore"
     "sync"
     "regexp"
-    "errors"
     "strings"
     "log"
     util "../../util"
@@ -109,7 +108,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
                     addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
                     addresses := addressPattern.FindAllString(gethResults,-1)
                     if len(addresses) < 1 {
-                        buildState.ReportError(errors.New("Unable to get addresses"))
+                        buildState.ReportError(fmt.Errorf("Unable to get addresses"))
                     }
                     address := addresses[0]
                     address = address[1:len(address)-1]

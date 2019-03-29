@@ -1,7 +1,6 @@
 package testnet
 
 import(
-    "errors"
     "log"
     "fmt"
     beam "../blockchains/beam"
@@ -29,7 +28,7 @@ func AddNodes(details db.DeploymentDetails,testnetId string) error {
     //STEP 1: MERGE IN MISSING INFO FROM ORIGINAL BUILD
     prevDetails,err := db.GetBuildByTestnet(testnetId)
     if err != nil {
-        log.Println(err.Error())
+        log.Println(err)
         buildState.ReportError(err)
         return err
     }
@@ -53,16 +52,16 @@ func AddNodes(details db.DeploymentDetails,testnetId string) error {
     for i,res := range details.Resources {
         err = res.ValidateAndSetDefaults()
         if err != nil {
-            log.Println(err.Error())
-            err = errors.New(fmt.Sprintf("%s. For node %d",err.Error(),i))
+            log.Println(err)
+            err = fmt.Errorf("%s. For node %d",err.Error(),i)
             buildState.ReportError(err)
             return err
         }
     }
         
     if details.Nodes > conf.MaxNodes {
-        buildState.ReportError(errors.New("Too many nodes"))
-        return errors.New("Too many nodes")
+        buildState.ReportError(fmt.Errorf("Too many nodes"))
+        return fmt.Errorf("Too many nodes")
     }
     //STEP 3: FETCH THE SERVERS
     servers,err  := db.GetServers(prevDetails.Servers)
@@ -129,8 +128,8 @@ func AddNodes(details db.DeploymentDetails,testnetId string) error {
         case "generic":
             log.Println("Built in generic mode")
         default:
-            buildState.ReportError(errors.New("Unknown blockchain"))
-            return errors.New("Unknown blockchain")
+            buildState.ReportError(fmt.Errorf("Unknown blockchain"))
+            return fmt.Errorf("Unknown blockchain")
     }
     
     i := 0

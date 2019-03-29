@@ -1,7 +1,6 @@
 package deploy
 
 import(
-    "errors"
     "fmt"
     "log"
     util "../util"
@@ -136,7 +135,7 @@ func dockerRunCmd(server db.Server,resources util.Resources,node int,image strin
     if !resources.NoMemoryLimits() {
         mem,err := resources.GetMemory()
         if err != nil {
-            return "",errors.New("Invalid value for memory")
+            return "",fmt.Errorf("Invalid value for memory")
         }
         command += fmt.Sprintf(" --memory %d",mem)
     }
@@ -163,7 +162,7 @@ func DockerRun(server db.Server,client *util.SshClient,resources util.Resources,
     if err != nil{
         log.Println(err)
         log.Println(res)
-        return errors.New(res)
+        return fmt.Errorf(res)
     }
     return nil
 }

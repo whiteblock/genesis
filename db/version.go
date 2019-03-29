@@ -4,7 +4,6 @@ import(
     _ "github.com/mattn/go-sqlite3"   
     "log"
     "fmt"
-    "errors"
     util "../util"
 )
 
@@ -20,7 +19,7 @@ func Check() error {
     }
     if version != Version {
         //Old version, previous database is now invalid
-        return errors.New("Needs update")
+        return fmt.Errorf("Needs update")
     }
     return nil
 }

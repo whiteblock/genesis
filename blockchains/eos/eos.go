@@ -6,7 +6,6 @@ import (
     "golang.org/x/sync/semaphore"
     "math/rand"
     "log"
-    "errors"
     db "../../db"
     util "../../util"
     state "../../state"
@@ -26,7 +25,7 @@ func init(){
 func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshClient,buildState *state.BuildState) ([]string,error) {
 
     if details.Nodes < 2 {
-        return nil, errors.New("Cannot build less than 2 nodes")
+        return nil, fmt.Errorf("Cannot build less than 2 nodes")
     }
 
     eosconf,err := NewConf(details.Params)
@@ -35,7 +34,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
         return nil,err
     }
     if eosconf.BlockProducers < 2 {
-        return nil, errors.New("Cannot build eos with only one BP")
+        return nil, fmt.Errorf("Cannot build eos with only one BP")
     }
     eosconf.BlockProducers++
     state.SetEOSNumberOfAccounts(eosconf.UserAccounts)
@@ -769,7 +768,7 @@ func Add(details db.DeploymentDetails,servers []db.Server,clients []*util.SshCli
     //fmt.Printf("RAW KEY DATA%s\n", data)
     keyPair := strings.Split(data, "\n")
     if(len(data) < 10){
-        return util.KeyPair{},errors.New(fmt.Sprintf("Unexpected create key output %s\n",keyPair))
+        return util.KeyPair{},fmt.Errorf("Unexpected create key output %s\n",keyPair)
         panic(1)
     }
     return util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]},nil

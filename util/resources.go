@@ -3,7 +3,6 @@ package util
 import(
     "strconv"
     "strings"
-    "errors"
     "fmt"
 )
 
@@ -80,7 +79,7 @@ func (this Resources) Validate() error {
             return err
         }
         if m2 > m1 {
-            return errors.New("Cannot give each node that much RAM, max is "+conf.MaxNodeMemory)
+            return fmt.Errorf("Cannot give each node that much RAM, max is %s",conf.MaxNodeMemory)
         }
     }
     
@@ -91,7 +90,7 @@ func (this Resources) Validate() error {
             return err
         }
         if c2 > c1 {
-            return errors.New(fmt.Sprintf("Cannot give each node that much CPU, max is %f",conf.MaxNodeCpu))
+            return fmt.Errorf("Cannot give each node that much CPU, max is %f",conf.MaxNodeCpu)
         }
     }
     
