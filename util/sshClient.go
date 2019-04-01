@@ -162,6 +162,15 @@ func (this SshClient) DockerExecd(node int,command string) (string,error) {
 }
 
 /*
+    DockerExecd runs the given command, and then returns immediately. 
+    This function will not return the output of the command. 
+    This is useful if you are starting a persistent process inside a container
+ */
+func (this SshClient) DockerExecdit(node int,command string) (string,error) {
+    return this.Run(fmt.Sprintf("docker exec -itd %s%d %s",conf.NodePrefix,node,command))
+}
+
+/*
     DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs. 
     Should only be used for the blockchain process.
  */

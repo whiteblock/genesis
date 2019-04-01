@@ -303,12 +303,13 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
                 gethCmd := fmt.Sprintf(
                     `geth --datadir /geth/ --maxpeers %d --networkid %d --rpc --nodiscover --rpcaddr %s`+
                         ` --rpcapi "web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
-                        ` --password /geth/passwd --etherbase %s console  2>&1 | tee output.log`,
+                        ` --password /geth/passwd --etherbase %s console  2>&1 | tee %s`,
                             ethconf.MaxPeers,
                             networkId,
                             nodeIP,
                             unlock,
-                            wallets[node])
+                            wallets[node],
+                            conf.DockerOutputFile)
                 
                 err = clients[i].DockerCp(num,"/home/appo/static-nodes.json","/geth/")
                 if err != nil {
@@ -316,8 +317,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
                     buildState.ReportError(err)
                     return
                 }
-                clients[i].DockerExecd(num,"tmux new -s whiteblock -d")
-                clients[i].DockerExecd(num,fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m",gethCmd))
+                clients[i].DockerExecdit(num,fmt.Sprintf("bash -ic '%s'",gethCmd))
                 
                 if err != nil {
                     log.Println(err)
@@ -354,14 +354,8 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
                 sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`,nodeIP)
 
                 //sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
-                res,err := clients[i].DockerExecd(relNum,"tmux new -s ethnet -d")
-                if err != nil {
-                    log.Println(err)
-                    log.Println(res)
-                    buildState.ReportError(err)
-                    return
-                }
-                res,err = clients[i].DockerExec(relNum,sedCmd)
+                
+                res,err := clients[i].DockerExec(relNum,sedCmd)
                 if err != nil {
                     log.Println(err)
                     log.Println(res)
@@ -381,7 +375,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
                     buildState.ReportError(err)
                     return
                 }
-                _,err = clients[i].DockerExecd(relNum,"tmux send-keys -t ethnet 'cd /eth-net-intelligence-api && pm2 start app.json' C-m")
+                _,err = clients[i].DockerExecd(relNum,"bash -c 'cd /eth-net-intelligence-api && pm2 start app.json'")
                 if err != nil {
                     log.Println(err)
                     buildState.ReportError(err)
