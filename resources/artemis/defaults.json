@@ -1,4 +1,5 @@
 {
+    "networkMode": "hobbits",
     "validators": 16,
     "nodes": 1,
     "shardCount":8,
@@ -44,5 +45,5 @@
     "domainAttestation":2,
     "domainDeposit":3,
     "domainVoluntaryExit":4,
-    "domainTransfer":"5r"
+    "domainTransfer":5
 }

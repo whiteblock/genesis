@@ -46,10 +46,11 @@ func GetServices() []util.Service {
 	return nil
 }
 
-func makeNodeConfig(artemisConf *ArtemisConf, identity string) (string,error){
+func makeNodeConfig(artemisConf *ArtemisConf, identity string, peers string) (string,error){
 	artConf := map[string]interface{}(*artemisConf)
 	artConf["identity"] = identity
-    filler := util.ConvertToStringMap(artConf)
+	filler := util.ConvertToStringMap(artConf)
+	filler["peers"] = peers
     dat, err := ioutil.ReadFile("./resources/artemis/artemis-config.toml.mustache")
     if err != nil {
         return "",err
