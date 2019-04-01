@@ -231,6 +231,17 @@ func BashExec(_cmd string) (string,error) {
 }
 
 /*
+    GetPath extracts the base path of the given path
+ */
+func GetPath(path string) string {
+    index := strings.LastIndex(path, "/")
+    if index != -1 {
+        return path
+    }
+    return path[:index]
+}
+
+/*
     IntArrRemove removes an element from an array of ints
  */
 func IntArrRemove(op []int,index int) []int {
