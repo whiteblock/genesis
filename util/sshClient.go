@@ -5,7 +5,7 @@ import (
     "log"
     "io/ioutil"
     "fmt"
-    "github.com/tmc/scp"
+    "github.com/Whiteblock/scp"
     "golang.org/x/crypto/ssh"
     state "../state"
 )
