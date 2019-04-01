@@ -66,3 +66,26 @@ func TestValidateFilePath(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateDockerImage(t *testing.T) {
+	//test --> invalid?
+	tests := map[string]bool {
+		"../../../":false,
+		"genesis.json; rm -rf /":true,
+		"config.ini":false,
+		"parity/genesis.json":false,
+		"\rhello":true,
+		"test\";rm -rf /":true,
+	}
+	for test,expected := range tests {
+		err := ValidateDockerImage(test)
+		if (err != nil) != expected {
+			if expected {
+				t.Errorf("ValidateDockerImage(\"%s\") passed when should have failed",test)
+			}else{
+				t.Errorf("ValidateDockerImage(\"%s\") failed when should have passed",test)
+			}
+			
+		}
+	}
+}

@@ -51,3 +51,19 @@ func ValidateFilePath(path string) error {
 
     return ValidateNormalAscii(path) 
 }
+
+func ValidNormalCharacter(chr rune) bool{
+    return  (chr >= '+' && chr <= ':') ||
+            (chr >= 'A' && chr <= 'Z') || 
+            (chr >= 'a' && chr <= 'z') ||
+            (chr == ' ' || chr == '_')
+}
+
+func ValidateDockerImage(image string) error {
+    for _,c := range image {
+        if !ValidNormalCharacter(c) {
+            return fmt.Errorf("Docker image contains invalid character \"%c\"",c)
+        }
+    }
+    return nil
+}
