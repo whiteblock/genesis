@@ -61,6 +61,23 @@ func AddTestNet(details db.DeploymentDetails, testNetId string) error {
         buildState.ReportError(fmt.Errorf("You must have atleast 1 node"))
         return fmt.Errorf("You must have atleast 1 node")
     }
+    err := util.ValidateDockerImage(details.Image)
+    if err != nil {
+        log.Println(err)
+        buildState.ReportError(err)
+        return err
+    }
+
+    err = util.ValidateDockerImage(details.Blockchain)
+    if err != nil {
+        log.Println(err)
+        buildState.ReportError(err)
+        return err
+    }
+
+    if len(details.Image) == 0 {
+        details.Image = "gcr.io/whiteblock/"+details.Blockchain+":master"
+    }
 
     //STEP 1: FETCH THE SERVERS
     servers, err := db.GetServers(details.Servers)
