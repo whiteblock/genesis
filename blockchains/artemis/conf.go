@@ -21,7 +21,7 @@ func NewConf(data map[string]interface{}) (*ArtemisConf, error) {
 	}
 
 	out := new(ArtemisConf)
-	*out = util.MergeStringMaps(defaults, data)
+	*out = ArtemisConf(util.MergeStringMaps(defaults, data))
 
 	return out, nil
 }
@@ -50,7 +50,7 @@ func makeNodeConfig(artemisConf *ArtemisConf, identity string) (string,error){
 	artConf := map[string]interface{}(*artemisConf)
 	artConf["identity"] = identity
     filler := util.ConvertToStringMap(artConf)
-    dat, err := ioutil.ReadFile("./resources/artemis/artemis-config.cfg.mustache")
+    dat, err := ioutil.ReadFile("./resources/artemis/artemis-config.toml.mustache")
     if err != nil {
         return "",err
     }
