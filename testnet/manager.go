@@ -61,14 +61,14 @@ func AddTestNet(details db.DeploymentDetails, testNetId string) error {
         buildState.ReportError(fmt.Errorf("You must have atleast 1 node"))
         return fmt.Errorf("You must have atleast 1 node")
     }
-    err := util.ValidateDockerImage(details.Image)
+    err := util.ValidateCommandLine(details.Image)
     if err != nil {
         log.Println(err)
         buildState.ReportError(err)
         return err
     }
 
-    err = util.ValidateDockerImage(details.Blockchain)
+    err = util.ValidateCommandLine(details.Blockchain)
     if err != nil {
         log.Println(err)
         buildState.ReportError(err)

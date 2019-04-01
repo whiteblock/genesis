@@ -68,6 +68,17 @@ func (this Resources) Validate() error {
     if this.NoLimits() {
         return nil
     }
+
+    err := ValidateCommandLine(this.Memory)
+    if err != nil {
+        return err
+    }
+
+    err = ValidateCommandLine(this.Cpus)
+    if err != nil {
+        return err
+    }
+
     if !this.NoMemoryLimits() {
         m1,err   := memconv(conf.MaxNodeMemory)
         if err != nil {

@@ -67,7 +67,7 @@ func TestValidateFilePath(t *testing.T) {
 	}
 }
 
-func TestValidateDockerImage(t *testing.T) {
+func TestValidateCommandLine(t *testing.T) {
 	//test --> invalid?
 	tests := map[string]bool {
 		"../../../":false,
@@ -78,7 +78,7 @@ func TestValidateDockerImage(t *testing.T) {
 		"test\";rm -rf /":true,
 	}
 	for test,expected := range tests {
-		err := ValidateDockerImage(test)
+		err := ValidateCommandLine(test)
 		if (err != nil) != expected {
 			if expected {
 				t.Errorf("ValidateDockerImage(\"%s\") passed when should have failed",test)
