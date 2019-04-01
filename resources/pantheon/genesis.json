@@ -9,7 +9,7 @@
         "byzantiumBlock": 0,
         "constantinopleBlock": 0,
         "constantinopleFixBlock": 0,
-        {{{consensus}}}: {{{consensusFields}}},
+        // {{{consensus}}}: {{{consensusFields}}},
         "clique": {
         "blockPeriodSeconds": {{{blockPeriodSeconds}}},
         "epoch": {{{epoch}}}
