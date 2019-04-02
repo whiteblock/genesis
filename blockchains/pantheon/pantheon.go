@@ -191,11 +191,11 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			for localId, _ := range server.Ips {
 				pantheonCmd := fmt.Sprintf(
 					`pantheon --data-path /pantheon/data --genesis-file=/pantheon/genesis/genesis.json --rpc-http-enabled --rpc-http-api=ETH,NET,IBFT ` +
-						` --p2p-port=%d --rpc-http-port=%d --rpc-http-cors-origins="all" 2>&1 | tee output.log`,
+						` --p2p-port=%d --rpc-http-port=%d --rpc-http-cors-origins="all"`,
 					p2pPort,
 					httpPort,
 					)
-				_, err := clients[i].DockerExecd(localId, pantheonCmd)
+				err := clients[i].DockerExecdLog(localId, pantheonCmd)
 				if err != nil {
 					log.Println(err)
 					return nil, err
