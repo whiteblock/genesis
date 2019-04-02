@@ -9,7 +9,7 @@ import (
 )
 
 func Destroy(buildConf *db.DeploymentDetails,clients []*util.SshClient) error {
-	var sem = semaphore.NewWeighted(conf.ThreadLimit)
+    var sem = semaphore.NewWeighted(conf.ThreadLimit)
     ctx := context.TODO()
     for i,_ := range clients {
         sem.Acquire(ctx,1)
@@ -34,5 +34,5 @@ func Destroy(buildConf *db.DeploymentDetails,clients []*util.SshClient) error {
         return err
     }
     sem.Release(conf.ThreadLimit)
-  	return nil
+    return nil
 }
