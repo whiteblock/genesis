@@ -220,7 +220,11 @@ func DeleteTestNet(testnetId string) error {
         log.Println(err)
         return err
     }
-
+    err = state.AcquireBuilding(details.Servers,testnetId)
+    if err != nil {
+        log.Println(err)
+        return err
+    }
     buildState := state.GetBuildStateByServerId(details.Servers[0])
     defer buildState.DoneBuilding()
 

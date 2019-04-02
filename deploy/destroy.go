@@ -11,21 +11,21 @@ import (
 func Destroy(buildConf *db.DeploymentDetails,clients []*util.SshClient) error {
     var sem = semaphore.NewWeighted(conf.ThreadLimit)
     ctx := context.TODO()
-    for i,_ := range clients {
+    for _,client := range clients {
         sem.Acquire(ctx,1)
-        go func(i int){
+        go func(client *util.SshClient){
             defer sem.Release(1)
-            DockerKillAll(clients[i])
-            DockerNetworkDestroyAll(clients[i])
-        }(i)
+            DockerKillAll(client)
+            DockerNetworkDestroyAll(client)
+        }(client)
     }
 
-    for i,_ := range clients {
+    for _,client := range clients {
         sem.Acquire(ctx,1)
-        go func(i int){
+        go func(client *util.SshClient){
             defer sem.Release(1)
-            DockerStopServices(clients[i])
-        }(i)
+            DockerStopServices(client)
+        }(client)
     }
 
     err := sem.Acquire(ctx,conf.ThreadLimit)
