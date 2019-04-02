@@ -35,9 +35,29 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		}
 	}
 
+	port := 9000
+	peers := "["
+	var peer string
+	for _, server := range servers {
+		for i, ip := range server.Ips {
+			peer = fmt.Sprintf("hobs://whiteblock-node%d@%s:%d",
+			i,
+			ip,
+			port,
+		)
+			if i < details.Nodes-1 {
+				peers = peers + "\"" + peer + "\"" + ","
+			} else {
+				peers = peers + "\"" + peer + "\""
+			}
+			buildState.IncrementBuildProgress()
+		}
+	}
+	peers = peers + "]"
+	fmt.Println(peers)
+
 	buildState.SetBuildStage("Creating node configuration files")
 	/**Create node config files**/
-	
 	for i, server := range servers {
 		for j, _ := range server.Ips {
 			buildState.IncrementBuildProgress()
@@ -45,7 +65,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			// potential error if application reads the identity as a string literal
 			identity := fmt.Sprintf("0x0%d", j)
 
-			artemisNodeConfig,err := makeNodeConfig(artemisConf, identity) 
+			artemisNodeConfig,err := makeNodeConfig(artemisConf, identity, peers) 
 			if err != nil {
 				log.Println(err)
 				return nil, err
@@ -73,6 +93,22 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			}
 		}
 	}
+
+	buildState.SetBuildStage("Starting Artemis")
+	for i, server := range servers {
+		for localId, _ := range server.Ips {
+			artemisCmd := fmt.Sprintf(
+				`artemis -c /artemis/config/config.toml 2>&1 | tee output.log`,
+				)
+			_, err := clients[i].DockerExecd(localId, artemisCmd)
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
+			buildState.IncrementBuildProgress()
+		}
+	}
+
 	return nil, nil
 }
 
