@@ -98,9 +98,9 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	for i, server := range servers {
 		for localId, _ := range server.Ips {
 			artemisCmd := fmt.Sprintf(
-				`artemis -c /artemis/config/config.toml 2>&1 | tee output.log`,
+				`artemis -c /artemis/config/config.toml`,
 				)
-			_, err := clients[i].DockerExecd(localId, artemisCmd)
+			err := clients[i].DockerExecdLog(localId, artemisCmd)
 			if err != nil {
 				log.Println(err)
 				return nil, err
