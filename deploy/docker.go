@@ -100,9 +100,9 @@ func DockerNetworkDestroy(client *util.SshClient, node int ) error {
 /*
     Remove all whiteblock networks on a node
  */
-func DockerNetworkDestroyAll(client *util.SshClient,buildState *state.BuildState) error {
-    _,err := client.Run(fmt.Sprintf("for net in $(docker network ls | grep %s | awk '{print $1}'); do docker network rm $net; done",conf.NodeNetworkPrefix))
-    buildState.IncrementDeployProgress()
+func DockerNetworkDestroyAll(client *util.SshClient) error {
+    _,err := client.Run(fmt.Sprintf(
+        "for net in $(docker network ls | grep %s | awk '{print $1}'); do docker network rm $net; done",conf.NodeNetworkPrefix))
     return err
 }
 

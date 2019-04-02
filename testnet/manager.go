@@ -212,6 +212,26 @@ func AddTestNet(details db.DeploymentDetails, testNetId string) error {
     return nil
 }
 
+
+
+func DeleteTestNet(testnetId string) error {
+    details,err := db.GetBuildByTestnet(testnetId)
+    if err != nil {
+        log.Println(err)
+        return err
+    }
+
+    buildState := state.GetBuildStateByServerId(details.Servers[0])
+    defer buildState.DoneBuilding()
+
+    clients, err := status.GetClients(details.Servers)
+    if err != nil {
+        log.Println(err)
+        return err
+    }
+    return deploy.Destroy(&details,clients)
+}
+
 /*
    GetParams fetches the name and type of each availible
    blockchain specific parameter for the given blockchain.

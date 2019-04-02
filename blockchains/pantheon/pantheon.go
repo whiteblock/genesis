@@ -190,7 +190,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		for i, server := range servers {
 			for localId, _ := range server.Ips {
 				pantheonCmd := fmt.Sprintf(
-					`pantheon --data-path /pantheon/data --genesis-file=/pantheon/genesis/genesis.json --rpc-http-enabled --rpc-http-api="ETH,NET,IBFT,WEB3" ` +
+					`pantheon --data-path /pantheon/data --genesis-file=/pantheon/genesis/genesis.json --rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,WEB3" ` +
 						` --p2p-port=%d --rpc-http-port=%d --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"`,
 					p2pPort,
 					httpPort,

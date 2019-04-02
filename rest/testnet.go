@@ -69,8 +69,14 @@ func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteTestNet(w http.ResponseWriter, r *http.Request) {
-    //TODO handle the deletion of the test net
-    http.Error(w,"Currently not supported",501)
+    params := mux.Vars(r)
+    err := testnet.DeleteTestNet(params["id"])
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),500)
+        return
+    }
+    w.Write([]byte("Success"))
 }
 
 func getTestNetNodes(w http.ResponseWriter, r *http.Request) {
