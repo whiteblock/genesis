@@ -7,6 +7,7 @@ import (
 	"errors"
 	"log"
 	"sync"
+	"encoding/json"
 )
 
 /*
@@ -22,18 +23,20 @@ type CustomError struct {
    Packages the build state nicely into an object
 */
 type BuildState struct {
-	mutex             sync.RWMutex
-	errMutex          sync.RWMutex
-	stopMux           sync.RWMutex
-	building          bool
-	progressIncrement float64
-	stopping          bool
+	mutex            	sync.RWMutex
+	errMutex          	sync.RWMutex
+	stopMux           	sync.RWMutex
+	extraMux			sync.RWMutex
+	building          	bool
+	progressIncrement 	float64
+	stopping          	bool
+	extras				map[string]string
 
-	Servers          []int
-	BuildId          string
-	BuildingProgress float64
-	BuildError       CustomError
-	BuildStage       string
+	Servers          	[]int
+	BuildId          	string
+	BuildingProgress 	float64
+	BuildError       	CustomError
+	BuildStage       	string
 }
 
 func NewBuildState(servers []int, buildId string) *BuildState {
@@ -41,6 +44,7 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	out.building = true
 	out.progressIncrement = 0.00
 	out.stopping = false
+	out.extras = map[string]string{}
 
 	out.Servers = servers
 	out.BuildId = buildId
@@ -126,6 +130,25 @@ func (this *BuildState) GetError() error {
 	this.errMutex.RLock()
 	defer this.errMutex.RUnlock()
 	return this.BuildError.err
+}
+
+func (this *BuildState) Set(key string,value string) {
+	this.extraMux.Lock()
+	defer this.extraMux.Unlock()
+	this.extras[key] = value
+}
+
+func (this *BuildState) Get(key string) (string,bool) {
+	this.extraMux.RLock()
+	defer this.extraMux.RUnlock()
+	res,ok := this.extras[key]
+	return res,ok
+}
+
+func (this *BuildState) GetExtras() ([]byte,error) {
+	this.extraMux.RLock()
+	defer this.extraMux.RUnlock()
+	return json.Marshal(this.extras)
 }
 
 /*

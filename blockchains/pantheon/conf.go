@@ -90,5 +90,11 @@ func GetDefaults() string {
 }
 
 func GetServices() []util.Service {
-	return nil
+	return []util.Service {
+		util.Service{//Include a geth node for transaction signing
+			Name: "geth",
+			Image: "gcr.io/whiteblock/geth:master",
+			Env:nil,
+		},
+	}
 }

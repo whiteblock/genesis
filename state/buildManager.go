@@ -16,9 +16,21 @@ var mux = sync.RWMutex{}
    Remove all of the finished build states
 
 */
-func cleanBuildStates() {
+func cleanBuildStates(servers []int) {
 	for i := 0; i < len(buildStates); i++ {
 		if buildStates[i].Done() {
+			needsToDie := false
+			for _, serverId1 := range buildStates[i].Servers { //Check if the build actually needs to be removed.
+				for _, serverId2 := range servers{
+					if serverId1 == serverId2 {
+						needsToDie = true
+					}
+				}
+			}
+			if needsToDie {
+				continue;
+			}
+			//Remove the build state
 			for _, serverId1 := range buildStates[i].Servers {
 				for j := 0; j < len(serversInUse); j++ {
 					if serverId1 == serversInUse[j] {
@@ -76,7 +88,7 @@ func AcquireBuilding(servers []int, buildId string) error {
 	mux.Lock()
 	defer mux.Unlock()
 
-	cleanBuildStates()
+	cleanBuildStates(servers)
 	for _, id := range serversInUse {
 		for _, id2 := range servers {
 			if id == id2 {

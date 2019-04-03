@@ -24,6 +24,7 @@ func init() {
 type NodeStatus struct {
     Name        string  `json:"name"`
     Server      int     `json:"server"`
+    Ip          string  `json:"ip"`
     Up          bool    `json:"up"`
     Cpu         float64 `json:"cpu"`
 }
@@ -86,6 +87,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
         }
         out[node.LocalId] = NodeStatus{
                                 Name:fmt.Sprintf("%s%d",conf.NodePrefix,node.LocalId),
+                                Ip:node.Ip,
                                 Server:node.Server,
                                 Up:false,
                                 Cpu:-1,
