@@ -214,7 +214,7 @@ func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address [
 		"gasLimit":       		fmt.Sprintf("0x0%X", panconf.GasLimit),
 		"blockPeriodSeconds": 	panconf.BlockPeriodSeconds,
 		"epoch":				panconf.Epoch,
-		// "extraData": 	  validators, //for IBFT2
+		//"extraData": 	  		fmt.Sprintf("0x0000000000000000000000000000000000000000000000000000000000000000", //for IBFT2
 	}
 	alloc := map[string]map[string]string{}
 	for _, addr := range address {
@@ -222,7 +222,12 @@ func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address [
 			"balance": panconf.InitBalance,
 		}
 	}
-
+	extraData := "0x0000000000000000000000000000000000000000000000000000000000000000"
+	for _,addr := range address {
+		extraData += addr
+	}
+	extraData += "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+	genesis["extraData"] = extraData
 	genesis["alloc"] = alloc
 	dat, err := util.GetBlockchainConfig("pantheon", "genesis.json", details.Files)
 	if err != nil {
