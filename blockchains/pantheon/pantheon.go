@@ -210,7 +210,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
                 buildState.IncrementBuildProgress()
             }(i,localId)
         }
-        
+
     }
 
     err = sem.Acquire(ctx,conf.ThreadLimit)

@@ -1,164 +1,161 @@
 package deploy
 
 import (
-    "context"
-    "fmt"
-    "golang.org/x/sync/semaphore"
-    "log"
-    db "../db"
-    util "../util"
-    state "../state"
-    netem "../net"
+	db "../db"
+	netem "../net"
+	state "../state"
+	util "../util"
+	"context"
+	"fmt"
+	"golang.org/x/sync/semaphore"
+	"log"
 )
 
 var conf *util.Config = util.GetConfig()
 
 /*
-    Build out the given docker network infrastructure according to the given parameters, and return 
-    the given array of servers, with ips updated for the nodes added to that server
- */
-func Build(buildConf *db.DeploymentDetails,servers []db.Server,clients []*util.SshClient,
-           services []util.Service,buildState *state.BuildState) ([]db.Server,error) {
-    
-    buildState.SetDeploySteps(3*buildConf.Nodes + 2 + len(services) )
-    defer buildState.FinishDeploy()
+   Build out the given docker network infrastructure according to the given parameters, and return
+   the given array of servers, with ips updated for the nodes added to that server
+*/
+func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+	services []util.Service, buildState *state.BuildState) ([]db.Server, error) {
 
-    var sem = semaphore.NewWeighted(conf.ThreadLimit)
-    ctx := context.TODO()
-    
-    fmt.Println("-------------Building The Docker Containers-------------")
+	buildState.SetDeploySteps(3*buildConf.Nodes + 2 + len(services))
+	defer buildState.FinishDeploy()
 
-    buildState.SetBuildStage("Tearing down the previous testnet")
-    for i,_ := range servers {
-        sem.Acquire(ctx,1)
-        go func(i int){
-            defer sem.Release(1)
-            DockerKillAll(clients[i])
-            buildState.IncrementDeployProgress()
-            DockerNetworkDestroyAll(clients[i])
-            buildState.IncrementDeployProgress()
-        }(i)
-    }
+	var sem = semaphore.NewWeighted(conf.ThreadLimit)
+	ctx := context.TODO()
 
-    err := sem.Acquire(ctx,conf.ThreadLimit)
-    if err != nil {
-        log.Println(err)
-        return nil, err
-    }
-    sem.Release(conf.ThreadLimit)
-    
-    buildState.SetBuildStage("Provisioning the nodes")
+	fmt.Println("-------------Building The Docker Containers-------------")
 
-    availibleServers := make([]int,len(servers))
-    for i,_ := range availibleServers {
-        availibleServers[i] = i
-    }
-    
-    index := 0
-    for i := 0; i < buildConf.Nodes; i++ {
-        serverIndex := availibleServers[index]
-        if servers[serverIndex].Max <= servers[serverIndex].Nodes {
-            if len(availibleServers) == 1 {
-                return nil,fmt.Errorf("Cannot build that many nodes with the availible resources")
-            }
-            availibleServers = append(availibleServers[:serverIndex],availibleServers[serverIndex+1:]...) 
-            i--
-            index++
-            index = index % len(availibleServers)
-            continue
-        }
+	buildState.SetBuildStage("Tearing down the previous testnet")
+	for i, _ := range servers {
+		sem.Acquire(ctx, 1)
+		go func(i int) {
+			defer sem.Release(1)
+			DockerKillAll(clients[i])
+			buildState.IncrementDeployProgress()
+			DockerNetworkDestroyAll(clients[i])
+			buildState.IncrementDeployProgress()
+		}(i)
+	}
 
-        servers[serverIndex].Ips = append(servers[serverIndex].Ips,util.GetNodeIP(servers[serverIndex].SubnetID,i))
-        servers[serverIndex].Nodes++;
+	err := sem.Acquire(ctx, conf.ThreadLimit)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	sem.Release(conf.ThreadLimit)
 
-        sem.Acquire(ctx,1)
-        go func(serverIndex int,i int){
-            defer sem.Release(1)
-            err := DockerNetworkCreate(servers[serverIndex],clients[serverIndex],i)
-            if err != nil {
-                log.Println(err)
-                buildState.ReportError(err)
-                return
-            }
-            buildState.IncrementDeployProgress()
+	buildState.SetBuildStage("Provisioning the nodes")
 
-            resource := buildConf.Resources[0]
-            var env map[string]string = nil
+	availibleServers := make([]int, len(servers))
+	for i, _ := range availibleServers {
+		availibleServers[i] = i
+	}
 
-            if len(buildConf.Resources) > i {
-                resource = buildConf.Resources[i]
-            }
-            if buildConf.Environments != nil && len(buildConf.Environments) > i && buildConf.Environments[i] != nil {
-                env = buildConf.Environments[i]
-            }
+	index := 0
+	for i := 0; i < buildConf.Nodes; i++ {
+		serverIndex := availibleServers[index]
+		if servers[serverIndex].Max <= servers[serverIndex].Nodes {
+			if len(availibleServers) == 1 {
+				return nil, fmt.Errorf("Cannot build that many nodes with the availible resources")
+			}
+			availibleServers = append(availibleServers[:serverIndex], availibleServers[serverIndex+1:]...)
+			i--
+			index++
+			index = index % len(availibleServers)
+			continue
+		}
 
-            err = DockerRun(servers[serverIndex],clients[serverIndex],resource,i,buildConf.Image,env)
-            if err != nil {
-                log.Println(err)
-                buildState.ReportError(err)
-                return
-            }
-            buildState.IncrementDeployProgress()
-        }(serverIndex,i)
-        
+		servers[serverIndex].Ips = append(servers[serverIndex].Ips, util.GetNodeIP(servers[serverIndex].SubnetID, i))
+		servers[serverIndex].Nodes++
 
-        index++
-        index = index % len(availibleServers)
-    }
+		sem.Acquire(ctx, 1)
+		go func(serverIndex int, i int) {
+			defer sem.Release(1)
+			err := DockerNetworkCreate(servers[serverIndex], clients[serverIndex], i)
+			if err != nil {
+				log.Println(err)
+				buildState.ReportError(err)
+				return
+			}
+			buildState.IncrementDeployProgress()
 
-    err = sem.Acquire(ctx,conf.ThreadLimit)
-    if err != nil {
-        log.Println(err)
-        return nil, err
-    }
-    sem.Release(conf.ThreadLimit)
-  
+			resource := buildConf.Resources[0]
+			var env map[string]string = nil
 
-    buildState.SetBuildStage("Setting up services")
+			if len(buildConf.Resources) > i {
+				resource = buildConf.Resources[i]
+			}
+			if buildConf.Environments != nil && len(buildConf.Environments) > i && buildConf.Environments[i] != nil {
+				env = buildConf.Environments[i]
+			}
 
-    sem.Acquire(ctx,1)
-    go func(){
-        defer sem.Release(1)
-        err = finalize(servers,clients,buildState)
-        if err != nil {
-            log.Println(err)
-            buildState.ReportError(err)
-            return
-        }
-    }()
-    
-    for i,_ := range servers {
-        sem.Acquire(ctx,1)
-        go func(i int){
-            defer sem.Release(1)
-            netem.RemoveAllOnServer(clients[i],servers[i].Nodes)
-        }(i)
-    }
+			err = DockerRun(servers[serverIndex], clients[serverIndex], resource, i, buildConf.Image, env)
+			if err != nil {
+				log.Println(err)
+				buildState.ReportError(err)
+				return
+			}
+			buildState.IncrementDeployProgress()
+		}(serverIndex, i)
 
+		index++
+		index = index % len(availibleServers)
+	}
 
-    for i,_ := range servers {
-        DockerStopServices(clients[i])
-    }
-    
-    if services != nil {//Maybe distribute the services over multiple servers
-        err := DockerStartServices(servers[0],clients[0],services,buildState)
-        if err != nil{
-            log.Println(err)
-            return nil,err
-        }
-    }
+	err = sem.Acquire(ctx, conf.ThreadLimit)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	sem.Release(conf.ThreadLimit)
 
-    for i,_ := range servers {
-        clients[i].Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
-    }
-    
-    //Acquire all of the resources here, then release and destroy
-    err = sem.Acquire(ctx,conf.ThreadLimit)
-    if err != nil {
-        log.Println(err)
-        return nil, err
-    }
-    sem.Release(conf.ThreadLimit)
-  
-    return servers, buildState.GetError()
+	buildState.SetBuildStage("Setting up services")
+
+	sem.Acquire(ctx, 1)
+	go func() {
+		defer sem.Release(1)
+		err = finalize(servers, clients, buildState)
+		if err != nil {
+			log.Println(err)
+			buildState.ReportError(err)
+			return
+		}
+	}()
+
+	for i, _ := range servers {
+		sem.Acquire(ctx, 1)
+		go func(i int) {
+			defer sem.Release(1)
+			netem.RemoveAllOnServer(clients[i], servers[i].Nodes)
+		}(i)
+	}
+
+	for i, _ := range servers {
+		DockerStopServices(clients[i])
+	}
+
+	if services != nil { //Maybe distribute the services over multiple servers
+		err := DockerStartServices(servers[0], clients[0], services, buildState)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+	}
+
+	for i, _ := range servers {
+		clients[i].Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
+	}
+
+	//Acquire all of the resources here, then release and destroy
+	err = sem.Acquire(ctx, conf.ThreadLimit)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	sem.Release(conf.ThreadLimit)
+
+	return servers, buildState.GetError()
 }

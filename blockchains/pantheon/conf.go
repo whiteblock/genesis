@@ -13,8 +13,8 @@ type PanConf struct {
 	InitBalance    		string `json:"initBalance"`
 	MaxPeers       		int64  `json:"maxPeers"`
 	GasLimit       		int64  `json:"gasLimit"`
-	BlockPeriodSeconds 	int64  `json:'blockPeriodSeconds'`
-	Epoch          		int64  `json:'epoch'`
+	BlockPeriodSeconds 	int64  `json:"blockPeriodSeconds"`
+	Epoch          		int64  `json:"epoch"`
 }
 
 /**
