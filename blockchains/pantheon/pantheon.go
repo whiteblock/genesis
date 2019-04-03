@@ -200,8 +200,6 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 					log.Println(err)
 					return nil, err
 				}
-				p2pPort++
-				httpPort++
 				buildState.IncrementBuildProgress()
 			}
 		}

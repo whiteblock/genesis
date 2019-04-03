@@ -9,13 +9,13 @@
         "byzantiumBlock": 0,
         "constantinopleBlock": 0,
         "constantinopleFixBlock": 0,
-        // {{{consensus}}}: {{{consensusFields}}},
         "clique": {
-        "blockPeriodSeconds": {{{blockPeriodSeconds}}},
-        "epoch": {{{epoch}}}
+            "blockPeriodSeconds": {{{blockPeriodSeconds}}},
+            "epoch": {{{epoch}}}
         }
     },
     "nonce": "0x0000000000000042",
+    "extraData":"0x000000000000000000000000000000000000000000000000000000000000000001a54556254bfa3db2daa7673435ec63649925c50000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
     "timestamp": "0x00",
     "gasLimit": {{{gasLimit}}},
     "difficulty": {{{difficulty}}},
