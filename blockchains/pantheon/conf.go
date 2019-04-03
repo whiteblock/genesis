@@ -2,9 +2,8 @@ package pantheon
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"io/ioutil"
-
 	util "../../util"
 )
 
@@ -16,7 +15,6 @@ type PanConf struct {
 	GasLimit       		int64  `json:"gasLimit"`
 	BlockPeriodSeconds 	int64  `json:'blockPeriodSeconds'`
 	Epoch          		int64  `json:'epoch'`
-	// ExtraData	   string `json:"extraData"` //for IBFT2
 }
 
 /**
@@ -60,11 +58,6 @@ func NewConf(data map[string]interface{}) (*PanConf, error) {
 		return nil, err
 	}
 
-	// err = util.GetJSONString(data, "extraData", &out.ExtraData)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	initBalance, exists := data["initBalance"]
 	if exists && initBalance != nil {
 		switch initBalance.(type) {
@@ -73,7 +66,7 @@ func NewConf(data map[string]interface{}) (*PanConf, error) {
 		case string:
 			out.InitBalance = initBalance.(string)
 		default:
-			return nil, errors.New("Incorrect type for initBalance given")
+			return nil, fmt.Errorf("Incorrect type for initBalance given")
 		}
 	}
 
