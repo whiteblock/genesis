@@ -5,9 +5,6 @@ import (
     "log"
     "sync"
     "context"
-    //"regexp"
-    //"strings"
-    // "io/ioutil"
     "golang.org/x/sync/semaphore"
     "github.com/Whiteblock/mustache"
     db "../../db"
@@ -23,6 +20,7 @@ func init() {
 
 func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
     buildState *state.BuildState) ([]string, error) {
+
     sem := semaphore.NewWeighted(conf.ThreadLimit)
     ctx := context.TODO()
     mux := sync.Mutex{}
@@ -34,11 +32,11 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
     }
 
     buildState.SetBuildSteps(6 * details.Nodes + 2)
-
     buildState.IncrementBuildProgress()
 
     addresses := make([]string,details.Nodes)
     pubKeys := make([]string,details.Nodes)
+    privKeys := make([]string,details.Nodes)
 
     buildState.SetBuildStage("Setting Up Accounts")
     node := 0
@@ -83,8 +81,20 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
                 }
                 buildState.IncrementBuildProgress()
                 keys := string(key[2:])
+
                 mux.Lock()
                 pubKeys[node] = keys
+                mux.Unlock()
+
+
+                privKey, err := clients[i].DockerExec(localId, "cat /pantheon/data/key")
+                if err != nil {
+                    log.Println(err)
+                    buildState.ReportError(err)
+                    return
+                }
+                mux.Lock()
+                privKeys[node] = privKey
                 mux.Unlock()
 
                 res, err = clients[i].DockerExec(localId, "bash -c 'echo \"[\\\"" + addrs + "\\\"]\" >> /pantheon/data/toEncode.json'")
@@ -143,8 +153,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
             enodeAddress = fmt.Sprintf("enode://%s@%s:%d",
             pubKeys[i],
             ip,
-            p2pPort,
-        )
+            p2pPort)
             if i < len(pubKeys)-1 {
                 enodes = enodes + "\"" + enodeAddress + "\"" + ","
             } else {
@@ -235,7 +244,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
         }
     }
     
-    return nil, nil
+    return privKeys, nil
 }
 
 func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address []string) error {
