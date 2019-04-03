@@ -135,7 +135,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
     }
     defer util.Rm("./genesis.json")
 
-    port := 30303
+    p2pPort := 30303
     enodes := "["
     var enodeAddress string
     for _, server := range servers {
@@ -143,14 +143,13 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
             enodeAddress = fmt.Sprintf("enode://%s@%s:%d",
             pubKeys[i],
             ip,
-            port,
+            p2pPort,
         )
             if i < len(pubKeys)-1 {
                 enodes = enodes + "\"" + enodeAddress + "\"" + ","
             } else {
                 enodes = enodes + "\"" + enodeAddress + "\""
             }
-            port++
             buildState.IncrementBuildProgress()
         }
     }
@@ -183,25 +182,41 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
         }
         defer clients[i].Run("rm /home/appo/genesis.json")
 
-        for j, _ := range server.Ips {
-            err := clients[i].DockerCp(j,"/home/appo/static-nodes.json","/pantheon/data/static-nodes.json")
-            if err != nil {
-                log.Println(err)
-                return nil,err
-            }
-            err = clients[i].DockerCp(j,"/home/appo/genesis.json","/pantheon/genesis/genesis.json")
-            if err != nil {
-                log.Println(err)
-                return nil,err
-            }
-            buildState.IncrementBuildProgress()
+        for localId, _ := range server.Ips {
+            sem.Acquire(ctx,1)
+            go func(i int,localId int){
+                defer sem.Release(1)
+                err := clients[i].DockerCp(localId,"/home/appo/static-nodes.json","/pantheon/data/static-nodes.json")
+                if err != nil {
+                    log.Println(err)
+                    buildState.ReportError(err)
+                    return
+                }
+                err = clients[i].DockerCp(localId,"/home/appo/genesis.json","/pantheon/genesis/genesis.json")
+                if err != nil {
+                    log.Println(err)
+                    buildState.ReportError(err)
+                    return
+                }
+                buildState.IncrementBuildProgress()
+            }(i,localId)
         }
         
     }
 
+    err = sem.Acquire(ctx,conf.ThreadLimit)
+    if err != nil{
+        log.Println(err)
+        return nil,err
+    }
+    sem.Release(conf.ThreadLimit)
+
+    if !buildState.ErrorFree(){
+        return nil,buildState.GetError()
+    }
+
     /* Start the nodes */
     buildState.SetBuildStage("Starting Pantheon")
-    p2pPort := 30303
     httpPort := 8545
     for i, server := range servers {
         for localId, _ := range server.Ips {
@@ -230,7 +245,6 @@ func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address [
         "gasLimit":             fmt.Sprintf("0x0%X", panconf.GasLimit),
         "blockPeriodSeconds":   panconf.BlockPeriodSeconds,
         "epoch":                panconf.Epoch,
-        //"extraData":          fmt.Sprintf("0x0000000000000000000000000000000000000000000000000000000000000000", //for IBFT2
     }
     alloc := map[string]map[string]string{}
     for _, addr := range address {
