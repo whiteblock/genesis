@@ -33,7 +33,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
         return nil, err
     }
 
-    buildState.SetBuildSteps(3 * details.Nodes)
+    buildState.SetBuildSteps(6 * details.Nodes + 2)
 
     buildState.IncrementBuildProgress()
 
@@ -54,7 +54,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
                     buildState.ReportError(err)
                     return
                 }
-
+                buildState.IncrementBuildProgress()
                 _, err = clients[i].DockerExec(localId, "pantheon --data-path=/pantheon/data public-key export --to=/pantheon/data/publicKey")
                 if err != nil {
                     log.Println(err)
@@ -81,7 +81,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
                     buildState.ReportError(err)
                     return
                 }
-
+                buildState.IncrementBuildProgress()
                 keys := string(key[2:])
                 mux.Lock()
                 pubKeys[node] = keys
@@ -194,8 +194,9 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
                 log.Println(err)
                 return nil,err
             }
+            buildState.IncrementBuildProgress()
         }
-        buildState.IncrementBuildProgress()
+        
     }
 
     /* Start the nodes */
