@@ -4,7 +4,7 @@
 package state
 
 import (
-	"errors"
+	"fmt"
 	"log"
 	"sync"
 	"encoding/json"
@@ -30,7 +30,7 @@ type BuildState struct {
 	building          	bool
 	progressIncrement 	float64
 	stopping          	bool
-	extras				map[string]string
+	extras				map[string]interface{}
 
 	Servers          	[]int
 	BuildId          	string
@@ -44,7 +44,7 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	out.building = true
 	out.progressIncrement = 0.00
 	out.stopping = false
-	out.extras = map[string]string{}
+	out.extras = map[string]interface{}{}
 
 	out.Servers = servers
 	out.BuildId = buildId
@@ -106,11 +106,11 @@ func (this *BuildState) SignalStop() error {
 	defer this.mutex.RUnlock()
 
 	if this.building {
-		this.ReportError(errors.New("Build stopped by user"))
+		this.ReportError(fmt.Errorf("Build stopped by user"))
 		this.stopping = true
 		return nil
 	}
-	return errors.New("No build in progress")
+	return fmt.Errorf("No build in progress")
 }
 
 /*
@@ -132,13 +132,24 @@ func (this *BuildState) GetError() error {
 	return this.BuildError.err
 }
 
-func (this *BuildState) Set(key string,value string) {
+/*
+	Insert a value into the state store, currently only supports string
+	and []string on the other side
+ */
+func (this *BuildState) Set(key string,value interface{}) error {
+	switch value.(type) {
+		case string:
+		case []string:
+		default:
+			return fmt.Errorf("Unsupported type for value")
+	}
 	this.extraMux.Lock()
 	defer this.extraMux.Unlock()
 	this.extras[key] = value
+	return nil
 }
 
-func (this *BuildState) Get(key string) (string,bool) {
+func (this *BuildState) Get(key string) (interface{},bool) {
 	this.extraMux.RLock()
 	defer this.extraMux.RUnlock()
 	res,ok := this.extras[key]
