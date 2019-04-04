@@ -28,7 +28,7 @@ func cleanBuildStates(servers []int) {
 				}
 			}
 			if !needsToDie {
-				continue;
+				continue
 			}
 			//Remove the build state
 			for _, serverId1 := range buildStates[i].Servers {
