@@ -27,7 +27,7 @@ func cleanBuildStates(servers []int) {
 					}
 				}
 			}
-			if needsToDie {
+			if !needsToDie {
 				continue;
 			}
 			//Remove the build state
