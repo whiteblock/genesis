@@ -15,31 +15,35 @@ type DeploymentDetails struct {
 	/*
 	   Servers: The ids of the servers to build on
 	*/
-	Servers []int `json:"servers"`
+	Servers []int 					`json:"servers"`
 	/*
 	   Blockchain: The blockchain to build.
 	*/
-	Blockchain string `json:"blockchain"`
+	Blockchain string 				`json:"blockchain"`
 	/*
 	   Nodes:  The number of nodes to build
 	*/
-	Nodes int `json:"nodes"`
+	Nodes int 						`json:"nodes"`
 	/*
 	   Image: The docker image to build off of
 	*/
-	Image string `json:"image"`
+	Image string 					`json:"image"`
 	/*
 	   Params: The blockchain specific parameters
 	*/
-	Params map[string]interface{} `json:"params"`
+	Params map[string]interface{} 	`json:"params"`
 	/*
 	   Resources: The resources per node
 	*/
-	Resources []util.Resources `json:"resources"`
+	Resources []util.Resources 		`json:"resources"`
 
 	Environments []map[string]string `json:"environments"`
 
-	Files map[string]string `json:"files"`
+	Files map[string]string 		`json:"files"`
+
+	Logs map[string]string 			`json:"logs"`
+
+	Extras map[string]interface{}	`json:"extras"`
 }
 
 /*

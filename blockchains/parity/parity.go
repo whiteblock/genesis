@@ -195,9 +195,9 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
         buildState.IncrementBuildProgress()
 
-        res,err = clients[0].Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --networkid %d --rpc --rpcaddr 0.0.0.0`+
+        res,err = clients[0].Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --networkid %d --rpc  --rpcaddr 0.0.0.0`+
                             ` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
-                            ` --password /geth/passwd --etherbase %s`,pconf.NetworkId,address,address))
+                            ` --password /geth/passwd --etherbase %s --nodiscover`,pconf.NetworkId,address,address))
         if err != nil {
             log.Println(res)
             log.Println(err)

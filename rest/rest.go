@@ -60,8 +60,8 @@ func StartServer() {
     router.HandleFunc("/params/{blockchain}",getBlockChainParams).Methods("GET")
     router.HandleFunc("/params/{blockchain}/",getBlockChainParams).Methods("GET")
 
-    router.HandleFunc("/state/{blockchain}",getBlockChainState).Methods("GET")
-    router.HandleFunc("/state/{blockchain}/",getBlockChainState).Methods("GET")
+    router.HandleFunc("/state/{buildId}",getBlockChainState).Methods("GET")
+    router.HandleFunc("/state/{buildId}/",getBlockChainState).Methods("GET")
 
     router.HandleFunc("/defaults/{blockchain}",getBlockChainDefaults).Methods("GET")
     router.HandleFunc("/defaults/{blockchain}/",getBlockChainDefaults).Methods("GET")

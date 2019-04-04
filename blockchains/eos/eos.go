@@ -37,7 +37,12 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
         return nil, fmt.Errorf("Cannot build eos with only one BP")
     }
     eosconf.BlockProducers++
-    state.SetEOSNumberOfAccounts(eosconf.UserAccounts)
+    err = buildState.Set("accounts",fmt.Sprintf("%d",eosconf.UserAccounts))
+    if err != nil {
+        log.Println(err)
+        return nil,err
+    }
+    
     fmt.Println("-------------Setting Up EOS-------------")
     sem := semaphore.NewWeighted(conf.ThreadLimit)
     ctx := context.TODO()

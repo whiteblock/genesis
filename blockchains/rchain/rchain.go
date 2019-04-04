@@ -218,7 +218,7 @@ func createFirstConfigFile(details db.DeploymentDetails,client *util.SshClient,n
     filler := util.ConvertToStringMap(map[string]interface{}{
         "influxIp":influxIP,
         "validatorCount":rchainConf.ValidatorCount,
-        "standalone":false,
+        "standalone":true,
     })
     dat, err := util.GetBlockchainConfig("rchain","rchain.conf.mustache",details.Files)
     if err != nil {

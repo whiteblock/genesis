@@ -88,18 +88,19 @@ func getBlockChainParams(w http.ResponseWriter,r *http.Request){
 
 func getBlockChainState(w http.ResponseWriter,r *http.Request){
     params := mux.Vars(r)
-    blockchain := params["blockchain"]
-    switch blockchain {
-        case "eos":
-            data := state.GetEosState()
-            if data == nil{
-                http.Error(w,"No state availible for eos",410)
-                return
-            }
-            json.NewEncoder(w).Encode(*data)
-            return
+    buildId := params["buildId"]
+    buildState,err := state.GetBuildStateById(buildId)
+    if err != nil {
+        http.Error(w,err.Error(),404)
+        return
     }
-    w.Write([]byte("Unknown blockchain "+ blockchain))
+    out,err := buildState.GetExtras()
+    if err != nil {
+        http.Error(w,err.Error(),500)
+        return
+    }
+    w.Write(out)
+
 }
 
 func getBlockChainDefaults(w http.ResponseWriter,r *http.Request){

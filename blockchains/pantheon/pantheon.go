@@ -80,10 +80,9 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
                     return
                 }
                 buildState.IncrementBuildProgress()
-                keys := string(key[2:])
 
                 mux.Lock()
-                pubKeys[node] = keys
+                pubKeys[node] = key[2:]
                 mux.Unlock()
 
 
@@ -94,7 +93,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
                     return
                 }
                 mux.Lock()
-                privKeys[node] = privKey
+                privKeys[node] = privKey[2:]
                 mux.Unlock()
 
                 res, err = clients[i].DockerExec(localId, "bash -c 'echo \"[\\\"" + addrs + "\\\"]\" >> /pantheon/data/toEncode.json'")
@@ -243,7 +242,65 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
             buildState.IncrementBuildProgress()
         }
     }
+
+    serviceIps,err := util.GetServiceIps(GetServices())
+    if err != nil {
+        log.Println(err)
+        return nil,err
+    }
+
+    err = buildState.Set("signer_ip",serviceIps["geth"])
+    if err != nil {
+        log.Println(err)
+        return nil,err
+    }
+
+    err = buildState.Set("accounts",addresses)
+    if err != nil {
+        log.Println(err)
+        return nil,err
+    }
+
+    //Set up a geth node as a service to sign transactions
+    clients[0].Run(`docker exec wb_service0 mkdir /geth/`)
     
+    unlock := ""
+    for i,privKey := range privKeys {
+       
+        res,err := clients[0].Run(`docker exec wb_service0 bash -c 'echo "second" >> /geth/passwd'`)
+        if err != nil {
+            log.Println(res)
+            log.Println(err)
+            return nil,err
+        }
+        res,err = clients[0].Run(fmt.Sprintf(`docker exec wb_service0 bash -c 'echo -n "%s" > /geth/pk%d' `,privKey,i))
+        if err != nil {
+            log.Println(res)
+            log.Println(err)
+            return nil,err
+        }
+
+        res,err = clients[0].Run(fmt.Sprintf(`docker exec wb_service0 geth --datadir /geth/ account import --password /geth/passwd /geth/pk%d`,i))
+        if err != nil {
+            log.Println(res)
+            log.Println(err)
+            return nil,err
+        }
+
+        if i != 0 {
+            unlock += ","
+        }
+        unlock += "0x" + addresses[i]
+        
+    }
+    res,err := clients[0].Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
+                            ` --rpcapi "admin,web3,db,eth,net,personal" --rpccorsdomain "0.0.0.0" --nodiscover --unlock="%s"`+
+                            ` --password /geth/passwd --networkid %d`,unlock,panconf.NetworkId))
+    if err != nil {
+        log.Println(res)
+        log.Println(err)
+        return nil,err
+    }
     return privKeys, nil
 }
 
