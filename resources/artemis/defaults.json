@@ -1,7 +1,6 @@
 {
     "networkMode": "hobbits",
-    "validators": 16,
-    "nodes": 1,
+    "numValidators": 16,
     "shardCount":8,
     "targetCommitteeSize":4,
     "maxBalanceChurnQuotient":32,

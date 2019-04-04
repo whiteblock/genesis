@@ -40,11 +40,12 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	var peer string
 	for _, server := range servers {
 		for i, ip := range server.Ips {
-			peer = fmt.Sprintf("hobs://whiteblock-node%d@%s:%d",
+			peer = fmt.Sprintf("%s://whiteblock-node%d@%s:%d",
+			artemisConf["networkMode"],
 			i,
 			ip,
 			port,
-		)
+			)
 			if i < details.Nodes-1 {
 				peers = peers + "\"" + peer + "\"" + ","
 			} else {
@@ -65,12 +66,12 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			// potential error if application reads the identity as a string literal
 			identity := fmt.Sprintf("0x0%d", j)
 
-			artemisNodeConfig,err := makeNodeConfig(artemisConf, identity, peers) 
+			artemisNodeConfig,err := makeNodeConfig(artemisConf, identity, peers, details.Nodes, details.Params) 
 			if err != nil {
 				log.Println(err)
 				return nil, err
 			}
-			
+
 			fmt.Println("Writing Configuration File")
 			err = util.Write("config.toml", artemisNodeConfig)
 			if err != nil {

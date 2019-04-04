@@ -1,62 +1,57 @@
 [node]
-# networkMode options:
-# "mock": use MockP2PNetwork
-# "rlpx": use RLPxP2PNetwork
-# "hobbits": use HobbitsP2PNetwork
-networkMode = {{{networkMode}}}
-identity = {{{identity}}}
-networkInterface = "0.0.0.0"
-port = 9000
-advertisedPort = 9000
-peers = {{{peers}}}
+networkMode={{{networkMode}}}
+identity={{{identity}}}
+networkInterface="0.0.0.0"
+port=9000
+advertisedPort=9000
+peers={{{peers}}}
 
 [sim]
-numValidators = {{validators}}
-numNodes = {{{nodes}}}
+numValidators={{numValidators}}
+numNodes={{{numNodes}}}
 
-# Modify constants in Constants.java
 [constants]
-SHARD_COUNT = {{{shardCount}}}
-TARGET_COMMITTEE_SIZE = {{{targetCommitteeSize}}}
-MAX_BALANCE_CHURN_QUOTIENT = {{{maxBalanceChurnQuotient}}}
-MAX_INDICES_PER_SLASHABLE_VOTE = {{{maxIndicesPerSlashableVote}}}
-MAX_EXIT_DEQUEUES_PER_EPOCH = {{{maxExitDequeuesPerEpoch}}}
-SHUFFLE_ROUND_COUNT = {{{suffleRoundCount}}}
-DEPOSIT_CONTRACT_TREE_DEPTH = {{{depositContractTreeDepth}}}
-MIN_DEPOSIT_AMOUNT = {{{minDepositAmount}}}
-MAX_DEPOSIT_AMOUNT = {{{maxDepositAmount}}}
-FORK_CHOICE_BALANCE_INCREMENT = {{{forkChoiceBalanceIncrement}}}
-EJECTION_BALANCE = {{{ejectionBalance}}}
-GENESIS_FORK_VERSION = {{{genesisForkVersion}}}
-GENESIS_SLOT = {{{genesisSlot}}}
-GENESIS_EPOCH = {{{genesisEpoch}}}
-GENESIS_START_SHARD = {{{genesisStartShard}}}
-SECONDS_PER_SLOT = {{{secondsPerSlot}}}
-MIN_ATTESTATION_INCLUSION_DELAY = {{{minAttestationInclusionDelay}}}
-SLOTS_PER_EPOCH = {{{slotsPerEpoch}}}
-MIN_SEED_LOOKAHEAD = {{{minSeedLookahead}}}
-ACTIVATION_EXIT_DELAY = {{{activationExitDelay}}}
-EPOCHS_PER_ETH1_VOTING_PERIOD = {{{epochsPerEth1VotingPeriod}}}
-SLOTS_PER_HISTORICAL_ROOT = {{{slotsPerHistoricalRoot}}}
-MIN_VALIDATOR_WITHDRAWABILITY_DELAY = {{{minValidatorWithdrawabilityDelay}}}
-PERSISTENT_COMMITTEE_PERIOD = {{{persistentCommitteePeriod}}}
-LATEST_RANDAO_MIXES_LENGTH = {{{latestRandaoMixesLength}}}
-LATEST_ACTIVE_INDEX_ROOTS_LENGTH = {{{latestActiveIndexRootsLength}}}
-LATEST_SLASHED_EXIT_LENGTH = {{{latestSlashedExitLength}}}
-BASE_REWARD_QUOTIENT = {{{baseRewardQuotient}}}
-WHISTLEBLOWER_REWARD_QUOTIENT = {{{whistleblowerRewardQuotient}}}
-ATTESTATION_INCLUSION_REWARD_QUOTIENT = {{{attestationInclusionRewardQuotient}}}
-INACTIVITY_PENALTY_QUOTIENT = {{{inactivityPenaltyQuotient}}}
-MIN_PENALTY_QUOTIENT = {{{minPenaltyQuotient}}}
-MAX_PROPOSER_SLASHINGS = {{{maxProposerSlashings}}}
-MAX_ATTESTER_SLASHINGS = {{{maxAttesterSlashings}}}
-MAX_ATTESTATIONS = {{{maxAttestations}}}
-MAX_DEPOSITS = {{{maxDeposits}}}
-MAX_VOLUNTARY_EXITS = {{{maxVoluntaryExits}}}
-MAX_TRANSFERS = {{{maxTransfers}}}
-DOMAIN_BEACON_BLOCK = {{{domainBeaconBlock}}}
-DOMAIN_RANDAO = {{{domainRandao}}}
-DOMAIN_ATTESTATION = {{{domainAttestation}}}
-DOMAIN_DEPOSIT = {{{domainDeposit}}}
-DOMAIN_VOLUNTARY_EXIT = {{{domainVoluntaryExit}}}
-DOMAIN_TRANSFER = {{{domainTransfer}}}
+SHARD_COUNT={{{shardCount}}}
+TARGET_COMMITTEE_SIZE={{{targetCommitteeSize}}}
+MAX_BALANCE_CHURN_QUOTIENT={{{maxBalanceChurnQuotient}}}
+MAX_INDICES_PER_SLASHABLE_VOTE={{{maxIndicesPerSlashableVote}}}
+MAX_EXIT_DEQUEUES_PER_EPOCH={{{maxExitDequeuesPerEpoch}}}
+SHUFFLE_ROUND_COUNT={{{suffleRoundCount}}}
+DEPOSIT_CONTRACT_TREE_DEPTH={{{depositContractTreeDepth}}}
+MIN_DEPOSIT_AMOUNT={{{minDepositAmount}}}
+MAX_DEPOSIT_AMOUNT={{{maxDepositAmount}}}
+FORK_CHOICE_BALANCE_INCREMENT={{{forkChoiceBalanceIncrement}}}
+EJECTION_BALANCE={{{ejectionBalance}}}
+GENESIS_FORK_VERSION={{{genesisForkVersion}}}
+GENESIS_SLOT={{{genesisSlot}}}
+GENESIS_EPOCH={{{genesisEpoch}}}
+GENESIS_START_SHARD={{{genesisStartShard}}}
+SECONDS_PER_SLOT={{{secondsPerSlot}}}
+MIN_ATTESTATION_INCLUSION_DELAY={{{minAttestationInclusionDelay}}}
+SLOTS_PER_EPOCH={{{slotsPerEpoch}}}
+MIN_SEED_LOOKAHEAD={{{minSeedLookahead}}}
+ACTIVATION_EXIT_DELAY={{{activationExitDelay}}}
+EPOCHS_PER_ETH1_VOTING_PERIOD={{{epochsPerEth1VotingPeriod}}}
+SLOTS_PER_HISTORICAL_ROOT={{{slotsPerHistoricalRoot}}}
+MIN_VALIDATOR_WITHDRAWABILITY_DELAY={{{minValidatorWithdrawabilityDelay}}}
+PERSISTENT_COMMITTEE_PERIOD={{{persistentCommitteePeriod}}}
+LATEST_RANDAO_MIXES_LENGTH={{{latestRandaoMixesLength}}}
+LATEST_ACTIVE_INDEX_ROOTS_LENGTH={{{latestActiveIndexRootsLength}}}
+LATEST_SLASHED_EXIT_LENGTH={{{latestSlashedExitLength}}}
+BASE_REWARD_QUOTIENT={{{baseRewardQuotient}}}
+WHISTLEBLOWER_REWARD_QUOTIENT={{{whistleblowerRewardQuotient}}}
+ATTESTATION_INCLUSION_REWARD_QUOTIENT={{{attestationInclusionRewardQuotient}}}
+INACTIVITY_PENALTY_QUOTIENT={{{inactivityPenaltyQuotient}}}
+MIN_PENALTY_QUOTIENT={{{minPenaltyQuotient}}}
+MAX_PROPOSER_SLASHINGS={{{maxProposerSlashings}}}
+MAX_ATTESTER_SLASHINGS={{{maxAttesterSlashings}}}
+MAX_ATTESTATIONS={{{maxAttestations}}}
+MAX_DEPOSITS={{{maxDeposits}}}
+MAX_VOLUNTARY_EXITS={{{maxVoluntaryExits}}}
+MAX_TRANSFERS={{{maxTransfers}}}
+DOMAIN_BEACON_BLOCK={{{domainBeaconBlock}}}
+DOMAIN_RANDAO={{{domainRandao}}}
+DOMAIN_ATTESTATION={{{domainAttestation}}}
+DOMAIN_DEPOSIT={{{domainDeposit}}}
+DOMAIN_VOLUNTARY_EXIT={{{domainVoluntaryExit}}}
+DOMAIN_TRANSFER={{{domainTransfer}}}

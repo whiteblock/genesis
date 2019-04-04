@@ -1,6 +1,5 @@
 [
     ["networkMode","string"],
-    ["validators","int"],
     ["shardCount","int"],
     ["targetCommitteeSize","int"],
     ["maxBalanceChurnQuotient","int"],
