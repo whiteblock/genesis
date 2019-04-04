@@ -295,7 +295,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
     }
     res,err := clients[0].Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
                             ` --rpcapi "admin,web3,db,eth,net,personal" --rpccorsdomain "0.0.0.0" --nodiscover --unlock="%s"`+
-                            ` --password /geth/passwd `,unlock))
+                            ` --password /geth/passwd --networkid %d`,unlock,panconf.NetworkId))
     if err != nil {
         log.Println(res)
         log.Println(err)
