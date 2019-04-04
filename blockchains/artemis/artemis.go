@@ -98,13 +98,10 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	for i, server := range servers {
 		for localId, _ := range server.Ips {
 			artemisCmd := fmt.Sprintf(
-				`artemis -c /artemis/config/config.toml`,
-				)
-			err := clients[i].DockerExecdLog(localId, artemisCmd)
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
+				`artemis -c /artemis/config/config.toml 2>&1 | tee output.log`,
+			)
+			clients[i].DockerExecd(localId,"tmux new -s whiteblock -d")
+			clients[i].DockerExecd(localId,fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m",artemisCmd))
 			buildState.IncrementBuildProgress()
 		}
 	}
@@ -116,3 +113,4 @@ func Add(details db.DeploymentDetails,servers []db.Server,clients []*util.SshCli
 	newNodes map[int][]string,buildState *state.BuildState) ([]string,error) {
 	return nil,nil
 }
+
