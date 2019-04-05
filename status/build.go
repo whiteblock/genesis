@@ -14,6 +14,7 @@ type BuildStatus struct {
     Error       state.CustomError   `json:"error"`
     Progress    float64             `json:"progress"`
     Stage       string              `json:"stage"`
+    Frozen      bool                `json:"frozen"`
 }
 
 /*
@@ -26,9 +27,9 @@ func CheckBuildStatus(buildId string) (string,error) {
         return "",err
     }
     if bs.ErrorFree() { //error should be null if there is not an error
-        return fmt.Sprintf("{\"progress\":%f,\"error\":null,\"stage\":\"%s\"}",bs.BuildingProgress,bs.BuildStage),nil
+        return fmt.Sprintf("{\"progress\":%f,\"error\":null,\"stage\":\"%s\",\"frozen\":%v}",bs.BuildingProgress,bs.BuildStage,bs.Frozen),nil
     }
     //otherwise give the error as an object
-    out,_ := json.Marshal(BuildStatus{ Progress:bs.BuildingProgress, Error:bs.BuildError,Stage:bs.BuildStage })
+    out,_ := json.Marshal(BuildStatus{ Progress:bs.BuildingProgress, Error:bs.BuildError,Stage:bs.BuildStage,Frozen:bs.Frozen })
     return string(out),nil
 }

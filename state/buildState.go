@@ -31,7 +31,7 @@ type BuildState struct {
 	freezeMux			sync.RWMutex
 	
 	building          	bool
-	frozen				bool
+	Frozen				bool
 	stopping          	bool
 
 	breakpoints			[]float64 //must be in ascending order
@@ -49,7 +49,7 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	out := new(BuildState)
 
 	out.building = true
-	out.frozen = false
+	out.Frozen = false
 	out.stopping = false
 	
 	out.breakpoints = []float64{}
@@ -68,7 +68,7 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 func (this *BuildState) Freeze() error {
 	log.Println("Freezing the build")
 	this.mutex.Lock()
-	if this.frozen {
+	if this.Frozen {
 		this.mutex.Unlock()
 		return fmt.Errorf("Already frozen")
 	}
@@ -77,7 +77,7 @@ func (this *BuildState) Freeze() error {
 		return fmt.Errorf("The build is terminating")
 	}
 	
-	this.frozen = true
+	this.Frozen = true
 	this.mutex.Unlock()
 
 	this.freeze.Lock()
@@ -89,11 +89,11 @@ func (this *BuildState) Unfreeze() error {
 	log.Println("Thawing the build")
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
-	if !this.frozen {
+	if !this.Frozen {
 		return fmt.Errorf("Not currently frozen")
 	}
 	this.freeze.Unlock()
-	this.frozen = false
+	this.Frozen = false
 	return nil
 }
 
