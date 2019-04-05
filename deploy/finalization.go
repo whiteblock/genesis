@@ -81,14 +81,14 @@ func copyOverSshKeys(servers []db.Server, clients []*util.SshClient, buildState 
 			if err != nil {
 				log.Println(res)
 				log.Println(err)
-				return err
+				return fmt.Errorf(res)
 			}
 
 			res, err = clients[i].DockerExecd(j, "service ssh start")
 			if err != nil {
 				log.Println(res)
 				log.Println(err)
-				return err
+				return fmt.Errorf(res)
 			}
 			buildState.IncrementDeployProgress()
 		}
