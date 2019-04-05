@@ -9,7 +9,7 @@ import (
 	"sync"
 	"encoding/json"
 )
-
+//This code is full of potential race conditons but these race conditons are extremely rare 
 /*
    CustomError is a custom wrapper for a go error, which
    has What containing error.Error()
@@ -27,6 +27,12 @@ type BuildState struct {
 	errMutex          	sync.RWMutex
 	stopMux           	sync.RWMutex
 	extraMux			sync.RWMutex
+
+	freeze				sync.RWMutex
+	frozen				bool
+
+	breakpoints			[]float64
+
 	building          	bool
 	progressIncrement 	float64
 	stopping          	bool
@@ -41,6 +47,8 @@ type BuildState struct {
 
 func NewBuildState(servers []int, buildId string) *BuildState {
 	out := new(BuildState)
+
+	out.frozen = false
 	out.building = true
 	out.progressIncrement = 0.00
 	out.stopping = false
@@ -53,6 +61,32 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	out.BuildStage = ""
 	return out
 }
+
+
+func (this *BuildState) Freeze() error {
+	this.mutex.Lock()
+	if this.frozen {
+		this.mutex.Unlock()
+		return fmt.Errorf("Already frozen")
+	}
+	
+	this.frozen = true
+	this.mutex.Unlock()
+
+	this.freeze.Lock()
+	
+	return nil
+}
+
+func (this *BuildState) Unfreeze() error {
+	if !this.frozen {
+		return fmt.Errorf("Not currently frozen")
+	}
+	this.freeze.Unlock()
+	this.frozen = false
+	return nil
+}
+
 
 /*
    DoneBuilding signals that the building process has finished and releases the
@@ -91,7 +125,11 @@ func (this *BuildState) Stop() bool {
 		return false
 	}
 	this.stopMux.RLock()
+	this.freeze.RLock()
+
 	defer this.stopMux.RUnlock()
+	defer this.freeze.RUnlock()
+
 	return this.stopping
 }
 
