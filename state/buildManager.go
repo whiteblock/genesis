@@ -21,7 +21,7 @@ func cleanBuildStates(servers []int) {
 		if buildStates[i].Done() {
 			needsToDie := false
 			for _, serverId1 := range buildStates[i].Servers { //Check if the build actually needs to be removed.
-				for _, serverId2 := range servers{
+				for _, serverId2 := range servers {
 					if serverId1 == serverId2 {
 						needsToDie = true
 					}

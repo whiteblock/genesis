@@ -8,6 +8,7 @@ import (
 	"log"
 	"sync"
 	"encoding/json"
+	"io/ioutil"
 )
 //This code is full of potential race conditons but these race conditons are extremely rare 
 /*
@@ -36,7 +37,9 @@ type BuildState struct {
 
 	breakpoints			[]float64 //must be in ascending order
 	progressIncrement 	float64
+	externExtras		map[string]interface{}//will be exported
 	extras				map[string]interface{}
+	files				[]string
 
 	Servers          	[]int
 	BuildId          	string
@@ -54,6 +57,7 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	
 	out.breakpoints = []float64{}
 	out.progressIncrement = 0.0
+	out.externExtras = map[string]interface{}{}
 	out.extras = map[string]interface{}{}
 
 	out.Servers = servers
@@ -214,7 +218,7 @@ func (this *BuildState) GetError() error {
 	Insert a value into the state store, currently only supports string
 	and []string on the other side
  */
-func (this *BuildState) Set(key string,value interface{}) error {
+func (this *BuildState) SetExt(key string,value interface{}) error {
 	switch value.(type) {
 		case string:
 		case []string:
@@ -223,21 +227,45 @@ func (this *BuildState) Set(key string,value interface{}) error {
 	}
 	this.extraMux.Lock()
 	defer this.extraMux.Unlock()
-	this.extras[key] = value
+	this.externExtras[key] = value
 	return nil
 }
 
-func (this *BuildState) Get(key string) (interface{},bool) {
+func (this *BuildState) GetExt(key string) (interface{},bool) {
 	this.extraMux.RLock()
 	defer this.extraMux.RUnlock()
-	res,ok := this.extras[key]
+	res,ok := this.externExtras[key]
 	return res,ok
 }
 
-func (this *BuildState) GetExtras() ([]byte,error) {
+func (this *BuildState) GetExtExtras() ([]byte,error) {
 	this.extraMux.RLock()
 	defer this.extraMux.RUnlock()
-	return json.Marshal(this.extras)
+	return json.Marshal(this.externExtras)
+}
+
+func (this *BuildState) Set(key string,value interface{}){
+	this.extraMux.Lock()
+	defer this.extraMux.Unlock()
+	this.extras[key] = value
+}
+
+func (this *BuildState) Get(key string) (interface{},bool){
+	this.extraMux.RLock()
+	defer this.extraMux.RUnlock()
+	out,ok := this.externExtras[key]
+	return out,ok
+}
+
+func (this *BuildState) GetExtras() map[string]interface{} {
+	return this.extras
+}
+
+func (this* BuildState) Write(file string,data string) error {
+	this.mutex.RLock()
+	this.files = append(this.files,file)
+	this.mutex.RUnlock()
+	return ioutil.WriteFile(file,[]byte(data),0664)
 }
 
 /*

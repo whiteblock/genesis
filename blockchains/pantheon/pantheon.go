@@ -249,13 +249,13 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
         return nil,err
     }
 
-    err = buildState.Set("signer_ip",serviceIps["geth"])
+    err = buildState.SetExt("signer_ip",serviceIps["geth"])
     if err != nil {
         log.Println(err)
         return nil,err
     }
 
-    err = buildState.Set("accounts",addresses)
+    err = buildState.SetExt("accounts",addresses)
     if err != nil {
         log.Println(err)
         return nil,err

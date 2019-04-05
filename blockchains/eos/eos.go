@@ -37,7 +37,7 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
         return nil, fmt.Errorf("Cannot build eos with only one BP")
     }
     eosconf.BlockProducers++
-    err = buildState.Set("accounts",fmt.Sprintf("%d",eosconf.UserAccounts))
+    err = buildState.SetExt("accounts",fmt.Sprintf("%d",eosconf.UserAccounts))
     if err != nil {
         log.Println(err)
         return nil,err

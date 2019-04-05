@@ -94,7 +94,7 @@ func getBlockChainState(w http.ResponseWriter,r *http.Request){
         http.Error(w,err.Error(),404)
         return
     }
-    out,err := buildState.GetExtras()
+    out,err := buildState.GetExtExtras()
     if err != nil {
         http.Error(w,err.Error(),500)
         return
