@@ -157,5 +157,16 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util
 	}
 	sem.Release(conf.ThreadLimit)
 
+	//Check if we should freeze 
+	if buildConf.Extras != nil {
+		shouldFreezeI,ok := buildConf.Extras["freezeAfterInfrastructure"]
+		if ok {
+			shouldFreeze, ok := shouldFreezeI.(bool)
+			if ok && shouldFreeze {
+				buildState.Freeze()
+			}
+		}
+	} 
+
 	return servers, buildState.GetError()
 }

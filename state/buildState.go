@@ -23,19 +23,19 @@ type CustomError struct {
    Packages the build state nicely into an object
 */
 type BuildState struct {
-	mutex            	sync.RWMutex
 	errMutex          	sync.RWMutex
-	stopMux           	sync.RWMutex
 	extraMux			sync.RWMutex
-
 	freeze				sync.RWMutex
-	frozen				bool
-
-	breakpoints			[]float64
-
+	mutex            	sync.RWMutex
+	stopMux           	sync.RWMutex
+	freezeMux			sync.RWMutex
+	
 	building          	bool
-	progressIncrement 	float64
+	frozen				bool
 	stopping          	bool
+
+	breakpoints			[]float64 //must be in ascending order
+	progressIncrement 	float64
 	extras				map[string]interface{}
 
 	Servers          	[]int
@@ -48,10 +48,12 @@ type BuildState struct {
 func NewBuildState(servers []int, buildId string) *BuildState {
 	out := new(BuildState)
 
-	out.frozen = false
 	out.building = true
-	out.progressIncrement = 0.00
+	out.frozen = false
 	out.stopping = false
+	
+	out.breakpoints = []float64{}
+	out.progressIncrement = 0.0
 	out.extras = map[string]interface{}{}
 
 	out.Servers = servers
@@ -64,10 +66,15 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 
 
 func (this *BuildState) Freeze() error {
+	log.Println("Freezing the build")
 	this.mutex.Lock()
 	if this.frozen {
 		this.mutex.Unlock()
 		return fmt.Errorf("Already frozen")
+	}
+	if this.stopping {
+		this.mutex.Unlock()
+		return fmt.Errorf("The build is terminating")
 	}
 	
 	this.frozen = true
@@ -79,6 +86,9 @@ func (this *BuildState) Freeze() error {
 }
 
 func (this *BuildState) Unfreeze() error {
+	log.Println("Thawing the build")
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
 	if !this.frozen {
 		return fmt.Errorf("Not currently frozen")
 	}
@@ -86,6 +96,21 @@ func (this *BuildState) Unfreeze() error {
 	this.frozen = false
 	return nil
 }
+
+func (this *BuildState) AddFreezePoint(freezePoint float64) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
+	i := 0
+	for ; i < len(this.breakpoints); i++ {//find insertion index
+		if this.breakpoints[i] > freezePoint {
+			break
+		}else if this.breakpoints[i] == freezePoint {
+			return //no duplicates
+		}
+	}
+	this.breakpoints = append(append(this.breakpoints[:i],freezePoint),this.breakpoints[i:]...)
+} 
 
 
 /*
@@ -124,12 +149,26 @@ func (this *BuildState) Stop() bool {
 	if this == nil { //golang allows for nil.Stop() to be a thing...
 		return false
 	}
-	this.stopMux.RLock()
+	
 	this.freeze.RLock()
+	this.freeze.RUnlock()
+	
+	if len(this.breakpoints) > 0 { //Don't take the lock overhead if there aren't any breakpoints
+		this.freezeMux.Lock()
+		if this.breakpoints[0] >= this.BuildingProgress {
+			if len(this.breakpoints) > 1 {
+				this.breakpoints = this.breakpoints[1:]
+			}else{
+				this.breakpoints = []float64{}
+			}
+			this.Freeze()
+			this.freeze.RLock()
+		}
+		this.freezeMux.Unlock()
+	}
 
+	this.stopMux.RLock()
 	defer this.stopMux.RUnlock()
-	defer this.freeze.RUnlock()
-
 	return this.stopping
 }
 
@@ -140,6 +179,7 @@ func (this *BuildState) Stop() bool {
 func (this *BuildState) SignalStop() error {
 	this.stopMux.Lock()
 	defer this.stopMux.Unlock()
+	this.Unfreeze()
 	this.mutex.RLock()
 	defer this.mutex.RUnlock()
 
