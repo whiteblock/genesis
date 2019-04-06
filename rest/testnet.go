@@ -186,7 +186,7 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
         http.Error(w,err.Error(),500)
         return
     }
-    cmdgexCmd := fmt.Sprintf("pgrep -n '%s'",strings.Split(cmd.Cmdline," ")[0])
+    cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep|  awk '{print $2}'| tail -n 1",strings.Split(cmd.Cmdline," ")[0])
     pid,err := client.DockerExec(cmd.Node,cmdgexCmd)
     if err != nil {
         log.Println(err)
@@ -202,7 +202,7 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
     }
 
     for {
-        _,err = client.DockerExec(cmd.Node,cmdgexCmd)
+        _,err = client.DockerExec(cmd.Node,fmt.Sprintf("ps aux | grep '%s' | grep -v grep",strings.Split(cmd.Cmdline," ")[0]))
         if err != nil {
             break
         }
