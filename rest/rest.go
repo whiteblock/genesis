@@ -81,6 +81,9 @@ func StartServer() {
 	router.HandleFunc("/nodes/{id}/{num}",delNodes).Methods("DELETE")
 	router.HandleFunc("/nodes/{id}/{num}/",delNodes).Methods("DELETE")
 
+	router.HandleFunc("/nodes/restart/{id}/{num}",restartNode).Methods("POST")
+	router.HandleFunc("/nodes/restart/{id}/{num}/",restartNode).Methods("POST")
+
 	router.HandleFunc("/build/{id}",stopBuild).Methods("DELETE")
 	router.HandleFunc("/build/{id}/",stopBuild).Methods("DELETE")
 

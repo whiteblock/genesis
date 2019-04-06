@@ -1,6 +1,8 @@
 package rest
 
 import(
+    "fmt"
+    "strings"
     "log"
     "net/http"
     "encoding/json"
@@ -10,6 +12,7 @@ import(
     state "../state"
     db "../db"
     testnet "../testnet"
+    util "../util"
 )
 
 
@@ -154,4 +157,62 @@ func delNodes(w http.ResponseWriter, r *http.Request) {
     }
     w.Write([]byte("Deleting the nodes"))
     go testnet.DelNodes(num,testnetId)
+}
+
+
+func restartNode(w http.ResponseWriter, r *http.Request) {
+    params := mux.Vars(r)
+    testnetId := params["id"]
+    node := params["num"]
+    log.Printf("%s %s\n",testnetId,node)
+    bs,err := state.GetBuildStateById(testnetId)
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),404)
+        return
+    }
+    cmdRaw,ok := bs.Get(node)
+    fmt.Printf("%#v\n",bs.GetExtras())
+    if !ok {
+        log.Printf("Node %s not found",node)
+        http.Error(w,fmt.Sprintf("Node %s not found",node),404)
+        return
+    }
+    cmd := cmdRaw.(util.Command)
+
+    client,err := status.GetClient(cmd.ServerId)
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),500)
+        return
+    }
+    cmdgexCmd := fmt.Sprintf("pgrep -n '%s'",strings.Split(cmd.Cmdline," ")[0])
+    pid,err := client.DockerExec(cmd.Node,cmdgexCmd)
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),500)
+        return
+    }
+    res,err := client.DockerExec(cmd.Node,fmt.Sprintf("kill -INT %s",pid))
+    if err != nil {
+        log.Println(err)
+        log.Println(res)
+        http.Error(w,err.Error(),500)
+        return
+    }
+
+    for {
+        _,err = client.DockerExec(cmd.Node,cmdgexCmd)
+        if err != nil {
+            break
+        }
+    }
+    err = client.DockerExecdLogAppend(cmd.Node,cmd.Cmdline)
+    if err != nil {
+        log.Println(err)
+        http.Error(w,err.Error(),500)
+        return
+    }
+    w.Write([]byte("Success"))
+
 }

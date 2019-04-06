@@ -122,6 +122,7 @@ func (this *BuildState) AddFreezePoint(freezePoint float64) {
    build lock.
 */
 func (this *BuildState) DoneBuilding() {
+	//TODO add file cleanup
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	this.BuildingProgress = 100.00
@@ -253,7 +254,7 @@ func (this *BuildState) Set(key string,value interface{}){
 func (this *BuildState) Get(key string) (interface{},bool){
 	this.extraMux.RLock()
 	defer this.extraMux.RUnlock()
-	out,ok := this.externExtras[key]
+	out,ok := this.extras[key]
 	return out,ok
 }
 

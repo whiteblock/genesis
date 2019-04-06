@@ -10,6 +10,12 @@ type KeyPair struct {
     PublicKey   string  `json:"publicKey"`
 }
 
+type Command struct {
+    Cmdline     string
+    Node        int
+    ServerId    int
+}
+
 /*
     Service represents a service for a blockchain. 
     All env variables will be passed to the container.
