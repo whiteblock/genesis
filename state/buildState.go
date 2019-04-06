@@ -4,13 +4,14 @@
 package state
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"sync"
-	"encoding/json"
-	"io/ioutil"
 )
-//This code is full of potential race conditons but these race conditons are extremely rare 
+
+//This code is full of potential race conditons but these race conditons are extremely rare
 /*
    CustomError is a custom wrapper for a go error, which
    has What containing error.Error()
@@ -24,28 +25,28 @@ type CustomError struct {
    Packages the build state nicely into an object
 */
 type BuildState struct {
-	errMutex          	sync.RWMutex
-	extraMux			sync.RWMutex
-	freeze				sync.RWMutex
-	mutex            	sync.RWMutex
-	stopMux           	sync.RWMutex
-	freezeMux			sync.RWMutex
-	
-	building          	bool
-	Frozen				bool
-	stopping          	bool
+	errMutex  sync.RWMutex
+	extraMux  sync.RWMutex
+	freeze    sync.RWMutex
+	mutex     sync.RWMutex
+	stopMux   sync.RWMutex
+	freezeMux sync.RWMutex
 
-	breakpoints			[]float64 //must be in ascending order
-	progressIncrement 	float64
-	externExtras		map[string]interface{}//will be exported
-	extras				map[string]interface{}
-	files				[]string
+	building bool
+	Frozen   bool
+	stopping bool
 
-	Servers          	[]int
-	BuildId          	string
-	BuildingProgress 	float64
-	BuildError       	CustomError
-	BuildStage       	string
+	breakpoints       []float64 //must be in ascending order
+	progressIncrement float64
+	externExtras      map[string]interface{} //will be exported
+	extras            map[string]interface{}
+	files             []string
+
+	Servers          []int
+	BuildId          string
+	BuildingProgress float64
+	BuildError       CustomError
+	BuildStage       string
 }
 
 func NewBuildState(servers []int, buildId string) *BuildState {
@@ -54,7 +55,7 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	out.building = true
 	out.Frozen = false
 	out.stopping = false
-	
+
 	out.breakpoints = []float64{}
 	out.progressIncrement = 0.0
 	out.externExtras = map[string]interface{}{}
@@ -68,7 +69,6 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	return out
 }
 
-
 func (this *BuildState) Freeze() error {
 	log.Println("Freezing the build")
 	this.mutex.Lock()
@@ -80,12 +80,12 @@ func (this *BuildState) Freeze() error {
 		this.mutex.Unlock()
 		return fmt.Errorf("The build is terminating")
 	}
-	
+
 	this.Frozen = true
 	this.mutex.Unlock()
 
 	this.freeze.Lock()
-	
+
 	return nil
 }
 
@@ -106,16 +106,15 @@ func (this *BuildState) AddFreezePoint(freezePoint float64) {
 	defer this.mutex.Unlock()
 
 	i := 0
-	for ; i < len(this.breakpoints); i++ {//find insertion index
+	for ; i < len(this.breakpoints); i++ { //find insertion index
 		if this.breakpoints[i] > freezePoint {
 			break
-		}else if this.breakpoints[i] == freezePoint {
+		} else if this.breakpoints[i] == freezePoint {
 			return //no duplicates
 		}
 	}
-	this.breakpoints = append(append(this.breakpoints[:i],freezePoint),this.breakpoints[i:]...)
-} 
-
+	this.breakpoints = append(append(this.breakpoints[:i], freezePoint), this.breakpoints[i:]...)
+}
 
 /*
    DoneBuilding signals that the building process has finished and releases the
@@ -154,16 +153,16 @@ func (this *BuildState) Stop() bool {
 	if this == nil { //golang allows for nil.Stop() to be a thing...
 		return false
 	}
-	
+
 	this.freeze.RLock()
 	this.freeze.RUnlock()
-	
+
 	if len(this.breakpoints) > 0 { //Don't take the lock overhead if there aren't any breakpoints
 		this.freezeMux.Lock()
 		if this.breakpoints[0] >= this.BuildingProgress {
 			if len(this.breakpoints) > 1 {
 				this.breakpoints = this.breakpoints[1:]
-			}else{
+			} else {
 				this.breakpoints = []float64{}
 			}
 			this.Freeze()
@@ -218,13 +217,13 @@ func (this *BuildState) GetError() error {
 /*
 	Insert a value into the state store, currently only supports string
 	and []string on the other side
- */
-func (this *BuildState) SetExt(key string,value interface{}) error {
+*/
+func (this *BuildState) SetExt(key string, value interface{}) error {
 	switch value.(type) {
-		case string:
-		case []string:
-		default:
-			return fmt.Errorf("Unsupported type for value")
+	case string:
+	case []string:
+	default:
+		return fmt.Errorf("Unsupported type for value")
 	}
 	this.extraMux.Lock()
 	defer this.extraMux.Unlock()
@@ -232,41 +231,41 @@ func (this *BuildState) SetExt(key string,value interface{}) error {
 	return nil
 }
 
-func (this *BuildState) GetExt(key string) (interface{},bool) {
+func (this *BuildState) GetExt(key string) (interface{}, bool) {
 	this.extraMux.RLock()
 	defer this.extraMux.RUnlock()
-	res,ok := this.externExtras[key]
-	return res,ok
+	res, ok := this.externExtras[key]
+	return res, ok
 }
 
-func (this *BuildState) GetExtExtras() ([]byte,error) {
+func (this *BuildState) GetExtExtras() ([]byte, error) {
 	this.extraMux.RLock()
 	defer this.extraMux.RUnlock()
 	return json.Marshal(this.externExtras)
 }
 
-func (this *BuildState) Set(key string,value interface{}){
+func (this *BuildState) Set(key string, value interface{}) {
 	this.extraMux.Lock()
 	defer this.extraMux.Unlock()
 	this.extras[key] = value
 }
 
-func (this *BuildState) Get(key string) (interface{},bool){
+func (this *BuildState) Get(key string) (interface{}, bool) {
 	this.extraMux.RLock()
 	defer this.extraMux.RUnlock()
-	out,ok := this.extras[key]
-	return out,ok
+	out, ok := this.extras[key]
+	return out, ok
 }
 
 func (this *BuildState) GetExtras() map[string]interface{} {
 	return this.extras
 }
 
-func (this* BuildState) Write(file string,data string) error {
+func (this *BuildState) Write(file string, data string) error {
 	this.mutex.RLock()
-	this.files = append(this.files,file)
+	this.files = append(this.files, file)
 	this.mutex.RUnlock()
-	return ioutil.WriteFile(file,[]byte(data),0664)
+	return ioutil.WriteFile(file, []byte(data), 0664)
 }
 
 /*

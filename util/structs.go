@@ -1,34 +1,33 @@
 package util
 
-
 /****Standard Data Structures****/
 /*
-    KeyPair represents a cryptographic key pair
- */
+   KeyPair represents a cryptographic key pair
+*/
 type KeyPair struct {
-    PrivateKey  string  `json:"privateKey"`
-    PublicKey   string  `json:"publicKey"`
+	PrivateKey string `json:"privateKey"`
+	PublicKey  string `json:"publicKey"`
 }
 
 type Command struct {
-    Cmdline     string
-    Node        int
-    ServerId    int
+	Cmdline  string
+	Node     int
+	ServerId int
 }
 
 /*
-    Service represents a service for a blockchain. 
-    All env variables will be passed to the container.
- */
+   Service represents a service for a blockchain.
+   All env variables will be passed to the container.
+*/
 type Service struct {
-    Name    string              `json:"name"`
-    Image   string              `json:"image"`
-    Env     map[string]string   `json:"env"`
-    Network string              `json:"network"`
+	Name    string            `json:"name"`
+	Image   string            `json:"image"`
+	Env     map[string]string `json:"env"`
+	Network string            `json:"network"`
 }
 
 type EndPoint struct {
-    Url     string  `json:"url"`
-    User    string  `json:"user"`
-    Pass    string  `json:"pass"`
+	Url  string `json:"url"`
+	User string `json:"user"`
+	Pass string `json:"pass"`
 }
