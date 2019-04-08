@@ -123,7 +123,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
             node++
         }
     }
-
+    
     err = sem.Acquire(ctx,conf.ThreadLimit)
     if err != nil{
         log.Println(err)
@@ -134,7 +134,21 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
     if !buildState.ErrorFree(){
         return nil,buildState.GetError()
     }
-
+    sem.Acquire(ctx,1)
+    go func(){
+        defer sem.Release(1)
+        /*
+            Set up a geth node, which is not part of the blockchain network,
+            to sign the transactions in place of the pantheon client. The pantheon
+            client does not support wallet management, so this acts as an easy work around.
+         */
+        err := startGeth(clients[0],panconf,addresses,privKeys,buildState)
+        if err != nil {
+            log.Println(err)
+            buildState.ReportError(err)
+            return
+        }
+    }()
         /* Create Genesis File */
     buildState.SetBuildStage("Generating Genesis File")
     err = createGenesisfile(panconf,details,addresses)
@@ -222,85 +236,41 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
     if !buildState.ErrorFree(){
         return nil,buildState.GetError()
     }
-
+    
     /* Start the nodes */
     buildState.SetBuildStage("Starting Pantheon")
     httpPort := 8545
     for i, server := range servers {
         for localId, _ := range server.Ips {
-            pantheonCmd := fmt.Sprintf(
-                `pantheon --data-path /pantheon/data --genesis-file=/pantheon/genesis/genesis.json --rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,WEB3" ` +
+            sem.Acquire(ctx,1)
+            go func(i int,localId int){
+                defer sem.Release(1)
+                err := clients[i].DockerExecdLog(localId, fmt.Sprintf(
+                    `pantheon --data-path /pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
+                    `--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,WEB3" ` +
                     ` --p2p-port=%d --rpc-http-port=%d --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"`,
-                p2pPort,
-                httpPort,
-                )
-            err := clients[i].DockerExecdLog(localId, pantheonCmd)
-            if err != nil {
-                log.Println(err)
-                return nil, err
-            }
-            buildState.IncrementBuildProgress()
+                        p2pPort,
+                        httpPort))
+                if err != nil {
+                    log.Println(err)
+                    buildState.ReportError(err)
+                    return
+                }
+                buildState.IncrementBuildProgress()
+            }(i,localId)
         }
     }
-
-    serviceIps,err := util.GetServiceIps(GetServices())
-    if err != nil {
+    err = sem.Acquire(ctx,conf.ThreadLimit)
+    if err != nil{
         log.Println(err)
         return nil,err
     }
+    sem.Release(conf.ThreadLimit)
 
-    err = buildState.SetExt("signer_ip",serviceIps["geth"])
-    if err != nil {
-        log.Println(err)
-        return nil,err
+    if !buildState.ErrorFree(){
+        return nil,buildState.GetError()
     }
-
-    err = buildState.SetExt("accounts",addresses)
-    if err != nil {
-        log.Println(err)
-        return nil,err
-    }
-
-    //Set up a geth node as a service to sign transactions
-    clients[0].Run(`docker exec wb_service0 mkdir /geth/`)
     
-    unlock := ""
-    for i,privKey := range privKeys {
-       
-        res,err := clients[0].Run(`docker exec wb_service0 bash -c 'echo "second" >> /geth/passwd'`)
-        if err != nil {
-            log.Println(res)
-            log.Println(err)
-            return nil,err
-        }
-        res,err = clients[0].Run(fmt.Sprintf(`docker exec wb_service0 bash -c 'echo -n "%s" > /geth/pk%d' `,privKey,i))
-        if err != nil {
-            log.Println(res)
-            log.Println(err)
-            return nil,err
-        }
-
-        res,err = clients[0].Run(fmt.Sprintf(`docker exec wb_service0 geth --datadir /geth/ account import --password /geth/passwd /geth/pk%d`,i))
-        if err != nil {
-            log.Println(res)
-            log.Println(err)
-            return nil,err
-        }
-
-        if i != 0 {
-            unlock += ","
-        }
-        unlock += "0x" + addresses[i]
-        
-    }
-    res,err := clients[0].Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
-                            ` --rpcapi "admin,web3,db,eth,net,personal" --rpccorsdomain "0.0.0.0" --nodiscover --unlock="%s"`+
-                            ` --password /geth/passwd --networkid %d`,unlock,panconf.NetworkId))
-    if err != nil {
-        log.Println(res)
-        log.Println(err)
-        return nil,err
-    }
     return privKeys, nil
 }
 
@@ -343,4 +313,66 @@ func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address [
 
 func createStaticNodesFile(list string) error {
     return util.Write("static-nodes.json", list)
+}
+
+func startGeth(client *util.SshClient,panconf *PanConf,addresses []string,privKeys []string,buildState *state.BuildState) error {
+    serviceIps,err := util.GetServiceIps(GetServices())
+    if err != nil {
+        log.Println(err)
+        return err
+    }
+
+    err = buildState.SetExt("signer_ip",serviceIps["geth"])
+    if err != nil {
+        log.Println(err)
+        return err
+    }
+
+    err = buildState.SetExt("accounts",addresses)
+    if err != nil {
+        log.Println(err)
+        return err
+    }
+
+    //Set up a geth node as a service to sign transactions
+    client.Run(`docker exec wb_service0 mkdir /geth/`)
+    
+    unlock := ""
+    for i,privKey := range privKeys {
+       
+        res,err := client.Run(`docker exec wb_service0 bash -c 'echo "second" >> /geth/passwd'`)
+        if err != nil {
+            log.Println(res)
+            log.Println(err)
+            return err
+        }
+        res,err = client.Run(fmt.Sprintf(`docker exec wb_service0 bash -c 'echo -n "%s" > /geth/pk%d' `,privKey,i))
+        if err != nil {
+            log.Println(res)
+            log.Println(err)
+            return err
+        }
+
+        res,err = client.Run(fmt.Sprintf(`docker exec wb_service0 geth --datadir /geth/ account import --password /geth/passwd /geth/pk%d`,i))
+        if err != nil {
+            log.Println(res)
+            log.Println(err)
+            return err
+        }
+
+        if i != 0 {
+            unlock += ","
+        }
+        unlock += "0x" + addresses[i]
+        
+    }
+    res,err := client.Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
+                            ` --rpcapi "admin,web3,db,eth,net,personal" --rpccorsdomain "0.0.0.0" --nodiscover --unlock="%s"`+
+                            ` --password /geth/passwd --networkid %d`,unlock,panconf.NetworkId))
+    if err != nil {
+        log.Println(res)
+        log.Println(err)
+        return err
+    }
+    return nil
 }
