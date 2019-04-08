@@ -64,7 +64,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			buildState.IncrementBuildProgress()
 
 			// potential error if application reads the identity as a string literal
-			identity := fmt.Sprintf("0x0%d", j)
+			identity := fmt.Sprintf("0x0%x", j)
 
 			artemisNodeConfig,err := makeNodeConfig(artemisConf, identity, peers, details.Nodes, details.Params) 
 			if err != nil {
