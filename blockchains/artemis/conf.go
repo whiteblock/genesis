@@ -47,7 +47,7 @@ func GetServices() []util.Service {
 	return nil
 }
 
-func makeNodeConfig(artemisConf ArtemisConf, identity string, peers string, numNodes int, numValidators map[string]interface{}) (string,error){
+func makeNodeConfig(artemisConf ArtemisConf, identity string, peers string, numNodes int, params map[string]interface{}) (string,error){
 
 	artConf := map[string]interface{}(artemisConf)
 	artConf["identity"] = identity
@@ -56,12 +56,12 @@ func makeNodeConfig(artemisConf ArtemisConf, identity string, peers string, numN
 	filler["numNodes"] = fmt.Sprintf("%d",numNodes)
 
 	var validators int64
-	err := util.GetJSONInt64(numValidators, "validators", &validators)
+	err := util.GetJSONInt64(params, "validators", &validators)
 	if err != nil {
 		return "", err
 	}
 
-	filler["numValidators"] = fmt.Sprintf("%d",validators)
+	filler["validators"] = fmt.Sprintf("%d",validators)
     dat, err := ioutil.ReadFile("./resources/artemis/artemis-config.toml.mustache")
     if err != nil {
         return "",err

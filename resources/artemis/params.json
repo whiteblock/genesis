@@ -1,4 +1,5 @@
 [
+    ["validators","int"],
     ["networkMode","string"],
     ["shardCount","int"],
     ["targetCommitteeSize","int"],
