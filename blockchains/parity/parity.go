@@ -40,11 +40,6 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 
 	buildState.SetBuildSteps(8 + (10 * details.Nodes))
-	defer func() {
-		fmt.Printf("Cleaning up...")
-		util.Rm("tmp")
-		fmt.Printf("done\n")
-	}()
 
 	//Make the data directories
 	for i, server := range servers {
@@ -65,17 +60,16 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		for i := 1; i <= details.Nodes; i++ {
 			data += "second\n"
 		}
-		err = util.Write("./passwd", data)
+		err = buildState.Write("passwd", data)
 		if err != nil {
 			log.Println(err)
 			return nil, err
 		}
 	}
 	buildState.IncrementBuildProgress()
-	defer util.Rm("./passwd")
 	/**Copy over the password file**/
 	for i, server := range servers {
-		err = clients[i].Scp("./passwd", "/home/appo/passwd")
+		err = clients[i].Scp("passwd", "/home/appo/passwd")
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -129,14 +123,13 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			return nil, err
 		}
 
-		err = util.Write("genesis.json", gethConf)
+		err = buildState.Write("genesis.json", gethConf)
 		if err != nil {
 			log.Println(err)
 			return nil, err
 		}
-		defer util.Rm("genesis.json")
 
-		err = clients[0].Scp("./genesis.json", "/home/appo/genesis.json")
+		err = clients[0].Scp("genesis.json", "/home/appo/genesis.json")
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -218,12 +211,11 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		return nil, err
 	}
 
-	err = util.Write("./spec.json", spec)
+	err = buildState.Write("spec.json", spec)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	defer util.Rm("./spec.json")
 
 	//create config file
 	configToml, err := BuildConfig(pconf, details.Files, wallets, "/parity/passwd")
@@ -232,24 +224,23 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		return nil, err
 	}
 
-	err = util.Write("./config.toml", configToml)
+	err = buildState.Write("config.toml", configToml)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	defer util.Rm("./config.toml")
 
 	//Copy over the config file, spec file, and the accounts
 	node := 0
 	for i, server := range servers {
-		err = clients[i].Scp("./config.toml", "/home/appo/config.toml")
+		err = clients[i].Scp("config.toml", "/home/appo/config.toml")
 		if err != nil {
 			log.Println(err)
 			return nil, err
 		}
 		defer clients[i].Run("rm /home/appo/config.toml")
 
-		err = clients[i].Scp("./spec.json", "/home/appo/spec.json")
+		err = clients[i].Scp("spec.json", "/home/appo/spec.json")
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -424,17 +415,4 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 func Add(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
-}
-
-func MakeFakeAccounts(accs int) []string {
-	out := make([]string, accs)
-	for i := 1; i <= accs; i++ {
-		acc := fmt.Sprintf("%X", i)
-		for j := len(acc); j < 40; j++ {
-			acc = "0" + acc
-		}
-		acc = "0x" + acc
-		out[i-1] = acc
-	}
-	return out
 }

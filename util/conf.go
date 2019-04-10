@@ -10,33 +10,33 @@ import (
 )
 
 type Config struct {
-	SshUser     		string 	`json:"ssh-user"`
-	SshPassword 		string 	`json:"ssh-password"`
-	RsaKey      		string 	`json:"rsa-key"`
-	RsaUser     		string 	`json:"rsa-user"`
-	ServerBits  		uint32 	`json:"server-bits"` 
-	ClusterBits 		uint32 	`json:"cluster-bits"`
-	NodeBits    		uint32 	`json:"node-bits"`
-	IPPrefix    		uint32 	`json:"ip-prefix"`
-	Listen      		string 	`json:"listen"`
-	Verbose     		bool   	`json:"verbose"`
-	ThreadLimit 		int64  	`json:"thread-limit"`
-	DockerOutputFile   	string 	`json:"docker-output-file"`
-	Influx             	string 	`json:"influx"`
-	InfluxUser         	string 	`json:"influx-user"`
-	InfluxPassword     	string 	`json:"influx-password"`
-	ServiceNetwork     	string 	`json:"service-network"`
-	ServiceNetworkName 	string 	`json:"service-network-name"`
-	NodePrefix         	string 	`json:"node-prefix"`
-	NodeNetworkPrefix  	string 	`json:"node-network-prefix"`
-	ServicePrefix      	string 	`json:"service-prefix"`
-	NodesPublicKey    	string 	`json:"nodes-public-key"`
-	NodesPrivateKey   	string 	`json:"nodes-private-key"`
-	HandleNodeSshKeys 	bool   	`json:"handle-node-ssh-keys"`
-	MaxNodes      		int     `json:"max-nodes"`
-	MaxNodeMemory 		string  `json:"max-node-memory"`
-	MaxNodeCpu    		float64 `json:"max-node-cpu"`
-	BridgePrefix  		string  `json:"bridge-prefix"`
+	SshUser            string  `json:"ssh-user"`
+	SshPassword        string  `json:"ssh-password"`
+	RsaKey             string  `json:"rsa-key"`
+	RsaUser            string  `json:"rsa-user"`
+	ServerBits         uint32  `json:"server-bits"`
+	ClusterBits        uint32  `json:"cluster-bits"`
+	NodeBits           uint32  `json:"node-bits"`
+	IPPrefix           uint32  `json:"ip-prefix"`
+	Listen             string  `json:"listen"`
+	Verbose            bool    `json:"verbose"`
+	ThreadLimit        int64   `json:"thread-limit"`
+	DockerOutputFile   string  `json:"docker-output-file"`
+	Influx             string  `json:"influx"`
+	InfluxUser         string  `json:"influx-user"`
+	InfluxPassword     string  `json:"influx-password"`
+	ServiceNetwork     string  `json:"service-network"`
+	ServiceNetworkName string  `json:"service-network-name"`
+	NodePrefix         string  `json:"node-prefix"`
+	NodeNetworkPrefix  string  `json:"node-network-prefix"`
+	ServicePrefix      string  `json:"service-prefix"`
+	NodesPublicKey     string  `json:"nodes-public-key"`
+	NodesPrivateKey    string  `json:"nodes-private-key"`
+	HandleNodeSshKeys  bool    `json:"handle-node-ssh-keys"`
+	MaxNodes           int     `json:"max-nodes"`
+	MaxNodeMemory      string  `json:"max-node-memory"`
+	MaxNodeCpu         float64 `json:"max-node-cpu"`
+	BridgePrefix       string  `json:"bridge-prefix"`
 }
 
 /*

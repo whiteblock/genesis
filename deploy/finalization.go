@@ -54,7 +54,7 @@ func copyOverSshKeys(servers []db.Server, clients []*util.SshClient, buildState 
 
 	for i, server := range servers {
 		clients[i].Run("rm /home/appo/node_key")
-		err = clients[i].Scp(conf.NodesPrivateKey, "/home/appo/node_key")
+		err = clients[i].InternalScp(conf.NodesPrivateKey, "/home/appo/node_key")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -111,7 +111,7 @@ func copyOverSshKeysToNewNodes(servers []db.Server, clients []*util.SshClient, n
 	for i, server := range servers {
 		nodes := len(newNodes[server.Id])
 		clients[i].Run("rm /home/appo/node_key")
-		err = clients[i].Scp(conf.NodesPrivateKey, "/home/appo/node_key")
+		err = clients[i].InternalScp(conf.NodesPrivateKey, "/home/appo/node_key")
 		if err != nil {
 			log.Println(err)
 			return err

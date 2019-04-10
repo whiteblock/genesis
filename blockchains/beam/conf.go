@@ -1,9 +1,9 @@
 package beam
 
 import (
-	"io/ioutil"
-	"github.com/Whiteblock/mustache"
 	util "../../util"
+	"github.com/Whiteblock/mustache"
+	"io/ioutil"
 )
 
 type BeamConf struct {
@@ -15,17 +15,17 @@ type BeamConf struct {
 func NewConf(data map[string]interface{}) (*BeamConf, error) {
 	out := new(BeamConf)
 
-	err := util.GetJSONInt64(data, "validators",&out.Validators)
+	err := util.GetJSONInt64(data, "validators", &out.Validators)
 	if err != nil {
 		return nil, err
 	}
 
-	err = util.GetJSONInt64(data, "txNodes",&out.TxNodes)
+	err = util.GetJSONInt64(data, "txNodes", &out.TxNodes)
 	if err != nil {
 		return nil, err
 	}
 
-	err = util.GetJSONInt64(data, "nilNodes",&out.NilNodes)
+	err = util.GetJSONInt64(data, "nilNodes", &out.NilNodes)
 	if err != nil {
 		return nil, err
 	}
@@ -33,36 +33,35 @@ func NewConf(data map[string]interface{}) (*BeamConf, error) {
 }
 
 func GetParams() string {
-    dat, err := ioutil.ReadFile("./resources/beam/params.json")
-    if err != nil {
-        panic(err)//Missing required files is a fatal error
-    }
-    return string(dat)
+	dat, err := ioutil.ReadFile("./resources/beam/params.json")
+	if err != nil {
+		panic(err) //Missing required files is a fatal error
+	}
+	return string(dat)
 }
 
 func GetDefaults() string {
-    dat, err := ioutil.ReadFile("./resources/beam/defaults.json")
-    if err != nil {
-        panic(err)//Missing required files is a fatal error
-    }
-    return string(dat)
+	dat, err := ioutil.ReadFile("./resources/beam/defaults.json")
+	if err != nil {
+		panic(err) //Missing required files is a fatal error
+	}
+	return string(dat)
 }
 
 func GetServices() []util.Service {
 	return nil
 }
 
-func makeNodeConfig(bconf *BeamConf,keyOwner string,keyMine string) (string,error){
+func makeNodeConfig(bconf *BeamConf, keyOwner string, keyMine string) (string, error) {
 
-    filler := util.ConvertToStringMap(map[string]interface{}{
-        "keyOwner":keyOwner,
-        "keyMine":keyMine,
-        
-    })
-    dat, err := ioutil.ReadFile("./resources/beam/beam-node.cfg.mustache")
-    if err != nil {
-        return "",err
-    }
-    data, err := mustache.Render(string(dat), filler)
-    return data,err
+	filler := util.ConvertToStringMap(map[string]interface{}{
+		"keyOwner": keyOwner,
+		"keyMine":  keyMine,
+	})
+	dat, err := ioutil.ReadFile("./resources/beam/beam-node.cfg.mustache")
+	if err != nil {
+		return "", err
+	}
+	data, err := mustache.Render(string(dat), filler)
+	return data, err
 }

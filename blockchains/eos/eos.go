@@ -101,7 +101,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		log.Println(err)
 		return nil, err
 	}
-	err = util.Write("genesis.json", genesis)
+	err = buildState.Write("genesis.json", genesis)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -111,7 +111,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	    log.Println(err)
 	    return nil,err
 	}*/
-	err = util.Write("config.ini", eosConfigIni)
+	err = buildState.Write("config.ini", eosConfigIni)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -181,13 +181,13 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			sem.Acquire(ctx, 1)
 			go func(i int, ips []string) {
 				defer sem.Release(1)
-				err := clients[i].Scp("./genesis.json", "/home/appo/genesis.json")
+				err := clients[i].Scp("genesis.json", "/home/appo/genesis.json")
 				if err != nil {
 					log.Println(err)
 					buildState.ReportError(err)
 					return
 				}
-				err = clients[i].Scp("./config.ini", "/home/appo/config.ini")
+				err = clients[i].Scp("config.ini", "/home/appo/config.ini")
 				if err != nil {
 					log.Println(err)
 					buildState.ReportError(err)
@@ -237,10 +237,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			return nil, buildState.GetError()
 		}
 	}
-	defer func() {
-		util.Rm("./genesis.json")
-		util.Rm("./config.ini")
-	}()
+
 	buildState.IncrementBuildProgress()
 	/**Step 2d**/
 	buildState.SetBuildStage("Starting EOS BIOS boot sequence")

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"sync"
 )
 
@@ -66,6 +67,12 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	out.BuildingProgress = 0.00
 	out.BuildError = CustomError{What: "", err: nil}
 	out.BuildStage = ""
+
+	err := os.MkdirAll("/tmp/"+buildId, 0755)
+	if err != nil {
+		panic(err) //Fatal error
+	}
+
 	return out
 }
 
@@ -128,6 +135,8 @@ func (this *BuildState) DoneBuilding() {
 	this.BuildStage = "Finished"
 	this.building = false
 	this.stopping = false
+
+	os.RemoveAll("/tmp/" + this.BuildId)
 }
 
 func (this *BuildState) Done() bool {
@@ -265,7 +274,7 @@ func (this *BuildState) Write(file string, data string) error {
 	this.mutex.RLock()
 	this.files = append(this.files, file)
 	this.mutex.RUnlock()
-	return ioutil.WriteFile(file, []byte(data), 0664)
+	return ioutil.WriteFile("/tmp/"+this.BuildId+"/"+file, []byte(data), 0664)
 }
 
 /*

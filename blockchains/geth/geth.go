@@ -51,17 +51,16 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		for i := 1; i <= details.Nodes; i++ {
 			data += "second\n"
 		}
-		err = util.Write("./passwd", data)
+		err = buildState.Write("passwd", data)
 		if err != nil {
 			log.Println(err)
 			return nil, err
 		}
 	}
-	defer util.Rm("./passwd")
 	buildState.SetBuildStage("Distributing secrets")
 	/**Copy over the password file**/
 	for i, server := range servers {
-		err = clients[i].Scp("./passwd", "/home/appo/passwd")
+		err = clients[i].Scp("passwd", "/home/appo/passwd")
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -157,18 +156,17 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Creating the genesis block")
-	err = createGenesisfile(ethconf, details, wallets)
+	err = createGenesisfile(ethconf, details, wallets, buildState)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	defer util.Rm("./CustomGenesis.json")
 
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Bootstrapping network")
 	node := 0
 	for i, server := range servers {
-		err = clients[i].Scp("./CustomGenesis.json", "/home/appo/CustomGenesis.json")
+		err = clients[i].Scp("CustomGenesis.json", "/home/appo/CustomGenesis.json")
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -273,8 +271,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		return nil, err
 	}
 
-	defer util.Rm("static-nodes.json")
-	err = util.Write("static-nodes.json", string(out))
+	err = buildState.Write("static-nodes.json", string(out))
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -284,12 +281,12 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	buildState.SetBuildStage("Starting geth")
 	node = 0
 	for i, server := range servers {
-		err = clients[i].Scp("./static-nodes.json", "/home/appo/static-nodes.json")
+		err = clients[i].Scp("static-nodes.json", "/home/appo/static-nodes.json")
 		if err != nil {
 			log.Println(err)
 			return nil, err
 		}
-
+		defer clients[i].Run("rm /home/appo/static-nodes.json")
 		for j, ip := range server.Ips {
 			sem.Acquire(ctx, 1)
 			fmt.Printf("-----------------------------  Starting NODE-%d  -----------------------------\n", node)
@@ -424,7 +421,7 @@ func MakeFakeAccounts(accs int) []string {
  * @param  []string wallets     The wallets to be allocated a balance
  */
 
-func createGenesisfile(ethconf *EthConf, details db.DeploymentDetails, wallets []string) error {
+func createGenesisfile(ethconf *EthConf, details db.DeploymentDetails, wallets []string, buildState *state.BuildState) error {
 
 	genesis := map[string]interface{}{
 		"chainId":        ethconf.NetworkId,
@@ -461,7 +458,7 @@ func createGenesisfile(ethconf *EthConf, details db.DeploymentDetails, wallets [
 		log.Println(err)
 		return err
 	}
-	return util.Write("CustomGenesis.json", data)
+	return buildState.Write("CustomGenesis.json", data)
 
 }
 

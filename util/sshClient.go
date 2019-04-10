@@ -256,6 +256,38 @@ func (this SshClient) Scp(src string, dest string) error {
 	if conf.Verbose {
 		fmt.Printf("Remote copying %s to %s...", src, dest)
 	}
+	if !strings.HasPrefix(src, "./") && src[0] != '/' {
+		bs := state.GetBuildStateByServerId(this.serverId)
+		src = "/tmp/" + bs.BuildId + "/" + src
+	}
+
+	session, err := this.getSession()
+	if err != nil {
+		return err
+	}
+	defer session.Close()
+
+	err = scp.CopyPath(src, dest, session)
+	if err != nil {
+		return err
+	}
+
+	if conf.Verbose {
+		fmt.Printf("done\n")
+	}
+
+	return nil
+}
+
+/*
+   Scp is a wrapper for the scp command. Can be used to copy
+   a file over to a remote machine.
+*/
+func (this SshClient) InternalScp(src string, dest string) error {
+	if conf.Verbose {
+		fmt.Printf("Remote copying %s to %s...", src, dest)
+	}
+
 	session, err := this.getSession()
 	if err != nil {
 		return err

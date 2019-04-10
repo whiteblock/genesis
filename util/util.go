@@ -118,7 +118,7 @@ func Cpr(src string, dest string) error {
 /*
    Write writes data to a file, creating it if it doesn't exist,
    deleting and recreating it if it does.
-*/
+
 func Write(path string, data string) error {
 	if conf.Verbose {
 		fmt.Printf("Writing to file %s...", path)
@@ -130,7 +130,7 @@ func Write(path string, data string) error {
 		fmt.Printf("done\n")
 	}
 	return err
-}
+}*/
 
 /*
    Lsr lists the contents of a directory recursively

@@ -1,11 +1,11 @@
 package artemis
 
 import (
+	db "../../db"
+	state "../../state"
+	util "../../util"
 	"fmt"
 	"log"
-	db "../../db"
-	util "../../util"
-	state "../../state"
 )
 
 var conf *util.Config
@@ -22,16 +22,16 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		log.Println(err)
 		return nil, err
 	}
-	buildState.SetBuildSteps(0+(details.Nodes*4))
+	buildState.SetBuildSteps(0 + (details.Nodes * 4))
 
 	for i, server := range servers {
 		for localId, _ := range server.Ips {
-				_, err := clients[i].DockerExec(localId, "rm /artemis/config/config.toml")
-				if err != nil {
-						log.Println(err)
-						return nil, err
-				}
-				buildState.IncrementBuildProgress()
+			_, err := clients[i].DockerExec(localId, "rm /artemis/config/config.toml")
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
+			buildState.IncrementBuildProgress()
 		}
 	}
 
@@ -41,10 +41,10 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	for _, server := range servers {
 		for i, ip := range server.Ips {
 			peer = fmt.Sprintf("%s://whiteblock-node%d@%s:%d",
-			artemisConf["networkMode"],
-			i,
-			ip,
-			port,
+				artemisConf["networkMode"],
+				i,
+				ip,
+				port,
 			)
 			if i < details.Nodes-1 {
 				peers = peers + "\"" + peer + "\"" + ","
@@ -66,31 +66,30 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			// potential error if application reads the identity as a string literal
 			identity := fmt.Sprintf("0x0%x", j)
 
-			artemisNodeConfig,err := makeNodeConfig(artemisConf, identity, peers, details.Nodes, details.Params) 
+			artemisNodeConfig, err := makeNodeConfig(artemisConf, identity, peers, details.Nodes, details.Params)
 			if err != nil {
 				log.Println(err)
 				return nil, err
 			}
 
 			fmt.Println("Writing Configuration File")
-			err = util.Write("config.toml", artemisNodeConfig)
+			err = buildState.Write("config.toml", artemisNodeConfig)
 			if err != nil {
 				log.Println(err)
 				return nil, err
 			}
-			defer util.Rm("./config.toml")
 
-			err = clients[i].Scp("./config.toml", "/home/appo/config.toml")
+			err = clients[i].Scp("config.toml", "/home/appo/config.toml")
 			if err != nil {
 				log.Println(err)
 				return nil, err
 			}
 			defer clients[i].Run("rm -f /home/appo/config.toml")
 
-			err = clients[i].DockerCp(j,"/home/appo/config.toml","/artemis/config/config.toml")
+			err = clients[i].DockerCp(j, "/home/appo/config.toml", "/artemis/config/config.toml")
 			if err != nil {
 				log.Println(err)
-				return nil,err
+				return nil, err
 			}
 		}
 	}
@@ -101,8 +100,8 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			artemisCmd := fmt.Sprintf(
 				`artemis -c /artemis/config/config.toml 2>&1 | tee /output.log`,
 			)
-			clients[i].DockerExecd(localId,"tmux new -s whiteblock -d")
-			clients[i].DockerExecd(localId,fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m",artemisCmd))
+			clients[i].DockerExecd(localId, "tmux new -s whiteblock -d")
+			clients[i].DockerExecd(localId, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", artemisCmd))
 			buildState.IncrementBuildProgress()
 		}
 	}
@@ -110,8 +109,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	return nil, nil
 }
 
-func Add(details db.DeploymentDetails,servers []db.Server,clients []*util.SshClient,
-	newNodes map[int][]string,buildState *state.BuildState) ([]string,error) {
-	return nil,nil
+func Add(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
+	return nil, nil
 }
-
