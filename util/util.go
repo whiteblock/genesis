@@ -15,7 +15,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
+	//"os/exec"
 	"strings"
 )
 
@@ -133,7 +133,7 @@ func CombineConfig(entries []string) string {
 /*
    BashExec executes _cmd in bash then return the result
 */
-func BashExec(_cmd string) (string, error) {
+/*func BashExec(_cmd string) (string, error) {
 	if conf.Verbose {
 		fmt.Printf("Executing : %s\n", _cmd)
 	}
@@ -155,7 +155,7 @@ func BashExec(_cmd string) (string, error) {
 	}
 
 	return resultsRaw.String(), nil
-}
+}*/
 
 /*
    GetPath extracts the base path of the given path
