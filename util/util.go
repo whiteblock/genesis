@@ -10,7 +10,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/satori/go.uuid"
+	"github.com/Whiteblock/go.uuid"
 	"io/ioutil"
 	"log"
 	"net/http"
