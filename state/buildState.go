@@ -270,6 +270,10 @@ func (this *BuildState) GetExtras() map[string]interface{} {
 	return this.extras
 }
 
+/*
+	Write writes data to a file, creating it if it doesn't exist,
+   	deleting and recreating it if it does.
+ */
 func (this *BuildState) Write(file string, data string) error {
 	this.mutex.RLock()
 	this.files = append(this.files, file)

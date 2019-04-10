@@ -5,7 +5,7 @@ import (
 	util "../../util"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"log"
 	"strings"
 )
 
@@ -15,22 +15,26 @@ type KeyMaster struct {
 	index       int
 }
 
-func NewKeyMaster() (*KeyMaster, error) {
+func NewKeyMaster(details *db.DeploymentDetails) (*KeyMaster, error) {
 	out := new(KeyMaster)
-	dat, err := ioutil.ReadFile("./resources/eos/privatekeys.json")
+	dat, err := util.GetBlockchainConfig("eos", "privatekeys.json", details.Files)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 	err = json.Unmarshal(dat, &out.PrivateKeys)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
-	dat, err = ioutil.ReadFile("./resources/eos/publickeys.json")
+	dat, err = util.GetBlockchainConfig("eos", "publickeys.json", details.Files)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 	err = json.Unmarshal(dat, &out.PublicKeys)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 	out.index = 0
@@ -44,7 +48,6 @@ func (this *KeyMaster) GenerateKeyPair(client *util.SshClient) (util.KeyPair, er
 	keyPair := strings.Split(data, "\n")
 	if len(data) < 10 {
 		return util.KeyPair{}, fmt.Errorf("Unexpected create key output %s\n", keyPair)
-		panic(1)
 	}
 	return util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]}, nil
 }
@@ -65,6 +68,7 @@ func (this *KeyMaster) GetMappedKeyPairs(args []string, client *util.SshClient) 
 	for _, arg := range args {
 		keyPair, err := this.GetKeyPair(client)
 		if err != nil {
+			log.Println(err)
 			return nil, err
 		}
 		keyPairs[arg] = keyPair

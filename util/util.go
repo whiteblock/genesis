@@ -116,23 +116,6 @@ func Cpr(src string, dest string) error {
 }
 
 /*
-   Write writes data to a file, creating it if it doesn't exist,
-   deleting and recreating it if it does.
-
-func Write(path string, data string) error {
-	if conf.Verbose {
-		fmt.Printf("Writing to file %s...", path)
-	}
-
-	err := ioutil.WriteFile(path, []byte(data), 0664)
-
-	if conf.Verbose {
-		fmt.Printf("done\n")
-	}
-	return err
-}*/
-
-/*
    Lsr lists the contents of a directory recursively
 */
 func Lsr(_dir string) ([]string, error) {
@@ -235,26 +218,6 @@ func GetPath(path string) string {
 		return path
 	}
 	return path[:index]
-}
-
-/*
-   IntArrRemove removes an element from an array of ints
-*/
-func IntArrRemove(op []int, index int) []int {
-	return append(op[:index], op[index+1:]...)
-}
-
-/*
-   IntArrFill fills the elements of an array according the given
-   function, and then returns it.
-   f takes in the index and returns the value to place at that index.
-*/
-func IntArrFill(size int, f func(int) int) []int {
-	out := make([]int, size)
-	for i := 0; i < size; i++ {
-		out[i] = f(i)
-	}
-	return out
 }
 
 /*
@@ -384,32 +347,6 @@ func ConvertToStringMap(in interface{}) map[string]string {
 
 	for key, value := range data {
 		strval, _ := json.Marshal(value)
-		/*switch v := i.(type) {
-		    case int:
-		        fallthrough
-		    case int8:
-		        fallthrough
-		    case int16:
-		        fallthrough
-		    case int32:
-		        fallthrough
-		    case int64:
-		        strval = string(strconv.AppendInt(nil, int64(v), 10))
-
-		    case float:
-		        fallthrough
-		    case float32:
-		        fallthrough
-		    case float64:
-		        b64 = strconv.AppendFloat(nil,float64(v), 'f', -1, 64)
-		        fmt.Println("the reciprocal of i is", 1/v)
-		    case string:
-		        strval = v
-		    case []byte:
-
-		    default:
-		        // i isn't one of the types above
-		}*/
 		out[key] = string(strval)
 	}
 	return out

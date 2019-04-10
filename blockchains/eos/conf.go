@@ -10,19 +10,16 @@ import (
 )
 
 type EosConf struct {
-	UserAccounts   int64 `json:"userAccounts"`
-	BlockProducers int64 `json:"validators"`
-
-	AccountCpuStake int64 `json:"accountCpuStake"`
-	AccountRam      int64 `json:"accountRam"`
-	AccountNetStake int64 `json:"accountNetStake"`
-	AccountFunds    int64 `json:"accountFunds"`
-
-	BpCpuStake int64 `json:"bpCpuStake"`
-	BpNetStake int64 `json:"bpNetStake"`
-	BpRam      int64 `json:"bpRam"`
-	BpFunds    int64 `json:"bpFunds"`
-
+	UserAccounts                   int64  `json:"userAccounts"`
+	BlockProducers                 int64  `json:"validators"`
+	AccountCpuStake                int64  `json:"accountCpuStake"`
+	AccountRam                     int64  `json:"accountRam"`
+	AccountNetStake                int64  `json:"accountNetStake"`
+	AccountFunds                   int64  `json:"accountFunds"`
+	BpCpuStake                     int64  `json:"bpCpuStake"`
+	BpNetStake                     int64  `json:"bpNetStake"`
+	BpRam                          int64  `json:"bpRam"`
+	BpFunds                        int64  `json:"bpFunds"`
 	MaxBlockNetUsage               int64  `json:"maxBlockNetUsage"`
 	TargetBlockNetUsagePct         int64  `json:"targetBlockNetUsagePct"`
 	MaxTransactionNetUsage         int64  `json:"maxTransactionNetUsage"`
@@ -41,16 +38,15 @@ type EosConf struct {
 	MaxInlineActionDepth           int64  `json:"maxInlineActionDepth"`
 	MaxAuthorityDepth              int64  `json:"maxAuthorityDepth"`
 	InitialChainId                 string `json:"initialChainId"`
-
-	ChainStateDbSizeMb       int64  `json:"chainStateDbSizeMb"`
-	ReversibleBlocksDbSizeMb int64  `json:"reversibleBlocksDbSizeMb"`
-	ContractsConsole         bool   `json:"contractsConsole"`
-	P2pMaxNodesPerHost       int64  `json:"p2pMaxNodesPerHost"`
-	AllowedConnection        string `json:"allowedConnection"`
-	MaxClients               int64  `json:"maxClients"`
-	ConnectionCleanupPeriod  int64  `json:"connectionCleanupPeriod"`
-	NetworkVersionMatch      int64  `json:"networkVersionMatch"`
-	SyncFetchSpan            int64  `json:"syncFetchSpan"`
+	ChainStateDbSizeMb             int64  `json:"chainStateDbSizeMb"`
+	ReversibleBlocksDbSizeMb       int64  `json:"reversibleBlocksDbSizeMb"`
+	ContractsConsole               bool   `json:"contractsConsole"`
+	P2pMaxNodesPerHost             int64  `json:"p2pMaxNodesPerHost"`
+	AllowedConnection              string `json:"allowedConnection"`
+	MaxClients                     int64  `json:"maxClients"`
+	ConnectionCleanupPeriod        int64  `json:"connectionCleanupPeriod"`
+	NetworkVersionMatch            int64  `json:"networkVersionMatch"`
+	SyncFetchSpan                  int64  `json:"syncFetchSpan"`
 	//  MaxImplicitRequest              int64       `json:"maxImplicitRequest"`
 	PauseOnStartup          bool     `json:"pauseOnStartup"`
 	MaxTransactionTime      int64    `json:"maxTransactionTime"`

@@ -66,7 +66,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		"eosio.token",
 		"eosio.vpay",
 	}
-	km, err := NewKeyMaster()
+	km, err := NewKeyMaster(&details)
 	if err != nil {
 		log.Println(err)
 		return nil, err

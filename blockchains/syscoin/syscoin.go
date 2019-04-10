@@ -176,7 +176,7 @@ func handleConf(servers []db.Server, clients []*util.SshClient, sysconf *SysConf
 					return
 				}
 				buildState.IncrementBuildProgress()
-				err = clients[i].DockerCp(node, fmt.Sprintf("/home/appo/regtest%d.conf"), "/syscoin/datadir/regtest.conf")
+				err = clients[i].DockerCp(node, fmt.Sprintf("/home/appo/regtest%d.conf", node), "/syscoin/datadir/regtest.conf")
 				if err != nil {
 					buildState.ReportError(err)
 					log.Println(err)
