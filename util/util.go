@@ -308,5 +308,4 @@ func GetBlockchainConfig(blockchain string, file string, files map[string]string
 		}
 	}
 	return ioutil.ReadFile(fmt.Sprintf("./resources/%s/%s", blockchain, file))
-
 }

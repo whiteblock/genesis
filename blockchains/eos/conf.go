@@ -1,9 +1,11 @@
 package eos
 
 import (
+	db "../../db"
 	util "../../util"
 	"encoding/json"
 	"fmt"
+	"log"
 	"github.com/Whiteblock/mustache"
 	"io/ioutil"
 	"time"
@@ -47,7 +49,6 @@ type EosConf struct {
 	ConnectionCleanupPeriod        int64  `json:"connectionCleanupPeriod"`
 	NetworkVersionMatch            int64  `json:"networkVersionMatch"`
 	SyncFetchSpan                  int64  `json:"syncFetchSpan"`
-	//  MaxImplicitRequest              int64       `json:"maxImplicitRequest"`
 	PauseOnStartup          bool     `json:"pauseOnStartup"`
 	MaxTransactionTime      int64    `json:"maxTransactionTime"`
 	MaxIrreversibleBlockAge int64    `json:"maxIrreversibleBlockAge"`
@@ -284,17 +285,10 @@ func NewConf(data map[string]interface{}) (*EosConf, error) {
 		return nil, err
 	}
 
-	/*  if _,ok := data["maxImplicitRequest"]; ok {
-	    out.MaxImplicitRequest,err = util.GetJSONInt64(data,"maxImplicitRequest")
-	    if err != nil {
-	        return nil,err
-	    }
-	}*/
-
 	return out, nil
 }
 
-func (this *EosConf) GenerateGenesis(masterPublicKey string) (string, error) {
+func (this *EosConf) GenerateGenesis(masterPublicKey string, details *db.DeploymentDetails) (string, error) {
 
 	filler := util.ConvertToStringMap(map[string]interface{}{
 		"initialTimestamp":               time.Now().Format("2006-01-02T15-04-05.000"),
@@ -318,12 +312,14 @@ func (this *EosConf) GenerateGenesis(masterPublicKey string) (string, error) {
 		"maxAuthorityDepth":              this.MaxAuthorityDepth,
 		"initialChainId":                 this.InitialChainId,
 	})
-	dat, err := ioutil.ReadFile("./resources/eos/genesis.json.mustache")
+	
+	
+	dat, err := util.GetBlockchainConfig("eos","genesis.json.mustache",details.Files)
 	if err != nil {
+		log.Println(err)
 		return "", err
 	}
-	data, err := mustache.Render(string(dat), filler)
-	return data, err
+	return mustache.Render(string(dat), filler)
 }
 
 func (this *EosConf) GenerateConfig() string {
