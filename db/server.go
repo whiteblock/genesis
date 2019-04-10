@@ -1,312 +1,235 @@
 package db
 
-import(
-    _ "github.com/mattn/go-sqlite3"
-    "fmt"
-    "regexp"
-    "errors"
-    "log"
+import (
+	"fmt"
+	_ "github.com/mattn/go-sqlite3"
+	"log"
+	"regexp"
 )
 
-type Server struct{
-    Addr        string      `json:"addr"`//IP to access the server
-    Iaddr       Iface       `json:"iaddr"`//Internal IP of the server for NIC attached to the vyos
-    Nodes       int         `json:"nodes"`
-    Max         int         `json:"max"`
-    Id          int         `json:"id"`
-    ServerID    int         `json:"serverID"`
-    Iface       string      `json:"iface"`
-    Switches    []Switch    `json:"switches"`
-    Ips         []string    `json:"ips"`
-}
-
-type Iface struct {
-    Ip          string      `json:"ip"`
-    Gateway     string      `json:"gateway"`
-    Subnet      int         `json:"subnet"`
+type Server struct {
+	/*
+	   Address of the server which is accessible from genesis
+	*/
+	Addr     string   `json:"addr"`
+	Nodes    int      `json:"nodes"`
+	Max      int      `json:"max"`
+	Id       int      `json:"id"`
+	SubnetID int      `json:"subnetID"`
+	Ips      []string `json:"ips"`
 }
 
 /*
-    Ensure that a server object contains valid data
- */
+   Ensure that a server object contains valid data
+*/
 func (s Server) Validate() error {
-    var re = regexp.MustCompile(`(?m)[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}`)
-    if !re.Match([]byte(s.Addr)) {
-        return errors.New("Addr is invalid")
-    }
-    if s.Nodes < 0 {
-        return errors.New("Nodes is invalid")
-    }
-    if s.Nodes > s.Max {
-        return errors.New("Max is invalid")
-    }
-    if s.ServerID < 1 {
-        return errors.New("ServerID is invalid")
-    }
-    if len(s.Switches) != 0 {
-        err := s.Switches[0].Validate()
-        if err != nil {
-            return err
-        }
-    }
-    
-    return nil
+	var re = regexp.MustCompile(`(?m)[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}`)
+	if !re.Match([]byte(s.Addr)) {
+		return fmt.Errorf("Addr is invalid")
+	}
+	if s.Nodes < 0 {
+		return fmt.Errorf("Nodes is invalid")
+	}
+	if s.Nodes > s.Max {
+		return fmt.Errorf("Max is invalid")
+	}
+	if s.SubnetID < 1 {
+		return fmt.Errorf("SubnetID is invalid")
+	}
+	return nil
 }
 
 /*
-    Get all of the servers, indexed by name
- */
-func GetAllServers() (map[string]Server,error) {
+   Get all of the servers, indexed by name
+*/
+func GetAllServers() (map[string]Server, error) {
 
-    rows, err :=  db.Query(fmt.Sprintf("SELECT id,server_id,addr, iaddr_ip,iaddr_gateway,iaddr_subnet,nodes,max,iface,switch,name FROM %s",ServerTable ))
-    if err != nil {
-        return nil,err 
-    }
-    defer rows.Close()
-    allServers := make(map[string]Server)
-    for rows.Next() {
-        var name string
-        var server Server
-        var switchId int
-        //var subnet string
-        err := rows.Scan(&server.Id,&server.ServerID,&server.Addr,
-                                  &server.Iaddr.Ip, &server.Iaddr.Gateway, &server.Iaddr.Subnet,
-                                  &server.Nodes,&server.Max,&server.Iface,&switchId,&name)
-        if err != nil {
-            return nil,err
-        }
-        if switchId != -1 {
-            swtch, err := GetSwitchById(switchId)
-            if err != nil {
-                return nil,err
-            }
-            server.Switches = []Switch{ swtch }
-        }else{
-            server.Switches = nil
-        }
-        
+	rows, err := db.Query(fmt.Sprintf("SELECT id,server_id,addr,nodes,max,name FROM %s", ServerTable))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	allServers := make(map[string]Server)
+	for rows.Next() {
+		var name string
+		var server Server
+		err := rows.Scan(&server.Id, &server.SubnetID, &server.Addr,
+			&server.Nodes, &server.Max, &name)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
 
-        
-        allServers[name] = server
-    }
-    return allServers,nil
+		allServers[name] = server
+	}
+	return allServers, nil
 }
 
 /*
-    Get servers from their ids
- */
-func GetServers(ids []int) ([]Server,error) {
-    var servers []Server
-    for _, id := range ids {
-        server,_,err := GetServer(id)
-        if err != nil {
-            return servers, err
-        }
-        servers = append(servers,server)
-    }
-    return servers,nil
+   Get servers from their ids
+*/
+func GetServers(ids []int) ([]Server, error) {
+	var servers []Server
+	for _, id := range ids {
+		server, _, err := GetServer(id)
+		if err != nil {
+			log.Println(err)
+			return servers, err
+		}
+		servers = append(servers, server)
+	}
+	return servers, nil
 }
 
 /*
-    Get a server by id
- */
+   Get a server by id
+*/
 func GetServer(id int) (Server, string, error) {
-    var name string
-    var server Server
+	var name string
+	var server Server
 
-    rows, err :=  db.Query(fmt.Sprintf("SELECT id,server_id,addr,iaddr_ip,iaddr_gateway,iaddr_subnet,nodes,max,iface,switch,name FROM %s WHERE id = %d",
-        ServerTable,id ))
-    if err != nil {
-        return server,name,err
-    }
+	rows, err := db.Query(fmt.Sprintf("SELECT id,server_id,addr,nodes,max,name FROM %s WHERE id = %d",
+		ServerTable, id))
+	if err != nil {
+		log.Println(err)
+		return server, name, err
+	}
 
-    
-    
-    if !rows.Next() {
-        return server, name, errors.New("Not found")
-    }
-    defer rows.Close()
-    var switchId int
-    //var subnet string
-    err = rows.Scan(&server.Id,&server.ServerID,&server.Addr,
-                              &server.Iaddr.Ip, &server.Iaddr.Gateway, &server.Iaddr.Subnet,
-                              &server.Nodes,&server.Max,&server.Iface,&switchId,&name)
-    if err != nil{
-        log.Println(err)
-        return server,name,err
-    }
-    //fmt.Println(subnet)
-    //fmt.Printf("Switch id is %d\n",switchId)
-    if switchId != -1 {
-        swtch, err := GetSwitchById(switchId)
-        if err != nil {
-            return server,name,err
-        }
-        server.Switches = []Switch{ swtch }
-    }else{
-        server.Switches = nil
-    }
-    
+	if !rows.Next() {
+		return server, name, fmt.Errorf("Not found")
+	}
+	defer rows.Close()
+	err = rows.Scan(&server.Id, &server.SubnetID, &server.Addr,
+		&server.Nodes, &server.Max, &name)
+	if err != nil {
+		log.Println(err)
+		return server, name, err
+	}
 
-    return server,name,nil
-}
-
-func _insertServer(name string,server Server,switchId int) (int,error) {
-
-    tx,err := db.Begin()
-    if err != nil {
-        return -1,err
-    }
-
-    stmt,err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (addr,server_id,iaddr_ip,iaddr_gateway,iaddr_subnet,nodes,max,iface,switch,name) VALUES (?,?,?,?,?,?,?,?,?,?)",ServerTable))
-    if err != nil {
-        return -1,err
-    }
-
-    defer stmt.Close()
-
-    res,err := stmt.Exec(server.Addr,server.ServerID,server.Iaddr.Ip, server.Iaddr.Gateway, server.Iaddr.Subnet,
-                       server.Nodes,server.Max,server.Iface,switchId,name)
-    if err != nil {
-        return -1,err
-    }
-    tx.Commit()
-    id, err := res.LastInsertId()
-    return int(id),err
+	return server, name, nil
 }
 
 /*
-    Insert a new server into the database
- */
-func InsertServer(name string,server Server) (int,error) {
-    if len(server.Switches) == 0 {
-        return _insertServer(name,server,-1)
-    }
-    switchId,err := InsertSwitch(server.Switches[0])
-    if err != nil {
-        return -1,err
-    }
-    return _insertServer(name,server,switchId)
+   Insert a new server into the database
+*/
+func InsertServer(name string, server Server) (int, error) {
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Println(err)
+		return -1, err
+	}
+
+	stmt, err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (addr,server_id,nodes,max,name) VALUES (?,?,?,?,?)", ServerTable))
+	if err != nil {
+		log.Println(err)
+		return -1, err
+	}
+
+	defer stmt.Close()
+
+	res, err := stmt.Exec(server.Addr, server.SubnetID,
+		server.Nodes, server.Max, name)
+	if err != nil {
+		log.Println(err)
+		return -1, err
+	}
+	tx.Commit()
+	id, err := res.LastInsertId()
+	return int(id), err
 }
 
 /*
-    Delete a server by id
- */
+   Delete a server by id
+*/
 func DeleteServer(id int) error {
 
-    _,err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d",ServerTable,id))
-    return err
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d", ServerTable, id))
+	return err
 }
 
 /*
-    Update a server by id
- */
-func UpdateServer(id int,server Server) error {
-    //Handle Updating of Switch
-    //fmt.Printf("UPDATED server is %+v\n",server)
-    swtch,err := GetSwitchById(server.Switches[0].Id)
+   Update a server by id
+*/
+func UpdateServer(id int, server Server) error {
 
-    var switchId int
-    if server.Switches == nil || len(server.Switches) == 0 {
-        switchId = -1
-    }else if err != nil {
-        switchId,err = InsertSwitch(server.Switches[0])
-        if err != nil {
-            return err
-        }
-    }else{
-        switchId = swtch.Id
-    }
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
 
-    db := getDB()
-    defer db.Close()
+	stmt, err := tx.Prepare(fmt.Sprintf("UPDATE %s SET server_id = ?,addr = ?, nodes = ?, max = ? WHERE id = ? ", ServerTable))
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 
-    tx,err := db.Begin()
-    if err != nil {
-        return err
-    }
-
-    stmt,err := tx.Prepare(fmt.Sprintf("UPDATE %s SET server_id = ?,addr = ?, iaddr_ip = ?, iaddr_gateway = ?, iaddr_subnet = ?, nodes = ?, max = ?, iface = ?, switch = ? WHERE id = ? ",ServerTable))
-    if err != nil {
-        return err
-    }
-    defer stmt.Close()
-
-    _,err = stmt.Exec(server.ServerID,
-                      server.Addr,
-                      server.Iaddr.Ip,
-                      server.Iaddr.Gateway,
-                      server.Iaddr.Subnet,
-                      server.Nodes,
-                      server.Max,
-                      server.Iface,
-                      switchId,
-                      server.Id)
-    if err != nil {
-        return err
-    }
-    return tx.Commit()
+	_, err = stmt.Exec(server.SubnetID,
+		server.Addr,
+		server.Nodes,
+		server.Max,
+		server.Id)
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 /*
-    Update the number of nodes a server has
- */
-func UpdateServerNodes(id int,nodes int) error {
+   Update the number of nodes a server has
+*/
+func UpdateServerNodes(id int, nodes int) error {
 
-    db := getDB()
-    defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
 
-    tx,err := db.Begin()
-    if err != nil {
-        return err
-    }
+	stmt, err := tx.Prepare(fmt.Sprintf("UPDATE %s SET nodes = ? WHERE id = ?", ServerTable))
 
-    stmt,err := tx.Prepare(fmt.Sprintf("UPDATE %s SET nodes = ? WHERE id = ?",ServerTable))
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 
-    if err != nil {
-        return err
-    }
-    defer stmt.Close()
-
-    _,err = stmt.Exec(nodes,id)
-    if err != nil {
-        return err
-    }
-    return tx.Commit()
+	_, err = stmt.Exec(nodes, id)
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
 
 }
 
 /*
-    Get the ips of the hosts for a testnet
- */
-func GetHostIPsByTestNet(id int) ([]string,error) {
+   Get the ips of the hosts for a testnet
+*/
+func GetHostIPsByTestNet(id int) ([]string, error) {
 
-    rows, err :=  db.Query(fmt.Sprintf("SELECT id,server_id,addr,iaddr_ip,iaddr_gateway,iaddr_subnet,nodes,max,iface,switch,name FROM %s INNER JOIN %s ON %s.id == %s.server WHERE %s.id == %d GROUP BY %s.id",
-        ServerTable,
-        NodesTable,
-        ServerTable,
-        NodesTable,
-        ServerTable,
-        id,
-        ServerTable))
+	rows, err := db.Query(fmt.Sprintf("SELECT addr FROM %s INNER JOIN %s ON %s.id == %s.server WHERE %s.id == %d GROUP BY %s.id",
+		ServerTable,
+		NodesTable,
+		ServerTable,
+		NodesTable,
+		ServerTable,
+		id,
+		ServerTable))
 
-    ips := []string{}
+	ips := []string{}
 
-    if err != nil {
-        return ips, err
-    }
+	if err != nil {
+		return ips, err
+	}
 
-    defer rows.Close()
+	defer rows.Close()
 
-    for rows.Next() {
-        var ip string
-        err = rows.Scan(&ip)
-        if err != nil {
-            return ips, err
-        }
+	for rows.Next() {
+		var ip string
+		err = rows.Scan(&ip)
+		if err != nil {
+			return ips, err
+		}
 
-        ips = append(ips,ip)
-    }
-    return ips, nil
+		ips = append(ips, ip)
+	}
+	return ips, nil
 }
-

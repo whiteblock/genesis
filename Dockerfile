@@ -1,4 +1,4 @@
-FROM golang:1.11.3-stretch as built
+FROM golang:1.11.5-stretch as built
 
 ADD . /genesis
 

@@ -1,0 +1,28 @@
+{
+    "config": {
+        "chainId": {{{chainId}}},
+        "homesteadBlock": 0,
+        "daoForkBlock": 0,
+        "eip150Block": 0,
+        "eip155Block": 0,
+        "eip158Block": 0,
+        "byzantiumBlock": 0,
+        "constantinopleBlock": 0,
+        "constantinopleFixBlock": 0,
+        "clique": {
+            "blockPeriodSeconds": {{{blockPeriodSeconds}}},
+            "epoch": {{{epoch}}}
+        }
+    },
+    "nonce": "0x0000000000000042",
+    "extraData":{{{extraData}}},
+    "timestamp": "0x00",
+    "gasLimit": {{{gasLimit}}},
+    "difficulty": {{{difficulty}}},
+    "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "coinbase": "0x0000000000000000000000000000000000000000",
+    "alloc":{{{alloc}}},
+    "number": "0x0",
+    "gasUsed": "0x0",
+    "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
+}

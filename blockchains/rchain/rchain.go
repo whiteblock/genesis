@@ -215,11 +215,15 @@ func Build(details db.DeploymentDetails,servers []db.Server,clients []*util.SshC
 
 
 func createFirstConfigFile(details db.DeploymentDetails,client *util.SshClient,node int,rchainConf *RChainConf,influxIP string) error {
-    filler := util.ConvertToStringMap(map[string]interface{}{
+    
+    raw := map[string]interface{}{
         "influxIp":influxIP,
         "validatorCount":rchainConf.ValidatorCount,
-        "standalone":false,
-    })
+        "standalone":true,
+    }
+    raw = util.MergeStringMaps(raw,details.Params)//Allow arbitrary custom options for rchain
+
+    filler := util.ConvertToStringMap(raw)
     dat, err := util.GetBlockchainConfig("rchain","rchain.conf.mustache",details.Files)
     if err != nil {
         log.Println(err)
@@ -259,12 +263,16 @@ func Add(details db.DeploymentDetails,servers []db.Server,clients []*util.SshCli
 }
 
 func createConfigFile(details db.DeploymentDetails,bootnodeAddr string,rchainConf *RChainConf,influxIP string) error {
-    filler := util.ConvertToStringMap(map[string]interface{}{
+
+    raw := map[string]interface{}{
         "influxIp":influxIP,
         "validatorCount":rchainConf.ValidatorCount,
         "standalone":false,
         "bootstrap":fmt.Sprintf("bootstrap = \"%s\"",bootnodeAddr),
-    })
+    }
+    raw = util.MergeStringMaps(raw,details.Params)//Allow arbitrary custom options for rchain
+
+    filler := util.ConvertToStringMap(raw)
     dat, err := util.GetBlockchainConfig("rchain","rchain.conf.mustache",details.Files)
     if err != nil {
         log.Println(err)

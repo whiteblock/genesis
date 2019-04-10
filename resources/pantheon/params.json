@@ -1,0 +1,8 @@
+[
+    ["networkId","int"],
+    ["difficulty","int"],
+    ["initBalance","string"],
+    ["gasLimit","int"],
+    ["blockPeriodSeconds","int"],
+    ["epoch","int"]
+]

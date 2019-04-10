@@ -9,10 +9,8 @@
 ##Configuration
 Configuration options are located in `config.json` in the same directory as the binary
 
-* __builder__: The application to use to build the nodes
 * __ssh-user__: The default username for ssh
 * __ssh-password__: The default password for ssh
-* __vyos-home-dir__: The location to put the vyos script
 * __listen__: The socket to listen on 
 * __rsa-key__: The location of the ssh private key
 * __rsa-user__: The corresponding username for that private key
@@ -21,21 +19,16 @@ Configuration options are located in `config.json` in the same directory as the 
 * __cluster-bits__: The bits given to each clusters's number
 * __node-bits__: The bits given to each nodes's number
 * __thread-limit__: The maximum number of threads that can be used for building
-* __build-mode__: Can set the build mode to allow for building in "standalone" mode, for demo purposes
 * __ip-prefix__: Used for the IP Scheme
-* __allow-exec__: Set to true to enable the /exec/ calls. __This is an unsafe option to enable__
 * __docker-output-file__: The location instead the docker containers where the clients stdout and stderr will be captured
 * __influx__: The influxdb endpoint
 * __influx-user__: The influx auth username
 * __influx-password__: The influx auth password
-* __service-vlan__: The vlan for the services network
 * __service-network__: CIDR of the network for the services
 * __service-network-name__: The name for the service network
 * __node-prefix__: The prefix for each node name
 * __node-network-prefix__: The prefix for each cluster network
 * __service-prefix__: The prefix for each service
-* __network-vlan-start__: The vlan to start the build process, aka vlan for net 0
-* __setup-masquerade__: Have genesis setup masquerading in the vyos
 
 * __nodes-public-key__: Location of the public key for the nodes
 * __nodes-private-key__: Location of the private key for the nodes
@@ -49,10 +42,8 @@ Configuration options are located in `config.json` in the same directory as the 
 These will override what is set in the config.json file, and allow configuration via
 only ENV variables
 
-* `BUILDER`
 * `SSH_USER`
 * `SSH_PASSWORD`
-* `VYOS_HOME_DIR`
 * `LISTEN`
 * `RSA_KEY`
 * `RSA_USER`
@@ -61,21 +52,16 @@ only ENV variables
 * `CLUSTER_BITS`
 * `NODE_BITS`
 * `THREAD_LIMIT`
-* `BUILD_MODE`
 * `IP_PREFIX`
-* `ALLOW_EXEC` (only need to set it)
 * `DOCKER_OUTPUT_FILE`
 * `INFLUX`
 * `INFLUX_USER`
 * `INFLUX_PASSWORD`
-* `SERVICE_VLAN`
 * `SERVICE_NETWORK`
 * `SERVICE_NETWORK_NAME`
 * `NODE_PREFIX`
 * `NODE_NETWORK_PREFIX`
 * `SERVICE_PREFIX`
-* `NETWORK_VLAN_START`
-* `SETUP_MASQUERADE`
 * `NODES_PUBLIC_KEY`
 * `NODES_PRIVATE_KEY`
 * `HANDLE_NODE_SSH_KEYS` (only need to set it)
@@ -385,7 +371,7 @@ Success
 #####EXAMPLE
 ```bash
 curl -X POST http://localhost:8000/testnets/ -d '{"servers":[3],"blockchain":"ethereum","nodes":3,"image":"ethereum:latest",
-"resources":{"cpus":"2.0","memory":"10gb"},"params":null}'
+"resources":[{"cpus":"2.0","memory":"10gb"}],"environments"{"BLAH":"blah"},"files":{"config.json":"base64 of file"},"params":null}'
 ```
 
 ###GET /testnets/{id}
@@ -411,7 +397,7 @@ HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 [
     {
-        "id":(int),
+        "id":(string),
         "testNetId":(int),
         "server":(int),
         "localId":(int),
@@ -421,8 +407,8 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 ```
 
 
-###GET /status/nodes/
-Get the nodes that are running in the latest testnet
+###GET /status/nodes/{testnetid}
+Get the nodes that are running in the given testnet
 #####RESPONSE
 ```
 HTTP/1.1 200 OK
@@ -430,7 +416,9 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 [
     {
         "name":"whiteblock-node0",
-        "server":4
+        "server":4,
+        "cpu":1.4,
+        "up":true
     },...
 ]
 ```
@@ -438,27 +426,6 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 ```bash
 curl -XGET http://localhost:8000/status/nodes/
 ```
-
-
-
-###POST /exec/{server}/{node}
-Execute a command on a given node
-#####BODY
-```
-<bash command>
-```
-#####RESPONSE
-```
-HTTP/1.1 200 OK
-Date: Mon, 22 Oct 2018 15:31:18 GMT
-<command results>
-```
-
-#####EXAMPLE
-```bash
-curl -X POST http://localhost:8000/exec/4/0 -d 'ls'
-```
-
 
 ###GET /params/{blockchain}/
 Get the build params for a blockchain
@@ -519,7 +486,7 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 curl -X POST http://localhost:8000/exec/4/0 -d 'ls'
 ```
 
-###GET /nodes
+###GET /nodes/{testnetid}
 Get the nodes for the latest testnet
 #####RESPONSE
 ```json
@@ -547,8 +514,8 @@ Get the nodes for the latest testnet
 curl -X GET http://localhost:8000/nodes
 ```
 
-###DELETE /build
-Stop the current build
+###DELETE /build/{buildid}
+Stop the given build
 #####RESPONSE
 `Stop signal has been sent...`
 #####EXAMPLE
@@ -584,8 +551,6 @@ curl -X POST http://localhost:8000/nodes/3 -d '{"servers":[3],"blockchain":"ethe
 "resources":{"cpus":"2.0","memory":"10gb"},"params":null}'
 ```
 
-router.HandleFunc("/nodes/{num}",delNodes).Methods("DELETE")
-    router.HandleFunc("/nodes/{num}/",delNodes).Methods("DELETE")
 
 ###DELETE /nodes/{num}
 Delete {num} nodes from the testnet
@@ -600,6 +565,63 @@ Success
 ```bash
 curl -X DELETE http://localhost:8000/nodes/5 
 ```
+
+
+###DELETE /emulate/{testnetId}
+Turn off emulate for a whole testnet 
+####BODY
+
+####EXAMPLE
+```bash
+curl -X DELETE http://localhost:8000/emulate/9e09efe8_d7a3_4429_832c_447d876194c8
+```
+
+###POST /emulate/{testnetId}
+Set emulation for a node or nodes
+####BODY
+TODO
+####EXAMPLE
+```bash
+curl -X POST http://localhost:8000/emulate/9e09efe8_d7a3_4429_832c_447d876194c8
+```
+
+###POST /emulate/all/{testnetId}
+Set emulation for a whole testnet
+####BODY
+TODO
+####EXAMPLE
+```bash
+curl -X POST http://localhost:8000/emulate/all/9e09efe8_d7a3_4429_832c_447d876194c8
+```
+
+###GET /resources/{blockchain}
+
+####BODY
+TODO
+####EXAMPLE
+```bash
+curl -X POST http://localhost:8000/resources/geth
+```
+
+###GET /resources/{blockchain}/{file}
+
+####BODY
+TODO
+####EXAMPLE
+```bash
+curl -X GET http://localhost:8000/resources/geth/genesis.json
+```
+
+###POST /resources/{blockchain}/{file}
+
+####BODY
+TODO
+####EXAMPLE
+```bash
+curl -X POST http://localhost:8000/resources/geth/genesis.json
+```
+
+
 
 ##Blockchain Specific Parameters
 

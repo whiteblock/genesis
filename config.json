@@ -1,8 +1,6 @@
 {
-	"build-mode":"normal",
 	"ssh-user":"appo",
 	"ssh-password":"w@ntest",
-	"vyos-home-dir":"/home/appo/",
 	"listen":"127.0.0.1:8000",
 	"rsa-key":"/home/appo/.ssh/id_rsa",
 	"rsa-user":"appo",
@@ -12,23 +10,17 @@
 	"node-bits":2,
 	"thread-limit":20,
 	"ip-prefix":10,
-	"allow-exec":true,
 	"influx":"127.0.0.1:8086",
-    	"influx-user":"",
-    	"influx-password":"",
-   	"service-vlan":4094,
+    "influx-user":"",
+    "influx-password":"",
    	"service-network":"172.30.0.1/16",
    	"service-network-name":"wb_builtin_services",
    	"node-prefix":"whiteblock-node",
    	"node-network-prefix":"wb_vlan_",
    	"service-prefix":"wb_service",
-   	"network-vlan-start":101,
-    "setup-masquerade":false,
     "nodes-public-key":"/home/master-secrets/id.master.pub",
     "nodes-private-key":"/home/master-secrets/id.master",
     "handle-node-ssh-keys":true,
-
-    "max-node-memory":"4gb",
-    "max-node-cpu":2.5,
-    "neo-build":true
+    "max-node-memory":"16gb",
+    "max-node-cpu":16
 }
