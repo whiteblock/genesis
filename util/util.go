@@ -92,30 +92,6 @@ func Mkdir(directory string) error {
 }
 
 /*
-   Cp copies a file
-*/
-func Cp(src string, dest string) error {
-	if conf.Verbose {
-		fmt.Printf("Copying %s to %s\n", src, dest)
-	}
-
-	cmd := exec.Command("bash", "-c", fmt.Sprintf("cp %s %s", src, dest))
-	return cmd.Run()
-}
-
-/*
-   Cpr copies a directory
-*/
-func Cpr(src string, dest string) error {
-	if conf.Verbose {
-		fmt.Printf("Copying %s to %s\n", src, dest)
-	}
-
-	cmd := exec.Command("cp", "-r", src, dest)
-	return cmd.Run()
-}
-
-/*
    Lsr lists the contents of a directory recursively
 */
 func Lsr(_dir string) ([]string, error) {
@@ -137,34 +113,6 @@ func Lsr(_dir string) ([]string, error) {
 			out = append(out, contents...)
 		} else {
 			out = append(out, fmt.Sprintf("%s%s", dir, f.Name()))
-		}
-	}
-	return out, nil
-}
-
-/*
-   LsDir lists directories in order of construction
-*/
-func LsDir(_dir string) ([]string, error) {
-	dir := _dir
-	if dir[len(dir)-1:] != "/" {
-		dir += "/"
-	}
-	out := []string{}
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	for _, f := range files {
-		if f.IsDir() {
-			out = append(out, fmt.Sprintf("%s%s/", dir, f.Name()))
-			content, err := LsDir(fmt.Sprintf("%s%s/", dir, f.Name()))
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			out = append(out, content...)
 		}
 	}
 	return out, nil
