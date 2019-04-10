@@ -2,7 +2,6 @@
     ["networkId","int"],
     ["difficulty","int"],
     ["initBalance","string"],
-    ["maxPeers","int"],
     ["gasLimit","int"],
     ["blockPeriodSeconds","int"],
     ["epoch","int"]
