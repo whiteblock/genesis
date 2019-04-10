@@ -308,7 +308,7 @@ func (this SshClient) InternalScp(src string, dest string) error {
 
 /*
    Scpr copies over a directory to a specified path on a remote host
-*/
+
 func (this SshClient) Scpr(dir string) error {
 
 	path := GetPath(dir)
@@ -331,7 +331,7 @@ func (this SshClient) Scpr(dir string) error {
 	}
 	_, err = this.Run(fmt.Sprintf("tar xfz %s && rm %s", file, file))
 	return err
-}
+}*/
 
 /*
    Clean up the resources used by this object

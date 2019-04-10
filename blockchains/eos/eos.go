@@ -96,7 +96,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		return nil, err
 	}
 	buildState.SetBuildStage("Building genesis block")
-	genesis, err := eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey,&details)
+	genesis, err := eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey, &details)
 	if err != nil {
 		log.Println(err)
 		return nil, err
