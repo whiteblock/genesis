@@ -95,6 +95,7 @@ func (this SshClient) Run(command string) (string, error) {
 		fmt.Printf("Running command: %s\n", command)
 	}
 	bs := state.GetBuildStateByServerId(this.serverId)
+	defer session.Close()
 	if bs.Stop() {
 		return "", bs.GetError()
 	}
@@ -103,7 +104,7 @@ func (this SshClient) Run(command string) (string, error) {
 		log.Println(err)
 		return "", err
 	}
-	defer session.Close()
+	
 	out, err := session.CombinedOutput(command)
 	if conf.Verbose {
 		fmt.Println(string(out))

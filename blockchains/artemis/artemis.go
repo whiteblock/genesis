@@ -64,7 +64,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			buildState.IncrementBuildProgress()
 
 			// potential error if application reads the identity as a string literal
-			identity := fmt.Sprintf("0x0%x", j)
+			identity := fmt.Sprintf("0x%.8x", j)
 
 			artemisNodeConfig, err := makeNodeConfig(artemisConf, identity, peers, details.Nodes, details.Params)
 			if err != nil {
@@ -98,7 +98,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	for i, server := range servers {
 		for localId, _ := range server.Ips {
 			artemisCmd := fmt.Sprintf(
-				`artemis -c /artemis/config/config.toml 2>&1 | tee /output.log`,
+				`artemis -c /artemis/config/config.toml -o /artemis/data/data.json 2>&1 | tee /output.log`,
 			)
 			clients[i].DockerExecd(localId, "tmux new -s whiteblock -d")
 			clients[i].DockerExecd(localId, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", artemisCmd))
