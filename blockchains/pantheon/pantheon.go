@@ -155,7 +155,6 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		log.Println(err)
 		return nil, err
 	}
-	//defer util.Rm("./genesis.json")
 
 	p2pPort := 30303
 	enodes := "["
@@ -184,7 +183,6 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		log.Println(err)
 		return nil, err
 	}
-	//defer util.Rm("./static-nodes.json")
 
 	/* Copy static-nodes & genesis files to each node */
 	buildState.SetBuildStage("Distributing Files")
