@@ -245,16 +245,26 @@ func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address [
 		consensusParams["blockPeriodSeconds"] = panconf.BlockPeriodSeconds
 		consensusParams["epoch"] = panconf.Epoch
 		consensusParams["requesttimeoutseconds"] = panconf.RequestTimeoutSeconds
+	case "ethhash":
+		consensusParams["fixeddifficulty"] = panconf.EthashDifficulty
+	}
+	switch panconf.Consensus {
+	case "ibft2":
+		fallthrough
+	case "ibft":
+		panconf.Consensus = "ibft2"
+		genesis["extraData"] = ibftExtraData
+	case "clique":
+		fallthrough
+	case "ethhash":
 		extraData := "0x0000000000000000000000000000000000000000000000000000000000000000"
 		for _, addr := range address {
 			extraData += addr
 		}
 		extraData += "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 		genesis["extraData"] = extraData
-	case "ethhash":
-		consensusParams["fixeddifficulty"] = panconf.EthashDifficulty
-		genesis["extraData"] = ibftExtraData
 	}
+	
 	
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
