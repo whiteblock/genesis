@@ -441,7 +441,6 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		log.Println(err)
 		return nil, err
 	}
-	fmt.Println(res)
 	/**Create normal user accounts**/
 	buildState.SetBuildStage("Creating funded accounts")
 	for _, name := range accountNames {
@@ -508,8 +507,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 				prod = rand.Intn(100) % n
 			}
 
-			prod = prod % (node - 1)
-			prod += 1
+			prod = (prod % (node - 1)) + 1
 			sem.Acquire(ctx, 1)
 			go func(masterServerIP string, masterIP string, name string, prod int) {
 				defer sem.Release(1)

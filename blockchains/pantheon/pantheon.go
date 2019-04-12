@@ -196,15 +196,15 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		err := clients[serverNum].DockerCp(localNodeNum, "/home/appo/static-nodes.json", "/pantheon/data/static-nodes.json")
 		if err != nil {
-				log.Println(err)
-				return err
+			log.Println(err)
+			return err
 		}
 		buildState.IncrementBuildProgress()
 		return clients[serverNum].DockerCp(localNodeNum, "/home/appo/genesis.json", "/pantheon/genesis/genesis.json")
 	})
 	if err != nil {
-			log.Println(err)
-			return nil, err
+		log.Println(err)
+		return nil, err
 	}
 
 	/* Start the nodes */
