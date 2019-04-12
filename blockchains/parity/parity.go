@@ -4,6 +4,7 @@ import (
 	db "../../db"
 	state "../../state"
 	util "../../util"
+	helpers "../helpers"
 	"context"
 	"encoding/json"
 	"errors"
@@ -12,6 +13,7 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -29,7 +31,7 @@ func init() {
  */
 func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {
-	//var mutex = &sync.Mutex{}
+	mux := sync.Mutex{}
 	var sem = semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
 	pconf, err := NewConf(details.Params)
@@ -40,17 +42,14 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 
 	buildState.SetBuildSteps(8 + (10 * details.Nodes))
-
 	//Make the data directories
-	for i, server := range servers {
-		for j, _ := range server.Ips {
-			res, err := clients[i].DockerExec(j, "mkdir -p /parity")
-			if err != nil {
-				log.Println(res)
-				log.Println(err)
-				return nil, err
-			}
-		}
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir -p /parity")
+		return err
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
 	buildState.IncrementBuildProgress()
 
@@ -68,52 +67,57 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 	buildState.IncrementBuildProgress()
 	/**Copy over the password file**/
-	for i, server := range servers {
-		err = clients[i].Scp("passwd", "/home/appo/passwd")
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-		defer clients[i].Run("rm /home/appo/passwd")
+	err = helpers.CopyToServers(servers, clients, buildState, "passwd", "/home/appo/passwd")
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 
-		for j, _ := range server.Ips {
-			err = clients[i].DockerCp(j, "/home/appo/passwd", "/parity/")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			buildState.IncrementBuildProgress()
-		}
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		buildState.IncrementBuildProgress()
+		return clients[serverNum].DockerCp(localNodeNum, "/home/appo/passwd", "/parity/")
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
 
 	/**Create the wallets**/
-	wallets := []string{}
-	rawWallets := []string{}
-	for i, server := range servers {
-		for j, _ := range server.Ips {
-			res, err := clients[i].DockerExec(j,
-				fmt.Sprintf("parity --base-path=/parity/ --password=/parity/passwd account new"))
-			if err != nil {
-				log.Println(res)
-				log.Println(err)
-				return nil, err
-			}
-			if len(res) == 0 {
-				return nil, errors.New("account new returned an empty response")
-			}
-
-			address := res[:len(res)-1]
-			wallets = append(wallets, address)
-
-			res, err = clients[i].DockerExec(j, "bash -c 'cat /parity/keys/ethereum/*'")
-			if err != nil {
-				log.Println(res)
-				log.Println(err)
-				return nil, err
-			}
-			buildState.IncrementBuildProgress()
-			rawWallets = append(rawWallets, strings.Replace(res, "\"", "\\\"", -1))
+	wallets := make([]string, details.Nodes)
+	rawWallets := make([]string, details.Nodes)
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		res, err := clients[serverNum].DockerExec(localNodeNum,
+			fmt.Sprintf("parity --base-path=/parity/ --password=/parity/passwd account new"))
+		if err != nil {
+			log.Println(err)
+			return err
 		}
+
+		if len(res) == 0 {
+			return fmt.Errorf("account new returned an empty response")
+		}
+
+		address := res[:len(res)-1]
+
+		mux.Lock()
+		wallets[absoluteNodeNum] = address
+		mux.Unlock()
+
+		res, err = clients[serverNum].DockerExec(localNodeNum, "bash -c 'cat /parity/keys/ethereum/*'")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		buildState.IncrementBuildProgress()
+
+		mux.Lock()
+		rawWallets[absoluteNodeNum] = strings.Replace(res, "\"", "\\\"", -1)
+		mux.Unlock()
+		return nil
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
 	//Start up the geth node
 	{

@@ -5,6 +5,7 @@ import (
 	state "../../state"
 	util "../../util"
 	"context"
+	"fmt"
 	"golang.org/x/sync/semaphore"
 	"log"
 )
@@ -72,4 +73,12 @@ func AllServerExecCon(servers []db.Server, buildState *state.BuildState,
 		return buildState.GetError()
 	}
 	return nil
+}
+
+func CopyToServers(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState, src string, dst string) error {
+	return AllServerExecCon(servers, buildState, func(serverNum int, server *db.Server) error {
+		buildState.Defer(func() { clients[serverNum].Run(fmt.Sprintf("rm -rf %s", dst)) })
+		return clients[serverNum].Scp(src, dst)
+	})
+
 }
