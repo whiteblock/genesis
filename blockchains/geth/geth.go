@@ -68,9 +68,8 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		defer clients[i].Run("rm /home/appo/passwd")
 
 		for j, _ := range server.Ips {
-			res, err := clients[i].DockerExec(j, "mkdir -p /geth")
+			_, err := clients[i].DockerExec(j, "mkdir -p /geth")
 			if err != nil {
-				log.Println(res)
 				log.Println(err)
 				return nil, err
 			}
@@ -97,9 +96,8 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 					defer sem.Release(1)
 					gethResults, err := clients[i].DockerExec(node, "geth --datadir /geth/ --password /geth/passwd account new")
 					if err != nil {
-						log.Println(gethResults)
 						log.Println(err)
-						buildState.ReportError(fmt.Errorf("%s\n%s", err.Error(), gethResults))
+						buildState.ReportError(err)
 						return
 					}
 
@@ -219,12 +217,11 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 				defer sem.Release(1)
 				//fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n",i)
 				//Load the CustomGenesis file
-				res, err := clients[i].DockerExec(j,
+				_, err := clients[i].DockerExec(j,
 					fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/CustomGenesis.json", ethconf.NetworkId))
 				if err != nil {
-					log.Println(res)
 					log.Println(err)
-					buildState.ReportError(fmt.Errorf("%s\n%s", err.Error(), res))
+					buildState.ReportError(err)
 					return
 				}
 				fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n", node)
@@ -313,8 +310,8 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 					buildState.ReportError(err)
 					return
 				}
-				clients[i].DockerExecdit(num, fmt.Sprintf("bash -ic '%s'", gethCmd))
 
+				_,err = clients[i].DockerExecdit(num, fmt.Sprintf("bash -ic '%s'", gethCmd))
 				if err != nil {
 					log.Println(err)
 					buildState.ReportError(err)
@@ -351,17 +348,15 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 				//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
 
-				res, err := clients[i].DockerExec(relNum, sedCmd)
+				_, err := clients[i].DockerExec(relNum, sedCmd)
 				if err != nil {
 					log.Println(err)
-					log.Println(res)
 					buildState.ReportError(err)
 					return
 				}
-				res, err = clients[i].DockerExec(relNum, sedCmd2)
+				_, err = clients[i].DockerExec(relNum, sedCmd2)
 				if err != nil {
 					log.Println(err)
-					log.Println(res)
 					buildState.ReportError(err)
 					return
 				}

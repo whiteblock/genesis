@@ -281,12 +281,11 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 					log.Println(err)
 					return
 				}
-				res, err := clients[0].KeepTryDockerExec(0, fmt.Sprintf("cleos -u http://%s:8889 create account eosio %s %s %s",
+				_, err = clients[0].KeepTryDockerExec(0, fmt.Sprintf("cleos -u http://%s:8889 create account eosio %s %s %s",
 					masterIP, account, masterKeyPair.PublicKey, contractKeyPair.PublicKey))
 				if err != nil {
 					buildState.ReportError(err)
 					log.Println(err)
-					log.Println(res)
 					return
 				}
 

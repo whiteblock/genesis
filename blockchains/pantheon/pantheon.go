@@ -45,10 +45,9 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			sem.Acquire(ctx, 1)
 			go func(i int, localId int, node int) {
 				defer sem.Release(1)
-				res, err := clients[i].DockerExec(localId, "pantheon --data-path=/pantheon/data public-key export-address --to=/pantheon/data/nodeAddress")
+				_, err := clients[i].DockerExec(localId, "pantheon --data-path=/pantheon/data public-key export-address --to=/pantheon/data/nodeAddress")
 				if err != nil {
 					log.Println(err)
-					log.Println(res)
 					buildState.ReportError(err)
 					return
 				}
@@ -95,10 +94,9 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 				privKeys[node] = privKey[2:]
 				mux.Unlock()
 
-				res, err = clients[i].DockerExec(localId, "bash -c 'echo \"[\\\""+addrs+"\\\"]\" >> /pantheon/data/toEncode.json'")
+				_, err = clients[i].DockerExec(localId, "bash -c 'echo \"[\\\""+addrs+"\\\"]\" >> /pantheon/data/toEncode.json'")
 				if err != nil {
 					log.Println(err)
-					log.Println(res)
 					buildState.ReportError(err)
 					return
 				}

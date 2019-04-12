@@ -25,50 +25,43 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	/**
 	 * Set up first node
 	 */
-	res, err := clients[0].DockerExec(0, "gaiad init --chain-id=whiteblock whiteblock")
+	_, err := clients[0].DockerExec(0, "gaiad init --chain-id=whiteblock whiteblock")
 	if err != nil {
-		log.Println(res)
 		log.Println(err)
 		return nil, err
 	}
 	buildState.IncrementBuildProgress()
-	res, err = clients[0].DockerExec(0, "bash -c 'echo \"password\\n\" | gaiacli keys add validator -ojson'")
+	_, err = clients[0].DockerExec(0, "bash -c 'echo \"password\\n\" | gaiacli keys add validator -ojson'")
 	if err != nil {
-		log.Println(res)
 		log.Println(err)
 		return nil, err
 	}
 
-	res, err = clients[0].DockerExec(0, "gaiacli keys show validator -a")
+	res, err := clients[0].DockerExec(0, "gaiacli keys show validator -a")
 	if err != nil {
-		log.Println(res)
 		log.Println(err)
 		return nil, err
 	}
 	buildState.IncrementBuildProgress()
-	res, err = clients[0].DockerExec(0, fmt.Sprintf("gaiad add-genesis-account %s 100000000stake,100000000validatortoken", res[:len(res)-1]))
+	_, err = clients[0].DockerExec(0, fmt.Sprintf("gaiad add-genesis-account %s 100000000stake,100000000validatortoken", res[:len(res)-1]))
 	if err != nil {
-		log.Println(res)
 		log.Println(err)
 		return nil, err
 	}
 
-	res, err = clients[0].DockerExec(0, "bash -c 'echo \"password\\n\" | gaiad gentx --name validator'")
+	_, err = clients[0].DockerExec(0, "bash -c 'echo \"password\\n\" | gaiad gentx --name validator'")
 	if err != nil {
-		log.Println(res)
 		log.Println(err)
 		return nil, err
 	}
 	buildState.IncrementBuildProgress()
-	res, err = clients[0].DockerExec(0, "gaiad collect-gentxs")
+	_, err = clients[0].DockerExec(0, "gaiad collect-gentxs")
 	if err != nil {
-		log.Println(res)
 		log.Println(err)
 		return nil, err
 	}
 	genesisFile, err := clients[0].DockerExec(0, "cat /root/.gaiad/config/genesis.json")
 	if err != nil {
-		log.Println(res)
 		log.Println(err)
 		return nil, err
 	}
@@ -79,10 +72,9 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		for j, ip := range server.Ips {
 			if node != 0 {
 				//init everything
-				res, err = clients[i].DockerExec(j, "gaiad init --chain-id=whiteblock whiteblock")
+				_, err = clients[i].DockerExec(j, "gaiad init --chain-id=whiteblock whiteblock")
 				if err != nil {
 					log.Println(res)
-					log.Println(err)
 					return nil, err
 				}
 			}
@@ -90,7 +82,6 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			//Get the node id
 			res, err = clients[i].DockerExec(j, "gaiad tendermint show-node-id")
 			if err != nil {
-				log.Println(res)
 				log.Println(err)
 				return nil, err
 			}
@@ -122,9 +113,8 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 				buildState.IncrementBuildProgress()
 				continue
 			}
-			res, err := clients[i].DockerExec(j, "rm /root/.gaiad/config/genesis.json")
+			_, err := clients[i].DockerExec(j, "rm /root/.gaiad/config/genesis.json")
 			if err != nil {
-				log.Println(res)
 				log.Println(err)
 				return nil, err
 			}
@@ -143,9 +133,8 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		for j, _ := range server.Ips {
 			cmd := fmt.Sprintf("gaiad start --p2p.persistent_peers=%s",
 				strings.Join(append(peers[:node], peers[node+1:]...), ","))
-			res, err := clients[i].DockerExecd(j, cmd)
+			_, err:= clients[i].DockerExecd(j, cmd)
 			if err != nil {
-				log.Println(res)
 				log.Println(err)
 				return nil, err
 			}
@@ -156,9 +145,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	return nil, nil
 }
 
-//,buildState *state.BuildState
-//
-//
+
 func Add(data map[string]interface{}, nodes int, servers []db.Server, clients []*util.SshClient,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
