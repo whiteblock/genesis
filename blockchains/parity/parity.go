@@ -22,7 +22,7 @@ func init() {
 
 /*
 Build builds out a fresh new ethereum test network
- */
+*/
 func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {
 
@@ -131,7 +131,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			log.Println(err)
 			return nil, err
 		}
-		buildState.Defer(func(){clients[0].Run("rm /home/appo/genesis.json")})
+		buildState.Defer(func() { clients[0].Run("rm /home/appo/genesis.json") })
 
 		buildState.IncrementBuildProgress()
 
@@ -261,7 +261,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	//util.Write("tmp/config.toml",configToml)
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		defer buildState.IncrementBuildProgress()
-		return clients[serverNum].DockerExecdLog(localNodeNum, 
+		return clients[serverNum].DockerExecdLog(localNodeNum,
 			fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`, wallets[absoluteNodeNum]))
 	})
 	if err != nil {

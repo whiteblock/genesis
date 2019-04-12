@@ -2,9 +2,9 @@ package tendermint
 
 import (
 	db "../../db"
-	helpers "../helpers"
 	state "../../state"
 	util "../../util"
+	helpers "../helpers"
 	"encoding/json"
 	"fmt"
 	"log"

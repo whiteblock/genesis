@@ -17,7 +17,7 @@ func init() {
 
 /*
 Build builds out a fresh new artemis test network
- */
+*/
 func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {
 

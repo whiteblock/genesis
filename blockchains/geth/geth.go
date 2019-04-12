@@ -24,7 +24,7 @@ const ETH_NET_STATS_PORT = 3338
 
 /*
 Build builds out a fresh new ethereum test network using geth
- */
+*/
 func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {
 
