@@ -20,12 +20,9 @@ func init() {
 	conf = util.GetConfig()
 }
 
-/**
- * Build the Ethereum Test Network
- * @param  map[string]interface{}   data    Configuration Data for the network
- * @param  int      nodes       The number of nodes in the network
- * @param  []Server servers     The list of servers passed from build
- */
+/*
+Build builds out a fresh new ethereum test network
+*/
 func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {
 
@@ -134,27 +131,14 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			log.Println(err)
 			return nil, err
 		}
-		defer clients[0].Run("rm /home/appo/genesis.json")
+		buildState.Defer(func() { clients[0].Run("rm /home/appo/genesis.json") })
 
 		buildState.IncrementBuildProgress()
 
-		_, err = clients[0].Run("docker exec wb_service0 mkdir -p /geth")
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-
-		_, err = clients[0].Run("docker cp /home/appo/genesis.json wb_service0:/geth/")
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-
-		_, err = clients[0].Run("docker exec wb_service0 bash -c 'echo second >> /geth/passwd'")
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
+		_, err = clients[0].FastMultiRun(
+			"docker exec wb_service0 mkdir -p /geth",
+			"docker cp /home/appo/genesis.json wb_service0:/geth/",
+			"docker exec wb_service0 bash -c 'echo second >> /geth/passwd'")
 
 		buildState.IncrementBuildProgress()
 
@@ -226,22 +210,13 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 
 	//Copy over the config file, spec file, and the accounts
-	err = helpers.AllServerExecCon(servers, buildState, func(serverNum int, server *db.Server) error {
-		buildState.Defer(func() { clients[serverNum].Run("rm /home/appo/config.toml") })
-		err := clients[serverNum].Scp("config.toml", "/home/appo/config.toml")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		buildState.Defer(func() { clients[serverNum].Run("rm /home/appo/spec.json") })
-		return clients[serverNum].Scp("spec.json", "/home/appo/spec.json")
-	})
+	err = helpers.CopyAllToServers(servers, clients, buildState,
+		"config.toml", "/home/appo/config.toml",
+		"spec.json", "/home/appo/spec.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		err := clients[serverNum].DockerCp(localNodeNum, "/home/appo/spec.json", "/parity/")
 		if err != nil {
@@ -285,9 +260,9 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 	//util.Write("tmp/config.toml",configToml)
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		parityCmd := fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`, wallets[absoluteNodeNum])
 		defer buildState.IncrementBuildProgress()
-		return clients[serverNum].DockerExecdLog(localNodeNum, parityCmd)
+		return clients[serverNum].DockerExecdLog(localNodeNum,
+			fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`, wallets[absoluteNodeNum]))
 	})
 	if err != nil {
 		log.Println(err)

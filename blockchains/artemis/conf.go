@@ -35,7 +35,7 @@ func NewConf(data map[string]interface{}) (ArtemisConf, error) {
 }
 
 func GetParams() string {
-	dat, err := ioutil.ReadFile("./resources/artemis/params.json")
+	dat, err := util.GetBlockchainConfig("artemis", "params.json", nil)
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -43,7 +43,7 @@ func GetParams() string {
 }
 
 func GetDefaults() string {
-	dat, err := ioutil.ReadFile("./resources/artemis/defaults.json")
+	dat, err := util.GetBlockchainConfig("artemis", "defaults.json", nil)
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}

@@ -1,5 +1,5 @@
 /*
-   Manages persistent state and keeps track of previous and current builds.
+Package db manages persistent state and keeps track of previous and current builds.
 */
 package db
 
@@ -7,15 +7,22 @@ import (
 	util "../util"
 	"database/sql"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" //needed for db
 	"os"
 )
 
 var dataLoc string = os.Getenv("HOME") + "/.config/whiteblock/.gdata"
 
+//ServerTable contains name of the server table
 const ServerTable string = "servers"
+
+//TestTable contains name of the testnet table
 const TestTable string = "testnets"
+
+//NodesTable contains name of the nodes table
 const NodesTable string = "nodes"
+
+//BuildsTable contains name of the builds table
 const BuildsTable string = "builds"
 
 var conf = util.GetConfig()

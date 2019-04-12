@@ -115,141 +115,94 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		log.Println(err)
 		return nil, err
 	}
+
 	err = buildState.Write("genesis.json", genesis)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	eosConfigIni := eosconf.GenerateConfig()
-	/*if err != nil {
-	    log.Println(err)
-	    return nil,err
-	}*/
-	err = buildState.Write("config.ini", eosConfigIni)
+
+	err = buildState.Write("config.ini", eosconf.GenerateConfig())
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 	buildState.IncrementBuildProgress()
 	/**Start keos and add all the key pairs for all the nodes**/
-	{
-		buildState.SetBuildStage("Generating key pairs")
-		for i, server := range servers {
-			for localId, ip := range server.Ips {
-				/**Start keosd**/
-				_, err = clients[i].DockerExecd(localId, "keosd --http-server-address 0.0.0.0:8900")
+	buildState.SetBuildStage("Generating key pairs")
+
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		/**Start keosd**/
+		ip := servers[serverNum].Ips[localNodeNum]
+		_, err = clients[serverNum].DockerExecd(localNodeNum, "keosd --http-server-address 0.0.0.0:8900")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		clientPasswords[ip], err = eos_createWallet(clients[serverNum], localNodeNum)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		cmds := []string{}
+		for _, name := range accountNames {
+			if len(cmds) > 50 {
+				_, err := clients[serverNum].KTDockerMultiExec(localNodeNum, cmds)
 				if err != nil {
 					log.Println(err)
-					return nil, err
+					return err
 				}
-				clientPasswords[ip], err = eos_createWallet(clients[i], localId)
-				if err != nil {
-					log.Println(err)
-					return nil, err
-				}
-				sem.Acquire(ctx, 1)
+				buildState.IncrementBuildProgress()
+				cmds = []string{}
+			}
 
-				go func(accountKeyPairs map[string]util.KeyPair, accountNames []string, localId int, server int) {
-					defer sem.Release(1)
-					cmds := []string{}
-					for _, name := range accountNames {
-						if len(cmds) > 50 {
-							_, err := clients[server].KTDockerMultiExec(localId, cmds)
-							if err != nil {
-								log.Println(err)
-								buildState.ReportError(err)
-								return
-							}
-							buildState.IncrementBuildProgress()
-							cmds = []string{}
-						}
-
-						cmds = append(cmds, fmt.Sprintf("cleos wallet import --private-key %s", accountKeyPairs[name].PrivateKey))
-					}
-					if len(cmds) > 0 {
-						_, err := clients[server].KTDockerMultiExec(localId, cmds)
-						if err != nil {
-							log.Println(err)
-							buildState.ReportError(err)
-							return
-						}
-					}
-					buildState.IncrementBuildProgress()
-				}(accountKeyPairs, accountNames, localId, i)
-
+			cmds = append(cmds, fmt.Sprintf("cleos wallet import --private-key %s", accountKeyPairs[name].PrivateKey))
+		}
+		if len(cmds) > 0 {
+			_, err := clients[serverNum].KTDockerMultiExec(localNodeNum, cmds)
+			if err != nil {
+				log.Println(err)
+				return err
 			}
 		}
-		sem.Acquire(ctx, conf.ThreadLimit)
-		sem.Release(conf.ThreadLimit)
-		if !buildState.ErrorFree() {
-			return nil, buildState.GetError()
-		}
-	}
+		buildState.IncrementBuildProgress()
+		return nil
+	})
+
 	password := clientPasswords[servers[0].Ips[0]]
 	passwordNormal := clientPasswords[servers[0].Ips[1]]
 	buildState.IncrementBuildProgress()
-	{
-		buildState.SetBuildStage("Building genesis block")
-		node := 0
-		for i, server := range servers {
-			sem.Acquire(ctx, 1)
-			go func(i int, ips []string) {
-				defer sem.Release(1)
-				err := clients[i].Scp("genesis.json", "/home/appo/genesis.json")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				err = clients[i].Scp("config.ini", "/home/appo/config.ini")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
 
-				for j := 0; j < len(ips); j++ {
-					_, err = clients[i].DockerExec(j, "mkdir /datadir/")
-					if err != nil {
-						log.Println(err)
-						buildState.ReportError(err)
-						return
-					}
-					err = clients[i].DockerCp(j, "/home/appo/genesis.json", "/datadir/")
-					if err != nil {
-						log.Println(err)
-						buildState.ReportError(err)
-						return
-					}
+	buildState.SetBuildStage("Building genesis block")
 
-					err = clients[i].DockerCp(j, "/home/appo/config.ini", "/datadir/")
-					if err != nil {
-						log.Println(err)
-						buildState.ReportError(err)
-						return
-					}
-					node++
-					buildState.IncrementBuildProgress()
-				}
-				_, err = clients[i].Run("rm /home/appo/genesis.json")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				_, err = clients[i].Run("rm /home/appo/config.ini")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-			}(i, server.Ips)
+	err = helpers.CopyAllToServers(servers, clients, buildState,
+		"genesis.json", "/home/appo/genesis.json",
+		"config.ini", "/home/appo/config.ini")
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		defer buildState.IncrementBuildProgress()
+		_, err = clients[serverNum].DockerExec(localNodeNum, "mkdir /datadir/")
+		if err != nil {
+			log.Println(err)
+			return err
 		}
-		sem.Acquire(ctx, conf.ThreadLimit)
-		sem.Release(conf.ThreadLimit)
-		if !buildState.ErrorFree() {
-			return nil, buildState.GetError()
+		err = clients[serverNum].DockerCp(localNodeNum, "/home/appo/genesis.json", "/datadir/")
+		if err != nil {
+			log.Println(err)
+			return err
 		}
+
+		return clients[serverNum].DockerCp(localNodeNum, "/home/appo/config.ini", "/datadir/")
+
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
 
 	buildState.IncrementBuildProgress()
@@ -760,111 +713,6 @@ func Add(details db.DeploymentDetails, servers []db.Server, clients []*util.SshC
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }
-
-/*func eos_getKeyPair(server int,clients []*util.SshClient) (util.KeyPair,error){
-    data,err := clients[server].DockerExec(0,"cleos create key --to-console | awk '{print $3}'")
-    if err != nil {
-        return util.KeyPair{},err
-    }
-    //fmt.Printf("RAW KEY DATA%s\n", data)
-    keyPair := strings.Split(data, "\n")
-    if(len(data) < 10){
-        return util.KeyPair{},fmt.Errorf("Unexpected create key output %s\n",keyPair)
-        panic(1)
-    }
-    return util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]},nil
-}*/
-
-/**
-func eos_getKeyPairs(servers []db.Server,clients []*util.SshClient) (map[string]util.KeyPair,error) {
-    keyPairs := make(map[string]util.KeyPair)
-    //Get the key pairs for each nodeos account
-
-    var wg sync.WaitGroup
-    var mutex = &sync.Mutex{}
-
-    for i, server := range servers {
-        wg.Add(1)
-        go func(server int,ips []string){
-            defer wg.Done()
-            for _, ip := range ips {
-                data,err := clients[server].DockerExec(0,"cleos create key --to-console | awk '{print $3}'")
-                if err != nil {
-                    state.ReportError(err)
-                    return
-                }
-                //fmt.Printf("RAW KEY DATA%s\n", data)
-                keyPair := strings.Split(data, "\n")
-                if(len(data) < 10){
-                    fmt.Printf("Unexpected create key output %s\n",keyPair)
-                    panic(1)
-                }
-
-                mutex.Lock()
-                keyPairs[ip] = util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]}
-                mutex.Unlock()
-            }
-        }(i,server.Ips)
-    }
-    wg.Wait()
-    if !state.ErrorFree() {
-        return nil, state.GetError()
-    }
-    return keyPairs,nil
-}
-
-
-func eos_getContractKeyPairs(servers []db.Server,contractAccounts []string) (map[string]util.KeyPair,error) {
-
-    keyPairs := make(map[string]util.KeyPair)
-    server := servers[0]
-    var err error
-
-    for _,contractAccount := range contractAccounts {
-
-        keyPairs[contractAccount],err = eos_getKeyPair(server.Addr)
-        if err != nil {
-            return keyPairs,err
-        }
-    }
-    return keyPairs,nil
-}
-
-func eos_getUserAccountKeyPairs(client *util.SshClient,accountNames []string) (map[string]util.KeyPair,error) {
-
-    keyPairs := make(map[string]util.KeyPair)
-    sem := semaphore.NewWeighted(conf.ThreadLimit)
-    var mutex = &sync.Mutex{}
-    ctx := context.TODO()
-
-    for _,name := range accountNames {
-        sem.Acquire(ctx,1)
-        go func(name string){
-            defer sem.Release(1)
-            data,err := client.DockerExec(0, "cleos create key --to-console | awk '{print $3}'")
-            if err != nil{
-                state.ReportError(err)
-                return
-            }
-            //fmt.Printf("RAW KEY DATA%s\n", data)
-            keyPair := strings.Split(data, "\n")
-            if(len(data) < 10){
-                fmt.Printf("Unexpected create key output %s\n",keyPair)
-                panic(1)
-            }
-            mutex.Lock()
-            keyPairs[name] = util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]}
-            mutex.Unlock()
-        }(name)
-    }
-    sem.Acquire(ctx,conf.ThreadLimit)
-    sem.Release(conf.ThreadLimit)
-    if !state.ErrorFree(){
-        return keyPairs,state.GetError()
-    }
-    return keyPairs,nil
-}
-*/
 
 func eos_createWallet(client *util.SshClient, node int) (string, error) {
 	data, err := client.DockerExec(node, "cleos wallet create --to-console | tail -n 1")

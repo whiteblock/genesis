@@ -4,6 +4,7 @@ import (
 	db "../../db"
 	state "../../state"
 	util "../../util"
+	helpers "../helpers"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -40,17 +41,15 @@ func Build(details db.DeploymentDetails, servers []db.Server,
 	for i, server := range servers {
 		for j, ip := range server.Ips {
 			//init everything
-			res, err := clients[i].DockerExec(j, "tendermint init")
+			_, err := clients[i].DockerExec(j, "tendermint init")
 			if err != nil {
-				log.Println(res)
 				log.Println(err)
 				return nil, err
 			}
 
 			//Get the node id
-			res, err = clients[i].DockerExec(j, "tendermint show_node_id")
+			res, err := clients[i].DockerExec(j, "tendermint show_node_id")
 			if err != nil {
-				log.Println(res)
 				log.Println(err)
 				return nil, err
 			}
@@ -60,7 +59,6 @@ func Build(details db.DeploymentDetails, servers []db.Server,
 			//Get the validators
 			res, err = clients[i].DockerExec(j, "cat /root/.tendermint/config/genesis.json")
 			if err != nil {
-				log.Println(res)
 				log.Println(err)
 				return nil, err
 			}
@@ -83,6 +81,11 @@ func Build(details db.DeploymentDetails, servers []db.Server,
 				validatorPubKeyData := validatorData["pub_key"].(map[string]interface{})
 
 				err = util.GetJSONString(validatorPubKeyData, "type", &validator.PubKey.Type)
+				if err != nil {
+					log.Println(err)
+					return nil, err
+				}
+
 				err = util.GetJSONString(validatorPubKeyData, "value", &validator.PubKey.Value)
 
 				err = util.GetJSONString(validatorData, "power", &validator.Power)
@@ -107,35 +110,27 @@ func Build(details db.DeploymentDetails, servers []db.Server,
 		log.Println(err)
 		return nil, err
 	}
+
+	err = helpers.CopyToServers(servers, clients, buildState, "genesis.json", "/home/appo/genesis.json")
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 	//distribute the created genensis file among the nodes
-	for i, server := range servers {
-		err := clients[i].Scp("genesis.json", "/home/appo/genesis.json")
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		defer buildState.IncrementBuildProgress()
+		_, err := clients[serverNum].DockerExec(localNodeNum, "rm /root/.tendermint/config/genesis.json")
 		if err != nil {
 			log.Println(err)
-			return nil, err
+			return err
 		}
-		defer clients[i].Run("rm /home/appo/genesis.json")
+		return clients[serverNum].DockerCp(localNodeNum, "/home/appo/genesis.json", "/root/.tendermint/config/")
+	})
 
-		for j, _ := range server.Ips {
-			res, err := clients[i].DockerExec(j, "rm /root/.tendermint/config/genesis.json")
-			if err != nil {
-				log.Println(res)
-				log.Println(err)
-				return nil, err
-			}
-			err = clients[i].DockerCp(j, "/home/appo/genesis.json", "/root/.tendermint/config/")
-			if err != nil {
-				log.Println(res)
-				log.Println(err)
-				return nil, err
-			}
-			buildState.IncrementBuildProgress()
-		}
-	}
 	buildState.SetBuildStage("Starting tendermint")
 	node := 0
 	for i, server := range servers {
-		for j, _ := range server.Ips {
+		for j := range server.Ips {
 			cmd := fmt.Sprintf("tendermint node --proxy_app=kvstore --p2p.persistent_peers=%s",
 				strings.Join(append(peers[:node], peers[node+1:]...), ","))
 			res, err := clients[i].DockerExecd(j, cmd)

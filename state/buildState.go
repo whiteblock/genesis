@@ -26,12 +26,12 @@ type CustomError struct {
    Packages the build state nicely into an object
 */
 type BuildState struct {
-	errMutex  sync.RWMutex
-	extraMux  sync.RWMutex
-	freeze    sync.RWMutex
-	mutex     sync.RWMutex
-	stopMux   sync.RWMutex
-	freezeMux sync.RWMutex
+	errMutex  *sync.RWMutex
+	extraMux  *sync.RWMutex
+	freeze    *sync.RWMutex
+	mutex     *sync.RWMutex
+	stopMux   *sync.RWMutex
+	freezeMux *sync.RWMutex
 
 	building bool
 	Frozen   bool
@@ -53,6 +53,13 @@ type BuildState struct {
 
 func NewBuildState(servers []int, buildId string) *BuildState {
 	out := new(BuildState)
+
+	out.errMutex = &sync.RWMutex{}
+	out.extraMux = &sync.RWMutex{}
+	out.freeze = &sync.RWMutex{}
+	out.mutex = &sync.RWMutex{}
+	out.stopMux = &sync.RWMutex{}
+	out.freezeMux = &sync.RWMutex{}
 
 	out.building = true
 	out.Frozen = false
