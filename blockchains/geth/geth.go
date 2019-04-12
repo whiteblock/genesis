@@ -5,11 +5,9 @@ import (
 	state "../../state"
 	util "../../util"
 	helpers "../helpers"
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/mustache"
-	"golang.org/x/sync/semaphore"
 	"log"
 	"regexp"
 	"strings"
@@ -33,8 +31,6 @@ const ETH_NET_STATS_PORT = 3338
 func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {
 
-	var sem = semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
 	mux := sync.Mutex{}
 	ethconf, err := NewConf(details.Params)
 	if err != nil {
@@ -60,28 +56,29 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 	buildState.SetBuildStage("Distributing secrets")
 	/**Copy over the password file**/
-	for i, server := range servers {
-		err = clients[i].Scp("passwd", "/home/appo/passwd")
+	err = helpers.AllServerExecCon(servers, buildState, func(serverNum int, server *db.Server) error {
+		buildState.Defer(func() { clients[serverNum].Run("rm /home/appo/passwd") })
+		buildState.IncrementBuildProgress()
+		return clients[serverNum].Scp("passwd", "/home/appo/passwd")
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir -p /geth")
 		if err != nil {
 			log.Println(err)
-			return nil, err
+			return err
 		}
-		defer clients[i].Run("rm /home/appo/passwd")
 
-		for j, _ := range server.Ips {
-			_, err := clients[i].DockerExec(j, "mkdir -p /geth")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
+		return clients[serverNum].DockerCp(localNodeNum, "/home/appo/passwd", "/geth/")
+	})
 
-			err = clients[i].DockerCp(j, "/home/appo/passwd", "/geth/")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-		}
-		buildState.IncrementBuildProgress()
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
 
 	/**Create the wallets**/
@@ -149,50 +146,37 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Bootstrapping network")
-	node := 0
-	for i, server := range servers {
-		err = clients[i].Scp("CustomGenesis.json", "/home/appo/CustomGenesis.json")
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-		defer clients[i].Run("rm /home/appo/CustomGenesis.json")
 
-		for j, _ := range server.Ips {
-			sem.Acquire(ctx, 1)
-			go func(i int, j int, node int) {
-				defer sem.Release(1)
-				err := clients[i].DockerCp(j, "/home/appo/CustomGenesis.json", "/geth/")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				for k, rawWallet := range rawWallets {
-					if k == node {
-						continue
-					}
-					_, err = clients[i].DockerExec(j, fmt.Sprintf("bash -c 'echo \"%s\">>/geth/keystore/account%d'", rawWallet, k))
-					if err != nil {
-						log.Println(err)
-						buildState.ReportError(err)
-						return
-					}
-				}
-			}(i, j, node)
-			node++
-		}
-	}
-
-	err = sem.Acquire(ctx, conf.ThreadLimit)
+	err = helpers.AllServerExecCon(servers, buildState, func(serverNum int, server *db.Server) error {
+		buildState.Defer(func() { clients[serverNum].Run("rm /home/appo/CustomGenesis.json") })
+		return clients[serverNum].Scp("CustomGenesis.json", "/home/appo/CustomGenesis.json")
+	})
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	sem.Release(conf.ThreadLimit)
-
-	if !buildState.ErrorFree() {
-		return nil, buildState.GetError()
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		err := clients[serverNum].DockerCp(localNodeNum, "/home/appo/CustomGenesis.json", "/geth/")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		for i, rawWallet := range rawWallets {
+			if i == absoluteNodeNum {
+				continue
+			}
+			_, err = clients[serverNum].DockerExec(localNodeNum,
+				fmt.Sprintf("bash -c 'echo \"%s\">>/geth/keystore/account%d'", rawWallet, i))
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
 
 	staticNodes := make([]string, details.Nodes)
@@ -260,112 +244,82 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		return nil, err
 	}
 
-	node = 0
-	for i, server := range servers {
-		for j, ip := range server.Ips {
-			sem.Acquire(ctx, 1)
-			fmt.Printf("-----------------------------  Starting NODE-%d  -----------------------------\n", node)
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		ip := servers[serverNum].Ips[localNodeNum]
+		buildState.IncrementBuildProgress()
 
-			go func(networkId int64, node int, server string, num int, unlock string, nodeIP string, i int) {
-				defer sem.Release(1)
+		gethCmd := fmt.Sprintf(
+			`geth --datadir /geth/ --maxpeers %d --networkid %d --rpc --nodiscover --rpcaddr %s`+
+				` --rpcapi "web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
+				` --password /geth/passwd --etherbase %s console  2>&1 | tee %s`,
+			ethconf.MaxPeers,
+			ethconf.NetworkId,
+			ip,
+			unlock,
+			wallets[absoluteNodeNum],
+			conf.DockerOutputFile)
 
-				buildState.IncrementBuildProgress()
-
-				gethCmd := fmt.Sprintf(
-					`geth --datadir /geth/ --maxpeers %d --networkid %d --rpc --nodiscover --rpcaddr %s`+
-						` --rpcapi "web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
-						` --password /geth/passwd --etherbase %s console  2>&1 | tee %s`,
-					ethconf.MaxPeers,
-					networkId,
-					nodeIP,
-					unlock,
-					wallets[node],
-					conf.DockerOutputFile)
-
-				err = clients[i].DockerCp(num, "/home/appo/static-nodes.json", "/geth/")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-
-				_, err = clients[i].DockerExecdit(num, fmt.Sprintf("bash -ic '%s'", gethCmd))
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-
-				buildState.IncrementBuildProgress()
-			}(ethconf.NetworkId, node, server.Addr, j, unlock, ip, i)
-			node++
+		err := clients[serverNum].DockerCp(localNodeNum, "/home/appo/static-nodes.json", "/geth/")
+		if err != nil {
+			log.Println(err)
+			return err
 		}
-	}
-	err = sem.Acquire(ctx, conf.ThreadLimit)
+
+		_, err = clients[serverNum].DockerExecdit(localNodeNum, fmt.Sprintf("bash -ic '%s'", gethCmd))
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		buildState.IncrementBuildProgress()
+		return nil
+	})
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	sem.Release(conf.ThreadLimit)
-
 	buildState.IncrementBuildProgress()
-	if !buildState.ErrorFree() {
-		return nil, buildState.GetError()
-	}
 
 	err = setupEthNetStats(clients[0])
-	node = 0
-	for i, server := range servers {
-		for j, ip := range server.Ips {
-			sem.Acquire(ctx, 1)
-			go func(i int, nodeIP string, ethnetIP string, absNum int, relNum int) {
-				absName := fmt.Sprintf("%s%d", conf.NodePrefix, absNum)
-				sedCmd := fmt.Sprintf(`sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`, absName)
-				sedCmd2 := fmt.Sprintf(`sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:%d"/g' /eth-net-intelligence-api/app.json`, ethnetIP, ETH_NET_STATS_PORT)
-				sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`, nodeIP)
-
-				//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
-
-				_, err := clients[i].DockerExec(relNum, sedCmd)
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				_, err = clients[i].DockerExec(relNum, sedCmd2)
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				_, err = clients[i].DockerExec(relNum, sedCmd3)
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				_, err = clients[i].DockerExecd(relNum, "bash -c 'cd /eth-net-intelligence-api && pm2 start app.json'")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				sem.Release(1)
-				buildState.IncrementBuildProgress()
-			}(i, ip, util.GetGateway(server.SubnetID, node), node, j)
-			node++
-		}
-	}
-
-	err = sem.Acquire(ctx, conf.ThreadLimit)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	sem.Release(conf.ThreadLimit)
-	return nil, nil
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		ip := servers[serverNum].Ips[localNodeNum]
+		absName := fmt.Sprintf("%s%d", conf.NodePrefix, absoluteNodeNum)
+		sedCmd := fmt.Sprintf(`sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`, absName)
+		sedCmd2 := fmt.Sprintf(`sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:%d"/g' /eth-net-intelligence-api/app.json`,
+			util.GetGateway(servers[serverNum].SubnetID, absoluteNodeNum), ETH_NET_STATS_PORT)
+		sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`, ip)
 
+		//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
+
+		_, err := clients[serverNum].DockerExec(localNodeNum, sedCmd)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		_, err = clients[serverNum].DockerExec(localNodeNum, sedCmd2)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		_, err = clients[serverNum].DockerExec(localNodeNum, sedCmd3)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		_, err = clients[serverNum].DockerExecd(localNodeNum, "bash -c 'cd /eth-net-intelligence-api && pm2 start app.json'")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		buildState.IncrementBuildProgress()
+		return nil
+	})
+	return nil, err
 }
 
 /***************************************************************************************************************************/
