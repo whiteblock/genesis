@@ -56,15 +56,13 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 	buildState.SetBuildStage("Distributing secrets")
 	/**Copy over the password file**/
-	err = helpers.AllServerExecCon(servers, buildState, func(serverNum int, server *db.Server) error {
-		buildState.Defer(func() { clients[serverNum].Run("rm /home/appo/passwd") })
-		buildState.IncrementBuildProgress()
-		return clients[serverNum].Scp("passwd", "/home/appo/passwd")
-	})
+
+	err = helpers.CopyToServers(servers, clients, buildState, "passwd", "/home/appo/passwd")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
+	buildState.IncrementBuildProgress()
 
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir -p /geth")
@@ -147,10 +145,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Bootstrapping network")
 
-	err = helpers.AllServerExecCon(servers, buildState, func(serverNum int, server *db.Server) error {
-		buildState.Defer(func() { clients[serverNum].Run("rm /home/appo/CustomGenesis.json") })
-		return clients[serverNum].Scp("CustomGenesis.json", "/home/appo/CustomGenesis.json")
-	})
+	err = helpers.CopyToServers(servers, clients, buildState, "CustomGenesis.json", "/home/appo/CustomGenesis.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -235,10 +230,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Starting geth")
 	//Copy static-nodes to every server
-	err = helpers.AllServerExecCon(servers, buildState, func(serverNum int, server *db.Server) error {
-		buildState.Defer(func() { clients[serverNum].Run("rm /home/appo/static-nodes.json") })
-		return clients[serverNum].Scp("static-nodes.json", "/home/appo/static-nodes.json")
-	})
+	err = helpers.CopyToServers(servers, clients, buildState, "static-nodes.json", "/home/appo/static-nodes.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err

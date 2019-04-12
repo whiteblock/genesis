@@ -226,22 +226,13 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 
 	//Copy over the config file, spec file, and the accounts
-	err = helpers.AllServerExecCon(servers, buildState, func(serverNum int, server *db.Server) error {
-		buildState.Defer(func() { clients[serverNum].Run("rm /home/appo/config.toml") })
-		err := clients[serverNum].Scp("config.toml", "/home/appo/config.toml")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		buildState.Defer(func() { clients[serverNum].Run("rm /home/appo/spec.json") })
-		return clients[serverNum].Scp("spec.json", "/home/appo/spec.json")
-	})
+	err = helpers.CopyAllToServers(servers, clients, buildState,
+		"config.toml", "/home/appo/config.toml",
+		"spec.json", "/home/appo/spec.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		err := clients[serverNum].DockerCp(localNodeNum, "/home/appo/spec.json", "/parity/")
 		if err != nil {
