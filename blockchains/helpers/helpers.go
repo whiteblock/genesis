@@ -26,7 +26,7 @@ func AllNodeExecCon(servers []db.Server, buildState *state.BuildState,
 	ctx := context.TODO()
 	node := 0
 	for i, server := range servers {
-		for j, _ := range server.Ips {
+		for j := range server.Ips {
 			sem.Acquire(ctx, 1)
 			go func(i int, j int, node int) {
 				defer sem.Release(1)
@@ -90,7 +90,7 @@ func CopyAllToServers(servers []db.Server, clients []*util.SshClient, buildState
 	sem := semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
 
-	for i, _ := range servers {
+	for i := range servers {
 		for j := 0; j < len(srcDst)/2; j++ {
 			sem.Acquire(ctx, 1)
 			go func(i int, j int) {
