@@ -175,16 +175,20 @@ func (this SshClient) DockerExecdit(node int, command string) (string, error) {
 	return this.Run(fmt.Sprintf("docker exec -itd %s%d %s", conf.NodePrefix, node, command))
 }
 
-/*
-   DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs.
-   Should only be used for the blockchain process.
-*/
-func (this SshClient) DockerExecdLog(node int, command string) error {
+func (this SshClient) logSanitizeAndStore(node int, command string) {
 	if strings.Count(command, "'") != strings.Count(command, "\\'") {
 		panic("DockerExecdLog commands cannot contain unescaped ' characters")
 	}
 	bs := state.GetBuildStateByServerId(this.serverId)
 	bs.Set(fmt.Sprintf("%d", node), Command{Cmdline: command, ServerId: this.serverId, Node: node})
+}
+
+/*
+   DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs.
+   Should only be used for the blockchain process.
+*/
+func (this SshClient) DockerExecdLog(node int, command string) error {
+	this.logSanitizeAndStore(node, command)
 
 	_, err := this.Run(fmt.Sprintf("docker exec -d %s%d bash -c '%s 2>&1 > %s'", conf.NodePrefix,
 		node, command, conf.DockerOutputFile))
@@ -196,12 +200,7 @@ func (this SshClient) DockerExecdLog(node int, command string) error {
    Should only be used for the blockchain process. Will append to existing logs.
 */
 func (this SshClient) DockerExecdLogAppend(node int, command string) error {
-	if strings.Count(command, "'") != strings.Count(command, "\\'") {
-		panic("DockerExecdLog commands cannot contain unescaped ' characters")
-	}
-	bs := state.GetBuildStateByServerId(this.serverId)
-	bs.Set(fmt.Sprintf("%d", node), Command{Cmdline: command, ServerId: this.serverId, Node: node})
-
+	this.logSanitizeAndStore(node, command)
 	_, err := this.Run(fmt.Sprintf("docker exec -d %s%d bash -c '%s 2>&1 >> %s'", conf.NodePrefix,
 		node, command, conf.DockerOutputFile))
 	return err
