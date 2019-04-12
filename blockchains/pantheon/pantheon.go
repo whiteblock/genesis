@@ -238,6 +238,9 @@ func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address [
 	switch panconf.Consensus {
 	case "ibft2":
 		fallthrough
+	case "ibft":
+		panconf.Consensus = "ibft2"
+		fallthrough
 	case "clique":
 		consensusParams["blockPeriodSeconds"] = fmt.Sprintf("%d",panconf.BlockPeriodSeconds)
 		consensusParams["epoch"] = fmt.Sprintf("%d",panconf.Epoch)
