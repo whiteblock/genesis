@@ -337,7 +337,6 @@ func (this *EosConf) GenerateConfig() string {
 		fmt.Sprintf("connection-cleanup-period = %d", this.ConnectionCleanupPeriod),
 		fmt.Sprintf("network-version-match = %d", this.NetworkVersionMatch),
 		fmt.Sprintf("sync-fetch-span = %d", this.SyncFetchSpan),
-		//      fmt.Sprintf("max-implicit-request = %d",this.MaxImplicitRequest),
 		fmt.Sprintf("pause-on-startup = %v", this.PauseOnStartup),
 		fmt.Sprintf("max-transaction-time = %d", this.MaxTransactionTime),
 		fmt.Sprintf("max-irreversible-block-age = %d", this.MaxIrreversibleBlockAge),

@@ -2,11 +2,10 @@ package cosmos
 
 import (
 	util "../../util"
-	"io/ioutil"
 )
 
 func GetParams() string {
-	dat, err := ioutil.ReadFile("./resources/cosmos/params.json")
+	dat, err := util.GetBlockchainConfig("cosmos", "params.json", nil)
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -14,7 +13,7 @@ func GetParams() string {
 }
 
 func GetDefaults() string {
-	dat, err := ioutil.ReadFile("./resources/cosmos/defaults.json")
+	dat, err := util.GetBlockchainConfig("cosmos", "defaults.json", nil)
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}

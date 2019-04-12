@@ -240,33 +240,11 @@ func DeleteTestNet(testnetId string) error {
    Ensure that the blockchain you have implemented is included
    in the switch statement.
 */
-func GetParams(blockchain string) string {
-	switch blockchain {
-	case "ethereum":
-		fallthrough
-	case "geth":
-		return geth.GetParams()
-	case "parity":
-		return parity.GetParams()
-	case "pantheon":
-		return pantheon.GetParams()
-	case "artemis":
-		return artemis.GetParams()
-	case "syscoin":
-		return sys.GetParams()
-	case "eos":
-		return eos.GetParams()
-	case "rchain":
-		return rchain.GetParams()
-	case "beam":
-		return beam.GetParams()
-	case "tendermint":
-		return tendermint.GetParams()
-	case "cosmos":
-		return cosmos.GetParams()
-	default:
-		return "[]"
+func GetParams(blockchain string) ([]byte,error) {
+	if blockchain == "ethereum"{
+		return GetParams("geth")
 	}
+	return util.GetBlockchainConfig(blockchain, "params.json", nil)
 }
 
 /*
@@ -274,31 +252,9 @@ func GetParams(blockchain string) string {
    the blockchain you have implemented is included in the switch
    statement.
 */
-func GetDefaults(blockchain string) string {
-	switch blockchain {
-	case "ethereum":
-		fallthrough
-	case "geth":
-		return geth.GetDefaults()
-	case "pantheon":
-		return pantheon.GetDefaults()
-	case "artemis":
-		return artemis.GetDefaults()
-	case "syscoin":
-		return sys.GetDefaults()
-	case "eos":
-		return eos.GetDefaults()
-	case "rchain":
-		return rchain.GetDefaults()
-	case "beam":
-		return beam.GetDefaults()
-	case "tendermint":
-		return tendermint.GetDefaults()
-	case "cosmos":
-		return cosmos.GetDefaults()
-	case "parity":
-		return parity.GetDefaults()
-	default:
-		return "{}"
+func GetDefaults(blockchain string) ([]byte,error) {
+	if blockchain == "ethereum"{
+		return GetParams("geth")
 	}
+	return util.GetBlockchainConfig(blockchain, "defaults.json", nil)
 }

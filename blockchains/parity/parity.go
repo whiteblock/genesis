@@ -131,27 +131,14 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			log.Println(err)
 			return nil, err
 		}
-		defer clients[0].Run("rm /home/appo/genesis.json")
+		buildState.Defer(func(){clients[0].Run("rm /home/appo/genesis.json")})
 
 		buildState.IncrementBuildProgress()
 
-		_, err = clients[0].Run("docker exec wb_service0 mkdir -p /geth")
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-
-		_, err = clients[0].Run("docker cp /home/appo/genesis.json wb_service0:/geth/")
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-
-		_, err = clients[0].Run("docker exec wb_service0 bash -c 'echo second >> /geth/passwd'")
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
+		_, err = clients[0].FastMultiRun(
+			"docker exec wb_service0 mkdir -p /geth",
+			"docker cp /home/appo/genesis.json wb_service0:/geth/",
+			"docker exec wb_service0 bash -c 'echo second >> /geth/passwd'")
 
 		buildState.IncrementBuildProgress()
 
@@ -273,9 +260,9 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 	//util.Write("tmp/config.toml",configToml)
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		parityCmd := fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`, wallets[absoluteNodeNum])
 		defer buildState.IncrementBuildProgress()
-		return clients[serverNum].DockerExecdLog(localNodeNum, parityCmd)
+		return clients[serverNum].DockerExecdLog(localNodeNum, 
+			fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`, wallets[absoluteNodeNum]))
 	})
 	if err != nil {
 		log.Println(err)
