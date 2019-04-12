@@ -284,18 +284,11 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`, ip)
 
 		//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
+		_, err := clients[serverNum].DockerMultiExec(localNodeNum, []string{
+			sedCmd,
+			sedCmd2,
+			sedCmd3})
 
-		_, err := clients[serverNum].DockerExec(localNodeNum, sedCmd)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		_, err = clients[serverNum].DockerExec(localNodeNum, sedCmd2)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		_, err = clients[serverNum].DockerExec(localNodeNum, sedCmd3)
 		if err != nil {
 			log.Println(err)
 			return err
