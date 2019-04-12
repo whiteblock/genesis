@@ -234,7 +234,7 @@ func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address [
 			"balance": panconf.InitBalance,
 		}
 	}
-	consensusParams := map[string]string{}
+	consensusParams := map[string]interface{}{}
 	switch panconf.Consensus {
 	case "ibft2":
 		fallthrough
@@ -242,9 +242,9 @@ func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address [
 		panconf.Consensus = "ibft2"
 		fallthrough
 	case "clique":
-		consensusParams["blockPeriodSeconds"] = fmt.Sprintf("%d",panconf.BlockPeriodSeconds)
-		consensusParams["epoch"] = fmt.Sprintf("%d",panconf.Epoch)
-		consensusParams["requesttimeoutseconds"] = fmt.Sprintf("%d",panconf.RequestTimeoutSeconds)
+		consensusParams["blockPeriodSeconds"] = panconf.BlockPeriodSeconds
+		consensusParams["epoch"] = panconf.Epoch
+		consensusParams["requesttimeoutseconds"] = panconf.RequestTimeoutSeconds
 		extraData := "0x0000000000000000000000000000000000000000000000000000000000000000"
 		for _, addr := range address {
 			extraData += addr
@@ -252,7 +252,7 @@ func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address [
 		extraData += "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 		genesis["extraData"] = extraData
 	case "ethhash":
-		consensusParams["fixeddifficulty"] = fmt.Sprintf("%d",panconf.EthashDifficulty)
+		consensusParams["fixeddifficulty"] = panconf.EthashDifficulty
 		genesis["extraData"] = ibftExtraData
 	}
 	
