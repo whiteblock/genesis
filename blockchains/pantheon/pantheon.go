@@ -335,22 +335,20 @@ func startGeth(client *util.SshClient, panconf *PanConf, addresses []string, pri
 	unlock := ""
 	for i, privKey := range privKeys {
 
-		res, err := client.Run(`docker exec wb_service0 bash -c 'echo "second" >> /geth/passwd'`)
+		_, err = client.Run(`docker exec wb_service0 bash -c 'echo "second" >> /geth/passwd'`)
 		if err != nil {
-			log.Println(res)
-			log.Println(err)
-			return err
-		}
-		res, err = client.Run(fmt.Sprintf(`docker exec wb_service0 bash -c 'echo -n "%s" > /geth/pk%d' `, privKey, i))
-		if err != nil {
-			log.Println(res)
 			log.Println(err)
 			return err
 		}
 
-		res, err = client.Run(fmt.Sprintf(`docker exec wb_service0 geth --datadir /geth/ account import --password /geth/passwd /geth/pk%d`, i))
+		_, err = client.Run(fmt.Sprintf(`docker exec wb_service0 bash -c 'echo -n "%s" > /geth/pk%d' `, privKey, i))
 		if err != nil {
-			log.Println(res)
+			log.Println(err)
+			return err
+		}
+
+		_, err = client.Run(fmt.Sprintf(`docker exec wb_service0 geth --datadir /geth/ account import --password /geth/passwd /geth/pk%d`, i))
+		if err != nil {
 			log.Println(err)
 			return err
 		}
@@ -361,11 +359,10 @@ func startGeth(client *util.SshClient, panconf *PanConf, addresses []string, pri
 		unlock += "0x" + addresses[i]
 
 	}
-	res, err := client.Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
+	_, err = client.Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
 		` --rpcapi "admin,web3,db,eth,net,personal" --rpccorsdomain "0.0.0.0" --nodiscover --unlock="%s"`+
 		` --password /geth/passwd --networkid %d`, unlock, panconf.NetworkId))
 	if err != nil {
-		log.Println(res)
 		log.Println(err)
 		return err
 	}

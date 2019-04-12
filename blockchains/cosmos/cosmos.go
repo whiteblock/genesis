@@ -133,7 +133,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		for j, _ := range server.Ips {
 			cmd := fmt.Sprintf("gaiad start --p2p.persistent_peers=%s",
 				strings.Join(append(peers[:node], peers[node+1:]...), ","))
-			_, err:= clients[i].DockerExecd(j, cmd)
+			_, err := clients[i].DockerExecd(j, cmd)
 			if err != nil {
 				log.Println(err)
 				return nil, err
@@ -144,7 +144,6 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 	return nil, nil
 }
-
 
 func Add(data map[string]interface{}, nodes int, servers []db.Server, clients []*util.SshClient,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {

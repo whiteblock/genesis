@@ -101,26 +101,26 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			artemisCmd := fmt.Sprintf(
 				`artemis -c /artemis/config/config.toml -o /artemis/data/data.json 2>&1 | tee /output.log`,
 			)
-			_,err = clients[i].DockerExecd(localId, "tmux new -s whiteblock -d")
+			_, err = clients[i].DockerExecd(localId, "tmux new -s whiteblock -d")
 			if err != nil {
 				log.Println(err)
-				return nil,err
+				return nil, err
 			}
 
-			_,err = clients[i].DockerExecd(localId, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", artemisCmd))
+			_, err = clients[i].DockerExecd(localId, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", artemisCmd))
 			if err != nil {
 				log.Println(err)
-				return nil,err
+				return nil, err
 			}
 
 			buildState.IncrementBuildProgress()
 
-			_,err = clients[i].DockerExecd(localId,
+			_, err = clients[i].DockerExecd(localId,
 				fmt.Sprintf("bash -c 'while :;do artemis-log-parser --influx \"http://%s:8086\" --node \"%s%d\" /artemis/data/data.json 2>&1 >> /parser.log; done'",
-					util.GetGateway(server.SubnetID,localId),conf.NodePrefix,node))
+					util.GetGateway(server.SubnetID, localId), conf.NodePrefix, node))
 			if err != nil {
 				log.Println(err)
-				return nil,err
+				return nil, err
 			}
 			node++
 		}

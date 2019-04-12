@@ -311,7 +311,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 					return
 				}
 
-				_,err = clients[i].DockerExecdit(num, fmt.Sprintf("bash -ic '%s'", gethCmd))
+				_, err = clients[i].DockerExecdit(num, fmt.Sprintf("bash -ic '%s'", gethCmd))
 				if err != nil {
 					log.Println(err)
 					buildState.ReportError(err)

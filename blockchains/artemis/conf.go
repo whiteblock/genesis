@@ -2,9 +2,9 @@ package artemis
 
 import (
 	util "../../util"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"encoding/base64"
 	"github.com/Whiteblock/mustache"
 	"io/ioutil"
 	"log"
@@ -63,7 +63,6 @@ func GetServices() []util.Service {
 		},
 	}
 }
-
 
 func makeNodeConfig(artemisConf ArtemisConf, identity string, peers string, numNodes int, params map[string]interface{}) (string, error) {
 
