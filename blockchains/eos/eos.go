@@ -588,7 +588,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	buildState.SetBuildStage("Initializing EOSIO")
 	/**Step 12**/
 
-	_, err = KeepTryDockerExecAll(0,
+	_, err = clients[0].KeepTryDockerExecAll(0,
 		fmt.Sprintf(
 			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio.prods", "permission": "active"}}]}}' -p eosio@owner`,
 			masterIP),
