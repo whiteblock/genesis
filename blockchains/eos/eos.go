@@ -159,6 +159,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 			cmds = append(cmds, fmt.Sprintf("cleos wallet import --private-key %s", accountKeyPairs[name].PrivateKey))
 		}
+
 		if len(cmds) > 0 {
 			_, err := clients[serverNum].KTDockerMultiExec(localNodeNum, cmds)
 			if err != nil {
@@ -345,60 +346,39 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	buildState.IncrementBuildProgress()
 
 	/**Step 10a**/
-	{
-		node := 0
-		for _, server := range servers {
-			for _, ip := range server.Ips {
-				if node == 0 {
-					node++
-					continue
-				}
-				sem.Acquire(ctx, 1)
-				go func(masterServerIP string, masterKeyPair util.KeyPair, keyPair util.KeyPair, node int) {
-					defer sem.Release(1)
-					if node > int(eosconf.BlockProducers) {
-						buildState.IncrementBuildProgress()
-						return
-					}
-					clients[0].DockerExec(0, fmt.Sprintf("cleos wallet import --private-key %s", keyPair.PrivateKey)) //ignore return
 
-					res, err := clients[0].KeepTryDockerExec(0,
-						fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "%d SYS" --stake-cpu "%d SYS" --buy-ram-kbytes %d`,
-							masterIP,
-							eos_getProducerName(node),
-							masterKeyPair.PublicKey,
-							keyPair.PublicKey,
-							eosconf.BpNetStake,
-							eosconf.BpCpuStake,
-							eosconf.BpRam))
-					if err != nil {
-						log.Println(res)
-						log.Println(err)
-						buildState.ReportError(err)
-						return
-					}
-
-					_, err = clients[0].KeepTryDockerExec(0, fmt.Sprintf(`cleos -u http://%s:8889 transfer eosio %s "%d SYS"`,
-						masterIP,
-						eos_getProducerName(node),
-						eosconf.BpFunds))
-					if err != nil {
-						log.Println(err)
-						buildState.ReportError(err)
-						return
-					}
-
-					buildState.IncrementBuildProgress()
-				}(masterServerIP, masterKeyPair, keyPairs[ip], node)
-				node++
-			}
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		defer buildState.IncrementBuildProgress()
+		if absoluteNodeNum == 0 || absoluteNodeNum > int(eosconf.BlockProducers) {
+			return nil
 		}
-		sem.Acquire(ctx, conf.ThreadLimit)
-		sem.Release(conf.ThreadLimit)
-		if !buildState.ErrorFree() {
-			return nil, buildState.GetError()
+		keyPair := keyPairs[servers[serverNum].Ips[localNodeNum]]
+
+		_, err = clients[0].DockerExec(0, fmt.Sprintf("cleos wallet import --private-key %s", keyPair.PrivateKey)) //ignore return
+		if err != nil {
+			log.Println(err)
+			return err
 		}
+		_, err = clients[0].KeepTryDockerExecAll(0,
+			fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "%d SYS" --stake-cpu "%d SYS" --buy-ram-kbytes %d`,
+				masterIP,
+				eos_getProducerName(absoluteNodeNum),
+				masterKeyPair.PublicKey,
+				keyPair.PublicKey,
+				eosconf.BpNetStake,
+				eosconf.BpCpuStake,
+				eosconf.BpRam),
+			fmt.Sprintf(`cleos -u http://%s:8889 transfer eosio %s "%d SYS"`,
+				masterIP,
+				eos_getProducerName(absoluteNodeNum),
+				eosconf.BpFunds))
+		return err
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
+
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Starting up the candidate block producers")
 	/**Step 11c**/
@@ -587,7 +567,8 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Initializing EOSIO")
 	/**Step 12**/
-
+	clients[0].DockerExec(0, fmt.Sprintf("cleos -u http://%s:8889 wallet unlock --password %s",
+		masterIP, password))
 	_, err = clients[0].KeepTryDockerExecAll(0,
 		fmt.Sprintf(
 			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio.prods", "permission": "active"}}]}}' -p eosio@owner`,
@@ -597,9 +578,6 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			masterIP),
 		fmt.Sprintf(
 			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.bpay", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.bpay@owner`,
-			masterIP),
-		fmt.Sprintf(
-			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.msig", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.msig@owner`,
 			masterIP),
 		fmt.Sprintf(
 			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.msig", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.msig@owner`,
