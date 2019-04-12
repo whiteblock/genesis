@@ -22,11 +22,8 @@ func init() {
 
 const ETH_NET_STATS_PORT = 3338
 
-/**
- * Build the Ethereum Test Network
- * @param  map[string]interface{}   data    Configuration Data for the network
- * @param  int      nodes       The number of nodes in the network
- * @param  []Server servers     The list of servers passed from build
+/*
+Build builds out a fresh new ethereum test network using geth
  */
 func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {

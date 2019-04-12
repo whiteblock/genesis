@@ -20,11 +20,8 @@ func init() {
 	conf = util.GetConfig()
 }
 
-/**
- * Build the Ethereum Test Network
- * @param  map[string]interface{}   data    Configuration Data for the network
- * @param  int      nodes       The number of nodes in the network
- * @param  []Server servers     The list of servers passed from build
+/*
+Build builds out a fresh new ethereum test network
  */
 func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {

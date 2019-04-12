@@ -17,6 +17,9 @@ func init() {
 	conf = util.GetConfig()
 }
 
+/*
+Build builds out a fresh new ethereum test network using pantheon
+ */
 func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {
 
@@ -167,20 +170,6 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	err = helpers.CopyAllToServers(servers, clients, buildState,
 		"static-nodes.json", "/home/appo/static-nodes.json",
 		"genesis.json", "/home/appo/genesis.json")
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		err := clients[serverNum].DockerCp(localNodeNum, "/home/appo/static-nodes.json", "/pantheon/data/static-nodes.json")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		buildState.IncrementBuildProgress()
-		return clients[serverNum].DockerCp(localNodeNum, "/home/appo/genesis.json", "/pantheon/genesis/genesis.json")
-	})
 	if err != nil {
 		log.Println(err)
 		return nil, err
