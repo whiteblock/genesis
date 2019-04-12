@@ -2,13 +2,11 @@ package pantheon
 
 import (
 	db "../../db"
-	helpers "../helpers"
 	state "../../state"
 	util "../../util"
-	"context"
+	helpers "../helpers"
 	"fmt"
 	"github.com/Whiteblock/mustache"
-	"golang.org/x/sync/semaphore"
 	"log"
 	"sync"
 )
@@ -21,9 +19,6 @@ func init() {
 
 func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {
-
-	sem := semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
 
 	wg := sync.WaitGroup{}
 	mux := sync.Mutex{}
@@ -42,17 +37,17 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	privKeys := make([]string, details.Nodes)
 
 	buildState.SetBuildStage("Setting Up Accounts")
-	
+
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		_, err := clients[serverNum].DockerExec(localNodeNum, 
-				"pantheon --data-path=/pantheon/data public-key export-address --to=/pantheon/data/nodeAddress")
+		_, err := clients[serverNum].DockerExec(localNodeNum,
+			"pantheon --data-path=/pantheon/data public-key export-address --to=/pantheon/data/nodeAddress")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 		buildState.IncrementBuildProgress()
-		_, err = clients[serverNum].DockerExec(localNodeNum, 
-				"pantheon --data-path=/pantheon/data public-key export --to=/pantheon/data/publicKey")
+		_, err = clients[serverNum].DockerExec(localNodeNum,
+			"pantheon --data-path=/pantheon/data public-key export --to=/pantheon/data/publicKey")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -101,19 +96,18 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			log.Println(err)
 			return err
 		}
-		
+
 		// used for IBFT2 extraData
-		_, err = clients[serverNum].DockerExec(localNodeNum, 
-				"pantheon rlp encode --from=/pantheon/data/toEncode.json --to=/pantheon/rlpEncodedExtraData")
+		_, err = clients[serverNum].DockerExec(localNodeNum,
+			"pantheon rlp encode --from=/pantheon/data/toEncode.json --to=/pantheon/rlpEncodedExtraData")
 		buildState.IncrementBuildProgress()
 		return err
-		
+
 	})
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-
 
 	wg.Add(1)
 	defer wg.Wait()
@@ -170,89 +164,51 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 	/* Copy static-nodes & genesis files to each node */
 	buildState.SetBuildStage("Distributing Files")
-	for i, server := range servers {
-		err = clients[i].Scp("static-nodes.json", "/home/appo/static-nodes.json")
+
+	err = helpers.AllServerExecCon(servers, buildState, func(serverNum int, server *db.Server) error {
+		buildState.Defer(func() { clients[serverNum].Run("rm /home/appo/static-nodes.json") })
+		err := clients[serverNum].Scp("static-nodes.json", "/home/appo/static-nodes.json")
 		if err != nil {
 			log.Println(err)
-			return nil, err
-		}
-		defer clients[i].Run("rm /home/appo/static-nodes.json")
-
-		err = clients[i].Scp("genesis.json", "/home/appo/genesis.json")
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-		defer clients[i].Run("rm /home/appo/genesis.json")
-
-		for localId, _ := range server.Ips {
-			sem.Acquire(ctx, 1)
-			go func(i int, localId int) {
-				defer sem.Release(1)
-				err := clients[i].DockerCp(localId, "/home/appo/static-nodes.json", "/pantheon/data/static-nodes.json")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				err = clients[i].DockerCp(localId, "/home/appo/genesis.json", "/pantheon/genesis/genesis.json")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				buildState.IncrementBuildProgress()
-			}(i, localId)
+			return err
 		}
 
-	}
-
-	err = sem.Acquire(ctx, conf.ThreadLimit)
+		buildState.Defer(func() { clients[serverNum].Run("rm /home/appo/genesis.json") })
+		return clients[serverNum].Scp("genesis.json", "/home/appo/genesis.json")
+	})
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	sem.Release(conf.ThreadLimit)
 
-	if !buildState.ErrorFree() {
-		return nil, buildState.GetError()
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		err := clients[serverNum].DockerCp(localNodeNum, "/home/appo/static-nodes.json", "/pantheon/data/static-nodes.json")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		buildState.IncrementBuildProgress()
+		return clients[serverNum].DockerCp(localNodeNum, "/home/appo/genesis.json", "/pantheon/genesis/genesis.json")
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
 
 	/* Start the nodes */
 	buildState.SetBuildStage("Starting Pantheon")
 	httpPort := 8545
-	for i, server := range servers {
-		for localId, _ := range server.Ips {
-			sem.Acquire(ctx, 1)
-			go func(i int, localId int) {
-				defer sem.Release(1)
-				err := clients[i].DockerExecdLog(localId, fmt.Sprintf(
-					`pantheon --data-path /pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
-						`--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,WEB3" `+
-						` --p2p-port=%d --rpc-http-port=%d --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"`,
-					p2pPort,
-					httpPort))
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				buildState.IncrementBuildProgress()
-			}(i, localId)
-		}
-	}
-	err = sem.Acquire(ctx, conf.ThreadLimit)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	sem.Release(conf.ThreadLimit)
-
-	if !buildState.ErrorFree() {
-		return nil, buildState.GetError()
-	}
-
-	return privKeys, nil
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		err := clients[serverNum].DockerExecdLog(localNodeNum, fmt.Sprintf(
+			`pantheon --data-path /pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
+				`--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,WEB3" `+
+				` --p2p-port=%d --rpc-http-port=%d --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"`,
+			p2pPort,
+			httpPort))
+		buildState.IncrementBuildProgress()
+		return err
+	})
+	return privKeys, err
 }
 
 func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address []string, buildState *state.BuildState) error {
