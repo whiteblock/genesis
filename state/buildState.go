@@ -42,6 +42,7 @@ type BuildState struct {
 	externExtras      map[string]interface{} //will be exported
 	extras            map[string]interface{}
 	files             []string
+	defers            []func() //Array of functions to run at the end of the build
 
 	Servers          []int
 	BuildId          string
@@ -61,6 +62,8 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	out.progressIncrement = 0.0
 	out.externExtras = map[string]interface{}{}
 	out.extras = map[string]interface{}{}
+	out.files = []string{}
+	out.defers = []func(){}
 
 	out.Servers = servers
 	out.BuildId = buildId
@@ -137,6 +140,10 @@ func (this *BuildState) DoneBuilding() {
 	this.stopping = false
 
 	os.RemoveAll("/tmp/" + this.BuildId)
+
+	for _, fn := range this.defers {
+		go fn() //No need to wait to confirm completion
+	}
 }
 
 func (this *BuildState) Done() bool {
@@ -279,6 +286,15 @@ func (this *BuildState) Write(file string, data string) error {
 	this.files = append(this.files, file)
 	this.mutex.RUnlock()
 	return ioutil.WriteFile("/tmp/"+this.BuildId+"/"+file, []byte(data), 0664)
+}
+
+/*
+	Add a function to be executed asynchronously after the build is completed.
+*/
+func (this *BuildState) Defer(fn func()) {
+	this.extraMux.Lock()
+	this.defers = append(this.defers, fn)
+	defer this.extraMux.Unlock()
 }
 
 /*

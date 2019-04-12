@@ -4,6 +4,7 @@ import (
 	db "../../db"
 	state "../../state"
 	util "../../util"
+	helpers "../helpers"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -31,7 +32,7 @@ const ETH_NET_STATS_PORT = 3338
  */
 func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {
-	//var mutex = &sync.Mutex{}
+
 	var sem = semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
 	mux := sync.Mutex{}
@@ -87,59 +88,45 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	wallets := make([]string, details.Nodes)
 	rawWallets := make([]string, details.Nodes)
 	buildState.SetBuildStage("Creating the wallets")
-	{
-		node := 0
-		for i, server := range servers {
-			for j, _ := range server.Ips {
-				sem.Acquire(ctx, 1)
-				go func(index int, node int) {
-					defer sem.Release(1)
-					gethResults, err := clients[i].DockerExec(node, "geth --datadir /geth/ --password /geth/passwd account new")
-					if err != nil {
-						log.Println(err)
-						buildState.ReportError(err)
-						return
-					}
 
-					addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
-					addresses := addressPattern.FindAllString(gethResults, -1)
-					if len(addresses) < 1 {
-						buildState.ReportError(fmt.Errorf("Unable to get addresses"))
-						return
-					}
-					address := addresses[0]
-					address = address[1 : len(address)-1]
-
-					//fmt.Printf("Created wallet with address: %s\n",address)
-					mux.Lock()
-					wallets[index] = address
-					mux.Unlock()
-
-					buildState.IncrementBuildProgress()
-
-					res, err := clients[i].DockerExec(node, "bash -c 'cat /geth/keystore/*'")
-					if err != nil {
-						buildState.ReportError(err)
-						log.Println(res)
-						log.Println(err)
-						return
-					}
-					mux.Lock()
-					rawWallets[index] = strings.Replace(res, "\"", "\\\"", -1)
-					mux.Unlock()
-				}(node, j)
-				node++
-			}
-		}
-
-		err = sem.Acquire(ctx, conf.ThreadLimit)
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		gethResults, err := clients[serverNum].DockerExec(localNodeNum, "geth --datadir /geth/ --password /geth/passwd account new")
 		if err != nil {
 			log.Println(err)
-			return nil, err
+			return err
 		}
 
-		sem.Release(conf.ThreadLimit)
+		addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
+		addresses := addressPattern.FindAllString(gethResults, -1)
+		if len(addresses) < 1 {
+			return fmt.Errorf("Unable to get addresses")
+		}
+		address := addresses[0]
+		address = address[1 : len(address)-1]
+
+		//fmt.Printf("Created wallet with address: %s\n",address)
+		mux.Lock()
+		wallets[absoluteNodeNum] = address
+		mux.Unlock()
+
+		buildState.IncrementBuildProgress()
+
+		res, err := clients[serverNum].DockerExec(localNodeNum, "bash -c 'cat /geth/keystore/*'")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		mux.Lock()
+		rawWallets[absoluteNodeNum] = strings.Replace(res, "\"", "\\\"", -1)
+		mux.Unlock()
+
+		return nil
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
+
 	fmt.Printf("%v\n%v\n", wallets, rawWallets)
 	buildState.IncrementBuildProgress()
 	unlock := ""
@@ -209,57 +196,44 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 
 	staticNodes := make([]string, details.Nodes)
-	node = 0
-	for i, server := range servers {
-		for j, ip := range server.Ips {
-			sem.Acquire(ctx, 1)
-			go func(i int, j int, node int, ip string) {
-				defer sem.Release(1)
-				//fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n",i)
-				//Load the CustomGenesis file
-				_, err := clients[i].DockerExec(j,
-					fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/CustomGenesis.json", ethconf.NetworkId))
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n", node)
-				gethResults, err := clients[i].DockerExec(j,
-					fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" |  geth --rpc --datadir /geth/ --networkid %d console'", ethconf.NetworkId))
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				//fmt.Printf("RAWWWWWWWWWWWW%s\n\n\n",gethResults)
-				enodePattern := regexp.MustCompile(`enode:\/\/[A-z|0-9]+@(\[\:\:\]|([0-9]|\.)+)\:[0-9]+`)
-				enode := enodePattern.FindAllString(gethResults, 1)[0]
-				//fmt.Printf("ENODE fetched is: %s\n",enode)
-				enodeAddressPattern := regexp.MustCompile(`\[\:\:\]|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})`)
 
-				enode = enodeAddressPattern.ReplaceAllString(enode, ip)
+	buildState.SetBuildStage("Initializing geth")
 
-				mux.Lock()
-				staticNodes[node] = enode
-				mux.Unlock()
-
-				buildState.IncrementBuildProgress()
-			}(i, j, node, ip)
-			node++
-
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		ip := servers[serverNum].Ips[localNodeNum]
+		//Load the CustomGenesis file
+		_, err := clients[serverNum].DockerExec(localNodeNum,
+			fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/CustomGenesis.json", ethconf.NetworkId))
+		if err != nil {
+			log.Println(err)
+			return err
 		}
-	}
+		fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n", absoluteNodeNum)
+		gethResults, err := clients[serverNum].DockerExec(localNodeNum,
+			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
+				"geth --rpc --datadir /geth/ --networkid %d console'", ethconf.NetworkId))
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		//fmt.Printf("RAWWWWWWWWWWWW%s\n\n\n",gethResults)
+		enodePattern := regexp.MustCompile(`enode:\/\/[A-z|0-9]+@(\[\:\:\]|([0-9]|\.)+)\:[0-9]+`)
+		enode := enodePattern.FindAllString(gethResults, 1)[0]
+		//fmt.Printf("ENODE fetched is: %s\n",enode)
+		enodeAddressPattern := regexp.MustCompile(`\[\:\:\]|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})`)
 
-	err = sem.Acquire(ctx, conf.ThreadLimit)
+		enode = enodeAddressPattern.ReplaceAllString(enode, ip)
+
+		mux.Lock()
+		staticNodes[absoluteNodeNum] = enode
+		mux.Unlock()
+
+		buildState.IncrementBuildProgress()
+		return nil
+	})
 	if err != nil {
 		log.Println(err)
 		return nil, err
-	}
-	sem.Release(conf.ThreadLimit)
-
-	if !buildState.ErrorFree() {
-		return nil, buildState.GetError()
 	}
 
 	out, err := json.Marshal(staticNodes)
@@ -276,14 +250,18 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Starting geth")
+	//Copy static-nodes to every server
+	err = helpers.AllServerExecCon(servers, buildState, func(serverNum int, server *db.Server) error {
+		buildState.Defer(func() { clients[serverNum].Run("rm /home/appo/static-nodes.json") })
+		return clients[serverNum].Scp("static-nodes.json", "/home/appo/static-nodes.json")
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
 	node = 0
 	for i, server := range servers {
-		err = clients[i].Scp("static-nodes.json", "/home/appo/static-nodes.json")
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-		defer clients[i].Run("rm /home/appo/static-nodes.json")
 		for j, ip := range server.Ips {
 			sem.Acquire(ctx, 1)
 			fmt.Printf("-----------------------------  Starting NODE-%d  -----------------------------\n", node)

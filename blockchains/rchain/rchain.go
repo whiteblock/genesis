@@ -36,12 +36,13 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 
 	/**Make the data directories**/
-	for i, server := range servers {
-		for j, _ := range server.Ips {
-			buildState.IncrementBuildProgress()
-			clients[i].DockerExec(j, "mkdir /datadir")
-		}
-	}
+
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		buildState.IncrementBuildProgress()
+		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir /datadir")
+		return err
+	})
+
 	/**Setup the first node**/
 	err = createFirstConfigFile(details, clients[0], 0, rchainConf, services["wb_influx_proxy"], buildState)
 	if err != nil {
