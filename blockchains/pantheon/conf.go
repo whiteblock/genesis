@@ -15,9 +15,9 @@ type PanConf struct {
 	GasLimit              int64  `json:"gasLimit"`
 	Consensus             string `json:"consensus"`
 	EthashDifficulty      int64  `json:"fixeddifficulty`
-	BlockPeriodSeconds 	  int64  `json:"blockPeriodSeconds"`
-	Epoch          		  int64  `json:"epoch"`
-	RequestTimeoutSeconds int64 `json:"requesttimeoutseconds"`
+	BlockPeriodSeconds    int64  `json:"blockPeriodSeconds"`
+	Epoch                 int64  `json:"epoch"`
+	RequestTimeoutSeconds int64  `json:"requesttimeoutseconds"`
 }
 
 /**

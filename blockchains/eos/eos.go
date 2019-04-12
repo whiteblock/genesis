@@ -588,111 +588,44 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	buildState.SetBuildStage("Initializing EOSIO")
 	/**Step 12**/
 
-	_, err = clients[0].KeepTryDockerExec(0,
+	_, err = KeepTryDockerExecAll(0,
 		fmt.Sprintf(
 			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio.prods", "permission": "active"}}]}}' -p eosio@owner`,
-			masterIP))
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	_, err = clients[0].KeepTryDockerExec(0,
+			masterIP),
 		fmt.Sprintf(
 			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio", "permission": "active", "parent": "owner", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio.prods", "permission": "active"}}]}}' -p eosio@active`,
-			masterIP))
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	_, err = clients[0].KeepTryDockerExec(0,
+			masterIP),
 		fmt.Sprintf(
 			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.bpay", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.bpay@owner`,
-			masterIP))
-
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	_, err = clients[0].KeepTryDockerExec(0,
-		fmt.Sprintf(
-			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.bpay", "permission": "active", "parent": "owner", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.bpay@active`,
-			masterIP))
-
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	_, err = clients[0].KeepTryDockerExec(0,
+			masterIP),
 		fmt.Sprintf(
 			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.msig", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.msig@owner`,
-			masterIP))
-
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	_, err = clients[0].KeepTryDockerExec(0,
+			masterIP),
+		fmt.Sprintf(
+			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.msig", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.msig@owner`,
+			masterIP),
 		fmt.Sprintf(
 			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.msig", "permission": "active", "parent": "owner", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.msig@active`,
-			masterIP))
-
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	_, err = clients[0].KeepTryDockerExec(0,
+			masterIP),
 		fmt.Sprintf(
 			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.names", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.names@owner`,
-			masterIP))
-
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	_, err = clients[0].KeepTryDockerExec(0, fmt.Sprintf(
-		`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.names", "permission": "active", "parent": "owner", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.names@active`,
-		masterIP))
-
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	_, err = clients[0].KeepTryDockerExec(0, fmt.Sprintf(
-		`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.ram", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.ram@owner`,
-		masterIP))
-
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	_, err = clients[0].KeepTryDockerExec(0, fmt.Sprintf(
-		`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.ram", "permission": "active", "parent": "owner", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.ram@active`,
-		masterIP))
-
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	_, err = clients[0].KeepTryDockerExec(0, fmt.Sprintf(
-		`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.ramfee", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.ramfee@owner`,
-		masterIP))
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	_, err = clients[0].KeepTryDockerExec(0, fmt.Sprintf(
-		`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.ramfee", "permission": "active", "parent": "owner", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.ramfee@active`,
-		masterIP))
+			masterIP),
+		fmt.Sprintf(
+			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.names", "permission": "active", "parent": "owner", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.names@active`,
+			masterIP),
+		fmt.Sprintf(
+			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.ram", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.ram@owner`,
+			masterIP),
+		fmt.Sprintf(
+			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.ram", "permission": "active", "parent": "owner", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.ram@active`,
+			masterIP),
+		fmt.Sprintf(
+			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.ramfee", "permission": "owner", "parent": "", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.ramfee@owner`,
+			masterIP),
+		fmt.Sprintf(
+			`cleos -u http://%s:8889 push action eosio updateauth '{"account": "eosio.ramfee", "permission": "active", "parent": "owner", "auth": {"threshold": 1, "keys": [], "waits": [], "accounts": [{"weight": 1, "permission": {"actor": "eosio", "permission": "active"}}]}}' -p eosio.ramfee@active`,
+			masterIP),
+	)
 	if err != nil {
 		log.Println(err)
 		return nil, err
