@@ -189,7 +189,8 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			return nil, err
 		}
 		_, err = clients[0].KeepTryRun(
-			`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json"  -d '{ "method": "miner_start", "params": [8], "id": 3, "jsonrpc": "2.0" }'`)
+			`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json" ` +
+				` -d '{ "method": "miner_start", "params": [8], "id": 3, "jsonrpc": "2.0" }'`)
 
 		if err != nil {
 			log.Println(err)
@@ -295,40 +296,47 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	//Start peering via curl
 	time.Sleep(time.Duration(5 * time.Second))
 	//Get the enode addresses
-	enodes := []string{}
-	for i, server := range servers {
-		for _, ip := range server.Ips {
-			var enode string
-			for len(enode) == 0 {
+	enodes := make([]string, details.Nodes)
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		enode := ""
+		for len(enode) == 0 {
+			ip := servers[serverNum].Ips[localNodeNum]
+			res, err := clients[serverNum].KeepTryRun(
+				fmt.Sprintf(
+					`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json" `+
+						` -d '{ "method": "parity_enode", "params": [], "id": 1, "jsonrpc": "2.0" }'`,
+					ip))
 
-				res, err := clients[i].KeepTryRun(
-					fmt.Sprintf(
-						`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d '{ "method": "parity_enode", "params": [], "id": 1, "jsonrpc": "2.0" }'`,
-						ip))
-
-				if err != nil {
-					log.Println(err)
-					return nil, err
-				}
-				var result map[string]interface{}
-
-				err = json.Unmarshal([]byte(res), &result)
-				if err != nil {
-					log.Println(err)
-					return nil, err
-				}
-				fmt.Println(result)
-
-				err = util.GetJSONString(result, "result", &enode)
-				if err != nil {
-					log.Println(err)
-					return nil, err
-				}
+			if err != nil {
+				log.Println(err)
+				return err
 			}
-			buildState.IncrementBuildProgress()
-			enodes = append(enodes, enode)
+			var result map[string]interface{}
+
+			err = json.Unmarshal([]byte(res), &result)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			fmt.Println(result)
+
+			err = util.GetJSONString(result, "result", &enode)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
 		}
+		buildState.IncrementBuildProgress()
+		mux.Lock()
+		enodes[absoluteNodeNum] = enode
+		mux.Unlock()
+		return nil
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
+
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		ip := servers[serverNum].Ips[localNodeNum]
 		for i, enode := range enodes {
@@ -358,7 +366,8 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	for _, enode := range enodes {
 		_, err := clients[0].KeepTryRun(
 			fmt.Sprintf(
-				`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json"  -d '{ "method": "admin_addPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
+				`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json" `+
+					` -d '{ "method": "admin_addPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
 				enode))
 		buildState.IncrementBuildProgress()
 		if err != nil {
@@ -367,7 +376,8 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		}
 	}
 	_, err = clients[0].KeepTryRun(
-		`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json"  -d '{ "method": "miner_start", "params": [8], "id": 4, "jsonrpc": "2.0" }'`)
+		`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json" ` +
+			` -d '{ "method": "miner_start", "params": [8], "id": 4, "jsonrpc": "2.0" }'`)
 
 	if err != nil {
 		log.Println(err)
