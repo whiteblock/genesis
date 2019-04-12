@@ -240,8 +240,8 @@ func DeleteTestNet(testnetId string) error {
    Ensure that the blockchain you have implemented is included
    in the switch statement.
 */
-func GetParams(blockchain string) ([]byte,error) {
-	if blockchain == "ethereum"{
+func GetParams(blockchain string) ([]byte, error) {
+	if blockchain == "ethereum" {
 		return GetParams("geth")
 	}
 	return util.GetBlockchainConfig(blockchain, "params.json", nil)
@@ -252,8 +252,8 @@ func GetParams(blockchain string) ([]byte,error) {
    the blockchain you have implemented is included in the switch
    statement.
 */
-func GetDefaults(blockchain string) ([]byte,error) {
-	if blockchain == "ethereum"{
+func GetDefaults(blockchain string) ([]byte, error) {
+	if blockchain == "ethereum" {
 		return GetParams("geth")
 	}
 	return util.GetBlockchainConfig(blockchain, "defaults.json", nil)

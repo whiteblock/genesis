@@ -84,7 +84,7 @@ func getBlockChainParams(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
 	log.Println("GET PARAMS : " + params["blockchain"])
-	blockchainParams,err := testnet.GetParams(params["blockchain"])
+	blockchainParams, err := testnet.GetParams(params["blockchain"])
 	if err != nil {
 		http.Error(w, err.Error(), 404)
 		return
@@ -110,7 +110,7 @@ func getBlockChainState(w http.ResponseWriter, r *http.Request) {
 }
 
 func getBlockChainDefaults(w http.ResponseWriter, r *http.Request) {
-	defaults,err := testnet.GetDefaults(mux.Vars(r)["blockchain"])
+	defaults, err := testnet.GetDefaults(mux.Vars(r)["blockchain"])
 	if err != nil {
 		http.Error(w, err.Error(), 404)
 		return
