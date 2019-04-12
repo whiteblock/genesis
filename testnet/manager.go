@@ -97,31 +97,7 @@ func AddTestNet(details db.DeploymentDetails, testNetId string) error {
 	}
 
 	//STEP 3: GET THE SERVICES
-	var services []util.Service
-	switch details.Blockchain {
-	case "ethereum":
-		fallthrough
-	case "geth":
-		services = geth.GetServices()
-	case "parity":
-		services = parity.GetServices()
-	case "pantheon":
-		services = pantheon.GetServices()
-	case "artemis":
-		services = artemis.GetServices()
-	case "eos":
-		services = eos.GetServices()
-	case "syscoin":
-		services = sys.GetServices()
-	case "rchain":
-		services = rchain.GetServices()
-	case "beam":
-		services = beam.GetServices()
-	case "tendermint":
-		services = tendermint.GetServices()
-	case "cosmos":
-		services = cosmos.GetServices()
-	}
+	services := GetServices(details.Blockchain)
 
 	//STEP 4: BUILD OUT THE DOCKER CONTAINERS AND THE NETWORK
 
@@ -257,4 +233,33 @@ func GetDefaults(blockchain string) ([]byte, error) {
 		return GetParams("geth")
 	}
 	return util.GetBlockchainConfig(blockchain, "defaults.json", nil)
+}
+
+func GetServices(blockchain string) []util.Service {
+	var services []util.Service
+	switch blockchain {
+	case "ethereum":
+		fallthrough
+	case "geth":
+		services = geth.GetServices()
+	case "parity":
+		services = parity.GetServices()
+	case "pantheon":
+		services = pantheon.GetServices()
+	case "artemis":
+		services = artemis.GetServices()
+	case "eos":
+		services = eos.GetServices()
+	case "syscoin":
+		services = sys.GetServices()
+	case "rchain":
+		services = rchain.GetServices()
+	case "beam":
+		services = beam.GetServices()
+	case "tendermint":
+		services = tendermint.GetServices()
+	case "cosmos":
+		services = cosmos.GetServices()
+	}
+	return services
 }
