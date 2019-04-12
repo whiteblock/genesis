@@ -26,8 +26,6 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util
 	var sem = semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
 
-	fmt.Println("-------------Building The Docker Containers-------------")
-
 	buildState.SetBuildStage("Tearing down the previous testnet")
 	for i, _ := range servers {
 		sem.Acquire(ctx, 1)
