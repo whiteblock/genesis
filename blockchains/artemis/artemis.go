@@ -116,7 +116,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			buildState.IncrementBuildProgress()
 
 			_,err = clients[i].DockerExecd(localId,
-				fmt.Sprintf("bash -c 'artemis-log-parser --influx \"http://%s:8086\" --node \"%s%d\" /artemis/data/data.json >> /parser.log'",
+				fmt.Sprintf("bash -c 'artemis-log-parser --influx \"http://%s:8086\" --node \"%s%d\" /artemis/data/data.json 2>&1 >> /parser.log'",
 					util.GetGateway(server.SubnetID,localId),conf.NodePrefix,node))
 			if err != nil {
 				log.Println(err)
