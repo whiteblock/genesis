@@ -3,6 +3,9 @@
     ["difficulty","int"],
     ["initBalance","string"],
     ["gasLimit","int"],
+    ["consensus","string"],
+    ["fixeddifficulty","int"],
     ["blockPeriodSeconds","int"],
-    ["epoch","int"]
+    ["epoch","int"],
+    ["requesttimeoutseconds","int"]
 ]

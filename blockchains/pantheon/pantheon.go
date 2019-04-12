@@ -35,6 +35,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	addresses := make([]string, details.Nodes)
 	pubKeys := make([]string, details.Nodes)
 	privKeys := make([]string, details.Nodes)
+	rlpEncodedData := make([]string,details.Nodes)
 
 	buildState.SetBuildStage("Setting Up Accounts")
 
@@ -98,8 +99,17 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		}
 
 		// used for IBFT2 extraData
-		_, err = clients[serverNum].DockerExec(localNodeNum,
+		rlpEncoded, err := clients[serverNum].DockerExec(localNodeNum,
 			"pantheon rlp encode --from=/pantheon/data/toEncode.json --to=/pantheon/rlpEncodedExtraData")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		mux.Lock()
+		rlpEncodedData[absoluteNodeNum] = rlpEncoded
+		mux.Unlock()
+
 		buildState.IncrementBuildProgress()
 		return err
 
@@ -128,7 +138,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 	/* Create Genesis File */
 	buildState.SetBuildStage("Generating Genesis File")
-	err = createGenesisfile(panconf, details, addresses, buildState)
+	err = createGenesisfile(panconf, details, addresses, buildState, rlpEncodedData[0])
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -200,7 +210,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	httpPort := 8545
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		err := clients[serverNum].DockerExecdLog(localNodeNum, fmt.Sprintf(
-			`pantheon --data-path /pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
+			`pantheon --data-path=/pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
 				`--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,WEB3" `+
 				` --p2p-port=%d --rpc-http-port=%d --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"`,
 			p2pPort,
@@ -211,13 +221,12 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	return privKeys, err
 }
 
-func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address []string, buildState *state.BuildState) error {
+func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address []string, buildState *state.BuildState, ibftExtraData string) error {
 	genesis := map[string]interface{}{
-		"chainId":            panconf.NetworkId,
-		"difficulty":         fmt.Sprintf("0x0%X", panconf.Difficulty),
-		"gasLimit":           fmt.Sprintf("0x0%X", panconf.GasLimit),
-		"blockPeriodSeconds": panconf.BlockPeriodSeconds,
-		"epoch":              panconf.Epoch,
+		"chainId":               panconf.NetworkId,
+		"difficulty":            fmt.Sprintf("0x0%X", panconf.Difficulty),
+		"gasLimit":              fmt.Sprintf("0x0%X", panconf.GasLimit),
+		"consensus":             panconf.Consensus,
 	}
 	alloc := map[string]map[string]string{}
 	for _, addr := range address {
@@ -225,13 +234,27 @@ func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address [
 			"balance": panconf.InitBalance,
 		}
 	}
-	extraData := "0x0000000000000000000000000000000000000000000000000000000000000000"
-	for _, addr := range address {
-		extraData += addr
+	consensusParams := map[string]string{}
+	switch panconf.Consensus {
+	case "ibft2":
+		fallthrough
+	case "clique":
+		consensusParams["blockPeriodSeconds"] = fmt.Sprintf("%d",panconf.BlockPeriodSeconds)
+		consensusParams["epoch"] = fmt.Sprintf("%d",panconf.Epoch)
+		consensusParams["requesttimeoutseconds"] = fmt.Sprintf("%d",panconf.RequestTimeoutSeconds)
+		extraData := "0x0000000000000000000000000000000000000000000000000000000000000000"
+		for _, addr := range address {
+			extraData += addr
+		}
+		extraData += "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+		genesis["extraData"] = extraData
+	case "ethhash":
+		consensusParams["fixeddifficulty"] = fmt.Sprintf("%d",panconf.EthashDifficulty)
+		genesis["extraData"] = ibftExtraData
 	}
-	extraData += "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-	genesis["extraData"] = extraData
+	
 	genesis["alloc"] = alloc
+	genesis["consensusParams"] = consensusParams
 	dat, err := util.GetBlockchainConfig("pantheon", "genesis.json", details.Files)
 	if err != nil {
 		log.Println(err)

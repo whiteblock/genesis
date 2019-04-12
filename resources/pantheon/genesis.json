@@ -9,9 +9,8 @@
         "byzantiumBlock": 0,
         "constantinopleBlock": 0,
         "constantinopleFixBlock": 0,
-        "clique": {
-            "blockPeriodSeconds": {{{blockPeriodSeconds}}},
-            "epoch": {{{epoch}}}
+        {{{consensus}}}: {
+            {{{consensusParams}}}
         }
     },
     "nonce": "0x0000000000000042",
