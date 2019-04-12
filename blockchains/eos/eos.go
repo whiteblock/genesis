@@ -4,11 +4,13 @@ import (
 	db "../../db"
 	state "../../state"
 	util "../../util"
+	helpers "../helpers"
 	"context"
 	"fmt"
 	"golang.org/x/sync/semaphore"
 	"log"
 	"math/rand"
+	"strings"
 )
 
 var conf *util.Config
@@ -66,11 +68,23 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		"eosio.token",
 		"eosio.vpay",
 	}
-	km, err := NewKeyMaster(&details)
+	km, err := helpers.NewKeyMaster(&details, "eos")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
+	km.AddGenerator(func(client *util.SshClient) (util.KeyPair, error) {
+		data, err := client.DockerExec(0, "cleos create key --to-console | awk '{print $3}'")
+		if err != nil {
+			return util.KeyPair{}, err
+		}
+		keyPair := strings.Split(data, "\n")
+		if len(data) < 10 {
+			return util.KeyPair{}, fmt.Errorf("Unexpected create key output %s\n", keyPair)
+		}
+		return util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]}, nil
+	})
+
 	keyPairs, err := km.GetServerKeyPairs(servers, clients)
 	if err != nil {
 		log.Println(err)

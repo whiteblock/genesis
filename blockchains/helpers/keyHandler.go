@@ -1,4 +1,4 @@
-package eos
+package helpers
 
 import (
 	db "../../db"
@@ -6,18 +6,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strings"
 )
 
+/*
+	Static resource key manager
+	Uses keys stored in the blockchains resource directory, so that
+	keys can remain consistent among builds and also to save
+	time on builds where a large number of keys are needed.
+*/
 type KeyMaster struct {
 	PrivateKeys []string
 	PublicKeys  []string
 	index       int
+	generator   func(client *util.SshClient) (util.KeyPair, error)
 }
 
-func NewKeyMaster(details *db.DeploymentDetails) (*KeyMaster, error) {
+func NewKeyMaster(details *db.DeploymentDetails, blockchain string) (*KeyMaster, error) {
 	out := new(KeyMaster)
-	dat, err := util.GetBlockchainConfig("eos", "privatekeys.json", details.Files)
+	dat, err := util.GetBlockchainConfig(blockchain, "privatekeys.json", details.Files)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -27,7 +33,7 @@ func NewKeyMaster(details *db.DeploymentDetails) (*KeyMaster, error) {
 		log.Println(err)
 		return nil, err
 	}
-	dat, err = util.GetBlockchainConfig("eos", "publickeys.json", details.Files)
+	dat, err = util.GetBlockchainConfig(blockchain, "publickeys.json", details.Files)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -40,16 +46,16 @@ func NewKeyMaster(details *db.DeploymentDetails) (*KeyMaster, error) {
 	out.index = 0
 	return out, nil
 }
+
+func (this *KeyMaster) AddGenerator(gen func(client *util.SshClient) (util.KeyPair, error)) {
+	this.generator = gen
+}
+
 func (this *KeyMaster) GenerateKeyPair(client *util.SshClient) (util.KeyPair, error) {
-	data, err := client.DockerExec(0, "cleos create key --to-console | awk '{print $3}'")
-	if err != nil {
-		return util.KeyPair{}, err
+	if this.generator != nil {
+		return this.generator(client)
 	}
-	keyPair := strings.Split(data, "\n")
-	if len(data) < 10 {
-		return util.KeyPair{}, fmt.Errorf("Unexpected create key output %s\n", keyPair)
-	}
-	return util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]}, nil
+	return util.KeyPair{}, fmt.Errorf("No generator provided")
 }
 
 func (this *KeyMaster) GetKeyPair(client *util.SshClient) (util.KeyPair, error) {

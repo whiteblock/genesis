@@ -4,6 +4,7 @@ import (
 	db "../../db"
 	state "../../state"
 	util "../../util"
+	helpers "../helpers"
 	"fmt"
 	"github.com/Whiteblock/mustache"
 	"log"
@@ -48,11 +49,11 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		return nil, err
 	}
 	buildState.IncrementBuildProgress()
-	km, err := NewKeyMaster()
+	km, err := helpers.NewKeyMaster(&details, "rchain")
 	keyPairs := make([]util.KeyPair, details.Nodes)
 
 	for i, _ := range keyPairs {
-		keyPairs[i], err = km.GetKeyPair()
+		keyPairs[i], err = km.GetKeyPair(clients[0])
 		if err != nil {
 			log.Println(err)
 			return nil, err
