@@ -99,8 +99,14 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		}
 
 		// used for IBFT2 extraData
-		rlpEncoded, err := clients[serverNum].DockerExec(localNodeNum,
+		_, err = clients[serverNum].DockerExec(localNodeNum,
 			"pantheon rlp encode --from=/pantheon/data/toEncode.json --to=/pantheon/rlpEncodedExtraData")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		rlpEncoded, err := clients[serverNum].DockerExec(localNodeNum, "bash -c 'cat /pantheon/rlpEncodedExtraData'")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -109,6 +115,8 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		mux.Lock()
 		rlpEncodedData[absoluteNodeNum] = rlpEncoded
 		mux.Unlock()
+
+		fmt.Println(rlpEncodedData)
 
 		buildState.IncrementBuildProgress()
 		return err
@@ -222,12 +230,6 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 }
 
 func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address []string, buildState *state.BuildState, ibftExtraData string) error {
-	genesis := map[string]interface{}{
-		"chainId":               panconf.NetworkId,
-		"difficulty":            fmt.Sprintf("0x0%X", panconf.Difficulty),
-		"gasLimit":              fmt.Sprintf("0x0%X", panconf.GasLimit),
-		"consensus":             panconf.Consensus,
-	}
 	alloc := map[string]map[string]string{}
 	for _, addr := range address {
 		alloc[addr] = map[string]string{
@@ -248,11 +250,16 @@ func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address [
 	case "ethhash":
 		consensusParams["fixeddifficulty"] = panconf.EthashDifficulty
 	}
+
+	genesis := map[string]interface{}{
+		"chainId":               panconf.NetworkId,
+		"difficulty":            fmt.Sprintf("0x0%X", panconf.Difficulty),
+		"gasLimit":              fmt.Sprintf("0x0%X", panconf.GasLimit),
+		"consensus":             panconf.Consensus,
+	}
+
 	switch panconf.Consensus {
 	case "ibft2":
-		fallthrough
-	case "ibft":
-		panconf.Consensus = "ibft2"
 		genesis["extraData"] = ibftExtraData
 	case "clique":
 		fallthrough
