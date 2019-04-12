@@ -109,7 +109,10 @@ func (this SshClient) Run(command string) (string, error) {
 	if conf.Verbose {
 		fmt.Println(string(out))
 	}
-	return string(out), err
+	if err != nil {
+		return string(out),FormatError(string(out),err)
+	}
+	return string(out), nil
 }
 
 /*
