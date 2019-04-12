@@ -4,6 +4,7 @@ import (
 	util "../../util"
 	"encoding/json"
 	"fmt"
+	"encoding/base64"
 	"github.com/Whiteblock/mustache"
 	"io/ioutil"
 	"log"
@@ -50,8 +51,19 @@ func GetDefaults() string {
 }
 
 func GetServices() []util.Service {
-	return nil
+	return []util.Service{
+		util.Service{
+			Name:  "wb_influx_proxy",
+			Image: "gcr.io/wb-genesis/bitbucket.org/whiteblockio/influx-proxy:master",
+			Env: map[string]string{
+				"BASIC_AUTH_BASE64": base64.StdEncoding.EncodeToString([]byte(conf.InfluxUser + ":" + conf.InfluxPassword)),
+				"INFLUXDB_URL":      conf.Influx,
+				"BIND_PORT":         "8086",
+			},
+		},
+	}
 }
+
 
 func makeNodeConfig(artemisConf ArtemisConf, identity string, peers string, numNodes int, params map[string]interface{}) (string, error) {
 
