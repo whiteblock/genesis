@@ -96,11 +96,6 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 	buildState.SetBuildStage("Starting Artemis")
 	node := 0
-	services, err := util.GetServiceIps(GetServices())
-	if err != nil {
-		log.Println(err)
-		return nil,err
-	}
 	for i, server := range servers {
 		for localId, _ := range server.Ips {
 			artemisCmd := fmt.Sprintf(
@@ -122,7 +117,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 			_,err = clients[i].DockerExecd(localId,
 				fmt.Sprintf("bash -c 'artemis-log-parser --influx \"http://%s:8086\" --node \"%s%d\" /artemis/data/data.json >> /parser.log'",
-					services["wb_influx_proxy"],conf.NodePrefix,node))
+					util.GetGateway(server.SubnetID,localId),conf.NodePrefix,node))
 			if err != nil {
 				log.Println(err)
 				return nil,err
