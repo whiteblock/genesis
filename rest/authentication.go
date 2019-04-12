@@ -39,8 +39,8 @@ func GetKey(kid string) (map[string]string, error) {
 func AuthN(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		next.ServeHTTP(w,r)//bypass
-		return 
+		next.ServeHTTP(w, r) //bypass
+		return
 
 		tokenString := r.Header.Get("Authorization")
 
