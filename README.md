@@ -1,5 +1,7 @@
 #Genesis
 
+[![Maintainability](https://api.codeclimate.com/v1/badges/4aae8bc608f619f0990e/maintainability)](https://codeclimate.com/repos/5cb0ac61f5eb734088003e71/maintainability)
+
 ##Installation
 * clone repository
 * `cd router`
