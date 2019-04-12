@@ -2,6 +2,7 @@ package pantheon
 
 import (
 	db "../../db"
+	helpers "../helpers"
 	state "../../state"
 	util "../../util"
 	"context"
@@ -23,6 +24,8 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 	sem := semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
+
+	wg := sync.WaitGroup{}
 	mux := sync.Mutex{}
 
 	panconf, err := NewConf(details.Params)
@@ -39,101 +42,83 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	privKeys := make([]string, details.Nodes)
 
 	buildState.SetBuildStage("Setting Up Accounts")
-	node := 0
-	for i, server := range servers {
-		for localId, _ := range server.Ips {
-			sem.Acquire(ctx, 1)
-			go func(i int, localId int, node int) {
-				defer sem.Release(1)
-				_, err := clients[i].DockerExec(localId, "pantheon --data-path=/pantheon/data public-key export-address --to=/pantheon/data/nodeAddress")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				buildState.IncrementBuildProgress()
-				_, err = clients[i].DockerExec(localId, "pantheon --data-path=/pantheon/data public-key export --to=/pantheon/data/publicKey")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-
-				addr, err := clients[i].DockerExec(localId, "cat /pantheon/data/nodeAddress")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-
-				addrs := string(addr[2:])
-
-				mux.Lock()
-				addresses[node] = addrs
-				mux.Unlock()
-
-				key, err := clients[i].DockerExec(localId, "cat /pantheon/data/publicKey")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				buildState.IncrementBuildProgress()
-
-				mux.Lock()
-				pubKeys[node] = key[2:]
-				mux.Unlock()
-
-				privKey, err := clients[i].DockerExec(localId, "cat /pantheon/data/key")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				mux.Lock()
-				privKeys[node] = privKey[2:]
-				mux.Unlock()
-
-				_, err = clients[i].DockerExec(localId, "bash -c 'echo \"[\\\""+addrs+"\\\"]\" >> /pantheon/data/toEncode.json'")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-
-				_, err = clients[i].DockerExec(localId, "mkdir /pantheon/genesis")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-
-				// used for IBFT2 extraData
-				_, err = clients[i].DockerExec(localId, "pantheon rlp encode --from=/pantheon/data/toEncode.json --to=/pantheon/rlpEncodedExtraData")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-				buildState.IncrementBuildProgress()
-			}(i, localId, node)
-			node++
+	
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		_, err := clients[serverNum].DockerExec(localNodeNum, 
+				"pantheon --data-path=/pantheon/data public-key export-address --to=/pantheon/data/nodeAddress")
+		if err != nil {
+			log.Println(err)
+			return err
 		}
-	}
+		buildState.IncrementBuildProgress()
+		_, err = clients[serverNum].DockerExec(localNodeNum, 
+				"pantheon --data-path=/pantheon/data public-key export --to=/pantheon/data/publicKey")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
 
-	err = sem.Acquire(ctx, conf.ThreadLimit)
+		addr, err := clients[serverNum].DockerExec(localNodeNum, "cat /pantheon/data/nodeAddress")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		addrs := string(addr[2:])
+
+		mux.Lock()
+		addresses[absoluteNodeNum] = addrs
+		mux.Unlock()
+
+		key, err := clients[serverNum].DockerExec(localNodeNum, "cat /pantheon/data/publicKey")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		buildState.IncrementBuildProgress()
+
+		mux.Lock()
+		pubKeys[absoluteNodeNum] = key[2:]
+		mux.Unlock()
+
+		privKey, err := clients[serverNum].DockerExec(localNodeNum, "cat /pantheon/data/key")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		mux.Lock()
+		privKeys[absoluteNodeNum] = privKey[2:]
+		mux.Unlock()
+
+		_, err = clients[serverNum].DockerExec(localNodeNum, "bash -c 'echo \"[\\\""+addrs+"\\\"]\" >> /pantheon/data/toEncode.json'")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		_, err = clients[serverNum].DockerExec(localNodeNum, "mkdir /pantheon/genesis")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		
+		// used for IBFT2 extraData
+		_, err = clients[serverNum].DockerExec(localNodeNum, 
+				"pantheon rlp encode --from=/pantheon/data/toEncode.json --to=/pantheon/rlpEncodedExtraData")
+		buildState.IncrementBuildProgress()
+		return err
+		
+	})
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	sem.Release(conf.ThreadLimit)
 
-	if !buildState.ErrorFree() {
-		return nil, buildState.GetError()
-	}
-	sem.Acquire(ctx, 1)
+
+	wg.Add(1)
+	defer wg.Wait()
 	go func() {
-		defer sem.Release(1)
+		defer wg.Done()
 		/*
 		   Set up a geth node, which is not part of the blockchain network,
 		   to sign the transactions in place of the pantheon client. The pantheon
@@ -146,6 +131,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			return
 		}
 	}()
+
 	/* Create Genesis File */
 	buildState.SetBuildStage("Generating Genesis File")
 	err = createGenesisfile(panconf, details, addresses, buildState)
