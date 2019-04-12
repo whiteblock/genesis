@@ -38,7 +38,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	addresses := make([]string, details.Nodes)
 	pubKeys := make([]string, details.Nodes)
 	privKeys := make([]string, details.Nodes)
-	rlpEncodedData := make([]string,details.Nodes)
+	rlpEncodedData := make([]string, details.Nodes)
 
 	buildState.SetBuildStage("Setting Up Accounts")
 
@@ -232,10 +232,10 @@ func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address [
 	}
 
 	genesis := map[string]interface{}{
-		"chainId":               panconf.NetworkId,
-		"difficulty":            fmt.Sprintf("0x0%X", panconf.Difficulty),
-		"gasLimit":              fmt.Sprintf("0x0%X", panconf.GasLimit),
-		"consensus":             panconf.Consensus,
+		"chainId":    panconf.NetworkId,
+		"difficulty": fmt.Sprintf("0x0%X", panconf.Difficulty),
+		"gasLimit":   fmt.Sprintf("0x0%X", panconf.GasLimit),
+		"consensus":  panconf.Consensus,
 	}
 
 	switch panconf.Consensus {
@@ -251,8 +251,7 @@ func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address [
 		extraData += "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 		genesis["extraData"] = extraData
 	}
-	
-	
+
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
 	dat, err := util.GetBlockchainConfig("pantheon", "genesis.json", details.Files)

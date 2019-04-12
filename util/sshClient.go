@@ -158,6 +158,21 @@ func (this SshClient) KeepTryDockerExec(node int, command string) (string, error
 }
 
 /*
+   KeepTryDockerExecAll is like KeepTryRun for nodes
+*/
+func (this SshClient) KeepTryDockerExecAll(node int, commands ...string) ([]string, error) {
+	out := []string{}
+	for _, command := range commands {
+		res, err := this.KeepTryRun(fmt.Sprintf("docker exec %s%d %s", conf.NodePrefix, node, command))
+		if err != nil {
+			return err
+		}
+		out = append(out, command)
+	}
+	return out, nil
+}
+
+/*
    DockerExecd runs the given command, and then returns immediately.
    This function will not return the output of the command.
    This is useful if you are starting a persistent process inside a container
