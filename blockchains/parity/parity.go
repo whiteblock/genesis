@@ -5,11 +5,8 @@ import (
 	state "../../state"
 	util "../../util"
 	helpers "../helpers"
-	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"golang.org/x/sync/semaphore"
 	"log"
 	"regexp"
 	"strings"
@@ -31,9 +28,8 @@ func init() {
  */
 func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {
+
 	mux := sync.Mutex{}
-	var sem = semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
 	pconf, err := NewConf(details.Params)
 	fmt.Printf("%#v\n", *pconf)
 	if err != nil {
@@ -142,31 +138,28 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 		buildState.IncrementBuildProgress()
 
-		res, err := clients[0].Run("docker exec wb_service0 mkdir -p /geth")
+		_, err = clients[0].Run("docker exec wb_service0 mkdir -p /geth")
 		if err != nil {
-			log.Println(res)
 			log.Println(err)
 			return nil, err
 		}
 
-		res, err = clients[0].Run("docker cp /home/appo/genesis.json wb_service0:/geth/")
+		_, err = clients[0].Run("docker cp /home/appo/genesis.json wb_service0:/geth/")
 		if err != nil {
-			log.Println(res)
 			log.Println(err)
 			return nil, err
 		}
-		res, err = clients[0].Run("docker exec wb_service0 bash -c 'echo second >> /geth/passwd'")
+
+		_, err = clients[0].Run("docker exec wb_service0 bash -c 'echo second >> /geth/passwd'")
 		if err != nil {
-			log.Println(res)
 			log.Println(err)
 			return nil, err
 		}
 
 		buildState.IncrementBuildProgress()
 
-		res, err = clients[0].Run("docker exec wb_service0 geth --datadir /geth/ --password /geth/passwd account new")
+		res, err := clients[0].Run("docker exec wb_service0 geth --datadir /geth/ --password /geth/passwd account new")
 		if err != nil {
-			log.Println(res)
 			log.Println(err)
 			return nil, err
 		}
@@ -174,34 +167,31 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
 		addresses := addressPattern.FindAllString(res, -1)
 		if len(addresses) < 1 {
-			return nil, errors.New("Unable to get addresses")
+			return nil, fmt.Errorf("Unable to get addresses")
 		}
 		address := addresses[0]
 		address = address[1 : len(address)-1]
 
-		res, err = clients[0].Run(
+		_, err = clients[0].Run(
 			fmt.Sprintf("docker exec wb_service0 geth --datadir /geth/ --networkid %d init /geth/genesis.json", pconf.NetworkId))
 		if err != nil {
-			log.Println(res)
 			log.Println(err)
 			return nil, err
 		}
 
 		buildState.IncrementBuildProgress()
 
-		res, err = clients[0].Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --networkid %d --rpc  --rpcaddr 0.0.0.0`+
+		_, err = clients[0].Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --networkid %d --rpc  --rpcaddr 0.0.0.0`+
 			` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
 			` --password /geth/passwd --etherbase %s --nodiscover`, pconf.NetworkId, address, address))
 		if err != nil {
-			log.Println(res)
 			log.Println(err)
 			return nil, err
 		}
-		res, err = clients[0].KeepTryRun(
+		_, err = clients[0].KeepTryRun(
 			`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json"  -d '{ "method": "miner_start", "params": [8], "id": 3, "jsonrpc": "2.0" }'`)
 
 		if err != nil {
-			log.Println(res)
 			log.Println(err)
 			return nil, err
 		}
@@ -235,89 +225,69 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 
 	//Copy over the config file, spec file, and the accounts
-	node := 0
-	for i, server := range servers {
-		err = clients[i].Scp("config.toml", "/home/appo/config.toml")
+	err = helpers.AllServerExecCon(servers, buildState, func(serverNum int, server *db.Server) error {
+		buildState.Defer(func() { clients[serverNum].Run("rm /home/appo/config.toml") })
+		err := clients[serverNum].Scp("config.toml", "/home/appo/config.toml")
 		if err != nil {
 			log.Println(err)
-			return nil, err
+			return err
 		}
-		defer clients[i].Run("rm /home/appo/config.toml")
 
-		err = clients[i].Scp("spec.json", "/home/appo/spec.json")
+		buildState.Defer(func() { clients[serverNum].Run("rm /home/appo/spec.json") })
+		return clients[serverNum].Scp("spec.json", "/home/appo/spec.json")
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		err := clients[serverNum].DockerCp(localNodeNum, "/home/appo/spec.json", "/parity/")
 		if err != nil {
 			log.Println(err)
-			return nil, err
+			return err
 		}
-		defer clients[i].Run("rm /home/appo/spec.json")
 
-		for j, _ := range server.Ips {
-			err = clients[i].DockerCp(j, "/home/appo/spec.json", "/parity/")
+		buildState.IncrementBuildProgress()
+
+		err = clients[serverNum].DockerCp(localNodeNum, "/home/appo/config.toml", "/parity/")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		buildState.IncrementBuildProgress()
+
+		for i, rawWallet := range rawWallets {
+
+			_, err = clients[serverNum].DockerExec(localNodeNum, fmt.Sprintf("bash -c 'echo \"%s\">>/parity/account%d'", rawWallet, i))
 			if err != nil {
 				log.Println(err)
-				return nil, err
+				return err
 			}
+			defer clients[serverNum].DockerExec(localNodeNum, fmt.Sprintf("rm /parity/account%d", i))
 
-			buildState.IncrementBuildProgress()
-
-			err = clients[i].DockerCp(j, "/home/appo/config.toml", "/parity/")
+			_, err = clients[serverNum].DockerExec(localNodeNum,
+				fmt.Sprintf("parity --base-path=/parity/ --chain /parity/spec.json --password=/parity/passwd account import /parity/account%d", i))
 			if err != nil {
 				log.Println(err)
-				return nil, err
+				return err
 			}
-
-			buildState.IncrementBuildProgress()
-
-			for k, rawWallet := range rawWallets {
-
-				_, err = clients[i].DockerExec(j, fmt.Sprintf("bash -c 'echo \"%s\">>/parity/account%d'", rawWallet, k))
-				if err != nil {
-					log.Println(err)
-					return nil, err
-				}
-				defer clients[i].DockerExec(j, fmt.Sprintf("rm /parity/account%d", k))
-
-				res, err := clients[i].DockerExec(j,
-					fmt.Sprintf("parity --base-path=/parity/ --chain /parity/spec.json --password=/parity/passwd account import /parity/account%d", k))
-				if err != nil {
-					log.Println(res)
-					log.Println(err)
-					return nil, err
-				}
-			}
-			buildState.IncrementBuildProgress()
-			node++
 		}
+		buildState.IncrementBuildProgress()
+		return nil
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
 
 	//util.Write("tmp/config.toml",configToml)
-	node = 0
-	for i, server := range servers {
-		for j, _ := range server.Ips {
-			sem.Acquire(ctx, 1)
-			//fmt.Printf("-----------------------------  Starting NODE-%d  -----------------------------\n", node)
-
-			go func(node int, i int, localNum int) {
-				defer sem.Release(1)
-
-				parityCmd := fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`,
-					wallets[node])
-
-				err := clients[i].DockerExecdLog(localNum, parityCmd)
-
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-
-				buildState.IncrementBuildProgress()
-			}(node, i, j)
-			node++
-		}
-	}
-
-	err = sem.Acquire(ctx, conf.ThreadLimit)
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		parityCmd := fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`, wallets[absoluteNodeNum])
+		defer buildState.IncrementBuildProgress()
+		return clients[serverNum].DockerExecdLog(localNodeNum, parityCmd)
+	})
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -359,58 +329,52 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			enodes = append(enodes, enode)
 		}
 	}
-	node = 0
-	for i, server := range servers {
-		for _, ip := range server.Ips {
-			for k, enode := range enodes {
-				if k == node {
-					continue
-				}
-				res, err := clients[i].KeepTryRun(
-					fmt.Sprintf(
-						`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d '{ "method": "parity_addReservedPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
-						ip,
-						enode))
-				if err != nil {
-					log.Println(res)
-					log.Println(err)
-					return nil, err
-				}
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		ip := servers[serverNum].Ips[localNodeNum]
+		for i, enode := range enodes {
+			if i == absoluteNodeNum {
+				continue
 			}
+			_, err := clients[serverNum].KeepTryRun(
+				fmt.Sprintf(
+					`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
+						`'{ "method": "parity_addReservedPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
+					ip, enode))
 			buildState.IncrementBuildProgress()
-			node++
+			if err != nil {
+				log.Println(err)
+				return err
+			}
 		}
+		return nil
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
 
 	buildState.IncrementBuildProgress()
-	sem.Release(conf.ThreadLimit)
-	if !buildState.ErrorFree() {
-		return nil, buildState.GetError()
-	}
 
-	{
-		for _, enode := range enodes {
-			res, err := clients[0].KeepTryRun(
-				fmt.Sprintf(
-					`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json"  -d '{ "method": "admin_addPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
-					enode))
-			buildState.IncrementBuildProgress()
-			if err != nil {
-				log.Println(res)
-				log.Println(err)
-				return nil, err
-			}
-		}
-		res, err := clients[0].KeepTryRun(
-			`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json"  -d '{ "method": "miner_start", "params": [8], "id": 4, "jsonrpc": "2.0" }'`)
-
+	for _, enode := range enodes {
+		_, err := clients[0].KeepTryRun(
+			fmt.Sprintf(
+				`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json"  -d '{ "method": "admin_addPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
+				enode))
+		buildState.IncrementBuildProgress()
 		if err != nil {
-			log.Println(res)
 			log.Println(err)
 			return nil, err
 		}
-		buildState.IncrementBuildProgress()
 	}
+	_, err = clients[0].KeepTryRun(
+		`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json"  -d '{ "method": "miner_start", "params": [8], "id": 4, "jsonrpc": "2.0" }'`)
+
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	buildState.IncrementBuildProgress()
+
 	return nil, nil
 }
 
