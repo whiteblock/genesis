@@ -104,13 +104,13 @@ func (this SshClient) Run(command string) (string, error) {
 		log.Println(err)
 		return "", err
 	}
-	
+
 	out, err := session.CombinedOutput(command)
 	if conf.Verbose {
 		fmt.Println(string(out))
 	}
 	if err != nil {
-		return string(out),FormatError(string(out),err)
+		return string(out), FormatError(string(out), err)
 	}
 	return string(out), nil
 }
@@ -350,35 +350,30 @@ func (this SshClient) Close() {
 }
 
 func sshConnect(host string) (*ssh.Client, error) {
+
+	key, err := ioutil.ReadFile(conf.SshKey)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 	sshConfig := &ssh.ClientConfig{
 		User: conf.SshUser,
-		Auth: []ssh.AuthMethod{ssh.Password(conf.SshPassword)},
+		Auth: []ssh.AuthMethod{
+			// Use the PublicKeys method for remote authentication.
+			ssh.PublicKeys(signer),
+		},
 	}
 	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
-
 	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", host), sshConfig)
-
-	if err != nil { //Try to connect using the id_rsa file
-		key, err := ioutil.ReadFile(conf.RsaKey)
-		if err != nil {
-			return nil, err
-		}
-		signer, err := ssh.ParsePrivateKey(key)
-		if err != nil {
-			return nil, err
-		}
-		sshConfig = &ssh.ClientConfig{
-			User: conf.RsaUser,
-			Auth: []ssh.AuthMethod{
-				// Use the PublicKeys method for remote authentication.
-				ssh.PublicKeys(signer),
-			},
-		}
-		sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
-		client, err = ssh.Dial("tcp", fmt.Sprintf("%s:22", host), sshConfig)
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
+
 	return client, nil
 }

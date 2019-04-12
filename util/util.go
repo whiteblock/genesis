@@ -310,6 +310,6 @@ func GetBlockchainConfig(blockchain string, file string, files map[string]string
 	return ioutil.ReadFile(fmt.Sprintf("./resources/%s/%s", blockchain, file))
 }
 
-func FormatError(res string,err error) error {
-	return fmt.Errorf("%s\n%s",res,err.Error())
+func FormatError(res string, err error) error {
+	return fmt.Errorf("%s\n%s", res, err.Error())
 }

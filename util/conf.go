@@ -11,9 +11,7 @@ import (
 
 type Config struct {
 	SshUser            string  `json:"ssh-user"`
-	SshPassword        string  `json:"ssh-password"`
-	RsaKey             string  `json:"rsa-key"`
-	RsaUser            string  `json:"rsa-user"`
+	SshKey             string  `json:"ssh-key"`
 	ServerBits         uint32  `json:"server-bits"`
 	ClusterBits        uint32  `json:"cluster-bits"`
 	NodeBits           uint32  `json:"node-bits"`
@@ -44,13 +42,9 @@ type Config struct {
 */
 func (this *Config) LoadFromEnv() {
 	var err error
-	val, exists := os.LookupEnv("SSH_USER")
+	val, exists := os.LookupEnv("RSA_USER")
 	if exists {
 		this.SshUser = val
-	}
-	val, exists = os.LookupEnv("SSH_PASSWORD")
-	if exists {
-		this.SshPassword = val
 	}
 	val, exists = os.LookupEnv("LISTEN")
 	if exists {
@@ -58,12 +52,9 @@ func (this *Config) LoadFromEnv() {
 	}
 	val, exists = os.LookupEnv("RSA_KEY")
 	if exists {
-		this.RsaKey = val
+		this.SshKey = val
 	}
-	val, exists = os.LookupEnv("RSA_USER")
-	if exists {
-		this.RsaUser = val
-	}
+
 	_, exists = os.LookupEnv("VERBOSE")
 	if exists {
 		this.Verbose = true
@@ -200,18 +191,13 @@ func (c *Config) AutoFillMissing() {
 	if len(c.SshUser) == 0 {
 		c.SshUser = "appo"
 	}
-	if len(c.SshPassword) == 0 {
-		c.SshPassword = "w@ntest"
-	}
+
 	if len(c.Listen) == 0 {
 		c.Listen = "127.0.0.1:8000"
 	}
-	if len(c.RsaKey) == 0 {
+	if len(c.SshKey) == 0 {
 		home := os.Getenv("HOME")
-		c.RsaKey = home + "/.ssh/id_rsa"
-	}
-	if len(c.RsaUser) == 0 {
-		c.RsaUser = "appo"
+		c.SshKey = home + "/.ssh/id_rsa"
 	}
 	if c.ServerBits <= 0 {
 		fmt.Println("Warning: Using default server bits")
