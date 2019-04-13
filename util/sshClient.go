@@ -165,7 +165,7 @@ func (this SshClient) KeepTryDockerExecAll(node int, commands ...string) ([]stri
 	for _, command := range commands {
 		res, err := this.KeepTryRun(fmt.Sprintf("docker exec %s%d %s", conf.NodePrefix, node, command))
 		if err != nil {
-			return nil,err
+			return nil, err
 		}
 		out = append(out, res)
 	}

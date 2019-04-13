@@ -83,14 +83,14 @@ func CopyToServers(servers []db.Server, clients []*util.SshClient, buildState *s
 
 }
 
-func CopyAllToServers(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState, srcDst ...string) error {
+func CopyAllToServers(clients []*util.SshClient, buildState *state.BuildState, srcDst ...string) error {
 	if len(srcDst)%2 != 0 {
 		return fmt.Errorf("Invalid number of variadic arguments, must be given an even number of them")
 	}
 	sem := semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
 
-	for i := range servers {
+	for i := range clients {
 		for j := 0; j < len(srcDst)/2; j++ {
 			sem.Acquire(ctx, 1)
 			go func(i int, j int) {

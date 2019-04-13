@@ -185,7 +185,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 	/* Copy static-nodes & genesis files to each node */
 	buildState.SetBuildStage("Distributing Files")
-	err = helpers.CopyAllToServers(servers, clients, buildState,
+	err = helpers.CopyAllToServers(clients, buildState,
 		"static-nodes.json", "/home/appo/static-nodes.json",
 		"genesis.json", "/home/appo/genesis.json")
 	if err != nil {

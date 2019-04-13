@@ -135,8 +135,9 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		_, err = clients[0].FastMultiRun(
 			"docker exec wb_service0 mkdir -p /geth",
 			"docker cp /home/appo/genesis.json wb_service0:/geth/",
-			"docker exec wb_service0 bash -c 'echo second >> /geth/passwd'",
-			"docker exec wb_service0 geth --datadir /geth/ --password /geth/passwd account new")
+			"docker exec wb_service0 bash -c 'echo second >> /geth/passwd'")
+
+		res, err := clients[0].Run("docker exec wb_service0 geth --datadir /geth/ --password /geth/passwd account new")
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -205,7 +206,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 
 	//Copy over the config file, spec file, and the accounts
-	err = helpers.CopyAllToServers(servers, clients, buildState,
+	err = helpers.CopyAllToServers(clients, buildState,
 		"config.toml", "/home/appo/config.toml",
 		"spec.json", "/home/appo/spec.json")
 	if err != nil {

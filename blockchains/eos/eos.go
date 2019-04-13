@@ -175,7 +175,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 	buildState.SetBuildStage("Building genesis block")
 
-	err = helpers.CopyAllToServers(servers, clients, buildState,
+	err = helpers.CopyAllToServers(clients, buildState,
 		"genesis.json", "/home/appo/genesis.json",
 		"config.ini", "/home/appo/config.ini")
 	if err != nil {

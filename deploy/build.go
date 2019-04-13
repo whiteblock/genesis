@@ -2,7 +2,6 @@ package deploy
 
 import (
 	db "../db"
-	netem "../net"
 	state "../state"
 	util "../util"
 	"context"
@@ -26,24 +25,14 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util
 	var sem = semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
 
-	buildState.SetBuildStage("Tearing down the previous testnet")
-	for i, _ := range servers {
-		sem.Acquire(ctx, 1)
-		go func(i int) {
-			defer sem.Release(1)
-			DockerKillAll(clients[i])
-			buildState.IncrementDeployProgress()
-			DockerNetworkDestroyAll(clients[i])
-			buildState.IncrementDeployProgress()
-		}(i)
-	}
+	buildState.SetBuildStage("Initializing build")
 
-	err := sem.Acquire(ctx, conf.ThreadLimit)
+	err := handlePreBuildExtras(buildConf, clients, buildState)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	sem.Release(conf.ThreadLimit)
+	PurgeTestNetwork(servers, clients, buildState)
 
 	buildState.SetBuildStage("Provisioning the nodes")
 
@@ -123,18 +112,6 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util
 		}
 	}()
 
-	for i, _ := range servers {
-		sem.Acquire(ctx, 1)
-		go func(i int) {
-			defer sem.Release(1)
-			netem.RemoveAllOnServer(clients[i], servers[i].Nodes)
-		}(i)
-	}
-
-	for i, _ := range servers {
-		DockerStopServices(clients[i])
-	}
-
 	if services != nil { //Maybe distribute the services over multiple servers
 		err := DockerStartServices(servers[0], clients[0], services, buildState)
 		if err != nil {
@@ -143,8 +120,8 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util
 		}
 	}
 
-	for i, _ := range servers {
-		clients[i].Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
+	for _, client := range clients {
+		client.Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
 	}
 
 	//Acquire all of the resources here, then release and destroy
