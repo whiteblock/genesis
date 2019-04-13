@@ -184,7 +184,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 
 	/* Copy static-nodes & genesis files to each node */
-
+	buildState.SetBuildStage("Distributing Files")
 	err = helpers.CopyToAllNodes(servers, clients, buildState,
 		"static-nodes.json", "/pantheon/data/static-nodes.json",
 		"genesis.json", "/pantheon/genesis/genesis.json")
@@ -192,29 +192,6 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		log.Println(err)
 		return nil, err
 	}
-
-	buildState.SetBuildStage("Distributing Files")
-	/*err = helpers.CopyAllToServers(clients, buildState,
-		"static-nodes.json", "/home/appo/static-nodes.json",
-		"genesis.json", "/home/appo/genesis.json")
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		err := clients[serverNum].DockerCp(localNodeNum, "/home/appo/static-nodes.json", "/pantheon/data/static-nodes.json")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		buildState.IncrementBuildProgress()
-		return clients[serverNum].DockerCp(localNodeNum, "/home/appo/genesis.json", "/pantheon/genesis/genesis.json")
-	})
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}*/
 
 	/* Start the nodes */
 	buildState.SetBuildStage("Starting Pantheon")

@@ -4,6 +4,7 @@ import (
 	db "../../db"
 	state "../../state"
 	util "../../util"
+	helpers "../helpers"
 	"fmt"
 	"log"
 	"strings"
@@ -19,7 +20,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	buildState *state.BuildState) ([]string, error) {
 
 	peers := []string{}
-	buildState.SetBuildSteps(4 + (details.Nodes * 3))
+	buildState.SetBuildSteps(4 + (details.Nodes * 2))
 
 	buildState.SetBuildStage("Setting up the first node")
 	/**
@@ -99,33 +100,13 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		log.Println(err)
 		return nil, err
 	}
-	//distribute the created genensis file among the nodes
-	for i, server := range servers {
-		err := clients[i].Scp("genesis.json", "/home/appo/genesis.json")
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-		defer clients[i].Run("rm /home/appo/genesis.json")
 
-		for j, _ := range server.Ips {
-			if i == 0 && j == 0 {
-				buildState.IncrementBuildProgress()
-				continue
-			}
-			_, err := clients[i].DockerExec(j, "rm /root/.gaiad/config/genesis.json")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			err = clients[i].DockerCp(j, "/home/appo/genesis.json", "/root/.gaiad/config/")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			buildState.IncrementBuildProgress()
-		}
+	err = helpers.CopyToAllNodes(servers, clients, buildState, "genesis.json", "/root/.gaiad/config/")
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
+
 	log.Printf("%v", peers)
 	buildState.SetBuildStage("Starting cosmos")
 	node = 0

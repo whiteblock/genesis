@@ -110,22 +110,12 @@ func Build(details db.DeploymentDetails, servers []db.Server,
 		log.Println(err)
 		return nil, err
 	}
-
-	err = helpers.CopyToServers(servers, clients, buildState, "genesis.json", "/home/appo/genesis.json")
+	//distribute the created genensis file among the nodes
+	err = helpers.CopyToAllNodes(servers, clients, buildState, "genesis.json", "/root/.tendermint/config/")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	//distribute the created genensis file among the nodes
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		defer buildState.IncrementBuildProgress()
-		_, err := clients[serverNum].DockerExec(localNodeNum, "rm /root/.tendermint/config/genesis.json")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		return clients[serverNum].DockerCp(localNodeNum, "/home/appo/genesis.json", "/root/.tendermint/config/")
-	})
 
 	buildState.SetBuildStage("Starting tendermint")
 	node := 0

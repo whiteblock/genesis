@@ -34,7 +34,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		return nil, err
 	}
 
-	buildState.SetBuildSteps(9 + (9 * details.Nodes))
+	buildState.SetBuildSteps(9 + (7 * details.Nodes))
 	//Make the data directories
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir -p /parity")
@@ -198,30 +198,14 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 
 	//Copy over the config file, spec file, and the accounts
-	err = helpers.CopyAllToServers(clients, buildState,
-		"config.toml", "/home/appo/config.toml",
-		"spec.json", "/home/appo/spec.json")
+	err = helpers.CopyToAllNodes(servers, clients, buildState,
+		"config.toml", "/parity/",
+		"spec.json", "/parity/")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		err := clients[serverNum].DockerCp(localNodeNum, "/home/appo/spec.json", "/parity/")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		buildState.IncrementBuildProgress()
-
-		err = clients[serverNum].DockerCp(localNodeNum, "/home/appo/config.toml", "/parity/")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		buildState.IncrementBuildProgress()
-
 		for i, rawWallet := range rawWallets {
 
 			_, err = clients[serverNum].DockerExec(localNodeNum, fmt.Sprintf("bash -c 'echo \"%s\">>/parity/account%d'", rawWallet, i))

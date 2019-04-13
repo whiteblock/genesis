@@ -44,10 +44,7 @@ func AllNodeExecCon(servers []db.Server, buildState *state.BuildState,
 
 	sem.Acquire(ctx, conf.ThreadLimit)
 	sem.Release(conf.ThreadLimit)
-	if !buildState.ErrorFree() {
-		return buildState.GetError()
-	}
-	return nil
+	return buildState.GetError()
 }
 
 func AllServerExecCon(servers []db.Server, buildState *state.BuildState,
@@ -70,18 +67,12 @@ func AllServerExecCon(servers []db.Server, buildState *state.BuildState,
 
 	sem.Acquire(ctx, conf.ThreadLimit)
 	sem.Release(conf.ThreadLimit)
-	if !buildState.ErrorFree() {
-		return buildState.GetError()
-	}
-	return nil
+
+	return buildState.GetError()
 }
 
-func CopyToServers(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState, src string, dst string) error {
-	return AllServerExecCon(servers, buildState, func(serverNum int, server *db.Server) error {
-		buildState.Defer(func() { clients[serverNum].Run(fmt.Sprintf("rm -rf %s", dst)) })
-		return clients[serverNum].Scp(src, dst)
-	})
-
+func CopyToServers(clients []*util.SshClient, buildState *state.BuildState, src string, dst string) error {
+	return CopyAllToServers(clients, buildState, src, dst)
 }
 
 func CopyAllToServers(clients []*util.SshClient, buildState *state.BuildState, srcDst ...string) error {
@@ -110,10 +101,7 @@ func CopyAllToServers(clients []*util.SshClient, buildState *state.BuildState, s
 
 	sem.Acquire(ctx, conf.ThreadLimit)
 	sem.Release(conf.ThreadLimit)
-	if !buildState.ErrorFree() {
-		return buildState.GetError()
-	}
-	return nil
+	return buildState.GetError()
 }
 
 func CopyToAllNodes(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState, srcDst ...string) error {
@@ -141,7 +129,6 @@ func CopyToAllNodes(servers []db.Server, clients []*util.SshClient, buildState *
 			go func(i int, j int, server *db.Server, intermediateDst string, rdy chan bool) {
 				defer wg.Done()
 				<-rdy
-				log.Printf("READY %d\n", j)
 				for k := range server.Ips {
 					sem.Acquire(ctx, 1)
 					wg.Add(1)

@@ -53,28 +53,21 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 	buildState.SetBuildStage("Distributing secrets")
 	/**Copy over the password file**/
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir -p /geth")
+		return err
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 
-	err = helpers.CopyToServers(servers, clients, buildState, "passwd", "/home/appo/passwd")
+	err = helpers.CopyToAllNodes(servers, clients, buildState, "passwd", "/geth")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 	buildState.IncrementBuildProgress()
-
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir -p /geth")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		return clients[serverNum].DockerCp(localNodeNum, "/home/appo/passwd", "/geth/")
-	})
-
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
 
 	/**Create the wallets**/
 	wallets := make([]string, details.Nodes)
@@ -142,7 +135,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Bootstrapping network")
 
-	err = helpers.CopyToAllNodes(servers, clients, buildState,"CustomGenesis.json","/geth/")
+	err = helpers.CopyToAllNodes(servers, clients, buildState, "CustomGenesis.json", "/geth/")
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -222,7 +215,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Starting geth")
 	//Copy static-nodes to every server
-	err = helpers.CopyToServers(servers, clients, buildState, "static-nodes.json", "/home/appo/static-nodes.json")
+	err = helpers.CopyToAllNodes(servers, clients, buildState, "static-nodes.json", "/geth/")
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -242,12 +235,6 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			unlock,
 			wallets[absoluteNodeNum],
 			conf.DockerOutputFile)
-
-		err := clients[serverNum].DockerCp(localNodeNum, "/home/appo/static-nodes.json", "/geth/")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
 
 		_, err = clients[serverNum].DockerExecdit(localNodeNum, fmt.Sprintf("bash -ic '%s'", gethCmd))
 		if err != nil {

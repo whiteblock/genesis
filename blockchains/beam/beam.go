@@ -35,28 +35,18 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	// walletIDs := []string{}
 	for i, server := range servers {
 		for localId, _ := range server.Ips {
-			_, err := clients[i].DockerExec(localId, "beam-wallet --command init --pass password")
-			if err != nil {
-				// log.Println(err)
-				// return nil, err
-			}
+			clients[i].DockerExec(localId, "beam-wallet --command init --pass password") //ign err
 
-			res1, err := clients[i].DockerExec(localId, "beam-wallet --command export_owner_key --pass password")
-			if err != nil {
-				// log.Println(err)
-				// return nil, err
-			}
+			res1, _ := clients[i].DockerExec(localId, "beam-wallet --command export_owner_key --pass password") //ign err
+
 			buildState.IncrementBuildProgress()
 
 			re := regexp.MustCompile(`(?m)^Owner([A-z|0-9|\s|\:|\/|\+|\=])*$`)
 			ownKLine := re.FindAllString(res1, -1)[0]
 			ownerKeys = append(ownerKeys, strings.Split(ownKLine, " ")[3])
 
-			res2, err := clients[i].DockerExec(localId, "beam-wallet --command export_miner_key --subkey=1 --pass password")
-			if err != nil {
-				// log.Println(err)
-				// return nil, err
-			}
+			res2, _ := clients[i].DockerExec(localId, "beam-wallet --command export_miner_key --subkey=1 --pass password") //ign err
+
 			re = regexp.MustCompile(`(?m)^Secret([A-z|0-9|\s|\:|\/|\+|\=])*$`)
 			secMLine := re.FindAllString(res2, -1)[0]
 			secretMinerKeys = append(secretMinerKeys, strings.Split(secMLine, " ")[3])

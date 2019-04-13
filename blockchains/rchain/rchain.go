@@ -25,7 +25,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		log.Println(err)
 		return nil, err
 	}
-	buildState.SetBuildSteps(9 + (len(servers) * 2) + (details.Nodes * 3))
+	buildState.SetBuildSteps(9 + (len(servers) * 2) + (details.Nodes * 2))
 	buildState.SetBuildStage("Setting up data collection")
 
 	services, err := util.GetServiceIps(GetServices())
@@ -140,24 +140,12 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 	buildState.SetBuildStage("Configuring the other rchain nodes")
 	/**Copy config files to the rest of the nodes**/
-	err = helpers.CopyToServers(servers, clients, buildState, "rnode.conf", "/home/appo/rnode.conf")
+	err = helpers.CopyToAllNodes(servers, clients, buildState, "rnode.conf", "/datadir/rnode.conf")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 	buildState.IncrementBuildProgress()
-
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		defer buildState.IncrementBuildProgress()
-		if absoluteNodeNum == 0 {
-			return nil
-		}
-		return clients[serverNum].DockerCp(localNodeNum, "/home/appo/rnode.conf", "/datadir/rnode.conf")
-	})
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
 
 	buildState.SetBuildStage("Starting the rest of the nodes")
 	/**Start up the rest of the nodes**/
