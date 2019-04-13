@@ -79,8 +79,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	wallets := make([]string, details.Nodes)
 	rawWallets := make([]string, details.Nodes)
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		res, err := clients[serverNum].DockerExec(localNodeNum,
-			fmt.Sprintf("parity --base-path=/parity/ --password=/parity/passwd account new"))
+		res, err := clients[serverNum].DockerExec(localNodeNum, "parity --base-path=/parity/ --password=/parity/passwd account new")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -90,10 +89,8 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			return fmt.Errorf("account new returned an empty response")
 		}
 
-		address := res[:len(res)-1]
-
 		mux.Lock()
-		wallets[absoluteNodeNum] = address
+		wallets[absoluteNodeNum] = res[:len(res)-1]
 		mux.Unlock()
 
 		res, err = clients[serverNum].DockerExec(localNodeNum, "bash -c 'cat /parity/keys/ethereum/*'")
@@ -138,15 +135,13 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		_, err = clients[0].FastMultiRun(
 			"docker exec wb_service0 mkdir -p /geth",
 			"docker cp /home/appo/genesis.json wb_service0:/geth/",
-			"docker exec wb_service0 bash -c 'echo second >> /geth/passwd'")
-
-		buildState.IncrementBuildProgress()
-
-		res, err := clients[0].Run("docker exec wb_service0 geth --datadir /geth/ --password /geth/passwd account new")
+			"docker exec wb_service0 bash -c 'echo second >> /geth/passwd'",
+			"docker exec wb_service0 geth --datadir /geth/ --password /geth/passwd account new")
 		if err != nil {
 			log.Println(err)
 			return nil, err
 		}
+		buildState.IncrementBuildProgress()
 
 		addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
 		addresses := addressPattern.FindAllString(res, -1)

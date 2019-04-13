@@ -133,9 +133,8 @@ func Build(details db.DeploymentDetails, servers []db.Server,
 		for j := range server.Ips {
 			cmd := fmt.Sprintf("tendermint node --proxy_app=kvstore --p2p.persistent_peers=%s",
 				strings.Join(append(peers[:node], peers[node+1:]...), ","))
-			res, err := clients[i].DockerExecd(j, cmd)
+			_, err := clients[i].DockerExecd(j, cmd)
 			if err != nil {
-				log.Println(res)
 				log.Println(err)
 				return nil, err
 			}
