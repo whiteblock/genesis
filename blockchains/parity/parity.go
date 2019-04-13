@@ -34,7 +34,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		return nil, err
 	}
 
-	buildState.SetBuildSteps(8 + (10 * details.Nodes))
+	buildState.SetBuildSteps(9 + (9 * details.Nodes))
 	//Make the data directories
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir -p /parity")
@@ -60,20 +60,12 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	}
 	buildState.IncrementBuildProgress()
 	/**Copy over the password file**/
-	err = helpers.CopyToServers(servers, clients, buildState, "passwd", "/home/appo/passwd")
+	err = helpers.CopyToAllNodes(servers, clients, buildState, "passwd", "/parity/")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		buildState.IncrementBuildProgress()
-		return clients[serverNum].DockerCp(localNodeNum, "/home/appo/passwd", "/parity/")
-	})
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
+	buildState.IncrementBuildProgress()
 
 	/**Create the wallets**/
 	wallets := make([]string, details.Nodes)

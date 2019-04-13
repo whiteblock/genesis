@@ -142,17 +142,12 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Bootstrapping network")
 
-	err = helpers.CopyToServers(servers, clients, buildState, "CustomGenesis.json", "/home/appo/CustomGenesis.json")
+	err = helpers.CopyToAllNodes(servers, clients, buildState,"CustomGenesis.json","/geth/")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		err := clients[serverNum].DockerCp(localNodeNum, "/home/appo/CustomGenesis.json", "/geth/")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
 		for i, rawWallet := range rawWallets {
 			if i == absoluteNodeNum {
 				continue

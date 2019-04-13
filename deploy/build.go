@@ -92,6 +92,19 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util
 		index = index % len(availibleServers)
 	}
 
+	if services != nil { //Maybe distribute the services over multiple servers
+		sem.Acquire(ctx, 1)
+		go func() {
+			defer sem.Release(1)
+			err := DockerStartServices(servers[0], clients[0], services, buildState)
+			if err != nil {
+				log.Println(err)
+				buildState.ReportError(err)
+				return
+			}
+		}()
+	}
+
 	err = sem.Acquire(ctx, conf.ThreadLimit)
 	if err != nil {
 		log.Println(err)
@@ -111,14 +124,6 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util
 			return
 		}
 	}()
-
-	if services != nil { //Maybe distribute the services over multiple servers
-		err := DockerStartServices(servers[0], clients[0], services, buildState)
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-	}
 
 	for _, client := range clients {
 		client.Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
