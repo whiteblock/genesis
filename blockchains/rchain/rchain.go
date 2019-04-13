@@ -83,7 +83,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 			return nil, err
 		}
 		buildState.IncrementBuildProgress()
-		defer clients[0].Run("rm -f /home/appo/bonds.txt")
+		buildState.Defer(func() { clients[0].Run("rm -f /home/appo/bonds.txt") })
 
 		err = clients[0].DockerCp(0, "/home/appo/bonds.txt", "/bonds.txt")
 		if err != nil {
@@ -140,71 +140,47 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 	buildState.SetBuildStage("Configuring the other rchain nodes")
 	/**Copy config files to the rest of the nodes**/
-	for i, server := range servers {
-		err = clients[i].Scp("rnode.conf", "/home/appo/rnode.conf")
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-		buildState.IncrementBuildProgress()
-		for node, _ := range server.Ips {
-			if node == 0 && i == 0 {
-				continue
-			}
-			err = clients[i].DockerCp(node, "/home/appo/rnode.conf", "/datadir/rnode.conf")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			buildState.IncrementBuildProgress()
-
-		}
-		_, err = clients[i].Run("rm -f ~/rnode.conf")
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-		buildState.IncrementBuildProgress()
-	}
-
+	err = helpers.CopyToServers(servers, clients, buildState, "rnode.conf", "/home/appo/rnode.conf")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
+	buildState.IncrementBuildProgress()
+
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		defer buildState.IncrementBuildProgress()
+		if absoluteNodeNum == 0 {
+			return nil
+		}
+		return clients[serverNum].DockerCp(localNodeNum, "/home/appo/rnode.conf", "/datadir/rnode.conf")
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
 	buildState.SetBuildStage("Starting the rest of the nodes")
 	/**Start up the rest of the nodes**/
-	node := 0
 	var validators int64 = 0
-	for i, server := range servers {
-		for j, ip := range server.Ips {
-			if node == 0 {
-				node++
-				continue
-			}
-			if validators < rchainConf.Validators {
-				err = clients[i].DockerExecdLog(j,
-					fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
-						rchainConf.Command, enode, keyPairs[node].PrivateKey, ip))
-				validators++
-			} else {
-				err = clients[i].DockerExecdLog(j,
-					fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s",
-						rchainConf.Command, enode, ip))
-			}
-			buildState.IncrementBuildProgress()
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			node++
+
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		defer buildState.IncrementBuildProgress()
+		if absoluteNodeNum == 0 {
+			return nil
 		}
-	}
-	/*err = SetupPrometheus(servers,clients)
-	  if err != nil{
-	      log.Println(err)
-	      return nil,err
-	  }*/
-	return nil, nil
+		ip := servers[serverNum].Ips[localNodeNum]
+		if validators < rchainConf.Validators {
+			err = clients[serverNum].DockerExecdLog(localNodeNum,
+				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
+					rchainConf.Command, enode, keyPairs[absoluteNodeNum].PrivateKey, ip))
+			validators++
+			return err
+		}
+		return clients[serverNum].DockerExecdLog(localNodeNum,
+			fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s",
+				rchainConf.Command, enode, ip))
+	})
+	return nil, err
 }
 
 func createFirstConfigFile(details db.DeploymentDetails, client *util.SshClient, node int, rchainConf *RChainConf, influxIP string, buildState *state.BuildState) error {
@@ -233,21 +209,12 @@ func createFirstConfigFile(details db.DeploymentDetails, client *util.SshClient,
 		return err
 	}
 	err = client.Scp("rnode.conf", "/home/appo/rnode.conf")
+	buildState.Defer(func() { client.Run("rm -f ~/rnode.conf") })
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	err = client.DockerCp(node, "/home/appo/rnode.conf", "/datadir/rnode.conf")
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	_, err = client.Run("rm -f ~/rnode.conf")
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	return nil
+	return client.DockerCp(node, "/home/appo/rnode.conf", "/datadir/rnode.conf")
 }
 
 func Add(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
