@@ -182,12 +182,17 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		log.Println(err)
 		return nil, err
 	}
-
+	err = createConfigfile(panconf, details, buildState)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 	/* Copy static-nodes & genesis files to each node */
 	buildState.SetBuildStage("Distributing Files")
 	err = helpers.CopyToAllNodes(servers, clients, buildState,
 		"static-nodes.json", "/pantheon/data/static-nodes.json",
-		"genesis.json", "/pantheon/genesis/genesis.json")
+		"genesis.json", "/pantheon/genesis/genesis.json",
+		"config.toml", "/pantheon/config.toml")
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -195,14 +200,12 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 	/* Start the nodes */
 	buildState.SetBuildStage("Starting Pantheon")
-	httpPort := 8545
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		err := clients[serverNum].DockerExecdLog(localNodeNum, fmt.Sprintf(
-			`pantheon --data-path=/pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
+			`pantheon --config-file=/pantheon/config.toml --data-path=/pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
 				`--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,TXPOOL,WEB3" `+
-				` --p2p-port=%d --rpc-http-port=%d --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"`,
-			p2pPort,
-			httpPort))
+				` --p2p-port=%d --rpc-http-port=8545 --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"`,
+			p2pPort))
 		buildState.IncrementBuildProgress()
 		return err
 	})
@@ -268,6 +271,16 @@ func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address [
 	fmt.Println("Writing Genesis File Locally")
 	return buildState.Write("genesis.json", data)
 
+}
+
+func createConfigfile(panconf *PanConf, details db.DeploymentDetails, buildState *state.BuildState) error {
+
+	dat, err := util.GetBlockchainConfig("pantheon", "config.toml", details.Files)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return buildState.Write("config.toml", string(dat))
 }
 
 func createStaticNodesFile(list string, buildState *state.BuildState) error {
