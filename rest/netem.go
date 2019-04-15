@@ -3,6 +3,7 @@ package rest
 import (
 	db "../db"
 	netem "../net"
+	status "../status"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"log"
@@ -82,4 +83,39 @@ func stopNet(w http.ResponseWriter, r *http.Request) {
 	netem.RemoveAll(nodes)
 
 	w.Write([]byte("Success"))
+}
+
+func getNet(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	servers, err := status.GetLatestServers(params["testnetId"])
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 404)
+		return
+	}
+	out := []netem.Netconf{}
+	for _, server := range servers {
+		client, err := status.GetClient(server.Id)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), 404)
+			return
+		}
+		confs, err := netem.GetConfigOnServer(client)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		out = append(out, confs...)
+	}
+
+	output, err := json.Marshal(out)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	w.Write(output)
 }

@@ -101,6 +101,9 @@ func StartServer() {
 	router.HandleFunc("/build/freeze/{id}", thawBuild).Methods("DELETE")
 	router.HandleFunc("/build/freeze/{id}/", thawBuild).Methods("DELETE")
 
+	router.HandleFunc("/emulate/{testnetId}", getNet).Methods("GET")
+	router.HandleFunc("/emulate/{testnetId}/", getNet).Methods("GET")
+
 	router.HandleFunc("/emulate/{testnetId}", stopNet).Methods("DELETE")
 	router.HandleFunc("/emulate/{testnetId}/", stopNet).Methods("DELETE")
 

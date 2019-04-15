@@ -13,7 +13,7 @@ rpc-http-api=["ADMIN","CLIQUE","DEBUG","EEA","ETH","IBFT","MINER","NET","TXPOOL"
 rpc-http-host="0.0.0.0"
 rpc-http-port="8545"
 
-logging="DEBUG"
+logging="INFO"
 
 # Chain
 genesis-file="/pantheon/genesis/genesis.json"
