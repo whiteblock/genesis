@@ -208,12 +208,21 @@ func parseItems(items []string, nconf *Netconf) error {
 			if len(matches) == 0 {
 				return fmt.Errorf("Unexpected delay value \"%s\"", items[2*i+1])
 			}
-			val, err := strconv.Atoi(items[2*i+1])
+
+			val, err := strconv.ParseFloat(matches[0], 64)
 			if err != nil {
 				log.Println(err)
 				return err
 			}
-			nconf.Delay = val
+			unit := items[2*i+1][len(matches[0]):]
+			switch unit {
+			case "s":
+				val *= 1000
+				fallthrough
+			case "ms":
+				val *= 1000
+			}
+			nconf.Delay = int(val)
 		case "rate":
 			nconf.Rate = items[2*i+1]
 		case "duplicate":
@@ -244,10 +253,13 @@ func parseItems(items []string, nconf *Netconf) error {
 
 //5 start index
 func GetConfigOnServer(client *util.SshClient) ([]Netconf, error) {
-	res, err := client.Run("tc qdisc show | grep wb_bridge | grep netem")
+	res, err := client.Run("tc qdisc show | grep wb_bridge | grep netem || true")
 	if err != nil {
 		log.Println(err)
 		return nil, err
+	}
+	if len(res) == 0 {
+		return []Netconf{}, nil
 	}
 	out := []Netconf{}
 	rawConfigs := strings.Split(res, "\n")
