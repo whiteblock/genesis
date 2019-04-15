@@ -199,7 +199,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		err := clients[serverNum].DockerExecdLog(localNodeNum, fmt.Sprintf(
 			`pantheon --data-path=/pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
-				`--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,WEB3" `+
+				`--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,TXPOOL,WEB3" `+
 				` --p2p-port=%d --rpc-http-port=%d --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"`,
 			p2pPort,
 			httpPort))

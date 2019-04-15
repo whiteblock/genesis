@@ -88,5 +88,14 @@ func handlePreBuildExtras(buildConf *db.DeploymentDetails, clients []*util.SshCl
 		}
 	}
 
+	dockerPull, ok := prebuild["pull"]
+	if ok && dockerPull.(bool) {
+		err := DockerPull(clients, buildConf.Image)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+	}
+
 	return nil
 }
