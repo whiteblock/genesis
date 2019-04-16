@@ -67,6 +67,33 @@ func ExtractJwt(r *http.Request) (string, error) {
 	return splt[1], nil
 }
 
+func GetKidFromJwt(jwt string) (string,error) {
+	if len(jwt) == 0 {
+		return "",fmt.Errorf("Given empty string for jwt")
+	}
+	headerb64 := strings.Split(jwt,".")[0]
+	headerJson,err := base64.StdEncoding.DecodeString(headerb64)
+	if err != nil {
+		log.Println(err)
+		return "",err
+	}
+	var header map[string]interface{}
+	err = json.Unmarshal(headerJson,&header)
+	if err != nil {
+		log.Println(err)
+		return "",err
+	}
+	kidAsI,ok := header["kid"]
+	if !ok {
+		return "",fmt.Errorf("JWT does not have kid in header")
+	}
+	kid,ok := kidAsI.(string)
+	if !ok {
+		return "",fmt.Errorf("kid is not string as expected.")
+	}
+	return kid,nil
+}
+
 func GetUUIDString() (string, error) {
 	uid, err := uuid.NewV4()
 	return uid.String(), err

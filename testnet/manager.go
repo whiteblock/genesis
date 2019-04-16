@@ -170,14 +170,14 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 			log.Println(err)
 			panic(err)
 		}
-		for _, ip := range server.Ips {
+		for j, ip := range server.Ips {
 			id, err := util.GetUUIDString()
 			if err != nil {
 				log.Println(err)
 				buildState.ReportError(err)
 				return err
 			}
-			node := db.Node{Id: id, TestNetId: testNetId, Server: server.Id, LocalId: i, Ip: ip}
+			node := db.Node{Id: id, TestNetId: testNetId, Server: server.Id, LocalId: j, Ip: ip}
 			if labels != nil {
 				node.Label = labels[i]
 			}
@@ -188,6 +188,27 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 			i++
 		}
 	}
+	return nil
+}
+
+func finalizeNode(node db.Node,details *db.DeploymentDetails,buildState *state.BuildState) error {
+	client,err := status.GetClient(node.Server)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	details.Logs["primary"] = conf.DockerOutputFile
+	files := ""
+	for _,file := range details.Logs {
+		files += " "+file
+	}
+	buildState.Defer(func(){
+		_,err := client.DockerExec(node.LocalId,
+			fmt.Sprintf("nibbler --jwt %s --testnet %s --node %s %s",details.GetJwt(),node.TestNetId,node.Id,files))
+		if err != nil {
+			log.Println(err)
+		}
+	})
 	return nil
 }
 
