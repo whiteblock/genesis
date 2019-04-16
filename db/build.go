@@ -41,12 +41,12 @@ type DeploymentDetails struct {
 	Logs         map[string]string      `json:"logs"`
 	Extras       map[string]interface{} `json:"extras"`
 	jwt          string
-	kid			 string					
+	kid          string
 }
 
 func (this *DeploymentDetails) SetJwt(jwt string) error {
 	this.jwt = jwt
-	kid,err := util.GetKidFromJwt(this.GetJwt())
+	kid, err := util.GetKidFromJwt(this.GetJwt())
 
 	this.kid = kid
 	return err
@@ -81,7 +81,7 @@ func GetAllBuilds() ([]DeploymentDetails, error) {
 		var logs []byte
 		var extras []byte
 
-		err = rows.Scan(&servers, &build.Blockchain, &build.Nodes, &build.Image, &params, &resources, &environment,&logs,&extras,&build.kid)
+		err = rows.Scan(&servers, &build.Blockchain, &build.Nodes, &build.Image, &params, &resources, &environment, &logs, &extras, &build.kid)
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -141,7 +141,7 @@ func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 	var logs []byte
 	var extras []byte
 
-	err := row.Scan(&servers, &build.Blockchain, &build.Nodes, &build.Image, &params, &resources, &environment,&logs,&extras,&build.kid)
+	err := row.Scan(&servers, &build.Blockchain, &build.Nodes, &build.Image, &params, &resources, &environment, &logs, &extras, &build.kid)
 	if err != nil {
 		log.Println(err)
 		return DeploymentDetails{}, err
@@ -217,8 +217,8 @@ func InsertBuild(dd DeploymentDetails, testnetID string) error {
 		return err
 	}
 
-	_, err = stmt.Exec(testnetID, string(servers), dd.Blockchain, dd.Nodes, dd.Image, 
-					   string(params), string(resources), string(environment),string(logs),string(extras),dd.kid)
+	_, err = stmt.Exec(testnetID, string(servers), dd.Blockchain, dd.Nodes, dd.Image,
+		string(params), string(resources), string(environment), string(logs), string(extras), dd.kid)
 
 	if err != nil {
 		log.Println(err)

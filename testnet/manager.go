@@ -181,6 +181,11 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 			if labels != nil {
 				node.Label = labels[i]
 			}
+			err = finalizeNode(node, details, buildState)
+			if err != nil {
+				log.Println(err)
+			}
+
 			_, err = db.InsertNode(node)
 			if err != nil {
 				log.Println(err)
@@ -191,20 +196,20 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 	return nil
 }
 
-func finalizeNode(node db.Node,details *db.DeploymentDetails,buildState *state.BuildState) error {
-	client,err := status.GetClient(node.Server)
+func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state.BuildState) error {
+	client, err := status.GetClient(node.Server)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 	details.Logs["primary"] = conf.DockerOutputFile
 	files := ""
-	for _,file := range details.Logs {
-		files += " "+file
+	for _, file := range details.Logs {
+		files += " " + file
 	}
-	buildState.Defer(func(){
-		_,err := client.DockerExec(node.LocalId,
-			fmt.Sprintf("nibbler --jwt %s --testnet %s --node %s %s",details.GetJwt(),node.TestNetId,node.Id,files))
+	buildState.Defer(func() {
+		_, err := client.DockerExec(node.LocalId,
+			fmt.Sprintf("nibbler --jwt %s --testnet %s --node %s %s", details.GetJwt(), node.TestNetId, node.Id, files))
 		if err != nil {
 			log.Println(err)
 		}
