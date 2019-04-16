@@ -9,10 +9,10 @@ no_download = false
 no_consensus = false
 no_persistent_txqueue = false
 
-chain = "/parity/spec.json"
-base_path = "/parity"
-db_path = "/parity"
-keys_path = "/parity/keys"
+chain = "/parity-poa/spec.json"
+base_path = "/parity-poa"
+db_path = "/parity-poa"
+keys_path = "/parity-poa/keys"
 identity = ""
 light = false
 
@@ -28,7 +28,7 @@ max_peers = 50
 nat = "any"
 id = {{{networkId}}}
 bootnodes = []
-discovery = {{{networkDiscovery}}}
+discovery = false
 warp = true
 allow_ips = "all"
 snapshot_peers = 0
@@ -72,35 +72,11 @@ port = 8083
 path = "$HOME/.local/share/io.parity.ethereum/secretstore"
 
 [ipfs]
-enable = {{{enableIPFS}}}
+enable = false
 port = 5001
 interface = "local"
 cors = []
 hosts = ["none"]
-
-[mining]
-#author = "0xdeadbeefcafe0000000000000000000000000001"
-#engine_signer = "0xdeadbeefcafe0000000000000000000000000001"
-force_sealing = {{{forceSealing}}}
-reseal_on_txs = {{{resealOnTxs}}}
-reseal_min_period = {{{resealMinPeriod}}}
-reseal_max_period = {{{resealMaxPeriod}}}
-work_queue_size = {{{workQueueSize}}}
-relay_set = {{{relaySet}}}
-usd_per_tx = {{{usdPerTx}}}
-usd_per_eth = {{{usdPerEth}}}
-price_update_period = {{{priceUpdatePeriod}}}
-gas_floor_target = {{{gasFloorTarget}}}
-gas_cap = {{{gasCap}}}
-tx_queue_size = {{{txQueueSize}}}
-#tx_queue_gas = {{{txQueueGas}}}
-tx_queue_strategy = {{{txQueueStrategy}}}
-tx_gas_limit = {{{txGasLimit}}}
-tx_time_limit = {{{txTimeLimit}}}
-extra_data = "Whiteblock"
-remove_solved = {{{removeSolved}}}
-#notify_work = []
-refuse_service_transactions = {{{refuseServiceTransactions}}}
 
 [footprint]
 tracing = "auto"
