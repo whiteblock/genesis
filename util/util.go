@@ -315,7 +315,7 @@ func ConvertToStringMap(in interface{}) map[string]string {
 
 func GetBlockchainConfig(blockchain string, file string, files map[string]string) ([]byte, error) {
 	if files != nil {
-		res, exists := files["genesis.json"]
+		res, exists := files[file]
 		if exists {
 			return base64.StdEncoding.DecodeString(res)
 		}
