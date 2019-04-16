@@ -206,16 +206,10 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 		return nil, err
 	}
 
-	err = buildState.Write("static-nodes.json", string(out))
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Starting geth")
 	//Copy static-nodes to every server
-	err = helpers.CopyToAllNodes(servers, clients, buildState, "static-nodes.json", "/geth/")
+	err = helpers.CopyBytesToAllNodes(servers, clients, buildState, string(out), "/geth/static-nodes.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
