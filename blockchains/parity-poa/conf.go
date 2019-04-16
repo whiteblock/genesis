@@ -187,7 +187,7 @@ func GetServices() []util.Service {
 */
 func BuildConfig(pconf *ParityPOAConf, files map[string]string, wallets []string, passwordFile string) (string, error) {
 
-	dat, err := util.GetBlockchainConfig("parity", "config.toml.template", files)
+	dat, err := util.GetBlockchainConfig("parity-poa", "config.toml.template", files)
 	if err != nil {
 		log.Println(err)
 		return "", err
@@ -250,7 +250,7 @@ func BuildSpec(pconf *ParityPOAConf, files map[string]string, wallets []string) 
 		"accounts":               accounts,
 	}
 	filler := util.ConvertToStringMap(tmp)
-	dat, err := util.GetBlockchainConfig("parity", "spec.json.mustache", files)
+	dat, err := util.GetBlockchainConfig("parity-poa", "spec.json.mustache", files)
 	if err != nil {
 		return "", err
 	}
