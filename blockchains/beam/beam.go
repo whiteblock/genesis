@@ -63,17 +63,25 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	}
 	buildState.SetBuildStage("Creating node configuration files")
 	/**Create node config files**/
-	node := 0
-	for i, server := range servers {
-		beam_node_configs := []helpers.FileDest{}
-		beam_wallet_configs := []helpers.FileDest{}
 
-		for j := range server.Ips {
-			beam_node_config, err := makeNodeConfig(beamConf, ownerKeys[node], secretMinerKeys[node])
+	err = helpers.CreateConfigs(servers, clients, buildState, "/beam/beam-node.cfg",
+		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+			beam_node_config, err := makeNodeConfig(beamConf, ownerKeys[absoluteNodeNum], secretMinerKeys[absoluteNodeNum])
 			if err != nil {
 				log.Println(err)
 				return nil, err
 			}
+			for _, ip := range append(ips[:absoluteNodeNum], ips[absoluteNodeNum+1:]...) {
+				beam_node_config += fmt.Sprintf("peer=%s:%d\n", ip, port)
+			}
+			return []byte(beam_node_config), nil
+		})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	err = helpers.CreateConfigs(servers, clients, buildState, "/beam/beam-wallet.cfg",
+		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
 			beam_wallet_config := []string{
 				"# Emission.Value0=800000000",
 				"# Emission.Drop0=525600",
@@ -90,35 +98,11 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 				"# AllowPublicUtxos=0",
 				"# FakePoW=0",
 			}
-			for _, ip := range append(ips[:node], ips[node+1:]...) {
-				beam_node_config += fmt.Sprintf("peer=%s:%d\n", ip, port)
-			}
-			beam_node_configs = append(beam_node_configs,
-				helpers.FileDest{
-					Data:        []byte(beam_node_config),
-					Dest:        "/beam/beam-node.cfg",
-					LocalNodeId: j})
-
-			beam_wallet_configs = append(beam_wallet_configs,
-				helpers.FileDest{
-					Data:        []byte(util.CombineConfig(beam_wallet_config)),
-					Dest:        "/beam/beam-wallet.cfg",
-					LocalNodeId: j})
-
-			// fmt.Println(config)
-			node++
-			buildState.IncrementBuildProgress()
-		}
-		err := helpers.CopyBytesToNodeFiles(clients[i], buildState, beam_node_configs...)
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-		err = helpers.CopyBytesToNodeFiles(clients[i], buildState, beam_wallet_configs...)
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
+			return []byte(util.CombineConfig(beam_wallet_config)), nil
+		})
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
 
 	totNodes := 0
