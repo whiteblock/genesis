@@ -101,3 +101,8 @@ disable_periodic = false
 logging = "own_tx=trace"
 log_file = "/output.log"
 color = true
+
+[mining]
+engine_signer = {{{signer}}}
+reseal_on_txs = "none"
+usd_per_tx = "0"
