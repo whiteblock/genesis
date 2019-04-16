@@ -12,7 +12,7 @@ no_persistent_txqueue = false
 chain = "/parity-poa/spec.json"
 base_path = "/parity-poa"
 db_path = "/parity-poa"
-keys_path = "/parity-poa/keys"
+keys_path = "/parity-poa/keys/ethereum"
 identity = ""
 light = false
 
