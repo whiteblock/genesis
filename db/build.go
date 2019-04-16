@@ -60,11 +60,8 @@ func (this DeploymentDetails) GetKid() string {
 	return this.kid
 }
 
-/*
-GetAllBuilds gets all of the builds done by a user
-*/
-func GetAllBuilds() ([]DeploymentDetails, error) {
-	rows, err := db.Query(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,environment,logs,extras,kid FROM %s", BuildsTable))
+func QueryBuilds(query string) ([]DeploymentDetails, error) {
+	rows, err := db.Query(query)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -128,61 +125,26 @@ func GetAllBuilds() ([]DeploymentDetails, error) {
 }
 
 /*
+GetAllBuilds gets all of the builds done by a user
+*/
+func GetAllBuilds() ([]DeploymentDetails, error) {
+	return QueryBuilds(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,environment,logs,extras,kid FROM %s", BuildsTable))
+}
+
+/*
 GetBuildByTestnet gets the build paramters based off testnet id
 */
 func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 
-	row := db.QueryRow(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,environment,logs,extras,kid FROM %s WHERE testnet = \"%s\"", BuildsTable, id))
-	var build DeploymentDetails
-	var servers []byte
-	var params []byte
-	var resources []byte
-	var environment []byte
-	var logs []byte
-	var extras []byte
-
-	err := row.Scan(&servers, &build.Blockchain, &build.Nodes, &build.Image, &params, &resources, &environment, &logs, &extras, &build.kid)
+	details, err := QueryBuilds(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,environment,logs,extras,kid FROM %s WHERE testnet = \"%s\"", BuildsTable, id))
 	if err != nil {
 		log.Println(err)
 		return DeploymentDetails{}, err
 	}
-
-	err = json.Unmarshal(servers, &build.Servers)
-	if err != nil {
-		log.Println(err)
-		return DeploymentDetails{}, err
+	if len(details) == 0 {
+		return DeploymentDetails{}, fmt.Errorf("No results found")
 	}
-
-	err = json.Unmarshal(params, &build.Params)
-	if err != nil {
-		log.Println(err)
-		return DeploymentDetails{}, err
-	}
-
-	err = json.Unmarshal(resources, &build.Resources)
-	if err != nil {
-		log.Println(err)
-		return DeploymentDetails{}, err
-	}
-
-	err = json.Unmarshal(environment, &build.Environments)
-	if err != nil {
-		log.Println(err)
-		return DeploymentDetails{}, err
-	}
-	err = json.Unmarshal(logs, &build.Logs)
-	if err != nil {
-		log.Println(err)
-		return DeploymentDetails{}, err
-	}
-
-	err = json.Unmarshal(extras, &build.Extras)
-	if err != nil {
-		log.Println(err)
-		return DeploymentDetails{}, err
-	}
-
-	return build, nil
+	return details[0], nil
 }
 
 /*
