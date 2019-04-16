@@ -72,7 +72,7 @@ port = 8083
 path = "$HOME/.local/share/io.parity.ethereum/secretstore"
 
 [ipfs]
-enable = {{{enableIPFS}}}
+enable = false
 port = 5001
 interface = "local"
 cors = []
