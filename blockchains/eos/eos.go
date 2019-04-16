@@ -107,25 +107,8 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 		log.Println(err)
 		return nil, err
 	}
-	buildState.SetBuildStage("Building genesis block")
-	genesis, err := eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey, details)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
+	//buildState.SetBuildStage("Starting up keos")
 
-	err = buildState.Write("genesis.json", genesis)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	err = buildState.Write("config.ini", eosconf.GenerateConfig())
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	buildState.IncrementBuildProgress()
 	/**Start keos and add all the key pairs for all the nodes**/
 	buildState.SetBuildStage("Generating key pairs")
 
@@ -174,31 +157,26 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	buildState.IncrementBuildProgress()
 
 	buildState.SetBuildStage("Building genesis block")
-
-	err = helpers.CopyAllToServers(clients, buildState,
-		"genesis.json", "/home/appo/genesis.json",
-		"config.ini", "/home/appo/config.ini")
+	genesis, err := eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey, details)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
+	buildState.IncrementBuildProgress()
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		defer buildState.IncrementBuildProgress()
 		_, err = clients[serverNum].DockerExec(localNodeNum, "mkdir /datadir/")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		err = clients[serverNum].DockerCp(localNodeNum, "/home/appo/genesis.json", "/datadir/")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		return clients[serverNum].DockerCp(localNodeNum, "/home/appo/config.ini", "/datadir/")
-
+		return err
 	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	err = helpers.CopyBytesToAllNodes(servers, clients, buildState,
+		genesis, "/datadir/genesis.json",
+		eosconf.GenerateConfig(), "/datadir/config.ini")
 	if err != nil {
 		log.Println(err)
 		return nil, err
