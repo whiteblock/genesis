@@ -1,0 +1,18 @@
+[
+    ["stepDuration", "int"],
+    ["gasLimitBoundDivisor","int"],
+    ["maximumExtraDataSize","int"],
+    ["minGasLimit","int"],
+    ["networkId","int"],
+    ["validateChainIdTransition","int"],
+    ["eip155Transition","int"],
+    ["eip140Transition","int"],
+    ["eip211Transition","int"],
+    ["eip214Transition","int"],
+    ["eip658Transition","int"],
+    ["step","int"],
+    ["signature","int"],
+    ["difficulty","int"],
+    ["gasLimit","int"],
+    ["initBalance","string"]
+]
