@@ -138,7 +138,30 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 		log.Println(err)
 		return nil, err
 	}
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		for i, rawWallet := range rawWallets {
 
+			_, err = clients[serverNum].DockerExec(localNodeNum, fmt.Sprintf("bash -c 'echo \"%s\">/parity-poa/account%d'", rawWallet, i))
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			//buildState.Defer(func(){clients[serverNum].DockerExec(localNodeNum, fmt.Sprintf("rm /parity/account%d", i))})
+
+			_, err = clients[serverNum].DockerExec(localNodeNum,
+				fmt.Sprintf("parity --base-path=/parity-poa/ --chain /parity-poa/spec.json --password=/parity-poa/passwd account import /parity-poa/account%d", i))
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+		}
+		buildState.IncrementBuildProgress()
+		return nil
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 	// start parity
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		defer buildState.IncrementBuildProgress()

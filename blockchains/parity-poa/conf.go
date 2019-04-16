@@ -32,7 +32,7 @@ type ParityPOAConf struct {
 	// EnableIPFS                bool   `json:"enableIPFS"`
 	// NetworkDiscovery          bool   `json:"networkDiscovery"`
 	// ExtraAccounts             int64  `json:"extraAccounts"`
-	ChainId                   int64  `json:"chainId"`
+	ChainId int64 `json:"chainId"`
 	// MaxPeers                  int64  `json:"maxPeers"`
 	// HomesteadBlock            int64  `json:"homesteadBlock"`
 	// Eip155Block               int64  `json:"eip155Block"`
@@ -43,25 +43,24 @@ type ParityPOAConf struct {
 	// BlockReward               int64  `json:"blockReward"`
 
 	//engine
-	StepDuration              int64 `json:"stepDuration"`
+	StepDuration int64 `json:"stepDuration"`
 	//params
-	GasLimitBoundDivisor      int64  `json:"gasLimitBoundDivisor"`
-	MaximumExtraDataSize      int64  `json:"maximumExtraDataSize"`
-	MinGasLimit               int64  `json:"minGasLimit"`
-	NetworkId                 int64  `json:"networkId"`
-	ValidateChainIdTransition int64  `json:"validateChainIdTransition"`
-	EIP155Transition          int64  `json:"eip155Transition"`
-	EIP140Transition          int64  `json:"eip140Transition"`
-	EIP211Transition          int64  `json:"eip211Transition"`
-	EIP214Transition          int64  `json:"eip214Transition"`
-	EIP658Transition          int64  `json:"eip658Transition"`
+	GasLimitBoundDivisor      int64 `json:"gasLimitBoundDivisor"`
+	MaximumExtraDataSize      int64 `json:"maximumExtraDataSize"`
+	MinGasLimit               int64 `json:"minGasLimit"`
+	NetworkId                 int64 `json:"networkId"`
+	ValidateChainIdTransition int64 `json:"validateChainIdTransition"`
+	EIP155Transition          int64 `json:"eip155Transition"`
+	EIP140Transition          int64 `json:"eip140Transition"`
+	EIP211Transition          int64 `json:"eip211Transition"`
+	EIP214Transition          int64 `json:"eip214Transition"`
+	EIP658Transition          int64 `json:"eip658Transition"`
 	//genesis
-	Step                      int64  `json:"step"`
-	Signature                 string  `json:"signature"`
-	Difficulty                int64  `json:"difficulty"`
-	GasLimit                  int64  `json:"gasLimit"`
-	InitBalance               string `json:"initBalance"`
-
+	Step        int64  `json:"step"`
+	Signature   string `json:"signature"`
+	Difficulty  int64  `json:"difficulty"`
+	GasLimit    int64  `json:"gasLimit"`
+	InitBalance string `json:"initBalance"`
 }
 
 /**
@@ -215,7 +214,7 @@ func BuildConfig(pconf *ParityPOAConf, files map[string]string, wallets []string
 	mp["unlock"] = string(raw)
 	mp["passwordFile"] = fmt.Sprintf("[\"%s\"]", passwordFile)
 	mp["networkId"] = fmt.Sprintf("%d", pconf.NetworkId)
-	mp["signer"] = fmt.Sprintf("\"%s\"",wallets[i])
+	mp["signer"] = fmt.Sprintf("\"%s\"", wallets[i])
 	return mustache.Render(string(dat), mp)
 }
 
@@ -234,21 +233,21 @@ func BuildSpec(pconf *ParityPOAConf, files map[string]string, wallets []string) 
 	}
 
 	tmp := map[string]interface{}{
-		"stepDuration":           pconf.StepDuration,
-		"validators":             validators,
-		"difficulty":             fmt.Sprintf("0x%x", pconf.Difficulty),
-		"gasLimit":               fmt.Sprintf("0x%x", pconf.GasLimit),
-		"networkId":              fmt.Sprintf("0x%x", pconf.NetworkId),
-		"maximumExtraDataSize":   fmt.Sprintf("0x%x", pconf.MaximumExtraDataSize),
-		"minGasLimit":            fmt.Sprintf("0x%x", pconf.MinGasLimit),
-		"gasLimitBoundDivisor":   fmt.Sprintf("0x%x", pconf.GasLimitBoundDivisor),
+		"stepDuration":              pconf.StepDuration,
+		"validators":                validators,
+		"difficulty":                fmt.Sprintf("0x%x", pconf.Difficulty),
+		"gasLimit":                  fmt.Sprintf("0x%x", pconf.GasLimit),
+		"networkId":                 fmt.Sprintf("0x%x", pconf.NetworkId),
+		"maximumExtraDataSize":      fmt.Sprintf("0x%x", pconf.MaximumExtraDataSize),
+		"minGasLimit":               fmt.Sprintf("0x%x", pconf.MinGasLimit),
+		"gasLimitBoundDivisor":      fmt.Sprintf("0x%x", pconf.GasLimitBoundDivisor),
 		"validateChainIdTransition": pconf.ValidateChainIdTransition,
-		"eip155Transition":       pconf.EIP155Transition,
-		"eip140Transition":       pconf.EIP140Transition,
-        "eip211Transition":       pconf.EIP211Transition,
-        "eip214Transition":       pconf.EIP214Transition,
-        "eip658Transition":       pconf.EIP658Transition,
-		"accounts":               accounts,
+		"eip155Transition":          pconf.EIP155Transition,
+		"eip140Transition":          pconf.EIP140Transition,
+		"eip211Transition":          pconf.EIP211Transition,
+		"eip214Transition":          pconf.EIP214Transition,
+		"eip658Transition":          pconf.EIP658Transition,
+		"accounts":                  accounts,
 	}
 	filler := util.ConvertToStringMap(tmp)
 	dat, err := util.GetBlockchainConfig("parity-poa", "spec.json.mustache", files)
