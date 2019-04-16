@@ -166,7 +166,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		defer buildState.IncrementBuildProgress()
 		return clients[serverNum].DockerExecdLog(localNodeNum,
-			fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`, wallets[absoluteNodeNum]))
+			fmt.Sprintf(`parity --author=%s -c /parity-poa/config.toml --chain=/parity/spec.json`, wallets[absoluteNodeNum]))
 	})
 	if err != nil {
 		log.Println(err)
