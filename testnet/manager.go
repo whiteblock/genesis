@@ -202,8 +202,7 @@ func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state
 		log.Println(err)
 		return err
 	}
-	details.Logs["primary"] = conf.DockerOutputFile
-	files := ""
+	files := conf.DockerOutputFile
 	for _, file := range details.Logs {
 		files += " " + file
 	}
