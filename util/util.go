@@ -23,21 +23,20 @@ import (
    Sends an http request and returns the body. Gives an error if the http request failed
    or returned a non success code.
 */
-func HttpRequest(method string, url string, bodyData string) (string, error) {
+func HttpRequest(method string, url string, bodyData string) ([]byte, error) {
 	//log.Println("URL IS "+url)
 	body := strings.NewReader(bodyData)
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		log.Println(err)
-		return "", err
+		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	req.Close = true
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Println(err)
-		return "", err
+		return nil, err
 	}
 
 	defer resp.Body.Close()
@@ -46,12 +45,12 @@ func HttpRequest(method string, url string, bodyData string) (string, error) {
 	_, err = buf.ReadFrom(resp.Body)
 	if err != nil {
 		log.Println(err)
-		return "", err
+		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf(buf.String())
+		return nil, fmt.Errorf(buf.String())
 	}
-	return buf.String(), nil
+	return []byte(buf.String()), nil
 }
 
 func JwtHttpRequest(method string, url string, jwt string, bodyData string) (string, error) {

@@ -18,7 +18,7 @@ func distributeNibbler(servers []db.Server, clients []*util.SshClient, buildStat
 			if err != nil {
 				log.Println(err)
 			}
-			err = buildState.Write("nibbler", nibbler)
+			err = buildState.Write("nibbler", string(nibbler))
 			if err != nil {
 				log.Println(err)
 			}
