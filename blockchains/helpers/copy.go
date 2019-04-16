@@ -106,3 +106,88 @@ func CopyBytesToAllNodes(servers []db.Server, clients []*util.SshClient, buildSt
 	}
 	return CopyToAllNodes(servers, clients, buildState, fmted...)
 }
+
+func SingleCp(client *util.SshClient, buildState *state.BuildState, localNodeId int, data []byte, dest string) error {
+	tmpFilename, err := util.GetUUIDString()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	err = buildState.Write(tmpFilename, string(data))
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	intermediateDst := "/home/appo/" + tmpFilename
+
+	err = client.Scp(tmpFilename, intermediateDst)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return client.DockerCp(localNodeId, intermediateDst, dest)
+}
+
+type FileDest struct {
+	Data        []byte
+	Dest        string
+	LocalNodeId int
+}
+
+func CopyBytesToNodeFiles(client *util.SshClient, buildState *state.BuildState, transfers ...FileDest) error {
+	sem := semaphore.NewWeighted(conf.ThreadLimit)
+	ctx := context.TODO()
+
+	for _, transfer := range transfers {
+		sem.Acquire(ctx, 1)
+		go func(transfer FileDest) {
+			defer sem.Release(1)
+			err := SingleCp(client, buildState, transfer.LocalNodeId, transfer.Data, transfer.Dest)
+			if err != nil {
+				log.Println(err)
+				buildState.ReportError(err)
+				return
+			}
+		}(transfer)
+	}
+
+	sem.Acquire(ctx, conf.ThreadLimit)
+	sem.Release(conf.ThreadLimit)
+	return buildState.GetError()
+}
+
+func CreateConfigs(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState, dest string,
+	fn func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error)) error {
+
+	sem := semaphore.NewWeighted(conf.ThreadLimit)
+	ctx := context.TODO()
+	node := 0
+	for i, server := range servers {
+		for j := range server.Ips {
+			sem.Acquire(ctx, 1)
+			go func(i int, j int, node int) {
+				defer sem.Release(1)
+				data, err := fn(i, j, node)
+				if err != nil {
+					log.Println(err)
+					buildState.ReportError(err)
+					return
+				}
+				err = SingleCp(clients[i], buildState, j, data, dest)
+				if err != nil {
+					log.Println(err)
+					buildState.ReportError(err)
+					return
+				}
+
+			}(i, j, node)
+			node++
+		}
+	}
+
+	sem.Acquire(ctx, conf.ThreadLimit)
+	sem.Release(conf.ThreadLimit)
+	return buildState.GetError()
+}

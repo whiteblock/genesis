@@ -41,21 +41,27 @@ type DeploymentDetails struct {
 	Logs         map[string]string      `json:"logs"`
 	Extras       map[string]interface{} `json:"extras"`
 	jwt          string
+	kid          string
 }
 
-func (this *DeploymentDetails) SetJwt(jwt string) {
+func (this *DeploymentDetails) SetJwt(jwt string) error {
 	this.jwt = jwt
+	kid, err := util.GetKidFromJwt(this.GetJwt())
+
+	this.kid = kid
+	return err
 }
 
-func (this *DeploymentDetails) GetJwt() string {
+func (this DeploymentDetails) GetJwt() string {
 	return this.jwt
 }
 
-/*
-GetAllBuilds gets all of the builds done by a user
-*/
-func GetAllBuilds() ([]DeploymentDetails, error) {
-	rows, err := db.Query(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,environment FROM %s", BuildsTable))
+func (this DeploymentDetails) GetKid() string {
+	return this.kid
+}
+
+func QueryBuilds(query string) ([]DeploymentDetails, error) {
+	rows, err := db.Query(query)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -69,8 +75,10 @@ func GetAllBuilds() ([]DeploymentDetails, error) {
 		var params []byte
 		var resources []byte
 		var environment []byte
+		var logs []byte
+		var extras []byte
 
-		err = rows.Scan(&servers, &build.Blockchain, &build.Nodes, &build.Image, &params, &resources, &environment)
+		err = rows.Scan(&servers, &build.Blockchain, &build.Nodes, &build.Image, &params, &resources, &environment, &logs, &extras, &build.kid)
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -99,9 +107,28 @@ func GetAllBuilds() ([]DeploymentDetails, error) {
 			log.Println(err)
 			return nil, err
 		}
+
+		err = json.Unmarshal(logs, &build.Logs)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+
+		err = json.Unmarshal(extras, &build.Extras)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
 		builds = append(builds, build)
 	}
 	return builds, nil
+}
+
+/*
+GetAllBuilds gets all of the builds done by a user
+*/
+func GetAllBuilds() ([]DeploymentDetails, error) {
+	return QueryBuilds(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,environment,logs,extras,kid FROM %s", BuildsTable))
 }
 
 /*
@@ -109,44 +136,15 @@ GetBuildByTestnet gets the build paramters based off testnet id
 */
 func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 
-	row := db.QueryRow(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,environment FROM %s WHERE testnet = \"%s\"", BuildsTable, id))
-	var build DeploymentDetails
-	var servers []byte
-	var params []byte
-	var resources []byte
-	var environment []byte
-
-	err := row.Scan(&servers, &build.Blockchain, &build.Nodes, &build.Image, &params, &resources, &environment)
+	details, err := QueryBuilds(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,environment,logs,extras,kid FROM %s WHERE testnet = \"%s\"", BuildsTable, id))
 	if err != nil {
 		log.Println(err)
 		return DeploymentDetails{}, err
 	}
-
-	err = json.Unmarshal(servers, &build.Servers)
-	if err != nil {
-		log.Println(err)
-		return DeploymentDetails{}, err
+	if len(details) == 0 {
+		return DeploymentDetails{}, fmt.Errorf("No results found")
 	}
-
-	err = json.Unmarshal(params, &build.Params)
-	if err != nil {
-		log.Println(err)
-		return DeploymentDetails{}, err
-	}
-
-	err = json.Unmarshal(resources, &build.Resources)
-	if err != nil {
-		log.Println(err)
-		return DeploymentDetails{}, err
-	}
-
-	err = json.Unmarshal(environment, &build.Environments)
-	if err != nil {
-		log.Println(err)
-		return DeploymentDetails{}, err
-	}
-
-	return build, nil
+	return details[0], nil
 }
 
 /*
@@ -161,7 +159,7 @@ func InsertBuild(dd DeploymentDetails, testnetID string) error {
 		return err
 	}
 
-	stmt, err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (testnet,servers,blockchain,nodes,image,params,resources,environment) VALUES (?,?,?,?,?,?,?,?)", BuildsTable))
+	stmt, err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (testnet,servers,blockchain,nodes,image,params,resources,environment,logs,extras,kid) VALUES (?,?,?,?,?,?,?,?,?,?,?)", BuildsTable))
 
 	if err != nil {
 		log.Println(err)
@@ -173,13 +171,16 @@ func InsertBuild(dd DeploymentDetails, testnetID string) error {
 	servers, _ := json.Marshal(dd.Servers)
 	params, _ := json.Marshal(dd.Params)
 	resources, _ := json.Marshal(dd.Resources)
+	logs, _ := json.Marshal(dd.Logs)
+	extras, _ := json.Marshal(dd.Extras)
 	environment, err := json.Marshal(dd.Environments)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	_, err = stmt.Exec(testnetID, string(servers), dd.Blockchain, dd.Nodes, dd.Image, string(params), string(resources), string(environment))
+	_, err = stmt.Exec(testnetID, string(servers), dd.Blockchain, dd.Nodes, dd.Image,
+		string(params), string(resources), string(environment), string(logs), string(extras), dd.kid)
 
 	if err != nil {
 		log.Println(err)
