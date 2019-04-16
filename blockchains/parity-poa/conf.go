@@ -185,7 +185,7 @@ func GetServices() []util.Service {
    passwordFile
    unlock
 */
-func BuildConfig(pconf *ParityPOAConf, files map[string]string, wallets []string, passwordFile string) (string, error) {
+func BuildConfig(pconf *ParityPOAConf, files map[string]string, wallets []string, passwordFile string, i int) (string, error) {
 
 	dat, err := util.GetBlockchainConfig("parity-poa", "config.toml.template", files)
 	if err != nil {
@@ -215,6 +215,7 @@ func BuildConfig(pconf *ParityPOAConf, files map[string]string, wallets []string
 	mp["unlock"] = string(raw)
 	mp["passwordFile"] = fmt.Sprintf("[\"%s\"]", passwordFile)
 	mp["networkId"] = fmt.Sprintf("%d", pconf.NetworkId)
+	mp["signer"] = fmt.Sprintf("\"%s\"",wallets[i])
 	return mustache.Render(string(dat), mp)
 }
 
