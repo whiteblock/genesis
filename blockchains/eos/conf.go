@@ -1,64 +1,61 @@
 package eos
 
 import (
+	db "../../db"
 	util "../../util"
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/mustache"
 	"io/ioutil"
+	"log"
 	"time"
 )
 
 type EosConf struct {
-	UserAccounts   int64 `json:"userAccounts"`
-	BlockProducers int64 `json:"validators"`
-
-	AccountCpuStake int64 `json:"accountCpuStake"`
-	AccountRam      int64 `json:"accountRam"`
-	AccountNetStake int64 `json:"accountNetStake"`
-	AccountFunds    int64 `json:"accountFunds"`
-
-	BpCpuStake int64 `json:"bpCpuStake"`
-	BpNetStake int64 `json:"bpNetStake"`
-	BpRam      int64 `json:"bpRam"`
-	BpFunds    int64 `json:"bpFunds"`
-
-	MaxBlockNetUsage               int64  `json:"maxBlockNetUsage"`
-	TargetBlockNetUsagePct         int64  `json:"targetBlockNetUsagePct"`
-	MaxTransactionNetUsage         int64  `json:"maxTransactionNetUsage"`
-	BasePerTransactionNetUsage     int64  `json:"basePerTransactionNetUsage"`
-	NetUsageLeeway                 int64  `json:"netUsageLeeway"`
-	ContextFreeDiscountNetUsageNum int64  `json:"contextFreeDiscountNetUsageNum"`
-	ContextFreeDiscountNetUsageDen int64  `json:"contextFreeDiscountNetUsageDen"`
-	MaxBlockCpuUsage               int64  `json:"maxBlockCpuUsage"`
-	TargetBlockCpuUsagePct         int64  `json:"targetBlockCpuUsagePct"`
-	MaxTransactionCpuUsage         int64  `json:"maxTransactionCpuUsage"`
-	MinTransactionCpuUsage         int64  `json:"minTransactionCpuUsage"`
-	MaxTransactionLifetime         int64  `json:"maxTransactionLifetime"`
-	DeferredTrxExpirationWindow    int64  `json:"deferredTrxExpirationWindow"`
-	MaxTransactionDelay            int64  `json:"maxTransactionDelay"`
-	MaxInlineActionSize            int64  `json:"maxInlineActionSize"`
-	MaxInlineActionDepth           int64  `json:"maxInlineActionDepth"`
-	MaxAuthorityDepth              int64  `json:"maxAuthorityDepth"`
-	InitialChainId                 string `json:"initialChainId"`
-
-	ChainStateDbSizeMb       int64  `json:"chainStateDbSizeMb"`
-	ReversibleBlocksDbSizeMb int64  `json:"reversibleBlocksDbSizeMb"`
-	ContractsConsole         bool   `json:"contractsConsole"`
-	P2pMaxNodesPerHost       int64  `json:"p2pMaxNodesPerHost"`
-	AllowedConnection        string `json:"allowedConnection"`
-	MaxClients               int64  `json:"maxClients"`
-	ConnectionCleanupPeriod  int64  `json:"connectionCleanupPeriod"`
-	NetworkVersionMatch      int64  `json:"networkVersionMatch"`
-	SyncFetchSpan            int64  `json:"syncFetchSpan"`
-	//  MaxImplicitRequest              int64       `json:"maxImplicitRequest"`
-	PauseOnStartup          bool     `json:"pauseOnStartup"`
-	MaxTransactionTime      int64    `json:"maxTransactionTime"`
-	MaxIrreversibleBlockAge int64    `json:"maxIrreversibleBlockAge"`
-	KeosdProviderTimeout    int64    `json:"keosdProviderTimeout"`
-	TxnReferenceBlockLag    int64    `json:"txnReferenceBlockLag"`
-	Plugins                 []string `json:"plugins"`
-	ConfigExtras            []string `json:"configExtras"`
+	UserAccounts                   int64    `json:"userAccounts"`
+	BlockProducers                 int64    `json:"validators"`
+	AccountCpuStake                int64    `json:"accountCpuStake"`
+	AccountRam                     int64    `json:"accountRam"`
+	AccountNetStake                int64    `json:"accountNetStake"`
+	AccountFunds                   int64    `json:"accountFunds"`
+	BpCpuStake                     int64    `json:"bpCpuStake"`
+	BpNetStake                     int64    `json:"bpNetStake"`
+	BpRam                          int64    `json:"bpRam"`
+	BpFunds                        int64    `json:"bpFunds"`
+	MaxBlockNetUsage               int64    `json:"maxBlockNetUsage"`
+	TargetBlockNetUsagePct         int64    `json:"targetBlockNetUsagePct"`
+	MaxTransactionNetUsage         int64    `json:"maxTransactionNetUsage"`
+	BasePerTransactionNetUsage     int64    `json:"basePerTransactionNetUsage"`
+	NetUsageLeeway                 int64    `json:"netUsageLeeway"`
+	ContextFreeDiscountNetUsageNum int64    `json:"contextFreeDiscountNetUsageNum"`
+	ContextFreeDiscountNetUsageDen int64    `json:"contextFreeDiscountNetUsageDen"`
+	MaxBlockCpuUsage               int64    `json:"maxBlockCpuUsage"`
+	TargetBlockCpuUsagePct         int64    `json:"targetBlockCpuUsagePct"`
+	MaxTransactionCpuUsage         int64    `json:"maxTransactionCpuUsage"`
+	MinTransactionCpuUsage         int64    `json:"minTransactionCpuUsage"`
+	MaxTransactionLifetime         int64    `json:"maxTransactionLifetime"`
+	DeferredTrxExpirationWindow    int64    `json:"deferredTrxExpirationWindow"`
+	MaxTransactionDelay            int64    `json:"maxTransactionDelay"`
+	MaxInlineActionSize            int64    `json:"maxInlineActionSize"`
+	MaxInlineActionDepth           int64    `json:"maxInlineActionDepth"`
+	MaxAuthorityDepth              int64    `json:"maxAuthorityDepth"`
+	InitialChainId                 string   `json:"initialChainId"`
+	ChainStateDbSizeMb             int64    `json:"chainStateDbSizeMb"`
+	ReversibleBlocksDbSizeMb       int64    `json:"reversibleBlocksDbSizeMb"`
+	ContractsConsole               bool     `json:"contractsConsole"`
+	P2pMaxNodesPerHost             int64    `json:"p2pMaxNodesPerHost"`
+	AllowedConnection              string   `json:"allowedConnection"`
+	MaxClients                     int64    `json:"maxClients"`
+	ConnectionCleanupPeriod        int64    `json:"connectionCleanupPeriod"`
+	NetworkVersionMatch            int64    `json:"networkVersionMatch"`
+	SyncFetchSpan                  int64    `json:"syncFetchSpan"`
+	PauseOnStartup                 bool     `json:"pauseOnStartup"`
+	MaxTransactionTime             int64    `json:"maxTransactionTime"`
+	MaxIrreversibleBlockAge        int64    `json:"maxIrreversibleBlockAge"`
+	KeosdProviderTimeout           int64    `json:"keosdProviderTimeout"`
+	TxnReferenceBlockLag           int64    `json:"txnReferenceBlockLag"`
+	Plugins                        []string `json:"plugins"`
+	ConfigExtras                   []string `json:"configExtras"`
 }
 
 func NewConf(data map[string]interface{}) (*EosConf, error) {
@@ -288,17 +285,10 @@ func NewConf(data map[string]interface{}) (*EosConf, error) {
 		return nil, err
 	}
 
-	/*  if _,ok := data["maxImplicitRequest"]; ok {
-	    out.MaxImplicitRequest,err = util.GetJSONInt64(data,"maxImplicitRequest")
-	    if err != nil {
-	        return nil,err
-	    }
-	}*/
-
 	return out, nil
 }
 
-func (this *EosConf) GenerateGenesis(masterPublicKey string) (string, error) {
+func (this *EosConf) GenerateGenesis(masterPublicKey string, details *db.DeploymentDetails) (string, error) {
 
 	filler := util.ConvertToStringMap(map[string]interface{}{
 		"initialTimestamp":               time.Now().Format("2006-01-02T15-04-05.000"),
@@ -322,12 +312,13 @@ func (this *EosConf) GenerateGenesis(masterPublicKey string) (string, error) {
 		"maxAuthorityDepth":              this.MaxAuthorityDepth,
 		"initialChainId":                 this.InitialChainId,
 	})
-	dat, err := ioutil.ReadFile("./resources/eos/genesis.json.mustache")
+
+	dat, err := util.GetBlockchainConfig("eos", "genesis.json.mustache", details.Files)
 	if err != nil {
+		log.Println(err)
 		return "", err
 	}
-	data, err := mustache.Render(string(dat), filler)
-	return data, err
+	return mustache.Render(string(dat), filler)
 }
 
 func (this *EosConf) GenerateConfig() string {
@@ -346,7 +337,6 @@ func (this *EosConf) GenerateConfig() string {
 		fmt.Sprintf("connection-cleanup-period = %d", this.ConnectionCleanupPeriod),
 		fmt.Sprintf("network-version-match = %d", this.NetworkVersionMatch),
 		fmt.Sprintf("sync-fetch-span = %d", this.SyncFetchSpan),
-		//      fmt.Sprintf("max-implicit-request = %d",this.MaxImplicitRequest),
 		fmt.Sprintf("pause-on-startup = %v", this.PauseOnStartup),
 		fmt.Sprintf("max-transaction-time = %d", this.MaxTransactionTime),
 		fmt.Sprintf("max-irreversible-block-age = %d", this.MaxIrreversibleBlockAge),

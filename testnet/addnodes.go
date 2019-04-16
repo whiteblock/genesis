@@ -21,7 +21,7 @@ import (
    It is worth noting that any missing information from the given
    deployment details will be filled in from the origin build.
 */
-func AddNodes(details db.DeploymentDetails, testnetId string) error {
+func AddNodes(details *db.DeploymentDetails, testnetId string) error {
 	buildState := state.GetBuildStateByServerId(details.Servers[0])
 	defer buildState.DoneBuilding()
 
@@ -80,7 +80,7 @@ func AddNodes(details db.DeploymentDetails, testnetId string) error {
 		return err
 	}
 
-	nodes, err := deploy.AddNodes(&details, servers, clients, buildState)
+	nodes, err := deploy.AddNodes(details, servers, clients, buildState)
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)

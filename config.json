@@ -1,9 +1,7 @@
 {
 	"ssh-user":"appo",
-	"ssh-password":"w@ntest",
 	"listen":"127.0.0.1:8000",
-	"rsa-key":"/home/appo/.ssh/id_rsa",
-	"rsa-user":"appo",
+	"ssh-key":"/home/appo/.ssh/id_rsa",
 	"verbose":true,
 	"server-bits":8,
 	"cluster-bits":14,

@@ -18,15 +18,21 @@ func init() {
 	conf = util.GetConfig()
 }
 
+type Comp struct {
+	Cpu float64 `json:"cpu"`
+	Vsz float64 `json:"virtualMemorySize"`
+	Rss float64 `json:"residentSetSize"`
+}
+
 /*
    Represents the status of the node
 */
 type NodeStatus struct {
-	Name   string  `json:"name"`
-	Server int     `json:"server"`
-	Ip     string  `json:"ip"`
-	Up     bool    `json:"up"`
-	Cpu    float64 `json:"cpu"`
+	Name      string `json:"name"`
+	Server    int    `json:"server"`
+	Ip        string `json:"ip"`
+	Up        bool   `json:"up"`
+	Resources Comp   `json:"resourceUse"`
 }
 
 /*
@@ -44,25 +50,42 @@ func FindNodeIndex(status []NodeStatus, name string, serverId int) int {
 /*
    Gets the cpu usage of a node
 */
-func SumCpuUsage(c *util.SshClient, name string) (float64, error) {
-	res, err := c.Run(fmt.Sprintf("docker exec %s ps aux --no-headers | awk '{print $3}'", name))
+func SumResUsage(c *util.SshClient, name string) (Comp, error) {
+	res, err := c.Run(fmt.Sprintf("docker exec %s ps aux --no-headers | awk '{print $3,$5,$6}'", name))
 	if err != nil {
 		log.Println(err)
-		return -1, err
+		return Comp{-1, -1, -1}, err
 	}
-	values := strings.Split(res, "\n")
-	fmt.Printf("%#v\n", values)
-	var out float64
-	for _, value := range values {
-		if len(value) == 0 {
+	procs := strings.Split(res, "\n")
+	fmt.Printf("%#v\n", procs)
+	var out Comp
+	for _, proc := range procs {
+		if len(proc) == 0 {
 			continue
 		}
-		parsed, err := strconv.ParseFloat(value, 64)
+		values := strings.Split(proc, " ")
+
+		cpu, err := strconv.ParseFloat(values[0], 64)
 		if err != nil {
 			log.Println(err)
-			return -1, err
+			return Comp{-1, -1, -1}, err
 		}
-		out += parsed
+		out.Cpu += cpu
+
+		vsz, err := strconv.ParseFloat(values[1], 64)
+		if err != nil {
+			log.Println(err)
+			return Comp{-1, -1, -1}, err
+		}
+		out.Vsz += vsz
+
+		rss, err := strconv.ParseFloat(values[2], 64)
+		if err != nil {
+			log.Println(err)
+			return Comp{-1, -1, -1}, err
+		}
+		out.Rss += rss
+
 	}
 	return out, nil
 }
@@ -86,11 +109,11 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 			serverIds = append(serverIds, node.Server)
 		}
 		out[node.LocalId] = NodeStatus{
-			Name:   fmt.Sprintf("%s%d", conf.NodePrefix, node.LocalId),
-			Ip:     node.Ip,
-			Server: node.Server,
-			Up:     false,
-			Cpu:    -1,
+			Name:      fmt.Sprintf("%s%d", conf.NodePrefix, node.LocalId),
+			Ip:        node.Ip,
+			Server:    node.Server,
+			Up:        false,
+			Resources: Comp{-1, -1, -1},
 		} //local id to testnet
 
 	}
@@ -129,13 +152,13 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 			sem.Acquire(ctx, 1)
 			go func(client *util.SshClient, name string, index int) {
 				defer sem.Release(1)
-				cpuUsage, err := SumCpuUsage(client, name)
+				resUsage, err := SumResUsage(client, name)
 				if err != nil {
 					log.Println(err)
 				}
 				mux.Lock()
 				out[index].Up = true
-				out[index].Cpu = cpuUsage
+				out[index].Resources = resUsage
 				mux.Unlock()
 			}(client, name, index)
 		}

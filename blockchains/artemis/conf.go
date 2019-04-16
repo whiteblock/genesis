@@ -2,6 +2,7 @@ package artemis
 
 import (
 	util "../../util"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/mustache"
@@ -34,7 +35,7 @@ func NewConf(data map[string]interface{}) (ArtemisConf, error) {
 }
 
 func GetParams() string {
-	dat, err := ioutil.ReadFile("./resources/artemis/params.json")
+	dat, err := util.GetBlockchainConfig("artemis", "params.json", nil)
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -42,7 +43,7 @@ func GetParams() string {
 }
 
 func GetDefaults() string {
-	dat, err := ioutil.ReadFile("./resources/artemis/defaults.json")
+	dat, err := util.GetBlockchainConfig("artemis", "defaults.json", nil)
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -50,7 +51,17 @@ func GetDefaults() string {
 }
 
 func GetServices() []util.Service {
-	return nil
+	return []util.Service{
+		util.Service{
+			Name:  "wb_influx_proxy",
+			Image: "gcr.io/wb-genesis/bitbucket.org/whiteblockio/influx-proxy:master",
+			Env: map[string]string{
+				"BASIC_AUTH_BASE64": base64.StdEncoding.EncodeToString([]byte(conf.InfluxUser + ":" + conf.InfluxPassword)),
+				"INFLUXDB_URL":      conf.Influx,
+				"BIND_PORT":         "8086",
+			},
+		},
+	}
 }
 
 func makeNodeConfig(artemisConf ArtemisConf, identity string, peers string, numNodes int, params map[string]interface{}) (string, error) {

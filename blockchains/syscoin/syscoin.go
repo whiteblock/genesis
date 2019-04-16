@@ -24,7 +24,7 @@ func init() {
  * @param {[type]} servers []db.Server)             The servers to be built on
  * @return ([]string,error [description]
  */
-func RegTest(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) ([]string, error) {
+func RegTest(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) ([]string, error) {
 	if details.Nodes < 3 {
 		log.Println("Tried to build syscoin with not enough nodes")
 		return nil, errors.New("Tried to build syscoin with not enough nodes")
@@ -46,7 +46,7 @@ func RegTest(details db.DeploymentDetails, servers []db.Server, clients []*util.
 	fmt.Println("-------------Setting Up Syscoin-------------")
 
 	fmt.Printf("Creating the syscoin conf files...")
-	out, err := handleConf(servers, clients, sysconf)
+	out, err := handleConf(servers, clients, sysconf, buildState)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -86,13 +86,12 @@ func RegTest(details db.DeploymentDetails, servers []db.Server, clients []*util.
 	return out, nil
 }
 
-func Add(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }
 
-func handleConf(servers []db.Server, clients []*util.SshClient, sysconf *SysConf) ([]string, error) {
-	buildState := state.GetBuildStateByServerId(servers[0].Id)
+func handleConf(servers []db.Server, clients []*util.SshClient, sysconf *SysConf, buildState *state.BuildState) ([]string, error) {
 	ips := []string{}
 	for _, server := range servers {
 		for _, ip := range server.Ips {
@@ -157,13 +156,13 @@ func handleConf(servers []db.Server, clients []*util.SshClient, sysconf *SysConf
 				}
 				confData += "rpcallowip=0.0.0.0/0\n"
 				//confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
-				err := util.Write(fmt.Sprintf("./regtest%d.conf", node), confData)
+				err := buildState.Write(fmt.Sprintf("./regtest%d.conf", node), confData)
 				if err != nil {
 					buildState.ReportError(err)
 					log.Println(err)
 					return
 				}
-				err = clients[i].Scp(fmt.Sprintf("./regtest%d.conf", node), fmt.Sprintf("/home/appo/regtest%d.conf", node))
+				err = clients[i].Scp(fmt.Sprintf("regtest%d.conf", node), fmt.Sprintf("/home/appo/regtest%d.conf", node))
 				if err != nil {
 					buildState.ReportError(err)
 					log.Println(err)
@@ -177,19 +176,13 @@ func handleConf(servers []db.Server, clients []*util.SshClient, sysconf *SysConf
 					return
 				}
 				buildState.IncrementBuildProgress()
-				err = clients[i].DockerCp(node, fmt.Sprintf("/home/appo/regtest%d.conf"), "/syscoin/datadir/regtest.conf")
+				err = clients[i].DockerCp(node, fmt.Sprintf("/home/appo/regtest%d.conf", node), "/syscoin/datadir/regtest.conf")
 				if err != nil {
 					buildState.ReportError(err)
 					log.Println(err)
 					return
 				}
-				buildState.IncrementBuildProgress()
-				err = util.Rm(fmt.Sprintf("./regtest%d.conf", node))
-				if err != nil {
-					buildState.ReportError(err)
-					log.Println(err)
-					return
-				}
+
 				buildState.IncrementBuildProgress()
 				_, err = clients[i].Run(fmt.Sprintf("rm /home/appo/regtest%d.conf", node))
 				if err != nil {

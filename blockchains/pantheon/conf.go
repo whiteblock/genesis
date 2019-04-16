@@ -1,26 +1,30 @@
 package pantheon
 
 import (
+	util "../../util"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	util "../../util"
 )
 
 type PanConf struct {
-	NetworkId      		int64  `json:"networkId"`
-	Difficulty     		int64  `json:"difficulty"`
-	InitBalance    		string `json:"initBalance"`
-	MaxPeers       		int64  `json:"maxPeers"`
-	GasLimit       		int64  `json:"gasLimit"`
-	BlockPeriodSeconds 	int64  `json:"blockPeriodSeconds"`
-	Epoch          		int64  `json:"epoch"`
+	NetworkId             int64  `json:"networkId"`
+	Difficulty            int64  `json:"difficulty"`
+	InitBalance           string `json:"initBalance"`
+	MaxPeers              int64  `json:"maxPeers"`
+	GasLimit              int64  `json:"gasLimit"`
+	Consensus             string `json:"consensus"`
+	EthashDifficulty      int64  `json:"fixeddifficulty`
+	BlockPeriodSeconds    int64  `json:"blockPeriodSeconds"`
+	Epoch                 int64  `json:"epoch"`
+	RequestTimeoutSeconds int64  `json:"requesttimeoutseconds"`
 }
 
 /**
  * Fills in the defaults for missing parts,
  */
 func NewConf(data map[string]interface{}) (*PanConf, error) {
+
 	out := new(PanConf)
 	err := json.Unmarshal([]byte(GetDefaults()), out)
 
@@ -48,12 +52,27 @@ func NewConf(data map[string]interface{}) (*PanConf, error) {
 		return nil, err
 	}
 
+	err = util.GetJSONString(data, "consensus", &out.Consensus)
+	if err != nil {
+		return nil, err
+	}
+
+	err = util.GetJSONInt64(data, "fixeddifficulty", &out.EthashDifficulty)
+	if err != nil {
+		return nil, err
+	}
+
 	err = util.GetJSONInt64(data, "blockPeriodSeconds", &out.BlockPeriodSeconds)
 	if err != nil {
 		return nil, err
 	}
 
 	err = util.GetJSONInt64(data, "epoch", &out.Epoch)
+	if err != nil {
+		return nil, err
+	}
+
+	err = util.GetJSONInt64(data, "requesttimeoutseconds", &out.RequestTimeoutSeconds)
 	if err != nil {
 		return nil, err
 	}
@@ -90,11 +109,11 @@ func GetDefaults() string {
 }
 
 func GetServices() []util.Service {
-	return []util.Service {
-		util.Service{//Include a geth node for transaction signing
-			Name: "geth",
+	return []util.Service{
+		util.Service{ //Include a geth node for transaction signing
+			Name:  "geth",
 			Image: "gcr.io/whiteblock/geth:master",
-			Env:nil,
+			Env:   nil,
 		},
 	}
 }

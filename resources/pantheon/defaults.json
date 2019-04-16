@@ -5,6 +5,9 @@
     "maxPeers":1000,
     "gasLimit":4000000,
     "extraData":"",
+    "consensus":"clique",
     "blockPeriodSeconds":2,
-    "epoch":30000
+    "epoch":30000,
+    "requesttimeoutseconds":10,
+    "fixeddifficulty": 1000
 }

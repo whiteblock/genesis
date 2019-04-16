@@ -9,6 +9,9 @@ import (
 	util "../util"
 	"fmt"
 	"log"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 /**
@@ -91,13 +94,12 @@ func CreateCommands(netconf Netconf, serverId int) []string {
 func Apply(client *util.SshClient, netconf Netconf, serverId int) error {
 	cmds := CreateCommands(netconf, serverId)
 	for i, cmd := range cmds {
-		res, err := client.Run(cmd)
+		_, err := client.Run(cmd)
 		if i == 0 {
 			//Don't check the success of the first command which clears
 			continue
 		}
 		if err != nil {
-			log.Println(res)
 			log.Println(err)
 			return err
 		}
@@ -142,13 +144,12 @@ func ApplyToAll(netconf Netconf, nodes []db.Node) error {
 				log.Println(err)
 				return err
 			}
-			res, err := client.Run(cmd)
+			_, err = client.Run(cmd)
 			if i == 0 {
 				//Don't check the success of the first command which clears
 				continue
 			}
 			if err != nil {
-				log.Println(res)
 				log.Println(err)
 				return err
 			}
@@ -178,8 +179,113 @@ func RemoveAll(nodes []db.Node) error {
 */
 func RemoveAllOnServer(client *util.SshClient, nodes int) {
 	for i := 0; i < nodes; i++ {
-
 		client.Run(
 			fmt.Sprintf("sudo tc qdisc del dev %s%d root", conf.BridgePrefix, i))
 	}
+}
+
+func parseItems(items []string, nconf *Netconf) error {
+
+	for i := 0; i < len(items)/2; i++ {
+		switch items[2*i] {
+		case "limit":
+			val, err := strconv.Atoi(items[2*i+1])
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			nconf.Limit = val
+		case "loss":
+			val, err := strconv.ParseFloat(items[2*i+1][:len(items[2*i+1])-1], 64)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			nconf.Loss = val
+		case "delay":
+			re := regexp.MustCompile(`(?m)[0-9]+\.[0-9]+`)
+			matches := re.FindAllString(items[2*i+1], -1)
+			if len(matches) == 0 {
+				return fmt.Errorf("Unexpected delay value \"%s\"", items[2*i+1])
+			}
+
+			val, err := strconv.ParseFloat(matches[0], 64)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			unit := items[2*i+1][len(matches[0]):]
+			switch unit {
+			case "s":
+				val *= 1000
+				fallthrough
+			case "ms":
+				val *= 1000
+			}
+			nconf.Delay = int(val)
+		case "rate":
+			nconf.Rate = items[2*i+1]
+		case "duplicate":
+			val, err := strconv.ParseFloat(items[2*i+1][:len(items[2*i+1])-1], 64)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			nconf.Duplication = val
+		case "corrupt":
+			val, err := strconv.ParseFloat(items[2*i+1][:len(items[2*i+1])-1], 64)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			nconf.Corrupt = val
+		case "reorder":
+			val, err := strconv.ParseFloat(items[2*i+1][:len(items[2*i+1])-1], 64)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			nconf.Reorder = val
+		}
+	}
+	return nil
+}
+
+//5 start index
+func GetConfigOnServer(client *util.SshClient) ([]Netconf, error) {
+	res, err := client.Run("tc qdisc show | grep wb_bridge | grep netem || true")
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	if len(res) == 0 {
+		return []Netconf{}, nil
+	}
+	out := []Netconf{}
+	rawConfigs := strings.Split(res, "\n")
+
+	for _, rawConfig := range rawConfigs { //4 for bridge name //7 for start of the shit
+		rawItems := strings.Split(rawConfig, " ")
+		if len(rawItems) < 5 {
+			continue
+		}
+		bridgeName := rawItems[4]
+
+		num, err := strconv.Atoi(bridgeName[len(conf.BridgePrefix):])
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		nconf := Netconf{Node: num}
+		if len(rawItems) >= 8 {
+			items := rawItems[7:]
+			err = parseItems(items, &nconf)
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
+		}
+		out = append(out, nconf)
+	}
+	return out, nil
 }

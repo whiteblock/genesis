@@ -1,7 +1,7 @@
 package state
 
 import (
-	"errors"
+	"fmt"
 	"log"
 	"sync"
 )
@@ -76,7 +76,7 @@ func GetBuildStateById(buildId string) (*BuildState, error) {
 		}
 	}
 
-	return nil, errors.New("Couldn't find the request build")
+	return nil, fmt.Errorf("Couldn't find the request build")
 }
 
 /*
@@ -92,7 +92,7 @@ func AcquireBuilding(servers []int, buildId string) error {
 	for _, id := range serversInUse {
 		for _, id2 := range servers {
 			if id == id2 {
-				return errors.New("Error: Build in progress on one of the given servers")
+				return fmt.Errorf("Error: Build in progress on server %d", id)
 			}
 		}
 	}
@@ -127,7 +127,7 @@ func SignalStop(buildId string) error {
 		return err
 	}
 	if bs == nil {
-		return errors.New("Build does not exist")
+		return fmt.Errorf("Build \"%s\" does not exist", buildId)
 	}
 	log.Printf("Sending stop signal to build:%s\n", buildId)
 	return bs.SignalStop()

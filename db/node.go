@@ -40,7 +40,7 @@ type Node struct {
 */
 func GetAllNodesByServer(serverId int) ([]Node, error) {
 
-	rows, err := db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE server = %d", NodesTable))
+	rows, err := db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label FROM %s WHERE server = %d", NodesTable, serverId))
 	if err != nil {
 		return nil, err
 	}

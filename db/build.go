@@ -4,12 +4,12 @@ import (
 	util "../util"
 	"encoding/json"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" //Bring db in
 	"log"
 )
 
 /*
-   DeploymentDetails represents the data for the construction of a testnet.
+DeploymentDetails represents the data for the construction of a testnet.
 */
 type DeploymentDetails struct {
 	/*
@@ -35,19 +35,24 @@ type DeploymentDetails struct {
 	/*
 	   Resources: The resources per node
 	*/
-	Resources []util.Resources `json:"resources"`
+	Resources    []util.Resources       `json:"resources"`
+	Environments []map[string]string    `json:"environments"`
+	Files        map[string]string      `json:"files"`
+	Logs         map[string]string      `json:"logs"`
+	Extras       map[string]interface{} `json:"extras"`
+	jwt          string
+}
 
-	Environments []map[string]string `json:"environments"`
+func (this *DeploymentDetails) SetJwt(jwt string) {
+	this.jwt = jwt
+}
 
-	Files map[string]string `json:"files"`
-
-	Logs map[string]string `json:"logs"`
-
-	Extras map[string]interface{} `json:"extras"`
+func (this *DeploymentDetails) GetJwt() string {
+	return this.jwt
 }
 
 /*
-   Get all of the builds done by a user
+GetAllBuilds gets all of the builds done by a user
 */
 func GetAllBuilds() ([]DeploymentDetails, error) {
 	rows, err := db.Query(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,environment FROM %s", BuildsTable))
@@ -100,7 +105,7 @@ func GetAllBuilds() ([]DeploymentDetails, error) {
 }
 
 /*
-   Get the build paramters based off testnet id
+GetBuildByTestnet gets the build paramters based off testnet id
 */
 func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 
@@ -145,9 +150,9 @@ func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 }
 
 /*
-   Insert a build
+InsertBuild inserts a build
 */
-func InsertBuild(dd DeploymentDetails, testnetId string) error {
+func InsertBuild(dd DeploymentDetails, testnetID string) error {
 
 	tx, err := db.Begin()
 
@@ -174,7 +179,7 @@ func InsertBuild(dd DeploymentDetails, testnetId string) error {
 		return err
 	}
 
-	_, err = stmt.Exec(testnetId, string(servers), dd.Blockchain, dd.Nodes, dd.Image, string(params), string(resources), string(environment))
+	_, err = stmt.Exec(testnetID, string(servers), dd.Blockchain, dd.Nodes, dd.Image, string(params), string(resources), string(environment))
 
 	if err != nil {
 		log.Println(err)

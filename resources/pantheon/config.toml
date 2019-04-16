@@ -1,0 +1,19 @@
+# Whiteblock default config.toml for pantheon
+# Assume any hard coded values here are required for correct operation of the platform.
+# Changing any of the required values may result in undesired and/or undefined behavior.
+
+data-path="/pantheon/data"
+
+# Network
+
+p2p-host="0.0.0.0"
+p2p-port="30303"
+
+rpc-http-api=["ADMIN","CLIQUE","DEBUG","EEA","ETH","IBFT","MINER","NET","TXPOOL","WEB3"]
+rpc-http-host="0.0.0.0"
+rpc-http-port="8545"
+
+logging="INFO"
+
+# Chain
+genesis-file="/pantheon/genesis/genesis.json"

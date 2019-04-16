@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"sync"
 )
 
@@ -25,12 +26,12 @@ type CustomError struct {
    Packages the build state nicely into an object
 */
 type BuildState struct {
-	errMutex  sync.RWMutex
-	extraMux  sync.RWMutex
-	freeze    sync.RWMutex
-	mutex     sync.RWMutex
-	stopMux   sync.RWMutex
-	freezeMux sync.RWMutex
+	errMutex  *sync.RWMutex
+	extraMux  *sync.RWMutex
+	freeze    *sync.RWMutex
+	mutex     *sync.RWMutex
+	stopMux   *sync.RWMutex
+	freezeMux *sync.RWMutex
 
 	building bool
 	Frozen   bool
@@ -41,6 +42,8 @@ type BuildState struct {
 	externExtras      map[string]interface{} //will be exported
 	extras            map[string]interface{}
 	files             []string
+	defers            []func() //Array of functions to run at the end of the build
+	asyncWaiter       sync.WaitGroup
 
 	Servers          []int
 	BuildId          string
@@ -52,6 +55,13 @@ type BuildState struct {
 func NewBuildState(servers []int, buildId string) *BuildState {
 	out := new(BuildState)
 
+	out.errMutex = &sync.RWMutex{}
+	out.extraMux = &sync.RWMutex{}
+	out.freeze = &sync.RWMutex{}
+	out.mutex = &sync.RWMutex{}
+	out.stopMux = &sync.RWMutex{}
+	out.freezeMux = &sync.RWMutex{}
+
 	out.building = true
 	out.Frozen = false
 	out.stopping = false
@@ -60,13 +70,33 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	out.progressIncrement = 0.0
 	out.externExtras = map[string]interface{}{}
 	out.extras = map[string]interface{}{}
+	out.files = []string{}
+	out.defers = []func(){}
 
 	out.Servers = servers
 	out.BuildId = buildId
 	out.BuildingProgress = 0.00
 	out.BuildError = CustomError{What: "", err: nil}
 	out.BuildStage = ""
+
+	err := os.MkdirAll("/tmp/"+buildId, 0755)
+	if err != nil {
+		panic(err) //Fatal error
+	}
+
 	return out
+}
+
+/*
+Set a function to be executed at some point during the build.
+All these functions must complete before the build is considered finished.
+*/
+func (this *BuildState) Async(fn func()) {
+	this.asyncWaiter.Add(1)
+	go func() {
+		defer this.asyncWaiter.Done()
+		fn()
+	}()
 }
 
 func (this *BuildState) Freeze() error {
@@ -128,6 +158,12 @@ func (this *BuildState) DoneBuilding() {
 	this.BuildStage = "Finished"
 	this.building = false
 	this.stopping = false
+	this.asyncWaiter.Wait() //Wait for the async calls to complete
+	os.RemoveAll("/tmp/" + this.BuildId)
+
+	for _, fn := range this.defers {
+		go fn() //No need to wait to confirm completion
+	}
 }
 
 func (this *BuildState) Done() bool {
@@ -261,11 +297,24 @@ func (this *BuildState) GetExtras() map[string]interface{} {
 	return this.extras
 }
 
+/*
+	Write writes data to a file, creating it if it doesn't exist,
+   	deleting and recreating it if it does.
+*/
 func (this *BuildState) Write(file string, data string) error {
 	this.mutex.RLock()
 	this.files = append(this.files, file)
 	this.mutex.RUnlock()
-	return ioutil.WriteFile(file, []byte(data), 0664)
+	return ioutil.WriteFile("/tmp/"+this.BuildId+"/"+file, []byte(data), 0664)
+}
+
+/*
+	Add a function to be executed asynchronously after the build is completed.
+*/
+func (this *BuildState) Defer(fn func()) {
+	this.extraMux.Lock()
+	this.defers = append(this.defers, fn)
+	defer this.extraMux.Unlock()
 }
 
 /*

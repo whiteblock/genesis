@@ -10,12 +10,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/satori/go.uuid"
+	"github.com/Whiteblock/go.uuid"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
+	//"os/exec"
 	"strings"
 )
 
@@ -52,6 +52,19 @@ func HttpRequest(method string, url string, bodyData string) (string, error) {
 		return "", fmt.Errorf(buf.String())
 	}
 	return buf.String(), nil
+}
+
+func ExtractJwt(r *http.Request) (string, error) {
+	tokenString := r.Header.Get("Authorization")
+
+	if len(tokenString) == 0 {
+		return "", fmt.Errorf("Missing JWT in Authorization header")
+	}
+	splt := strings.Split(tokenString, " ")
+	if len(splt) < 2 {
+		return "", fmt.Errorf("Invalid Auth header")
+	}
+	return splt[1], nil
 }
 
 func GetUUIDString() (string, error) {
@@ -92,47 +105,6 @@ func Mkdir(directory string) error {
 }
 
 /*
-   Cp copies a file
-*/
-func Cp(src string, dest string) error {
-	if conf.Verbose {
-		fmt.Printf("Copying %s to %s\n", src, dest)
-	}
-
-	cmd := exec.Command("bash", "-c", fmt.Sprintf("cp %s %s", src, dest))
-	return cmd.Run()
-}
-
-/*
-   Cpr copies a directory
-*/
-func Cpr(src string, dest string) error {
-	if conf.Verbose {
-		fmt.Printf("Copying %s to %s\n", src, dest)
-	}
-
-	cmd := exec.Command("cp", "-r", src, dest)
-	return cmd.Run()
-}
-
-/*
-   Write writes data to a file, creating it if it doesn't exist,
-   deleting and recreating it if it does.
-*/
-func Write(path string, data string) error {
-	if conf.Verbose {
-		fmt.Printf("Writing to file %s...", path)
-	}
-
-	err := ioutil.WriteFile(path, []byte(data), 0664)
-
-	if conf.Verbose {
-		fmt.Printf("done\n")
-	}
-	return err
-}
-
-/*
    Lsr lists the contents of a directory recursively
 */
 func Lsr(_dir string) ([]string, error) {
@@ -160,34 +132,6 @@ func Lsr(_dir string) ([]string, error) {
 }
 
 /*
-   LsDir lists directories in order of construction
-*/
-func LsDir(_dir string) ([]string, error) {
-	dir := _dir
-	if dir[len(dir)-1:] != "/" {
-		dir += "/"
-	}
-	out := []string{}
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	for _, f := range files {
-		if f.IsDir() {
-			out = append(out, fmt.Sprintf("%s%s/", dir, f.Name()))
-			content, err := LsDir(fmt.Sprintf("%s%s/", dir, f.Name()))
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			out = append(out, content...)
-		}
-	}
-	return out, nil
-}
-
-/*
    CombineConfig combines an Array with \n as the delimiter.
    Useful for generating configuration files.
 */
@@ -202,7 +146,7 @@ func CombineConfig(entries []string) string {
 /*
    BashExec executes _cmd in bash then return the result
 */
-func BashExec(_cmd string) (string, error) {
+/*func BashExec(_cmd string) (string, error) {
 	if conf.Verbose {
 		fmt.Printf("Executing : %s\n", _cmd)
 	}
@@ -224,7 +168,7 @@ func BashExec(_cmd string) (string, error) {
 	}
 
 	return resultsRaw.String(), nil
-}
+}*/
 
 /*
    GetPath extracts the base path of the given path
@@ -235,26 +179,6 @@ func GetPath(path string) string {
 		return path
 	}
 	return path[:index]
-}
-
-/*
-   IntArrRemove removes an element from an array of ints
-*/
-func IntArrRemove(op []int, index int) []int {
-	return append(op[:index], op[index+1:]...)
-}
-
-/*
-   IntArrFill fills the elements of an array according the given
-   function, and then returns it.
-   f takes in the index and returns the value to place at that index.
-*/
-func IntArrFill(size int, f func(int) int) []int {
-	out := make([]int, size)
-	for i := 0; i < size; i++ {
-		out[i] = f(i)
-	}
-	return out
 }
 
 /*
@@ -384,32 +308,6 @@ func ConvertToStringMap(in interface{}) map[string]string {
 
 	for key, value := range data {
 		strval, _ := json.Marshal(value)
-		/*switch v := i.(type) {
-		    case int:
-		        fallthrough
-		    case int8:
-		        fallthrough
-		    case int16:
-		        fallthrough
-		    case int32:
-		        fallthrough
-		    case int64:
-		        strval = string(strconv.AppendInt(nil, int64(v), 10))
-
-		    case float:
-		        fallthrough
-		    case float32:
-		        fallthrough
-		    case float64:
-		        b64 = strconv.AppendFloat(nil,float64(v), 'f', -1, 64)
-		        fmt.Println("the reciprocal of i is", 1/v)
-		    case string:
-		        strval = v
-		    case []byte:
-
-		    default:
-		        // i isn't one of the types above
-		}*/
 		out[key] = string(strval)
 	}
 	return out
@@ -423,5 +321,8 @@ func GetBlockchainConfig(blockchain string, file string, files map[string]string
 		}
 	}
 	return ioutil.ReadFile(fmt.Sprintf("./resources/%s/%s", blockchain, file))
+}
 
+func FormatError(res string, err error) error {
+	return fmt.Errorf("%s\n%s", res, err.Error())
 }

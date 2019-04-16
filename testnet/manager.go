@@ -36,7 +36,7 @@ func init() {
 
 // AddTestNet implements the build command. All blockchains Build command must be
 // implemented here, other it will not be called during the build process.
-func AddTestNet(details db.DeploymentDetails, testNetId string) error {
+func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 
 	buildState := state.GetBuildStateByServerId(details.Servers[0])
 	buildState.SetDeploySteps(3*details.Nodes + 2)
@@ -97,35 +97,11 @@ func AddTestNet(details db.DeploymentDetails, testNetId string) error {
 	}
 
 	//STEP 3: GET THE SERVICES
-	var services []util.Service
-	switch details.Blockchain {
-	case "ethereum":
-		fallthrough
-	case "geth":
-		services = geth.GetServices()
-	case "parity":
-		services = parity.GetServices()
-	case "pantheon":
-		services = pantheon.GetServices()
-	case "artemis":
-		services = artemis.GetServices()
-	case "eos":
-		services = eos.GetServices()
-	case "syscoin":
-		services = sys.GetServices()
-	case "rchain":
-		services = rchain.GetServices()
-	case "beam":
-		services = beam.GetServices()
-	case "tendermint":
-		services = tendermint.GetServices()
-	case "cosmos":
-		services = cosmos.GetServices()
-	}
+	services := GetServices(details.Blockchain)
 
 	//STEP 4: BUILD OUT THE DOCKER CONTAINERS AND THE NETWORK
 
-	newServerData, err := deploy.Build(&details, servers, clients, services, buildState) //TODO: Restructure distribution of nodes over servers
+	newServerData, err := deploy.Build(details, servers, clients, services, buildState) //TODO: Restructure distribution of nodes over servers
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)
@@ -178,7 +154,7 @@ func AddTestNet(details db.DeploymentDetails, testNetId string) error {
 		buildState.ReportError(err)
 		return err
 	}
-	err = db.InsertBuild(details, testNetId)
+	err = db.InsertBuild(*details, testNetId)
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)
@@ -240,33 +216,11 @@ func DeleteTestNet(testnetId string) error {
    Ensure that the blockchain you have implemented is included
    in the switch statement.
 */
-func GetParams(blockchain string) string {
-	switch blockchain {
-	case "ethereum":
-		fallthrough
-	case "geth":
-		return geth.GetParams()
-	case "parity":
-		return parity.GetParams()
-	case "pantheon":
-		return pantheon.GetParams()
-	case "artemis":
-		return artemis.GetParams()
-	case "syscoin":
-		return sys.GetParams()
-	case "eos":
-		return eos.GetParams()
-	case "rchain":
-		return rchain.GetParams()
-	case "beam":
-		return beam.GetParams()
-	case "tendermint":
-		return tendermint.GetParams()
-	case "cosmos":
-		return cosmos.GetParams()
-	default:
-		return "[]"
+func GetParams(blockchain string) ([]byte, error) {
+	if blockchain == "ethereum" {
+		return GetParams("geth")
 	}
+	return util.GetBlockchainConfig(blockchain, "params.json", nil)
 }
 
 /*
@@ -274,31 +228,38 @@ func GetParams(blockchain string) string {
    the blockchain you have implemented is included in the switch
    statement.
 */
-func GetDefaults(blockchain string) string {
+func GetDefaults(blockchain string) ([]byte, error) {
+	if blockchain == "ethereum" {
+		return GetParams("geth")
+	}
+	return util.GetBlockchainConfig(blockchain, "defaults.json", nil)
+}
+
+func GetServices(blockchain string) []util.Service {
+	var services []util.Service
 	switch blockchain {
 	case "ethereum":
 		fallthrough
 	case "geth":
-		return geth.GetDefaults()
-	case "pantheon":
-		return pantheon.GetDefaults()
-	case "artemis":
-		return artemis.GetDefaults()
-	case "syscoin":
-		return sys.GetDefaults()
-	case "eos":
-		return eos.GetDefaults()
-	case "rchain":
-		return rchain.GetDefaults()
-	case "beam":
-		return beam.GetDefaults()
-	case "tendermint":
-		return tendermint.GetDefaults()
-	case "cosmos":
-		return cosmos.GetDefaults()
+		services = geth.GetServices()
 	case "parity":
-		return parity.GetDefaults()
-	default:
-		return "{}"
+		services = parity.GetServices()
+	case "pantheon":
+		services = pantheon.GetServices()
+	case "artemis":
+		services = artemis.GetServices()
+	case "eos":
+		services = eos.GetServices()
+	case "syscoin":
+		services = sys.GetServices()
+	case "rchain":
+		services = rchain.GetServices()
+	case "beam":
+		services = beam.GetServices()
+	case "tendermint":
+		services = tendermint.GetServices()
+	case "cosmos":
+		services = cosmos.GetServices()
 	}
+	return services
 }
