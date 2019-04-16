@@ -54,6 +54,36 @@ func HttpRequest(method string, url string, bodyData string) (string, error) {
 	return buf.String(), nil
 }
 
+func JwtHttpRequest(method string, url string, jwt string, bodyData string) (string, error) {
+	body := strings.NewReader(bodyData)
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", jwt))
+	req.Close = true
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+
+	defer resp.Body.Close()
+	buf := new(bytes.Buffer)
+
+	_, err = buf.ReadFrom(resp.Body)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf(buf.String())
+	}
+	return buf.String(), nil
+}
+
 func ExtractJwt(r *http.Request) (string, error) {
 	tokenString := r.Header.Get("Authorization")
 

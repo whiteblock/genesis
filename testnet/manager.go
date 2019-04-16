@@ -6,10 +6,6 @@
 package testnet
 
 import (
-	"fmt"
-	"log"
-	"time"
-
 	artemis "../blockchains/artemis"
 	beam "../blockchains/beam"
 	cosmos "../blockchains/cosmos"
@@ -21,6 +17,10 @@ import (
 	rchain "../blockchains/rchain"
 	sys "../blockchains/syscoin"
 	tendermint "../blockchains/tendermint"
+	"encoding/json"
+	"fmt"
+	"log"
+	"time"
 
 	db "../db"
 	deploy "../deploy"
@@ -79,7 +79,9 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 	if len(details.Image) == 0 {
 		details.Image = "gcr.io/whiteblock/" + details.Blockchain + ":master"
 	}
-
+	buildState.Async(func() {
+		declareTestnet(testNetId, details)
+	})
 	//STEP 1: FETCH THE SERVERS
 	servers, err := db.GetServers(details.Servers)
 	if err != nil {
@@ -196,6 +198,37 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 	return nil
 }
 
+func declareTestnet(testnetId string, details *db.DeploymentDetails) error {
+
+	data := map[string]interface{}{
+		"id":        testnetId,
+		"kind":      details.Blockchain,
+		"num_nodes": details.Nodes,
+		"image":     details.Image,
+	}
+	rawData, err := json.Marshal(data)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	_, err = util.JwtHttpRequest("POST", "https://api.whiteblock.io/testnets", details.GetJwt(), string(rawData))
+	return err
+}
+
+func declareNode(node db.Node, details *db.DeploymentDetails) error {
+	data := map[string]interface{}{
+		"id":         node.TestNetId,
+		"ip_address": node.Ip,
+	}
+	rawData, err := json.Marshal(data)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	_, err = util.JwtHttpRequest("POST", "https://api.whiteblock.io/testnets/"+node.TestNetId+"/nodes", details.GetJwt(), string(rawData))
+	return err
+}
+
 func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state.BuildState) error {
 	client, err := status.GetClient(node.Server)
 	if err != nil {
@@ -207,7 +240,8 @@ func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state
 		files += " " + file
 	}
 	buildState.Defer(func() {
-		_, err := client.DockerExec(node.LocalId,
+		err := declareNode(node, details)
+		_, err = client.DockerExec(node.LocalId,
 			fmt.Sprintf("nibbler --jwt %s --testnet %s --node %s %s", details.GetJwt(), node.TestNetId, node.Id, files))
 		if err != nil {
 			log.Println(err)
