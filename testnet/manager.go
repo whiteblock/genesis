@@ -122,7 +122,7 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 	case "parity":
 		labels, err = parity.Build(details, newServerData, clients, buildState)
 	case "parity-poa":
-		labels, err = parity.Build(details, newServerData, clients, buildState)
+		labels, err = paritypoa.Build(details, newServerData, clients, buildState)
 	case "artemis":
 		labels, err = artemis.Build(details, newServerData, clients, buildState)
 	case "pantheon":
