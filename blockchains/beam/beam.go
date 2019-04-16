@@ -4,6 +4,7 @@ import (
 	db "../../db"
 	state "../../state"
 	util "../../util"
+	helpers "../helpers"
 	"fmt"
 	"log"
 	"regexp"
@@ -64,9 +65,15 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	/**Create node config files**/
 	node := 0
 	for i, server := range servers {
-		for range server.Ips {
-			beam_node_config, err := makeNodeConfig(beamConf, ownerKeys[node], secretMinerKeys[node])
+		beam_node_configs := []helpers.FileDest{}
+		beam_wallet_configs := []helpers.FileDest{}
 
+		for j := range server.Ips {
+			beam_node_config, err := makeNodeConfig(beamConf, ownerKeys[node], secretMinerKeys[node])
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
 			beam_wallet_config := []string{
 				"# Emission.Value0=800000000",
 				"# Emission.Drop0=525600",
@@ -86,46 +93,31 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 			for _, ip := range append(ips[:node], ips[node+1:]...) {
 				beam_node_config += fmt.Sprintf("peer=%s:%d\n", ip, port)
 			}
-			err = buildState.Write("beam-node.cfg", beam_node_config)
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			err = buildState.Write("beam-wallet.cfg", util.CombineConfig(beam_wallet_config))
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
+			beam_node_configs = append(beam_node_configs,
+				helpers.FileDest{
+					Data:        []byte(beam_node_config),
+					Dest:        "/beam/beam-node.cfg",
+					LocalNodeId: j})
 
-			err = clients[i].Scp("beam-node.cfg", "/home/appo/beam-node.cfg")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			defer clients[i].Run("rm -f /home/appo/beam-node.cfg")
-
-			err = clients[i].Scp("beam-wallet.cfg", "/home/appo/beam-wallet.cfg")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			defer clients[i].Run("rm -f /home/appo/beam-wallet.cfg")
-
-			err = clients[i].DockerCp(node, "/home/appo/beam-node.cfg", "/beam/")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-
-			err = clients[i].DockerCp(node, "/home/appo/beam-wallet.cfg", "/beam/")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
+			beam_wallet_configs = append(beam_wallet_configs,
+				helpers.FileDest{
+					Data:        []byte(util.CombineConfig(beam_wallet_config)),
+					Dest:        "/beam/beam-wallet.cfg",
+					LocalNodeId: j})
 
 			// fmt.Println(config)
 			node++
 			buildState.IncrementBuildProgress()
+		}
+		err := helpers.CopyBytesToNodeFiles(clients[i], buildState, beam_node_configs...)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		err = helpers.CopyBytesToNodeFiles(clients[i], buildState, beam_wallet_configs...)
+		if err != nil {
+			log.Println(err)
+			return nil, err
 		}
 	}
 
