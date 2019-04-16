@@ -131,6 +131,15 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 		return nil, err
 	}
 
+	// copy genesis file
+	err = helpers.CopyToAllNodes(servers, clients, buildState,
+		"spec.json", "/parity-poa/")
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	// start parity
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		defer buildState.IncrementBuildProgress()
 		return clients[serverNum].DockerExecdLog(localNodeNum,
