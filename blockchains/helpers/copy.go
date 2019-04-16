@@ -120,7 +120,7 @@ func SingleCp(client *util.SshClient, buildState *state.BuildState, localNodeId 
 		return err
 	}
 	intermediateDst := "/home/appo/" + tmpFilename
-
+	buildState.Defer(func() { client.Run("rm -rf " + intermediateDst) })
 	err = client.Scp(tmpFilename, intermediateDst)
 	if err != nil {
 		log.Println(err)

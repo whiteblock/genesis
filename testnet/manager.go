@@ -241,7 +241,7 @@ func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state
 	}
 	buildState.Defer(func() {
 		err := declareNode(node, details)
-		_, err = client.DockerExec(node.LocalId,
+		_, err = client.DockerExecd(node.LocalId,
 			fmt.Sprintf("nibbler --jwt %s --testnet %s --node %s %s", details.GetJwt(), node.TestNetId, node.Id, files))
 		if err != nil {
 			log.Println(err)
