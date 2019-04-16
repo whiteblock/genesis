@@ -24,7 +24,7 @@ func init() {
  * @param  int      nodes       The number of producers to make
  * @param  []Server servers     The list of relevant servers
  */
-func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) ([]string, error) {
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) ([]string, error) {
 	if details.Nodes < 2 {
 		return nil, fmt.Errorf("Cannot build less than 2 nodes")
 	}
@@ -66,7 +66,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		"eosio.token",
 		"eosio.vpay",
 	}
-	km, err := helpers.NewKeyMaster(&details, "eos")
+	km, err := helpers.NewKeyMaster(details, "eos")
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -108,7 +108,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		return nil, err
 	}
 	buildState.SetBuildStage("Building genesis block")
-	genesis, err := eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey, &details)
+	genesis, err := eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey, details)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -590,7 +590,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	return out, nil
 }
 
-func Add(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }

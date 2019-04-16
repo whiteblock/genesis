@@ -54,6 +54,19 @@ func HttpRequest(method string, url string, bodyData string) (string, error) {
 	return buf.String(), nil
 }
 
+func ExtractJwt(r *http.Request) (string, error) {
+	tokenString := r.Header.Get("Authorization")
+
+	if len(tokenString) == 0 {
+		return "", fmt.Errorf("Missing JWT in Authorization header")
+	}
+	splt := strings.Split(tokenString, " ")
+	if len(splt) < 2 {
+		return "", fmt.Errorf("Invalid Auth header")
+	}
+	return splt[1], nil
+}
+
 func GetUUIDString() (string, error) {
 	uid, err := uuid.NewV4()
 	return uid.String(), err

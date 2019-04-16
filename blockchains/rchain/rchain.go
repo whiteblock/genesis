@@ -18,7 +18,7 @@ func init() {
 	conf = util.GetConfig()
 }
 
-func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) ([]string, error) {
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) ([]string, error) {
 
 	rchainConf, err := NewRChainConf(details.Params)
 	if err != nil {
@@ -50,7 +50,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 		return nil, err
 	}
 	buildState.IncrementBuildProgress()
-	km, err := helpers.NewKeyMaster(&details, "rchain")
+	km, err := helpers.NewKeyMaster(details, "rchain")
 	keyPairs := make([]util.KeyPair, details.Nodes)
 
 	for i, _ := range keyPairs {
@@ -171,7 +171,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	return nil, err
 }
 
-func createFirstConfigFile(details db.DeploymentDetails, client *util.SshClient, node int, rchainConf *RChainConf, influxIP string, buildState *state.BuildState) error {
+func createFirstConfigFile(details *db.DeploymentDetails, client *util.SshClient, node int, rchainConf *RChainConf, influxIP string, buildState *state.BuildState) error {
 
 	raw := map[string]interface{}{
 		"influxIp":       influxIP,
@@ -205,12 +205,12 @@ func createFirstConfigFile(details db.DeploymentDetails, client *util.SshClient,
 	return client.DockerCp(node, "/home/appo/rnode.conf", "/datadir/rnode.conf")
 }
 
-func Add(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }
 
-func createConfigFile(details db.DeploymentDetails, bootnodeAddr string, rchainConf *RChainConf,
+func createConfigFile(details *db.DeploymentDetails, bootnodeAddr string, rchainConf *RChainConf,
 	influxIP string, buildState *state.BuildState) error {
 
 	raw := map[string]interface{}{

@@ -18,7 +18,7 @@ func init() {
 /*
 Build builds out a fresh new artemis test network
 */
-func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {
 
 	artemisConf, err := NewConf(details.Params)
@@ -126,7 +126,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	return nil, nil
 }
 
-func Add(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }

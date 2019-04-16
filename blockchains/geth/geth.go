@@ -25,7 +25,7 @@ const ETH_NET_STATS_PORT = 3338
 /*
 Build builds out a fresh new ethereum test network using geth
 */
-func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {
 
 	mux := sync.Mutex{}
@@ -288,7 +288,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 
 /***************************************************************************************************************************/
 
-func Add(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }
@@ -312,7 +312,7 @@ func MakeFakeAccounts(accs int) []string {
  * @param  []string wallets     The wallets to be allocated a balance
  */
 
-func createGenesisfile(ethconf *EthConf, details db.DeploymentDetails, wallets []string, buildState *state.BuildState) error {
+func createGenesisfile(ethconf *EthConf, details *db.DeploymentDetails, wallets []string, buildState *state.BuildState) error {
 
 	genesis := map[string]interface{}{
 		"chainId":        ethconf.NetworkId,

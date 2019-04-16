@@ -23,7 +23,7 @@ func init() {
 /*
 Build builds out a fresh new ethereum test network
 */
-func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {
 
 	mux := sync.Mutex{}

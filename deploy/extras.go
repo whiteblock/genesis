@@ -11,6 +11,32 @@ import (
 	"sync"
 )
 
+func distributeNibbler(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) {
+	buildState.Async(
+		func() {
+			nibbler, err := util.HttpRequest("GET", "https://storage.googleapis.com/genesis-public/nibbler/master/bin/linux/amd64/nibbler", "")
+			if err != nil {
+				log.Println(err)
+			}
+			err = buildState.Write("nibbler", nibbler)
+			if err != nil {
+				log.Println(err)
+			}
+			err = helpers.CopyToAllNodes(servers, clients, buildState,
+				"nibbler", "/usr/local/bin/nibbler")
+			if err != nil {
+				log.Println(err)
+			}
+			err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+				_, err := clients[serverNum].DockerExec(localNodeNum, "chmod +x /usr/local/bin/nibbler")
+				return err
+			})
+			if err != nil {
+				log.Println(err)
+			}
+		})
+}
+
 func handleDockerBuildRequest(blockchain string, prebuild map[string]interface{},
 	clients []*util.SshClient, buildState *state.BuildState) error {
 

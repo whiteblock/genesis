@@ -54,14 +54,14 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util
 			index = index % len(availibleServers)
 			continue
 		}
-
+		relNum := len(servers[serverIndex].Ips)
 		servers[serverIndex].Ips = append(servers[serverIndex].Ips, util.GetNodeIP(servers[serverIndex].SubnetID, i))
 		servers[serverIndex].Nodes++
 
 		sem.Acquire(ctx, 1)
-		go func(serverIndex int, i int) {
+		go func(serverIndex int, absNum int, relNum int) {
 			defer sem.Release(1)
-			err := DockerNetworkCreate(servers[serverIndex], clients[serverIndex], i)
+			err := DockerNetworkCreate(servers[serverIndex], clients[serverIndex], relNum)
 			if err != nil {
 				log.Println(err)
 				buildState.ReportError(err)
@@ -72,21 +72,21 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util
 			resource := buildConf.Resources[0]
 			var env map[string]string = nil
 
-			if len(buildConf.Resources) > i {
-				resource = buildConf.Resources[i]
+			if len(buildConf.Resources) > absNum {
+				resource = buildConf.Resources[absNum]
 			}
-			if buildConf.Environments != nil && len(buildConf.Environments) > i && buildConf.Environments[i] != nil {
-				env = buildConf.Environments[i]
+			if buildConf.Environments != nil && len(buildConf.Environments) > absNum && buildConf.Environments[absNum] != nil {
+				env = buildConf.Environments[absNum]
 			}
 
-			err = DockerRun(servers[serverIndex], clients[serverIndex], resource, i, buildConf.Image, env)
+			err = DockerRun(servers[serverIndex], clients[serverIndex], resource, relNum, buildConf.Image, env)
 			if err != nil {
 				log.Println(err)
 				buildState.ReportError(err)
 				return
 			}
 			buildState.IncrementDeployProgress()
-		}(serverIndex, i)
+		}(serverIndex, i, relNum)
 
 		index++
 		index = index % len(availibleServers)
@@ -128,7 +128,7 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util
 	for _, client := range clients {
 		client.Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
 	}
-
+	distributeNibbler(servers, clients, buildState)
 	//Acquire all of the resources here, then release and destroy
 	err = sem.Acquire(ctx, conf.ThreadLimit)
 	if err != nil {

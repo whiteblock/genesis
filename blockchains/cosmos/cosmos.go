@@ -16,7 +16,7 @@ func init() {
 	conf = util.GetConfig()
 }
 
-func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {
 
 	peers := []string{}
@@ -126,7 +126,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	return nil, nil
 }
 
-func Add(data map[string]interface{}, nodes int, servers []db.Server, clients []*util.SshClient,
+func Add(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }

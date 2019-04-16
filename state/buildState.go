@@ -43,6 +43,7 @@ type BuildState struct {
 	extras            map[string]interface{}
 	files             []string
 	defers            []func() //Array of functions to run at the end of the build
+	asyncWaiter       sync.WaitGroup
 
 	Servers          []int
 	BuildId          string
@@ -84,6 +85,14 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	}
 
 	return out
+}
+
+func (this *BuildState) Async(fn func()) {
+	this.asyncWaiter.Add(1)
+	go func() {
+		defer this.asyncWaiter.Done()
+		fn()
+	}()
 }
 
 func (this *BuildState) Freeze() error {
@@ -145,7 +154,7 @@ func (this *BuildState) DoneBuilding() {
 	this.BuildStage = "Finished"
 	this.building = false
 	this.stopping = false
-
+	this.asyncWaiter.Wait() //Wait for the async calls to complete
 	os.RemoveAll("/tmp/" + this.BuildId)
 
 	for _, fn := range this.defers {

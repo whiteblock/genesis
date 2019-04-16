@@ -26,15 +26,22 @@ func getAllTestNets(w http.ResponseWriter, r *http.Request) {
 }
 
 func createTestNet(w http.ResponseWriter, r *http.Request) {
-	var tn db.DeploymentDetails
+	tn := &db.DeploymentDetails{}
 	decoder := json.NewDecoder(r.Body)
 	decoder.UseNumber()
-	err := decoder.Decode(&tn)
+	err := decoder.Decode(tn)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 400)
 		return
 	}
+	jwt, err := util.ExtractJwt(r)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 403)
+		return
+	}
+	tn.SetJwt(jwt)
 	id, err := status.GetNextTestNetId()
 	if err != nil {
 		log.Println(err)
@@ -126,7 +133,7 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte("Adding the nodes"))
-	go testnet.AddNodes(tn, testnetId)
+	go testnet.AddNodes(&tn, testnetId)
 }
 
 func delNodes(w http.ResponseWriter, r *http.Request) {

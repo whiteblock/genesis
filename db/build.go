@@ -35,15 +35,20 @@ type DeploymentDetails struct {
 	/*
 	   Resources: The resources per node
 	*/
-	Resources []util.Resources `json:"resources"`
+	Resources    []util.Resources       `json:"resources"`
+	Environments []map[string]string    `json:"environments"`
+	Files        map[string]string      `json:"files"`
+	Logs         map[string]string      `json:"logs"`
+	Extras       map[string]interface{} `json:"extras"`
+	jwt          string
+}
 
-	Environments []map[string]string `json:"environments"`
+func (this *DeploymentDetails) SetJwt(jwt string) {
+	this.jwt = jwt
+}
 
-	Files map[string]string `json:"files"`
-
-	Logs map[string]string `json:"logs"`
-
-	Extras map[string]interface{} `json:"extras"`
+func (this *DeploymentDetails) GetJwt() string {
+	return this.jwt
 }
 
 /*

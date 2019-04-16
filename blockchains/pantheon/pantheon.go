@@ -20,7 +20,7 @@ func init() {
 /*
 Build builds out a fresh new ethereum test network using pantheon
 */
-func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	buildState *state.BuildState) ([]string, error) {
 
 	wg := sync.WaitGroup{}
@@ -212,7 +212,7 @@ func Build(details db.DeploymentDetails, servers []db.Server, clients []*util.Ss
 	return privKeys, err
 }
 
-func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address []string, buildState *state.BuildState, ibftExtraData string) error {
+func createGenesisfile(panconf *PanConf, details *db.DeploymentDetails, address []string, buildState *state.BuildState, ibftExtraData string) error {
 	alloc := map[string]map[string]string{}
 	for _, addr := range address {
 		alloc[addr] = map[string]string{
@@ -273,7 +273,7 @@ func createGenesisfile(panconf *PanConf, details db.DeploymentDetails, address [
 
 }
 
-func createConfigfile(panconf *PanConf, details db.DeploymentDetails, buildState *state.BuildState) error {
+func createConfigfile(panconf *PanConf, details *db.DeploymentDetails, buildState *state.BuildState) error {
 
 	dat, err := util.GetBlockchainConfig("pantheon", "config.toml", details.Files)
 	if err != nil {

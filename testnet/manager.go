@@ -36,7 +36,7 @@ func init() {
 
 // AddTestNet implements the build command. All blockchains Build command must be
 // implemented here, other it will not be called during the build process.
-func AddTestNet(details db.DeploymentDetails, testNetId string) error {
+func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 
 	buildState := state.GetBuildStateByServerId(details.Servers[0])
 	buildState.SetDeploySteps(3*details.Nodes + 2)
@@ -101,7 +101,7 @@ func AddTestNet(details db.DeploymentDetails, testNetId string) error {
 
 	//STEP 4: BUILD OUT THE DOCKER CONTAINERS AND THE NETWORK
 
-	newServerData, err := deploy.Build(&details, servers, clients, services, buildState) //TODO: Restructure distribution of nodes over servers
+	newServerData, err := deploy.Build(details, servers, clients, services, buildState) //TODO: Restructure distribution of nodes over servers
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)
@@ -154,7 +154,7 @@ func AddTestNet(details db.DeploymentDetails, testNetId string) error {
 		buildState.ReportError(err)
 		return err
 	}
-	err = db.InsertBuild(details, testNetId)
+	err = db.InsertBuild(*details, testNetId)
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)
