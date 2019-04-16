@@ -116,74 +116,21 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 		return nil, err
 	}
 
-	//create config file
-	node := 0
-	for i, server := range servers {
-		for range server.Ips {
-			configToml, err := BuildConfig(pconf, details.Files, wallets, "/parity-poa/passwd", i)
+	//handle configuration file
+	err = helpers.CreateConfigs(servers, clients, buildState, "/parity-poa/config.toml",
+		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+			configToml, err := BuildConfig(pconf, details.Files, wallets, "/parity-poa/passwd", absoluteNodeNum)
 			if err != nil {
 				log.Println(err)
 				return nil, err
 			}
-
-			err = buildState.Write("config.toml", configToml)
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-
-			//Copy over the config file, spec file, and the accounts
-			err = clients[i].Scp("config.toml", "/home/appo/config.toml")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			defer clients[i].Run("rm -f /home/appo/config.toml")
-
-			err = clients[i].DockerCp(node, "/home/appo/config.toml", "/parity-poa/")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-
-			// err = helpers.CopyToAllNodes(servers, clients, buildState,
-			// 	"config.toml", "/parity-poa/",
-			// 	"spec.json", "/parity-poa/")
-			// if err != nil {
-			// 	log.Println(err)
-			// 	return nil, err
-			// }
-		}
-		node++
-		buildState.IncrementBuildProgress()
-	}
-	
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		for i, rawWallet := range rawWallets {
-
-			_, err = clients[serverNum].DockerExec(localNodeNum, fmt.Sprintf("bash -c 'echo \"%s\">/parity-poa/account%d'", rawWallet, i))
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-			//buildState.Defer(func(){clients[serverNum].DockerExec(localNodeNum, fmt.Sprintf("rm /parity/account%d", i))})
-
-			_, err = clients[serverNum].DockerExec(localNodeNum,
-				fmt.Sprintf("parity --base-path=/parity-poa/ --chain /parity-poa/spec.json --password=/parity-poa/passwd account import /parity-poa/account%d", i))
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-		}
-		buildState.IncrementBuildProgress()
-		return nil
-	})
+			return []byte(configToml), nil
+		})
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	//util.Write("tmp/config.toml",configToml)
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		defer buildState.IncrementBuildProgress()
 		return clients[serverNum].DockerExecdLog(localNodeNum,
