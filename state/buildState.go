@@ -87,6 +87,10 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	return out
 }
 
+/*
+Set a function to be executed at some point during the build.
+All these functions must complete before the build is considered finished.
+*/
 func (this *BuildState) Async(fn func()) {
 	this.asyncWaiter.Add(1)
 	go func() {
