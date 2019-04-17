@@ -102,14 +102,12 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 		return nil, err
 	}
 	//Start up the geth node
-	
+
 	err = setupGeth(clients[0], buildState, pconf, wallets)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	
-	
 
 	buildState.IncrementBuildProgress()
 
@@ -325,7 +323,7 @@ func setupGeth(client *util.SshClient, buildState *state.BuildState, pconf *Pari
 		_, err = client.KeepTryRun(
 			`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json" ` +
 				` -d '{ "method": "miner_start", "params": [8], "id": 3, "jsonrpc": "2.0" }'`)
-	}else{
+	} else {
 		_, err = client.KeepTryRun(
 			`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json" ` +
 				` -d '{ "method": "miner_stop", "params": [], "id": 3, "jsonrpc": "2.0" }'`)

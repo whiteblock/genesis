@@ -48,7 +48,7 @@ type ParityConf struct {
 	MaximumExtraDataSize      int64  `json:"maximumExtraDataSize"`
 	MinGasLimit               int64  `json:"minGasLimit"`
 	GasLimitBoundDivisor      int64  `json:"gasLimitBoundDivisor"`
-	DontMine				  bool	 `json:"dontMine"`
+	DontMine                  bool   `json:"dontMine"`
 }
 
 /**

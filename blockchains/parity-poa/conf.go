@@ -62,7 +62,7 @@ type ParityPOAConf struct {
 	GasLimit    int64  `json:"gasLimit"`
 	InitBalance string `json:"initBalance"`
 
-	PowNodes	int64	`json:"powNodes"`
+	PowNodes int64 `json:"powNodes"`
 }
 
 /**
