@@ -233,7 +233,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 				return err
 			}
 			counter++ //rc
-			fmt.Sprintf("%d\n",counter)
+			fmt.Sprintf("%d\n", counter)
 		}
 		return nil
 	})

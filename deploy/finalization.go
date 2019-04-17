@@ -1,10 +1,10 @@
 package deploy
 
 import (
+	helpers "../blockchains/helpers"
 	db "../db"
 	state "../state"
 	util "../util"
-	helpers "../blockchains/helpers"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -59,9 +59,9 @@ func copyOverSshKeys(servers []db.Server, clients []*util.SshClient, buildState 
 			log.Println(err)
 			return err
 		}
-		buildState.Defer(func(){clients[i].Run("rm /home/appo/node_key")})
+		buildState.Defer(func() { clients[i].Run("rm /home/appo/node_key") })
 	}
-	err = helpers.AllNodeExecCon(servers, buildState,func(serverNum int, localNodeNum int, absoluteNodeNum int) error{
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir -p /root/.ssh/")
 		if err != nil {
 			log.Println(err)
@@ -82,7 +82,7 @@ func copyOverSshKeys(servers []db.Server, clients []*util.SshClient, buildState 
 		}
 
 		_, err = clients[serverNum].DockerExecd(localNodeNum, "service ssh start")
-		
+
 		buildState.IncrementDeployProgress()
 		return err
 	})
