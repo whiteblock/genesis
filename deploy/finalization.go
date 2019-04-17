@@ -4,6 +4,7 @@ import (
 	db "../db"
 	state "../state"
 	util "../util"
+	helpers "../blockchains/helpers"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -51,49 +52,41 @@ func copyOverSshKeys(servers []db.Server, clients []*util.SshClient, buildState 
 		log.Println(err)
 		return err
 	}
-
-	for i, server := range servers {
+	for i := range servers {
 		clients[i].Run("rm /home/appo/node_key")
 		err = clients[i].InternalScp(conf.NodesPrivateKey, "/home/appo/node_key")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
-		defer clients[i].Run("rm /home/appo/node_key")
-
-		for j, _ := range server.Ips {
-			res, err := clients[i].DockerExec(j, "mkdir -p /root/.ssh/")
-			if err != nil {
-				log.Println(res)
-				log.Println(err)
-				return err
-			}
-
-			res, err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/node_key %s%d:/root/.ssh/id_rsa",
-				conf.NodePrefix, j))
-			if err != nil {
-				log.Println(res)
-				log.Println(err)
-				return err
-			}
-
-			res, err = clients[i].DockerExec(j, fmt.Sprintf(`bash -c 'echo "%s" >> /root/.ssh/authorized_keys'`, pubKey))
-			if err != nil {
-				log.Println(res)
-				log.Println(err)
-				return fmt.Errorf(res)
-			}
-
-			res, err = clients[i].DockerExecd(j, "service ssh start")
-			if err != nil {
-				log.Println(res)
-				log.Println(err)
-				return fmt.Errorf(res)
-			}
-			buildState.IncrementDeployProgress()
-		}
+		buildState.Defer(func(){clients[i].Run("rm /home/appo/node_key")})
 	}
-	return nil
+	err = helpers.AllNodeExecCon(servers, buildState,func(serverNum int, localNodeNum int, absoluteNodeNum int) error{
+		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir -p /root/.ssh/")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		_, err = clients[serverNum].Run(fmt.Sprintf("docker cp /home/appo/node_key %s%d:/root/.ssh/id_rsa",
+			conf.NodePrefix, localNodeNum))
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		_, err = clients[serverNum].DockerExec(localNodeNum, fmt.Sprintf(`bash -c 'echo "%s" >> /root/.ssh/authorized_keys'`, pubKey))
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		_, err = clients[serverNum].DockerExecd(localNodeNum, "service ssh start")
+		
+		buildState.IncrementDeployProgress()
+		return err
+	})
+	return err
 }
 
 /*

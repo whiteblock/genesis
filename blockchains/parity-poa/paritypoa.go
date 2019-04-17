@@ -166,7 +166,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		defer buildState.IncrementBuildProgress()
 		return clients[serverNum].DockerExecdLog(localNodeNum,
-			fmt.Sprintf(`parity --author=%s -c /parity-poa/config.toml --chain=/parity-poa/spec.json`, wallets[absoluteNodeNum]))
+			fmt.Sprintf(`parity --author=%s -c /parity-poa/config.toml --chain=/parity-poa/spec.json --fat-db on`, wallets[absoluteNodeNum]))
 	})
 	if err != nil {
 		log.Println(err)
@@ -215,14 +215,14 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 		log.Println(err)
 		return nil, err
 	}
-
+	counter := 0
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		ip := servers[serverNum].Ips[localNodeNum]
 		for i, enode := range enodes {
 			if i == absoluteNodeNum {
 				continue
 			}
-			_, err := clients[serverNum].KeepTryRun(
+			_, err := clients[serverNum].Run(
 				fmt.Sprintf(
 					`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
 						`'{ "method": "parity_addReservedPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
@@ -232,6 +232,8 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 				log.Println(err)
 				return err
 			}
+			counter++ //rc
+			fmt.Sprintf("%d\n",counter)
 		}
 		return nil
 	})
@@ -239,8 +241,8 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 		log.Println(err)
 		return nil, err
 	}
-
 	buildState.IncrementBuildProgress()
+	log.Println("DONNNNNNNNNNNNNNNNNNNNNNNNNNNNEEEEEEEEEEEEEEEEEEEEEEEee")
 
 	return nil, err
 }

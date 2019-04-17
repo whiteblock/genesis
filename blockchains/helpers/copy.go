@@ -161,14 +161,13 @@ func CopyBytesToNodeFiles(client *util.SshClient, buildState *state.BuildState, 
 func CreateConfigs(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState, dest string,
 	fn func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error)) error {
 
-	sem := semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
+	wg := sync.WaitGroup{}
 	node := 0
 	for i, server := range servers {
 		for j := range server.Ips {
-			sem.Acquire(ctx, 1)
+			wg.Add(1)
 			go func(i int, j int, node int) {
-				defer sem.Release(1)
+				defer wg.Done()
 				data, err := fn(i, j, node)
 				if err != nil {
 					log.Println(err)
@@ -187,7 +186,6 @@ func CreateConfigs(servers []db.Server, clients []*util.SshClient, buildState *s
 		}
 	}
 
-	sem.Acquire(ctx, conf.ThreadLimit)
-	sem.Release(conf.ThreadLimit)
+	wg.Wait()
 	return buildState.GetError()
 }
