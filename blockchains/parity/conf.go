@@ -48,6 +48,7 @@ type ParityConf struct {
 	MaximumExtraDataSize      int64  `json:"maximumExtraDataSize"`
 	MinGasLimit               int64  `json:"minGasLimit"`
 	GasLimitBoundDivisor      int64  `json:"gasLimitBoundDivisor"`
+	DontMine				  bool	 `json:"dontMine"`
 }
 
 /**
@@ -242,6 +243,11 @@ func NewConf(data map[string]interface{}) (*ParityConf, error) {
 	}
 
 	err = util.GetJSONInt64(data, "gasLimitBoundDivisor", &out.GasLimitBoundDivisor)
+	if err != nil {
+		return nil, err
+	}
+
+	err = util.GetJSONBool(data, "dontMine", &out.DontMine)
 	if err != nil {
 		return nil, err
 	}

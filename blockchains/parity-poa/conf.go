@@ -61,6 +61,8 @@ type ParityPOAConf struct {
 	Difficulty  int64  `json:"difficulty"`
 	GasLimit    int64  `json:"gasLimit"`
 	InitBalance string `json:"initBalance"`
+
+	PowNodes	int64	`json:"powNodes"`
 }
 
 /**
@@ -149,9 +151,11 @@ func NewConf(data map[string]interface{}) (*ParityPOAConf, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// err = util.GetJSONBool(data, "forceSealing", &out.ForceSealing)
-
+	//PowNodes
+	err = util.GetJSONInt64(data, "powNodes", &out.PowNodes)
+	if err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 

@@ -35,5 +35,6 @@
     "blockReward":5000000000000000000,
     "maximumExtraDataSize":32,
     "minGasLimit":5000,
-    "gasLimitBoundDivisor":1024
+    "gasLimitBoundDivisor":1024,
+    "dontMine":false
 }

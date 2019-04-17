@@ -102,12 +102,14 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 		return nil, err
 	}
 	//Start up the geth node
-
-	err = setupGeth(clients[0], buildState, pconf, wallets)
-	if err != nil {
-		log.Println(err)
-		return nil, err
+	if !pconf.DontMine {
+		err = setupGeth(clients[0], buildState, pconf, wallets)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
 	}
+	
 
 	buildState.IncrementBuildProgress()
 

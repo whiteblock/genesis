@@ -36,4 +36,5 @@
     ["maximumExtraDataSize","int"],
     ["minGasLimit","int"],
     ["gasLimitBoundDivisor","int"]
+    ["dontMine","bool"]
 ]
