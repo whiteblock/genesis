@@ -242,7 +242,6 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 		return nil, err
 	}
 	buildState.IncrementBuildProgress()
-	log.Println("DONNNNNNNNNNNNNNNNNNNNNNNNNNNNEEEEEEEEEEEEEEEEEEEEEEEee")
 
 	return nil, err
 }
