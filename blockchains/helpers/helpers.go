@@ -4,8 +4,6 @@ import (
 	db "../../db"
 	state "../../state"
 	util "../../util"
-	"context"
-	"golang.org/x/sync/semaphore"
 	"log"
 	"sync"
 )
@@ -45,12 +43,11 @@ func AllNodeExecCon(servers []db.Server, buildState *state.BuildState,
 func AllServerExecCon(servers []db.Server, buildState *state.BuildState,
 	fn func(serverNum int, server *db.Server) error) error {
 
-	sem := semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
+	wg := sync.WaitGroup{}
 	for i, server := range servers {
-		sem.Acquire(ctx, 1)
+		wg.Add(1)
 		go func(serverNum int, server *db.Server) {
-			defer sem.Release(1)
+			defer wg.Done()
 			err := fn(serverNum, server)
 			if err != nil {
 				log.Println(err)
@@ -59,9 +56,6 @@ func AllServerExecCon(servers []db.Server, buildState *state.BuildState,
 			}
 		}(i, &server)
 	}
-
-	sem.Acquire(ctx, conf.ThreadLimit)
-	sem.Release(conf.ThreadLimit)
-
+	wg.Wait()
 	return buildState.GetError()
 }

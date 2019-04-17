@@ -19,14 +19,12 @@ func CopyAllToServers(clients []*util.SshClient, buildState *state.BuildState, s
 	if len(srcDst)%2 != 0 {
 		return fmt.Errorf("Invalid number of variadic arguments, must be given an even number of them")
 	}
-	sem := semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
-
+	wg := sync.WaitGroup{}
 	for i := range clients {
 		for j := 0; j < len(srcDst)/2; j++ {
-			sem.Acquire(ctx, 1)
+			wg.Add(1)
 			go func(i int, j int) {
-				defer sem.Release(1)
+				defer wg.Done()
 				buildState.Defer(func() { clients[i].Run(fmt.Sprintf("rm -rf %s", srcDst[2*j+1])) })
 				err := clients[i].Scp(srcDst[2*j], srcDst[2*j+1])
 				if err != nil {
@@ -37,9 +35,7 @@ func CopyAllToServers(clients []*util.SshClient, buildState *state.BuildState, s
 			}(i, j)
 		}
 	}
-
-	sem.Acquire(ctx, conf.ThreadLimit)
-	sem.Release(conf.ThreadLimit)
+	wg.Wait()
 	return buildState.GetError()
 }
 
@@ -120,7 +116,7 @@ func SingleCp(client *util.SshClient, buildState *state.BuildState, localNodeId 
 		return err
 	}
 	intermediateDst := "/home/appo/" + tmpFilename
-	buildState.Defer(func() { client.Run("rm -rf " + intermediateDst) })
+	buildState.Defer(func() { client.Run("rm " + intermediateDst) })
 	err = client.Scp(tmpFilename, intermediateDst)
 	if err != nil {
 		log.Println(err)
@@ -137,13 +133,12 @@ type FileDest struct {
 }
 
 func CopyBytesToNodeFiles(client *util.SshClient, buildState *state.BuildState, transfers ...FileDest) error {
-	sem := semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
+	wg := sync.WaitGroup{}
 
 	for _, transfer := range transfers {
-		sem.Acquire(ctx, 1)
+		wg.Add(1)
 		go func(transfer FileDest) {
-			defer sem.Release(1)
+			defer wg.Done()
 			err := SingleCp(client, buildState, transfer.LocalNodeId, transfer.Data, transfer.Dest)
 			if err != nil {
 				log.Println(err)
@@ -152,9 +147,7 @@ func CopyBytesToNodeFiles(client *util.SshClient, buildState *state.BuildState, 
 			}
 		}(transfer)
 	}
-
-	sem.Acquire(ctx, conf.ThreadLimit)
-	sem.Release(conf.ThreadLimit)
+	wg.Wait()
 	return buildState.GetError()
 }
 
