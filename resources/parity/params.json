@@ -35,6 +35,6 @@
     ["blockReward","int"],
     ["maximumExtraDataSize","int"],
     ["minGasLimit","int"],
-    ["gasLimitBoundDivisor","int"]
+    ["gasLimitBoundDivisor","int"],
     ["dontMine","bool"]
 ]
