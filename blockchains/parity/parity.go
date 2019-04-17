@@ -315,16 +315,20 @@ func setupGeth(client *util.SshClient, buildState *state.BuildState, pconf *Pari
 	buildState.IncrementBuildProgress()
 
 	_, err = client.Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --networkid %d --rpc  --rpcaddr 0.0.0.0`+
-		` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
+		` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --unlock="%s"`+
 		` --password /geth/passwd --etherbase %s --nodiscover`, pconf.NetworkId, address, address))
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 	if !pconf.DontMine {
-		/*_, err = client.KeepTryRun(
+		_, err = client.KeepTryRun(
 			`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json" ` +
-				` -d '{ "method": "miner_start", "params": [8], "id": 3, "jsonrpc": "2.0" }'`)*/
+				` -d '{ "method": "miner_start", "params": [8], "id": 3, "jsonrpc": "2.0" }'`)
+	}else{
+		_, err = client.KeepTryRun(
+			`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json" ` +
+				` -d '{ "method": "miner_stop", "params": [], "id": 3, "jsonrpc": "2.0" }'`)
 	}
 	return err
 }
