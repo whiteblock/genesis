@@ -344,14 +344,7 @@ func peerWithGeth(client *util.SshClient, buildState *state.BuildState, enodes [
 			return err
 		}
 	}
-	_, err := client.KeepTryRun(
-		`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json" ` +
-			` -d '{ "method": "miner_start", "params": [8], "id": 4, "jsonrpc": "2.0" }'`)
 
-	if err != nil {
-		log.Println(err)
-		return err
-	}
 	buildState.IncrementBuildProgress()
 	return nil
 }
