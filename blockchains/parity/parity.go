@@ -326,8 +326,7 @@ func setupGeth(client *util.SshClient, buildState *state.BuildState, pconf *Pari
 	if len(addresses) < 1 {
 		return fmt.Errorf("Unable to get addresses")
 	}
-	address := addresses[0]
-	address = address[1 : len(address)-1]
+	address =  addresses[0][1 : len( addresses[0])-1]
 
 	_, err = client.Run(
 		fmt.Sprintf("docker exec wb_service0 geth --datadir /geth/ --networkid %d init /geth/genesis.json", pconf.NetworkId))
