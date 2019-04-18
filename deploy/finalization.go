@@ -1,9 +1,10 @@
 package deploy
 
 import (
+	helpers "../blockchains/helpers"
 	db "../db"
+	ssh "../ssh"
 	state "../state"
-	util "../util"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,7 +14,7 @@ import (
 /*
    Finalization methods for the docker build process. Will be run immediately following their deployment
 */
-func finalize(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) error {
+func finalize(servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) error {
 	if conf.HandleNodeSshKeys {
 		err := copyOverSshKeys(servers, clients, buildState)
 		if err != nil {
@@ -28,7 +29,7 @@ func finalize(servers []db.Server, clients []*util.SshClient, buildState *state.
 /*
    Finalization methods for the docker build process. Will be run immediately following their deployment
 */
-func finalizeNewNodes(servers []db.Server, clients []*util.SshClient, newNodes map[int][]string, buildState *state.BuildState) error {
+func finalizeNewNodes(servers []db.Server, clients []*ssh.Client, newNodes map[int][]string, buildState *state.BuildState) error {
 	if conf.HandleNodeSshKeys {
 		err := copyOverSshKeysToNewNodes(servers, clients, newNodes, buildState)
 		if err != nil {
@@ -43,7 +44,7 @@ func finalizeNewNodes(servers []db.Server, clients []*util.SshClient, newNodes m
    Copy over the ssh public key to each node to allow for the user to ssh into each node.
    The public key comes from the nodes public key specified in the configuration
 */
-func copyOverSshKeys(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) error {
+func copyOverSshKeys(servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) error {
 	tmp, err := ioutil.ReadFile(conf.NodesPublicKey)
 	pubKey := string(tmp)
 	pubKey = strings.Trim(pubKey, "\t\n\v\r")
@@ -51,55 +52,47 @@ func copyOverSshKeys(servers []db.Server, clients []*util.SshClient, buildState 
 		log.Println(err)
 		return err
 	}
-
-	for i, server := range servers {
+	for i := range servers {
 		clients[i].Run("rm /home/appo/node_key")
 		err = clients[i].InternalScp(conf.NodesPrivateKey, "/home/appo/node_key")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
-		defer clients[i].Run("rm /home/appo/node_key")
-
-		for j, _ := range server.Ips {
-			res, err := clients[i].DockerExec(j, "mkdir -p /root/.ssh/")
-			if err != nil {
-				log.Println(res)
-				log.Println(err)
-				return err
-			}
-
-			res, err = clients[i].Run(fmt.Sprintf("docker cp /home/appo/node_key %s%d:/root/.ssh/id_rsa",
-				conf.NodePrefix, j))
-			if err != nil {
-				log.Println(res)
-				log.Println(err)
-				return err
-			}
-
-			res, err = clients[i].DockerExec(j, fmt.Sprintf(`bash -c 'echo "%s" >> /root/.ssh/authorized_keys'`, pubKey))
-			if err != nil {
-				log.Println(res)
-				log.Println(err)
-				return fmt.Errorf(res)
-			}
-
-			res, err = clients[i].DockerExecd(j, "service ssh start")
-			if err != nil {
-				log.Println(res)
-				log.Println(err)
-				return fmt.Errorf(res)
-			}
-			buildState.IncrementDeployProgress()
-		}
+		buildState.Defer(func() { clients[i].Run("rm /home/appo/node_key") })
 	}
-	return nil
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir -p /root/.ssh/")
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		_, err = clients[serverNum].Run(fmt.Sprintf("docker cp /home/appo/node_key %s%d:/root/.ssh/id_rsa",
+			conf.NodePrefix, localNodeNum))
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		_, err = clients[serverNum].DockerExec(localNodeNum, fmt.Sprintf(`bash -c 'echo "%s" >> /root/.ssh/authorized_keys'`, pubKey))
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		_, err = clients[serverNum].DockerExecd(localNodeNum, "service ssh start")
+
+		buildState.IncrementDeployProgress()
+		return err
+	})
+	return err
 }
 
 /*
    Functions like copyOverSshKeys, but with the add nodes format.
 */
-func copyOverSshKeysToNewNodes(servers []db.Server, clients []*util.SshClient, newNodes map[int][]string, buildState *state.BuildState) error {
+func copyOverSshKeysToNewNodes(servers []db.Server, clients []*ssh.Client, newNodes map[int][]string, buildState *state.BuildState) error {
 	tmp, err := ioutil.ReadFile(conf.NodesPublicKey)
 	pubKey := string(tmp)
 	pubKey = strings.Trim(pubKey, "\t\n\v\r")

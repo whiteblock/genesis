@@ -8,7 +8,7 @@ RUN cd /genesis &&\
 
 FROM ubuntu:latest as final
 
-RUN mkdir -p /genesis && apt-get update && apt-get install -y openssh-client
+RUN mkdir -p /genesis && apt-get update && apt-get install -y openssh-client ca-certificates
 WORKDIR /genesis
 
 COPY --from=built /genesis/resources /genesis/resources

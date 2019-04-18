@@ -2,6 +2,7 @@ package rchain
 
 import (
 	db "../../db"
+	ssh "../../ssh"
 	state "../../state"
 	util "../../util"
 	helpers "../helpers"
@@ -18,7 +19,7 @@ func init() {
 	conf = util.GetConfig()
 }
 
-func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) ([]string, error) {
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) ([]string, error) {
 
 	rchainConf, err := NewRChainConf(details.Params)
 	if err != nil {
@@ -171,7 +172,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	return nil, err
 }
 
-func createFirstConfigFile(details *db.DeploymentDetails, client *util.SshClient, node int, rchainConf *RChainConf, influxIP string, buildState *state.BuildState) error {
+func createFirstConfigFile(details *db.DeploymentDetails, client *ssh.Client, node int, rchainConf *RChainConf, influxIP string, buildState *state.BuildState) error {
 
 	raw := map[string]interface{}{
 		"influxIp":       influxIP,
@@ -205,7 +206,7 @@ func createFirstConfigFile(details *db.DeploymentDetails, client *util.SshClient
 	return client.DockerCp(node, "/home/appo/rnode.conf", "/datadir/rnode.conf")
 }
 
-func Add(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }

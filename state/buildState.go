@@ -367,3 +367,25 @@ func (this *BuildState) IncrementBuildProgress() {
 func (this *BuildState) SetBuildStage(stage string) {
 	this.BuildStage = stage
 }
+
+func (this *BuildState) Reset() {
+
+	this.building = true
+	this.Frozen = false
+	this.stopping = false
+
+	this.breakpoints = []float64{}
+	this.progressIncrement = 0.0
+
+	this.files = []string{}
+	this.defers = []func(){}
+
+	this.BuildingProgress = 0.00
+	this.BuildError = CustomError{What: "", err: nil}
+	this.BuildStage = ""
+
+	err := os.MkdirAll("/tmp/"+this.BuildId, 0755)
+	if err != nil {
+		panic(err) //Fatal error
+	}
+}

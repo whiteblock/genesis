@@ -23,16 +23,45 @@ import (
    Sends an http request and returns the body. Gives an error if the http request failed
    or returned a non success code.
 */
-func HttpRequest(method string, url string, bodyData string) (string, error) {
+func HttpRequest(method string, url string, bodyData string) ([]byte, error) {
 	//log.Println("URL IS "+url)
+	body := strings.NewReader(bodyData)
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	req.Close = true
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	buf := new(bytes.Buffer)
+
+	_, err = buf.ReadFrom(resp.Body)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf(buf.String())
+	}
+	return []byte(buf.String()), nil
+}
+
+func JwtHttpRequest(method string, url string, jwt string, bodyData string) (string, error) {
 	body := strings.NewReader(bodyData)
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		log.Println(err)
 		return "", err
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", jwt))
 	req.Close = true
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -65,6 +94,33 @@ func ExtractJwt(r *http.Request) (string, error) {
 		return "", fmt.Errorf("Invalid Auth header")
 	}
 	return splt[1], nil
+}
+
+func GetKidFromJwt(jwt string) (string, error) {
+	if len(jwt) == 0 {
+		return "", fmt.Errorf("Given empty string for jwt")
+	}
+	headerb64 := strings.Split(jwt, ".")[0]
+	headerJson, err := base64.StdEncoding.DecodeString(headerb64)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	var header map[string]interface{}
+	err = json.Unmarshal(headerJson, &header)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	kidAsI, ok := header["kid"]
+	if !ok {
+		return "", fmt.Errorf("JWT does not have kid in header")
+	}
+	kid, ok := kidAsI.(string)
+	if !ok {
+		return "", fmt.Errorf("kid is not string as expected.")
+	}
+	return kid, nil
 }
 
 func GetUUIDString() (string, error) {
@@ -315,7 +371,7 @@ func ConvertToStringMap(in interface{}) map[string]string {
 
 func GetBlockchainConfig(blockchain string, file string, files map[string]string) ([]byte, error) {
 	if files != nil {
-		res, exists := files["genesis.json"]
+		res, exists := files[file]
 		if exists {
 			return base64.StdEncoding.DecodeString(res)
 		}

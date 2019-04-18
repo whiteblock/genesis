@@ -3,6 +3,7 @@ package deploy
 import (
 	helpers "../blockchains/helpers"
 	db "../db"
+	ssh "../ssh"
 	state "../state"
 	util "../util"
 	"encoding/base64"
@@ -11,14 +12,14 @@ import (
 	"sync"
 )
 
-func distributeNibbler(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) {
+func distributeNibbler(servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) {
 	buildState.Async(
 		func() {
 			nibbler, err := util.HttpRequest("GET", "https://storage.googleapis.com/genesis-public/nibbler/master/bin/linux/amd64/nibbler", "")
 			if err != nil {
 				log.Println(err)
 			}
-			err = buildState.Write("nibbler", nibbler)
+			err = buildState.Write("nibbler", string(nibbler))
 			if err != nil {
 				log.Println(err)
 			}
@@ -38,7 +39,7 @@ func distributeNibbler(servers []db.Server, clients []*util.SshClient, buildStat
 }
 
 func handleDockerBuildRequest(blockchain string, prebuild map[string]interface{},
-	clients []*util.SshClient, buildState *state.BuildState) error {
+	clients []*ssh.Client, buildState *state.BuildState) error {
 
 	_, hasDockerfile := prebuild["dockerfile"] //Must be base64
 	if !hasDockerfile {
@@ -71,7 +72,7 @@ func handleDockerBuildRequest(blockchain string, prebuild map[string]interface{}
 	wg := sync.WaitGroup{}
 	for _, client := range clients {
 		wg.Add(1)
-		go func(client *util.SshClient) {
+		go func(client *ssh.Client) {
 			defer wg.Done()
 
 			_, err := client.Run(fmt.Sprintf("docker build /home/appo/ -t %s", imageName))
@@ -91,7 +92,7 @@ func handleDockerBuildRequest(blockchain string, prebuild map[string]interface{}
 	return nil
 }
 
-func handlePreBuildExtras(buildConf *db.DeploymentDetails, clients []*util.SshClient, buildState *state.BuildState) error {
+func handlePreBuildExtras(buildConf *db.DeploymentDetails, clients []*ssh.Client, buildState *state.BuildState) error {
 	if buildConf.Extras == nil {
 		return nil //Nothing to do
 	}

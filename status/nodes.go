@@ -2,6 +2,7 @@ package status
 
 import (
 	db "../db"
+	ssh "../ssh"
 	util "../util"
 	"context"
 	"fmt"
@@ -50,7 +51,7 @@ func FindNodeIndex(status []NodeStatus, name string, serverId int) int {
 /*
    Gets the cpu usage of a node
 */
-func SumResUsage(c *util.SshClient, name string) (Comp, error) {
+func SumResUsage(c *ssh.Client, name string) (Comp, error) {
 	res, err := c.Run(fmt.Sprintf("docker exec %s ps aux --no-headers | awk '{print $3,$5,$6}'", name))
 	if err != nil {
 		log.Println(err)
@@ -127,8 +128,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 	ctx := context.TODO()
 
 	for _, server := range servers {
-		client, err := util.NewSshClient(server.Addr, server.Id)
-		defer client.Close()
+		client, err := GetClient(server.Id)
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -150,7 +150,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 				log.Printf("name=\"%s\",server=%d\n", name, server.Id)
 			}
 			sem.Acquire(ctx, 1)
-			go func(client *util.SshClient, name string, index int) {
+			go func(client *ssh.Client, name string, index int) {
 				defer sem.Release(1)
 				resUsage, err := SumResUsage(client, name)
 				if err != nil {

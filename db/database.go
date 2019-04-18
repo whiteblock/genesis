@@ -79,7 +79,7 @@ func dbInit() {
 		"ip TEXT NOT NULL",
 		"label TEXT")
 
-	buildSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s,%s,%s);",
+	buildSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s,%s);",
 		BuildsTable,
 		"id INTEGER PRIMARY KEY AUTOINCREMENT",
 		"testnet TEXT",
@@ -89,7 +89,11 @@ func dbInit() {
 		"image TEXT",
 		"params TEXT",
 		"resources TEXT",
-		"environment TEXT")
+		"environment TEXT",
+
+		"logs TEXT",
+		"extras TEXT",
+		"kid TEXT")
 
 	versionSchema := fmt.Sprintf("CREATE TABLE meta (%s,%s);",
 		"key TEXT",

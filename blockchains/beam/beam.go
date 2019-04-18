@@ -2,12 +2,15 @@ package beam
 
 import (
 	db "../../db"
+	ssh "../../ssh"
 	state "../../state"
 	util "../../util"
+	helpers "../helpers"
 	"fmt"
 	"log"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 var conf *util.Config
@@ -18,7 +21,7 @@ func init() {
 
 const port int = 10000
 
-func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	buildState *state.BuildState) ([]string, error) {
 
 	beamConf, err := NewConf(details.Params)
@@ -30,29 +33,37 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 
 	buildState.SetBuildStage("Setting up the wallets")
 	/**Set up wallets**/
-	ownerKeys := []string{}
-	secretMinerKeys := []string{}
+	ownerKeys := make([]string, details.Nodes)
+	secretMinerKeys := make([]string, details.Nodes)
+	mux := sync.Mutex{}
 	// walletIDs := []string{}
-	for i, server := range servers {
-		for localId, _ := range server.Ips {
-			clients[i].DockerExec(localId, "beam-wallet --command init --pass password") //ign err
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 
-			res1, _ := clients[i].DockerExec(localId, "beam-wallet --command export_owner_key --pass password") //ign err
+		clients[serverNum].DockerExec(localNodeNum, "beam-wallet --command init --pass password") //ign err
 
-			buildState.IncrementBuildProgress()
+		res1, _ := clients[serverNum].DockerExec(localNodeNum, "beam-wallet --command export_owner_key --pass password") //ign err
 
-			re := regexp.MustCompile(`(?m)^Owner([A-z|0-9|\s|\:|\/|\+|\=])*$`)
-			ownKLine := re.FindAllString(res1, -1)[0]
-			ownerKeys = append(ownerKeys, strings.Split(ownKLine, " ")[3])
+		buildState.IncrementBuildProgress()
 
-			res2, _ := clients[i].DockerExec(localId, "beam-wallet --command export_miner_key --subkey=1 --pass password") //ign err
+		re := regexp.MustCompile(`(?m)^Owner([A-z|0-9|\s|\:|\/|\+|\=])*$`)
+		ownKLine := re.FindAllString(res1, -1)[0]
 
-			re = regexp.MustCompile(`(?m)^Secret([A-z|0-9|\s|\:|\/|\+|\=])*$`)
-			secMLine := re.FindAllString(res2, -1)[0]
-			secretMinerKeys = append(secretMinerKeys, strings.Split(secMLine, " ")[3])
-			buildState.IncrementBuildProgress()
-		}
-	}
+		mux.Lock()
+		ownerKeys[absoluteNodeNum] = strings.Split(ownKLine, " ")[3]
+		mux.Unlock()
+
+		res2, _ := clients[serverNum].DockerExec(localNodeNum, "beam-wallet --command export_miner_key --subkey=1 --pass password") //ign err
+
+		re = regexp.MustCompile(`(?m)^Secret([A-z|0-9|\s|\:|\/|\+|\=])*$`)
+		secMLine := re.FindAllString(res2, -1)[0]
+
+		mux.Lock()
+		secretMinerKeys[absoluteNodeNum] = strings.Split(secMLine, " ")[3]
+		mux.Unlock()
+
+		buildState.IncrementBuildProgress()
+		return nil
+	})
 
 	ips := []string{}
 	for _, server := range servers {
@@ -62,11 +73,25 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	}
 	buildState.SetBuildStage("Creating node configuration files")
 	/**Create node config files**/
-	node := 0
-	for i, server := range servers {
-		for range server.Ips {
-			beam_node_config, err := makeNodeConfig(beamConf, ownerKeys[node], secretMinerKeys[node])
 
+	err = helpers.CreateConfigs(servers, clients, buildState, "/beam/beam-node.cfg",
+		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+			beam_node_config, err := makeNodeConfig(beamConf, ownerKeys[absoluteNodeNum], secretMinerKeys[absoluteNodeNum])
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
+			for _, ip := range append(ips[:absoluteNodeNum], ips[absoluteNodeNum+1:]...) {
+				beam_node_config += fmt.Sprintf("peer=%s:%d\n", ip, port)
+			}
+			return []byte(beam_node_config), nil
+		})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	err = helpers.CreateConfigs(servers, clients, buildState, "/beam/beam-wallet.cfg",
+		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
 			beam_wallet_config := []string{
 				"# Emission.Value0=800000000",
 				"# Emission.Drop0=525600",
@@ -83,83 +108,32 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 				"# AllowPublicUtxos=0",
 				"# FakePoW=0",
 			}
-			for _, ip := range append(ips[:node], ips[node+1:]...) {
-				beam_node_config += fmt.Sprintf("peer=%s:%d\n", ip, port)
-			}
-			err = buildState.Write("beam-node.cfg", beam_node_config)
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			err = buildState.Write("beam-wallet.cfg", util.CombineConfig(beam_wallet_config))
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-
-			err = clients[i].Scp("beam-node.cfg", "/home/appo/beam-node.cfg")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			defer clients[i].Run("rm -f /home/appo/beam-node.cfg")
-
-			err = clients[i].Scp("beam-wallet.cfg", "/home/appo/beam-wallet.cfg")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			defer clients[i].Run("rm -f /home/appo/beam-wallet.cfg")
-
-			err = clients[i].DockerCp(node, "/home/appo/beam-node.cfg", "/beam/")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-
-			err = clients[i].DockerCp(node, "/home/appo/beam-wallet.cfg", "/beam/")
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-
-			// fmt.Println(config)
-			node++
-			buildState.IncrementBuildProgress()
-		}
+			return []byte(util.CombineConfig(beam_wallet_config)), nil
+		})
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
 
-	totNodes := 0
 	buildState.SetBuildStage("Starting beam")
-	for i, server := range servers {
-		for localId, ip := range server.Ips {
-			if totNodes >= int(beamConf.Validators) {
-				_, err := clients[i].DockerExecd(localId, "beam-node --mining_threads 1")
-				if err != nil {
-					log.Println(err)
-					return nil, err
-				}
-			} else {
-				_, err := clients[i].DockerExecd(localId, "beam-node")
-				if err != nil {
-					log.Println(err)
-					return nil, err
-				}
-
-			}
-			err = clients[i].DockerExecdLog(localId, fmt.Sprintf("beam-wallet --command listen -n %s:%d --pass password", ip, port))
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			buildState.IncrementBuildProgress()
-			totNodes++
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		defer buildState.IncrementBuildProgress()
+		miningFlag := ""
+		if absoluteNodeNum >= int(beamConf.Validators) {
+			miningFlag = " --mining_threads 1"
 		}
-	}
-	return nil, nil
+		_, err := clients[serverNum].DockerExecd(localNodeNum, fmt.Sprintf("beam-node%s", miningFlag))
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		return clients[serverNum].DockerExecdLog(localNodeNum, fmt.Sprintf("beam-wallet --command listen -n 0.0.0.0:%d --pass password", port))
+	})
+
+	return nil, err
 }
 
-func Add(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }

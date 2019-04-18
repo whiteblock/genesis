@@ -2,6 +2,7 @@ package eos
 
 import (
 	db "../../db"
+	ssh "../../ssh"
 	state "../../state"
 	util "../../util"
 	helpers "../helpers"
@@ -24,7 +25,7 @@ func init() {
  * @param  int      nodes       The number of producers to make
  * @param  []Server servers     The list of relevant servers
  */
-func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) ([]string, error) {
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) ([]string, error) {
 	if details.Nodes < 2 {
 		return nil, fmt.Errorf("Cannot build less than 2 nodes")
 	}
@@ -71,7 +72,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 		log.Println(err)
 		return nil, err
 	}
-	km.AddGenerator(func(client *util.SshClient) (util.KeyPair, error) {
+	km.AddGenerator(func(client *ssh.Client) (util.KeyPair, error) {
 		data, err := client.DockerExec(0, "cleos create key --to-console | awk '{print $3}'")
 		if err != nil {
 			return util.KeyPair{}, err
@@ -107,25 +108,8 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 		log.Println(err)
 		return nil, err
 	}
-	buildState.SetBuildStage("Building genesis block")
-	genesis, err := eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey, details)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
+	//buildState.SetBuildStage("Starting up keos")
 
-	err = buildState.Write("genesis.json", genesis)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	err = buildState.Write("config.ini", eosconf.GenerateConfig())
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	buildState.IncrementBuildProgress()
 	/**Start keos and add all the key pairs for all the nodes**/
 	buildState.SetBuildStage("Generating key pairs")
 
@@ -174,31 +158,26 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	buildState.IncrementBuildProgress()
 
 	buildState.SetBuildStage("Building genesis block")
-
-	err = helpers.CopyAllToServers(clients, buildState,
-		"genesis.json", "/home/appo/genesis.json",
-		"config.ini", "/home/appo/config.ini")
+	genesis, err := eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey, details)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
+	buildState.IncrementBuildProgress()
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		defer buildState.IncrementBuildProgress()
 		_, err = clients[serverNum].DockerExec(localNodeNum, "mkdir /datadir/")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		err = clients[serverNum].DockerCp(localNodeNum, "/home/appo/genesis.json", "/datadir/")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		return clients[serverNum].DockerCp(localNodeNum, "/home/appo/config.ini", "/datadir/")
-
+		return err
 	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	err = helpers.CopyBytesToAllNodes(servers, clients, buildState,
+		genesis, "/datadir/genesis.json",
+		eosconf.GenerateConfig(), "/datadir/config.ini")
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -590,12 +569,12 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	return out, nil
 }
 
-func Add(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }
 
-func eos_createWallet(client *util.SshClient, node int) (string, error) {
+func eos_createWallet(client *ssh.Client, node int) (string, error) {
 	data, err := client.DockerExec(node, "cleos wallet create --to-console | tail -n 1")
 	if err != nil {
 		return "", err

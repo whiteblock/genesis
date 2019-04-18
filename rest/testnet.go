@@ -126,10 +126,10 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		//Ignore error and continue
 	}
-	err = state.AcquireBuilding(tn.Servers, testnetId)
+	_, err = state.GetBuildStateById(testnetId)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, "There is a build in progress", 409)
+		http.Error(w, "Testnet is down, build a new one", 409)
 		return
 	}
 	w.Write([]byte("Adding the nodes"))

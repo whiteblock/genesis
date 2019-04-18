@@ -2,6 +2,7 @@ package parity
 
 import (
 	db "../../db"
+	ssh "../../ssh"
 	state "../../state"
 	util "../../util"
 	helpers "../helpers"
@@ -23,12 +24,11 @@ func init() {
 /*
 Build builds out a fresh new ethereum test network
 */
-func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	buildState *state.BuildState) ([]string, error) {
 
 	mux := sync.Mutex{}
 	pconf, err := NewConf(details.Params)
-	fmt.Printf("%#v\n", *pconf)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -46,26 +46,20 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	}
 	buildState.IncrementBuildProgress()
 
-	/**Create the Password file**/
+	/**Create the Password file and copy it over**/
 	{
 		var data string
 		for i := 1; i <= details.Nodes; i++ {
 			data += "second\n"
 		}
-		err = buildState.Write("passwd", data)
+		buildState.IncrementBuildProgress()
+		err = helpers.CopyBytesToAllNodes(servers, clients, buildState, data, "/parity/passwd")
 		if err != nil {
 			log.Println(err)
 			return nil, err
 		}
+		buildState.IncrementBuildProgress()
 	}
-	buildState.IncrementBuildProgress()
-	/**Copy over the password file**/
-	err = helpers.CopyToAllNodes(servers, clients, buildState, "passwd", "/parity/")
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	buildState.IncrementBuildProgress()
 
 	/**Create the wallets**/
 	wallets := make([]string, details.Nodes)
@@ -101,59 +95,27 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 		log.Println(err)
 		return nil, err
 	}
-	//Start up the geth node
-
-	err = setupGeth(clients[0], buildState, pconf, wallets)
+	/***********************************************************SPLIT************************************************************/
+	switch pconf.Consensus {
+	case "ethash":
+		err = setupPOW(details, servers, clients, buildState, pconf, wallets)
+	case "poa":
+		err = setupPOA(details, servers, clients, buildState, pconf, wallets)
+	}
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	buildState.IncrementBuildProgress()
+	/***********************************************************SPLIT************************************************************/
 
-	//Create the chain spec files
-	spec, err := BuildSpec(pconf, details.Files, wallets)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	err = buildState.Write("spec.json", spec)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	//create config file
-	configToml, err := BuildConfig(pconf, details.Files, wallets, "/parity/passwd")
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	err = buildState.Write("config.toml", configToml)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	//Copy over the config file, spec file, and the accounts
-	err = helpers.CopyToAllNodes(servers, clients, buildState,
-		"config.toml", "/parity/",
-		"spec.json", "/parity/")
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		for i, rawWallet := range rawWallets {
-
 			_, err = clients[serverNum].DockerExec(localNodeNum, fmt.Sprintf("bash -c 'echo \"%s\">/parity/account%d'", rawWallet, i))
 			if err != nil {
 				log.Println(err)
 				return err
 			}
-			//buildState.Defer(func(){clients[serverNum].DockerExec(localNodeNum, fmt.Sprintf("rm /parity/account%d", i))})
 
 			_, err = clients[serverNum].DockerExec(localNodeNum,
 				fmt.Sprintf("parity --base-path=/parity/ --chain /parity/spec.json --password=/parity/passwd account import /parity/account%d", i))
@@ -249,18 +211,76 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	}
 
 	buildState.IncrementBuildProgress()
-
-	return nil, peerWithGeth(clients[0], buildState, enodes)
+	if pconf.Consensus == "ethash" {
+		return nil, peerWithGeth(clients[0], buildState, enodes)
+	}
+	return nil, nil
 }
 
 /***************************************************************************************************************************/
 
-func Add(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }
 
-func setupGeth(client *util.SshClient, buildState *state.BuildState, pconf *ParityConf, wallets []string) error {
+func setupPOA(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
+	buildState *state.BuildState, pconf *ParityConf, wallets []string) error {
+	//Create the chain spec files
+	spec, err := BuildPoaSpec(pconf, details.Files, wallets)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	err = helpers.CopyBytesToAllNodes(servers, clients, buildState, spec, "/parity/spec.json")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	//handle configuration file
+	return helpers.CreateConfigs(servers, clients, buildState, "/parity/config.toml",
+		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+			configToml, err := BuildPoaConfig(pconf, details.Files, wallets, "/parity/passwd", absoluteNodeNum)
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
+			return []byte(configToml), nil
+		})
+}
+
+func setupPOW(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
+	buildState *state.BuildState, pconf *ParityConf, wallets []string) error {
+	//Start up the geth node
+	err := setupGeth(clients[0], buildState, pconf, wallets)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	buildState.IncrementBuildProgress()
+
+	//Create the chain spec files
+	spec, err := BuildSpec(pconf, details.Files, wallets)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	//create config file
+	configToml, err := BuildConfig(pconf, details.Files, wallets, "/parity/passwd")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	//Copy over the config file, spec file, and the accounts
+	return helpers.CopyBytesToAllNodes(servers, clients, buildState,
+		configToml, "/parity/config.toml",
+		spec, "/parity/spec.json")
+}
+
+func setupGeth(client *ssh.Client, buildState *state.BuildState, pconf *ParityConf, wallets []string) error {
 
 	gethConf, err := GethSpec(pconf, wallets)
 	if err != nil {
@@ -300,8 +320,7 @@ func setupGeth(client *util.SshClient, buildState *state.BuildState, pconf *Pari
 	if len(addresses) < 1 {
 		return fmt.Errorf("Unable to get addresses")
 	}
-	address := addresses[0]
-	address = address[1 : len(address)-1]
+	address := addresses[0][1 : len(addresses[0])-1]
 
 	_, err = client.Run(
 		fmt.Sprintf("docker exec wb_service0 geth --datadir /geth/ --networkid %d init /geth/genesis.json", pconf.NetworkId))
@@ -313,19 +332,25 @@ func setupGeth(client *util.SshClient, buildState *state.BuildState, pconf *Pari
 	buildState.IncrementBuildProgress()
 
 	_, err = client.Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --networkid %d --rpc  --rpcaddr 0.0.0.0`+
-		` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
+		` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --unlock="%s"`+
 		` --password /geth/passwd --etherbase %s --nodiscover`, pconf.NetworkId, address, address))
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	_, err = client.KeepTryRun(
-		`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json" ` +
-			` -d '{ "method": "miner_start", "params": [8], "id": 3, "jsonrpc": "2.0" }'`)
+	if !pconf.DontMine {
+		_, err = client.KeepTryRun(
+			`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json" ` +
+				` -d '{ "method": "miner_start", "params": [8], "id": 3, "jsonrpc": "2.0" }'`)
+	} else {
+		_, err = client.KeepTryRun(
+			`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json" ` +
+				` -d '{ "method": "miner_stop", "params": [], "id": 3, "jsonrpc": "2.0" }'`)
+	}
 	return err
 }
 
-func peerWithGeth(client *util.SshClient, buildState *state.BuildState, enodes []string) error {
+func peerWithGeth(client *ssh.Client, buildState *state.BuildState, enodes []string) error {
 	for _, enode := range enodes {
 		_, err := client.KeepTryRun(
 			fmt.Sprintf(
@@ -338,14 +363,7 @@ func peerWithGeth(client *util.SshClient, buildState *state.BuildState, enodes [
 			return err
 		}
 	}
-	_, err := client.KeepTryRun(
-		`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json" ` +
-			` -d '{ "method": "miner_start", "params": [8], "id": 4, "jsonrpc": "2.0" }'`)
 
-	if err != nil {
-		log.Println(err)
-		return err
-	}
 	buildState.IncrementBuildProgress()
 	return nil
 }

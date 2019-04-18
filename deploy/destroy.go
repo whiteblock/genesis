@@ -3,8 +3,8 @@ package deploy
 import (
 	db "../db"
 	netem "../net"
+	ssh "../ssh"
 	state "../state"
-	util "../util"
 	"context"
 	"golang.org/x/sync/semaphore"
 	"log"
@@ -15,7 +15,7 @@ PurgeTestNetwork goes into each given ssh client and removes all the nodes and t
 Increments the build state len(clients) * 2 times and sets it stag to tearing down network,
 if buildState is non nil.
 */
-func PurgeTestNetwork(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) {
+func PurgeTestNetwork(servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) {
 	var sem = semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
 	if buildState != nil {
@@ -56,12 +56,12 @@ func PurgeTestNetwork(servers []db.Server, clients []*util.SshClient, buildState
 	sem.Release(conf.ThreadLimit)
 }
 
-func Destroy(buildConf *db.DeploymentDetails, clients []*util.SshClient) error {
+func Destroy(buildConf *db.DeploymentDetails, clients []*ssh.Client) error {
 	var sem = semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
 	for _, client := range clients {
 		sem.Acquire(ctx, 1)
-		go func(client *util.SshClient) {
+		go func(client *ssh.Client) {
 			defer sem.Release(1)
 			DockerKillAll(client)
 			DockerNetworkDestroyAll(client)
@@ -70,7 +70,7 @@ func Destroy(buildConf *db.DeploymentDetails, clients []*util.SshClient) error {
 
 	for _, client := range clients {
 		sem.Acquire(ctx, 1)
-		go func(client *util.SshClient) {
+		go func(client *ssh.Client) {
 			defer sem.Release(1)
 			DockerStopServices(client)
 		}(client)

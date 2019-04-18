@@ -2,13 +2,14 @@ package syscoin
 
 import (
 	db "../../db"
+	ssh "../../ssh"
 	state "../../state"
 	util "../../util"
-	"context"
+	helpers "../helpers"
 	"errors"
 	"fmt"
-	"golang.org/x/sync/semaphore"
 	"log"
+	"sync"
 )
 
 var conf *util.Config
@@ -24,28 +25,21 @@ func init() {
  * @param {[type]} servers []db.Server)             The servers to be built on
  * @return ([]string,error [description]
  */
-func RegTest(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) ([]string, error) {
+func RegTest(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) ([]string, error) {
 	if details.Nodes < 3 {
 		log.Println("Tried to build syscoin with not enough nodes")
 		return nil, errors.New("Tried to build syscoin with not enough nodes")
 	}
-	sem3 := semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
+
 	sysconf, err := NewConf(details.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	defer func() {
-		fmt.Printf("Cleaning up...")
-		util.Rm("config.boot")
-		fmt.Printf("done\n")
-	}()
-	buildState.SetBuildSteps(1 + (6 * details.Nodes))
 
-	fmt.Println("-------------Setting Up Syscoin-------------")
+	buildState.SetBuildSteps(1 + (4 * details.Nodes))
 
-	fmt.Printf("Creating the syscoin conf files...")
+	buildState.SetBuildStage("Creating the syscoin conf files")
 	out, err := handleConf(servers, clients, sysconf, buildState)
 	if err != nil {
 		log.Println(err)
@@ -54,44 +48,22 @@ func RegTest(details *db.DeploymentDetails, servers []db.Server, clients []*util
 	buildState.IncrementBuildProgress()
 	fmt.Printf("done\n")
 
-	fmt.Printf("Launching the nodes")
-	for i, server := range servers {
-		sem3.Acquire(ctx, 1)
-		go func(server db.Server, i int) {
-			defer sem3.Release(1)
+	buildState.SetBuildStage("Launching the nodes")
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		defer buildState.IncrementBuildProgress()
+		return clients[serverNum].DockerExecdLog(localNodeNum,
+			"syscoind -conf=\"/syscoin/datadir/regtest.conf\" -datadir=\"/syscoin/datadir/\"")
+	})
 
-			for j, _ := range server.Ips {
-				err := clients[i].DockerExecdLog(j, "syscoind -conf=\"/syscoin/datadir/regtest.conf\" -datadir=\"/syscoin/datadir/\"")
-				if err != nil {
-					buildState.ReportError(err)
-					log.Println(err)
-					return
-				}
-				buildState.IncrementBuildProgress()
-			}
-		}(server, i)
-	}
-
-	err = sem3.Acquire(ctx, conf.ThreadLimit)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	fmt.Printf("done\n")
-	sem3.Release(conf.ThreadLimit)
-
-	if !buildState.ErrorFree() {
-		return nil, buildState.GetError()
-	}
-	return out, nil
+	return out, err
 }
 
-func Add(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }
 
-func handleConf(servers []db.Server, clients []*util.SshClient, sysconf *SysConf, buildState *state.BuildState) ([]string, error) {
+func handleConf(servers []db.Server, clients []*ssh.Client, sysconf *SysConf, buildState *state.BuildState) ([]string, error) {
 	ips := []string{}
 	for _, server := range servers {
 		for _, ip := range server.Ips {
@@ -128,79 +100,52 @@ func handleConf(servers []db.Server, clients []*util.SshClient, sysconf *SysConf
 		log.Println(err)
 		return nil, err
 	}
+
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		defer buildState.IncrementBuildProgress()
+		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir -p /syscoin/datadir")
+		return err
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 	//Finally generate the configuration for each node
-	sem := semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
-	node := 0
+	mux := sync.Mutex{}
 	labels := make([]string, len(ips))
-	for i, server := range servers {
-		for _, _ = range server.Ips {
-			sem.Acquire(ctx, 1)
-			go func(node int) {
-				confData := ""
-				maxConns := 1
-				if node < noMasterNodes { //Master Node
-					confData += sysconf.GenerateMN()
-					labels[node] = "Master Node"
-				} else if node%2 == 0 { //Sender
-					confData += sysconf.GenerateSender()
-					labels[node] = "Sender"
-				} else { //Receiver
-					confData += sysconf.GenerateReceiver()
-					labels[node] = "Receiver"
-				}
-				confData += "rpcport=8369\nport=8370\n"
-				for _, conn := range connsDist[node] {
-					confData += fmt.Sprintf("connect=%s:8370\n", conn)
-					maxConns += 4
-				}
-				confData += "rpcallowip=0.0.0.0/0\n"
-				//confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
-				err := buildState.Write(fmt.Sprintf("./regtest%d.conf", node), confData)
-				if err != nil {
-					buildState.ReportError(err)
-					log.Println(err)
-					return
-				}
-				err = clients[i].Scp(fmt.Sprintf("regtest%d.conf", node), fmt.Sprintf("/home/appo/regtest%d.conf", node))
-				if err != nil {
-					buildState.ReportError(err)
-					log.Println(err)
-					return
-				}
-				buildState.IncrementBuildProgress()
-				_, err = clients[i].DockerExec(node, "mkdir -p /syscoin/datadir")
-				if err != nil {
-					buildState.ReportError(err)
-					log.Println(err)
-					return
-				}
-				buildState.IncrementBuildProgress()
-				err = clients[i].DockerCp(node, fmt.Sprintf("/home/appo/regtest%d.conf", node), "/syscoin/datadir/regtest.conf")
-				if err != nil {
-					buildState.ReportError(err)
-					log.Println(err)
-					return
-				}
+	err = helpers.CreateConfigs(servers, clients, buildState, "/syscoin/datadir/regtest.conf",
+		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+			defer buildState.IncrementBuildProgress()
+			confData := ""
+			maxConns := 1
+			label := ""
+			if absoluteNodeNum < noMasterNodes { //Master Node
+				confData += sysconf.GenerateMN()
+				label = "Master Node"
+			} else if absoluteNodeNum%2 == 0 { //Sender
+				confData += sysconf.GenerateSender()
+				label = "Sender"
+			} else { //Receiver
+				confData += sysconf.GenerateReceiver()
+				label = "Receiver"
+			}
 
-				buildState.IncrementBuildProgress()
-				_, err = clients[i].Run(fmt.Sprintf("rm /home/appo/regtest%d.conf", node))
-				if err != nil {
-					buildState.ReportError(err)
-					log.Println(err)
-					return
-				}
-				buildState.IncrementBuildProgress()
-				sem.Release(1)
+			mux.Lock()
+			labels[absoluteNodeNum] = label
+			mux.Unlock()
+			confData += "rpcport=8369\nport=8370\n"
+			for _, conn := range connsDist[absoluteNodeNum] {
+				confData += fmt.Sprintf("connect=%s:8370\n", conn)
+				maxConns += 4
+			}
+			confData += "rpcallowip=0.0.0.0/0\n"
+			//confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
+			return []byte(confData), nil
+		})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 
-			}(node)
-			node++
-		}
-	}
-	sem.Acquire(ctx, conf.ThreadLimit)
-	sem.Release(conf.ThreadLimit)
-	if !buildState.ErrorFree() {
-		return nil, buildState.GetError()
-	}
 	return labels, nil
 }
