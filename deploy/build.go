@@ -4,10 +4,9 @@ import (
 	db "../db"
 	state "../state"
 	util "../util"
-	"context"
 	"fmt"
-	"golang.org/x/sync/semaphore"
 	"log"
+	"sync"
 )
 
 var conf *util.Config = util.GetConfig()
@@ -21,9 +20,7 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util
 
 	buildState.SetDeploySteps(3*buildConf.Nodes + 2 + len(services))
 	defer buildState.FinishDeploy()
-
-	var sem = semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
+	wg := sync.WaitGroup{}
 
 	buildState.SetBuildStage("Initializing build")
 
@@ -58,9 +55,9 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util
 		servers[serverIndex].Ips = append(servers[serverIndex].Ips, util.GetNodeIP(servers[serverIndex].SubnetID, i))
 		servers[serverIndex].Nodes++
 
-		sem.Acquire(ctx, 1)
+		wg.Add(1)
 		go func(serverIndex int, absNum int, relNum int) {
-			defer sem.Release(1)
+			defer wg.Done()
 			err := DockerNetworkCreate(servers[serverIndex], clients[serverIndex], relNum)
 			if err != nil {
 				log.Println(err)
@@ -93,9 +90,9 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util
 	}
 
 	if services != nil { //Maybe distribute the services over multiple servers
-		sem.Acquire(ctx, 1)
+		wg.Add(1)
 		go func() {
-			defer sem.Release(1)
+			defer wg.Done()
 			err := DockerStartServices(servers[0], clients[0], services, buildState)
 			if err != nil {
 				log.Println(err)
@@ -104,19 +101,13 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util
 			}
 		}()
 	}
-
-	err = sem.Acquire(ctx, conf.ThreadLimit)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	sem.Release(conf.ThreadLimit)
+	wg.Wait()
 
 	buildState.SetBuildStage("Setting up services")
 
-	sem.Acquire(ctx, 1)
+	wg.Add(1)
 	go func() {
-		defer sem.Release(1)
+		defer wg.Done()
 		err = finalize(servers, clients, buildState)
 		if err != nil {
 			log.Println(err)
@@ -126,16 +117,16 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util
 	}()
 
 	for _, client := range clients {
-		client.Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			client.Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
+		}()
+
 	}
 	distributeNibbler(servers, clients, buildState)
 	//Acquire all of the resources here, then release and destroy
-	err = sem.Acquire(ctx, conf.ThreadLimit)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	sem.Release(conf.ThreadLimit)
+	wg.Wait()
 
 	//Check if we should freeze
 	if buildConf.Extras != nil {
