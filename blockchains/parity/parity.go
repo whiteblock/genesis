@@ -28,7 +28,6 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 
 	mux := sync.Mutex{}
 	pconf, err := NewConf(details.Params)
-	fmt.Printf("%#v\n", *pconf)
 	if err != nil {
 		log.Println(err)
 		return nil, err
