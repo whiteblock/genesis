@@ -13,7 +13,7 @@ import (
 type ParityConf struct {
 	BlockReward               int64  `json:"blockReward"`
 	ChainId                   int64  `json:"chainId"`
-	Consensus                 string `json:"concensus"` //TODO
+	Consensus                 string `json:"consensus"` //TODO
 	Difficulty                int64  `json:"difficulty"`
 	DifficultyBoundDivisor    int64  `json:"difficultyBoundDivisor"`
 	DontMine                  bool   `json:"dontMine"`

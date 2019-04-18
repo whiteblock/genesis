@@ -1,7 +1,7 @@
 {
     "blockReward":5000000000000000000,
     "chainId":15468,
-    "concensus":"ethash",
+    "consensus":"ethash",
     "difficulty":131072,
     "difficultyBoundDivisor":2048,
     "dontMine":false,

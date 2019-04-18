@@ -1,7 +1,7 @@
 [
     ["blockReward","int"],
     ["chainId","int"],
-    ["concensus","string"],
+    ["consensus","string"],
     ["difficulty","int"],
     ["difficultyBoundDivisor","int"],
     ["dontMine","bool"],
