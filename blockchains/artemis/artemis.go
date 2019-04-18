@@ -63,38 +63,14 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 
 	buildState.SetBuildStage("Creating node configuration files")
 	/**Create node config files**/
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 
-		identity := fmt.Sprintf("0x%.8x", absoluteNodeNum) // potential error if application reads the identity as a string literal
-
-		artemisNodeConfig, err := makeNodeConfig(artemisConf, identity, peers, details.Nodes, details.Params)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		fmt.Println("Writing Configuration File")
-		err = buildState.Write(fmt.Sprintf("config.toml%d", absoluteNodeNum), artemisNodeConfig)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		err = clients[serverNum].Scp(fmt.Sprintf("config.toml%d", absoluteNodeNum), fmt.Sprintf("/home/appo/config.toml%d", absoluteNodeNum))
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		buildState.Defer(func() { clients[serverNum].Run(fmt.Sprintf("rm -f /home/appo/config.toml%d", absoluteNodeNum)) })
-
-		err = clients[serverNum].DockerCp(localNodeNum, fmt.Sprintf("/home/appo/config.toml%d", absoluteNodeNum), "/artemis/config/config.toml")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		buildState.IncrementBuildProgress()
-		return nil
-	})
+	err = helpers.CreateConfigs(servers, clients, buildState, "/artemis/config/config.toml",
+		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+			defer buildState.IncrementBuildProgress()
+			identity := fmt.Sprintf("0x%.8x", absoluteNodeNum)
+			artemisNodeConfig, err := makeNodeConfig(artemisConf, identity, peers, absoluteNodeNum, details)
+			return []byte(artemisNodeConfig), err
+		})
 
 	buildState.SetBuildStage("Starting Artemis")
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
