@@ -168,6 +168,9 @@ func CreateConfigs(servers []db.Server, clients []*ssh.Client, buildState *state
 					buildState.ReportError(err)
 					return
 				}
+				if data == nil {
+					return//skip if nil
+				}
 				err = SingleCp(clients[i], buildState, j, data, dest)
 				if err != nil {
 					log.Println(err)
