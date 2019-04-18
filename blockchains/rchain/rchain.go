@@ -216,11 +216,13 @@ func createConfigFile(details *db.DeploymentDetails, bootnodeAddr string, rchain
 		"influxIp":       influxIP,
 		"validatorCount": rchainConf.ValidatorCount,
 		"standalone":     false,
-		"bootstrap":      fmt.Sprintf("bootstrap = \"%s\"", bootnodeAddr),
+		
 	}
+
 	raw = util.MergeStringMaps(raw, details.Params) //Allow arbitrary custom options for rchain
 
 	filler := util.ConvertToStringMap(raw)
+	filler["bootstrap"] = fmt.Sprintf("bootstrap = \"%s\"", bootnodeAddr)
 	dat, err := helpers.GetBlockchainConfig("rchain", node, "rchain.conf.mustache", details)
 	if err != nil {
 		log.Println(err)

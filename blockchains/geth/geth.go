@@ -46,7 +46,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		for i := 1; i <= details.Nodes; i++ {
 			data += "second\n"
 		}
-		err = buildState.Write("passwd", data)
+		err = helpers.CopyBytesToAllNodes(servers, clients, buildState, "passwd", "/geth")
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -63,11 +63,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		return nil, err
 	}
 
-	err = helpers.CopyToAllNodes(servers, clients, buildState, "passwd", "/geth")
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
+	
 	buildState.IncrementBuildProgress()
 
 	/**Create the wallets**/
