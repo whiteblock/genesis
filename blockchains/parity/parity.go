@@ -265,7 +265,6 @@ func setupPOW(details *db.DeploymentDetails, servers []db.Server, clients []*uti
 		log.Println(err)
 		return err
 	}
-
 	buildState.IncrementBuildProgress()
 
 	//Create the chain spec files
@@ -274,13 +273,6 @@ func setupPOW(details *db.DeploymentDetails, servers []db.Server, clients []*uti
 		log.Println(err)
 		return err
 	}
-
-	err = buildState.Write("spec.json", spec)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
 	//create config file
 	configToml, err := BuildConfig(pconf, details.Files, wallets, "/parity/passwd")
 	if err != nil {
@@ -288,15 +280,10 @@ func setupPOW(details *db.DeploymentDetails, servers []db.Server, clients []*uti
 		return err
 	}
 
-	err = buildState.Write("config.toml", configToml)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
 	//Copy over the config file, spec file, and the accounts
-	return helpers.CopyToAllNodes(servers, clients, buildState,
-		"config.toml", "/parity/",
-		"spec.json", "/parity/")
+	return helpers.CopyBytesToAllNodes(servers, clients, buildState,
+		configToml, "/parity/config.toml",
+		spec, "/parity/spec.json")
 }
 
 func setupGeth(client *util.SshClient, buildState *state.BuildState, pconf *ParityConf, wallets []string) error {
