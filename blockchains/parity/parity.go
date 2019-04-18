@@ -2,6 +2,7 @@ package parity
 
 import (
 	db "../../db"
+	ssh "../../ssh"
 	state "../../state"
 	util "../../util"
 	helpers "../helpers"
@@ -23,7 +24,7 @@ func init() {
 /*
 Build builds out a fresh new ethereum test network
 */
-func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	buildState *state.BuildState) ([]string, error) {
 
 	mux := sync.Mutex{}
@@ -218,12 +219,12 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 
 /***************************************************************************************************************************/
 
-func Add(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }
 
-func setupPOA(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func setupPOA(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	buildState *state.BuildState, pconf *ParityConf, wallets []string) error {
 	//Create the chain spec files
 	spec, err := BuildPoaSpec(pconf, details.Files, wallets)
@@ -250,7 +251,7 @@ func setupPOA(details *db.DeploymentDetails, servers []db.Server, clients []*uti
 		})
 }
 
-func setupPOW(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func setupPOW(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	buildState *state.BuildState, pconf *ParityConf, wallets []string) error {
 	//Start up the geth node
 	err := setupGeth(clients[0], buildState, pconf, wallets)
@@ -279,7 +280,7 @@ func setupPOW(details *db.DeploymentDetails, servers []db.Server, clients []*uti
 		spec, "/parity/spec.json")
 }
 
-func setupGeth(client *util.SshClient, buildState *state.BuildState, pconf *ParityConf, wallets []string) error {
+func setupGeth(client *ssh.Client, buildState *state.BuildState, pconf *ParityConf, wallets []string) error {
 
 	gethConf, err := GethSpec(pconf, wallets)
 	if err != nil {
@@ -349,7 +350,7 @@ func setupGeth(client *util.SshClient, buildState *state.BuildState, pconf *Pari
 	return err
 }
 
-func peerWithGeth(client *util.SshClient, buildState *state.BuildState, enodes []string) error {
+func peerWithGeth(client *ssh.Client, buildState *state.BuildState, enodes []string) error {
 	for _, enode := range enodes {
 		_, err := client.KeepTryRun(
 			fmt.Sprintf(

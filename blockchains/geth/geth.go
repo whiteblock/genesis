@@ -2,6 +2,7 @@ package geth
 
 import (
 	db "../../db"
+	ssh "../../ssh"
 	state "../../state"
 	util "../../util"
 	helpers "../helpers"
@@ -25,7 +26,7 @@ const ETH_NET_STATS_PORT = 3338
 /*
 Build builds out a fresh new ethereum test network using geth
 */
-func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	buildState *state.BuildState) ([]string, error) {
 
 	mux := sync.Mutex{}
@@ -282,7 +283,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 
 /***************************************************************************************************************************/
 
-func Add(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }
@@ -351,7 +352,7 @@ func createGenesisfile(ethconf *EthConf, details *db.DeploymentDetails, wallets 
  * Setup Eth Net Stats on a server
  * @param  string    ip     The servers config
  */
-func setupEthNetStats(client *util.SshClient) error {
+func setupEthNetStats(client *ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf(
 		"docker exec -d wb_service0 bash -c 'cd /eth-netstats && WS_SECRET=second PORT=%d npm start'", ETH_NET_STATS_PORT))
 	if err != nil {

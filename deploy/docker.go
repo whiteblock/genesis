@@ -2,6 +2,7 @@ package deploy
 
 import (
 	db "../db"
+	ssh "../ssh"
 	state "../state"
 	util "../util"
 	"fmt"
@@ -13,7 +14,7 @@ import (
 /*
    Kill a single node by index on a server
 */
-func DockerKill(client *util.SshClient, node int) error {
+func DockerKill(client *ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker rm -f %s%d", conf.NodePrefix, node))
 	return err
 }
@@ -21,7 +22,7 @@ func DockerKill(client *util.SshClient, node int) error {
 /*
    Kill all nodes on a server
 */
-func DockerKillAll(client *util.SshClient) error {
+func DockerKillAll(client *ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s\")", conf.NodePrefix))
 	return err
 }
@@ -41,7 +42,7 @@ func dockerNetworkCreateCmd(subnet string, gateway string, network int, name str
 /*
    Create a docker network for a node
 */
-func DockerNetworkCreate(server db.Server, client *util.SshClient, node int) error {
+func DockerNetworkCreate(server db.Server, client *ssh.Client, node int) error {
 	command := dockerNetworkCreateCmd(
 		util.GetNetworkAddress(server.SubnetID, node),
 		util.GetGateway(server.SubnetID, node),
@@ -62,7 +63,7 @@ func DockerNetworkCreate(server db.Server, client *util.SshClient, node int) err
 /*
    Create all of the node docker networks on a server
 */
-func DockerNetworkCreateAll(server db.Server, client *util.SshClient, nodes int, buildState *state.BuildState) error {
+func DockerNetworkCreateAll(server db.Server, client *ssh.Client, nodes int, buildState *state.BuildState) error {
 	for i := 0; i < nodes; i++ {
 		buildState.IncrementDeployProgress()
 		err := DockerNetworkCreate(server, client, i)
@@ -74,7 +75,7 @@ func DockerNetworkCreateAll(server db.Server, client *util.SshClient, nodes int,
 	return nil
 }
 
-func DockerNetworkCreateAppendAll(server db.Server, client *util.SshClient, start int,
+func DockerNetworkCreateAppendAll(server db.Server, client *ssh.Client, start int,
 	nodes int, buildState *state.BuildState) error {
 	for i := start; i < start+nodes; i++ {
 		buildState.IncrementDeployProgress()
@@ -87,7 +88,7 @@ func DockerNetworkCreateAppendAll(server db.Server, client *util.SshClient, star
 	return nil
 }
 
-func DockerNetworkDestroy(client *util.SshClient, node int) error {
+func DockerNetworkDestroy(client *ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker network rm %s%d", conf.NodeNetworkPrefix, node))
 	return err
 }
@@ -95,7 +96,7 @@ func DockerNetworkDestroy(client *util.SshClient, node int) error {
 /*
    Remove all whiteblock networks on a node
 */
-func DockerNetworkDestroyAll(client *util.SshClient) error {
+func DockerNetworkDestroyAll(client *ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf(
 		"for net in $(docker network ls | grep %s | awk '{print $1}'); do docker network rm $net; done", conf.NodeNetworkPrefix))
 	return err
@@ -104,7 +105,7 @@ func DockerNetworkDestroyAll(client *util.SshClient) error {
 /*
    Pull an image on all the given servers
 */
-func DockerPull(clients []*util.SshClient, image string) error {
+func DockerPull(clients []*ssh.Client, image string) error {
 	for _, client := range clients {
 		_, err := client.Run("docker pull " + image)
 		if err != nil {
@@ -146,7 +147,7 @@ func dockerRunCmd(server db.Server, resources util.Resources, node int, image st
 /*
    Starts a node
 */
-func DockerRun(server db.Server, client *util.SshClient, resources util.Resources, node int, image string, env map[string]string) error {
+func DockerRun(server db.Server, client *ssh.Client, resources util.Resources, node int, image string, env map[string]string) error {
 	command, err := dockerRunCmd(server, resources, node, image, env)
 	if err != nil {
 		log.Println(err)
@@ -163,7 +164,7 @@ func DockerRun(server db.Server, client *util.SshClient, resources util.Resource
 /*
    Start a batch of nodes
 */
-func DockerRunAll(server db.Server, client *util.SshClient, resources []util.Resources, nodes int,
+func DockerRunAll(server db.Server, client *ssh.Client, resources []util.Resources, nodes int,
 	image string, buildState *state.BuildState, envs []map[string]string) error {
 	return DockerRunAppendAll(server, client, resources, 0, nodes, image, buildState, envs)
 }
@@ -172,7 +173,7 @@ func DockerRunAll(server db.Server, client *util.SshClient, resources []util.Res
    Similar to docker run all, but start creating the nodes at a given starting point,
    rather than 0
 */
-func DockerRunAppendAll(server db.Server, client *util.SshClient, resources []util.Resources, start int,
+func DockerRunAppendAll(server db.Server, client *ssh.Client, resources []util.Resources, start int,
 	nodes int, image string, buildState *state.BuildState, envs []map[string]string) error {
 	var command string
 	for i := start; i < start+nodes; i++ {
@@ -234,7 +235,7 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 /*
    Stop all services and remove the service network from a server
 */
-func DockerStopServices(client *util.SshClient) error {
+func DockerStopServices(client *ssh.Client) error {
 	res, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)", conf.ServicePrefix))
 	client.Run("docker network rm " + conf.ServiceNetworkName)
 	if err != nil {
@@ -246,7 +247,7 @@ func DockerStopServices(client *util.SshClient) error {
 /*
    Creates the service network and starts all the services on a server
 */
-func DockerStartServices(server db.Server, client *util.SshClient, services []util.Service, buildState *state.BuildState) error {
+func DockerStartServices(server db.Server, client *ssh.Client, services []util.Service, buildState *state.BuildState) error {
 	gateway, subnet, err := util.GetServiceNetwork()
 	if err != nil {
 		log.Println(err)

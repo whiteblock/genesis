@@ -2,6 +2,7 @@ package syscoin
 
 import (
 	db "../../db"
+	ssh "../../ssh"
 	state "../../state"
 	util "../../util"
 	helpers "../helpers"
@@ -24,7 +25,7 @@ func init() {
  * @param {[type]} servers []db.Server)             The servers to be built on
  * @return ([]string,error [description]
  */
-func RegTest(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) ([]string, error) {
+func RegTest(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) ([]string, error) {
 	if details.Nodes < 3 {
 		log.Println("Tried to build syscoin with not enough nodes")
 		return nil, errors.New("Tried to build syscoin with not enough nodes")
@@ -57,12 +58,12 @@ func RegTest(details *db.DeploymentDetails, servers []db.Server, clients []*util
 	return out, err
 }
 
-func Add(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }
 
-func handleConf(servers []db.Server, clients []*util.SshClient, sysconf *SysConf, buildState *state.BuildState) ([]string, error) {
+func handleConf(servers []db.Server, clients []*ssh.Client, sysconf *SysConf, buildState *state.BuildState) ([]string, error) {
 	ips := []string{}
 	for _, server := range servers {
 		for _, ip := range server.Ips {

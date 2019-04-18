@@ -5,6 +5,7 @@ package netconf
 
 import (
 	db "../db"
+	ssh "../ssh"
 	status "../status"
 	util "../util"
 	"fmt"
@@ -91,7 +92,7 @@ func CreateCommands(netconf Netconf, serverId int) []string {
 /*
    Apply applies the given network config.
 */
-func Apply(client *util.SshClient, netconf Netconf, serverId int) error {
+func Apply(client *ssh.Client, netconf Netconf, serverId int) error {
 	cmds := CreateCommands(netconf, serverId)
 	for i, cmd := range cmds {
 		_, err := client.Run(cmd)
@@ -177,7 +178,7 @@ func RemoveAll(nodes []db.Node) error {
 /*
    RemoveAll removes network conditions from the given number of nodes
 */
-func RemoveAllOnServer(client *util.SshClient, nodes int) {
+func RemoveAllOnServer(client *ssh.Client, nodes int) {
 	for i := 0; i < nodes; i++ {
 		client.Run(
 			fmt.Sprintf("sudo tc qdisc del dev %s%d root", conf.BridgePrefix, i))
@@ -252,7 +253,7 @@ func parseItems(items []string, nconf *Netconf) error {
 }
 
 //5 start index
-func GetConfigOnServer(client *util.SshClient) ([]Netconf, error) {
+func GetConfigOnServer(client *ssh.Client) ([]Netconf, error) {
 	res, err := client.Run("tc qdisc show | grep wb_bridge | grep netem || true")
 	if err != nil {
 		log.Println(err)

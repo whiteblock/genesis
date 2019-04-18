@@ -3,8 +3,8 @@ package deploy
 import (
 	helpers "../blockchains/helpers"
 	db "../db"
+	ssh "../ssh"
 	state "../state"
-	util "../util"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -14,7 +14,7 @@ import (
 /*
    Finalization methods for the docker build process. Will be run immediately following their deployment
 */
-func finalize(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) error {
+func finalize(servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) error {
 	if conf.HandleNodeSshKeys {
 		err := copyOverSshKeys(servers, clients, buildState)
 		if err != nil {
@@ -29,7 +29,7 @@ func finalize(servers []db.Server, clients []*util.SshClient, buildState *state.
 /*
    Finalization methods for the docker build process. Will be run immediately following their deployment
 */
-func finalizeNewNodes(servers []db.Server, clients []*util.SshClient, newNodes map[int][]string, buildState *state.BuildState) error {
+func finalizeNewNodes(servers []db.Server, clients []*ssh.Client, newNodes map[int][]string, buildState *state.BuildState) error {
 	if conf.HandleNodeSshKeys {
 		err := copyOverSshKeysToNewNodes(servers, clients, newNodes, buildState)
 		if err != nil {
@@ -44,7 +44,7 @@ func finalizeNewNodes(servers []db.Server, clients []*util.SshClient, newNodes m
    Copy over the ssh public key to each node to allow for the user to ssh into each node.
    The public key comes from the nodes public key specified in the configuration
 */
-func copyOverSshKeys(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) error {
+func copyOverSshKeys(servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) error {
 	tmp, err := ioutil.ReadFile(conf.NodesPublicKey)
 	pubKey := string(tmp)
 	pubKey = strings.Trim(pubKey, "\t\n\v\r")
@@ -92,7 +92,7 @@ func copyOverSshKeys(servers []db.Server, clients []*util.SshClient, buildState 
 /*
    Functions like copyOverSshKeys, but with the add nodes format.
 */
-func copyOverSshKeysToNewNodes(servers []db.Server, clients []*util.SshClient, newNodes map[int][]string, buildState *state.BuildState) error {
+func copyOverSshKeysToNewNodes(servers []db.Server, clients []*ssh.Client, newNodes map[int][]string, buildState *state.BuildState) error {
 	tmp, err := ioutil.ReadFile(conf.NodesPublicKey)
 	pubKey := string(tmp)
 	pubKey = strings.Trim(pubKey, "\t\n\v\r")

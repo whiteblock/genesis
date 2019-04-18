@@ -2,6 +2,7 @@ package cosmos
 
 import (
 	db "../../db"
+	ssh "../../ssh"
 	state "../../state"
 	util "../../util"
 	helpers "../helpers"
@@ -17,7 +18,7 @@ func init() {
 	conf = util.GetConfig()
 }
 
-func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	buildState *state.BuildState) ([]string, error) {
 
 	buildState.SetBuildSteps(4 + (details.Nodes * 2))
@@ -115,7 +116,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	return nil, err
 }
 
-func Add(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }

@@ -2,6 +2,7 @@ package pantheon
 
 import (
 	db "../../db"
+	ssh "../../ssh"
 	state "../../state"
 	util "../../util"
 	helpers "../helpers"
@@ -20,7 +21,7 @@ func init() {
 /*
 Build builds out a fresh new ethereum test network using pantheon
 */
-func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	buildState *state.BuildState) ([]string, error) {
 
 	wg := sync.WaitGroup{}
@@ -287,7 +288,7 @@ func createStaticNodesFile(list string, buildState *state.BuildState) error {
 	return buildState.Write("static-nodes.json", list)
 }
 
-func startGeth(client *util.SshClient, panconf *PanConf, addresses []string, privKeys []string, buildState *state.BuildState) error {
+func startGeth(client *ssh.Client, panconf *PanConf, addresses []string, privKeys []string, buildState *state.BuildState) error {
 	serviceIps, err := util.GetServiceIps(GetServices())
 	if err != nil {
 		log.Println(err)

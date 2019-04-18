@@ -2,6 +2,7 @@ package deploy
 
 import (
 	db "../db"
+	ssh "../ssh"
 	state "../state"
 	util "../util"
 	"context"
@@ -14,7 +15,7 @@ import (
    Add nodes to the network instead of building independently. Functions similarly to build, except that it
    does not destroy the previous network when building.
 */
-func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	buildState *state.BuildState) (map[int][]string, error) {
 
 	buildState.SetDeploySteps(2 * buildConf.Nodes)

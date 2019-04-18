@@ -2,6 +2,7 @@ package artemis
 
 import (
 	db "../../db"
+	ssh "../../ssh"
 	state "../../state"
 	util "../../util"
 	helpers "../helpers"
@@ -18,7 +19,7 @@ func init() {
 /*
 Build builds out a fresh new artemis test network
 */
-func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	buildState *state.BuildState) ([]string, error) {
 
 	artemisConf, err := NewConf(details.Params)
@@ -126,7 +127,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	return nil, nil
 }
 
-func Add(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }

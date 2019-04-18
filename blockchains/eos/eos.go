@@ -2,6 +2,7 @@ package eos
 
 import (
 	db "../../db"
+	ssh "../../ssh"
 	state "../../state"
 	util "../../util"
 	helpers "../helpers"
@@ -24,7 +25,7 @@ func init() {
  * @param  int      nodes       The number of producers to make
  * @param  []Server servers     The list of relevant servers
  */
-func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient, buildState *state.BuildState) ([]string, error) {
+func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) ([]string, error) {
 	if details.Nodes < 2 {
 		return nil, fmt.Errorf("Cannot build less than 2 nodes")
 	}
@@ -71,7 +72,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 		log.Println(err)
 		return nil, err
 	}
-	km.AddGenerator(func(client *util.SshClient) (util.KeyPair, error) {
+	km.AddGenerator(func(client *ssh.Client) (util.KeyPair, error) {
 		data, err := client.DockerExec(0, "cleos create key --to-console | awk '{print $3}'")
 		if err != nil {
 			return util.KeyPair{}, err
@@ -568,12 +569,12 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	return out, nil
 }
 
-func Add(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
 }
 
-func eos_createWallet(client *util.SshClient, node int) (string, error) {
+func eos_createWallet(client *ssh.Client, node int) (string, error) {
 	data, err := client.DockerExec(node, "cleos wallet create --to-console | tail -n 1")
 	if err != nil {
 		return "", err

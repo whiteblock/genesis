@@ -2,6 +2,7 @@ package helpers
 
 import (
 	db "../../db"
+	ssh "../../ssh"
 	util "../../util"
 	"encoding/json"
 	"fmt"
@@ -18,7 +19,7 @@ type KeyMaster struct {
 	PrivateKeys []string
 	PublicKeys  []string
 	index       int
-	generator   func(client *util.SshClient) (util.KeyPair, error)
+	generator   func(client *ssh.Client) (util.KeyPair, error)
 }
 
 func NewKeyMaster(details *db.DeploymentDetails, blockchain string) (*KeyMaster, error) {
@@ -47,18 +48,18 @@ func NewKeyMaster(details *db.DeploymentDetails, blockchain string) (*KeyMaster,
 	return out, nil
 }
 
-func (this *KeyMaster) AddGenerator(gen func(client *util.SshClient) (util.KeyPair, error)) {
+func (this *KeyMaster) AddGenerator(gen func(client *ssh.Client) (util.KeyPair, error)) {
 	this.generator = gen
 }
 
-func (this *KeyMaster) GenerateKeyPair(client *util.SshClient) (util.KeyPair, error) {
+func (this *KeyMaster) GenerateKeyPair(client *ssh.Client) (util.KeyPair, error) {
 	if this.generator != nil {
 		return this.generator(client)
 	}
 	return util.KeyPair{}, fmt.Errorf("No generator provided")
 }
 
-func (this *KeyMaster) GetKeyPair(client *util.SshClient) (util.KeyPair, error) {
+func (this *KeyMaster) GetKeyPair(client *ssh.Client) (util.KeyPair, error) {
 	if this.index >= len(this.PrivateKeys) || this.index >= len(this.PublicKeys) {
 		return this.GenerateKeyPair(client)
 	}
@@ -68,7 +69,7 @@ func (this *KeyMaster) GetKeyPair(client *util.SshClient) (util.KeyPair, error) 
 	return out, nil
 }
 
-func (this *KeyMaster) GetMappedKeyPairs(args []string, client *util.SshClient) (map[string]util.KeyPair, error) {
+func (this *KeyMaster) GetMappedKeyPairs(args []string, client *ssh.Client) (map[string]util.KeyPair, error) {
 	keyPairs := make(map[string]util.KeyPair)
 
 	for _, arg := range args {
@@ -82,7 +83,7 @@ func (this *KeyMaster) GetMappedKeyPairs(args []string, client *util.SshClient) 
 	return keyPairs, nil
 }
 
-func (this *KeyMaster) GetServerKeyPairs(servers []db.Server, clients []*util.SshClient) (map[string]util.KeyPair, error) {
+func (this *KeyMaster) GetServerKeyPairs(servers []db.Server, clients []*ssh.Client) (map[string]util.KeyPair, error) {
 	ips := []string{}
 	for _, server := range servers {
 		for _, ip := range server.Ips {

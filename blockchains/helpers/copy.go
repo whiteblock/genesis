@@ -2,6 +2,7 @@ package helpers
 
 import (
 	db "../../db"
+	ssh "../../ssh"
 	state "../../state"
 	util "../../util"
 	"context"
@@ -11,11 +12,11 @@ import (
 	"sync"
 )
 
-func CopyToServers(clients []*util.SshClient, buildState *state.BuildState, src string, dst string) error {
+func CopyToServers(clients []*ssh.Client, buildState *state.BuildState, src string, dst string) error {
 	return CopyAllToServers(clients, buildState, src, dst)
 }
 
-func CopyAllToServers(clients []*util.SshClient, buildState *state.BuildState, srcDst ...string) error {
+func CopyAllToServers(clients []*ssh.Client, buildState *state.BuildState, srcDst ...string) error {
 	if len(srcDst)%2 != 0 {
 		return fmt.Errorf("Invalid number of variadic arguments, must be given an even number of them")
 	}
@@ -39,7 +40,7 @@ func CopyAllToServers(clients []*util.SshClient, buildState *state.BuildState, s
 	return buildState.GetError()
 }
 
-func CopyToAllNodes(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState, srcDst ...string) error {
+func CopyToAllNodes(servers []db.Server, clients []*ssh.Client, buildState *state.BuildState, srcDst ...string) error {
 	if len(srcDst)%2 != 0 {
 		return fmt.Errorf("Invalid number of variadic arguments, must be given an even number of them")
 	}
@@ -88,7 +89,7 @@ func CopyToAllNodes(servers []db.Server, clients []*util.SshClient, buildState *
 	return buildState.GetError()
 }
 
-func CopyBytesToAllNodes(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState, dataDst ...string) error {
+func CopyBytesToAllNodes(servers []db.Server, clients []*ssh.Client, buildState *state.BuildState, dataDst ...string) error {
 	fmted := []string{}
 	for i := 0; i < len(dataDst)/2; i++ {
 		tmpFilename, err := util.GetUUIDString()
@@ -103,7 +104,7 @@ func CopyBytesToAllNodes(servers []db.Server, clients []*util.SshClient, buildSt
 	return CopyToAllNodes(servers, clients, buildState, fmted...)
 }
 
-func SingleCp(client *util.SshClient, buildState *state.BuildState, localNodeId int, data []byte, dest string) error {
+func SingleCp(client *ssh.Client, buildState *state.BuildState, localNodeId int, data []byte, dest string) error {
 	tmpFilename, err := util.GetUUIDString()
 	if err != nil {
 		log.Println(err)
@@ -132,7 +133,7 @@ type FileDest struct {
 	LocalNodeId int
 }
 
-func CopyBytesToNodeFiles(client *util.SshClient, buildState *state.BuildState, transfers ...FileDest) error {
+func CopyBytesToNodeFiles(client *ssh.Client, buildState *state.BuildState, transfers ...FileDest) error {
 	wg := sync.WaitGroup{}
 
 	for _, transfer := range transfers {
@@ -151,7 +152,7 @@ func CopyBytesToNodeFiles(client *util.SshClient, buildState *state.BuildState, 
 	return buildState.GetError()
 }
 
-func CreateConfigs(servers []db.Server, clients []*util.SshClient, buildState *state.BuildState, dest string,
+func CreateConfigs(servers []db.Server, clients []*ssh.Client, buildState *state.BuildState, dest string,
 	fn func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error)) error {
 
 	wg := sync.WaitGroup{}
