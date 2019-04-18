@@ -13,7 +13,6 @@ import (
 	geth "../blockchains/geth"
 	pantheon "../blockchains/pantheon"
 	parity "../blockchains/parity"
-	paritypoa "../blockchains/parity-poa"
 	rchain "../blockchains/rchain"
 	sys "../blockchains/syscoin"
 	tendermint "../blockchains/tendermint"
@@ -123,8 +122,6 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 		labels, err = geth.Build(details, newServerData, clients, buildState)
 	case "parity":
 		labels, err = parity.Build(details, newServerData, clients, buildState)
-	case "parity-poa":
-		labels, err = paritypoa.Build(details, newServerData, clients, buildState)
 	case "artemis":
 		labels, err = artemis.Build(details, newServerData, clients, buildState)
 	case "pantheon":
@@ -306,8 +303,6 @@ func GetServices(blockchain string) []util.Service {
 		services = geth.GetServices()
 	case "parity":
 		services = parity.GetServices()
-	case "parity-poa":
-		services = paritypoa.GetServices()
 	case "pantheon":
 		services = pantheon.GetServices()
 	case "artemis":

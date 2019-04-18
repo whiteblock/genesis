@@ -101,59 +101,27 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 		log.Println(err)
 		return nil, err
 	}
-	//Start up the geth node
-
-	err = setupGeth(clients[0], buildState, pconf, wallets)
+	/***********************************************************SPLIT************************************************************/
+	switch pconf.Consensus {
+	case "ethash":
+		err = setupPOW(details, servers, clients, buildState, pconf, wallets)
+	case "poa":
+		err = setupPOA(details, servers, clients, buildState, pconf, wallets)
+	}
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	buildState.IncrementBuildProgress()
+	/***********************************************************SPLIT************************************************************/
 
-	//Create the chain spec files
-	spec, err := BuildSpec(pconf, details.Files, wallets)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	err = buildState.Write("spec.json", spec)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	//create config file
-	configToml, err := BuildConfig(pconf, details.Files, wallets, "/parity/passwd")
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	err = buildState.Write("config.toml", configToml)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	//Copy over the config file, spec file, and the accounts
-	err = helpers.CopyToAllNodes(servers, clients, buildState,
-		"config.toml", "/parity/",
-		"spec.json", "/parity/")
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		for i, rawWallet := range rawWallets {
-
 			_, err = clients[serverNum].DockerExec(localNodeNum, fmt.Sprintf("bash -c 'echo \"%s\">/parity/account%d'", rawWallet, i))
 			if err != nil {
 				log.Println(err)
 				return err
 			}
-			//buildState.Defer(func(){clients[serverNum].DockerExec(localNodeNum, fmt.Sprintf("rm /parity/account%d", i))})
 
 			_, err = clients[serverNum].DockerExec(localNodeNum,
 				fmt.Sprintf("parity --base-path=/parity/ --chain /parity/spec.json --password=/parity/passwd account import /parity/account%d", i))
@@ -258,6 +226,75 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 func Add(details db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	return nil, nil
+}
+
+func setupPOA(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+	buildState *state.BuildState, pconf *ParityConf, wallets []string) error {
+	//Create the chain spec files
+	spec, err := BuildPoaSpec(pconf, details.Files, wallets)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	err = helpers.CopyBytesToAllNodes(servers, clients, buildState, spec, "/parity/spec.json")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	//handle configuration file
+	return helpers.CreateConfigs(servers, clients, buildState, "/parity/config.toml",
+		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+			configToml, err := BuildPoaConfig(pconf, details.Files, wallets, "/parity/passwd", absoluteNodeNum)
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
+			return []byte(configToml), nil
+		})
+}
+
+func setupPOW(details *db.DeploymentDetails, servers []db.Server, clients []*util.SshClient,
+	buildState *state.BuildState, pconf *ParityConf, wallets []string) error {
+	//Start up the geth node
+	err := setupGeth(clients[0], buildState, pconf, wallets)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	buildState.IncrementBuildProgress()
+
+	//Create the chain spec files
+	spec, err := BuildSpec(pconf, details.Files, wallets)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	err = buildState.Write("spec.json", spec)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	//create config file
+	configToml, err := BuildConfig(pconf, details.Files, wallets, "/parity/passwd")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	err = buildState.Write("config.toml", configToml)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	//Copy over the config file, spec file, and the accounts
+	return helpers.CopyToAllNodes(servers, clients, buildState,
+		"config.toml", "/parity/",
+		"spec.json", "/parity/")
 }
 
 func setupGeth(client *util.SshClient, buildState *state.BuildState, pconf *ParityConf, wallets []string) error {

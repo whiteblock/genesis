@@ -11,44 +11,54 @@ import (
 )
 
 type ParityConf struct {
-	ForceSealing              bool   `json:"forceSealing"`
-	ResealOnTxs               string `json:"resealOnTxs"`
-	ResealMinPeriod           int64  `json:"resealMinPeriod"`
-	ResealMaxPeriod           int64  `json:"resealMaxPeriod"`
-	WorkQueueSize             int64  `json:"workQueueSize"`
-	RelaySet                  string `json:"relaySet"`
-	UsdPerTx                  string `json:"usdPerTx"`
-	UsdPerEth                 string `json:"usdPerEth"`
-	PriceUpdatePeriod         string `json:"priceUpdatePeriod"`
-	GasFloorTarget            string `json:"gasFloorTarget"`
-	GasCap                    string `json:"gasCap"`
-	TxQueueSize               int64  `json:"txQueueSize"`
-	TxQueueGas                string `json:"txQueueGas"`
-	TxQueueStrategy           string `json:"txQueueStrategy"`
-	TxGasLimit                string `json:"txGasLimit"`
-	TxTimeLimit               int64  `json:"txTimeLimit"`
-	RemoveSolved              bool   `json:"removeSolved"`
-	RefuseServiceTransactions bool   `json:"refuseServiceTransactions"`
-	EnableIPFS                bool   `json:"enableIPFS"`
-	NetworkDiscovery          bool   `json:"networkDiscovery"`
-	ExtraAccounts             int64  `json:"extraAccounts"`
+	BlockReward               int64  `json:"blockReward"`
 	ChainId                   int64  `json:"chainId"`
-	NetworkId                 int64  `json:"networkId"`
+	Consensus                 string `json:"concensus"` //TODO
 	Difficulty                int64  `json:"difficulty"`
-	InitBalance               string `json:"initBalance"`
-	MaxPeers                  int64  `json:"maxPeers"`
-	GasLimit                  int64  `json:"gasLimit"`
-	HomesteadBlock            int64  `json:"homesteadBlock"`
+	DifficultyBoundDivisor    int64  `json:"difficultyBoundDivisor"`
+	DontMine                  bool   `json:"dontMine"`
+	DurationLimit             int64  `json:"durationLimit"`
 	Eip155Block               int64  `json:"eip155Block"`
 	Eip158Block               int64  `json:"eip158Block"`
-	MinimumDifficulty         int64  `json:"minimumDifficulty"`
-	DifficultyBoundDivisor    int64  `json:"difficultyBoundDivisor"`
-	DurationLimit             int64  `json:"durationLimit"`
-	BlockReward               int64  `json:"blockReward"`
-	MaximumExtraDataSize      int64  `json:"maximumExtraDataSize"`
-	MinGasLimit               int64  `json:"minGasLimit"`
+	EIP140Transition          int64  `json:"eip140Transition"`
+	EIP155Transition          int64  `json:"eip155Transition"`
+	EIP211Transition          int64  `json:"eip211Transition"`
+	EIP214Transition          int64  `json:"eip214Transition"`
+	EIP658Transition          int64  `json:"eip658Transition"`
+	EnableIPFS                bool   `json:"enableIPFS"`
+	ExtraAccounts             int64  `json:"extraAccounts"`
+	ForceSealing              bool   `json:"forceSealing"`
+	GasCap                    string `json:"gasCap"`
+	GasFloorTarget            string `json:"gasFloorTarget"`
+	GasLimit                  int64  `json:"gasLimit"`
 	GasLimitBoundDivisor      int64  `json:"gasLimitBoundDivisor"`
-	DontMine                  bool   `json:"dontMine"`
+	HomesteadBlock            int64  `json:"homesteadBlock"`
+	InitBalance               string `json:"initBalance"`
+	MaximumExtraDataSize      int64  `json:"maximumExtraDataSize"`
+	MaxPeers                  int64  `json:"maxPeers"`
+	MinGasLimit               int64  `json:"minGasLimit"`
+	MinimumDifficulty         int64  `json:"minimumDifficulty"`
+	NetworkDiscovery          bool   `json:"networkDiscovery"`
+	NetworkId                 int64  `json:"networkId"`
+	PriceUpdatePeriod         string `json:"priceUpdatePeriod"`
+	RefuseServiceTransactions bool   `json:"refuseServiceTransactions"`
+	RelaySet                  string `json:"relaySet"`
+	RemoveSolved              bool   `json:"removeSolved"`
+	ResealMaxPeriod           int64  `json:"resealMaxPeriod"`
+	ResealMinPeriod           int64  `json:"resealMinPeriod"`
+	ResealOnTxs               string `json:"resealOnTxs"`
+	Signature                 string `json:"signature"`    //POA
+	Step                      int64  `json:"step"`         //POA
+	StepDuration              int64  `json:"stepDuration"` //POA
+	TxGasLimit                string `json:"txGasLimit"`
+	TxQueueGas                string `json:"txQueueGas"`
+	TxQueueSize               int64  `json:"txQueueSize"`
+	TxQueueStrategy           string `json:"txQueueStrategy"`
+	TxTimeLimit               int64  `json:"txTimeLimit"`
+	UsdPerEth                 string `json:"usdPerEth"`
+	UsdPerTx                  string `json:"usdPerTx"`
+	ValidateChainIdTransition int64  `json:"validateChainIdTransition"`
+	WorkQueueSize             int64  `json:"workQueueSize"`
 }
 
 /**
@@ -62,197 +72,14 @@ func NewConf(data map[string]interface{}) (*ParityConf, error) {
 		log.Println(err)
 		return out, err
 	}
-	err = util.GetJSONBool(data, "forceSealing", &out.ForceSealing)
+	tmp, err := json.Marshal(data)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
+	err = json.Unmarshal(tmp, out)
 
-	err = util.GetJSONString(data, "resealOnTxs", &out.ResealOnTxs)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "resealMinPeriod", &out.ResealMinPeriod)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "resealMaxPeriod", &out.ResealMaxPeriod)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "workQueueSize", &out.WorkQueueSize)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "relaySet", &out.RelaySet)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "usdPerTx", &out.UsdPerTx)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "usdPerEth", &out.UsdPerEth)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "priceUpdatePeriod", &out.PriceUpdatePeriod)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "gasFloorTarget", &out.GasFloorTarget)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "gasCap", &out.GasCap)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "txQueueSize", &out.TxQueueSize)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "txQueueGas", &out.TxQueueGas)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "txQueueStrategy", &out.TxQueueStrategy)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "txGasLimit", &out.TxGasLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "txTimeLimit", &out.TxTimeLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONBool(data, "removeSolved", &out.RemoveSolved)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONBool(data, "refuseServiceTransactions", &out.RefuseServiceTransactions)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONBool(data, "enableIPFS", &out.EnableIPFS)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONBool(data, "networkDiscovery", &out.NetworkDiscovery)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "extraAccounts", &out.ExtraAccounts)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "chainId", &out.ChainId)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "networkId", &out.NetworkId)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "difficulty", &out.Difficulty)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "initBalance", &out.InitBalance)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxPeers", &out.MaxPeers)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "gasLimit", &out.GasLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "homesteadBlock", &out.HomesteadBlock)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "eip155Block", &out.Eip155Block)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "eip158Block", &out.Eip158Block)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "minimumDifficulty", &out.MinimumDifficulty)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "difficultyBoundDivisor", &out.DifficultyBoundDivisor)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "durationLimit", &out.DurationLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "blockReward", &out.BlockReward)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maximumExtraDataSize", &out.MaximumExtraDataSize)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "minGasLimit", &out.MinGasLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "gasLimitBoundDivisor", &out.GasLimitBoundDivisor)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONBool(data, "dontMine", &out.DontMine)
-	if err != nil {
-		return nil, err
-	}
-
-	return out, nil
+	return out, err
 }
 
 func GetParams() string {
@@ -317,6 +144,45 @@ func BuildConfig(pconf *ParityConf, files map[string]string, wallets []string, p
 	return mustache.Render(string(dat), mp)
 }
 
+func BuildPoaSpec(pconf *ParityConf, files map[string]string, wallets []string) (string, error) {
+
+	accounts := make(map[string]interface{})
+	for _, wallet := range wallets {
+		accounts[wallet] = map[string]interface{}{
+			"balance": pconf.InitBalance,
+		}
+	}
+
+	var validators []string
+	for _, wallet := range wallets {
+		validators = append(validators, wallet)
+	}
+
+	tmp := map[string]interface{}{
+		"stepDuration":              pconf.StepDuration,
+		"validators":                validators,
+		"difficulty":                fmt.Sprintf("0x%x", pconf.Difficulty),
+		"gasLimit":                  fmt.Sprintf("0x%x", pconf.GasLimit),
+		"networkId":                 fmt.Sprintf("0x%x", pconf.NetworkId),
+		"maximumExtraDataSize":      fmt.Sprintf("0x%x", pconf.MaximumExtraDataSize),
+		"minGasLimit":               fmt.Sprintf("0x%x", pconf.MinGasLimit),
+		"gasLimitBoundDivisor":      fmt.Sprintf("0x%x", pconf.GasLimitBoundDivisor),
+		"validateChainIdTransition": pconf.ValidateChainIdTransition,
+		"eip155Transition":          pconf.EIP155Transition,
+		"eip140Transition":          pconf.EIP140Transition,
+		"eip211Transition":          pconf.EIP211Transition,
+		"eip214Transition":          pconf.EIP214Transition,
+		"eip658Transition":          pconf.EIP658Transition,
+		"accounts":                  accounts,
+	}
+	filler := util.ConvertToStringMap(tmp)
+	dat, err := util.GetBlockchainConfig("parity", "spec.json.poa.mustache", files)
+	if err != nil {
+		return "", err
+	}
+	return mustache.Render(string(dat), filler)
+}
+
 func BuildSpec(pconf *ParityConf, files map[string]string, wallets []string) (string, error) {
 
 	accounts := make(map[string]interface{})
@@ -371,4 +237,42 @@ func GethSpec(pconf *ParityConf, wallets []string) (string, error) {
 	}
 	data, err := mustache.Render(string(dat), filler)
 	return data, err
+}
+
+/*
+   passwordFile
+   unlock
+*/
+func BuildPoaConfig(pconf *ParityConf, files map[string]string, wallets []string, passwordFile string, i int) (string, error) {
+
+	dat, err := util.GetBlockchainConfig("parity", "config.toml.poa.mustache", files)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	var tmp interface{}
+
+	raw, err := json.Marshal(*pconf)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+
+	err = json.Unmarshal(raw, &tmp)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+
+	mp := util.ConvertToStringMap(tmp)
+	raw, err = json.Marshal(wallets)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	mp["unlock"] = string(raw)
+	mp["passwordFile"] = fmt.Sprintf("[\"%s\"]", passwordFile)
+	mp["networkId"] = fmt.Sprintf("%d", pconf.NetworkId)
+	mp["signer"] = fmt.Sprintf("\"%s\"", wallets[i])
+	return mustache.Render(string(dat), mp)
 }
