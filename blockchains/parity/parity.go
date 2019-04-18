@@ -217,8 +217,10 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	}
 
 	buildState.IncrementBuildProgress()
-
-	return nil, peerWithGeth(clients[0], buildState, enodes)
+	if pconf.Consensus == "ethash" {
+		return nil, peerWithGeth(clients[0], buildState, enodes)
+	}
+	return nil, nil
 }
 
 /***************************************************************************************************************************/
