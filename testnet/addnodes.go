@@ -40,8 +40,8 @@ func AddNodes(details *db.DeploymentDetails, testnetId string) error {
 		details.Blockchain = prevDetails.Blockchain
 	}
 
-	if len(details.Image) == 0 {
-		details.Image = prevDetails.Image
+	if len(details.Images) == 0 {
+		details.Images = prevDetails.Images
 	}
 
 	if details.Params == nil {

@@ -227,7 +227,7 @@ func Add(details db.DeploymentDetails, servers []db.Server, clients []*ssh.Clien
 func setupPOA(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	buildState *state.BuildState, pconf *ParityConf, wallets []string) error {
 	//Create the chain spec files
-	spec, err := BuildPoaSpec(pconf, details.Files, wallets)
+	spec, err := BuildPoaSpec(pconf, details, wallets)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -242,7 +242,7 @@ func setupPOA(details *db.DeploymentDetails, servers []db.Server, clients []*ssh
 	//handle configuration file
 	return helpers.CreateConfigs(servers, clients, buildState, "/parity/config.toml",
 		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
-			configToml, err := BuildPoaConfig(pconf, details.Files, wallets, "/parity/passwd", absoluteNodeNum)
+			configToml, err := BuildPoaConfig(pconf, details, wallets, "/parity/passwd", absoluteNodeNum)
 			if err != nil {
 				log.Println(err)
 				return nil, err
@@ -262,21 +262,24 @@ func setupPOW(details *db.DeploymentDetails, servers []db.Server, clients []*ssh
 	buildState.IncrementBuildProgress()
 
 	//Create the chain spec files
-	spec, err := BuildSpec(pconf, details.Files, wallets)
+	spec, err := BuildSpec(pconf, details, wallets)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 	//create config file
-	configToml, err := BuildConfig(pconf, details.Files, wallets, "/parity/passwd")
-	if err != nil {
-		log.Println(err)
-		return err
-	}
+	err = helpers.CreateConfigs(servers, clients, buildState, "/parity/config.toml",
+		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+			configToml, err := BuildConfig(pconf, details, wallets, "/parity/passwd", absoluteNodeNum)
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
+			return []byte(configToml), nil
+		})
 
 	//Copy over the config file, spec file, and the accounts
 	return helpers.CopyBytesToAllNodes(servers, clients, buildState,
-		configToml, "/parity/config.toml",
 		spec, "/parity/spec.json")
 }
 

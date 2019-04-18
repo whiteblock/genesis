@@ -333,7 +333,7 @@ func createGenesisfile(ethconf *EthConf, details *db.DeploymentDetails, wallets 
 		}
 	}
 	genesis["alloc"] = alloc
-	dat, err := util.GetBlockchainConfig("geth", "genesis.json", details.Files)
+	dat, err := helpers.GetBlockchainConfig("geth", 0, "genesis.json", details)
 	if err != nil {
 		log.Println(err)
 		return err

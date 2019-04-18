@@ -59,10 +59,13 @@ func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*s
 				return
 			}
 			buildState.IncrementDeployProgress()
-
+			image := buildConf.Images[0]
 			resource := buildConf.Resources[0]
 			if len(buildConf.Resources) > i {
 				resource = buildConf.Resources[i]
+			}
+			if len(buildConf.Images) > i {
+				image = buildConf.Images[i]
 			}
 
 			var env map[string]string = nil
@@ -70,7 +73,7 @@ func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*s
 				env = buildConf.Environments[i]
 			}
 
-			err = DockerRun(servers[serverIndex], clients[serverIndex], resource, i, buildConf.Image, env)
+			err = DockerRun(servers[serverIndex], clients[serverIndex], resource, i, image, env)
 			if err != nil {
 				log.Println(err)
 				buildState.ReportError(err)

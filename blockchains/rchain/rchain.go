@@ -132,20 +132,18 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		   validators
 		*/
 		log.Println("Got the address for the bootnode: " + enode)
-		err = createConfigFile(details, enode, rchainConf, services["wb_influx_proxy"], buildState)
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
+
 	}
+	err = helpers.CreateConfigs(servers, clients, buildState, "/datadir/rnode.conf",
+		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+			if absoluteNodeNum == 0 {
+				return nil, nil
+			}
+			return createConfigFile(details, enode, rchainConf, services["wb_influx_proxy"], buildState, absoluteNodeNum)
+		})
 
 	buildState.SetBuildStage("Configuring the other rchain nodes")
 	/**Copy config files to the rest of the nodes**/
-	err = helpers.CopyToAllNodes(servers, clients, buildState, "rnode.conf", "/datadir/rnode.conf")
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
 	buildState.IncrementBuildProgress()
 
 	buildState.SetBuildStage("Starting the rest of the nodes")
@@ -182,7 +180,7 @@ func createFirstConfigFile(details *db.DeploymentDetails, client *ssh.Client, no
 	raw = util.MergeStringMaps(raw, details.Params) //Allow arbitrary custom options for rchain
 
 	filler := util.ConvertToStringMap(raw)
-	dat, err := util.GetBlockchainConfig("rchain", "rchain.conf.mustache", details.Files)
+	dat, err := helpers.GetBlockchainConfig("rchain", 0, "rchain.conf.mustache", details)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -212,7 +210,7 @@ func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Clie
 }
 
 func createConfigFile(details *db.DeploymentDetails, bootnodeAddr string, rchainConf *RChainConf,
-	influxIP string, buildState *state.BuildState) error {
+	influxIP string, buildState *state.BuildState, node int) ([]byte, error) {
 
 	raw := map[string]interface{}{
 		"influxIp":       influxIP,
@@ -223,15 +221,15 @@ func createConfigFile(details *db.DeploymentDetails, bootnodeAddr string, rchain
 	raw = util.MergeStringMaps(raw, details.Params) //Allow arbitrary custom options for rchain
 
 	filler := util.ConvertToStringMap(raw)
-	dat, err := util.GetBlockchainConfig("rchain", "rchain.conf.mustache", details.Files)
+	dat, err := helpers.GetBlockchainConfig("rchain", node, "rchain.conf.mustache", details)
 	if err != nil {
 		log.Println(err)
-		return err
+		return nil, err
 	}
 	data, err := mustache.Render(string(dat), filler)
 	if err != nil {
 		log.Println(err)
-		return err
+		return nil, err
 	}
-	return buildState.Write("rnode.conf", data)
+	return []byte(data), nil
 }

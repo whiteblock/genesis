@@ -2,10 +2,11 @@ package cosmos
 
 import (
 	util "../../util"
+	helpers "../helpers"
 )
 
 func GetParams() string {
-	dat, err := util.GetBlockchainConfig("cosmos", "params.json", nil)
+	dat, err := helpers.GetStaticBlockchainConfig("cosmos", "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -13,7 +14,7 @@ func GetParams() string {
 }
 
 func GetDefaults() string {
-	dat, err := util.GetBlockchainConfig("cosmos", "defaults.json", nil)
+	dat, err := helpers.GetStaticBlockchainConfig("cosmos", "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}

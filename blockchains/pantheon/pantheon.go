@@ -258,7 +258,7 @@ func createGenesisfile(panconf *PanConf, details *db.DeploymentDetails, address 
 
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
-	dat, err := util.GetBlockchainConfig("pantheon", "genesis.json", details.Files)
+	dat, err := helpers.GetBlockchainConfig("pantheon", 0, "genesis.json", details)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -276,7 +276,7 @@ func createGenesisfile(panconf *PanConf, details *db.DeploymentDetails, address 
 
 func createConfigfile(panconf *PanConf, details *db.DeploymentDetails, buildState *state.BuildState) error {
 
-	dat, err := util.GetBlockchainConfig("pantheon", "config.toml", details.Files)
+	dat, err := helpers.GetBlockchainConfig("pantheon", 0, "config.toml", details)
 	if err != nil {
 		log.Println(err)
 		return err

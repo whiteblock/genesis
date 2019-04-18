@@ -2,6 +2,7 @@ package artemis
 
 import (
 	util "../../util"
+	helpers "../helpers"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -35,7 +36,7 @@ func NewConf(data map[string]interface{}) (ArtemisConf, error) {
 }
 
 func GetParams() string {
-	dat, err := util.GetBlockchainConfig("artemis", "params.json", nil)
+	dat, err := helpers.GetStaticBlockchainConfig("artemis", "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -43,7 +44,7 @@ func GetParams() string {
 }
 
 func GetDefaults() string {
-	dat, err := util.GetBlockchainConfig("artemis", "defaults.json", nil)
+	dat, err := helpers.GetStaticBlockchainConfig("artemis", "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}

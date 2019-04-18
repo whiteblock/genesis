@@ -11,6 +11,7 @@ import (
 	cosmos "../blockchains/cosmos"
 	eos "../blockchains/eos"
 	geth "../blockchains/geth"
+	helpers "../blockchains/helpers"
 	pantheon "../blockchains/pantheon"
 	parity "../blockchains/parity"
 	rchain "../blockchains/rchain"
@@ -61,22 +62,24 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 		buildState.ReportError(fmt.Errorf("You must have atleast 1 node"))
 		return fmt.Errorf("You must have atleast 1 node")
 	}
-	err := util.ValidateCommandLine(details.Image)
+	for _, image := range details.Images {
+		err := util.ValidateCommandLine(image)
+		if err != nil {
+			log.Println(err)
+			buildState.ReportError(err)
+			return err
+		}
+	}
+
+	err := util.ValidateCommandLine(details.Blockchain)
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)
 		return err
 	}
 
-	err = util.ValidateCommandLine(details.Blockchain)
-	if err != nil {
-		log.Println(err)
-		buildState.ReportError(err)
-		return err
-	}
-
-	if len(details.Image) == 0 {
-		details.Image = "gcr.io/whiteblock/" + details.Blockchain + ":master"
+	if len(details.Images) == 0 {
+		details.Images = []string{"gcr.io/whiteblock/" + details.Blockchain + ":master"}
 	}
 	buildState.Async(func() {
 		declareTestnet(testNetId, details)
@@ -149,7 +152,7 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 	}
 	err = db.InsertTestNet(db.TestNet{
 		Id: testNetId, Blockchain: details.Blockchain,
-		Nodes: details.Nodes, Image: details.Image,
+		Nodes: details.Nodes, Image: details.Images[0], //fix
 		Ts: time.Now().Unix()})
 	if err != nil {
 		log.Println(err)
@@ -201,7 +204,7 @@ func declareTestnet(testnetId string, details *db.DeploymentDetails) error {
 		"id":        testnetId,
 		"kind":      details.Blockchain,
 		"num_nodes": details.Nodes,
-		"image":     details.Image,
+		"image":     details.Images[0],
 	}
 	rawData, err := json.Marshal(data)
 	if err != nil {
@@ -233,9 +236,13 @@ func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state
 		return err
 	}
 	files := conf.DockerOutputFile
-	for _, file := range details.Logs {
-		files += " " + file
-	}
+	/*logs := details.Logs[0]
+	if logs != nil {//DEBT
+		for _, file := range logs {
+			files += " " + file
+		}
+	}*/
+
 	buildState.Defer(func() {
 		err := declareNode(node, details)
 		_, err = client.DockerExecd(node.LocalId,
@@ -279,7 +286,7 @@ func GetParams(blockchain string) ([]byte, error) {
 	if blockchain == "ethereum" {
 		return GetParams("geth")
 	}
-	return util.GetBlockchainConfig(blockchain, "params.json", nil)
+	return helpers.GetStaticBlockchainConfig(blockchain, "params.json")
 }
 
 /*
@@ -291,7 +298,7 @@ func GetDefaults(blockchain string) ([]byte, error) {
 	if blockchain == "ethereum" {
 		return GetParams("geth")
 	}
-	return util.GetBlockchainConfig(blockchain, "defaults.json", nil)
+	return helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
 }
 
 func GetServices(blockchain string) []util.Service {

@@ -1,13 +1,13 @@
 package parity
 
 import (
+	db "../../db"
 	util "../../util"
+	helpers "../helpers"
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/mustache"
-	"io/ioutil"
 	"log"
-	//"strconv"
 )
 
 type ParityConf struct {
@@ -83,14 +83,14 @@ func NewConf(data map[string]interface{}) (*ParityConf, error) {
 }
 
 func GetParams() string {
-	dat, err := ioutil.ReadFile("./resources/parity/params.json")
+	dat, err := helpers.GetStaticBlockchainConfig("parity", "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
 	return string(dat)
 }
 func GetDefaults() string {
-	dat, err := ioutil.ReadFile("./resources/parity/defaults.json")
+	dat, err := helpers.GetStaticBlockchainConfig("parity", "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -111,9 +111,9 @@ func GetServices() []util.Service {
    passwordFile
    unlock
 */
-func BuildConfig(pconf *ParityConf, files map[string]string, wallets []string, passwordFile string) (string, error) {
+func BuildConfig(pconf *ParityConf, details *db.DeploymentDetails, wallets []string, passwordFile string, node int) (string, error) {
 
-	dat, err := util.GetBlockchainConfig("parity", "config.toml.template", files)
+	dat, err := helpers.GetBlockchainConfig("parity", node, "config.toml.template", details)
 	if err != nil {
 		log.Println(err)
 		return "", err
@@ -144,7 +144,7 @@ func BuildConfig(pconf *ParityConf, files map[string]string, wallets []string, p
 	return mustache.Render(string(dat), mp)
 }
 
-func BuildPoaSpec(pconf *ParityConf, files map[string]string, wallets []string) (string, error) {
+func BuildPoaSpec(pconf *ParityConf, details *db.DeploymentDetails, wallets []string) (string, error) {
 
 	accounts := make(map[string]interface{})
 	for _, wallet := range wallets {
@@ -176,14 +176,14 @@ func BuildPoaSpec(pconf *ParityConf, files map[string]string, wallets []string) 
 		"accounts":                  accounts,
 	}
 	filler := util.ConvertToStringMap(tmp)
-	dat, err := util.GetBlockchainConfig("parity", "spec.json.poa.mustache", files)
+	dat, err := helpers.GetBlockchainConfig("parity", 0, "spec.json.poa.mustache", details)
 	if err != nil {
 		return "", err
 	}
 	return mustache.Render(string(dat), filler)
 }
 
-func BuildSpec(pconf *ParityConf, files map[string]string, wallets []string) (string, error) {
+func BuildSpec(pconf *ParityConf, details *db.DeploymentDetails, wallets []string) (string, error) {
 
 	accounts := make(map[string]interface{})
 	for _, wallet := range wallets {
@@ -206,7 +206,7 @@ func BuildSpec(pconf *ParityConf, files map[string]string, wallets []string) (st
 		"accounts":               accounts,
 	}
 	filler := util.ConvertToStringMap(tmp)
-	dat, err := util.GetBlockchainConfig("parity", "spec.json.mustache", files)
+	dat, err := helpers.GetBlockchainConfig("parity", 0, "spec.json.mustache", details)
 	if err != nil {
 		return "", err
 	}
@@ -231,7 +231,7 @@ func GethSpec(pconf *ParityConf, wallets []string) (string, error) {
 		"alloc":          accounts,
 	}
 	filler := util.ConvertToStringMap(tmp)
-	dat, err := ioutil.ReadFile("./resources/geth/genesis.json")
+	dat, err := helpers.GetStaticBlockchainConfig("geth", "genesis.json")
 	if err != nil {
 		return "", err
 	}
@@ -243,9 +243,9 @@ func GethSpec(pconf *ParityConf, wallets []string) (string, error) {
    passwordFile
    unlock
 */
-func BuildPoaConfig(pconf *ParityConf, files map[string]string, wallets []string, passwordFile string, i int) (string, error) {
+func BuildPoaConfig(pconf *ParityConf, details *db.DeploymentDetails, wallets []string, passwordFile string, i int) (string, error) {
 
-	dat, err := util.GetBlockchainConfig("parity", "config.toml.poa.mustache", files)
+	dat, err := helpers.GetBlockchainConfig("parity", i, "config.toml.poa.mustache", details)
 	if err != nil {
 		log.Println(err)
 		return "", err

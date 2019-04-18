@@ -369,16 +369,6 @@ func ConvertToStringMap(in interface{}) map[string]string {
 	return out
 }
 
-func GetBlockchainConfig(blockchain string, file string, files map[string]string) ([]byte, error) {
-	if files != nil {
-		res, exists := files[file]
-		if exists {
-			return base64.StdEncoding.DecodeString(res)
-		}
-	}
-	return ioutil.ReadFile(fmt.Sprintf("./resources/%s/%s", blockchain, file))
-}
-
 func FormatError(res string, err error) error {
 	return fmt.Errorf("%s\n%s", res, err.Error())
 }

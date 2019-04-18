@@ -117,12 +117,21 @@ func handlePreBuildExtras(buildConf *db.DeploymentDetails, clients []*ssh.Client
 
 	dockerPull, ok := prebuild["pull"]
 	if ok && dockerPull.(bool) {
-		err := DockerPull(clients, buildConf.Image)
-		if err != nil {
-			log.Println(err)
-			return err
+		wg := sync.WaitGroup{}
+		for _, image := range buildConf.Images {
+			wg.Add(1)
+			go func(image string) {
+				defer wg.Done()
+				err := DockerPull(clients, image)
+				if err != nil {
+					log.Println(err)
+					buildState.ReportError(err)
+					return
+				}
+			}(image)
 		}
+		wg.Wait()
 	}
 
-	return nil
+	return buildState.GetError()
 }

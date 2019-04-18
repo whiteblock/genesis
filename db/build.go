@@ -27,7 +27,7 @@ type DeploymentDetails struct {
 	/*
 	   Image: The docker image to build off of
 	*/
-	Image string `json:"image"`
+	Images []string `json:"images"`
 	/*
 	   Params: The blockchain specific parameters
 	*/
@@ -37,8 +37,8 @@ type DeploymentDetails struct {
 	*/
 	Resources    []util.Resources       `json:"resources"`
 	Environments []map[string]string    `json:"environments"`
-	Files        map[string]string      `json:"files"`
-	Logs         map[string]string      `json:"logs"`
+	Files        []map[string]string    `json:"files"`
+	Logs         []map[string]string    `json:"logs"`
 	Extras       map[string]interface{} `json:"extras"`
 	jwt          string
 	kid          string
@@ -77,8 +77,9 @@ func QueryBuilds(query string) ([]DeploymentDetails, error) {
 		var environment []byte
 		var logs []byte
 		var extras []byte
+		var images []byte
 
-		err = rows.Scan(&servers, &build.Blockchain, &build.Nodes, &build.Image, &params, &resources, &environment, &logs, &extras, &build.kid)
+		err = rows.Scan(&servers, &build.Blockchain, &build.Nodes, &images, &params, &resources, &environment, &logs, &extras, &build.kid)
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -115,6 +116,12 @@ func QueryBuilds(query string) ([]DeploymentDetails, error) {
 		}
 
 		err = json.Unmarshal(extras, &build.Extras)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+
+		err = json.Unmarshal(images, &build.Images)
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -191,13 +198,14 @@ func InsertBuild(dd DeploymentDetails, testnetID string) error {
 	resources, _ := json.Marshal(dd.Resources)
 	logs, _ := json.Marshal(dd.Logs)
 	extras, _ := json.Marshal(dd.Extras)
+	images, _ := json.Marshal(dd.Images)
 	environment, err := json.Marshal(dd.Environments)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	_, err = stmt.Exec(testnetID, string(servers), dd.Blockchain, dd.Nodes, dd.Image,
+	_, err = stmt.Exec(testnetID, string(servers), dd.Blockchain, dd.Nodes, string(images),
 		string(params), string(resources), string(environment), string(logs), string(extras), dd.kid)
 
 	if err != nil {

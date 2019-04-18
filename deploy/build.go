@@ -68,16 +68,21 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*ssh.
 			buildState.IncrementDeployProgress()
 
 			resource := buildConf.Resources[0]
+			image := buildConf.Images[0]
 			var env map[string]string = nil
 
 			if len(buildConf.Resources) > absNum {
 				resource = buildConf.Resources[absNum]
 			}
+			if len(buildConf.Images) > absNum {
+				image = buildConf.Images[absNum]
+			}
+
 			if buildConf.Environments != nil && len(buildConf.Environments) > absNum && buildConf.Environments[absNum] != nil {
 				env = buildConf.Environments[absNum]
 			}
 
-			err = DockerRun(servers[serverIndex], clients[serverIndex], resource, relNum, buildConf.Image, env)
+			err = DockerRun(servers[serverIndex], clients[serverIndex], resource, relNum, image, env)
 			if err != nil {
 				log.Println(err)
 				buildState.ReportError(err)

@@ -24,7 +24,7 @@ type KeyMaster struct {
 
 func NewKeyMaster(details *db.DeploymentDetails, blockchain string) (*KeyMaster, error) {
 	out := new(KeyMaster)
-	dat, err := util.GetBlockchainConfig(blockchain, "privatekeys.json", details.Files)
+	dat, err := GetStaticBlockchainConfig(blockchain, "privatekeys.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -34,7 +34,7 @@ func NewKeyMaster(details *db.DeploymentDetails, blockchain string) (*KeyMaster,
 		log.Println(err)
 		return nil, err
 	}
-	dat, err = util.GetBlockchainConfig(blockchain, "publickeys.json", details.Files)
+	dat, err = GetStaticBlockchainConfig(blockchain, "publickeys.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
