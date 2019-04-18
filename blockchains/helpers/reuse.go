@@ -81,14 +81,14 @@ func GetStaticBlockchainConfig(blockchain string, file string) ([]byte, error) {
 func GetBlockchainConfig(blockchain string, node int, file string, details *db.DeploymentDetails) ([]byte, error) {
 
 	if details.Files != nil {
-		if len(details.Files) > node  && details.Files[node] != nil{
+		if len(details.Files) > node && details.Files[node] != nil {
 			res, exists := details.Files[node][file]
-			if exists && len(res) != 0{
+			if exists && len(res) != 0 {
 				return base64.StdEncoding.DecodeString(res)
 			}
 		} else {
 			res, exists := GetFileDefault(details, file)
-			if exists  && len(res) != 0{
+			if exists && len(res) != 0 {
 				return base64.StdEncoding.DecodeString(res)
 			}
 		}

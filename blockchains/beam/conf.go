@@ -1,7 +1,9 @@
 package beam
 
 import (
+	db "../../db"
 	util "../../util"
+	helpers "../helpers"
 	"github.com/Whiteblock/mustache"
 	"io/ioutil"
 )
@@ -52,13 +54,13 @@ func GetServices() []util.Service {
 	return nil
 }
 
-func makeNodeConfig(bconf *BeamConf, keyOwner string, keyMine string) (string, error) {
+func makeNodeConfig(bconf *BeamConf, keyOwner string, keyMine string, details *db.DeploymentDetails, node int) (string, error) {
 
 	filler := util.ConvertToStringMap(map[string]interface{}{
 		"keyOwner": keyOwner,
 		"keyMine":  keyMine,
 	})
-	dat, err := ioutil.ReadFile("./resources/beam/beam-node.cfg.mustache")
+	dat, err := helpers.GetBlockchainConfig("beam", node, "beam-node.cfg.mustache", details)
 	if err != nil {
 		return "", err
 	}

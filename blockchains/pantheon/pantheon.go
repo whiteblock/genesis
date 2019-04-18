@@ -178,12 +178,18 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 	/* Create Static Nodes File */
 	buildState.SetBuildStage("Setting Up Static Peers")
 	buildState.IncrementBuildProgress()
-	err = createStaticNodesFile(enodes, buildState)
+	err = helpers.CopyBytesToAllNodes(servers, clients, buildState,
+		enodes, "/pantheon/data/static-nodes.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	err = createConfigfile(panconf, details, buildState)
+
+	err = helpers.CreateConfigs(servers, clients, buildState, "/pantheon/config.toml",
+		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+			return helpers.GetBlockchainConfig("pantheon", absoluteNodeNum, "config.toml", details)
+		})
+
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -191,9 +197,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 	/* Copy static-nodes & genesis files to each node */
 	buildState.SetBuildStage("Distributing Files")
 	err = helpers.CopyToAllNodes(servers, clients, buildState,
-		"static-nodes.json", "/pantheon/data/static-nodes.json",
-		"genesis.json", "/pantheon/genesis/genesis.json",
-		"config.toml", "/pantheon/config.toml")
+		"genesis.json", "/pantheon/genesis/genesis.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -272,16 +276,6 @@ func createGenesisfile(panconf *PanConf, details *db.DeploymentDetails, address 
 	fmt.Println("Writing Genesis File Locally")
 	return buildState.Write("genesis.json", data)
 
-}
-
-func createConfigfile(panconf *PanConf, details *db.DeploymentDetails, buildState *state.BuildState) error {
-
-	dat, err := helpers.GetBlockchainConfig("pantheon", 0, "config.toml", details)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	return buildState.Write("config.toml", string(dat))
 }
 
 func createStaticNodesFile(list string, buildState *state.BuildState) error {

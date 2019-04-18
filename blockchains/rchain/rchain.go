@@ -216,7 +216,6 @@ func createConfigFile(details *db.DeploymentDetails, bootnodeAddr string, rchain
 		"influxIp":       influxIP,
 		"validatorCount": rchainConf.ValidatorCount,
 		"standalone":     false,
-		
 	}
 
 	raw = util.MergeStringMaps(raw, details.Params) //Allow arbitrary custom options for rchain

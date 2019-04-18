@@ -63,7 +63,6 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		return nil, err
 	}
 
-	
 	buildState.IncrementBuildProgress()
 
 	/**Create the wallets**/
