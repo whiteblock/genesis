@@ -148,6 +148,24 @@ func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 }
 
 /*
+GetBuildByTestnet gets the build paramters based off testnet id
+*/
+func GetLastBuildByKid(kid string) (DeploymentDetails, error) {
+
+	details, err := QueryBuilds(fmt.Sprintf(
+		"SELECT servers,blockchain,nodes,image,params,resources,environment,logs,extras,kid FROM %s"+
+		" WHERE kid = \"%s\" ORDER BY id DESC LIMIT 1",BuildsTable, kid))
+	if err != nil {
+		log.Println(err)
+		return DeploymentDetails{}, err
+	}
+	if len(details) == 0 {
+		return DeploymentDetails{}, fmt.Errorf("No results found")
+	}
+	return details[0], nil
+}
+
+/*
 InsertBuild inserts a build
 */
 func InsertBuild(dd DeploymentDetails, testnetID string) error {

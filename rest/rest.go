@@ -87,8 +87,8 @@ func StartServer() {
 	router.HandleFunc("/build/{id}", stopBuild).Methods("DELETE")
 	router.HandleFunc("/build/{id}/", stopBuild).Methods("DELETE")
 
-	router.HandleFunc("/build", getAllBuilds).Methods("GET")
-	router.HandleFunc("/build/", getAllBuilds).Methods("GET")
+	router.HandleFunc("/build", getPreviousBuild).Methods("GET")
+	router.HandleFunc("/build/", getPreviousBuild).Methods("GET")
 
 	router.HandleFunc("/build/{id}", getBuild).Methods("GET")
 	router.HandleFunc("/build/{id}/", getBuild).Methods("GET")
@@ -211,14 +211,26 @@ func thawBuild(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Build has been resumed"))
 }
 
-func getAllBuilds(w http.ResponseWriter, r *http.Request) {
-	builds, err := db.GetAllBuilds()
+func getPreviousBuild(w http.ResponseWriter, r *http.Request) {
+
+	jwt, err := util.ExtractJwt(r)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 403)
+		return
+	}
+	kid, err := util.GetKidFromJwt(jwt)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 403)
+	}
+	build, err := db.GetLastBuildByKid(kid)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
 		return
 	}
-	json.NewEncoder(w).Encode(builds)
+	json.NewEncoder(w).Encode(build)
 }
 
 func getBuild(w http.ResponseWriter, r *http.Request) {
