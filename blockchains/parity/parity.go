@@ -46,26 +46,20 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*util.S
 	}
 	buildState.IncrementBuildProgress()
 
-	/**Create the Password file**/
+	/**Create the Password file and copy it over**/
 	{
 		var data string
 		for i := 1; i <= details.Nodes; i++ {
 			data += "second\n"
 		}
-		err = buildState.Write("passwd", data)
+		buildState.IncrementBuildProgress()
+		err = helpers.CopyBytesToAllNodes(servers, clients, buildState, data, "/parity/passwd")
 		if err != nil {
 			log.Println(err)
 			return nil, err
 		}
+		buildState.IncrementBuildProgress()
 	}
-	buildState.IncrementBuildProgress()
-	/**Copy over the password file**/
-	err = helpers.CopyToAllNodes(servers, clients, buildState, "passwd", "/parity/")
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	buildState.IncrementBuildProgress()
 
 	/**Create the wallets**/
 	wallets := make([]string, details.Nodes)
