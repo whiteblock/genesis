@@ -40,18 +40,6 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 
 	buildState.IncrementBuildProgress()
 
-	/**Create the Password files**/
-	{
-		var data string
-		for i := 1; i <= details.Nodes; i++ {
-			data += "second\n"
-		}
-		err = helpers.CopyBytesToAllNodes(servers, clients, buildState, "passwd", "/geth")
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-	}
 	buildState.SetBuildStage("Distributing secrets")
 	/**Copy over the password file**/
 	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
@@ -61,6 +49,18 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 	if err != nil {
 		log.Println(err)
 		return nil, err
+	}
+	/**Create the Password files**/
+	{
+		var data string
+		for i := 1; i <= details.Nodes; i++ {
+			data += "second\n"
+		}
+		err = helpers.CopyBytesToAllNodes(servers, clients, buildState, data, "/geth/passwd")
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
 	}
 
 	buildState.IncrementBuildProgress()
