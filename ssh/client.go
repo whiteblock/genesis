@@ -59,10 +59,11 @@ func (this *Client) getSession() (*ssh.Session, error) {
 	}
 	this.mux.RUnlock()
 	client, err := sshConnect(this.host)
-	if err != nil {
+	for err != nil && strings.Contains(err.Error(), "connection reset by peer") {
 		log.Println(err)
-		return nil, err
+		client, err = sshConnect(this.host)
 	}
+
 	session, err := client.NewSession()
 	if err != nil {
 		log.Println(err)
@@ -408,6 +409,11 @@ func sshConnect(host string) (*ssh.Client, error) {
 	}
 	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", host), sshConfig)
+	i := 0
+	for err != nil && i < 10 {
+		client, err = ssh.Dial("tcp", fmt.Sprintf("%s:22", host), sshConfig)
+		i++
+	}
 	if err != nil {
 		log.Println(err)
 		return nil, err

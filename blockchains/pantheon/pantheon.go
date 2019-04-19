@@ -120,7 +120,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		rlpEncodedData[absoluteNodeNum] = rlpEncoded
 		mux.Unlock()
 
-		fmt.Println(rlpEncodedData)
+		//fmt.Println(rlpEncodedData)
 
 		buildState.IncrementBuildProgress()
 		return err

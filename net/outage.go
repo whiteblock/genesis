@@ -4,9 +4,7 @@ import (
 	db "../db"
 	ssh "../ssh"
 	status "../status"
-	"context"
 	"fmt"
-	"golang.org/x/sync/semaphore"
 	"log"
 	"strings"
 	"sync"
@@ -25,17 +23,12 @@ func RemoveAllOutages(client *ssh.Client) error {
 	cmds := strings.Split(res, "\n")
 	wg := sync.WaitGroup{}
 
-	sem := semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
-
 	for _, cmd := range cmds {
 		if len(cmd) == 0 {
 			continue
 		}
-		sem.Acquire(ctx, 1)
 		wg.Add(1)
 		go func(cmd string) {
-			defer sem.Release(1)
 			defer wg.Done()
 			_, err = client.Run(fmt.Sprintf("sudo iptables -D %s", cmd))
 			if err != nil {
@@ -43,8 +36,6 @@ func RemoveAllOutages(client *ssh.Client) error {
 			}
 		}(cmd)
 	}
-	sem.Acquire(ctx, conf.ThreadLimit)
-	sem.Release(conf.ThreadLimit)
 
 	wg.Wait()
 	return nil
@@ -108,7 +99,6 @@ func RemoveOutage(node1 db.Node, node2 db.Node) error {
 		log.Println(err)
 		return err
 	}
-
 	return nil
 }
 
