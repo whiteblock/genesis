@@ -80,7 +80,7 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 
 	//STEP 4: BUILD OUT THE DOCKER CONTAINERS AND THE NETWORK
 
-	newServerData, err := deploy.Build(details, servers, clients, services, buildState) //TODO: Restructure distribution of nodes over servers
+	newServerData, err := deploy.Build(details, servers, clients, services, buildState)
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)
@@ -133,15 +133,28 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 		buildState.ReportError(err)
 		return err
 	}
+
 	err = db.InsertBuild(*details, testNetId)
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)
 		return err
 	}
+
+	err = storeNodes(newServerData, buildState, details, testNetId, labels)
+	if err != nil {
+		log.Println(err)
+		buildState.ReportError(err)
+		return err
+	}
+	return nil
+}
+
+func storeNodes(newServerData []db.Server, buildState *state.BuildState, details *db.DeploymentDetails,
+	testnetId string, labels []string) error {
 	i := 0
 	for _, server := range newServerData {
-		err = db.UpdateServerNodes(server.Id, 0)
+		err := db.UpdateServerNodes(server.Id, 0)
 		if err != nil {
 			log.Println(err)
 			panic(err)
@@ -153,11 +166,11 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 				buildState.ReportError(err)
 				return err
 			}
-			node := db.Node{Id: id, TestNetId: testNetId, Server: server.Id, LocalId: j, Ip: ip}
+			node := db.Node{Id: id, TestNetId: testnetId, Server: server.Id, LocalId: j, Ip: ip}
 			if labels != nil {
 				node.Label = labels[i]
 			}
-			err = finalizeNode(node, details, buildState)
+			err = finalizeNode(node, details, buildState, i)
 			if err != nil {
 				log.Println(err)
 			}
@@ -203,19 +216,24 @@ func declareNode(node db.Node, details *db.DeploymentDetails) error {
 	return err
 }
 
-func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state.BuildState) error {
+func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state.BuildState, absNum int) error {
 	client, err := status.GetClient(node.Server)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 	files := conf.DockerOutputFile
-	/*logs := details.Logs[0]
-	if logs != nil {//DEBT
-		for _, file := range logs {
+	if details.Logs != nil && len(details.Logs) > 0 {
+		var logFiles map[string]string
+		if len(details.Logs) == 1 || len(details.Logs) <= absNum {
+			logFiles = details.Logs[0]
+		} else {
+			logFiles = details.Logs[absNum]
+		}
+		for _, file := range logFiles { //Eventually may need to handle the names as well
 			files += " " + file
 		}
-	}*/
+	}
 
 	buildState.Defer(func() {
 		err := declareNode(node, details)
