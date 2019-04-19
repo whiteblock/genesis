@@ -8,7 +8,6 @@ package util
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/go.uuid"
@@ -374,23 +373,15 @@ func FormatError(res string, err error) error {
 	return fmt.Errorf("%s\n%s", res, err.Error())
 }
 
-func init() {
-	gob.Register(map[string]interface{}{})
-}
-
 // Map performs a deep copy of the given map m.
 func CopyMap(m map[string]interface{}) (map[string]interface{}, error) {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	dec := gob.NewDecoder(&buf)
-	err := enc.Encode(m)
+	var out map[string]interface{}
+	tmp, err := json.Marshal(m)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
-	var copy map[string]interface{}
-	err = dec.Decode(&copy)
-	if err != nil {
-		return nil, err
-	}
-	return copy, nil
+
+	err = json.Unmarshal(tmp, &out)
+	return out, err
 }
