@@ -38,49 +38,23 @@ func init() {
 // AddTestNet implements the build command. All blockchains Build command must be
 // implemented here, other it will not be called during the build process.
 func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
-
+	if details.Servers == nil || len(details.Servers) == 0 {
+		err := fmt.Errorf("Missing servers")
+		log.Println(err)
+		return err
+	}
 	buildState := state.GetBuildStateByServerId(details.Servers[0])
 	buildState.SetDeploySteps(3*details.Nodes + 2)
 	defer buildState.DoneBuilding()
+
 	//STEP 0: VALIDATE
-	for i, res := range details.Resources {
-		err := res.ValidateAndSetDefaults()
-		if err != nil {
-			log.Println(err)
-			err = fmt.Errorf("%s. For node %d", err.Error(), i)
-			buildState.ReportError(err)
-			return err
-		}
-	}
-
-	if details.Nodes > conf.MaxNodes {
-		buildState.ReportError(fmt.Errorf("Too many nodes"))
-		return fmt.Errorf("Too many nodes")
-	}
-
-	if details.Nodes < 1 {
-		buildState.ReportError(fmt.Errorf("You must have atleast 1 node"))
-		return fmt.Errorf("You must have atleast 1 node")
-	}
-	for _, image := range details.Images {
-		err := util.ValidateCommandLine(image)
-		if err != nil {
-			log.Println(err)
-			buildState.ReportError(err)
-			return err
-		}
-	}
-
-	err := util.ValidateCommandLine(details.Blockchain)
+	err := validate(details)
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)
 		return err
 	}
 
-	if len(details.Images) == 0 {
-		details.Images = []string{"gcr.io/whiteblock/" + details.Blockchain + ":master"}
-	}
 	buildState.Async(func() {
 		declareTestnet(testNetId, details)
 	})
