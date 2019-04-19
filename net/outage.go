@@ -4,7 +4,9 @@ import (
 	db "../db"
 	ssh "../ssh"
 	status "../status"
+	"context"
 	"fmt"
+	"golang.org/x/sync/semaphore"
 	"log"
 	"strings"
 	"sync"
@@ -21,14 +23,30 @@ func RemoveAllOutages(client *ssh.Client) error {
 	}
 	res = strings.Replace(res, "-A ", "", -1)
 	cmds := strings.Split(res, "\n")
+	wg := sync.WaitGroup{}
+
+	sem := semaphore.NewWeighted(conf.ThreadLimit)
+	ctx := context.TODO()
 
 	for _, cmd := range cmds {
-		_, err = client.Run(fmt.Sprintf("sudo iptables -D %s", cmd))
-		if err != nil {
-			log.Println(err)
-			return err
+		if len(cmd) == 0 {
+			continue
 		}
+		sem.Acquire(ctx, 1)
+		wg.Add(1)
+		go func(cmd string) {
+			defer sem.Release(1)
+			defer wg.Done()
+			_, err = client.Run(fmt.Sprintf("sudo iptables -D %s", cmd))
+			if err != nil {
+				log.Println(err)
+			}
+		}(cmd)
 	}
+	sem.Acquire(ctx, conf.ThreadLimit)
+	sem.Release(conf.ThreadLimit)
+
+	wg.Wait()
 	return nil
 }
 
@@ -98,7 +116,9 @@ func CreatePartitionOutage(side1 []db.Node, side2 []db.Node) { //Doesn't report 
 	wg := sync.WaitGroup{}
 	for _, node1 := range side1 {
 		for _, node2 := range side2 {
+			wg.Add(1)
 			go func(node1 db.Node, node2 db.Node) {
+				defer wg.Done()
 				err := MakeOutage(node1, node2)
 				if err != nil {
 					log.Println(err)
