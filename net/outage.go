@@ -7,13 +7,17 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 )
 
 func RemoveAllOutages(client *ssh.Client) error {
-	res, err := client.Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD")
+	res, err := client.Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD || true")
 	if err != nil {
 		log.Println(err)
 		return err
+	}
+	if len(res) == 0 {
+		return nil
 	}
 	res = strings.Replace(res, "-A ", "", -1)
 	cmds := strings.Split(res, "\n")
@@ -88,4 +92,19 @@ func RemoveOutage(node1 db.Node, node2 db.Node) error {
 	}
 
 	return nil
+}
+
+func CreatePartitionOutage(side1 []db.Node, side2 []db.Node) { //Doesn't report errors yet
+	wg := sync.WaitGroup{}
+	for _, node1 := range side1 {
+		for _, node2 := range side2 {
+			go func(node1 db.Node, node2 db.Node) {
+				err := MakeOutage(node1, node2)
+				if err != nil {
+					log.Println(err)
+				}
+			}(node1, node2)
+		}
+	}
+	wg.Wait()
 }

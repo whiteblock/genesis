@@ -125,6 +125,12 @@ func StartServer() {
 	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}", removeOutage).Methods("DELETE")
 	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}/", removeOutage).Methods("DELETE")
 
+	router.HandleFunc("/outage/{testnetId}", removeAllOutages).Methods("DELETE")
+	router.HandleFunc("/outage/{testnetId}/", removeAllOutages).Methods("DELETE")
+
+	router.HandleFunc("/outage/partition/{testnetId}", partitionOutage).Methods("POST")
+	router.HandleFunc("/outage/partition/{testnetId}/", partitionOutage).Methods("POST")
+
 	http.ListenAndServe(conf.Listen, router)
 }
 

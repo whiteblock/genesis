@@ -304,8 +304,9 @@ func (this *BuildState) GetExtras() map[string]interface{} {
 func (this *BuildState) Write(file string, data string) error {
 	this.mutex.RLock()
 	this.files = append(this.files, file)
+	err := ioutil.WriteFile("/tmp/"+this.BuildId+"/"+file, []byte(data), 0664)
 	this.mutex.RUnlock()
-	return ioutil.WriteFile("/tmp/"+this.BuildId+"/"+file, []byte(data), 0664)
+	return err
 }
 
 /*
@@ -330,7 +331,9 @@ func (this *BuildState) SetDeploySteps(steps int) {
    IncrementDeployProgress increments the deploy process by one step.
 */
 func (this *BuildState) IncrementDeployProgress() {
+	this.mutex.Lock()
 	this.BuildingProgress += this.progressIncrement
+	this.mutex.Unlock()
 }
 
 /*
@@ -388,4 +391,16 @@ func (this *BuildState) Reset() {
 	if err != nil {
 		panic(err) //Fatal error
 	}
+}
+
+func (this *BuildState) Marshal() string {
+	this.mutex.RLock()
+	defer this.mutex.RUnlock()
+	if this.ErrorFree() { //error should be null if there is not an error
+		return fmt.Sprintf("{\"progress\":%f,\"error\":null,\"stage\":\"%s\",\"frozen\":%v}", this.BuildingProgress, this.BuildStage, this.Frozen)
+	}
+	//otherwise give the error as an object
+	out, _ := json.Marshal(
+		map[string]interface{}{"progress": this.BuildingProgress, "error": this.BuildError, "stage": this.BuildStage, "frozen": this.Frozen})
+	return string(out)
 }

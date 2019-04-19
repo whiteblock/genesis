@@ -220,3 +220,36 @@ func GetNodeByAbsNum(nodes []Node, absNum int) (Node, error) {
 
 	return Node{}, errors.New("Couldn't find the given node")
 }
+
+func DivideNodesByAbsMatch(nodes []Node, nodeNums []int) ([]Node, []Node, error) {
+	matches := []Node{}
+	notMatches := make([]Node, len(nodes))
+	copy(notMatches, nodes)
+	fmt.Printf("%#v\n", notMatches)
+	for {
+		num := nodeNums[0]
+		index := -1
+		for i, node := range notMatches {
+			if node.AbsoluteNum == num {
+				index = i
+				break
+			}
+		}
+		if index == -1 {
+			return nil, nil, fmt.Errorf("Couldn't find node %d", num)
+		}
+		matches = append(matches, notMatches[index])
+		if len(notMatches) == index-1 {
+			notMatches = notMatches[:index]
+		} else {
+			notMatches = append(notMatches[:index], notMatches[index+1:]...)
+		}
+
+		if len(nodeNums) == 1 {
+			break
+		}
+		nodeNums = nodeNums[1:]
+
+	}
+	return matches, notMatches, nil
+}

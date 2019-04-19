@@ -214,3 +214,58 @@ func removeOutage(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write([]byte("Success"))
 }
+
+func partitionOutage(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	nodeNums := []int{}
+	decoder := json.NewDecoder(r.Body)
+	decoder.UseNumber()
+	err := decoder.Decode(&nodeNums)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	nodes, err := db.GetAllNodesByTestNet(params["testnetId"])
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 404)
+		return
+	}
+	side1, side2, err := db.DivideNodesByAbsMatch(nodes, nodeNums)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	netem.CreatePartitionOutage(side1, side2)
+	w.Write([]byte("success"))
+}
+
+func removeAllOutages(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	servers, err := status.GetLatestServers(params["testnetId"])
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 404)
+		return
+	}
+
+	for _, server := range servers {
+		client, err := status.GetClient(server.Id)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), 404)
+			return
+		}
+		err = netem.RemoveAllOutages(client)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), 500)
+			return
+		}
+	}
+	w.Write([]byte("Success"))
+}

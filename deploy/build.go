@@ -59,7 +59,7 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*ssh.
 		wg.Add(1)
 		go func(serverIndex int, absNum int, relNum int) {
 			defer wg.Done()
-			err := DockerNetworkCreate(servers[serverIndex], clients[serverIndex], relNum)
+			err := DockerNetworkCreate(servers[serverIndex], clients[serverIndex], relNum)//RACE
 			if err != nil {
 				log.Println(err)
 				buildState.ReportError(err)

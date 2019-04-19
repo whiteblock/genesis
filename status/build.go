@@ -5,8 +5,6 @@ package status
 
 import (
 	state "../state"
-	"encoding/json"
-	"fmt"
 	"log"
 )
 
@@ -26,10 +24,5 @@ func CheckBuildStatus(buildId string) (string, error) {
 		log.Println(err)
 		return "", err
 	}
-	if bs.ErrorFree() { //error should be null if there is not an error
-		return fmt.Sprintf("{\"progress\":%f,\"error\":null,\"stage\":\"%s\",\"frozen\":%v}", bs.BuildingProgress, bs.BuildStage, bs.Frozen), nil
-	}
-	//otherwise give the error as an object
-	out, _ := json.Marshal(BuildStatus{Progress: bs.BuildingProgress, Error: bs.BuildError, Stage: bs.BuildStage, Frozen: bs.Frozen})
-	return string(out), nil
+	return bs.Marshal(), nil
 }
