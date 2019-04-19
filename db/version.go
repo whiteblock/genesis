@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-const Version = "2.2.2"
+const Version = "2.2.3"
 
 func Check() error {
 	row := db.QueryRow(fmt.Sprintf("SELECT value FROM meta WHERE key = \"version\""))

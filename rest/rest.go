@@ -119,6 +119,12 @@ func StartServer() {
 	router.HandleFunc("/resources/{blockchain}/{file}", getConfFile).Methods("GET")
 	router.HandleFunc("/resources/{blockchain}/{file}/", getConfFile).Methods("GET")
 
+	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}", addOutage).Methods("POST")
+	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}/", addOutage).Methods("POST")
+
+	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}", removeOutage).Methods("DELETE")
+	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}/", removeOutage).Methods("DELETE")
+
 	http.ListenAndServe(conf.Listen, router)
 }
 

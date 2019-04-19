@@ -183,6 +183,7 @@ func RemoveAllOnServer(client *ssh.Client, nodes int) {
 		client.Run(
 			fmt.Sprintf("sudo tc qdisc del dev %s%d root", conf.BridgePrefix, i))
 	}
+	RemoveAllOutages(client)
 }
 
 func parseItems(items []string, nconf *Netconf) error {

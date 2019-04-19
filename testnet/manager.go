@@ -166,7 +166,7 @@ func storeNodes(newServerData []db.Server, buildState *state.BuildState, details
 				buildState.ReportError(err)
 				return err
 			}
-			node := db.Node{Id: id, TestNetId: testnetId, Server: server.Id, LocalId: j, Ip: ip}
+			node := db.Node{Id: id, AbsoluteNum: i, TestNetId: testnetId, Server: server.Id, LocalId: j, Ip: ip}
 			if labels != nil {
 				node.Label = labels[i]
 			}
