@@ -57,9 +57,9 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*ssh.
 		servers[serverIndex].Nodes++
 
 		wg.Add(1)
-		go func(serverIndex int, absNum int, relNum int) {
+		go func(server db.Server, serverIndex int, absNum int, relNum int) {
 			defer wg.Done()
-			err := DockerNetworkCreate(servers[serverIndex], clients[serverIndex], relNum)//RACE
+			err := DockerNetworkCreate(server, clients[serverIndex], relNum) //RACE
 			if err != nil {
 				log.Println(err)
 				buildState.ReportError(err)
@@ -82,14 +82,14 @@ func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*ssh.
 				env = buildConf.Environments[absNum]
 			}
 
-			err = DockerRun(servers[serverIndex], clients[serverIndex], resource, relNum, image, env)
+			err = DockerRun(server, clients[serverIndex], resource, relNum, image, env)
 			if err != nil {
 				log.Println(err)
 				buildState.ReportError(err)
 				return
 			}
 			buildState.IncrementDeployProgress()
-		}(serverIndex, i, relNum)
+		}(servers[serverIndex], serverIndex, i, relNum)
 
 		index++
 		index = index % len(availibleServers)

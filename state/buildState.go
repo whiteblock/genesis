@@ -302,10 +302,11 @@ func (this *BuildState) GetExtras() map[string]interface{} {
    	deleting and recreating it if it does.
 */
 func (this *BuildState) Write(file string, data string) error {
-	this.mutex.RLock()
+	this.mutex.Lock()
 	this.files = append(this.files, file)
+	this.mutex.Unlock()
 	err := ioutil.WriteFile("/tmp/"+this.BuildId+"/"+file, []byte(data), 0664)
-	this.mutex.RUnlock()
+
 	return err
 }
 
@@ -357,10 +358,12 @@ func (this *BuildState) SetBuildSteps(steps int) {
    IncrementBuildProgress increments the build progress by one step.
 */
 func (this *BuildState) IncrementBuildProgress() {
+	this.mutex.Lock()
 	this.BuildingProgress += this.progressIncrement
 	if this.BuildingProgress >= 100.00 {
 		this.BuildingProgress = 99.99
 	}
+	this.mutex.Unlock()
 }
 
 /*
