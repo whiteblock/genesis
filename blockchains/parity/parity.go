@@ -192,7 +192,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 			if i == absoluteNodeNum {
 				continue
 			}
-			_, err := clients[serverNum].KeepTryRun(
+			_, err := clients[serverNum].Run(
 				fmt.Sprintf(
 					`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
 						`'{ "method": "parity_addReservedPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,

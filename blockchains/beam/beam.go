@@ -76,13 +76,15 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 
 	err = helpers.CreateConfigs(servers, clients, buildState, "/beam/beam-node.cfg",
 		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+			ipsCpy := make([]string,len(ips))
+			copy(ipsCpy,ips)
 			beam_node_config, err := makeNodeConfig(beamConf, ownerKeys[absoluteNodeNum],
 				secretMinerKeys[absoluteNodeNum], details, absoluteNodeNum)
 			if err != nil {
 				log.Println(err)
 				return nil, err
 			}
-			for _, ip := range append(ips[:absoluteNodeNum], ips[absoluteNodeNum+1:]...) {
+			for _, ip := range append(ipsCpy[:absoluteNodeNum], ipsCpy[absoluteNodeNum+1:]...) {
 				beam_node_config += fmt.Sprintf("peer=%s:%d\n", ip, port)
 			}
 			return []byte(beam_node_config), nil
