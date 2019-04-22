@@ -111,14 +111,7 @@ func getNet(w http.ResponseWriter, r *http.Request) {
 		}
 		out = append(out, confs...)
 	}
-
-	output, err := json.Marshal(out)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 500)
-		return
-	}
-	w.Write(output)
+	json.NewEncoder(w).Encode(out)
 }
 
 func addOutage(w http.ResponseWriter, r *http.Request) {
@@ -268,4 +261,49 @@ func removeAllOutages(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.Write([]byte("Success"))
+}
+
+func getAllOutages(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	servers, err := status.GetLatestServers(params["testnetId"])
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 404)
+		return
+	}
+	out := []netem.Connection{}
+	for _, server := range servers {
+		client, err := status.GetClient(server.Id)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), 404)
+			return
+		}
+		conns, err := netem.GetCutConnections(client)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		out = append(out, conns...)
+	}
+	nodeRaw, exists := params["node"]
+	if exists {
+		node, err := strconv.Atoi(nodeRaw)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), 400)
+			return
+		}
+		filteredOut := []netem.Connection{}
+		for _, conn := range out {
+			if conn.To == node || conn.From == node {
+				filteredOut = append(filteredOut, conn)
+			}
+		}
+		json.NewEncoder(w).Encode(filteredOut)
+		return
+	}
+	json.NewEncoder(w).Encode(out)
 }

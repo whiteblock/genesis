@@ -4,9 +4,7 @@ import (
 	db "../db"
 	ssh "../ssh"
 	util "../util"
-	"context"
 	"fmt"
-	"golang.org/x/sync/semaphore"
 	"log"
 	"strconv"
 	"strings"
@@ -109,7 +107,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 		if push {
 			serverIds = append(serverIds, node.Server)
 		}
-		out[node.LocalId] = NodeStatus{
+		out[node.AbsoluteNum] = NodeStatus{
 			Name:      fmt.Sprintf("%s%d", conf.NodePrefix, node.LocalId),
 			Ip:        node.Ip,
 			Server:    node.Server,
@@ -124,8 +122,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 		return nil, err
 	}
 	mux := sync.Mutex{}
-	sem := semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
+	wg := sync.WaitGroup{}
 
 	for _, server := range servers {
 		client, err := GetClient(server.Id)
@@ -148,10 +145,11 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 			index := FindNodeIndex(out, name, server.Id)
 			if index == -1 {
 				log.Printf("name=\"%s\",server=%d\n", name, server.Id)
+				continue
 			}
-			sem.Acquire(ctx, 1)
+			wg.Add(1)
 			go func(client *ssh.Client, name string, index int) {
-				defer sem.Release(1)
+				defer wg.Done()
 				resUsage, err := SumResUsage(client, name)
 				if err != nil {
 					log.Println(err)
@@ -163,12 +161,6 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 			}(client, name, index)
 		}
 	}
-	err = sem.Acquire(ctx, conf.ThreadLimit)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	sem.Release(conf.ThreadLimit)
+	wg.Wait()
 	return out, nil
 }

@@ -4,11 +4,18 @@ import (
 	db "../db"
 	ssh "../ssh"
 	status "../status"
+	util "../util"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 )
+
+type Connection struct {
+	To   int `json:"to"`
+	From int `json:"from"`
+}
 
 func RemoveAllOutages(client *ssh.Client) error {
 	res, err := client.Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD || true")
@@ -117,4 +124,42 @@ func CreatePartitionOutage(side1 []db.Node, side2 []db.Node) { //Doesn't report 
 		}
 	}
 	wg.Wait()
+}
+
+//TODO: Naive Implementation, does not yet take multiple servers into account
+func GetCutConnections(client *ssh.Client) ([]Connection, error) {
+	res, err := client.Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD | awk '{print $4,$6}' | sed -e 's/\\/32//g' || true")
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	out := []Connection{}
+	if len(res) == 0 { //No cut connections on this server
+		return out, nil
+	}
+
+	cuts := strings.Split(res, "\n")
+
+	for _, cut := range cuts {
+		if len(cut) == 0 {
+			continue
+		}
+		cutPair := strings.Split(cut, " ")
+		if len(cutPair) != 2 {
+			return nil, fmt.Errorf("unexpected result \"%s\" for cut pair", cut)
+		}
+		_, toNode := util.GetInfoFromIP(cutPair[0])
+
+		if len(cutPair[1]) <= len(conf.BridgePrefix) {
+			return nil, fmt.Errorf("unexpected source interface, found \"%s\"", cutPair[1])
+		}
+
+		fromNode, err := strconv.Atoi(cutPair[1][len(conf.BridgePrefix):])
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		out = append(out, Connection{To: toNode, From: fromNode})
+	}
+	return out, nil
 }

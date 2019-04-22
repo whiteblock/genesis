@@ -1,20 +1,25 @@
-package Client
+package ssh
 
 import (
 	state "../state"
 	util "../util"
+	"context"
 	"fmt"
 	"github.com/Whiteblock/scp"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/sync/semaphore"
 	"io/ioutil"
 	"log"
 	"strings"
 	"sync"
+	"time"
 )
 
 var conf = util.GetConfig()
 
 const maxRunAttempts int = 20
+
+const maxConnections int = 50
 
 /*
    Client maintains a persistent connect with a server,
@@ -25,6 +30,7 @@ type Client struct {
 	host     string
 	serverId int
 	mux      *sync.RWMutex
+	sem      *semaphore.Weighted
 }
 
 /*
@@ -44,35 +50,49 @@ func NewClient(host string, serverId int) (*Client, error) {
 	out.host = host
 	out.serverId = serverId
 	out.mux = &sync.RWMutex{}
+	out.sem = semaphore.NewWeighted(int64(maxConnections))
 	return out, nil
 }
 
-func (this *Client) getSession() (*ssh.Session, error) {
+func (this *Client) getSession() (*Session, error) {
 	this.mux.RLock()
+	ctx := context.TODO()
+	this.sem.Acquire(ctx, 1)
 	for _, client := range this.clients {
 		session, err := client.NewSession()
 		if err != nil {
 			continue
 		}
 		this.mux.RUnlock()
-		return session, nil
+		return NewSession(session, this.sem), nil
 	}
 	this.mux.RUnlock()
+
 	client, err := sshConnect(this.host)
-	for err != nil && strings.Contains(err.Error(), "connection reset by peer") {
+	for err != nil && (strings.Contains(err.Error(), "connection reset by peer") || strings.Contains(err.Error(), "EOF")) {
 		log.Println(err)
+		time.Sleep(50 * time.Millisecond)
 		client, err = sshConnect(this.host)
 	}
-
+	if client == nil {
+		this.sem.Release(1)
+		return nil, fmt.Errorf("Client is nil! Error(\"%s\")", err.Error())
+	}
+	if err != nil {
+		this.sem.Release(1)
+		log.Println(err)
+		return nil, err
+	}
 	session, err := client.NewSession()
 	if err != nil {
+		this.sem.Release(1)
 		log.Println(err)
 		return nil, err
 	}
 	this.mux.Lock()
 	this.clients = append(this.clients, client)
 	this.mux.Unlock()
-	return session, nil
+	return NewSession(session, this.sem), nil
 }
 
 /*
@@ -128,7 +148,7 @@ func (this *Client) Run(command string) (string, error) {
 		return "", err
 	}
 
-	out, err := session.CombinedOutput(command)
+	out, err := session.Get().CombinedOutput(command)
 	if conf.Verbose {
 		fmt.Println(string(out))
 	}
@@ -308,7 +328,7 @@ func (this *Client) Scp(src string, dest string) error {
 	}
 	defer session.Close()
 
-	err = scp.CopyPath(src, dest, session)
+	err = scp.CopyPath(src, dest, session.Get())
 	if err != nil {
 		return err
 	}
@@ -335,7 +355,7 @@ func (this *Client) InternalScp(src string, dest string) error {
 	}
 	defer session.Close()
 
-	err = scp.CopyPath(src, dest, session)
+	err = scp.CopyPath(src, dest, session.Get())
 	if err != nil {
 		return err
 	}
