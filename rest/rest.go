@@ -137,6 +137,9 @@ func StartServer() {
 	router.HandleFunc("/outage/partition/{testnetId}", partitionOutage).Methods("POST")
 	router.HandleFunc("/outage/partition/{testnetId}/", partitionOutage).Methods("POST")
 
+	router.HandleFunc("/partition/{testnetId}", getAllPartitions).Methods("GET")
+	router.HandleFunc("/partition/{testnetId}/", getAllPartitions).Methods("GET")
+
 	http.ListenAndServe(conf.Listen, router)
 }
 

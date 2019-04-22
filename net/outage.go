@@ -12,11 +12,6 @@ import (
 	"sync"
 )
 
-type Connection struct {
-	To   int `json:"to"`
-	From int `json:"from"`
-}
-
 func RemoveAllOutages(client *ssh.Client) error {
 	res, err := client.Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD || true")
 	if err != nil {
@@ -162,4 +157,27 @@ func GetCutConnections(client *ssh.Client) ([]Connection, error) {
 		out = append(out, Connection{To: toNode, From: fromNode})
 	}
 	return out, nil
+}
+
+func CalculatePartitions(nodes []db.Node) ([][]int, error) {
+	clients, err := status.GetClientsFromNodes(nodes)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	cutConnections := []Connection{}
+	for _, client := range clients {
+		conns, err := GetCutConnections(client)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		cutConnections = append(cutConnections, conns...)
+	}
+
+	conns := NewConnections(len(nodes))
+
+	conns.RemoveAll(cutConnections)
+
+	return conns.Networks(), nil
 }

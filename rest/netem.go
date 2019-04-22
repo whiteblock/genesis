@@ -307,3 +307,21 @@ func getAllOutages(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(out)
 }
+
+func getAllPartitions(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	nodes, err := db.GetAllNodesByTestNet(params["testnetId"])
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 404)
+		return
+	}
+
+	out, err := netem.CalculatePartitions(nodes)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	json.NewEncoder(w).Encode(out)
+}

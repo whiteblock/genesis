@@ -253,3 +253,19 @@ func DivideNodesByAbsMatch(nodes []Node, nodeNums []int) ([]Node, []Node, error)
 	}
 	return matches, notMatches, nil
 }
+
+func GetUniqueServerIds(nodes []Node) []int {
+	out := []int{}
+	for _, node := range nodes {
+		shouldAdd := true
+		for _, serverId := range out {
+			if node.Server == serverId {
+				shouldAdd = false
+			}
+		}
+		if shouldAdd {
+			out = append(out, node.Server)
+		}
+	}
+	return out
+}
