@@ -9,5 +9,6 @@
     "blockPeriodSeconds":2,
     "epoch":30000,
     "requesttimeoutseconds":10,
-    "fixeddifficulty": 1000
+    "fixeddifficulty": 1000,
+    "accounts":50
 }

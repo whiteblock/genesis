@@ -7,5 +7,6 @@
     ["fixeddifficulty","int"],
     ["blockPeriodSeconds","int"],
     ["epoch","int"],
-    ["requesttimeoutseconds","int"]
+    ["requesttimeoutseconds","int"],
+    ["accounts","int"]
 ]

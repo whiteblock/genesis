@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/Whiteblock/mustache"
 	"log"
+	"regexp"
 	"sync"
 )
 
@@ -40,6 +41,19 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 	pubKeys := make([]string, details.Nodes)
 	privKeys := make([]string, details.Nodes)
 	rlpEncodedData := make([]string, details.Nodes)
+
+	extraAccChan := make(chan []string)
+
+	go func() {
+		accs, err := PrepareGeth(clients[0], panconf, details.Nodes, buildState)
+		if err != nil {
+			log.Println(err)
+			buildState.ReportError(err)
+			extraAccChan <- nil
+			return
+		}
+		extraAccChan <- accs
+	}()
 
 	buildState.SetBuildStage("Setting Up Accounts")
 
@@ -130,6 +144,9 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		log.Println(err)
 		return nil, err
 	}
+	//<- extraAccChan
+	extraAccs := <-extraAccChan
+	addresses = append(addresses, extraAccs...)
 
 	wg.Add(1)
 	defer wg.Wait()
@@ -253,8 +270,8 @@ func createGenesisfile(panconf *PanConf, details *db.DeploymentDetails, address 
 		fallthrough
 	case "ethash":
 		extraData := "0x0000000000000000000000000000000000000000000000000000000000000000"
-		for _, addr := range address {
-			extraData += addr
+		for i := 0; i < len(address) && i < details.Nodes; i++ {
+			extraData += address[i]
 		}
 		extraData += "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 		genesis["extraData"] = extraData
@@ -282,37 +299,93 @@ func createStaticNodesFile(list string, buildState *state.BuildState) error {
 	return buildState.Write("static-nodes.json", list)
 }
 
+func PrepareGeth(client *ssh.Client, panconf *PanConf, nodes int, buildState *state.BuildState) ([]string, error) {
+	addresses := []string{}
+	passwd := ""
+	for i := 0; int64(i) < panconf.Accounts+int64(nodes); i++ {
+		passwd += "second\n"
+	}
+	err := buildState.Write("passwd2", passwd)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	//Set up a geth node as a service to sign transactions
+	client.Run(`docker exec wb_service0 mkdir /geth/`)
+
+	err = client.Scp("passwd2", "/home/appo/passwd2")
+	buildState.Defer(func() { client.Run("rm /home/appo/passwd2") })
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	_, err = client.Run("docker cp /home/appo/passwd2 wb_service0:/geth/passwd")
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	toCreate := panconf.Accounts
+	wg := &sync.WaitGroup{}
+	mux := &sync.Mutex{}
+	for i := 0; i < 40 && i < int(toCreate); i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				mux.Lock()
+				if toCreate == 0 {
+					mux.Unlock()
+					break
+				}
+				toCreate--
+				mux.Unlock()
+
+				gethResults, err := client.Run("docker exec wb_service0 geth --datadir /geth/ --password /geth/passwd account new")
+				if err != nil {
+					log.Println(err)
+					buildState.ReportError(err)
+					return
+				}
+
+				addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
+				addrRaw := addressPattern.FindAllString(gethResults, -1)
+				if len(addrRaw) < 1 {
+					buildState.ReportError(fmt.Errorf("Unable to get addresses"))
+					return
+				}
+				address := addrRaw[0]
+				address = address[1 : len(address)-1]
+
+				mux.Lock()
+				addresses = append(addresses, address)
+				mux.Unlock()
+			}
+		}()
+	}
+	wg.Wait()
+	return addresses, nil
+}
+
 func startGeth(client *ssh.Client, panconf *PanConf, addresses []string, privKeys []string, buildState *state.BuildState) error {
 	serviceIps, err := util.GetServiceIps(GetServices())
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-
 	err = buildState.SetExt("signer_ip", serviceIps["geth"])
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-
 	err = buildState.SetExt("accounts", addresses)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	//Set up a geth node as a service to sign transactions
-	client.Run(`docker exec wb_service0 mkdir /geth/`)
-
 	unlock := ""
 	for i, privKey := range privKeys {
-
-		_, err = client.Run(`docker exec wb_service0 bash -c 'echo "second" >> /geth/passwd'`)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
 		_, err = client.Run(fmt.Sprintf(`docker exec wb_service0 bash -c 'echo -n "%s" > /geth/pk%d' `, privKey, i))
 		if err != nil {
 			log.Println(err)
@@ -324,16 +397,17 @@ func startGeth(client *ssh.Client, panconf *PanConf, addresses []string, privKey
 			log.Println(err)
 			return err
 		}
+	}
 
+	for i, addr := range addresses {
 		if i != 0 {
 			unlock += ","
 		}
-		unlock += "0x" + addresses[i]
-
+		unlock += "0x" + addr
 	}
-	_, err = client.Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
+	_, err = client.Run(fmt.Sprintf(`docker exec -itd wb_service0 bash -ic 'geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
 		` --rpcapi "admin,web3,db,eth,net,personal" --rpccorsdomain "0.0.0.0" --nodiscover --unlock="%s"`+
-		` --password /geth/passwd --networkid %d`, unlock, panconf.NetworkId))
+		` --password /geth/passwd --networkid %d console 2>&1 >> /output.log'`, unlock, panconf.NetworkId))
 	if err != nil {
 		log.Println(err)
 		return err

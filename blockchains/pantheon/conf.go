@@ -18,6 +18,7 @@ type PanConf struct {
 	BlockPeriodSeconds    int64  `json:"blockPeriodSeconds"`
 	Epoch                 int64  `json:"epoch"`
 	RequestTimeoutSeconds int64  `json:"requesttimeoutseconds"`
+	Accounts              int64  `json:"accounts"`
 }
 
 /**
