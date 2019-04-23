@@ -61,6 +61,8 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 			return nil, err
 		}
 	}
+	buildState.Set("keyPairs", keyPairs)
+
 	buildState.IncrementBuildProgress()
 
 	buildState.SetBuildStage("Setting up bonds")
@@ -132,8 +134,10 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		   validators
 		*/
 		log.Println("Got the address for the bootnode: " + enode)
-
 	}
+	buildState.Set("bootnode", enode)
+	buildState.Set("rchainConf", *rchainConf)
+
 	err = helpers.CreateConfigs(servers, clients, buildState, "/datadir/rnode.conf",
 		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
 			if absoluteNodeNum == 0 {
@@ -206,7 +210,78 @@ func createFirstConfigFile(details *db.DeploymentDetails, client *ssh.Client, no
 
 func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
-	return nil, nil
+
+	rchainConf, err := NewRChainConf(details.Params)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	iEnode, ok := buildState.Get("bootnode")
+	if !ok {
+		err = fmt.Errorf("Missing bootnode, has rchain been built before?")
+		log.Println(err)
+		return nil, err
+	}
+	enode := iEnode.(string)
+
+	services, err := util.GetServiceIps(GetServices())
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	err = helpers.CreateConfigs(servers, clients, buildState, "/datadir/rnode.conf",
+		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+			startPoint := len(servers[serverNum].Ips) - len(newNodes[servers[serverNum].Id])
+			if localNodeNum < startPoint {
+				return nil, nil
+			}
+			if absoluteNodeNum == 0 {
+				return nil, nil
+			}
+			return createConfigFile(details, enode, rchainConf, services["wb_influx_proxy"], buildState, absoluteNodeNum)
+		})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	iKeyPairs, ok := buildState.Get("keyPairs")
+	if !ok {
+		err = fmt.Errorf("Missing key pairs, has rchain been built before?")
+		log.Println(err)
+		return nil, err
+	}
+	keyPairs := iKeyPairs.([]util.KeyPair)
+	buildState.SetBuildStage("Configuring the other rchain nodes")
+	/**Copy config files to the rest of the nodes**/
+	//buildState.IncrementBuildProgress()
+
+	buildState.SetBuildStage("Starting the rest of the nodes")
+	/**Start up the rest of the nodes**/
+	var validators int64 = 0
+
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		startPoint := len(servers[serverNum].Ips) - len(newNodes[servers[serverNum].Id])
+		if localNodeNum < startPoint {
+			return nil
+		}
+		//defer buildState.IncrementBuildProgress()
+		if absoluteNodeNum == 0 {
+			return nil
+		}
+		ip := servers[serverNum].Ips[localNodeNum]
+		if validators < rchainConf.Validators {
+			err = clients[serverNum].DockerExecdLog(localNodeNum,
+				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
+					rchainConf.Command, enode, keyPairs[absoluteNodeNum].PrivateKey, ip))
+			validators++
+			return err
+		}
+		return clients[serverNum].DockerExecdLog(localNodeNum,
+			fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s",
+				rchainConf.Command, enode, ip))
+	})
+	return nil, err
 }
 
 func createConfigFile(details *db.DeploymentDetails, bootnodeAddr string, rchainConf *RChainConf,

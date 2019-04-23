@@ -75,8 +75,8 @@ func StartServer() {
 	router.HandleFunc("/nodes/{id}", getTestNetNodes).Methods("GET")
 	router.HandleFunc("/nodes/{id}/", getTestNetNodes).Methods("GET")
 
-	router.HandleFunc("/nodes/{id}/{num}", addNodes).Methods("POST")
-	router.HandleFunc("/nodes/{id}/{num}/", addNodes).Methods("POST")
+	router.HandleFunc("/nodes/{testnetid}", addNodes).Methods("POST")
+	router.HandleFunc("/nodes/{testnetid}/", addNodes).Methods("POST")
 
 	router.HandleFunc("/nodes/{id}/{num}", delNodes).Methods("DELETE")
 	router.HandleFunc("/nodes/{id}/{num}/", delNodes).Methods("DELETE")

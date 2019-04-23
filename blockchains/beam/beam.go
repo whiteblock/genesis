@@ -76,8 +76,8 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 
 	err = helpers.CreateConfigs(servers, clients, buildState, "/beam/beam-node.cfg",
 		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
-			ipsCpy := make([]string,len(ips))
-			copy(ipsCpy,ips)
+			ipsCpy := make([]string, len(ips))
+			copy(ipsCpy, ips)
 			beam_node_config, err := makeNodeConfig(beamConf, ownerKeys[absoluteNodeNum],
 				secretMinerKeys[absoluteNodeNum], details, absoluteNodeNum)
 			if err != nil {

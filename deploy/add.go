@@ -5,10 +5,9 @@ import (
 	ssh "../ssh"
 	state "../state"
 	util "../util"
-	"context"
 	"fmt"
-	"golang.org/x/sync/semaphore"
 	"log"
+	"sync"
 )
 
 /*
@@ -20,9 +19,7 @@ func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*s
 
 	buildState.SetDeploySteps(2 * buildConf.Nodes)
 	defer buildState.FinishDeploy()
-
-	var sem = semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
+	wg := sync.WaitGroup{}
 
 	fmt.Println("-------------Building The Docker Containers-------------")
 
@@ -34,6 +31,7 @@ func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*s
 	}
 	out := map[int][]string{}
 	index := 0
+
 	for i := 0; i < buildConf.Nodes; i++ {
 		serverIndex := availibleServers[index]
 		nodeNum := servers[serverIndex].Nodes + i
@@ -49,9 +47,9 @@ func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*s
 		}
 		out[servers[serverIndex].Id] = append(out[servers[serverIndex].Id], util.GetNodeIP(servers[serverIndex].SubnetID, nodeNum))
 
-		sem.Acquire(ctx, 1)
+		wg.Add(1)
 		go func(serverIndex int, i int) {
-			defer sem.Release(1)
+			defer wg.Done()
 			err := DockerNetworkCreate(servers[serverIndex], clients[serverIndex], i)
 			if err != nil {
 				log.Println(err)
@@ -85,20 +83,14 @@ func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*s
 		index++
 		index = index % len(availibleServers)
 	}
-
-	err := sem.Acquire(ctx, conf.ThreadLimit)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	sem.Release(conf.ThreadLimit)
+	wg.Wait()
 
 	buildState.SetBuildStage("Setting up services")
 
-	sem.Acquire(ctx, 1)
+	wg.Add(1)
 	go func() {
-		defer sem.Release(1)
-		err = finalizeNewNodes(servers, clients, out, buildState)
+		defer wg.Done()
+		err := finalizeNewNodes(servers, clients, out, buildState)
 		if err != nil {
 			log.Println(err)
 			buildState.ReportError(err)
@@ -109,14 +101,7 @@ func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*s
 	for i, _ := range servers {
 		clients[i].Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
 	}
-
-	//Acquire all of the resources here, then release and destroy
-	err = sem.Acquire(ctx, conf.ThreadLimit)
-	if err != nil {
-		log.Println(err)
-		return nil, nil
-	}
-	sem.Release(conf.ThreadLimit)
+	wg.Wait()
 
 	log.Println("Finished adding nodes into the network")
 	return out, buildState.GetError()

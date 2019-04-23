@@ -102,12 +102,6 @@ func getTestNetNodes(w http.ResponseWriter, r *http.Request) {
 
 func addNodes(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	num, err := strconv.Atoi(params["num"])
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "Invalid number of nodes", 400)
-		return
-	}
 
 	testnetId := params["id"]
 
@@ -118,7 +112,6 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tn.Nodes = num
 	decoder := json.NewDecoder(r.Body)
 	decoder.UseNumber()
 	err = decoder.Decode(&tn)
