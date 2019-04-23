@@ -10,7 +10,7 @@ import (
 const Version = "2.2.3"
 
 func Check() error {
-	row := db.QueryRow(fmt.Sprintf("SELECT value FROM meta WHERE key = \"version\""))
+	row := db.QueryRow("SELECT value FROM meta WHERE key = \"version\"")
 	var version string
 	err := row.Scan(&version)
 	if err != nil {
@@ -41,7 +41,7 @@ func SetVersion(version string) error {
 		return err
 	}
 
-	stmt, err := tx.Prepare(fmt.Sprintf("INSERT INTO meta (key,value) VALUES (?,?)"))
+	stmt, err := tx.Prepare("INSERT INTO meta (key,value) VALUES (?,?)")
 
 	if err != nil {
 		log.Println(err)

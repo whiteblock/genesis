@@ -103,7 +103,7 @@ func getTestNetNodes(w http.ResponseWriter, r *http.Request) {
 func addNodes(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	testnetId := params["id"]
+	testnetId := params["testnetid"]
 
 	tn, err := db.GetBuildByTestnet(testnetId)
 	if err != nil {
@@ -119,12 +119,13 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		//Ignore error and continue
 	}
-	_, err = state.GetBuildStateById(testnetId)
+	bs, err := state.GetBuildStateById(testnetId)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Testnet is down, build a new one", 409)
 		return
 	}
+	bs.Reset()
 	w.Write([]byte("Adding the nodes"))
 	go testnet.AddNodes(&tn, testnetId)
 }

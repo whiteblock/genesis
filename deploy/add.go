@@ -34,7 +34,7 @@ func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*s
 
 	for i := 0; i < buildConf.Nodes; i++ {
 		serverIndex := availibleServers[index]
-		nodeNum := servers[serverIndex].Nodes + i
+		nodeNum := len(servers[serverIndex].Ips) + i
 		if servers[serverIndex].Max <= servers[serverIndex].Nodes {
 			if len(availibleServers) == 1 {
 				return nil, fmt.Errorf("Cannot build that many nodes with the availible resources")
