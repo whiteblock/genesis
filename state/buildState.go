@@ -185,7 +185,6 @@ func (this *BuildState) DoneBuilding() {
 			log.Println(err)
 		}
 	}
-	fmt.Println("STORED!")
 	for _, fn := range this.defers {
 		go fn() //No need to wait to confirm completion
 	}
@@ -419,6 +418,7 @@ func (this *BuildState) Reset() {
 	if err != nil {
 		panic(err) //Fatal error
 	}
+	fmt.Println("BUILD has been reset!")
 }
 
 func (this *BuildState) Marshal() string {
