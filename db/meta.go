@@ -29,7 +29,7 @@ func SetMeta(key string, value interface{}) error {
 		return err
 	}
 
-	_, err = stmt.Exec(key, v)
+	_, err = stmt.Exec(key, string(v))
 	if err != nil {
 		log.Println(err)
 		return err
@@ -66,4 +66,9 @@ func GetMetaP(key string, v interface{}) error {
 		return err
 	}
 	return json.Unmarshal(data, &v)
+}
+
+func DeleteMeta(key string) error {
+	_, err := db.Exec(fmt.Sprintf("DELETE FROM meta WHERE key = \"%s\"", key))
+	return err
 }

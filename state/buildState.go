@@ -4,6 +4,7 @@
 package state
 
 import (
+	db "../db"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -39,8 +40,8 @@ type BuildState struct {
 
 	breakpoints       []float64 //must be in ascending order
 	progressIncrement float64
-	externExtras      map[string]interface{} //will be exported
-	extras            map[string]interface{}
+	ExternExtras      map[string]interface{} //will be exported
+	Extras            map[string]interface{}
 	files             []string
 	defers            []func() //Array of functions to run at the end of the build
 	asyncWaiter       sync.WaitGroup
@@ -68,8 +69,8 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 
 	out.breakpoints = []float64{}
 	out.progressIncrement = 0.0
-	out.externExtras = map[string]interface{}{}
-	out.extras = map[string]interface{}{}
+	out.ExternExtras = map[string]interface{}{}
+	out.Extras = map[string]interface{}{}
 	out.files = []string{}
 	out.defers = []func(){}
 
@@ -85,6 +86,24 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	}
 
 	return out
+}
+
+func RestoreBuildState(buildID string) (*BuildState, error) {
+	out := new(BuildState)
+	err := db.GetMetaP(buildID, out)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	out.errMutex = &sync.RWMutex{}
+	out.extraMux = &sync.RWMutex{}
+	out.freeze = &sync.RWMutex{}
+	out.mutex = &sync.RWMutex{}
+	out.stopMux = &sync.RWMutex{}
+	out.freezeMux = &sync.RWMutex{}
+
+	out.Reset()
+	return out, nil
 }
 
 /*
@@ -160,7 +179,13 @@ func (this *BuildState) DoneBuilding() {
 	this.stopping = false
 	this.asyncWaiter.Wait() //Wait for the async calls to complete
 	os.RemoveAll("/tmp/" + this.BuildId)
-
+	if this.ErrorFree() {
+		err := this.Store()
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	fmt.Println("STORED!")
 	for _, fn := range this.defers {
 		go fn() //No need to wait to confirm completion
 	}
@@ -263,38 +288,38 @@ func (this *BuildState) SetExt(key string, value interface{}) error {
 	}
 	this.extraMux.Lock()
 	defer this.extraMux.Unlock()
-	this.externExtras[key] = value
+	this.ExternExtras[key] = value
 	return nil
 }
 
 func (this *BuildState) GetExt(key string) (interface{}, bool) {
 	this.extraMux.RLock()
 	defer this.extraMux.RUnlock()
-	res, ok := this.externExtras[key]
+	res, ok := this.ExternExtras[key]
 	return res, ok
 }
 
 func (this *BuildState) GetExtExtras() ([]byte, error) {
 	this.extraMux.RLock()
 	defer this.extraMux.RUnlock()
-	return json.Marshal(this.externExtras)
+	return json.Marshal(this.ExternExtras)
 }
 
 func (this *BuildState) Set(key string, value interface{}) {
 	this.extraMux.Lock()
 	defer this.extraMux.Unlock()
-	this.extras[key] = value
+	this.Extras[key] = value
 }
 
 func (this *BuildState) Get(key string) (interface{}, bool) {
 	this.extraMux.RLock()
 	defer this.extraMux.RUnlock()
-	out, ok := this.extras[key]
+	out, ok := this.Extras[key]
 	return out, ok
 }
 
 func (this *BuildState) GetExtras() map[string]interface{} {
-	return this.extras
+	return this.Extras
 }
 
 /*
@@ -406,4 +431,12 @@ func (this *BuildState) Marshal() string {
 	out, _ := json.Marshal(
 		map[string]interface{}{"progress": this.BuildingProgress, "error": this.BuildError, "stage": this.BuildStage, "frozen": this.Frozen})
 	return string(out)
+}
+
+func (this *BuildState) Store() error {
+	return db.SetMeta(this.BuildId, *this)
+}
+
+func (this *BuildState) Destroy() error {
+	return db.DeleteMeta(this.BuildId)
 }

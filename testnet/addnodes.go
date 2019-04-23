@@ -22,7 +22,11 @@ import (
    deployment details will be filled in from the origin build.
 */
 func AddNodes(details *db.DeploymentDetails, testnetId string) error {
-	buildState := state.GetBuildStateByServerId(details.Servers[0])
+	buildState, err := state.GetBuildStateById(testnetId)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 	defer buildState.DoneBuilding()
 
 	//STEP 1: MERGE IN MISSING INFO FROM ORIGINAL BUILD
@@ -64,7 +68,7 @@ func AddNodes(details *db.DeploymentDetails, testnetId string) error {
 		return fmt.Errorf("Too many nodes")
 	}
 	//STEP 3: FETCH THE SERVERS
-	servers, err := db.GetServers(prevDetails.Servers)
+	servers, err := status.GetLatestServers(testnetId)
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)
