@@ -16,29 +16,29 @@ func init() {
 }
 
 /*
-	fn func(serverId int,localNodeNum int,absoluteNodeNum int)(error)
+	fn func(client *ssh.Client, server &db.Server,localNodeNum int,absoluteNodeNum int)(error)
 */
-func AllNodeExecCon(tn *testnet.TestNet,fn func(*ssh.Client,int,int,int) error) error {
+func AllNodeExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, int, int) error) error {
 	wg := sync.WaitGroup{}
 	for _, node := range tn.Nodes {
-		
+
 		wg.Add(1)
 		go func(node *db.Node) {
 			defer wg.Done()
-			err := fn(tn.Clients[node.Server],node.Server, node.LocalID, node.AbsoluteNum)
+			err := fn(tn.Clients[node.Server], tn.GetServer(node.Server), node.LocalID, node.AbsoluteNum)
 			if err != nil {
 				log.Println(err)
 				tn.BuildState.ReportError(err)
 				return
 			}
 		}(&node)
-		
+
 	}
 	wg.Wait()
 	return tn.BuildState.GetError()
 }
 
-func AllServerExecCon(tn *testnet.TestNet,fn func(*ssh.Client,*db.Server) error) error {
+func AllServerExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server) error) error {
 
 	wg := sync.WaitGroup{}
 	for _, server := range tn.Servers {
@@ -51,7 +51,7 @@ func AllServerExecCon(tn *testnet.TestNet,fn func(*ssh.Client,*db.Server) error)
 				tn.BuildState.ReportError(err)
 				return
 			}
-		}( &server)
+		}(&server)
 	}
 	wg.Wait()
 	return tn.BuildState.GetError()

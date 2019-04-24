@@ -22,8 +22,7 @@ func init() {
 /*
 Build builds out a fresh new ethereum test network using pantheon
 */
-func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
-	buildState *state.BuildState) ([]string, error) {
+func Build(tn *testnet.TestNet) ([]string, error) {
 
 	wg := sync.WaitGroup{}
 	mux := sync.Mutex{}

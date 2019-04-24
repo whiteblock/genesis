@@ -24,8 +24,8 @@ type TestNet struct {
 	BuildState      *state.BuildState
 	Details         []db.DeploymentDetails
 	CombinedDetails db.DeploymentDetails
-
-	mux *sync.RWMutex
+	LDD             *db.DeploymentDetails //ptr to latest deployment details
+	mux             *sync.RWMutex
 }
 
 func NewTestNet(details db.DeploymentDetails, buildID string) (*TestNet, error) {
@@ -37,6 +37,7 @@ func NewTestNet(details db.DeploymentDetails, buildID string) (*TestNet, error) 
 	out.NewlyBuiltNodes = []db.Node{}
 	out.Details = []db.DeploymentDetails{details}
 	out.CombinedDetails = details
+	out.LDD = &details
 	out.mux = &sync.RWMutex{}
 
 	out.BuildState, err = state.GetBuildStateById(buildID)
@@ -87,6 +88,7 @@ func (this *TestNet) AddDetails(dd db.DeploymentDetails) error {
 		log.Println(err)
 		return err
 	}
+	this.LDD = &this.Details[len(this.Details)-1]
 	return json.Unmarshal(tmp, &this.CombinedDetails)
 }
 
@@ -111,10 +113,6 @@ func (this *TestNet) GetServer(id int) *db.Server {
 		}
 	}
 	return nil
-}
-
-func (this *TestNet) LDD() *db.DeploymentDetails {
-	return this.GetLastestDeploymentDetails()
 }
 
 func (this *TestNet) GetLastestDeploymentDetails() *db.DeploymentDetails {

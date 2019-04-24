@@ -3,7 +3,7 @@ package eos
 import (
 	db "../../db"
 	ssh "../../ssh"
-	state "../../state"
+	testnet "../../testnet"
 	util "../../util"
 	helpers "../helpers"
 	"context"
@@ -12,6 +12,7 @@ import (
 	"log"
 	"math/rand"
 	"strings"
+	"sync"
 )
 
 var conf *util.Config
@@ -25,12 +26,14 @@ func init() {
  * @param  int      nodes       The number of producers to make
  * @param  []Server servers     The list of relevant servers
  */
-func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) ([]string, error) {
-	if details.Nodes < 2 {
+func Build(tn *testnet.TestNet) ([]string, error) {
+	clients := tn.GetFlatClients()
+	buildState := tn.BuildState
+	if tn.LDD.Nodes < 2 {
 		return nil, fmt.Errorf("Cannot build less than 2 nodes")
 	}
 
-	eosconf, err := NewConf(details.Params)
+	eosconf, err := NewConf(tn.LDD.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -48,13 +51,14 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 	fmt.Println("-------------Setting Up EOS-------------")
 	sem := semaphore.NewWeighted(conf.ThreadLimit)
 	ctx := context.TODO()
+	mux := sync.Mutex{}
 
-	masterIP := servers[0].Ips[0]
-	masterServerIP := servers[0].Addr
+	masterIP := tn.Nodes[0].Ip
+	masterServerIP := tn.Servers[0].Addr
 
 	clientPasswords := make(map[string]string)
 
-	buildState.SetBuildSteps(17 + (details.Nodes * (3)) + (int(eosconf.UserAccounts) * (2)) + ((int(eosconf.UserAccounts) / 50) * details.Nodes))
+	buildState.SetBuildSteps(17 + (tn.LDD.Nodes * (3)) + (int(eosconf.UserAccounts) * (2)) + ((int(eosconf.UserAccounts) / 50) * tn.LDD.Nodes))
 
 	contractAccounts := []string{
 		"eosio.bpay",
@@ -67,7 +71,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		"eosio.token",
 		"eosio.vpay",
 	}
-	km, err := helpers.NewKeyMaster(details, "eos")
+	km, err := helpers.NewKeyMaster(tn.LDD, "eos")
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -84,7 +88,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		return util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]}, nil
 	})
 
-	keyPairs, err := km.GetServerKeyPairs(servers, clients)
+	keyPairs, err := km.GetServerKeyPairs(tn.Servers, clients)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -97,7 +101,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 	}
 	buildState.IncrementBuildProgress()
 
-	masterKeyPair := keyPairs[servers[0].Ips[0]]
+	masterKeyPair := keyPairs[tn.Nodes[0].Ip]
 
 	var accountNames []string
 	for i := 0; i < int(eosconf.UserAccounts); i++ {
@@ -113,15 +117,17 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 	/**Start keos and add all the key pairs for all the nodes**/
 	buildState.SetBuildStage("Generating key pairs")
 
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		/**Start keosd**/
-		ip := servers[serverNum].Ips[localNodeNum]
-		_, err = clients[serverNum].DockerExecd(localNodeNum, "keosd --http-server-address 0.0.0.0:8900")
+		ip := tn.Nodes[absoluteNodeNum].Ip
+		_, err = client.DockerExecd(localNodeNum, "keosd --http-server-address 0.0.0.0:8900")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
-		clientPasswords[ip], err = eos_createWallet(clients[serverNum], localNodeNum)
+		mux.Lock()
+		clientPasswords[ip], err = eos_createWallet(client, localNodeNum)
+		mux.Unlock()
 		if err != nil {
 			log.Println(err)
 			return err
@@ -130,7 +136,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		cmds := []string{}
 		for _, name := range accountNames {
 			if len(cmds) > 50 {
-				_, err := clients[serverNum].KTDockerMultiExec(localNodeNum, cmds)
+				_, err := client.KTDockerMultiExec(localNodeNum, cmds)
 				if err != nil {
 					log.Println(err)
 					return err
@@ -143,7 +149,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		}
 
 		if len(cmds) > 0 {
-			_, err := clients[serverNum].KTDockerMultiExec(localNodeNum, cmds)
+			_, err := client.KTDockerMultiExec(localNodeNum, cmds)
 			if err != nil {
 				log.Println(err)
 				return err
@@ -153,21 +159,21 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		return nil
 	})
 
-	password := clientPasswords[servers[0].Ips[0]]
-	passwordNormal := clientPasswords[servers[0].Ips[1]]
+	password := clientPasswords[masterIP]
+	passwordNormal := clientPasswords[tn.Nodes[1].Ip]
 	buildState.IncrementBuildProgress()
 
 	buildState.SetBuildStage("Building genesis block")
-	genesis, err := eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey, details)
+	genesis, err := eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey, tn.LDD)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
 	buildState.IncrementBuildProgress()
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		defer buildState.IncrementBuildProgress()
-		_, err = clients[serverNum].DockerExec(localNodeNum, "mkdir /datadir/")
+		_, err = client.DockerExec(localNodeNum, "mkdir /datadir/")
 		return err
 	})
 	if err != nil {
@@ -175,7 +181,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		return nil, err
 	}
 
-	err = helpers.CopyBytesToAllNodes(servers, clients, buildState,
+	err = helpers.CopyBytesToAllNodes(tn,
 		genesis, "/datadir/genesis.json",
 		eosconf.GenerateConfig(), "/datadir/config.ini")
 	if err != nil {
@@ -199,7 +205,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		err = clients[0].DockerExecdLog(0,
 			fmt.Sprintf(`nodeos -e -p eosio --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s`,
 				eos_getKeyPairFlag(keyPairs[masterIP]),
-				eos_getPTPFlags(servers, 0)))
+				eos_getPTPFlags(tn.Nodes, 0)))
 		fmt.Println(res)
 		if err != nil {
 			log.Println(err)
@@ -305,12 +311,12 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 
 	/**Step 10a**/
 
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		defer buildState.IncrementBuildProgress()
 		if absoluteNodeNum == 0 || absoluteNodeNum > int(eosconf.BlockProducers) {
 			return nil
 		}
-		keyPair := keyPairs[servers[serverNum].Ips[localNodeNum]]
+		keyPair := keyPairs[tn.Nodes[absoluteNodeNum].Ip]
 
 		_, err = clients[0].DockerExec(0, fmt.Sprintf("cleos wallet import --private-key %s", keyPair.PrivateKey)) //ignore return
 		if err != nil {
@@ -340,58 +346,49 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Starting up the candidate block producers")
 	/**Step 11c**/
-	{
-		node := 0
-		for i, server := range servers {
-			for j, ip := range server.Ips {
 
-				if node == 0 {
-					node++
-					continue
-				}
-				sem.Acquire(ctx, 1)
-
-				go func(server int, servers []db.Server, node int, j int, kp util.KeyPair) {
-					defer sem.Release(1)
-					clients[server].DockerExec(j, "mkdir -p /datadir/blocks")
-
-					p2pFlags := eos_getPTPFlags(servers, node)
-					prodFlags := ""
-
-					if node <= int(eosconf.BlockProducers) {
-						prodFlags = " -p " + eos_getProducerName(node) + " "
-					}
-
-					err := clients[server].DockerExecdLog(j,
-						fmt.Sprintf(`nodeos --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s %s`,
-							prodFlags,
-							eos_getKeyPairFlag(kp),
-							p2pFlags))
-					//fmt.Println(res)
-					if err != nil {
-						log.Println(err)
-						buildState.ReportError(err)
-						return
-					}
-
-				}(i, servers, node, j, keyPairs[ip])
-				node++
-			}
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+		if absoluteNodeNum == 0 {
+			return nil
 		}
-		sem.Acquire(ctx, conf.ThreadLimit)
-		sem.Release(conf.ThreadLimit)
-		if !buildState.ErrorFree() {
-			return nil, buildState.GetError()
+		ip := tn.Nodes[absoluteNodeNum].Ip
+		kp := keyPairs[ip]
+
+		client.DockerExec(localNodeNum, "mkdir -p /datadir/blocks")
+
+		p2pFlags := eos_getPTPFlags(tn.Nodes, absoluteNodeNum)
+		prodFlags := ""
+
+		if absoluteNodeNum <= int(eosconf.BlockProducers) {
+			prodFlags = " -p " + eos_getProducerName(absoluteNodeNum) + " "
 		}
+
+		err := client.DockerExecdLog(localNodeNum,
+			fmt.Sprintf(`nodeos --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s %s`,
+				prodFlags,
+				eos_getKeyPairFlag(kp),
+				p2pFlags))
+		//fmt.Println(res)
+		if err != nil {
+			log.Println(err)
+			buildState.ReportError(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
+
 	buildState.IncrementBuildProgress()
 	/**Step 11a**/
 
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		if absoluteNodeNum == 0 || absoluteNodeNum > int(eosconf.BlockProducers) {
 			return nil
 		}
-		ip := servers[serverNum].Ips[localNodeNum]
+		ip := tn.Nodes[absoluteNodeNum].Ip
 		if absoluteNodeNum%5 == 0 {
 			clients[0].DockerExec(0, fmt.Sprintf("cleos -u http://%s:8889 wallet unlock --password %s",
 				masterIP, password)) //ignore
@@ -467,12 +464,8 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 	buildState.SetBuildStage("Voting in block producers")
 	/**Vote in block producers**/
 	{
-		node := 0
-		for _, server := range servers {
-			for range server.Ips {
-				node++
-			}
-		}
+		node := len(tn.Nodes)
+
 		if node > int(eosconf.BlockProducers) {
 			node = int(eosconf.BlockProducers)
 		}
@@ -560,17 +553,15 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 
 	out := []string{}
 
-	for _, server := range servers {
-		for _, ip := range server.Ips {
-			out = append(out, clientPasswords[ip])
-		}
+	for _, node := range tn.Nodes {
+		out = append(out, clientPasswords[node.Ip])
 	}
+
 	buildState.IncrementBuildProgress()
 	return out, nil
 }
 
-func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
-	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
+func Add(tn *testnet.TestNet) ([]string, error) {
 	return nil, nil
 }
 
@@ -629,18 +620,13 @@ func eos_getRegularName(num int) string {
 	return "user" + out
 }
 
-func eos_getPTPFlags(servers []db.Server, exclude int) string {
+func eos_getPTPFlags(nodes []db.Node, exclude int) string {
 	flags := ""
-	node := 0
-	for _, server := range servers {
-		for _, ip := range server.Ips {
-			if node == exclude {
-				node++
-				continue
-			}
-			flags += fmt.Sprintf("--p2p-peer-address %s:8999 ", ip)
-
+	for i, node := range nodes {
+		if i == exclude {
+			continue
 		}
+		flags += fmt.Sprintf("--p2p-peer-address %s:8999 ", node.Ip)
 	}
 	return flags
 }

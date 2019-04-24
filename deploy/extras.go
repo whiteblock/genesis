@@ -2,6 +2,7 @@ package deploy
 
 import (
 	helpers "../blockchains/helpers"
+	db "../db"
 	ssh "../ssh"
 	testnet "../testnet"
 	util "../util"
@@ -25,7 +26,7 @@ func distributeNibbler(tn *testnet.TestNet) {
 		if err != nil {
 			log.Println(err)
 		}
-		err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ int, localNodeNum int, _ int) error {
+		err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
 			_, err := client.DockerExec(localNodeNum, "chmod +x /usr/local/bin/nibbler")
 			return err
 		})
@@ -64,7 +65,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		return err
 	}
 	tn.BuildState.SetBuildStage("Building your custom image")
-	imageName := fmt.Sprintf("%s:%s", tn.LDD().Blockchain, tag)
+	imageName := fmt.Sprintf("%s:%s", tn.LDD.Blockchain, tag)
 	wg := sync.WaitGroup{}
 	for _, client := range tn.Clients {
 		wg.Add(1)
@@ -89,14 +90,14 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 }
 
 func handlePreBuildExtras(tn *testnet.TestNet) error {
-	if tn.LDD().Extras == nil {
+	if tn.LDD.Extras == nil {
 		return nil //Nothing to do
 	}
-	_, exists := tn.LDD().Extras["prebuild"]
+	_, exists := tn.LDD.Extras["prebuild"]
 	if !exists {
 		return nil //Nothing to do
 	}
-	prebuild, ok := tn.LDD().Extras["prebuild"].(map[string]interface{})
+	prebuild, ok := tn.LDD.Extras["prebuild"].(map[string]interface{})
 	if !ok || prebuild == nil {
 		return nil //Nothing to do
 	}
@@ -114,7 +115,7 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 	dockerPull, ok := prebuild["pull"]
 	if ok && dockerPull.(bool) {
 		wg := sync.WaitGroup{}
-		for _, image := range tn.LDD().Images { //OPTMZ
+		for _, image := range tn.LDD.Images { //OPTMZ
 			wg.Add(1)
 			go func(image string) {
 				defer wg.Done()

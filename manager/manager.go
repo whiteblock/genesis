@@ -82,27 +82,27 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 
 	switch details.Blockchain {
 	case "eos":
-		labels, err = eos.Build(details, newServerData, clients, buildState)
+		labels, err = eos.Build(tn)
 	case "ethereum":
 		fallthrough
 	case "geth":
-		labels, err = geth.Build(details, newServerData, clients, buildState)
+		labels, err = geth.Build(tn)
 	case "parity":
-		labels, err = parity.Build(details, newServerData, clients, buildState)
+		labels, err = parity.Build(tn)
 	case "artemis":
-		labels, err = artemis.Build(details, newServerData, clients, buildState)
+		labels, err = artemis.Build(tn)
 	case "pantheon":
-		labels, err = pantheon.Build(details, newServerData, clients, buildState)
+		labels, err = pantheon.Build(tn)
 	case "syscoin":
-		labels, err = sys.RegTest(details, newServerData, clients, buildState)
+		labels, err = sys.RegTest(tn)
 	case "rchain":
-		labels, err = rchain.Build(details, newServerData, clients, buildState)
+		labels, err = rchain.Build(tn)
 	case "beam":
-		labels, err = beam.Build(details, newServerData, clients, buildState)
+		labels, err = beam.Build(tn)
 	case "tendermint":
-		labels, err = tendermint.Build(details, newServerData, clients, buildState)
+		labels, err = tendermint.Build(tn)
 	case "cosmos":
-		labels, err = cosmos.Build(details, newServerData, clients, buildState)
+		labels, err = cosmos.Build(tn)
 	case "generic":
 		log.Println("Built in generic mode")
 	default:

@@ -22,7 +22,7 @@ func CopyAllToServers(tn *testnet.TestNet, srcDst ...string) error {
 		return fmt.Errorf("Invalid number of variadic arguments, must be given an even number of them")
 	}
 	wg := sync.WaitGroup{}
-	for _,client := range tn.Clients {
+	for _, client := range tn.Clients {
 		for j := 0; j < len(srcDst)/2; j++ {
 			wg.Add(1)
 			go func(client *ssh.Client, j int) {
@@ -57,18 +57,18 @@ func CopyToAllNodes(tn *testnet.TestNet, srcDst ...string) error {
 			wg.Add(1)
 			intermediateDst := "/home/appo/" + srcDst[2*j]
 
-			go func(sid int,j int, rdy chan bool) {
+			go func(sid int, j int, rdy chan bool) {
 				defer sem.Release(1)
 				defer wg.Done()
 				ScpAndDeferRemoval(tn.Clients[sid], tn.BuildState, srcDst[2*j], intermediateDst)
 				rdy <- true
-			}(sid,j,rdy)
+			}(sid, j, rdy)
 
 			wg.Add(1)
-			go func(nodes []db.Node,j int, intermediateDst string, rdy chan bool) {
+			go func(nodes []db.Node, j int, intermediateDst string, rdy chan bool) {
 				defer wg.Done()
 				<-rdy
-				for _,node := range nodes {
+				for _, node := range nodes {
 					sem.Acquire(ctx, 1)
 					wg.Add(1)
 					go func(node *db.Node, j int, intermediateDst string) {
@@ -107,7 +107,7 @@ func CopyBytesToAllNodes(tn *testnet.TestNet, dataDst ...string) error {
 	return CopyToAllNodes(tn, fmted...)
 }
 
-func SingleCp(client *ssh.Client,buildState *state.BuildState, localNodeId int, data []byte, dest string) error {
+func SingleCp(client *ssh.Client, buildState *state.BuildState, localNodeId int, data []byte, dest string) error {
 	tmpFilename, err := util.GetUUIDString()
 	if err != nil {
 		log.Println(err)
@@ -136,7 +136,7 @@ type FileDest struct {
 	LocalNodeId int
 }
 
-func CopyBytesToNodeFiles(client *ssh.Client,buildState *state.BuildState, transfers ...FileDest) error {
+func CopyBytesToNodeFiles(client *ssh.Client, buildState *state.BuildState, transfers ...FileDest) error {
 	wg := sync.WaitGroup{}
 
 	for _, transfer := range transfers {
@@ -157,11 +157,11 @@ func CopyBytesToNodeFiles(client *ssh.Client,buildState *state.BuildState, trans
 
 /*
 	fn func(serverid int, localNodeNum int, absoluteNodeNum int) ([]byte, error)
- */
-func CreateConfigs(tn *testnet.TestNet, dest string,fn func(int,int,int) ([]byte, error)) error {
+*/
+func CreateConfigs(tn *testnet.TestNet, dest string, fn func(int, int, int) ([]byte, error)) error {
 
 	wg := sync.WaitGroup{}
-	for _,node := range tn.Nodes{
+	for _, node := range tn.Nodes {
 		wg.Add(1)
 		go func(node *db.Node) {
 			client := tn.Clients[node.Server]

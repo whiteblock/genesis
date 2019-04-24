@@ -4,6 +4,7 @@ import (
 	db "../../db"
 	ssh "../../ssh"
 	state "../../state"
+	testnet "../../testnet"
 	util "../../util"
 	helpers "../helpers"
 	"fmt"
@@ -19,14 +20,14 @@ func init() {
 	conf = util.GetConfig()
 }
 
-func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) ([]string, error) {
-
-	rchainConf, err := NewRChainConf(details.Params)
+func Build(tn *testnet.TestNet) ([]string, error) {
+	buildState := tn.BuildState
+	rchainConf, err := NewRChainConf(tn.LDD.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	buildState.SetBuildSteps(9 + (len(servers) * 2) + (details.Nodes * 2))
+	buildState.SetBuildSteps(9 + (len(tn.Servers) * 2) + (tn.LDD.Nodes * 2))
 	buildState.SetBuildStage("Setting up data collection")
 
 	services, err := util.GetServiceIps(GetServices())
@@ -38,21 +39,21 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 
 	/**Make the data directories**/
 
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		buildState.IncrementBuildProgress()
-		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir /datadir")
+		_, err := client.DockerExec(localNodeNum, "mkdir /datadir")
 		return err
 	})
-
+	clients := tn.GetFlatClients()
 	/**Setup the first node**/
-	err = createFirstConfigFile(details, clients[0], 0, rchainConf, services["wb_influx_proxy"], buildState)
+	err = createFirstConfigFile(tn.LDD, clients[0], 0, rchainConf, services["wb_influx_proxy"], tn.BuildState)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 	buildState.IncrementBuildProgress()
-	km, err := helpers.NewKeyMaster(details, "rchain")
-	keyPairs := make([]util.KeyPair, details.Nodes)
+	km, err := helpers.NewKeyMaster(tn.LDD, "rchain")
+	keyPairs := make([]util.KeyPair, tn.LDD.Nodes)
 
 	for i, _ := range keyPairs {
 		keyPairs[i], err = km.GetKeyPair(clients[0])
@@ -68,7 +69,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 	buildState.SetBuildStage("Setting up bonds")
 	/**Setup bonds**/
 	{
-		bonds := make([]string, details.Nodes)
+		bonds := make([]string, tn.LDD.Nodes)
 		for i, keyPair := range keyPairs {
 			bonds[i] = fmt.Sprintf("%s 1000000", keyPair.PublicKey)
 		}
@@ -154,7 +155,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 	/**Start up the rest of the nodes**/
 	var validators int64 = 0
 
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
 		defer buildState.IncrementBuildProgress()
 		if absoluteNodeNum == 0 {
 			return nil

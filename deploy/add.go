@@ -15,7 +15,7 @@ import (
 */
 func AddNodes(tn *testnet.TestNet) error {
 
-	tn.BuildState.SetDeploySteps(2 * tn.LDD().Nodes)
+	tn.BuildState.SetDeploySteps(2 * tn.LDD.Nodes)
 	defer tn.BuildState.FinishDeploy()
 	wg := sync.WaitGroup{}
 
@@ -29,7 +29,7 @@ func AddNodes(tn *testnet.TestNet) error {
 	}
 	index := 0
 
-	for i := 0; i < tn.LDD().Nodes; i++ {
+	for i := 0; i < tn.LDD.Nodes; i++ {
 		serverIndex := availibleServers[index]
 		serverID := tn.Servers[serverIndex].Id
 
@@ -68,18 +68,18 @@ func AddNodes(tn *testnet.TestNet) error {
 				return
 			}
 			tn.BuildState.IncrementDeployProgress()
-			image := tn.LDD().Images[0]
-			resource := tn.LDD().Resources[0]
-			if len(tn.LDD().Resources) > absNum {
-				resource = tn.LDD().Resources[absNum]
+			image := tn.LDD.Images[0]
+			resource := tn.LDD.Resources[0]
+			if len(tn.LDD.Resources) > absNum {
+				resource = tn.LDD.Resources[absNum]
 			}
-			if len(tn.LDD().Images) > absNum {
-				image = tn.LDD().Images[absNum]
+			if len(tn.LDD.Images) > absNum {
+				image = tn.LDD.Images[absNum]
 			}
 
 			var env map[string]string = nil
-			if tn.LDD().Environments != nil && len(tn.LDD().Environments) > absNum && tn.LDD().Environments[absNum] != nil {
-				env = tn.LDD().Environments[absNum]
+			if tn.LDD.Environments != nil && len(tn.LDD.Environments) > absNum && tn.LDD.Environments[absNum] != nil {
+				env = tn.LDD.Environments[absNum]
 			}
 
 			err = DockerRun(tn, serverID, resource, relNum, image, env)

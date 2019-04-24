@@ -16,7 +16,7 @@ var conf *util.Config = util.GetConfig()
    the given array of servers, with ips updated for the nodes added to that server
 */
 func Build(tn *testnet.TestNet, services []util.Service) error {
-	tn.BuildState.SetDeploySteps(3*tn.LDD().Nodes + 2 + len(services))
+	tn.BuildState.SetDeploySteps(3*tn.LDD.Nodes + 2 + len(services))
 	defer tn.BuildState.FinishDeploy()
 	wg := sync.WaitGroup{}
 
@@ -37,7 +37,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 	}
 
 	index := 0
-	for i := 0; i < tn.LDD().Nodes; i++ {
+	for i := 0; i < tn.LDD.Nodes; i++ {
 		serverIndex := availibleServers[index]
 		serverID := tn.Servers[serverIndex].Id
 
@@ -77,19 +77,19 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 			}
 			tn.BuildState.IncrementDeployProgress()
 
-			resource := tn.LDD().Resources[0]
-			image := tn.LDD().Images[0]
+			resource := tn.LDD.Resources[0]
+			image := tn.LDD.Images[0]
 			var env map[string]string = nil
 
-			if len(tn.LDD().Resources) > absNum {
-				resource = tn.LDD().Resources[absNum]
+			if len(tn.LDD.Resources) > absNum {
+				resource = tn.LDD.Resources[absNum]
 			}
-			if len(tn.LDD().Images) > absNum {
-				image = tn.LDD().Images[absNum]
+			if len(tn.LDD.Images) > absNum {
+				image = tn.LDD.Images[absNum]
 			}
 
-			if tn.LDD().Environments != nil && len(tn.LDD().Environments) > absNum && tn.LDD().Environments[absNum] != nil {
-				env = tn.LDD().Environments[absNum]
+			if tn.LDD.Environments != nil && len(tn.LDD.Environments) > absNum && tn.LDD.Environments[absNum] != nil {
+				env = tn.LDD.Environments[absNum]
 			}
 
 			err = DockerRun(tn, serverID, resource, relNum, image, env)
@@ -145,8 +145,8 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 	wg.Wait()
 
 	//Check if we should freeze
-	if tn.LDD().Extras != nil {
-		shouldFreezeI, ok := tn.LDD().Extras["freezeAfterInfrastructure"]
+	if tn.LDD.Extras != nil {
+		shouldFreezeI, ok := tn.LDD.Extras["freezeAfterInfrastructure"]
 		if ok {
 			shouldFreeze, ok := shouldFreezeI.(bool)
 			if ok && shouldFreeze {

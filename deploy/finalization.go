@@ -2,6 +2,7 @@ package deploy
 
 import (
 	helpers "../blockchains/helpers"
+	db "../db"
 	ssh "../ssh"
 	testnet "../testnet"
 	"fmt"
@@ -58,7 +59,7 @@ func copyOverSshKeys(tn *testnet.TestNet) error {
 		return err
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ int, localNodeNum int, _ int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
 		defer tn.BuildState.IncrementDeployProgress()
 
 		_, err := client.DockerExec(localNodeNum, "mkdir -p /root/.ssh/")
@@ -101,7 +102,7 @@ func copyOverSshKeysToNewNodes(tn *testnet.TestNet) error {
 		return err
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ int, localNodeNum int, _ int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error { //TODO only run on new nodes
 		defer tn.BuildState.IncrementDeployProgress()
 
 		_, err := client.DockerExec(localNodeNum, "mkdir -p /root/.ssh/")

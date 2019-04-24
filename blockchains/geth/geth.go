@@ -4,6 +4,7 @@ import (
 	db "../../db"
 	ssh "../../ssh"
 	state "../../state"
+	testnet "../../testnet"
 	util "../../util"
 	helpers "../helpers"
 	"encoding/json"
@@ -26,24 +27,24 @@ const ETH_NET_STATS_PORT = 3338
 /*
 Build builds out a fresh new ethereum test network using geth
 */
-func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
-	buildState *state.BuildState) ([]string, error) {
-
+func Build(tn *testnet.TestNet) ([]string, error) {
+	buildState := tn.BuildState
+	clients := tn.GetFlatClients()
 	mux := sync.Mutex{}
-	ethconf, err := NewConf(details.Params)
+	ethconf, err := NewConf(tn.LDD.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	buildState.SetBuildSteps(8 + (5 * details.Nodes))
+	buildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes))
 
 	buildState.IncrementBuildProgress()
 
 	buildState.SetBuildStage("Distributing secrets")
 	/**Copy over the password file**/
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir -p /geth")
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
+		_, err := client.DockerExec(localNodeNum, "mkdir -p /geth")
 		return err
 	})
 	if err != nil {
@@ -53,10 +54,10 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 	/**Create the Password files**/
 	{
 		var data string
-		for i := 1; i <= details.Nodes; i++ {
+		for i := 1; i <= tn.LDD.Nodes; i++ {
 			data += "second\n"
 		}
-		err = helpers.CopyBytesToAllNodes(servers, clients, buildState, data, "/geth/passwd")
+		err = helpers.CopyBytesToAllNodes(tn, data, "/geth/passwd")
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -66,12 +67,12 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 	buildState.IncrementBuildProgress()
 
 	/**Create the wallets**/
-	wallets := make([]string, details.Nodes)
-	rawWallets := make([]string, details.Nodes)
+	wallets := make([]string, tn.LDD.Nodes)
+	rawWallets := make([]string, tn.LDD.Nodes)
 	buildState.SetBuildStage("Creating the wallets")
 
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		gethResults, err := clients[serverNum].DockerExec(localNodeNum, "geth --datadir /geth/ --password /geth/passwd account new")
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
+		gethResults, err := client.DockerExec(localNodeNum, "geth --datadir /geth/ --password /geth/passwd account new")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -92,7 +93,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 
 		buildState.IncrementBuildProgress()
 
-		res, err := clients[serverNum].DockerExec(localNodeNum, "bash -c 'cat /geth/keystore/*'")
+		res, err := client.DockerExec(localNodeNum, "bash -c 'cat /geth/keystore/*'")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -122,7 +123,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Creating the genesis block")
-	err = createGenesisfile(ethconf, details, wallets, buildState)
+	err = createGenesisfile(ethconf, tn.LDD, wallets, buildState)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -131,17 +132,17 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Bootstrapping network")
 
-	err = helpers.CopyToAllNodes(servers, clients, buildState, "CustomGenesis.json", "/geth/")
+	err = helpers.CopyToAllNodes(tn, "CustomGenesis.json", "/geth/")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		for i, rawWallet := range rawWallets {
 			if i == absoluteNodeNum {
 				continue
 			}
-			_, err = clients[serverNum].DockerExec(localNodeNum,
+			_, err = client.DockerExec(localNodeNum,
 				fmt.Sprintf("bash -c 'echo \"%s\">>/geth/keystore/account%d'", rawWallet, i))
 			if err != nil {
 				log.Println(err)
@@ -155,21 +156,21 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		return nil, err
 	}
 
-	staticNodes := make([]string, details.Nodes)
+	staticNodes := make([]string, tn.LDD.Nodes)
 
 	buildState.SetBuildStage("Initializing geth")
 
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		ip := servers[serverNum].Ips[localNodeNum]
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
+		ip := tn.Nodes[absoluteNodeNum].Ip
 		//Load the CustomGenesis file
-		_, err := clients[serverNum].DockerExec(localNodeNum,
+		_, err := client.DockerExec(localNodeNum,
 			fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/CustomGenesis.json", ethconf.NetworkId))
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 		fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n", absoluteNodeNum)
-		gethResults, err := clients[serverNum].DockerExec(localNodeNum,
+		gethResults, err := client.DockerExec(localNodeNum,
 			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
 				"geth --rpc --datadir /geth/ --networkid %d console'", ethconf.NetworkId))
 		if err != nil {
@@ -205,14 +206,14 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 	buildState.IncrementBuildProgress()
 	buildState.SetBuildStage("Starting geth")
 	//Copy static-nodes to every server
-	err = helpers.CopyBytesToAllNodes(servers, clients, buildState, string(out), "/geth/static-nodes.json")
+	err = helpers.CopyBytesToAllNodes(tn, string(out), "/geth/static-nodes.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		ip := servers[serverNum].Ips[localNodeNum]
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
+		ip := tn.Nodes[absoluteNodeNum]
 		buildState.IncrementBuildProgress()
 
 		gethCmd := fmt.Sprintf(
@@ -226,7 +227,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 			wallets[absoluteNodeNum],
 			conf.DockerOutputFile)
 
-		_, err = clients[serverNum].DockerExecdit(localNodeNum, fmt.Sprintf("bash -ic '%s'", gethCmd))
+		_, err = client.DockerExecdit(localNodeNum, fmt.Sprintf("bash -ic '%s'", gethCmd))
 		if err != nil {
 			log.Println(err)
 			return err
@@ -247,16 +248,16 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		return nil, err
 	}
 
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		ip := servers[serverNum].Ips[localNodeNum]
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+		ip := tn.Nodes[absoluteNodeNum].Ip
 		absName := fmt.Sprintf("%s%d", conf.NodePrefix, absoluteNodeNum)
 		sedCmd := fmt.Sprintf(`sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`, absName)
 		sedCmd2 := fmt.Sprintf(`sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:%d"/g' /eth-net-intelligence-api/app.json`,
-			util.GetGateway(servers[serverNum].SubnetID, absoluteNodeNum), ETH_NET_STATS_PORT)
+			util.GetGateway(server.SubnetID, absoluteNodeNum), ETH_NET_STATS_PORT)
 		sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`, ip)
 
 		//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
-		_, err := clients[serverNum].DockerMultiExec(localNodeNum, []string{
+		_, err := client.DockerMultiExec(localNodeNum, []string{
 			sedCmd,
 			sedCmd2,
 			sedCmd3})
@@ -265,7 +266,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 			log.Println(err)
 			return err
 		}
-		_, err = clients[serverNum].DockerExecd(localNodeNum, "bash -c 'cd /eth-net-intelligence-api && pm2 start app.json'")
+		_, err = client.DockerExecd(localNodeNum, "bash -c 'cd /eth-net-intelligence-api && pm2 start app.json'")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -278,8 +279,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 
 /***************************************************************************************************************************/
 
-func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
-	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
+func Add(tn *testnet.TestNet) ([]string, error) {
 	return nil, nil
 }
 
