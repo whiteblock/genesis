@@ -3,7 +3,7 @@
    Handles creating test nets, adding/removing nodes from testnets, and keeps track of the
    ssh clients for each server
 */
-package testnet
+package manager
 
 import (
 	artemis "../blockchains/artemis"
@@ -43,7 +43,13 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 		log.Println(err)
 		return err
 	}
-	buildState := state.GetBuildStateByServerId(details.Servers[0])
+	//STEP 1: SETUP THE TESTNET
+	testnet,err := NewTestNet(*details, testNetId)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	buildState := testnet.BuildState
 	buildState.SetDeploySteps(3*details.Nodes + 2)
 	defer buildState.DoneBuilding()
 
@@ -58,22 +64,6 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 	buildState.Async(func() {
 		declareTestnet(testNetId, details)
 	})
-	//STEP 1: FETCH THE SERVERS
-	servers, err := db.GetServers(details.Servers)
-	if err != nil {
-		log.Println(err)
-		buildState.ReportError(err)
-		return err
-	}
-	fmt.Println("Got the Servers")
-
-	//STEP 2: OPEN UP THE RELEVANT SSH CONNECTIONS
-	clients, err := status.GetClients(details.Servers)
-	if err != nil {
-		log.Println(err)
-		buildState.ReportError(err)
-		return err
-	}
 
 	//STEP 3: GET THE SERVICES
 	services := GetServices(details.Blockchain)

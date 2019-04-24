@@ -17,7 +17,6 @@ type Server struct {
 	Id       	int      	`json:"id"`
 	SubnetID 	int      	`json:"subnetID"`
 	Ips 		[]string    `json:"ips"`
-	Nodes      	[]Nodes 	`json:"nodes"`
 }
 
 /*
