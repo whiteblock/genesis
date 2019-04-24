@@ -3,7 +3,7 @@ package tendermint
 import (
 	db "../../db"
 	ssh "../../ssh"
-	state "../../state"
+	testnet "../../testnet"
 	util "../../util"
 	helpers "../helpers"
 	"encoding/json"
@@ -33,26 +33,26 @@ func init() {
 }
 
 //ExecStart=/usr/bin/tendermint node --proxy_app=kvstore --p2p.persistent_peers=167b80242c300bf0ccfb3ced3dec60dc2a81776e@165.227.41.206:26656,3c7a5920811550c04bf7a0b2f1e02ab52317b5e6@165.227.43.146:26656,303a1a4312c30525c99ba66522dd81cca56a361a@159.89.115.32:26656,b686c2a7f4b1b46dca96af3a0f31a6a7beae0be4@159.89.119.125:26656
-func Build(details *db.DeploymentDetails, servers []db.Server,
-	clients []*ssh.Client, buildState *state.BuildState) ([]string, error) {
+func Build(tn *testnet.TestNet) ([]string, error) {
 	//Ensure that genesis file has same chain_id
 	peers := []string{}
 	validators := []Validator{}
-	buildState.SetBuildSteps(1 + (details.Nodes * 4))
+	buildState := tn.BuildState
+	buildState.SetBuildSteps(1 + (tn.LDD.Nodes * 4))
 	buildState.SetBuildStage("Initializing the nodes")
 
 	mux := sync.Mutex{}
-	err := helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		ip := servers[serverNum].Ips[localNodeNum]
+	err := helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+		ip := tn.Nodes[absoluteNodeNum]
 		//init everything
-		_, err := clients[serverNum].DockerExec(localNodeNum, "tendermint init")
+		_, err := client.DockerExec(localNodeNum, "tendermint init")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
 		//Get the node id
-		res, err := clients[serverNum].DockerExec(localNodeNum, "tendermint show_node_id")
+		res, err := client.DockerExec(localNodeNum, "tendermint show_node_id")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -64,7 +64,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server,
 		mux.Unlock()
 
 		//Get the validators
-		res, err = clients[serverNum].DockerExec(localNodeNum, "cat /root/.tendermint/config/genesis.json")
+		res, err = client.DockerExec(localNodeNum, "cat /root/.tendermint/config/genesis.json")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -120,17 +120,16 @@ func Build(details *db.DeploymentDetails, servers []db.Server,
 	buildState.SetBuildStage("Propogating the genesis file")
 
 	//distribute the created genensis file among the nodes
-	err = helpers.CopyBytesToAllNodes(servers, clients, buildState,
-		GetGenesisFile(validators), "/root/.tendermint/config/genesis.json")
+	err = helpers.CopyBytesToAllNodes(tn, GetGenesisFile(validators), "/root/.tendermint/config/genesis.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
 	buildState.SetBuildStage("Starting tendermint")
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		defer buildState.IncrementBuildProgress()
-		return clients[serverNum].DockerExecdLog(localNodeNum, fmt.Sprintf("tendermint node --proxy_app=kvstore --p2p.persistent_peers=%s",
+		return client.DockerExecdLog(localNodeNum, fmt.Sprintf("tendermint node --proxy_app=kvstore --p2p.persistent_peers=%s",
 			strings.Join(append(peers[:absoluteNodeNum], peers[absoluteNodeNum+1:]...), ",")))
 	})
 	return nil, err

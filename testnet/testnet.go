@@ -28,6 +28,34 @@ type TestNet struct {
 	mux             *sync.RWMutex
 }
 
+func RestoreTestNet(buildID string) (*TestNet, error) {
+	out := new(TestNet)
+	err := db.GetMetaP("testnet_"+buildID, out)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	bs, err := state.RestoreBuildState(buildID)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	out.BuildState = bs
+	out.mux = &sync.RWMutex{}
+	out.LDD = out.GetLastestDeploymentDetails()
+
+	out.Clients = map[int]*ssh.Client{}
+	for _, server := range out.Servers {
+		out.Clients[server.Id], err = status.GetClient(server.Id)
+		if err != nil {
+			log.Println(err)
+			out.BuildState.ReportError(err)
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
 func NewTestNet(details db.DeploymentDetails, buildID string) (*TestNet, error) {
 	var err error
 	out := new(TestNet)
@@ -92,8 +120,9 @@ func (this *TestNet) AddDetails(dd db.DeploymentDetails) error {
 	return json.Unmarshal(tmp, &this.CombinedDetails)
 }
 
-func (this *TestNet) FinishBuilding() {
-	//TODO
+func (this *TestNet) FinishedBuilding() {
+	this.NewlyBuiltNodes = []db.Node{}
+	this.Store()
 }
 
 func (this *TestNet) GetFlatClients() []*ssh.Client {
@@ -149,4 +178,22 @@ func (this *TestNet) PreOrderNewNodes() map[int][]db.Node {
 		out[node.Server] = append(out[node.Server], node)
 	}
 	return out
+}
+
+func (this *TestNet) Store() {
+	db.SetMeta("testnet_"+this.TestNetID, *this)
+}
+
+func (this *TestNet) StoreNodes(labels []string) error {
+	for i, node := range this.NewlyBuiltNodes {
+		if labels != nil {
+			node.Label = labels[i]
+		}
+
+		_, err := db.InsertNode(node)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	return nil
 }

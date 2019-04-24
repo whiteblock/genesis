@@ -33,7 +33,7 @@ func PurgeTestNetwork(tn *testnet.TestNet) {
 	})
 }
 
-func Destroy(buildConf *db.DeploymentDetails, tn *testnet.TestNet) error {
+func Destroy(tn *testnet.TestNet) error {
 	DockerStopServices(tn)
 	return helpers.AllServerExecCon(tn, func(client *ssh.Client, _ *db.Server) error {
 		DockerKillAll(client)

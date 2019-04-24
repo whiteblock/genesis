@@ -3,7 +3,7 @@ package syscoin
 import (
 	db "../../db"
 	ssh "../../ssh"
-	state "../../state"
+	testnet "../../testnet"
 	util "../../util"
 	helpers "../helpers"
 	"errors"
@@ -25,50 +25,47 @@ func init() {
  * @param {[type]} servers []db.Server)             The servers to be built on
  * @return ([]string,error [description]
  */
-func RegTest(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) ([]string, error) {
-	if details.Nodes < 3 {
+func RegTest(tn *testnet.TestNet) ([]string, error) {
+	if tn.LDD.Nodes < 3 {
 		log.Println("Tried to build syscoin with not enough nodes")
 		return nil, errors.New("Tried to build syscoin with not enough nodes")
 	}
 
-	sysconf, err := NewConf(details.Params)
+	sysconf, err := NewConf(tn.LDD.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	buildState.SetBuildSteps(1 + (4 * details.Nodes))
+	tn.BuildState.SetBuildSteps(1 + (4 * tn.LDD.Nodes))
 
-	buildState.SetBuildStage("Creating the syscoin conf files")
-	out, err := handleConf(servers, clients, sysconf, buildState)
+	tn.BuildState.SetBuildStage("Creating the syscoin conf files")
+	out, err := handleConf(tn, sysconf)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 	fmt.Printf("done\n")
 
-	buildState.SetBuildStage("Launching the nodes")
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		defer buildState.IncrementBuildProgress()
-		return clients[serverNum].DockerExecdLog(localNodeNum,
+	tn.BuildState.SetBuildStage("Launching the nodes")
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
+		defer tn.BuildState.IncrementBuildProgress()
+		return client.DockerExecdLog(localNodeNum,
 			"syscoind -conf=\"/syscoin/datadir/regtest.conf\" -datadir=\"/syscoin/datadir/\"")
 	})
 
 	return out, err
 }
 
-func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
-	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
+func Add(tn *testnet.TestNet) ([]string, error) {
 	return nil, nil
 }
 
-func handleConf(servers []db.Server, clients []*ssh.Client, sysconf *SysConf, buildState *state.BuildState) ([]string, error) {
+func handleConf(tn *testnet.TestNet, sysconf *SysConf) ([]string, error) {
 	ips := []string{}
-	for _, server := range servers {
-		for _, ip := range server.Ips {
-			ips = append(ips, ip)
-		}
+	for _, node := range tn.Nodes {
+		ips = append(ips, node.Ip)
 	}
 
 	noMasterNodes := int(float64(len(ips)) * (float64(sysconf.PercOfMNodes) / float64(100)))
@@ -101,9 +98,9 @@ func handleConf(servers []db.Server, clients []*ssh.Client, sysconf *SysConf, bu
 		return nil, err
 	}
 
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		defer buildState.IncrementBuildProgress()
-		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir -p /syscoin/datadir")
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+		defer tn.BuildState.IncrementBuildProgress()
+		_, err := client.DockerExec(localNodeNum, "mkdir -p /syscoin/datadir")
 		return err
 	})
 	if err != nil {
@@ -113,9 +110,9 @@ func handleConf(servers []db.Server, clients []*ssh.Client, sysconf *SysConf, bu
 	//Finally generate the configuration for each node
 	mux := sync.Mutex{}
 	labels := make([]string, len(ips))
-	err = helpers.CreateConfigs(servers, clients, buildState, "/syscoin/datadir/regtest.conf",
-		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
-			defer buildState.IncrementBuildProgress()
+	err = helpers.CreateConfigs(tn, "/syscoin/datadir/regtest.conf",
+		func(serverID int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+			defer tn.BuildState.IncrementBuildProgress()
 			confData := ""
 			maxConns := 1
 			label := ""

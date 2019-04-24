@@ -177,7 +177,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	p2pPort := 30303
 	enodes := "["
 	var enodeAddress string
-	for i,node := range tn.Nodes {
+	for i, node := range tn.Nodes {
 		enodeAddress = fmt.Sprintf("enode://%s@%s:%d",
 			pubKeys[i],
 			node.Ip,
@@ -189,15 +189,13 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		}
 		buildState.IncrementBuildProgress()
 	}
-			
-		
-	
+
 	enodes = enodes + "]"
 
 	/* Create Static Nodes File */
 	buildState.SetBuildStage("Setting Up Static Peers")
 	buildState.IncrementBuildProgress()
-	err = helpers.CopyBytesToAllNodes(tn,enodes, "/pantheon/data/static-nodes.json")
+	err = helpers.CopyBytesToAllNodes(tn, enodes, "/pantheon/data/static-nodes.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -214,7 +212,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 	/* Copy static-nodes & genesis files to each node */
 	buildState.SetBuildStage("Distributing Files")
-	err = helpers.CopyToAllNodes(tn,"genesis.json", "/pantheon/genesis/genesis.json")
+	err = helpers.CopyToAllNodes(tn, "genesis.json", "/pantheon/genesis/genesis.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err

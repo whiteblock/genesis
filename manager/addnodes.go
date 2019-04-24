@@ -1,19 +1,19 @@
 package manager
 
 import (
-	beam "../blockchains/beam"
-	eos "../blockchains/eos"
-	geth "../blockchains/geth"
-	rchain "../blockchains/rchain"
-	sys "../blockchains/syscoin"
 	db "../db"
-	deploy "../deploy"
-	state "../state"
-	status "../status"
-	util "../util"
-	"fmt"
-	"log"
-)
+	/*	beam "../blockchains/beam"
+		eos "../blockchains/eos"
+		geth "../blockchains/geth"
+		rchain "../blockchains/rchain"
+		sys "../blockchains/syscoin"
+		db "../db"
+		deploy "../deploy"
+		state "../state"
+		status "../status"
+		util "../util"
+		"fmt"
+		"log"*/)
 
 /*
    AddNodes allows for nodes to be added to the network.
@@ -22,7 +22,7 @@ import (
    deployment details will be filled in from the origin build.
 */
 func AddNodes(details *db.DeploymentDetails, testnetId string) error {
-	buildState, err := state.GetBuildStateById(testnetId)
+	/*buildState, err := state.GetBuildStateById(testnetId)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -159,5 +159,6 @@ func AddNodes(details *db.DeploymentDetails, testnetId string) error {
 
 	}
 
+	*/
 	return nil
 }

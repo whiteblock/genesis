@@ -4,7 +4,11 @@ import (
 	helpers "../blockchains/helpers"
 	db "../db"
 	ssh "../ssh"
+	state "../state"
+	status "../status"
 	testnet "../testnet"
+	util "../util"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -38,6 +42,28 @@ func finalizeNewNodes(tn *testnet.TestNet) error {
 		}
 	}
 	return nil
+}
+
+func alwaysRunFinalize(tn *testnet.TestNet) {
+
+	tn.BuildState.Async(func() {
+		for _, node := range tn.NewlyBuiltNodes {
+			err := declareNode(&node, tn.LDD)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	})
+
+	tn.BuildState.Defer(func() {
+		for i, node := range tn.NewlyBuiltNodes {
+			err := finalizeNode(node, tn.LDD, tn.BuildState, i)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	})
+
 }
 
 /*
@@ -125,4 +151,47 @@ func copyOverSshKeysToNewNodes(tn *testnet.TestNet) error {
 	}
 
 	return helpers.CopyBytesToAllNodes(tn, string(privKey), "/root/.ssh/id_rsa")
+}
+
+func declareNode(node *db.Node, details *db.DeploymentDetails) error {
+	data := map[string]interface{}{
+		"id":         node.TestNetID,
+		"ip_address": node.Ip,
+	}
+	rawData, err := json.Marshal(data)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	_, err = util.JwtHttpRequest("POST", "https://api.whiteblock.io/testnets/"+node.TestNetID+"/nodes", details.GetJwt(), string(rawData))
+	return err
+}
+
+func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state.BuildState, absNum int) error {
+	client, err := status.GetClient(node.Server)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	files := conf.DockerOutputFile
+	if details.Logs != nil && len(details.Logs) > 0 {
+		var logFiles map[string]string
+		if len(details.Logs) == 1 || len(details.Logs) <= absNum {
+			logFiles = details.Logs[0]
+		} else {
+			logFiles = details.Logs[absNum]
+		}
+		for _, file := range logFiles { //Eventually may need to handle the names as well
+			files += " " + file
+		}
+	}
+
+	buildState.Defer(func() {
+		_, err := client.DockerExecd(node.LocalID,
+			fmt.Sprintf("nibbler --jwt %s --testnet %s --node %s %s", details.GetJwt(), node.TestNetID, node.ID, files))
+		if err != nil {
+			log.Println(err)
+		}
+	})
+	return nil
 }

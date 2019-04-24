@@ -24,8 +24,6 @@ import (
 
 	db "../db"
 	deploy "../deploy"
-	state "../state"
-	status "../status"
 	testnet "../testnet"
 	util "../util"
 )
@@ -52,9 +50,10 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 	}
 	buildState := tn.BuildState
 	defer buildState.DoneBuilding()
+	defer tn.FinishedBuilding()
 
 	//STEP 0: VALIDATE
-	err := validate(details)
+	err = validate(details)
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)
@@ -118,6 +117,7 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 		Id: testNetId, Blockchain: details.Blockchain,
 		Nodes: details.Nodes, Image: details.Images[0], //fix
 		Ts: time.Now().Unix()})
+
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)
@@ -130,47 +130,11 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 		buildState.ReportError(err)
 		return err
 	}
-
-	err = storeNodes(newServerData, buildState, details, testNetId, labels)
+	err = tn.StoreNodes(labels)
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)
 		return err
-	}
-	return nil
-}
-
-func storeNodes(newServerData []db.Server, buildState *state.BuildState, details *db.DeploymentDetails,
-	testnetId string, labels []string) error {
-	i := 0
-	for _, server := range newServerData {
-		err := db.UpdateServerNodes(server.Id, 0)
-		if err != nil {
-			log.Println(err)
-			panic(err)
-		}
-		for j, ip := range server.Ips {
-			id, err := util.GetUUIDString()
-			if err != nil {
-				log.Println(err)
-				buildState.ReportError(err)
-				return err
-			}
-			node := db.Node{Id: id, AbsoluteNum: i, TestNetId: testnetId, Server: server.Id, LocalId: j, Ip: ip}
-			if labels != nil {
-				node.Label = labels[i]
-			}
-			err = finalizeNode(node, details, buildState, i)
-			if err != nil {
-				log.Println(err)
-			}
-
-			_, err = db.InsertNode(node)
-			if err != nil {
-				log.Println(err)
-			}
-			i++
-		}
 	}
 	return nil
 }
@@ -192,70 +156,14 @@ func declareTestnet(testnetId string, details *db.DeploymentDetails) error {
 	return err
 }
 
-func declareNode(node db.Node, details *db.DeploymentDetails) error {
-	data := map[string]interface{}{
-		"id":         node.TestNetId,
-		"ip_address": node.Ip,
-	}
-	rawData, err := json.Marshal(data)
+func DeleteTestNet(testnetID string) error {
+	tn, err := testnet.RestoreTestNet(testnetID)
 	if err != nil {
 		log.Println(err)
 		return err
-	}
-	_, err = util.JwtHttpRequest("POST", "https://api.whiteblock.io/testnets/"+node.TestNetId+"/nodes", details.GetJwt(), string(rawData))
-	return err
-}
-
-func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state.BuildState, absNum int) error {
-	client, err := status.GetClient(node.Server)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	files := conf.DockerOutputFile
-	if details.Logs != nil && len(details.Logs) > 0 {
-		var logFiles map[string]string
-		if len(details.Logs) == 1 || len(details.Logs) <= absNum {
-			logFiles = details.Logs[0]
-		} else {
-			logFiles = details.Logs[absNum]
-		}
-		for _, file := range logFiles { //Eventually may need to handle the names as well
-			files += " " + file
-		}
 	}
 
-	buildState.Defer(func() {
-		err := declareNode(node, details)
-		_, err = client.DockerExecd(node.LocalId,
-			fmt.Sprintf("nibbler --jwt %s --testnet %s --node %s %s", details.GetJwt(), node.TestNetId, node.Id, files))
-		if err != nil {
-			log.Println(err)
-		}
-	})
-	return nil
-}
-
-func DeleteTestNet(testnetId string) error {
-	details, err := db.GetBuildByTestnet(testnetId)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	err = state.AcquireBuilding(details.Servers, testnetId)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	buildState := state.GetBuildStateByServerId(details.Servers[0])
-	defer buildState.DoneBuilding()
-
-	clients, err := status.GetClients(details.Servers)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	return deploy.Destroy(&details, clients)
+	return deploy.Destroy(tn)
 }
 
 /*

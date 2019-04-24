@@ -155,7 +155,7 @@ func delNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte("Deleting the nodes"))
-	go testnet.DelNodes(num, testnetId)
+	go manager.DelNodes(num, testnetId)
 }
 
 func restartNode(w http.ResponseWriter, r *http.Request) {
