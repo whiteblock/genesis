@@ -84,7 +84,7 @@ func AddNodes(details *db.DeploymentDetails, testnetId string) error {
 		return err
 	}
 
-	nodes, err := deploy.AddNodes(details, servers, clients, buildState)
+	servers, nodes, err := deploy.AddNodes(details, servers, clients, buildState)
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)
@@ -137,15 +137,15 @@ func AddNodes(details *db.DeploymentDetails, testnetId string) error {
 	}
 
 	i := 0
-	for serverId, ips := range nodes {
-		for _, ip := range ips {
+	for _, server := range servers {
+		for j, ip := range nodes[server.Id] {
 			id, err := util.GetUUIDString()
 			if err != nil {
 				log.Println(err.Error())
 				buildState.ReportError(err)
 				return err
 			}
-			node := db.Node{Id: id, TestNetId: testnetId, Server: serverId, LocalId: i, Ip: ip}
+			node := db.Node{Id: id, AbsoluteNum: i + len(server.Ips), TestNetId: testnetId, Server: server.Id, LocalId: j + len(server.Ips), Ip: ip}
 			if labels != nil {
 				node.Label = labels[i]
 			}

@@ -317,6 +317,24 @@ func (this *BuildState) Get(key string) (interface{}, bool) {
 	return out, ok
 }
 
+func (this *BuildState) GetP(key string, out interface{}) bool {
+	tmp, ok := this.Get(key)
+	if !ok {
+		return false
+	}
+	tmpBytes, err := json.Marshal(tmp)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	err = json.Unmarshal(tmpBytes, out)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return true
+}
+
 func (this *BuildState) GetExtras() map[string]interface{} {
 	return this.Extras
 }

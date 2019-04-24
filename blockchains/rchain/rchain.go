@@ -210,8 +210,11 @@ func createFirstConfigFile(details *db.DeploymentDetails, client *ssh.Client, no
 
 func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
+	fmt.Printf("%#v\n", servers)
+	fmt.Printf("%#v\n", newNodes)
 
 	rchainConf, err := NewRChainConf(details.Params)
+	buildState.SetBuildSteps(9 + (len(servers) * 2) + (details.Nodes * 2))
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -229,6 +232,32 @@ func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Clie
 		log.Println(err)
 		return nil, err
 	}
+	keyPairs := []util.KeyPair{}
+	km, err := helpers.NewKeyMaster(details, "rchain")
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	for i := range servers {
+		for range servers[i].Ips {
+			kp, err := km.GetKeyPair(clients[0])
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
+			keyPairs = append(keyPairs, kp)
+		}
+	}
+
+	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
+		startPoint := len(servers[serverNum].Ips) - len(newNodes[servers[serverNum].Id])
+		if localNodeNum < startPoint {
+			return nil
+		}
+		buildState.IncrementBuildProgress()
+		_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir /datadir")
+		return err
+	})
 
 	err = helpers.CreateConfigs(servers, clients, buildState, "/datadir/rnode.conf",
 		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
@@ -245,13 +274,12 @@ func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Clie
 		log.Println(err)
 		return nil, err
 	}
-	iKeyPairs, ok := buildState.Get("keyPairs")
+
 	if !ok {
 		err = fmt.Errorf("Missing key pairs, has rchain been built before?")
 		log.Println(err)
 		return nil, err
 	}
-	keyPairs := iKeyPairs.([]util.KeyPair)
 	buildState.SetBuildStage("Configuring the other rchain nodes")
 	/**Copy config files to the rest of the nodes**/
 	//buildState.IncrementBuildProgress()

@@ -15,7 +15,7 @@ import (
    does not destroy the previous network when building.
 */
 func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
-	buildState *state.BuildState) (map[int][]string, error) {
+	buildState *state.BuildState) ([]db.Server, map[int][]string, error) {
 
 	buildState.SetDeploySteps(2 * buildConf.Nodes)
 	defer buildState.FinishDeploy()
@@ -37,7 +37,7 @@ func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*s
 		nodeNum := len(servers[serverIndex].Ips) + i
 		if servers[serverIndex].Max <= servers[serverIndex].Nodes {
 			if len(availibleServers) == 1 {
-				return nil, fmt.Errorf("Cannot build that many nodes with the availible resources")
+				return nil, nil, fmt.Errorf("Cannot build that many nodes with the availible resources")
 			}
 			availibleServers = append(availibleServers[:serverIndex], availibleServers[serverIndex+1:]...)
 			i--
@@ -46,7 +46,7 @@ func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*s
 			continue
 		}
 		out[servers[serverIndex].Id] = append(out[servers[serverIndex].Id], util.GetNodeIP(servers[serverIndex].SubnetID, nodeNum))
-
+		servers[serverIndex].Ips = append(servers[serverIndex].Ips, util.GetNodeIP(servers[serverIndex].SubnetID, nodeNum))
 		wg.Add(1)
 		go func(serverIndex int, i int) {
 			defer wg.Done()
@@ -104,5 +104,5 @@ func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*s
 	wg.Wait()
 
 	log.Println("Finished adding nodes into the network")
-	return out, buildState.GetError()
+	return servers, out, buildState.GetError()
 }

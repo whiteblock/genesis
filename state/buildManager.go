@@ -39,6 +39,7 @@ func cleanBuildStates(servers []int) {
 					}
 				}
 			}
+			buildStates[i].Destroy()
 			buildStates = append(buildStates[:i], buildStates[i+1:]...)
 			i--
 		}
