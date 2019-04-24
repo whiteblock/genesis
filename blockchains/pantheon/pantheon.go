@@ -4,6 +4,7 @@ import (
 	db "../../db"
 	ssh "../../ssh"
 	state "../../state"
+	testnet "../../testnet"
 	util "../../util"
 	helpers "../helpers"
 	"fmt"
@@ -23,28 +24,28 @@ func init() {
 Build builds out a fresh new ethereum test network using pantheon
 */
 func Build(tn *testnet.TestNet) ([]string, error) {
-
+	buildState := tn.BuildState
 	wg := sync.WaitGroup{}
 	mux := sync.Mutex{}
 
-	panconf, err := NewConf(details.Params)
+	panconf, err := NewConf(tn.LDD.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	buildState.SetBuildSteps(6*details.Nodes + 2)
+	buildState.SetBuildSteps(6*tn.LDD.Nodes + 2)
 	buildState.IncrementBuildProgress()
 
-	addresses := make([]string, details.Nodes)
-	pubKeys := make([]string, details.Nodes)
-	privKeys := make([]string, details.Nodes)
-	rlpEncodedData := make([]string, details.Nodes)
+	addresses := make([]string, tn.LDD.Nodes)
+	pubKeys := make([]string, tn.LDD.Nodes)
+	privKeys := make([]string, tn.LDD.Nodes)
+	rlpEncodedData := make([]string, tn.LDD.Nodes)
 
 	extraAccChan := make(chan []string)
 
 	go func() {
-		accs, err := PrepareGeth(clients[0], panconf, details.Nodes, buildState)
+		accs, err := PrepareGeth(tn.GetFlatClients()[0], panconf, tn.LDD.Nodes, buildState)
 		if err != nil {
 			log.Println(err)
 			buildState.ReportError(err)
@@ -56,22 +57,22 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	buildState.SetBuildStage("Setting Up Accounts")
 
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		_, err := clients[serverNum].DockerExec(localNodeNum,
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
+		_, err := client.DockerExec(localNodeNum,
 			"pantheon --data-path=/pantheon/data public-key export-address --to=/pantheon/data/nodeAddress")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 		buildState.IncrementBuildProgress()
-		_, err = clients[serverNum].DockerExec(localNodeNum,
+		_, err = client.DockerExec(localNodeNum,
 			"pantheon --data-path=/pantheon/data public-key export --to=/pantheon/data/publicKey")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
-		addr, err := clients[serverNum].DockerExec(localNodeNum, "cat /pantheon/data/nodeAddress")
+		addr, err := client.DockerExec(localNodeNum, "cat /pantheon/data/nodeAddress")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -83,7 +84,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		addresses[absoluteNodeNum] = addrs
 		mux.Unlock()
 
-		key, err := clients[serverNum].DockerExec(localNodeNum, "cat /pantheon/data/publicKey")
+		key, err := client.DockerExec(localNodeNum, "cat /pantheon/data/publicKey")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -94,7 +95,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		pubKeys[absoluteNodeNum] = key[2:]
 		mux.Unlock()
 
-		privKey, err := clients[serverNum].DockerExec(localNodeNum, "cat /pantheon/data/key")
+		privKey, err := client.DockerExec(localNodeNum, "cat /pantheon/data/key")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -103,27 +104,27 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		privKeys[absoluteNodeNum] = privKey[2:]
 		mux.Unlock()
 
-		_, err = clients[serverNum].DockerExec(localNodeNum, "bash -c 'echo \"[\\\""+addrs+"\\\"]\" >> /pantheon/data/toEncode.json'")
+		_, err = client.DockerExec(localNodeNum, "bash -c 'echo \"[\\\""+addrs+"\\\"]\" >> /pantheon/data/toEncode.json'")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
-		_, err = clients[serverNum].DockerExec(localNodeNum, "mkdir /pantheon/genesis")
+		_, err = client.DockerExec(localNodeNum, "mkdir /pantheon/genesis")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
 		// used for IBFT2 extraData
-		_, err = clients[serverNum].DockerExec(localNodeNum,
+		_, err = client.DockerExec(localNodeNum,
 			"pantheon rlp encode --from=/pantheon/data/toEncode.json --to=/pantheon/rlpEncodedExtraData")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
-		rlpEncoded, err := clients[serverNum].DockerExec(localNodeNum, "bash -c 'cat /pantheon/rlpEncodedExtraData'")
+		rlpEncoded, err := client.DockerExec(localNodeNum, "bash -c 'cat /pantheon/rlpEncodedExtraData'")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -156,6 +157,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		   to sign the transactions in place of the pantheon client. The pantheon
 		   client does not support wallet management, so this acts as an easy work around.
 		*/
+		clients := tn.GetFlatClients()
 		err := startGeth(clients[0], panconf, addresses, privKeys, buildState)
 		if err != nil {
 			log.Println(err)
@@ -166,7 +168,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	/* Create Genesis File */
 	buildState.SetBuildStage("Generating Genesis File")
-	err = createGenesisfile(panconf, details, addresses, buildState, rlpEncodedData[0])
+	err = createGenesisfile(panconf, tn.LDD, addresses, buildState, rlpEncodedData[0])
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -175,35 +177,35 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	p2pPort := 30303
 	enodes := "["
 	var enodeAddress string
-	for _, server := range servers {
-		for i, ip := range server.Ips {
-			enodeAddress = fmt.Sprintf("enode://%s@%s:%d",
-				pubKeys[i],
-				ip,
-				p2pPort)
-			if i < len(pubKeys)-1 {
-				enodes = enodes + "\"" + enodeAddress + "\"" + ","
-			} else {
-				enodes = enodes + "\"" + enodeAddress + "\""
-			}
-			buildState.IncrementBuildProgress()
+	for i,node := range tn.Nodes {
+		enodeAddress = fmt.Sprintf("enode://%s@%s:%d",
+			pubKeys[i],
+			node.Ip,
+			p2pPort)
+		if i < len(pubKeys)-1 {
+			enodes = enodes + "\"" + enodeAddress + "\"" + ","
+		} else {
+			enodes = enodes + "\"" + enodeAddress + "\""
 		}
+		buildState.IncrementBuildProgress()
 	}
+			
+		
+	
 	enodes = enodes + "]"
 
 	/* Create Static Nodes File */
 	buildState.SetBuildStage("Setting Up Static Peers")
 	buildState.IncrementBuildProgress()
-	err = helpers.CopyBytesToAllNodes(servers, clients, buildState,
-		enodes, "/pantheon/data/static-nodes.json")
+	err = helpers.CopyBytesToAllNodes(tn,enodes, "/pantheon/data/static-nodes.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	err = helpers.CreateConfigs(servers, clients, buildState, "/pantheon/config.toml",
+	err = helpers.CreateConfigs(tn, "/pantheon/config.toml",
 		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
-			return helpers.GetBlockchainConfig("pantheon", absoluteNodeNum, "config.toml", details)
+			return helpers.GetBlockchainConfig("pantheon", absoluteNodeNum, "config.toml", tn.LDD)
 		})
 
 	if err != nil {
@@ -212,8 +214,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 	/* Copy static-nodes & genesis files to each node */
 	buildState.SetBuildStage("Distributing Files")
-	err = helpers.CopyToAllNodes(servers, clients, buildState,
-		"genesis.json", "/pantheon/genesis/genesis.json")
+	err = helpers.CopyToAllNodes(tn,"genesis.json", "/pantheon/genesis/genesis.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -221,8 +222,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	/* Start the nodes */
 	buildState.SetBuildStage("Starting Pantheon")
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		err := clients[serverNum].DockerExecdLog(localNodeNum, fmt.Sprintf(
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+		err := client.DockerExecdLog(localNodeNum, fmt.Sprintf(
 			`pantheon --config-file=/pantheon/config.toml --data-path=/pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
 				`--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,TXPOOL,WEB3" `+
 				` --p2p-port=%d --rpc-http-port=8545 --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"`,

@@ -210,8 +210,7 @@ func createFirstConfigFile(details *db.DeploymentDetails, client *ssh.Client, no
 }
 
 /**********************************************************************ADD********************************************************************/
-func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
-	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
+func Add(tn *testnet.TestNet) ([]string, error) {
 	fmt.Printf("%#v\n", servers)
 	fmt.Printf("%#v\n", newNodes)
 
