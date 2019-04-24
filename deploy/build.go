@@ -4,6 +4,7 @@ import (
 	db "../db"
 	ssh "../ssh"
 	state "../state"
+	testnet "../testnet"
 	util "../util"
 	"fmt"
 	"log"
@@ -16,9 +17,8 @@ var conf *util.Config = util.GetConfig()
    Build out the given docker network infrastructure according to the given parameters, and return
    the given array of servers, with ips updated for the nodes added to that server
 */
-func Build(buildConf *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
-	services []util.Service, buildState *state.BuildState) ([]db.Server, error) {
-
+func Build(tn *testnet.TestNet,services []util.Service) (error) {
+	buildState := tn.BuildState
 	buildState.SetDeploySteps(3*buildConf.Nodes + 2 + len(services))
 	defer buildState.FinishDeploy()
 	wg := sync.WaitGroup{}

@@ -2,9 +2,9 @@ package rest
 
 import (
 	db "../db"
+	manager "../manager"
 	state "../state"
 	status "../status"
-	testnet "../testnet"
 	util "../util"
 	"encoding/json"
 	"fmt"
@@ -56,7 +56,7 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go testnet.AddTestNet(tn, id)
+	go manager.AddTestNet(tn, id)
 	w.Write([]byte(id))
 
 }
@@ -79,7 +79,7 @@ func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
 
 func deleteTestNet(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	err := testnet.DeleteTestNet(params["id"])
+	err := manager.DeleteTestNet(params["id"])
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 500)
@@ -127,7 +127,7 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
 	}
 	bs.Reset()
 	w.Write([]byte("Adding the nodes"))
-	go testnet.AddNodes(&tn, testnetId)
+	go manager.AddNodes(&tn, testnetId)
 }
 
 func delNodes(w http.ResponseWriter, r *http.Request) {

@@ -11,12 +11,12 @@ type Server struct {
 	/*
 	   Address of the server which is accessible from genesis
 	*/
-	Addr     	string   	`json:"addr"`
-	Nodes    	int      	`json:"nodes"`
-	Max      	int      	`json:"max"`
-	Id       	int      	`json:"id"`
-	SubnetID 	int      	`json:"subnetID"`
-	Ips 		[]string    `json:"ips"`
+	Addr     string   `json:"addr"`
+	Nodes    int      `json:"nodes"`
+	Max      int      `json:"max"`
+	Id       int      `json:"id"`
+	SubnetID int      `json:"subnetID"`
+	Ips      []string `json:"ips"`
 }
 
 /*

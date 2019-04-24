@@ -26,6 +26,7 @@ import (
 	deploy "../deploy"
 	state "../state"
 	status "../status"
+	testnet "../testnet"
 	util "../util"
 )
 
@@ -44,13 +45,12 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 		return err
 	}
 	//STEP 1: SETUP THE TESTNET
-	testnet,err := NewTestNet(*details, testNetId)
+	tn, err := testnet.NewTestNet(*details, testNetId)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	buildState := testnet.BuildState
-	buildState.SetDeploySteps(3*details.Nodes + 2)
+	buildState := tn.BuildState
 	defer buildState.DoneBuilding()
 
 	//STEP 0: VALIDATE
@@ -70,7 +70,7 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 
 	//STEP 4: BUILD OUT THE DOCKER CONTAINERS AND THE NETWORK
 
-	newServerData, err := deploy.Build(details, servers, clients, services, buildState)
+	err = deploy.Build(tn, services)
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)

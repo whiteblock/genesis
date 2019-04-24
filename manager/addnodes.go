@@ -1,4 +1,4 @@
-package testnet
+package manager
 
 import (
 	beam "../blockchains/beam"

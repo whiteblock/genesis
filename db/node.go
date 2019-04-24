@@ -12,13 +12,13 @@ import (
    Node represents a node within the network
 */
 type Node struct {
-	Id string `json:"id"`
+	ID string `json:"id"`
 
 	AbsoluteNum int `json:"absNum"`
 	/*
 	   TestNetId is the id of the testnet to which the node belongs to
 	*/
-	TestNetId string `json:"testNetId"`
+	TestNetID string `json:"testNetId"`
 	/*
 	   Server is the id of the server on which the node resides
 	*/
@@ -26,7 +26,7 @@ type Node struct {
 	/*
 	   LocalId is the number of the node in the testnet
 	*/
-	LocalId int `json:"localId"`
+	LocalID int `json:"localId"`
 	/*
 	   Ip is the ip address of the node
 	*/
@@ -51,7 +51,7 @@ func GetAllNodesByServer(serverId int) ([]Node, error) {
 	nodes := []Node{}
 	for rows.Next() {
 		var node Node
-		err := rows.Scan(&node.Id, &node.TestNetId, &node.Server, &node.LocalId, &node.Ip, &node.Label, &node.AbsoluteNum)
+		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.ID, &node.Label, &node.AbsoluteNum)
 		if err != nil {
 			return nil, err
 		}
@@ -75,7 +75,7 @@ func GetAllNodesByTestNet(testId string) ([]Node, error) {
 
 	for rows.Next() {
 		var node Node
-		err := rows.Scan(&node.Id, &node.TestNetId, &node.Server, &node.LocalId, &node.Ip, &node.Label, &node.AbsoluteNum)
+		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.Ip, &node.Label, &node.AbsoluteNum)
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -99,7 +99,7 @@ func GetAllNodes() ([]Node, error) {
 
 	for rows.Next() {
 		var node Node
-		err := rows.Scan(&node.Id, &node.TestNetId, &node.Server, &node.LocalId, &node.Ip, &node.Label, &node.AbsoluteNum)
+		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.Ip, &node.Label, &node.AbsoluteNum)
 		if err != nil {
 			return nil, err
 		}
@@ -117,7 +117,7 @@ func GetNode(id string) (Node, error) {
 
 	var node Node
 
-	if row.Scan(&node.Id, &node.TestNetId, &node.Server, &node.LocalId, &node.Ip, &node.Label, &node.AbsoluteNum) == sql.ErrNoRows {
+	if row.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.Ip, &node.Label, &node.AbsoluteNum) == sql.ErrNoRows {
 		return node, errors.New("Not Found")
 	}
 
@@ -133,7 +133,7 @@ func GetNodeByTestNetAndId(testnet string, id string) (Node, error) {
 
 	var node Node
 
-	if row.Scan(&node.Id, &node.TestNetId, &node.Server, &node.LocalId, &node.Ip, &node.Label, &node.AbsoluteNum) == sql.ErrNoRows {
+	if row.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.Ip, &node.Label, &node.AbsoluteNum) == sql.ErrNoRows {
 		return node, errors.New("Not Found")
 	}
 
@@ -158,7 +158,7 @@ func InsertNode(node Node) (int, error) {
 
 	defer stmt.Close()
 
-	res, err := stmt.Exec(node.Id, node.TestNetId, node.Server, node.LocalId, node.Ip, node.Label, node.AbsoluteNum)
+	res, err := stmt.Exec(node.ID, node.TestNetID, node.Server, node.LocalID, node.Ip, node.Label, node.AbsoluteNum)
 	if err != nil {
 		return -1, nil
 	}
@@ -201,9 +201,9 @@ func DeleteNodesByServer(id string) error {
  * Helper functions which do not query the database
  */
 
-func GetNodeByLocalId(nodes []Node, localId int) (Node, error) {
+func GetNodeByLocalId(nodes []Node, localID int) (Node, error) {
 	for _, node := range nodes {
-		if node.LocalId == localId {
+		if node.LocalID == localID {
 			return node, nil
 		}
 	}

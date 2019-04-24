@@ -107,9 +107,9 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 		if push {
 			serverIds = append(serverIds, node.Server)
 		}
-		fmt.Printf("ABS = %d; REL=%d;NAME=%s%d\n", node.AbsoluteNum, node.LocalId, conf.NodePrefix, node.LocalId)
+		//fmt.Printf("ABS = %d; REL=%d;NAME=%s%d\n", node.AbsoluteNum, node.LocalID, conf.NodePrefix, node.LocalID)
 		out[node.AbsoluteNum] = NodeStatus{
-			Name:      fmt.Sprintf("%s%d", conf.NodePrefix, node.LocalId),
+			Name:      fmt.Sprintf("%s%d", conf.NodePrefix, node.LocalID),
 			Ip:        node.Ip,
 			Server:    node.Server,
 			Up:        false,

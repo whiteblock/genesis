@@ -5,6 +5,7 @@ import (
 	db "../db"
 	ssh "../ssh"
 	state "../state"
+	testnet "../testnet"
 	util "../util"
 	"encoding/base64"
 	"fmt"
@@ -12,7 +13,7 @@ import (
 	"sync"
 )
 
-func distributeNibbler(servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) {
+func distributeNibbler(tn *testnet.TestNet) {
 	buildState.Async(
 		func() {
 			nibbler, err := util.HttpRequest("GET", "https://storage.googleapis.com/genesis-public/nibbler/master/bin/linux/amd64/nibbler", "")
@@ -92,7 +93,7 @@ func handleDockerBuildRequest(blockchain string, prebuild map[string]interface{}
 	return nil
 }
 
-func handlePreBuildExtras(buildConf *db.DeploymentDetails, clients []*ssh.Client, buildState *state.BuildState) error {
+func handlePreBuildExtras(tn *testnet.TestNet) error {
 	if buildConf.Extras == nil {
 		return nil //Nothing to do
 	}

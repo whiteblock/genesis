@@ -2,7 +2,8 @@ package helpers
 
 import (
 	db "../../db"
-	state "../../state"
+	ssh "../../ssh"
+	testnet "../../testnet"
 	util "../../util"
 	"log"
 	"sync"
@@ -15,47 +16,43 @@ func init() {
 }
 
 /*
-	fn func(serverNum int,localNodeNum int,absoluteNodeNum int)(error)
+	fn func(serverId int,localNodeNum int,absoluteNodeNum int)(error)
 */
-func AllNodeExecCon(servers []db.Server, buildState *state.BuildState,
-	fn func(serverNum int, localNodeNum int, absoluteNodeNum int) error) error {
-	node := 0
+func AllNodeExecCon(tn *testnet.TestNet,fn func(*ssh.Client,int,int,int) error) error {
 	wg := sync.WaitGroup{}
-	for i, server := range servers {
-		for j := range server.Ips {
-			wg.Add(1)
-			go func(i int, j int, node int) {
-				defer wg.Done()
-				err := fn(i, j, node)
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-			}(i, j, node)
-			node++
-		}
-	}
-	wg.Wait()
-	return buildState.GetError()
-}
-
-func AllServerExecCon(servers []db.Server, buildState *state.BuildState,
-	fn func(serverNum int, server *db.Server) error) error {
-
-	wg := sync.WaitGroup{}
-	for i, server := range servers {
+	for _, node := range tn.Nodes {
+		
 		wg.Add(1)
-		go func(serverNum int, server *db.Server) {
+		go func(node *db.Node) {
 			defer wg.Done()
-			err := fn(serverNum, server)
+			err := fn(tn.Clients[node.Server],node.Server, node.LocalID, node.AbsoluteNum)
 			if err != nil {
 				log.Println(err)
-				buildState.ReportError(err)
+				tn.BuildState.ReportError(err)
 				return
 			}
-		}(i, &server)
+		}(&node)
+		
 	}
 	wg.Wait()
-	return buildState.GetError()
+	return tn.BuildState.GetError()
+}
+
+func AllServerExecCon(tn *testnet.TestNet,fn func(*ssh.Client,*db.Server) error) error {
+
+	wg := sync.WaitGroup{}
+	for _, server := range tn.Servers {
+		wg.Add(1)
+		go func(server *db.Server) {
+			defer wg.Done()
+			err := fn(tn.Clients[server.Id], server)
+			if err != nil {
+				log.Println(err)
+				tn.BuildState.ReportError(err)
+				return
+			}
+		}( &server)
+	}
+	wg.Wait()
+	return tn.BuildState.GetError()
 }
