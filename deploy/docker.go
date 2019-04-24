@@ -1,9 +1,11 @@
 package deploy
 
 import (
+	helpers "../blockchains/helpers"
 	db "../db"
 	ssh "../ssh"
 	state "../state"
+	testnet "../testnet"
 	util "../util"
 	"fmt"
 	"log"
@@ -42,22 +44,17 @@ func dockerNetworkCreateCmd(subnet string, gateway string, network int, name str
 /*
    Create a docker network for a node
 */
-func DockerNetworkCreate(server db.Server, client *ssh.Client, node int) error {
+func DockerNetworkCreate(tn *testnet.TestNet, serverID int, node int) error {
+	server := tn.GetServer(serverID)
 	command := dockerNetworkCreateCmd(
 		util.GetNetworkAddress(server.SubnetID, node),
 		util.GetGateway(server.SubnetID, node),
 		node,
 		fmt.Sprintf("%s%d", conf.NodeNetworkPrefix, node))
 
-	_, err := client.Run(command)
-	if err != nil {
-		_, err = client.Run(command)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-	}
-	return nil
+	_, err := tn.Clients[serverID].KeepTryRun(command)
+
+	return err
 }
 
 /*
@@ -119,7 +116,7 @@ func DockerPull(clients []*ssh.Client, image string) error {
 /*
    Makes a docker run command to start a node
 */
-func dockerRunCmd(server db.Server, resources util.Resources, node int, image string, env map[string]string) (string, error) {
+func dockerRunCmd(server *db.Server, resources util.Resources, node int, image string, env map[string]string) (string, error) {
 	command := "docker run -itd --entrypoint /bin/sh "
 	command += fmt.Sprintf("--network %s%d", conf.NodeNetworkPrefix, node)
 
@@ -147,13 +144,13 @@ func dockerRunCmd(server db.Server, resources util.Resources, node int, image st
 /*
    Starts a node
 */
-func DockerRun(server db.Server, client *ssh.Client, resources util.Resources, node int, image string, env map[string]string) error {
-	command, err := dockerRunCmd(server, resources, node, image, env)
+func DockerRun(tn *testnet.TestNet, serverID int, resources util.Resources, node int, image string, env map[string]string) error {
+	command, err := dockerRunCmd(tn.GetServer(serverID), resources, node, image, env)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	_, err = client.Run(command)
+	_, err = tn.Clients[serverID].Run(command)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -235,25 +232,26 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 /*
    Stop all services and remove the service network from a server
 */
-func DockerStopServices(client *ssh.Client) error {
-	res, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)", conf.ServicePrefix))
-	client.Run("docker network rm " + conf.ServiceNetworkName)
-	if err != nil {
-		log.Println(res)
-	}
-	return err
+func DockerStopServices(tn *testnet.TestNet) error {
+	return helpers.AllServerExecCon(tn, func(client *ssh.Client, _ *db.Server) error {
+		_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)", conf.ServicePrefix))
+		client.Run("docker network rm " + conf.ServiceNetworkName)
+		if err != nil {
+			log.Println(err)
+		}
+	})
 }
 
 /*
    Creates the service network and starts all the services on a server
 */
-func DockerStartServices(server db.Server, client *ssh.Client, services []util.Service, buildState *state.BuildState) error {
+func DockerStartServices(tn *testnet.TestNet, services []util.Service) error {
 	gateway, subnet, err := util.GetServiceNetwork()
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-
+	client := tn.GetFlatClients()[0] //TODO make this nice
 	_, err = client.KeepTryRun(dockerNetworkCreateCmd(subnet, gateway, -1, conf.ServiceNetworkName))
 	if err != nil {
 		log.Println(err)

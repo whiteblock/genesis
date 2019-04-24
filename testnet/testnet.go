@@ -71,6 +71,7 @@ func NewTestNet(details db.DeploymentDetails, buildID string) (*TestNet, error) 
 func (this *TestNet) AddNode(node db.Node) {
 	this.mux.Lock()
 	defer this.mux.Unlock()
+	node.AbsoluteNum = len(this.Nodes)
 	this.NewlyBuiltNodes = append(this.NewlyBuiltNodes, node)
 	this.Nodes = append(this.Nodes, node)
 }
@@ -90,6 +91,25 @@ func (this *TestNet) AddDetails(dd db.DeploymentDetails) error {
 
 func (this *TestNet) FinishBuilding() {
 	//TODO
+}
+
+func (this *TestNet) GetFlatClients() []*ssh.Client {
+	out := []*ssh.Client{}
+	this.mux.RLock()
+	defer this.mux.RUnlock()
+	for _, client := range this.Clients {
+		out = append(out, client)
+	}
+	return out
+}
+
+func (this *TestNet) GetServer(id int) *db.Server {
+	for _, server := range this.Servers {
+		if server.Id == id {
+			return &server
+		}
+	}
+	return nil
 }
 
 func (this *TestNet) LDD() *db.DeploymentDetails {
