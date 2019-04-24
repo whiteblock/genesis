@@ -16,7 +16,7 @@ var conf *util.Config = util.GetConfig()
    the given array of servers, with ips updated for the nodes added to that server
 */
 func Build(tn *testnet.TestNet, services []util.Service) error {
-	tn.BuildState.SetDeploySteps(3*buildConf.Nodes + 2 + len(services))
+	tn.BuildState.SetDeploySteps(3*tn.LDD().Nodes + 2 + len(services))
 	defer tn.BuildState.FinishDeploy()
 	wg := sync.WaitGroup{}
 
@@ -25,7 +25,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 	err := handlePreBuildExtras(tn)
 	if err != nil {
 		log.Println(err)
-		return nil, err
+		return err
 	}
 	PurgeTestNetwork(tn)
 
@@ -41,9 +41,9 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 		serverIndex := availibleServers[index]
 		serverID := tn.Servers[serverIndex].Id
 
-		if servers[serverIndex].Max <= servers[serverIndex].Nodes {
+		if tn.Servers[serverIndex].Max <= tn.Servers[serverIndex].Nodes {
 			if len(availibleServers) == 1 {
-				return nil, fmt.Errorf("Cannot build that many nodes with the availible resources")
+				return fmt.Errorf("Cannot build that many nodes with the availible resources")
 			}
 			availibleServers = append(availibleServers[:serverIndex], availibleServers[serverIndex+1:]...)
 			i--
@@ -51,13 +51,20 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 			index = index % len(availibleServers)
 			continue
 		}
-		relNum := len(servers[serverIndex].Ips)
-		tn.AddNode(db.Node{
-			Id: id, TestNetId: tn.TestNetID, Server: serverID,
-			LocalId: servers[serverID].Nodes, Ip: util.GetNodeIP(servers[serverIndex].SubnetID, i)})
+		relNum := len(tn.Servers[serverIndex].Ips)
 
-		servers[serverIndex].Ips = append(servers[serverIndex].Ips, util.GetNodeIP(servers[serverIndex].SubnetID, i)) //TODO: REMOVE
-		servers[serverIndex].Nodes++
+		nodeID, err := util.GetUUIDString()
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		tn.AddNode(db.Node{
+			ID: nodeID, TestNetID: tn.TestNetID, Server: serverID,
+			LocalID: tn.Servers[serverID].Nodes, Ip: util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes))})
+
+		tn.Servers[serverIndex].Ips = append(tn.Servers[serverIndex].Ips, util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes))) //TODO: REMOVE
+		tn.Servers[serverIndex].Nodes++
 
 		wg.Add(1)
 		go func(serverID int, absNum int, relNum int) {
@@ -125,7 +132,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 		}
 	}()
 
-	for _, client := range clients {
+	for _, client := range tn.Clients {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -133,20 +140,20 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 		}()
 
 	}
-	distributeNibbler(tn, buildState)
+	distributeNibbler(tn)
 	//Acquire all of the resources here, then release and destroy
 	wg.Wait()
 
 	//Check if we should freeze
-	if buildConf.Extras != nil {
-		shouldFreezeI, ok := buildConf.Extras["freezeAfterInfrastructure"]
+	if tn.LDD().Extras != nil {
+		shouldFreezeI, ok := tn.LDD().Extras["freezeAfterInfrastructure"]
 		if ok {
 			shouldFreeze, ok := shouldFreezeI.(bool)
 			if ok && shouldFreeze {
-				buildState.Freeze()
+				tn.BuildState.Freeze()
 			}
 		}
 	}
 
-	return servers, buildState.GetError()
+	return tn.BuildState.GetError()
 }

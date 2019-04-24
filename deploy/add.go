@@ -2,8 +2,7 @@ package deploy
 
 import (
 	db "../db"
-	ssh "../ssh"
-	state "../state"
+	testnet "../testnet"
 	util "../util"
 	"fmt"
 	"log"
@@ -14,30 +13,29 @@ import (
    Add nodes to the network instead of building independently. Functions similarly to build, except that it
    does not destroy the previous network when building.
 */
-func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
-	buildState *state.BuildState) ([]db.Server, map[int][]string, error) {
+func AddNodes(tn *testnet.TestNet) error {
 
-	buildState.SetDeploySteps(2 * buildConf.Nodes)
-	defer buildState.FinishDeploy()
+	tn.BuildState.SetDeploySteps(2 * tn.LDD().Nodes)
+	defer tn.BuildState.FinishDeploy()
 	wg := sync.WaitGroup{}
 
 	fmt.Println("-------------Building The Docker Containers-------------")
 
-	buildState.SetBuildStage("Provisioning the nodes")
+	tn.BuildState.SetBuildStage("Provisioning the nodes")
 
-	availibleServers := make([]int, len(servers))
+	availibleServers := make([]int, len(tn.Servers))
 	for i, _ := range availibleServers {
 		availibleServers[i] = i
 	}
-	out := map[int][]string{}
 	index := 0
 
-	for i := 0; i < buildConf.Nodes; i++ {
+	for i := 0; i < tn.LDD().Nodes; i++ {
 		serverIndex := availibleServers[index]
-		nodeNum := len(servers[serverIndex].Ips) + i
-		if servers[serverIndex].Max <= servers[serverIndex].Nodes {
+		serverID := tn.Servers[serverIndex].Id
+
+		if tn.Servers[serverIndex].Max <= tn.Servers[serverIndex].Nodes {
 			if len(availibleServers) == 1 {
-				return nil, nil, fmt.Errorf("Cannot build that many nodes with the availible resources")
+				return fmt.Errorf("Cannot build that many nodes with the availible resources")
 			}
 			availibleServers = append(availibleServers[:serverIndex], availibleServers[serverIndex+1:]...)
 			i--
@@ -45,64 +43,77 @@ func AddNodes(buildConf *db.DeploymentDetails, servers []db.Server, clients []*s
 			index = index % len(availibleServers)
 			continue
 		}
-		out[servers[serverIndex].Id] = append(out[servers[serverIndex].Id], util.GetNodeIP(servers[serverIndex].SubnetID, nodeNum))
-		servers[serverIndex].Ips = append(servers[serverIndex].Ips, util.GetNodeIP(servers[serverIndex].SubnetID, nodeNum))
+
+		relNum := tn.Servers[serverIndex].Nodes
+
+		nodeID, err := util.GetUUIDString()
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		absNum := tn.AddNode(db.Node{
+			ID: nodeID, TestNetID: tn.TestNetID, Server: serverID,
+			LocalID: tn.Servers[serverID].Nodes, Ip: util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes))})
+
+		tn.Servers[serverIndex].Nodes++
+
 		wg.Add(1)
-		go func(serverIndex int, i int) {
+		go func(serverID int, absNum int, relNum int) {
 			defer wg.Done()
-			err := DockerNetworkCreate(servers[serverIndex], clients[serverIndex], i)
+			err := DockerNetworkCreate(tn, serverID, relNum)
 			if err != nil {
 				log.Println(err)
-				buildState.ReportError(err)
+				tn.BuildState.ReportError(err)
 				return
 			}
-			buildState.IncrementDeployProgress()
-			image := buildConf.Images[0]
-			resource := buildConf.Resources[0]
-			if len(buildConf.Resources) > i {
-				resource = buildConf.Resources[i]
+			tn.BuildState.IncrementDeployProgress()
+			image := tn.LDD().Images[0]
+			resource := tn.LDD().Resources[0]
+			if len(tn.LDD().Resources) > absNum {
+				resource = tn.LDD().Resources[absNum]
 			}
-			if len(buildConf.Images) > i {
-				image = buildConf.Images[i]
+			if len(tn.LDD().Images) > absNum {
+				image = tn.LDD().Images[absNum]
 			}
 
 			var env map[string]string = nil
-			if buildConf.Environments != nil && len(buildConf.Environments) > i && buildConf.Environments[i] != nil {
-				env = buildConf.Environments[i]
+			if tn.LDD().Environments != nil && len(tn.LDD().Environments) > absNum && tn.LDD().Environments[absNum] != nil {
+				env = tn.LDD().Environments[absNum]
 			}
 
-			err = DockerRun(servers[serverIndex], clients[serverIndex], resource, i, image, env)
+			err = DockerRun(tn, serverID, resource, relNum, image, env)
 			if err != nil {
 				log.Println(err)
-				buildState.ReportError(err)
+				tn.BuildState.ReportError(err)
 				return
 			}
-			buildState.IncrementDeployProgress()
-		}(serverIndex, nodeNum)
+			tn.BuildState.IncrementDeployProgress()
+		}(serverID, absNum, relNum)
 
 		index++
 		index = index % len(availibleServers)
 	}
 	wg.Wait()
 
-	buildState.SetBuildStage("Setting up services")
+	tn.BuildState.SetBuildStage("Setting up services")
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := finalizeNewNodes(servers, clients, out, buildState)
+		err := finalizeNewNodes(tn)
 		if err != nil {
 			log.Println(err)
-			buildState.ReportError(err)
+			tn.BuildState.ReportError(err)
 			return
 		}
 	}()
 
-	for i, _ := range servers {
-		clients[i].Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
+	for _, client := range tn.Clients {
+		client.Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
 	}
 	wg.Wait()
 
 	log.Println("Finished adding nodes into the network")
-	return servers, out, buildState.GetError()
+	return tn.BuildState.GetError()
 }

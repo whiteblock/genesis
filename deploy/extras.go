@@ -2,9 +2,7 @@ package deploy
 
 import (
 	helpers "../blockchains/helpers"
-	db "../db"
 	ssh "../ssh"
-	state "../state"
 	testnet "../testnet"
 	util "../util"
 	"encoding/base64"
@@ -49,7 +47,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		log.Println(err)
 		return err
 	}
-	err = buildState.Write("Dockerfile", string(dockerfile))
+	err = tn.BuildState.Write("Dockerfile", string(dockerfile))
 	if err != nil {
 		log.Println(err)
 	}
@@ -66,7 +64,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		return err
 	}
 	tn.BuildState.SetBuildStage("Building your custom image")
-	imageName := fmt.Sprintf("%s:%s", blockchain, tag)
+	imageName := fmt.Sprintf("%s:%s", tn.LDD().Blockchain, tag)
 	wg := sync.WaitGroup{}
 	for _, client := range tn.Clients {
 		wg.Add(1)
@@ -91,14 +89,14 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 }
 
 func handlePreBuildExtras(tn *testnet.TestNet) error {
-	if buildConf.Extras == nil {
+	if tn.LDD().Extras == nil {
 		return nil //Nothing to do
 	}
-	_, exists := buildConf.Extras["prebuild"]
+	_, exists := tn.LDD().Extras["prebuild"]
 	if !exists {
 		return nil //Nothing to do
 	}
-	prebuild, ok := buildConf.Extras["prebuild"].(map[string]interface{})
+	prebuild, ok := tn.LDD().Extras["prebuild"].(map[string]interface{})
 	if !ok || prebuild == nil {
 		return nil //Nothing to do
 	}
@@ -116,7 +114,7 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 	dockerPull, ok := prebuild["pull"]
 	if ok && dockerPull.(bool) {
 		wg := sync.WaitGroup{}
-		for _, image := range tn.LDD().Params.Images { //OPTMZ
+		for _, image := range tn.LDD().Images { //OPTMZ
 			wg.Add(1)
 			go func(image string) {
 				defer wg.Done()

@@ -1,13 +1,11 @@
 package deploy
 
 import (
+	helpers "../blockchains/helpers"
 	db "../db"
 	netem "../net"
 	ssh "../ssh"
-	state "../state"
-	"context"
-	"golang.org/x/sync/semaphore"
-	"log"
+	testnet "../testnet"
 )
 
 /*
@@ -15,72 +13,31 @@ PurgeTestNetwork goes into each given ssh client and removes all the nodes and t
 Increments the build state len(clients) * 2 times and sets it stag to tearing down network,
 if buildState is non nil.
 */
-func PurgeTestNetwork(servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) {
-	var sem = semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
-	if buildState != nil {
-		buildState.SetBuildStage("Tearing down the previous testnet")
+func PurgeTestNetwork(tn *testnet.TestNet) {
+	if tn.BuildState != nil {
+		tn.BuildState.SetBuildStage("Tearing down the previous testnet")
 	}
-	for i := range clients {
-		sem.Acquire(ctx, 1)
-		go func(i int) {
-			defer sem.Release(1)
-			DockerKillAll(clients[i])
-			if buildState != nil {
-				buildState.IncrementDeployProgress()
-			}
-			DockerNetworkDestroyAll(clients[i])
-			if buildState != nil {
-				buildState.IncrementDeployProgress()
-			}
-		}(i)
-	}
+	DockerStopServices(tn)
+	helpers.AllServerExecCon(tn, func(client *ssh.Client, server *db.Server) error {
+		DockerKillAll(client)
+		if tn.BuildState != nil {
+			tn.BuildState.IncrementDeployProgress()
+		}
+		DockerNetworkDestroyAll(client)
+		if tn.BuildState != nil {
+			tn.BuildState.IncrementDeployProgress()
+		}
+		netem.RemoveAllOnServer(client, server.Nodes)
 
-	for i := range servers {
-		sem.Acquire(ctx, 1)
-		go func(i int) {
-			defer sem.Release(1)
-			netem.RemoveAllOnServer(clients[i], servers[i].Nodes)
-		}(i)
-	}
-
-	for i := range servers {
-		sem.Acquire(ctx, 1)
-		go func(i int) {
-			defer sem.Release(1)
-			DockerStopServices(clients[i])
-		}(i)
-	}
-
-	sem.Acquire(ctx, conf.ThreadLimit)
-	sem.Release(conf.ThreadLimit)
+		return nil
+	})
 }
 
-func Destroy(buildConf *db.DeploymentDetails, clients []*ssh.Client) error {
-	var sem = semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
-	for _, client := range clients {
-		sem.Acquire(ctx, 1)
-		go func(client *ssh.Client) {
-			defer sem.Release(1)
-			DockerKillAll(client)
-			DockerNetworkDestroyAll(client)
-		}(client)
-	}
-
-	for _, client := range clients {
-		sem.Acquire(ctx, 1)
-		go func(client *ssh.Client) {
-			defer sem.Release(1)
-			DockerStopServices(client)
-		}(client)
-	}
-
-	err := sem.Acquire(ctx, conf.ThreadLimit)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	sem.Release(conf.ThreadLimit)
-	return nil
+func Destroy(buildConf *db.DeploymentDetails, tn *testnet.TestNet) error {
+	DockerStopServices(tn)
+	return helpers.AllServerExecCon(tn, func(client *ssh.Client, _ *db.Server) error {
+		DockerKillAll(client)
+		DockerNetworkDestroyAll(client)
+		return nil
+	})
 }

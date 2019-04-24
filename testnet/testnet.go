@@ -68,12 +68,13 @@ func NewTestNet(details db.DeploymentDetails, buildID string) (*TestNet, error) 
 	return out, nil
 }
 
-func (this *TestNet) AddNode(node db.Node) {
+func (this *TestNet) AddNode(node db.Node) int {
 	this.mux.Lock()
 	defer this.mux.Unlock()
 	node.AbsoluteNum = len(this.Nodes)
 	this.NewlyBuiltNodes = append(this.NewlyBuiltNodes, node)
 	this.Nodes = append(this.Nodes, node)
+	return node.AbsoluteNum
 }
 
 func (this *TestNet) AddDetails(dd db.DeploymentDetails) error {

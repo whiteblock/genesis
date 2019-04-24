@@ -4,7 +4,6 @@ import (
 	helpers "../blockchains/helpers"
 	db "../db"
 	ssh "../ssh"
-	state "../state"
 	testnet "../testnet"
 	util "../util"
 	"fmt"
@@ -60,7 +59,7 @@ func DockerNetworkCreate(tn *testnet.TestNet, serverID int, node int) error {
 /*
    Create all of the node docker networks on a server
 */
-func DockerNetworkCreateAll(server db.Server, client *ssh.Client, nodes int, buildState *state.BuildState) error {
+/*func DockerNetworkCreateAll(server db.Server, client *ssh.Client, nodes int, buildState *state.BuildState) error {
 	for i := 0; i < nodes; i++ {
 		buildState.IncrementDeployProgress()
 		err := DockerNetworkCreate(server, client, i)
@@ -83,7 +82,7 @@ func DockerNetworkCreateAppendAll(server db.Server, client *ssh.Client, start in
 		}
 	}
 	return nil
-}
+}*/
 
 func DockerNetworkDestroy(client *ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker network rm %s%d", conf.NodeNetworkPrefix, node))
@@ -161,15 +160,16 @@ func DockerRun(tn *testnet.TestNet, serverID int, resources util.Resources, node
 /*
    Start a batch of nodes
 */
-func DockerRunAll(server db.Server, client *ssh.Client, resources []util.Resources, nodes int,
+/*func DockerRunAll(server db.Server, client *ssh.Client, resources []util.Resources, nodes int,
 	image string, buildState *state.BuildState, envs []map[string]string) error {
 	return DockerRunAppendAll(server, client, resources, 0, nodes, image, buildState, envs)
-}
+}*/
 
 /*
    Similar to docker run all, but start creating the nodes at a given starting point,
    rather than 0
 */
+/*
 func DockerRunAppendAll(server db.Server, client *ssh.Client, resources []util.Resources, start int,
 	nodes int, image string, buildState *state.BuildState, envs []map[string]string) error {
 	var command string
@@ -205,7 +205,7 @@ func DockerRunAppendAll(server db.Server, client *ssh.Client, resources []util.R
 		}
 	}
 	return nil
-}
+}*/
 
 /*
    Creates the command to start a service container
@@ -239,6 +239,7 @@ func DockerStopServices(tn *testnet.TestNet) error {
 		if err != nil {
 			log.Println(err)
 		}
+		return nil
 	})
 }
 
@@ -278,7 +279,7 @@ func DockerStartServices(tn *testnet.TestNet, services []util.Service) error {
 			log.Println(err)
 			return err
 		}
-		buildState.IncrementDeployProgress()
+		tn.BuildState.IncrementDeployProgress()
 	}
 	return nil
 }
