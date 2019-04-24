@@ -208,6 +208,7 @@ func createFirstConfigFile(details *db.DeploymentDetails, client *ssh.Client, no
 	return client.DockerCp(node, "/home/appo/rnode.conf", "/datadir/rnode.conf")
 }
 
+/**********************************************************************ADD********************************************************************/
 func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
 	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
 	fmt.Printf("%#v\n", servers)
@@ -268,7 +269,7 @@ func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Clie
 			if absoluteNodeNum == 0 {
 				return nil, nil
 			}
-			return createConfigFile(details, enode, rchainConf, services["wb_influx_proxy"], buildState, absoluteNodeNum)
+			return createConfigFile(details, enode, rchainConf, services["wb_influx_proxy"], buildState, absoluteNodeNum-startPoint)
 		})
 	if err != nil {
 		log.Println(err)

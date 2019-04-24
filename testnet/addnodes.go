@@ -145,7 +145,8 @@ func AddNodes(details *db.DeploymentDetails, testnetId string) error {
 				buildState.ReportError(err)
 				return err
 			}
-			node := db.Node{Id: id, AbsoluteNum: i + len(server.Ips), TestNetId: testnetId, Server: server.Id, LocalId: j + len(server.Ips), Ip: ip}
+			node := db.Node{Id: id, AbsoluteNum: i + (len(server.Ips) - len(nodes[server.Id])),
+				TestNetId: testnetId, Server: server.Id, LocalId: j + (len(server.Ips) - len(nodes[server.Id])), Ip: ip}
 			if labels != nil {
 				node.Label = labels[i]
 			}
