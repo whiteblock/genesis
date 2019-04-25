@@ -8,6 +8,7 @@ import (
 	helpers "../helpers"
 	"fmt"
 	"log"
+	"strings"
 )
 
 var conf *util.Config
@@ -25,6 +26,19 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		log.Println(err)
 		return nil, err
 	}
+	fetchedConfChan := make(chan string)
+
+	go func(artemisConf ArtemisConf) {
+		res, err := util.HttpRequest("GET", artemisConf["constantsSource"].(string), "")
+		if err != nil {
+			log.Println(err)
+			tn.BuildState.ReportError(err)
+			return
+		}
+		fetchedConfChan <- string(res)
+
+	}(artemisConf)
+
 	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
 
 	port := 9000
@@ -50,12 +64,20 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	tn.BuildState.SetBuildStage("Creating node configuration files")
 	/**Create node config files**/
+	fetchedConf := <-fetchedConfChan
+	fmt.Println("FETCHED=" + fetchedConf)
 
+	constantsIndex := strings.Index(fetchedConf, "[constants]")
+	if constantsIndex == -1 {
+		return nil, fmt.Errorf("Couldn't find \"[constants]\" in file fetched from given source")
+	}
+	rawConstants := fetchedConf[constantsIndex:]
+	fmt.Printf("RAW CONSTANTS=%s\n", rawConstants)
 	err = helpers.CreateConfigs(tn, "/artemis/config/config.toml",
 		func(serverId int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
 			defer tn.BuildState.IncrementBuildProgress()
 			identity := fmt.Sprintf("0x%.8x", absoluteNodeNum)
-			artemisNodeConfig, err := makeNodeConfig(artemisConf, identity, peers, absoluteNodeNum, tn.LDD)
+			artemisNodeConfig, err := makeNodeConfig(artemisConf, identity, peers, absoluteNodeNum, tn.LDD, rawConstants)
 			return []byte(artemisNodeConfig), err
 		})
 
