@@ -8,6 +8,7 @@ import (
 	util "../util"
 	"fmt"
 	"log"
+	"strings"
 )
 
 /**Quick naive interface to Docker calls over ssh*/
@@ -55,34 +56,6 @@ func DockerNetworkCreate(tn *testnet.TestNet, serverID int, subnetID int, node i
 	return err
 }
 
-/*
-   Create all of the node docker networks on a server
-*/
-/*func DockerNetworkCreateAll(server db.Server, client *ssh.Client, nodes int, buildState *state.BuildState) error {
-	for i := 0; i < nodes; i++ {
-		buildState.IncrementDeployProgress()
-		err := DockerNetworkCreate(server, client, i)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-	}
-	return nil
-}
-
-func DockerNetworkCreateAppendAll(server db.Server, client *ssh.Client, start int,
-	nodes int, buildState *state.BuildState) error {
-	for i := start; i < start+nodes; i++ {
-		buildState.IncrementDeployProgress()
-		err := DockerNetworkCreate(server, client, i)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-	}
-	return nil
-}*/
-
 func DockerNetworkDestroy(client *ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker network rm %s%d", conf.NodeNetworkPrefix, node))
 	return err
@@ -94,6 +67,18 @@ func DockerNetworkDestroy(client *ssh.Client, node int) error {
 func DockerNetworkDestroyAll(client *ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf(
 		"for net in $(docker network ls | grep %s | awk '{print $1}'); do docker network rm $net; done", conf.NodeNetworkPrefix))
+	return err
+}
+
+func DockerLogin(client *ssh.Client, username string, password string) error {
+	user := strings.Replace(username, "\"", "\\\"", -1) //Escape the quotes
+	pass := strings.Replace(password, "\"", "\\\"", -1) //Escape the quotes
+	_, err := client.Run(fmt.Sprintf("docker login -u \"%s\" -p \"%s\"", user, pass))
+	return err
+}
+
+func DockerLogout(client *ssh.Client) error {
+	_, err := client.Run("docker logout")
 	return err
 }
 
@@ -156,59 +141,6 @@ func DockerRun(tn *testnet.TestNet, serverID int, subnetID int, resources util.R
 	return nil
 }
 
-/*
-   Start a batch of nodes
-*/
-/*func DockerRunAll(server db.Server, client *ssh.Client, resources []util.Resources, nodes int,
-	image string, buildState *state.BuildState, envs []map[string]string) error {
-	return DockerRunAppendAll(server, client, resources, 0, nodes, image, buildState, envs)
-}*/
-
-/*
-   Similar to docker run all, but start creating the nodes at a given starting point,
-   rather than 0
-*/
-/*
-func DockerRunAppendAll(server db.Server, client *ssh.Client, resources []util.Resources, start int,
-	nodes int, image string, buildState *state.BuildState, envs []map[string]string) error {
-	var command string
-	for i := start; i < start+nodes; i++ {
-		//state.IncrementDeployProgress()
-		resource := resources[0]
-		var env map[string]string = nil
-
-		if len(resources) > i {
-			resource = resources[i]
-		}
-		if envs != nil && len(envs) > i && envs[i] != nil {
-			env = envs[i]
-		}
-		tmp, err := dockerRunCmd(server, resource, i, image, env)
-		if err != nil {
-			return err
-		}
-
-		if len(command) == 0 {
-			command += tmp
-		} else {
-			command += "&&" + tmp
-		}
-
-		if i%2 == 0 || i == (start+nodes)-1 {
-			_, err := client.Run(command)
-			command = ""
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-		}
-	}
-	return nil
-}*/
-
-/*
-   Creates the command to start a service container
-*/
 func serviceDockerRunCmd(network string, ip string, name string, env map[string]string, image string) string {
 	envFlags := ""
 	for k, v := range env {

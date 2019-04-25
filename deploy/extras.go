@@ -83,10 +83,25 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		}(client)
 	}
 	wg.Wait()
-	if !tn.BuildState.ErrorFree() {
-		return tn.BuildState.GetError()
+	return tn.BuildState.GetError()
+}
+
+func handleDockerAuth(tn *testnet.TestNet, auth map[string]interface{}) error {
+	wg := sync.WaitGroup{}
+	for _, client := range tn.Clients {
+		wg.Add(1)
+		go func(client *ssh.Client) { //TODO add validation
+			err := DockerLogin(client, auth["username"].(string), auth["password"].(string))
+			if err != nil {
+				log.Println(err)
+				tn.BuildState.ReportError(err)
+			}
+			tn.BuildState.Defer(func() { DockerLogout(client) })
+		}(client)
 	}
-	return nil
+
+	wg.Wait()
+	return tn.BuildState.GetError()
 }
 
 func handlePreBuildExtras(tn *testnet.TestNet) error {
@@ -101,8 +116,16 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 	if !ok || prebuild == nil {
 		return nil //Nothing to do
 	}
-	//
-
+	//Handle docker Auth
+	iDockerAuth, ok := prebuild["auth"]
+	if ok {
+		err := handleDockerAuth(tn, iDockerAuth.(map[string]interface{}))
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+	}
+	//Handle docker build
 	dockerBuild, ok := prebuild["build"] //bool to see if a manual build was requested.
 	if ok && dockerBuild.(bool) {
 		err := handleDockerBuildRequest(tn, prebuild)
@@ -111,9 +134,9 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 			return err
 		}
 	}
-
+	//Force docker pull
 	dockerPull, ok := prebuild["pull"]
-	if ok && dockerPull.(bool) {
+	if ok && dockerPull.(bool) { //Slightly frail
 		wg := sync.WaitGroup{}
 		for _, image := range tn.LDD.Images { //OPTMZ
 			wg.Add(1)
