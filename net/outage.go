@@ -50,7 +50,11 @@ func MakeOutageCommands(node1 db.Node, node2 db.Node) []string {
 	}
 }
 
-func MakeOutage(node1 db.Node, node2 db.Node) error {
+func mkrmOutage(node1 db.Node, node2 db.Node, create bool) error {
+	flag := "-I"
+	if !create {
+		flag = "-D"
+	}
 	cmds := MakeOutageCommands(node1, node2)
 
 	client, err := status.GetClient(node1.Server)
@@ -58,7 +62,7 @@ func MakeOutage(node1 db.Node, node2 db.Node) error {
 		log.Println(err)
 		return err
 	}
-	_, err = client.Run(fmt.Sprintf("sudo iptables -I %s", cmds[0]))
+	_, err = client.Run(fmt.Sprintf("sudo iptables %s %s", flag, cmds[0]))
 	if err != nil {
 		log.Println(err)
 		return err
@@ -68,7 +72,7 @@ func MakeOutage(node1 db.Node, node2 db.Node) error {
 		log.Println(err)
 		return err
 	}
-	_, err = client.Run(fmt.Sprintf("sudo iptables -I %s", cmds[1]))
+	_, err = client.Run(fmt.Sprintf("sudo iptables %s %s", flag, cmds[1]))
 	if err != nil {
 		log.Println(err)
 		return err
@@ -77,31 +81,12 @@ func MakeOutage(node1 db.Node, node2 db.Node) error {
 	return nil
 }
 
+func MakeOutage(node1 db.Node, node2 db.Node) error {
+	return mkrmOutage(node1, node2, true)
+}
+
 func RemoveOutage(node1 db.Node, node2 db.Node) error {
-
-	cmds := MakeOutageCommands(node1, node2)
-
-	client, err := status.GetClient(node1.Server)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	_, err = client.Run(fmt.Sprintf("sudo iptables -D %s", cmds[0]))
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	client, err = status.GetClient(node2.Server)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	_, err = client.Run(fmt.Sprintf("sudo iptables -D %s", cmds[1]))
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	return nil
+	return mkrmOutage(node1, node2, false)
 }
 
 func CreatePartitionOutage(side1 []db.Node, side2 []db.Node) { //Doesn't report errors yet
