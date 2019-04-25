@@ -20,7 +20,7 @@ import (
 */
 func finalize(tn *testnet.TestNet) error {
 	if conf.HandleNodeSshKeys {
-		err := copyOverSshKeys(tn)
+		err := copyOverSshKeys(tn, false)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -35,7 +35,7 @@ func finalize(tn *testnet.TestNet) error {
 */
 func finalizeNewNodes(tn *testnet.TestNet) error {
 	if conf.HandleNodeSshKeys {
-		err := copyOverSshKeysToNewNodes(tn)
+		err := copyOverSshKeys(tn, true)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -70,7 +70,7 @@ func alwaysRunFinalize(tn *testnet.TestNet) {
    Copy over the ssh public key to each node to allow for the user to ssh into each node.
    The public key comes from the nodes public key specified in the configuration
 */
-func copyOverSshKeys(tn *testnet.TestNet) error {
+func copyOverSshKeys(tn *testnet.TestNet, newOnly bool) error {
 	tmp, err := ioutil.ReadFile(conf.NodesPublicKey)
 	pubKey := string(tmp)
 	pubKey = strings.Trim(pubKey, "\t\n\v\r")
@@ -85,7 +85,7 @@ func copyOverSshKeys(tn *testnet.TestNet) error {
 		return err
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
+	fn := func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
 		defer tn.BuildState.IncrementDeployProgress()
 
 		_, err := client.DockerExec(localNodeNum, "mkdir -p /root/.ssh/")
@@ -101,56 +101,19 @@ func copyOverSshKeys(tn *testnet.TestNet) error {
 
 		_, err = client.DockerExecd(localNodeNum, "service ssh start")
 		return err
-	})
+	}
+
+	if newOnly {
+		err = helpers.AllNewNodeExecCon(tn, fn)
+	} else {
+		err = helpers.AllNodeExecCon(tn, fn)
+	}
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
 	return helpers.CopyBytesToAllNodes(tn, string(privKey), "/root/.ssh/id_rsa")
-}
-
-/*
-   Functions like copyOverSshKeys, but with the add nodes format.
-*/
-func copyOverSshKeysToNewNodes(tn *testnet.TestNet) error {
-	tmp, err := ioutil.ReadFile(conf.NodesPublicKey)
-	pubKey := string(tmp)
-	pubKey = strings.Trim(pubKey, "\t\n\v\r")
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	privKey, err := ioutil.ReadFile(conf.NodesPrivateKey)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	err = helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error { //TODO only run on new nodes
-		defer tn.BuildState.IncrementDeployProgress()
-
-		_, err := client.DockerExec(localNodeNum, "mkdir -p /root/.ssh/")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		_, err = client.DockerExec(localNodeNum, fmt.Sprintf(`bash -c 'echo "%s" >> /root/.ssh/authorized_keys'`, pubKey))
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		_, err = client.DockerExecd(localNodeNum, "service ssh start")
-		return err
-	})
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	return helpers.CopyBytesToAllNewNodes(tn, string(privKey), "/root/.ssh/id_rsa")
 }
 
 func declareNode(node *db.Node, details *db.DeploymentDetails) error {
