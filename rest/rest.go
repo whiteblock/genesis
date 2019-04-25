@@ -78,11 +78,17 @@ func StartServer() {
 	router.HandleFunc("/nodes/{testnetid}", addNodes).Methods("POST")
 	router.HandleFunc("/nodes/{testnetid}/", addNodes).Methods("POST")
 
-	router.HandleFunc("/nodes/{id}/{num}", delNodes).Methods("DELETE")
+	router.HandleFunc("/nodes/{id}/{num}", delNodes).Methods("DELETE") //Completely remove x nodes
 	router.HandleFunc("/nodes/{id}/{num}/", delNodes).Methods("DELETE")
 
-	router.HandleFunc("/nodes/restart/{id}/{num}", restartNode).Methods("POST")
-	router.HandleFunc("/nodes/restart/{id}/{num}/", restartNode).Methods("POST")
+	router.HandleFunc("/nodes/restart/{testnetid}/{num}", restartNode).Methods("POST")
+	router.HandleFunc("/nodes/restart/{testnetid}/{num}/", restartNode).Methods("POST")
+
+	router.HandleFunc("/nodes/raise/{testnetid}/{node}/{signal}", signalNode).Methods("POST")
+	router.HandleFunc("/nodes/raise/{testnetid}/{node}/{signal}/", signalNode).Methods("POST")
+
+	router.HandleFunc("/nodes/kill/{testnetid}/{node}", killNode).Methods("POST")
+	router.HandleFunc("/nodes/kill/{testnetid}/{node}/", killNode).Methods("POST")
 
 	router.HandleFunc("/build/{id}", stopBuild).Methods("DELETE")
 	router.HandleFunc("/build/{id}/", stopBuild).Methods("DELETE")

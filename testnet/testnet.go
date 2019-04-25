@@ -225,6 +225,10 @@ func (this *TestNet) Store() {
 	db.SetMeta("testnet_"+this.TestNetID, *this)
 }
 
+func (this *TestNet) Destroy() error {
+	return db.DeleteMeta("testnet_" + this.TestNetID)
+}
+
 func (this *TestNet) StoreNodes(labels []string) error {
 	for i, node := range this.NewlyBuiltNodes {
 		if labels != nil {

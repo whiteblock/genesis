@@ -142,7 +142,7 @@ func (this *BuildState) Freeze() error {
 	}
 
 	this.Frozen = true
-	this.mutex.Unlock()
+	this.mutex.Unlock() //Must occur before freeze lock to prevent full seizing
 
 	this.freeze.Lock()
 
@@ -191,6 +191,7 @@ func (this *BuildState) DoneBuilding() {
 			log.Println(err)
 		}
 	} else {
+		this.extraMux.RLock()
 		wg := sync.WaitGroup{} //Wait for completion, to prevent a potential race
 		for i := range this.errorCleanupFuncs {
 			wg.Add(1)
@@ -199,6 +200,7 @@ func (this *BuildState) DoneBuilding() {
 				(*fn)()
 			}(&this.errorCleanupFuncs[i])
 		}
+		this.extraMux.RUnlock()
 		wg.Wait()
 	}
 	atomic.StoreUint64(&this.BuildProgress, this.BuildTotal)
@@ -236,7 +238,7 @@ func (this *BuildState) Stop() bool {
 		return false
 	}
 
-	this.freeze.RLock()
+	this.freeze.RLock() //Catch on freeze
 	this.freeze.RUnlock()
 
 	if len(this.breakpoints) > 0 { //Don't take the lock overhead if there aren't any breakpoints
@@ -254,8 +256,9 @@ func (this *BuildState) Stop() bool {
 	}
 
 	this.stopMux.RLock()
+	isStopping := this.stopping
 	defer this.stopMux.RUnlock()
-	return this.stopping
+	return isStopping
 }
 
 /*
@@ -369,9 +372,7 @@ func (this *BuildState) Write(file string, data string) error {
 	this.mutex.Lock()
 	this.files = append(this.files, file)
 	this.mutex.Unlock()
-	err := ioutil.WriteFile("/tmp/"+this.BuildId+"/"+file, []byte(data), 0664)
-
-	return err
+	return ioutil.WriteFile("/tmp/"+this.BuildId+"/"+file, []byte(data), 0664)
 }
 
 /*
