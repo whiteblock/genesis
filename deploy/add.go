@@ -19,8 +19,6 @@ func AddNodes(tn *testnet.TestNet) error {
 	defer tn.BuildState.FinishDeploy()
 	wg := sync.WaitGroup{}
 
-	fmt.Println("-------------Building The Docker Containers-------------")
-
 	tn.BuildState.SetBuildStage("Provisioning the nodes")
 
 	availibleServers := make([]int, len(tn.Servers))
@@ -59,42 +57,10 @@ func AddNodes(tn *testnet.TestNet) error {
 		tn.Servers[serverIndex].Nodes++
 
 		wg.Add(1)
-		go func(serverID int, subnetID int, absNum int, relNum int) {
+		go func(server *db.Server, absNum int, relNum int) {
 			defer wg.Done()
-			tn.BuildState.OnError(func() {
-				DockerKill(tn.Clients[serverID], relNum)
-				DockerNetworkDestroy(tn.Clients[serverID], relNum)
-			})
-			err := DockerNetworkCreate(tn, serverID, subnetID, relNum)
-			if err != nil {
-				log.Println(err)
-				tn.BuildState.ReportError(err)
-				return
-			}
-			tn.BuildState.IncrementDeployProgress()
-			image := tn.LDD.Images[0]
-			resource := tn.LDD.Resources[0]
-			if len(tn.LDD.Resources) > absNum {
-				resource = tn.LDD.Resources[absNum]
-			}
-			if len(tn.LDD.Images) > absNum {
-				image = tn.LDD.Images[absNum]
-			}
-
-			var env map[string]string = nil
-			if tn.LDD.Environments != nil && len(tn.LDD.Environments) > absNum && tn.LDD.Environments[absNum] != nil {
-				env = tn.LDD.Environments[absNum]
-			}
-
-			err = DockerRun(tn, serverID, subnetID, resource, relNum, image, env)
-			if err != nil {
-				log.Println(err)
-				tn.BuildState.ReportError(err)
-				return
-			}
-
-			tn.BuildState.IncrementDeployProgress()
-		}(serverID, tn.Servers[serverIndex].SubnetID, absNum, relNum)
+			BuildNode(tn, server, absNum, relNum)
+		}(&tn.Servers[serverIndex], absNum, relNum)
 
 		index++
 		index = index % len(availibleServers)

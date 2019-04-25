@@ -11,6 +11,44 @@ import (
 
 var conf *util.Config = util.GetConfig()
 
+func BuildNode(tn *testnet.TestNet, server *db.Server, absNum int, relNum int) {
+	tn.BuildState.OnError(func() {
+		DockerKill(tn.Clients[server.Id], relNum)
+		DockerNetworkDestroy(tn.Clients[server.Id], relNum)
+	})
+	err := DockerNetworkCreate(tn, server.Id, server.SubnetID, relNum) //RACE
+	if err != nil {
+		log.Println(err)
+		tn.BuildState.ReportError(err)
+		return
+	}
+	tn.BuildState.IncrementDeployProgress()
+
+	resource := tn.LDD.Resources[0]
+	image := tn.LDD.Images[0]
+	var env map[string]string = nil
+
+	if len(tn.LDD.Resources) > absNum {
+		resource = tn.LDD.Resources[absNum]
+	}
+	if len(tn.LDD.Images) > absNum {
+		image = tn.LDD.Images[absNum]
+	}
+
+	if tn.LDD.Environments != nil && len(tn.LDD.Environments) > absNum && tn.LDD.Environments[absNum] != nil {
+		env = tn.LDD.Environments[absNum]
+	}
+
+	err = DockerRun(tn, server.Id, server.SubnetID, resource, relNum, image, env)
+	if err != nil {
+		log.Println(err)
+		tn.BuildState.ReportError(err)
+		return
+	}
+
+	tn.BuildState.IncrementDeployProgress()
+}
+
 /*
    Build out the given docker network infrastructure according to the given parameters, and return
    the given array of servers, with ips updated for the nodes added to that server
@@ -66,44 +104,10 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 		tn.Servers[serverIndex].Nodes++
 
 		wg.Add(1)
-		go func(serverID int, subnetID int, absNum int, relNum int) {
+		go func(server *db.Server, absNum int, relNum int) {
 			defer wg.Done()
-			tn.BuildState.OnError(func() {
-				DockerKill(tn.Clients[serverID], relNum)
-				DockerNetworkDestroy(tn.Clients[serverID], relNum)
-			})
-			err := DockerNetworkCreate(tn, serverID, subnetID, relNum) //RACE
-			if err != nil {
-				log.Println(err)
-				tn.BuildState.ReportError(err)
-				return
-			}
-			tn.BuildState.IncrementDeployProgress()
-
-			resource := tn.LDD.Resources[0]
-			image := tn.LDD.Images[0]
-			var env map[string]string = nil
-
-			if len(tn.LDD.Resources) > absNum {
-				resource = tn.LDD.Resources[absNum]
-			}
-			if len(tn.LDD.Images) > absNum {
-				image = tn.LDD.Images[absNum]
-			}
-
-			if tn.LDD.Environments != nil && len(tn.LDD.Environments) > absNum && tn.LDD.Environments[absNum] != nil {
-				env = tn.LDD.Environments[absNum]
-			}
-
-			err = DockerRun(tn, serverID, subnetID, resource, relNum, image, env)
-			if err != nil {
-				log.Println(err)
-				tn.BuildState.ReportError(err)
-				return
-			}
-
-			tn.BuildState.IncrementDeployProgress()
-		}(serverID, tn.Servers[serverIndex].SubnetID, i, relNum)
+			BuildNode(tn, server, absNum, relNum)
+		}(&tn.Servers[serverIndex], i, relNum)
 
 		index++
 		index = index % len(availibleServers)

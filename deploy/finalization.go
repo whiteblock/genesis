@@ -112,7 +112,9 @@ func copyOverSshKeys(tn *testnet.TestNet, newOnly bool) error {
 		log.Println(err)
 		return err
 	}
-
+	if newOnly {
+		return helpers.CopyBytesToAllNewNodes(tn, string(privKey), "/root/.ssh/id_rsa")
+	}
 	return helpers.CopyBytesToAllNodes(tn, string(privKey), "/root/.ssh/id_rsa")
 }
 
