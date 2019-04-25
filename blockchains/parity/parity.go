@@ -26,7 +26,6 @@ func init() {
 Build builds out a fresh new ethereum test network
 */
 func Build(tn *testnet.TestNet) ([]string, error) {
-	buildState := tn.BuildState
 	mux := sync.Mutex{}
 	pconf, err := NewConf(tn.LDD.Params)
 	if err != nil {
@@ -34,7 +33,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 
-	buildState.SetBuildSteps(9 + (7 * tn.LDD.Nodes))
+	tn.BuildState.SetBuildSteps(9 + (7 * tn.LDD.Nodes))
 	//Make the data directories
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		_, err := client.DockerExec(localNodeNum, "mkdir -p /parity")
@@ -44,7 +43,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		log.Println(err)
 		return nil, err
 	}
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 
 	/**Create the Password file and copy it over**/
 	{
@@ -52,13 +51,13 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		for i := 1; i <= tn.LDD.Nodes; i++ {
 			data += "second\n"
 		}
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 		err = helpers.CopyBytesToAllNodes(tn, data, "/parity/passwd")
 		if err != nil {
 			log.Println(err)
 			return nil, err
 		}
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 	}
 
 	/**Create the wallets**/
@@ -84,7 +83,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			log.Println(err)
 			return err
 		}
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 
 		mux.Lock()
 		rawWallets[absoluteNodeNum] = strings.Replace(res, "\"", "\\\"", -1)
@@ -124,7 +123,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 				return err
 			}
 		}
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 	if err != nil {
@@ -134,7 +133,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	//util.Write("tmp/config.toml",configToml)
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		defer buildState.IncrementBuildProgress()
+		defer tn.BuildState.IncrementBuildProgress()
 		return client.DockerExecdLog(localNodeNum,
 			fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`, wallets[absoluteNodeNum]))
 	})
@@ -175,7 +174,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 				return err
 			}
 		}
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 		mux.Lock()
 		enodes[absoluteNodeNum] = enode
 		mux.Unlock()
@@ -186,7 +185,27 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = peerAllNodes(tn, enodes)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	tn.BuildState.IncrementBuildProgress()
+	if pconf.Consensus == "ethash" {
+		return nil, peerWithGeth(tn.GetFlatClients()[0], tn.BuildState, enodes)
+	}
+	return nil, nil
+}
+
+/***************************************************************************************************************************/
+
+func Add(tn *testnet.TestNet) ([]string, error) {
+	return nil, nil
+}
+
+func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
+	return helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, _ int, absoluteNodeNum int) error {
 		ip := tn.Nodes[absoluteNodeNum].Ip
 		for i, enode := range enodes {
 			if i == absoluteNodeNum {
@@ -197,7 +216,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 					`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
 						`'{ "method": "parity_addReservedPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
 					ip, enode))
-			buildState.IncrementBuildProgress()
+			tn.BuildState.IncrementBuildProgress()
 			if err != nil {
 				log.Println(err)
 				return err
@@ -205,22 +224,6 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		}
 		return nil
 	})
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	buildState.IncrementBuildProgress()
-	if pconf.Consensus == "ethash" {
-		return nil, peerWithGeth(tn.GetFlatClients()[0], buildState, enodes)
-	}
-	return nil, nil
-}
-
-/***************************************************************************************************************************/
-
-func Add(tn *testnet.TestNet) ([]string, error) {
-	return nil, nil
 }
 
 func setupPOA(tn *testnet.TestNet, pconf *ParityConf, wallets []string) error {
