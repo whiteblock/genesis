@@ -26,7 +26,6 @@ func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 		log.Println(err)
 		return err
 	}
-	defer buildState.DoneBuilding()
 
 	tn, err := testnet.RestoreTestNet(testnetID)
 	if err != nil {
@@ -34,6 +33,7 @@ func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 		buildState.ReportError(err)
 		return err
 	}
+	defer tn.FinishedBuilding()
 
 	err = tn.AddDetails(*details)
 	if err != nil {

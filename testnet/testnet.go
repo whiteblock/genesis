@@ -117,7 +117,47 @@ func (this *TestNet) AddDetails(dd db.DeploymentDetails) error {
 		return err
 	}
 	this.LDD = &this.Details[len(this.Details)-1]
-	return json.Unmarshal(tmp, &this.CombinedDetails)
+
+	oldCD := this.CombinedDetails
+	err = json.Unmarshal(tmp, &this.CombinedDetails)
+	if err != nil {
+		log.Println(err)
+	}
+
+	/**Handle Files**/
+	this.CombinedDetails.Files = oldCD.Files
+	if dd.Files != nil && len(dd.Files) > 0 {
+		if this.CombinedDetails.Files == nil {
+			this.CombinedDetails.Files = make([]map[string]string, oldCD.Nodes)
+		}
+		if len(this.CombinedDetails.Files) < oldCD.Nodes {
+			for i := len(this.CombinedDetails.Files); i < oldCD.Nodes; i++ {
+				this.CombinedDetails.Files = append(this.CombinedDetails.Files, map[string]string{})
+			}
+		}
+		for _, files := range dd.Files {
+			this.CombinedDetails.Files = append(this.CombinedDetails.Files, files)
+		}
+	}
+
+	/**Handle Nodes**/
+	this.CombinedDetails.Nodes = oldCD.Nodes + dd.Nodes
+
+	/**Handle Images***/
+	if dd.Images != nil && len(dd.Images) > 0 {
+		if this.CombinedDetails.Images == nil {
+			this.CombinedDetails.Images = make([]string, oldCD.Nodes)
+		}
+		if len(this.CombinedDetails.Images) < oldCD.Nodes {
+			for i := len(this.CombinedDetails.Images); i < oldCD.Nodes; i++ {
+				this.CombinedDetails.Images = append(this.CombinedDetails.Images, this.CombinedDetails.Images[0])
+			}
+		}
+		for _, image := range dd.Images {
+			this.CombinedDetails.Images = append(this.CombinedDetails.Images, image)
+		}
+	}
+	return nil
 }
 
 func (this *TestNet) FinishedBuilding() {

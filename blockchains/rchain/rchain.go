@@ -279,16 +279,19 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 	/**Start up the rest of the nodes**/
 	var validators int64 = 0
 	mux := sync.Mutex{}
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		ip := tn.Nodes[absoluteNodeNum].Ip
-		if validators < rchainConf.Validators {
+
+		mux.Lock()
+		isValidator := validators < rchainConf.Validators
+		validators++
+		mux.Unlock()
+
+		if isValidator {
 			err = client.DockerExecdLog(localNodeNum,
 				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
 					rchainConf.Command, enode, keyPairs[absoluteNodeNum].PrivateKey, ip))
-			mux.Lock()
-			validators++
-			mux.Unlock()
 			return err
 		}
 		return client.DockerExecdLog(localNodeNum,

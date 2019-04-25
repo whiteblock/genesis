@@ -128,7 +128,7 @@ func copyOverSshKeysToNewNodes(tn *testnet.TestNet) error {
 		return err
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error { //TODO only run on new nodes
+	err = helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error { //TODO only run on new nodes
 		defer tn.BuildState.IncrementDeployProgress()
 
 		_, err := client.DockerExec(localNodeNum, "mkdir -p /root/.ssh/")

@@ -61,6 +61,10 @@ func AddNodes(tn *testnet.TestNet) error {
 		wg.Add(1)
 		go func(serverID int, subnetID int, absNum int, relNum int) {
 			defer wg.Done()
+			tn.BuildState.OnError(func() {
+				DockerKill(tn.Clients[serverID], relNum)
+				DockerNetworkDestroy(tn.Clients[serverID], relNum)
+			})
 			err := DockerNetworkCreate(tn, serverID, subnetID, relNum)
 			if err != nil {
 				log.Println(err)
@@ -88,6 +92,7 @@ func AddNodes(tn *testnet.TestNet) error {
 				tn.BuildState.ReportError(err)
 				return
 			}
+
 			tn.BuildState.IncrementDeployProgress()
 		}(serverID, tn.Servers[serverIndex].SubnetID, absNum, relNum)
 

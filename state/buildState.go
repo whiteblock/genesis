@@ -39,12 +39,13 @@ type BuildState struct {
 	Frozen   bool
 	stopping bool
 
-	breakpoints  []float64              //must be in ascending order
-	ExternExtras map[string]interface{} //will be exported
-	Extras       map[string]interface{}
-	files        []string
-	defers       []func() //Array of functions to run at the end of the build
-	asyncWaiter  sync.WaitGroup
+	breakpoints       []float64              //must be in ascending order
+	ExternExtras      map[string]interface{} //will be exported
+	Extras            map[string]interface{}
+	files             []string
+	defers            []func() //Array of functions to run at the end of the build
+	errorCleanupFuncs []func()
+	asyncWaiter       sync.WaitGroup
 
 	Servers []int
 	BuildId string
@@ -78,6 +79,7 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	out.Extras = map[string]interface{}{}
 	out.files = []string{}
 	out.defers = []func(){}
+	out.errorCleanupFuncs = []func(){}
 
 	out.Servers = servers
 	out.BuildId = buildId
@@ -182,18 +184,29 @@ func (this *BuildState) DoneBuilding() {
 	//TODO add file cleanup
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
+
+	if this.ErrorFree() {
+		err := this.Store()
+		if err != nil {
+			log.Println(err)
+		}
+	} else {
+		wg := sync.WaitGroup{} //Wait for completion, to prevent a potential race
+		for _, fn := range this.errorCleanupFuncs {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				fn()
+			}()
+		}
+		wg.Wait()
+	}
 	atomic.StoreUint64(&this.BuildProgress, this.BuildTotal)
 	this.BuildStage = "Finished"
 	this.building = false
 	this.stopping = false
 	this.asyncWaiter.Wait() //Wait for the async calls to complete
 	os.RemoveAll("/tmp/" + this.BuildId)
-	if this.ErrorFree() {
-		err := this.Store()
-		if err != nil {
-			log.Println(err)
-		}
-	}
 	for _, fn := range this.defers {
 		go fn() //No need to wait to confirm completion
 	}
@@ -366,8 +379,15 @@ func (this *BuildState) Write(file string, data string) error {
 */
 func (this *BuildState) Defer(fn func()) {
 	this.extraMux.Lock()
-	this.defers = append(this.defers, fn)
 	defer this.extraMux.Unlock()
+	this.defers = append(this.defers, fn)
+
+}
+
+func (this *BuildState) OnError(fn func()) {
+	this.extraMux.Lock()
+	defer this.extraMux.Unlock()
+	this.errorCleanupFuncs = append(this.errorCleanupFuncs, fn)
 }
 
 /*
