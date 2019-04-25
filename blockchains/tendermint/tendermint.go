@@ -43,7 +43,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	mux := sync.Mutex{}
 	err := helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		ip := tn.Nodes[absoluteNodeNum]
+		ip := tn.Nodes[absoluteNodeNum].Ip
 		//init everything
 		_, err := client.DockerExec(localNodeNum, "tendermint init")
 		if err != nil {
@@ -129,8 +129,10 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	buildState.SetBuildStage("Starting tendermint")
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		defer buildState.IncrementBuildProgress()
+		peersCpy := make([]string, len(peers))
+		copy(peersCpy, peers)
 		return client.DockerExecdLog(localNodeNum, fmt.Sprintf("tendermint node --proxy_app=kvstore --p2p.persistent_peers=%s",
-			strings.Join(append(peers[:absoluteNodeNum], peers[absoluteNodeNum+1:]...), ",")))
+			strings.Join(append(peersCpy[:absoluteNodeNum], peersCpy[absoluteNodeNum+1:]...), ",")))
 	})
 	return nil, err
 }
