@@ -49,7 +49,6 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 		return err
 	}
 	buildState := tn.BuildState
-	defer buildState.DoneBuilding()
 	defer tn.FinishedBuilding()
 
 	//STEP 0: VALIDATE

@@ -138,12 +138,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		for i, rawWallet := range rawWallets {
+		for i := range rawWallets {
 			if i == absoluteNodeNum {
 				continue
 			}
-			_, err = client.DockerExec(localNodeNum,
-				fmt.Sprintf("bash -c 'echo \"%s\">>/geth/keystore/account%d'", rawWallet, i))
+			_, err := client.DockerExec(localNodeNum,
+				fmt.Sprintf("bash -c 'echo \"%s\">>/geth/keystore/account%d'", rawWallets[i], i))
 			if err != nil {
 				log.Println(err)
 				return err
@@ -213,7 +213,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		ip := tn.Nodes[absoluteNodeNum]
+		ip := tn.Nodes[absoluteNodeNum].Ip
 		buildState.IncrementBuildProgress()
 
 		gethCmd := fmt.Sprintf(
@@ -227,7 +227,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			wallets[absoluteNodeNum],
 			conf.DockerOutputFile)
 
-		_, err = client.DockerExecdit(localNodeNum, fmt.Sprintf("bash -ic '%s'", gethCmd))
+		_, err := client.DockerExecdit(localNodeNum, fmt.Sprintf("bash -ic '%s'", gethCmd))
 		if err != nil {
 			log.Println(err)
 			return err

@@ -54,14 +54,14 @@ func AddNodes(tn *testnet.TestNet) error {
 
 		absNum := tn.AddNode(db.Node{
 			ID: nodeID, TestNetID: tn.TestNetID, Server: serverID,
-			LocalID: tn.Servers[serverID].Nodes, Ip: util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes))})
+			LocalID: tn.Servers[serverIndex].Nodes, Ip: util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes))})
 
 		tn.Servers[serverIndex].Nodes++
 
 		wg.Add(1)
-		go func(serverID int, absNum int, relNum int) {
+		go func(serverID int, subnetID int, absNum int, relNum int) {
 			defer wg.Done()
-			err := DockerNetworkCreate(tn, serverID, relNum)
+			err := DockerNetworkCreate(tn, serverID, subnetID, relNum)
 			if err != nil {
 				log.Println(err)
 				tn.BuildState.ReportError(err)
@@ -82,14 +82,14 @@ func AddNodes(tn *testnet.TestNet) error {
 				env = tn.LDD.Environments[absNum]
 			}
 
-			err = DockerRun(tn, serverID, resource, relNum, image, env)
+			err = DockerRun(tn, serverID, subnetID, resource, relNum, image, env)
 			if err != nil {
 				log.Println(err)
 				tn.BuildState.ReportError(err)
 				return
 			}
 			tn.BuildState.IncrementDeployProgress()
-		}(serverID, absNum, relNum)
+		}(serverID, tn.Servers[serverIndex].SubnetID, absNum, relNum)
 
 		index++
 		index = index % len(availibleServers)

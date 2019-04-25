@@ -43,11 +43,10 @@ func dockerNetworkCreateCmd(subnet string, gateway string, network int, name str
 /*
    Create a docker network for a node
 */
-func DockerNetworkCreate(tn *testnet.TestNet, serverID int, node int) error {
-	server := tn.GetServer(serverID)
+func DockerNetworkCreate(tn *testnet.TestNet, serverID int, subnetID int, node int) error {
 	command := dockerNetworkCreateCmd(
-		util.GetNetworkAddress(server.SubnetID, node),
-		util.GetGateway(server.SubnetID, node),
+		util.GetNetworkAddress(subnetID, node),
+		util.GetGateway(subnetID, node),
 		node,
 		fmt.Sprintf("%s%d", conf.NodeNetworkPrefix, node))
 
@@ -115,7 +114,7 @@ func DockerPull(clients []*ssh.Client, image string) error {
 /*
    Makes a docker run command to start a node
 */
-func dockerRunCmd(server *db.Server, resources util.Resources, node int, image string, env map[string]string) (string, error) {
+func dockerRunCmd(subnetID int, resources util.Resources, node int, image string, env map[string]string) (string, error) {
 	command := "docker run -itd --entrypoint /bin/sh "
 	command += fmt.Sprintf("--network %s%d", conf.NodeNetworkPrefix, node)
 
@@ -133,7 +132,7 @@ func dockerRunCmd(server *db.Server, resources util.Resources, node int, image s
 	for key, value := range env {
 		command += fmt.Sprintf(" -e \"%s=%s\"", key, value)
 	}
-	command += fmt.Sprintf(" --ip %s", util.GetNodeIP(server.SubnetID, node))
+	command += fmt.Sprintf(" --ip %s", util.GetNodeIP(subnetID, node))
 	command += fmt.Sprintf(" --hostname %s%d", conf.NodePrefix, node)
 	command += fmt.Sprintf(" --name %s%d", conf.NodePrefix, node)
 	command += " " + image
@@ -143,8 +142,8 @@ func dockerRunCmd(server *db.Server, resources util.Resources, node int, image s
 /*
    Starts a node
 */
-func DockerRun(tn *testnet.TestNet, serverID int, resources util.Resources, node int, image string, env map[string]string) error {
-	command, err := dockerRunCmd(tn.GetServer(serverID), resources, node, image, env)
+func DockerRun(tn *testnet.TestNet, serverID int, subnetID int, resources util.Resources, node int, image string, env map[string]string) error {
+	command, err := dockerRunCmd(subnetID, resources, node, image, env)
 	if err != nil {
 		log.Println(err)
 		return err

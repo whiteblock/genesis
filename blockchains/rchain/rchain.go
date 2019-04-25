@@ -11,6 +11,7 @@ import (
 	"github.com/Whiteblock/mustache"
 	"log"
 	"regexp"
+	"sync"
 	"time"
 )
 
@@ -153,6 +154,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	buildState.SetBuildStage("Starting the rest of the nodes")
 	/**Start up the rest of the nodes**/
+	mux := sync.Mutex{}
+
 	var validators int64 = 0
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
@@ -160,12 +163,15 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		if absoluteNodeNum == 0 {
 			return nil
 		}
-		ip := tn.Nodes[0].Ip
-		if validators < rchainConf.Validators {
-			err = client.DockerExecdLog(localNodeNum,
+		ip := tn.Nodes[absoluteNodeNum].Ip
+		mux.Lock()
+		isValidator := validators < rchainConf.Validators
+		validators++
+		mux.Unlock()
+		if isValidator {
+			err := client.DockerExecdLog(localNodeNum,
 				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
 					rchainConf.Command, enode, keyPairs[absoluteNodeNum].PrivateKey, ip))
-			validators++
 			return err
 		}
 		return client.DockerExecdLog(localNodeNum,
@@ -211,105 +217,85 @@ func createFirstConfigFile(details *db.DeploymentDetails, client *ssh.Client, no
 
 /**********************************************************************ADD********************************************************************/
 func Add(tn *testnet.TestNet) ([]string, error) {
-	//fmt.Printf("%#v\n", servers)
-	//fmt.Printf("%#v\n", newNodes)
-	/*
-		rchainConf, err := NewRChainConf(tn.LDD.Params)
-		buildState.SetBuildSteps(9 + (len(servers) * 2) + (tn.LDD.Nodes * 2))
+
+	rchainConf, err := NewRChainConf(tn.CombinedDetails.Params)
+	tn.BuildState.SetBuildSteps(1 + 2*len(tn.NewlyBuiltNodes)) //TODO
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	iEnode, ok := tn.BuildState.Get("bootnode")
+	if !ok {
+		err = fmt.Errorf("Missing bootnode, has rchain been built before?")
+		log.Println(err)
+		return nil, err
+	}
+	enode := iEnode.(string)
+
+	services, err := util.GetServiceIps(GetServices())
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	keyPairs := []util.KeyPair{}
+	km, err := helpers.NewKeyMaster(&tn.CombinedDetails, "rchain")
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	for range tn.Nodes {
+		kp, err := km.GetKeyPair(tn.GetFlatClients()[0])
 		if err != nil {
 			log.Println(err)
 			return nil, err
 		}
-		iEnode, ok := buildState.Get("bootnode")
-		if !ok {
-			err = fmt.Errorf("Missing bootnode, has rchain been built before?")
-			log.Println(err)
-			return nil, err
-		}
-		enode := iEnode.(string)
+		keyPairs = append(keyPairs, kp)
+	}
 
-		services, err := util.GetServiceIps(GetServices())
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-		keyPairs := []util.KeyPair{}
-		km, err := helpers.NewKeyMaster(details, "rchain")
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-		for _,node := range tn.Nodes {
-			kp, err := km.GetKeyPair(clients[0])
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			keyPairs = append(keyPairs, kp)
-		}
+	err = helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
+		defer tn.BuildState.IncrementBuildProgress()
+		_, err := client.DockerExec(localNodeNum, "mkdir /datadir")
+		return err
+	})
 
-		err = helpers.AllNodeExecCon(tn, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-			startPoint := len(servers[serverNum].Ips) - len(newNodes[servers[serverNum].Id])
-			if localNodeNum < startPoint {
-				return nil
-			}
-			buildState.IncrementBuildProgress()
-			_, err := clients[serverNum].DockerExec(localNodeNum, "mkdir /datadir")
-			return err
-		})
+	err = helpers.CreateConfigsNewNodes(tn, "/datadir/rnode.conf", func(_ int, _ int, absoluteNodeNum int) ([]byte, error) {
+		return createConfigFile(&tn.CombinedDetails, enode, rchainConf, services["wb_influx_proxy"], tn.BuildState, absoluteNodeNum)
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 
-		err = helpers.CreateConfigs(servers, clients, buildState, "/datadir/rnode.conf",
-			func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
-				startPoint := len(servers[serverNum].Ips) - len(newNodes[servers[serverNum].Id])
-				if localNodeNum < startPoint {
-					return nil, nil
-				}
-				if absoluteNodeNum == 0 {
-					return nil, nil
-				}
-				return createConfigFile(details, enode, rchainConf, services["wb_influx_proxy"], buildState, absoluteNodeNum-startPoint)
-			})
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-
-		if !ok {
-			err = fmt.Errorf("Missing key pairs, has rchain been built before?")
-			log.Println(err)
-			return nil, err
-		}
-		buildState.SetBuildStage("Configuring the other rchain nodes")*/
+	if !ok {
+		err = fmt.Errorf("Missing key pairs, has rchain been built before?")
+		log.Println(err)
+		return nil, err
+	}
+	tn.BuildState.SetBuildStage("Configuring the other rchain nodes")
 	/**Copy config files to the rest of the nodes**/
-	//buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 
-	/*buildState.SetBuildStage("Starting the rest of the nodes")*/
+	tn.BuildState.SetBuildStage("Starting the rest of the nodes")
 	/**Start up the rest of the nodes**/
-	/*var validators int64 = 0
-
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		startPoint := len(servers[serverNum].Ips) - len(newNodes[servers[serverNum].Id])
-		if localNodeNum < startPoint {
-			return nil
-		}
-		//defer buildState.IncrementBuildProgress()
-		if absoluteNodeNum == 0 {
-			return nil
-		}
-		ip := servers[serverNum].Ips[localNodeNum]
+	var validators int64 = 0
+	mux := sync.Mutex{}
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
+		defer tn.BuildState.IncrementBuildProgress()
+		ip := tn.Nodes[absoluteNodeNum].Ip
 		if validators < rchainConf.Validators {
-			err = clients[serverNum].DockerExecdLog(localNodeNum,
+			err = client.DockerExecdLog(localNodeNum,
 				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
 					rchainConf.Command, enode, keyPairs[absoluteNodeNum].PrivateKey, ip))
+			mux.Lock()
 			validators++
+			mux.Unlock()
 			return err
 		}
-		return clients[serverNum].DockerExecdLog(localNodeNum,
+		return client.DockerExecdLog(localNodeNum,
 			fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s",
 				rchainConf.Command, enode, ip))
 	})
-	return nil, err*/
-	return nil, nil
+	return nil, err
 }
 
 func createConfigFile(details *db.DeploymentDetails, bootnodeAddr string, rchainConf *RChainConf,

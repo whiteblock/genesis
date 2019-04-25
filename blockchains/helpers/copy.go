@@ -68,7 +68,7 @@ func CopyToAllNodes(tn *testnet.TestNet, srcDst ...string) error {
 			go func(nodes []db.Node, j int, intermediateDst string, rdy chan bool) {
 				defer wg.Done()
 				<-rdy
-				for _, node := range nodes {
+				for i := range nodes {
 					sem.Acquire(ctx, 1)
 					wg.Add(1)
 					go func(node *db.Node, j int, intermediateDst string) {
@@ -80,7 +80,7 @@ func CopyToAllNodes(tn *testnet.TestNet, srcDst ...string) error {
 							tn.BuildState.ReportError(err)
 							return
 						}
-					}(&node, j, intermediateDst)
+					}(&nodes[i], j, intermediateDst)
 				}
 			}(nodes, j, intermediateDst, rdy)
 		}
@@ -158,15 +158,17 @@ func CopyBytesToNodeFiles(client *ssh.Client, buildState *state.BuildState, tran
 /*
 	fn func(serverid int, localNodeNum int, absoluteNodeNum int) ([]byte, error)
 */
-func CreateConfigs(tn *testnet.TestNet, dest string, fn func(int, int, int) ([]byte, error)) error {
-
+func createConfigs(tn *testnet.TestNet, dest string, useNew bool, fn func(int, int, int) ([]byte, error)) error {
+	nodes := tn.Nodes
+	if useNew {
+		nodes = tn.NewlyBuiltNodes
+	}
 	wg := sync.WaitGroup{}
-	for _, node := range tn.Nodes {
+	for _, node := range nodes {
 		wg.Add(1)
-		go func(node *db.Node) {
-			client := tn.Clients[node.Server]
+		go func(client *ssh.Client, serverID int, localID int, absNum int) {
 			defer wg.Done()
-			data, err := fn(node.Server, node.LocalID, node.AbsoluteNum)
+			data, err := fn(serverID, localID, absNum)
 			if err != nil {
 				log.Println(err)
 				tn.BuildState.ReportError(err)
@@ -175,16 +177,24 @@ func CreateConfigs(tn *testnet.TestNet, dest string, fn func(int, int, int) ([]b
 			if data == nil {
 				return //skip if nil
 			}
-			err = SingleCp(client, tn.BuildState, node.LocalID, data, dest)
+			err = SingleCp(client, tn.BuildState, localID, data, dest)
 			if err != nil {
 				log.Println(err)
 				tn.BuildState.ReportError(err)
 				return
 			}
 
-		}(&node)
+		}(tn.Clients[node.Server], node.Server, node.LocalID, node.AbsoluteNum)
 	}
 
 	wg.Wait()
 	return tn.BuildState.GetError()
+}
+
+func CreateConfigsNewNodes(tn *testnet.TestNet, dest string, fn func(int, int, int) ([]byte, error)) error {
+	return createConfigs(tn, dest, true, fn)
+}
+
+func CreateConfigs(tn *testnet.TestNet, dest string, fn func(int, int, int) ([]byte, error)) error {
+	return createConfigs(tn, dest, false, fn)
 }

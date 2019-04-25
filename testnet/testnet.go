@@ -35,7 +35,7 @@ func RestoreTestNet(buildID string) (*TestNet, error) {
 		log.Println(err)
 		return nil, err
 	}
-	bs, err := state.RestoreBuildState(buildID)
+	bs, err := state.GetBuildStateById(buildID)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -121,6 +121,7 @@ func (this *TestNet) AddDetails(dd db.DeploymentDetails) error {
 }
 
 func (this *TestNet) FinishedBuilding() {
+	this.BuildState.DoneBuilding()
 	this.NewlyBuiltNodes = []db.Node{}
 	this.Store()
 }

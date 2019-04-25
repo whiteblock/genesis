@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"sync/atomic"
 )
 
 //This code is full of potential race conditons but these race conditons are extremely rare
@@ -38,19 +39,24 @@ type BuildState struct {
 	Frozen   bool
 	stopping bool
 
-	breakpoints       []float64 //must be in ascending order
-	progressIncrement float64
-	ExternExtras      map[string]interface{} //will be exported
-	Extras            map[string]interface{}
-	files             []string
-	defers            []func() //Array of functions to run at the end of the build
-	asyncWaiter       sync.WaitGroup
+	breakpoints  []float64              //must be in ascending order
+	ExternExtras map[string]interface{} //will be exported
+	Extras       map[string]interface{}
+	files        []string
+	defers       []func() //Array of functions to run at the end of the build
+	asyncWaiter  sync.WaitGroup
 
-	Servers          []int
-	BuildId          string
-	BuildingProgress float64
-	BuildError       CustomError
-	BuildStage       string
+	Servers []int
+	BuildId string
+
+	BuildError CustomError
+	BuildStage string
+
+	DeployProgress uint64
+	DeployTotal    uint64
+
+	BuildProgress uint64
+	BuildTotal    uint64
 }
 
 func NewBuildState(servers []int, buildId string) *BuildState {
@@ -68,7 +74,6 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	out.stopping = false
 
 	out.breakpoints = []float64{}
-	out.progressIncrement = 0.0
 	out.ExternExtras = map[string]interface{}{}
 	out.Extras = map[string]interface{}{}
 	out.files = []string{}
@@ -76,9 +81,13 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 
 	out.Servers = servers
 	out.BuildId = buildId
-	out.BuildingProgress = 0.00
 	out.BuildError = CustomError{What: "", err: nil}
 	out.BuildStage = ""
+
+	out.DeployProgress = 0
+	out.DeployTotal = 0
+	out.BuildProgress = 0
+	out.BuildTotal = 1
 
 	err := os.MkdirAll("/tmp/"+buildId, 0755)
 	if err != nil {
@@ -173,7 +182,7 @@ func (this *BuildState) DoneBuilding() {
 	//TODO add file cleanup
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
-	this.BuildingProgress = 100.00
+	atomic.StoreUint64(&this.BuildProgress, this.BuildTotal)
 	this.BuildStage = "Finished"
 	this.building = false
 	this.stopping = false
@@ -219,7 +228,7 @@ func (this *BuildState) Stop() bool {
 
 	if len(this.breakpoints) > 0 { //Don't take the lock overhead if there aren't any breakpoints
 		this.freezeMux.Lock()
-		if this.breakpoints[0] >= this.BuildingProgress {
+		if this.breakpoints[0] >= this.GetProgress() {
 			if len(this.breakpoints) > 1 {
 				this.breakpoints = this.breakpoints[1:]
 			} else {
@@ -367,16 +376,14 @@ func (this *BuildState) Defer(fn func()) {
    IncrementDeployProgress will be called.
 */
 func (this *BuildState) SetDeploySteps(steps int) {
-	this.progressIncrement = 25.00 / float64(steps)
+	atomic.StoreUint64(&this.DeployTotal, uint64(steps))
 }
 
 /*
    IncrementDeployProgress increments the deploy process by one step.
 */
 func (this *BuildState) IncrementDeployProgress() {
-	this.mutex.Lock()
-	this.BuildingProgress += this.progressIncrement
-	this.mutex.Unlock()
+	atomic.AddUint64(&this.DeployProgress, 1)
 }
 
 /*
@@ -384,7 +391,7 @@ func (this *BuildState) IncrementDeployProgress() {
    blockchain specific process will begin.
 */
 func (this *BuildState) FinishDeploy() {
-	this.BuildingProgress = 25.00
+	atomic.StoreUint64(&this.DeployProgress, atomic.LoadUint64(&this.DeployTotal))
 }
 
 /*
@@ -393,19 +400,37 @@ func (this *BuildState) FinishDeploy() {
    will be called.
 */
 func (this *BuildState) SetBuildSteps(steps int) {
-	this.progressIncrement = 75.00 / float64(steps+1)
+	atomic.StoreUint64(&this.BuildTotal, uint64(steps+1)) //stay one step ahead to prevent early termination
 }
 
 /*
    IncrementBuildProgress increments the build progress by one step.
 */
 func (this *BuildState) IncrementBuildProgress() {
-	this.mutex.Lock()
-	this.BuildingProgress += this.progressIncrement
-	if this.BuildingProgress >= 100.00 {
-		this.BuildingProgress = 99.99
+	if atomic.LoadUint64(&this.BuildProgress) < atomic.LoadUint64(&this.BuildTotal) {
+		atomic.AddUint64(&this.BuildProgress, 1)
 	}
-	this.mutex.Unlock()
+}
+
+func (this *BuildState) GetProgress() float64 {
+	dp := atomic.LoadUint64(&this.DeployProgress)
+	dt := atomic.LoadUint64(&this.DeployTotal)
+	bp := atomic.LoadUint64(&this.BuildProgress)
+	bt := atomic.LoadUint64(&this.BuildTotal)
+
+	var out float64 = 0
+	if dp == 0 || dt == 0 {
+		return out
+	}
+	if dp == dt {
+		out = 25.0
+	} else {
+		return float64(dp) / float64(dt) * 25.0
+	}
+	if bt == 0 {
+		return out
+	}
+	return out + (float64(bp)/float64(bt))*75.0
 }
 
 /*
@@ -413,7 +438,10 @@ func (this *BuildState) IncrementBuildProgress() {
    build progress percentage when the status of the build is queried.
 */
 func (this *BuildState) SetBuildStage(stage string) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
 	this.BuildStage = stage
+
 }
 
 func (this *BuildState) Reset() {
@@ -423,14 +451,17 @@ func (this *BuildState) Reset() {
 	this.stopping = false
 
 	this.breakpoints = []float64{}
-	this.progressIncrement = 0.0
 
 	this.files = []string{}
 	this.defers = []func(){}
 
-	this.BuildingProgress = 0.00
 	this.BuildError = CustomError{What: "", err: nil}
 	this.BuildStage = ""
+
+	this.DeployProgress = 0
+	this.DeployTotal = 0
+	this.BuildProgress = 0
+	this.BuildTotal = 0
 
 	err := os.MkdirAll("/tmp/"+this.BuildId, 0755)
 	if err != nil {
@@ -443,11 +474,11 @@ func (this *BuildState) Marshal() string {
 	this.mutex.RLock()
 	defer this.mutex.RUnlock()
 	if this.ErrorFree() { //error should be null if there is not an error
-		return fmt.Sprintf("{\"progress\":%f,\"error\":null,\"stage\":\"%s\",\"frozen\":%v}", this.BuildingProgress, this.BuildStage, this.Frozen)
+		return fmt.Sprintf("{\"progress\":%f,\"error\":null,\"stage\":\"%s\",\"frozen\":%v}", this.GetProgress(), this.BuildStage, this.Frozen)
 	}
 	//otherwise give the error as an object
 	out, _ := json.Marshal(
-		map[string]interface{}{"progress": this.BuildingProgress, "error": this.BuildError, "stage": this.BuildStage, "frozen": this.Frozen})
+		map[string]interface{}{"progress": this.GetProgress(), "error": this.BuildError, "stage": this.BuildStage, "frozen": this.Frozen})
 	return string(out)
 }
 
