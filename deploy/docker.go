@@ -1,9 +1,10 @@
 package deploy
 
 import (
+	helpers "../blockchains/helpers"
 	db "../db"
 	ssh "../ssh"
-	state "../state"
+	testnet "../testnet"
 	util "../util"
 	"fmt"
 	"log"
@@ -42,28 +43,22 @@ func dockerNetworkCreateCmd(subnet string, gateway string, network int, name str
 /*
    Create a docker network for a node
 */
-func DockerNetworkCreate(server db.Server, client *ssh.Client, node int) error {
+func DockerNetworkCreate(tn *testnet.TestNet, serverID int, subnetID int, node int) error {
 	command := dockerNetworkCreateCmd(
-		util.GetNetworkAddress(server.SubnetID, node),
-		util.GetGateway(server.SubnetID, node),
+		util.GetNetworkAddress(subnetID, node),
+		util.GetGateway(subnetID, node),
 		node,
 		fmt.Sprintf("%s%d", conf.NodeNetworkPrefix, node))
 
-	_, err := client.Run(command)
-	if err != nil {
-		_, err = client.Run(command)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-	}
-	return nil
+	_, err := tn.Clients[serverID].KeepTryRun(command)
+
+	return err
 }
 
 /*
    Create all of the node docker networks on a server
 */
-func DockerNetworkCreateAll(server db.Server, client *ssh.Client, nodes int, buildState *state.BuildState) error {
+/*func DockerNetworkCreateAll(server db.Server, client *ssh.Client, nodes int, buildState *state.BuildState) error {
 	for i := 0; i < nodes; i++ {
 		buildState.IncrementDeployProgress()
 		err := DockerNetworkCreate(server, client, i)
@@ -86,7 +81,7 @@ func DockerNetworkCreateAppendAll(server db.Server, client *ssh.Client, start in
 		}
 	}
 	return nil
-}
+}*/
 
 func DockerNetworkDestroy(client *ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker network rm %s%d", conf.NodeNetworkPrefix, node))
@@ -119,7 +114,7 @@ func DockerPull(clients []*ssh.Client, image string) error {
 /*
    Makes a docker run command to start a node
 */
-func dockerRunCmd(server db.Server, resources util.Resources, node int, image string, env map[string]string) (string, error) {
+func dockerRunCmd(subnetID int, resources util.Resources, node int, image string, env map[string]string) (string, error) {
 	command := "docker run -itd --entrypoint /bin/sh "
 	command += fmt.Sprintf("--network %s%d", conf.NodeNetworkPrefix, node)
 
@@ -137,7 +132,7 @@ func dockerRunCmd(server db.Server, resources util.Resources, node int, image st
 	for key, value := range env {
 		command += fmt.Sprintf(" -e \"%s=%s\"", key, value)
 	}
-	command += fmt.Sprintf(" --ip %s", util.GetNodeIP(server.SubnetID, node))
+	command += fmt.Sprintf(" --ip %s", util.GetNodeIP(subnetID, node))
 	command += fmt.Sprintf(" --hostname %s%d", conf.NodePrefix, node)
 	command += fmt.Sprintf(" --name %s%d", conf.NodePrefix, node)
 	command += " " + image
@@ -147,13 +142,13 @@ func dockerRunCmd(server db.Server, resources util.Resources, node int, image st
 /*
    Starts a node
 */
-func DockerRun(server db.Server, client *ssh.Client, resources util.Resources, node int, image string, env map[string]string) error {
-	command, err := dockerRunCmd(server, resources, node, image, env)
+func DockerRun(tn *testnet.TestNet, serverID int, subnetID int, resources util.Resources, node int, image string, env map[string]string) error {
+	command, err := dockerRunCmd(subnetID, resources, node, image, env)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	_, err = client.Run(command)
+	_, err = tn.Clients[serverID].Run(command)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -164,15 +159,16 @@ func DockerRun(server db.Server, client *ssh.Client, resources util.Resources, n
 /*
    Start a batch of nodes
 */
-func DockerRunAll(server db.Server, client *ssh.Client, resources []util.Resources, nodes int,
+/*func DockerRunAll(server db.Server, client *ssh.Client, resources []util.Resources, nodes int,
 	image string, buildState *state.BuildState, envs []map[string]string) error {
 	return DockerRunAppendAll(server, client, resources, 0, nodes, image, buildState, envs)
-}
+}*/
 
 /*
    Similar to docker run all, but start creating the nodes at a given starting point,
    rather than 0
 */
+/*
 func DockerRunAppendAll(server db.Server, client *ssh.Client, resources []util.Resources, start int,
 	nodes int, image string, buildState *state.BuildState, envs []map[string]string) error {
 	var command string
@@ -208,7 +204,7 @@ func DockerRunAppendAll(server db.Server, client *ssh.Client, resources []util.R
 		}
 	}
 	return nil
-}
+}*/
 
 /*
    Creates the command to start a service container
@@ -235,25 +231,27 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 /*
    Stop all services and remove the service network from a server
 */
-func DockerStopServices(client *ssh.Client) error {
-	res, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)", conf.ServicePrefix))
-	client.Run("docker network rm " + conf.ServiceNetworkName)
-	if err != nil {
-		log.Println(res)
-	}
-	return err
+func DockerStopServices(tn *testnet.TestNet) error {
+	return helpers.AllServerExecCon(tn, func(client *ssh.Client, _ *db.Server) error {
+		_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)", conf.ServicePrefix))
+		client.Run("docker network rm " + conf.ServiceNetworkName)
+		if err != nil {
+			log.Println(err)
+		}
+		return nil
+	})
 }
 
 /*
    Creates the service network and starts all the services on a server
 */
-func DockerStartServices(server db.Server, client *ssh.Client, services []util.Service, buildState *state.BuildState) error {
+func DockerStartServices(tn *testnet.TestNet, services []util.Service) error {
 	gateway, subnet, err := util.GetServiceNetwork()
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-
+	client := tn.GetFlatClients()[0] //TODO make this nice
 	_, err = client.KeepTryRun(dockerNetworkCreateCmd(subnet, gateway, -1, conf.ServiceNetworkName))
 	if err != nil {
 		log.Println(err)
@@ -280,7 +278,7 @@ func DockerStartServices(server db.Server, client *ssh.Client, services []util.S
 			log.Println(err)
 			return err
 		}
-		buildState.IncrementDeployProgress()
+		tn.BuildState.IncrementDeployProgress()
 	}
 	return nil
 }

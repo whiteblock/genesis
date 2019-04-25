@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 )
 
 type RChainConf struct {
@@ -26,58 +27,12 @@ func NewRChainConf(data map[string]interface{}) (*RChainConf, error) {
 	if data == nil {
 		return out, err
 	}
-
-	err = util.GetJSONBool(data, "noUpnp", &out.NoUpnp)
+	tmp, err := json.Marshal(data)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
-
-	err = util.GetJSONInt64(data, "defaultTimeout", &out.DefaultTimeout)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "mapSize", &out.MapSize)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "casperBlockStoreSize", &out.CasperBlockStoreSize)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONBool(data, "inMemoryStore", &out.InMemoryStore)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxNumOfConnections", &out.MaxNumOfConnections)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "validators", &out.Validators)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "validatorCount", &out.ValidatorCount)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "sigAlgorithm", &out.SigAlgorithm)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "command", &out.Command)
-	if err != nil {
-		return nil, err
-	}
-
-	return out, nil
+	return out, json.Unmarshal(tmp, out)
 }
 
 func GetServices() []util.Service {

@@ -47,6 +47,31 @@ func GetNodeIP(server int, node int) string {
 }
 
 /*
+	GetInfoFromIP returns the server number and the node number calculated from the given
+	IPv4 address based on the current IP scheme.
+*/
+func GetInfoFromIP(ipStr string) (int, int) {
+	ipBytes := net.ParseIP(ipStr).To4()
+	var rawIP uint32 = 0
+	for _, ipByte := range ipBytes {
+		rawIP = rawIP << 8
+		rawIP += uint32(ipByte)
+	}
+	var clusterLast uint32 = (1 << conf.ClusterBits) - 1
+	server := (rawIP >> (conf.NodeBits + conf.ClusterBits)) & ((1 << conf.ServerBits) - 1)
+	cluster := (rawIP >> conf.NodeBits) & ((1 << conf.ClusterBits) - 1)
+	var node uint32
+
+	if cluster != clusterLast {
+		node = (rawIP & ((1 << conf.NodeBits) - 1)) - 2
+	} else {
+		node = 0
+	}
+	node = node + (cluster * NodesPerCluster)
+	return int(server), int(node)
+}
+
+/*
    GetGateway calculates the gateway IP address for a node,
    base on the current IP scheme
 */

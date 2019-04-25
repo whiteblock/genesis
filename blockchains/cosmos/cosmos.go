@@ -3,7 +3,7 @@ package cosmos
 import (
 	db "../../db"
 	ssh "../../ssh"
-	state "../../state"
+	testnet "../../testnet"
 	util "../../util"
 	helpers "../helpers"
 	"fmt"
@@ -18,12 +18,11 @@ func init() {
 	conf = util.GetConfig()
 }
 
-func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
-	buildState *state.BuildState) ([]string, error) {
+func Build(tn *testnet.TestNet) ([]string, error) {
+	tn.BuildState.SetBuildSteps(4 + (tn.LDD.Nodes * 2))
 
-	buildState.SetBuildSteps(4 + (details.Nodes * 2))
-
-	buildState.SetBuildStage("Setting up the first node")
+	tn.BuildState.SetBuildStage("Setting up the first node")
+	clients := tn.GetFlatClients()
 	/**
 	 * Set up first node
 	 */
@@ -32,7 +31,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		log.Println(err)
 		return nil, err
 	}
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 	_, err = clients[0].DockerExec(0, "bash -c 'echo \"password\\n\" | gaiacli keys add validator -ojson'")
 	if err != nil {
 		log.Println(err)
@@ -44,7 +43,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		log.Println(err)
 		return nil, err
 	}
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 	_, err = clients[0].DockerExec(0, fmt.Sprintf("gaiad add-genesis-account %s 100000000stake,100000000validatortoken", res[:len(res)-1]))
 	if err != nil {
 		log.Println(err)
@@ -56,7 +55,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		log.Println(err)
 		return nil, err
 	}
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 	_, err = clients[0].DockerExec(0, "gaiad collect-gentxs")
 	if err != nil {
 		log.Println(err)
@@ -67,16 +66,16 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		log.Println(err)
 		return nil, err
 	}
-	buildState.IncrementBuildProgress()
-	buildState.SetBuildStage("Initializing the rest of the nodes")
-	peers := make([]string, details.Nodes)
+	tn.BuildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Initializing the rest of the nodes")
+	peers := make([]string, tn.LDD.Nodes)
 	mux := sync.Mutex{}
 
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		ip := servers[serverNum].Ips[localNodeNum]
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+		ip := tn.Nodes[absoluteNodeNum].Ip
 		if absoluteNodeNum != 0 {
 			//init everything
-			_, err = clients[serverNum].DockerExec(localNodeNum, "gaiad init --chain-id=whiteblock whiteblock")
+			_, err := client.DockerExec(localNodeNum, "gaiad init --chain-id=whiteblock whiteblock")
 			if err != nil {
 				log.Println(res)
 				return err
@@ -84,7 +83,7 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		}
 
 		//Get the node id
-		res, err = clients[serverNum].DockerExec(localNodeNum, "gaiad tendermint show-node-id")
+		res, err := client.DockerExec(localNodeNum, "gaiad tendermint show-node-id")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -93,30 +92,31 @@ func Build(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Cl
 		mux.Lock()
 		peers[absoluteNodeNum] = fmt.Sprintf("%s@%s:26656", nodeId, ip)
 		mux.Unlock()
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 
-	buildState.SetBuildStage("Copying the genesis file to each node")
+	tn.BuildState.SetBuildStage("Copying the genesis file to each node")
 
-	err = helpers.CopyToAllNodes(servers, clients, buildState, genesisFile, "/root/.gaiad/config/genesis.json")
+	err = helpers.CopyBytesToAllNodes(tn, genesisFile, "/root/.gaiad/config/genesis.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	buildState.SetBuildStage("Starting cosmos")
+	tn.BuildState.SetBuildStage("Starting cosmos")
 
-	err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-		defer buildState.IncrementBuildProgress()
-		_, err := clients[serverNum].DockerExecd(localNodeNum, fmt.Sprintf("gaiad start --p2p.persistent_peers=%s",
-			strings.Join(append(peers[:absoluteNodeNum], peers[absoluteNodeNum+1:]...), ",")))
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+		defer tn.BuildState.IncrementBuildProgress()
+		peersCpy := make([]string, len(peers))
+		copy(peersCpy, peers)
+		_, err := client.DockerExecd(localNodeNum, fmt.Sprintf("gaiad start --p2p.persistent_peers=%s",
+			strings.Join(append(peersCpy[:absoluteNodeNum], peersCpy[absoluteNodeNum+1:]...), ",")))
 		return err
 	})
 	return nil, err
 }
 
-func Add(details *db.DeploymentDetails, servers []db.Server, clients []*ssh.Client,
-	newNodes map[int][]string, buildState *state.BuildState) ([]string, error) {
+func Add(tn *testnet.TestNet) ([]string, error) {
 	return nil, nil
 }

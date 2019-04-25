@@ -4,12 +4,14 @@
 package state
 
 import (
+	db "../db"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"sync"
+	"sync/atomic"
 )
 
 //This code is full of potential race conditons but these race conditons are extremely rare
@@ -37,19 +39,25 @@ type BuildState struct {
 	Frozen   bool
 	stopping bool
 
-	breakpoints       []float64 //must be in ascending order
-	progressIncrement float64
-	externExtras      map[string]interface{} //will be exported
-	extras            map[string]interface{}
+	breakpoints       []float64              //must be in ascending order
+	ExternExtras      map[string]interface{} //will be exported
+	Extras            map[string]interface{}
 	files             []string
 	defers            []func() //Array of functions to run at the end of the build
+	errorCleanupFuncs []func()
 	asyncWaiter       sync.WaitGroup
 
-	Servers          []int
-	BuildId          string
-	BuildingProgress float64
-	BuildError       CustomError
-	BuildStage       string
+	Servers []int
+	BuildId string
+
+	BuildError CustomError
+	BuildStage string
+
+	DeployProgress uint64
+	DeployTotal    uint64
+
+	BuildProgress uint64
+	BuildTotal    uint64
 }
 
 func NewBuildState(servers []int, buildId string) *BuildState {
@@ -67,17 +75,21 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	out.stopping = false
 
 	out.breakpoints = []float64{}
-	out.progressIncrement = 0.0
-	out.externExtras = map[string]interface{}{}
-	out.extras = map[string]interface{}{}
+	out.ExternExtras = map[string]interface{}{}
+	out.Extras = map[string]interface{}{}
 	out.files = []string{}
 	out.defers = []func(){}
+	out.errorCleanupFuncs = []func(){}
 
 	out.Servers = servers
 	out.BuildId = buildId
-	out.BuildingProgress = 0.00
 	out.BuildError = CustomError{What: "", err: nil}
 	out.BuildStage = ""
+
+	out.DeployProgress = 0
+	out.DeployTotal = 0
+	out.BuildProgress = 0
+	out.BuildTotal = 1
 
 	err := os.MkdirAll("/tmp/"+buildId, 0755)
 	if err != nil {
@@ -85,6 +97,24 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	}
 
 	return out
+}
+
+func RestoreBuildState(buildID string) (*BuildState, error) {
+	out := new(BuildState)
+	err := db.GetMetaP(buildID, out)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	out.errMutex = &sync.RWMutex{}
+	out.extraMux = &sync.RWMutex{}
+	out.freeze = &sync.RWMutex{}
+	out.mutex = &sync.RWMutex{}
+	out.stopMux = &sync.RWMutex{}
+	out.freezeMux = &sync.RWMutex{}
+
+	out.Reset()
+	return out, nil
 }
 
 /*
@@ -112,7 +142,7 @@ func (this *BuildState) Freeze() error {
 	}
 
 	this.Frozen = true
-	this.mutex.Unlock()
+	this.mutex.Unlock() //Must occur before freeze lock to prevent full seizing
 
 	this.freeze.Lock()
 
@@ -154,13 +184,31 @@ func (this *BuildState) DoneBuilding() {
 	//TODO add file cleanup
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
-	this.BuildingProgress = 100.00
+
+	if this.ErrorFree() {
+		err := this.Store()
+		if err != nil {
+			log.Println(err)
+		}
+	} else {
+		this.extraMux.RLock()
+		wg := sync.WaitGroup{} //Wait for completion, to prevent a potential race
+		for i := range this.errorCleanupFuncs {
+			wg.Add(1)
+			go func(fn *func()) {
+				defer wg.Done()
+				(*fn)()
+			}(&this.errorCleanupFuncs[i])
+		}
+		this.extraMux.RUnlock()
+		wg.Wait()
+	}
+	atomic.StoreUint64(&this.BuildProgress, this.BuildTotal)
 	this.BuildStage = "Finished"
 	this.building = false
 	this.stopping = false
 	this.asyncWaiter.Wait() //Wait for the async calls to complete
 	os.RemoveAll("/tmp/" + this.BuildId)
-
 	for _, fn := range this.defers {
 		go fn() //No need to wait to confirm completion
 	}
@@ -190,12 +238,12 @@ func (this *BuildState) Stop() bool {
 		return false
 	}
 
-	this.freeze.RLock()
+	this.freeze.RLock() //Catch on freeze
 	this.freeze.RUnlock()
 
 	if len(this.breakpoints) > 0 { //Don't take the lock overhead if there aren't any breakpoints
 		this.freezeMux.Lock()
-		if this.breakpoints[0] >= this.BuildingProgress {
+		if this.breakpoints[0] >= this.GetProgress() {
 			if len(this.breakpoints) > 1 {
 				this.breakpoints = this.breakpoints[1:]
 			} else {
@@ -208,8 +256,9 @@ func (this *BuildState) Stop() bool {
 	}
 
 	this.stopMux.RLock()
+	isStopping := this.stopping
 	defer this.stopMux.RUnlock()
-	return this.stopping
+	return isStopping
 }
 
 /*
@@ -263,38 +312,56 @@ func (this *BuildState) SetExt(key string, value interface{}) error {
 	}
 	this.extraMux.Lock()
 	defer this.extraMux.Unlock()
-	this.externExtras[key] = value
+	this.ExternExtras[key] = value
 	return nil
 }
 
 func (this *BuildState) GetExt(key string) (interface{}, bool) {
 	this.extraMux.RLock()
 	defer this.extraMux.RUnlock()
-	res, ok := this.externExtras[key]
+	res, ok := this.ExternExtras[key]
 	return res, ok
 }
 
 func (this *BuildState) GetExtExtras() ([]byte, error) {
 	this.extraMux.RLock()
 	defer this.extraMux.RUnlock()
-	return json.Marshal(this.externExtras)
+	return json.Marshal(this.ExternExtras)
 }
 
 func (this *BuildState) Set(key string, value interface{}) {
 	this.extraMux.Lock()
 	defer this.extraMux.Unlock()
-	this.extras[key] = value
+	this.Extras[key] = value
 }
 
 func (this *BuildState) Get(key string) (interface{}, bool) {
 	this.extraMux.RLock()
 	defer this.extraMux.RUnlock()
-	out, ok := this.extras[key]
+	out, ok := this.Extras[key]
 	return out, ok
 }
 
+func (this *BuildState) GetP(key string, out interface{}) bool {
+	tmp, ok := this.Get(key)
+	if !ok {
+		return false
+	}
+	tmpBytes, err := json.Marshal(tmp)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	err = json.Unmarshal(tmpBytes, out)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return true
+}
+
 func (this *BuildState) GetExtras() map[string]interface{} {
-	return this.extras
+	return this.Extras
 }
 
 /*
@@ -302,9 +369,9 @@ func (this *BuildState) GetExtras() map[string]interface{} {
    	deleting and recreating it if it does.
 */
 func (this *BuildState) Write(file string, data string) error {
-	this.mutex.RLock()
+	this.mutex.Lock()
 	this.files = append(this.files, file)
-	this.mutex.RUnlock()
+	this.mutex.Unlock()
 	return ioutil.WriteFile("/tmp/"+this.BuildId+"/"+file, []byte(data), 0664)
 }
 
@@ -313,8 +380,15 @@ func (this *BuildState) Write(file string, data string) error {
 */
 func (this *BuildState) Defer(fn func()) {
 	this.extraMux.Lock()
-	this.defers = append(this.defers, fn)
 	defer this.extraMux.Unlock()
+	this.defers = append(this.defers, fn)
+
+}
+
+func (this *BuildState) OnError(fn func()) {
+	this.extraMux.Lock()
+	defer this.extraMux.Unlock()
+	this.errorCleanupFuncs = append(this.errorCleanupFuncs, fn)
 }
 
 /*
@@ -323,14 +397,14 @@ func (this *BuildState) Defer(fn func()) {
    IncrementDeployProgress will be called.
 */
 func (this *BuildState) SetDeploySteps(steps int) {
-	this.progressIncrement = 25.00 / float64(steps)
+	atomic.StoreUint64(&this.DeployTotal, uint64(steps))
 }
 
 /*
    IncrementDeployProgress increments the deploy process by one step.
 */
 func (this *BuildState) IncrementDeployProgress() {
-	this.BuildingProgress += this.progressIncrement
+	atomic.AddUint64(&this.DeployProgress, 1)
 }
 
 /*
@@ -338,7 +412,7 @@ func (this *BuildState) IncrementDeployProgress() {
    blockchain specific process will begin.
 */
 func (this *BuildState) FinishDeploy() {
-	this.BuildingProgress = 25.00
+	atomic.StoreUint64(&this.DeployProgress, atomic.LoadUint64(&this.DeployTotal))
 }
 
 /*
@@ -347,17 +421,37 @@ func (this *BuildState) FinishDeploy() {
    will be called.
 */
 func (this *BuildState) SetBuildSteps(steps int) {
-	this.progressIncrement = 75.00 / float64(steps+1)
+	atomic.StoreUint64(&this.BuildTotal, uint64(steps+1)) //stay one step ahead to prevent early termination
 }
 
 /*
    IncrementBuildProgress increments the build progress by one step.
 */
 func (this *BuildState) IncrementBuildProgress() {
-	this.BuildingProgress += this.progressIncrement
-	if this.BuildingProgress >= 100.00 {
-		this.BuildingProgress = 99.99
+	if atomic.LoadUint64(&this.BuildProgress) < atomic.LoadUint64(&this.BuildTotal) {
+		atomic.AddUint64(&this.BuildProgress, 1)
 	}
+}
+
+func (this *BuildState) GetProgress() float64 {
+	dp := atomic.LoadUint64(&this.DeployProgress)
+	dt := atomic.LoadUint64(&this.DeployTotal)
+	bp := atomic.LoadUint64(&this.BuildProgress)
+	bt := atomic.LoadUint64(&this.BuildTotal)
+
+	var out float64 = 0
+	if dp == 0 || dt == 0 {
+		return out
+	}
+	if dp == dt {
+		out = 25.0
+	} else {
+		return float64(dp) / float64(dt) * 25.0
+	}
+	if bt == 0 {
+		return out
+	}
+	return out + (float64(bp)/float64(bt))*75.0
 }
 
 /*
@@ -365,7 +459,10 @@ func (this *BuildState) IncrementBuildProgress() {
    build progress percentage when the status of the build is queried.
 */
 func (this *BuildState) SetBuildStage(stage string) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
 	this.BuildStage = stage
+
 }
 
 func (this *BuildState) Reset() {
@@ -375,17 +472,41 @@ func (this *BuildState) Reset() {
 	this.stopping = false
 
 	this.breakpoints = []float64{}
-	this.progressIncrement = 0.0
 
 	this.files = []string{}
 	this.defers = []func(){}
 
-	this.BuildingProgress = 0.00
 	this.BuildError = CustomError{What: "", err: nil}
 	this.BuildStage = ""
+
+	this.DeployProgress = 0
+	this.DeployTotal = 0
+	this.BuildProgress = 0
+	this.BuildTotal = 0
 
 	err := os.MkdirAll("/tmp/"+this.BuildId, 0755)
 	if err != nil {
 		panic(err) //Fatal error
 	}
+	fmt.Println("BUILD has been reset!")
+}
+
+func (this *BuildState) Marshal() string {
+	this.mutex.RLock()
+	defer this.mutex.RUnlock()
+	if this.ErrorFree() { //error should be null if there is not an error
+		return fmt.Sprintf("{\"progress\":%f,\"error\":null,\"stage\":\"%s\",\"frozen\":%v}", this.GetProgress(), this.BuildStage, this.Frozen)
+	}
+	//otherwise give the error as an object
+	out, _ := json.Marshal(
+		map[string]interface{}{"progress": this.GetProgress(), "error": this.BuildError, "stage": this.BuildStage, "frozen": this.Frozen})
+	return string(out)
+}
+
+func (this *BuildState) Store() error {
+	return db.SetMeta(this.BuildId, *this)
+}
+
+func (this *BuildState) Destroy() error {
+	return db.DeleteMeta(this.BuildId)
 }

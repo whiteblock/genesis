@@ -4,7 +4,7 @@ import (
 	helpers "../blockchains/helpers"
 	db "../db"
 	ssh "../ssh"
-	state "../state"
+	testnet "../testnet"
 	util "../util"
 	"encoding/base64"
 	"fmt"
@@ -12,34 +12,31 @@ import (
 	"sync"
 )
 
-func distributeNibbler(servers []db.Server, clients []*ssh.Client, buildState *state.BuildState) {
-	buildState.Async(
-		func() {
-			nibbler, err := util.HttpRequest("GET", "https://storage.googleapis.com/genesis-public/nibbler/master/bin/linux/amd64/nibbler", "")
-			if err != nil {
-				log.Println(err)
-			}
-			err = buildState.Write("nibbler", string(nibbler))
-			if err != nil {
-				log.Println(err)
-			}
-			err = helpers.CopyToAllNodes(servers, clients, buildState,
-				"nibbler", "/usr/local/bin/nibbler")
-			if err != nil {
-				log.Println(err)
-			}
-			err = helpers.AllNodeExecCon(servers, buildState, func(serverNum int, localNodeNum int, absoluteNodeNum int) error {
-				_, err := clients[serverNum].DockerExec(localNodeNum, "chmod +x /usr/local/bin/nibbler")
-				return err
-			})
-			if err != nil {
-				log.Println(err)
-			}
+func distributeNibbler(tn *testnet.TestNet) {
+	tn.BuildState.Async(func() {
+		nibbler, err := util.HttpRequest("GET", "https://storage.googleapis.com/genesis-public/nibbler/master/bin/linux/amd64/nibbler", "")
+		if err != nil {
+			log.Println(err)
+		}
+		err = tn.BuildState.Write("nibbler", string(nibbler))
+		if err != nil {
+			log.Println(err)
+		}
+		err = helpers.CopyToAllNodes(tn, "nibbler", "/usr/local/bin/nibbler")
+		if err != nil {
+			log.Println(err)
+		}
+		err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
+			_, err := client.DockerExec(localNodeNum, "chmod +x /usr/local/bin/nibbler")
+			return err
 		})
+		if err != nil {
+			log.Println(err)
+		}
+	})
 }
 
-func handleDockerBuildRequest(blockchain string, prebuild map[string]interface{},
-	clients []*ssh.Client, buildState *state.BuildState) error {
+func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface{}) error {
 
 	_, hasDockerfile := prebuild["dockerfile"] //Must be base64
 	if !hasDockerfile {
@@ -51,12 +48,12 @@ func handleDockerBuildRequest(blockchain string, prebuild map[string]interface{}
 		log.Println(err)
 		return err
 	}
-	err = buildState.Write("Dockerfile", string(dockerfile))
+	err = tn.BuildState.Write("Dockerfile", string(dockerfile))
 	if err != nil {
 		log.Println(err)
 	}
 
-	err = helpers.CopyAllToServers(clients, buildState, "Dockerfile", "/home/appo/Dockerfile")
+	err = helpers.CopyAllToServers(tn, "Dockerfile", "/home/appo/Dockerfile")
 	if err != nil {
 		log.Println(err)
 		return err
@@ -67,40 +64,40 @@ func handleDockerBuildRequest(blockchain string, prebuild map[string]interface{}
 		log.Println(err)
 		return err
 	}
-	buildState.SetBuildStage("Building your custom image")
-	imageName := fmt.Sprintf("%s:%s", blockchain, tag)
+	tn.BuildState.SetBuildStage("Building your custom image")
+	imageName := fmt.Sprintf("%s:%s", tn.LDD.Blockchain, tag)
 	wg := sync.WaitGroup{}
-	for _, client := range clients {
+	for _, client := range tn.Clients {
 		wg.Add(1)
 		go func(client *ssh.Client) {
 			defer wg.Done()
 
 			_, err := client.Run(fmt.Sprintf("docker build /home/appo/ -t %s", imageName))
-			buildState.Defer(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
+			tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
 			if err != nil {
 				log.Println(err)
-				buildState.ReportError(err)
+				tn.BuildState.ReportError(err)
 				return
 			}
 
 		}(client)
 	}
 	wg.Wait()
-	if !buildState.ErrorFree() {
-		return buildState.GetError()
+	if !tn.BuildState.ErrorFree() {
+		return tn.BuildState.GetError()
 	}
 	return nil
 }
 
-func handlePreBuildExtras(buildConf *db.DeploymentDetails, clients []*ssh.Client, buildState *state.BuildState) error {
-	if buildConf.Extras == nil {
+func handlePreBuildExtras(tn *testnet.TestNet) error {
+	if tn.LDD.Extras == nil {
 		return nil //Nothing to do
 	}
-	_, exists := buildConf.Extras["prebuild"]
+	_, exists := tn.LDD.Extras["prebuild"]
 	if !exists {
 		return nil //Nothing to do
 	}
-	prebuild, ok := buildConf.Extras["prebuild"].(map[string]interface{})
+	prebuild, ok := tn.LDD.Extras["prebuild"].(map[string]interface{})
 	if !ok || prebuild == nil {
 		return nil //Nothing to do
 	}
@@ -108,7 +105,7 @@ func handlePreBuildExtras(buildConf *db.DeploymentDetails, clients []*ssh.Client
 
 	dockerBuild, ok := prebuild["build"] //bool to see if a manual build was requested.
 	if ok && dockerBuild.(bool) {
-		err := handleDockerBuildRequest(buildConf.Blockchain, prebuild, clients, buildState)
+		err := handleDockerBuildRequest(tn, prebuild)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -117,12 +114,21 @@ func handlePreBuildExtras(buildConf *db.DeploymentDetails, clients []*ssh.Client
 
 	dockerPull, ok := prebuild["pull"]
 	if ok && dockerPull.(bool) {
-		err := DockerPull(clients, buildConf.Image)
-		if err != nil {
-			log.Println(err)
-			return err
+		wg := sync.WaitGroup{}
+		for _, image := range tn.LDD.Images { //OPTMZ
+			wg.Add(1)
+			go func(image string) {
+				defer wg.Done()
+				err := DockerPull(tn.GetFlatClients(), image) //OPTMZ
+				if err != nil {
+					log.Println(err)
+					tn.BuildState.ReportError(err)
+					return
+				}
+			}(image)
 		}
+		wg.Wait()
 	}
 
-	return nil
+	return tn.BuildState.GetError()
 }

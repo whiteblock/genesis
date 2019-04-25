@@ -3,6 +3,7 @@ package eos
 import (
 	db "../../db"
 	util "../../util"
+	helpers "../helpers"
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/mustache"
@@ -313,7 +314,7 @@ func (this *EosConf) GenerateGenesis(masterPublicKey string, details *db.Deploym
 		"initialChainId":                 this.InitialChainId,
 	})
 
-	dat, err := util.GetBlockchainConfig("eos", "genesis.json.mustache", details.Files)
+	dat, err := helpers.GetBlockchainConfig("eos", 0, "genesis.json.mustache", details)
 	if err != nil {
 		log.Println(err)
 		return "", err

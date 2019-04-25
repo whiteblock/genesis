@@ -2,6 +2,7 @@ package rest
 
 import (
 	db "../db"
+	manager "../manager"
 	state "../state"
 	status "../status"
 	testnet "../testnet"
@@ -56,7 +57,7 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go testnet.AddTestNet(tn, id)
+	go manager.AddTestNet(tn, id)
 	w.Write([]byte(id))
 
 }
@@ -79,7 +80,7 @@ func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
 
 func deleteTestNet(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	err := testnet.DeleteTestNet(params["id"])
+	err := manager.DeleteTestNet(params["id"])
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 500)
@@ -102,14 +103,8 @@ func getTestNetNodes(w http.ResponseWriter, r *http.Request) {
 
 func addNodes(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	num, err := strconv.Atoi(params["num"])
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "Invalid number of nodes", 400)
-		return
-	}
 
-	testnetId := params["id"]
+	testnetId := params["testnetid"]
 
 	tn, err := db.GetBuildByTestnet(testnetId)
 	if err != nil {
@@ -118,7 +113,6 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tn.Nodes = num
 	decoder := json.NewDecoder(r.Body)
 	decoder.UseNumber()
 	err = decoder.Decode(&tn)
@@ -126,14 +120,15 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		//Ignore error and continue
 	}
-	_, err = state.GetBuildStateById(testnetId)
+	bs, err := state.GetBuildStateById(testnetId)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Testnet is down, build a new one", 409)
 		return
 	}
+	bs.Reset()
 	w.Write([]byte("Adding the nodes"))
-	go testnet.AddNodes(&tn, testnetId)
+	go manager.AddNodes(&tn, testnetId)
 }
 
 func delNodes(w http.ResponseWriter, r *http.Request) {
@@ -161,7 +156,7 @@ func delNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte("Deleting the nodes"))
-	go testnet.DelNodes(num, testnetId)
+	go manager.DelNodes(num, testnetId)
 }
 
 func restartNode(w http.ResponseWriter, r *http.Request) {
@@ -169,14 +164,14 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 	testnetId := params["id"]
 	node := params["num"]
 	log.Printf("%s %s\n", testnetId, node)
-	bs, err := state.GetBuildStateById(testnetId)
+	tn, err := testnet.RestoreTestNet(testnetId)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
 		return
 	}
-	cmdRaw, ok := bs.Get(node)
-	fmt.Printf("%#v\n", bs.GetExtras())
+	cmdRaw, ok := tn.BuildState.Get(node)
+	fmt.Printf("%#v\n", tn.BuildState.GetExtras())
 	if !ok {
 		log.Printf("Node %s not found", node)
 		http.Error(w, fmt.Sprintf("Node %s not found", node), 404)
@@ -211,6 +206,7 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
+
 	err = client.DockerExecdLogAppend(cmd.Node, cmd.Cmdline)
 	if err != nil {
 		log.Println(err)
@@ -218,5 +214,106 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte("Success"))
+}
 
+func signalNode(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	testnetID := params["testnetid"]
+	node := params["node"]
+	nodeNum, err := strconv.Atoi(node)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	signal := params["signal"]
+	err = util.ValidateCommandLine(signal)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, fmt.Sprintf("Invalid signal \"%s\", see `man 7 signal` for help"), 400)
+	}
+
+	tn, err := testnet.RestoreTestNet(testnetID)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 404)
+		return
+	}
+	if nodeNum >= len(tn.Nodes) {
+		http.Error(w, fmt.Sprintf("Node %d does not exist. Try node 0 through node %d", nodeNum, len(tn.Nodes)), 400)
+		return
+	}
+	n := &tn.Nodes[nodeNum]
+	cmdRaw, ok := tn.BuildState.Get(node)
+	if !ok {
+		log.Printf("Node %s not found", node)
+		http.Error(w, fmt.Sprintf("Node %s not found", node), 404)
+		return
+	}
+	cmd := cmdRaw.(util.Command)
+
+	cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep|  awk '{print $2}'| tail -n 1", strings.Split(cmd.Cmdline, " ")[0])
+	pid, err := tn.Clients[n.Server].DockerExec(cmd.Node, cmdgexCmd)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	_, err = tn.Clients[n.Server].DockerExec(n.LocalID, fmt.Sprintf("kill -%s %s", signal, pid))
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	w.Write([]byte(fmt.Sprintf("Sent signal %s to node %s", signal, node)))
+}
+
+func killNode(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	testnetId := params["testnetid"]
+	node := params["node"]
+	log.Printf("%s %s\n", testnetId, node)
+	tn, err := testnet.RestoreTestNet(testnetId)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 404)
+		return
+	}
+	cmdRaw, ok := tn.BuildState.Get(node)
+	if !ok {
+		log.Printf("Node %s not found", node)
+		http.Error(w, fmt.Sprintf("Node %s not found", node), 404)
+		return
+	}
+	cmd := cmdRaw.(util.Command)
+
+	client, err := status.GetClient(cmd.ServerId)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep|  awk '{print $2}'| tail -n 1", strings.Split(cmd.Cmdline, " ")[0])
+	pid, err := client.DockerExec(cmd.Node, cmdgexCmd)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	res, err := client.DockerExec(cmd.Node, fmt.Sprintf("kill -INT %s", pid))
+	if err != nil {
+		log.Println(err)
+		log.Println(res)
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	for {
+		_, err = client.DockerExec(cmd.Node, fmt.Sprintf("ps aux | grep '%s' | grep -v grep", strings.Split(cmd.Cmdline, " ")[0]))
+		if err != nil {
+			break
+		}
+	}
+	w.Write([]byte(fmt.Sprintf("Killed node %d", node)))
 }

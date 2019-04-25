@@ -1,12 +1,13 @@
 package artemis
 
 import (
+	db "../../db"
 	util "../../util"
+	helpers "../helpers"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/mustache"
-	"io/ioutil"
 	"log"
 )
 
@@ -35,7 +36,7 @@ func NewConf(data map[string]interface{}) (ArtemisConf, error) {
 }
 
 func GetParams() string {
-	dat, err := util.GetBlockchainConfig("artemis", "params.json", nil)
+	dat, err := helpers.GetStaticBlockchainConfig("artemis", "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -43,7 +44,7 @@ func GetParams() string {
 }
 
 func GetDefaults() string {
-	dat, err := util.GetBlockchainConfig("artemis", "defaults.json", nil)
+	dat, err := helpers.GetStaticBlockchainConfig("artemis", "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -64,22 +65,26 @@ func GetServices() []util.Service {
 	}
 }
 
-func makeNodeConfig(artemisConf ArtemisConf, identity string, peers string, numNodes int, params map[string]interface{}) (string, error) {
+func makeNodeConfig(artemisConf ArtemisConf, identity string, peers string, node int, details *db.DeploymentDetails) (string, error) {
 
-	artConf := map[string]interface{}(artemisConf)
+	artConf, err := util.CopyMap(artemisConf)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
 	artConf["identity"] = identity
 	filler := util.ConvertToStringMap(artConf)
 	filler["peers"] = peers
-	filler["numNodes"] = fmt.Sprintf("%d", numNodes)
+	filler["numNodes"] = fmt.Sprintf("%d", details.Nodes)
 
 	var validators int64
-	err := util.GetJSONInt64(params, "validators", &validators)
+	err = util.GetJSONInt64(details.Params, "validators", &validators)
 	if err != nil {
 		return "", err
 	}
 
 	filler["validators"] = fmt.Sprintf("%d", validators)
-	dat, err := ioutil.ReadFile("./resources/artemis/artemis-config.toml.mustache")
+	dat, err := helpers.GetBlockchainConfig("artemis", node, "artemis-config.toml.mustache", details)
 	if err != nil {
 		return "", err
 	}

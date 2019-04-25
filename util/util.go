@@ -369,16 +369,19 @@ func ConvertToStringMap(in interface{}) map[string]string {
 	return out
 }
 
-func GetBlockchainConfig(blockchain string, file string, files map[string]string) ([]byte, error) {
-	if files != nil {
-		res, exists := files[file]
-		if exists {
-			return base64.StdEncoding.DecodeString(res)
-		}
-	}
-	return ioutil.ReadFile(fmt.Sprintf("./resources/%s/%s", blockchain, file))
-}
-
 func FormatError(res string, err error) error {
 	return fmt.Errorf("%s\n%s", res, err.Error())
+}
+
+// Map performs a deep copy of the given map m.
+func CopyMap(m map[string]interface{}) (map[string]interface{}, error) {
+	var out map[string]interface{}
+	tmp, err := json.Marshal(m)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	err = json.Unmarshal(tmp, &out)
+	return out, err
 }

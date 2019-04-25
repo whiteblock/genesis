@@ -70,9 +70,10 @@ func dbInit() {
 		"image TEXT NOT NULL",
 		"ts INTEGER")
 
-	nodesSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s);",
+	nodesSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s);",
 		NodesTable,
 		"id TEXT",
+		"abs_num INTEGER",
 		"test_net TEXT",
 		"server INTEGER",
 		"local_id INTEGER",

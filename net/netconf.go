@@ -137,7 +137,7 @@ func ApplyAll(netconfs []Netconf, nodes []db.Node) error {
 */
 func ApplyToAll(netconf Netconf, nodes []db.Node) error {
 	for _, node := range nodes {
-		netconf.Node = node.LocalId
+		netconf.Node = node.LocalID
 		cmds := CreateCommands(netconf, node.Server)
 		for i, cmd := range cmds {
 			client, err := status.GetClient(node.Server)
@@ -170,7 +170,7 @@ func RemoveAll(nodes []db.Node) error {
 			return err
 		}
 		client.Run(
-			fmt.Sprintf("sudo tc qdisc del dev %s%d root", conf.BridgePrefix, node.LocalId))
+			fmt.Sprintf("sudo tc qdisc del dev %s%d root", conf.BridgePrefix, node.LocalID))
 	}
 	return nil
 }
@@ -183,6 +183,7 @@ func RemoveAllOnServer(client *ssh.Client, nodes int) {
 		client.Run(
 			fmt.Sprintf("sudo tc qdisc del dev %s%d root", conf.BridgePrefix, i))
 	}
+	RemoveAllOutages(client)
 }
 
 func parseItems(items []string, nconf *Netconf) error {

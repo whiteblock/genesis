@@ -2,9 +2,9 @@ package rest
 
 import (
 	db "../db"
+	manager "../manager"
 	state "../state"
 	status "../status"
-	testnet "../testnet"
 	util "../util"
 	"encoding/json"
 	"fmt"
@@ -84,7 +84,7 @@ func getBlockChainParams(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
 	log.Println("GET PARAMS : " + params["blockchain"])
-	blockchainParams, err := testnet.GetParams(params["blockchain"])
+	blockchainParams, err := manager.GetParams(params["blockchain"])
 	if err != nil {
 		http.Error(w, err.Error(), 404)
 		return
@@ -110,7 +110,7 @@ func getBlockChainState(w http.ResponseWriter, r *http.Request) {
 }
 
 func getBlockChainDefaults(w http.ResponseWriter, r *http.Request) {
-	defaults, err := testnet.GetDefaults(mux.Vars(r)["blockchain"])
+	defaults, err := manager.GetDefaults(mux.Vars(r)["blockchain"])
 	if err != nil {
 		http.Error(w, err.Error(), 404)
 		return
@@ -157,7 +157,7 @@ func getBlockChainLog(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 404)
 		return
 	}
-	res, err := client.DockerRead(node.LocalId, conf.DockerOutputFile, lines)
+	res, err := client.DockerRead(node.LocalID, conf.DockerOutputFile, lines)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, fmt.Sprintf("%s %s", res, err.Error()), 500)

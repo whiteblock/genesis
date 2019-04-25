@@ -75,14 +75,20 @@ func StartServer() {
 	router.HandleFunc("/nodes/{id}", getTestNetNodes).Methods("GET")
 	router.HandleFunc("/nodes/{id}/", getTestNetNodes).Methods("GET")
 
-	router.HandleFunc("/nodes/{id}/{num}", addNodes).Methods("POST")
-	router.HandleFunc("/nodes/{id}/{num}/", addNodes).Methods("POST")
+	router.HandleFunc("/nodes/{testnetid}", addNodes).Methods("POST")
+	router.HandleFunc("/nodes/{testnetid}/", addNodes).Methods("POST")
 
-	router.HandleFunc("/nodes/{id}/{num}", delNodes).Methods("DELETE")
+	router.HandleFunc("/nodes/{id}/{num}", delNodes).Methods("DELETE") //Completely remove x nodes
 	router.HandleFunc("/nodes/{id}/{num}/", delNodes).Methods("DELETE")
 
-	router.HandleFunc("/nodes/restart/{id}/{num}", restartNode).Methods("POST")
-	router.HandleFunc("/nodes/restart/{id}/{num}/", restartNode).Methods("POST")
+	router.HandleFunc("/nodes/restart/{testnetid}/{num}", restartNode).Methods("POST")
+	router.HandleFunc("/nodes/restart/{testnetid}/{num}/", restartNode).Methods("POST")
+
+	router.HandleFunc("/nodes/raise/{testnetid}/{node}/{signal}", signalNode).Methods("POST")
+	router.HandleFunc("/nodes/raise/{testnetid}/{node}/{signal}/", signalNode).Methods("POST")
+
+	router.HandleFunc("/nodes/kill/{testnetid}/{node}", killNode).Methods("POST")
+	router.HandleFunc("/nodes/kill/{testnetid}/{node}/", killNode).Methods("POST")
 
 	router.HandleFunc("/build/{id}", stopBuild).Methods("DELETE")
 	router.HandleFunc("/build/{id}/", stopBuild).Methods("DELETE")
@@ -118,6 +124,27 @@ func StartServer() {
 
 	router.HandleFunc("/resources/{blockchain}/{file}", getConfFile).Methods("GET")
 	router.HandleFunc("/resources/{blockchain}/{file}/", getConfFile).Methods("GET")
+
+	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}", removeOrAddOutage).Methods("POST")
+	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}/", removeOrAddOutage).Methods("POST")
+
+	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}", removeOrAddOutage).Methods("DELETE")
+	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}/", removeOrAddOutage).Methods("DELETE")
+
+	router.HandleFunc("/outage/{testnetId}", removeAllOutages).Methods("DELETE")
+	router.HandleFunc("/outage/{testnetId}/", removeAllOutages).Methods("DELETE")
+
+	router.HandleFunc("/outage/{testnetId}", getAllOutages).Methods("GET")
+	router.HandleFunc("/outage/{testnetId}/", getAllOutages).Methods("GET")
+
+	router.HandleFunc("/outage/{testnetId}/{node}", getAllOutages).Methods("GET")
+	router.HandleFunc("/outage/{testnetId}/{node}/", getAllOutages).Methods("GET")
+
+	router.HandleFunc("/outage/partition/{testnetId}", partitionOutage).Methods("POST")
+	router.HandleFunc("/outage/partition/{testnetId}/", partitionOutage).Methods("POST")
+
+	router.HandleFunc("/partition/{testnetId}", getAllPartitions).Methods("GET")
+	router.HandleFunc("/partition/{testnetId}/", getAllPartitions).Methods("GET")
 
 	http.ListenAndServe(conf.Listen, router)
 }

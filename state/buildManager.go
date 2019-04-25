@@ -39,6 +39,7 @@ func cleanBuildStates(servers []int) {
 					}
 				}
 			}
+			buildStates[i].Destroy()
 			buildStates = append(buildStates[:i], buildStates[i+1:]...)
 			i--
 		}
@@ -68,15 +69,24 @@ func GetBuildStateByServerId(serverId int) *BuildState {
 */
 func GetBuildStateById(buildId string) (*BuildState, error) {
 	mux.RLock()
-	defer mux.RUnlock()
 
 	for _, bs := range buildStates {
 		if bs.BuildId == buildId {
+			mux.RUnlock()
 			return bs, nil
 		}
 	}
-
-	return nil, fmt.Errorf("Couldn't find the request build")
+	mux.RUnlock()
+	mux.Lock()
+	defer mux.Unlock()
+	bs, err := RestoreBuildState(buildId)
+	if err != nil || bs == nil {
+		log.Println(err)
+		return nil, fmt.Errorf("Couldn't find the request build")
+	}
+	buildStates = append(buildStates, bs)
+	serversInUse = append(serversInUse, bs.Servers...)
+	return bs, nil
 }
 
 /*
