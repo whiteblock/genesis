@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
+	//"strings"
 
 	util "../util"
-	"crypto/x509"
-	"encoding/pem"
-	"github.com/Whiteblock/jwt-go"
+	//"crypto/x509"
+	//"encoding/pem"
+	//"github.com/Whiteblock/jwt-go"
 )
 
 const allowNoKeyAcess = true
@@ -42,7 +42,7 @@ func AuthN(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r) //bypass
 		return
 
-		tokenString := r.Header.Get("Authorization")
+		/*tokenString := r.Header.Get("Authorization")
 
 		if len(tokenString) == 0 {
 			log.Println("Info: Request came in without the Authorization header set")
@@ -105,6 +105,6 @@ func AuthN(next http.Handler) http.Handler {
 		fmt.Printf("Token: %v\n", token)
 		// Authenticated, move on to next step
 		next.ServeHTTP(w, r)
-
+		*/
 	})
 }

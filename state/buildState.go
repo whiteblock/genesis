@@ -45,7 +45,7 @@ type BuildState struct {
 	files             []string
 	defers            []func() //Array of functions to run at the end of the build
 	errorCleanupFuncs []func()
-	asyncWaiter       sync.WaitGroup
+	asyncWaiter       *sync.WaitGroup
 
 	Servers []int
 	BuildId string
@@ -69,6 +69,7 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	out.mutex = &sync.RWMutex{}
 	out.stopMux = &sync.RWMutex{}
 	out.freezeMux = &sync.RWMutex{}
+	out.asyncWaiter = &sync.WaitGroup{}
 
 	out.building = true
 	out.Frozen = false
@@ -112,6 +113,7 @@ func RestoreBuildState(buildID string) (*BuildState, error) {
 	out.mutex = &sync.RWMutex{}
 	out.stopMux = &sync.RWMutex{}
 	out.freezeMux = &sync.RWMutex{}
+	out.asyncWaiter = &sync.WaitGroup{}
 
 	out.Reset()
 	return out, nil

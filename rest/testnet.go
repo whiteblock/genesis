@@ -230,7 +230,7 @@ func signalNode(w http.ResponseWriter, r *http.Request) {
 	err = util.ValidateCommandLine(signal)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, fmt.Sprintf("Invalid signal \"%s\", see `man 7 signal` for help"), 400)
+		http.Error(w, fmt.Sprintf("Invalid signal \"%s\", see `man 7 signal` for help", signal), 400)
 	}
 
 	tn, err := testnet.RestoreTestNet(testnetID)
