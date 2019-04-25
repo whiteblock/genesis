@@ -2,10 +2,10 @@ package syscoin
 
 import (
 	db "../../db"
-	helpers "../helpers"
 	ssh "../../ssh"
 	testnet "../../testnet"
 	util "../../util"
+	helpers "../helpers"
 	"errors"
 	"fmt"
 	"log"

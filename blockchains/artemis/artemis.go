@@ -27,16 +27,6 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		defer tn.BuildState.IncrementBuildProgress()
-		_, err := client.DockerExec(localNodeNum, "rm /artemis/config/config.toml")
-		return err
-	})
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
 	port := 9000
 	peers := "["
 	var peer string
