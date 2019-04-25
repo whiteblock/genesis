@@ -22,15 +22,14 @@ func init() {
 const port int = 10000
 
 func Build(tn *testnet.TestNet) ([]string, error) {
-	buildState := tn.BuildState
 	beamConf, err := NewConf(tn.LDD.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	buildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
+	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
 
-	buildState.SetBuildStage("Setting up the wallets")
+	tn.BuildState.SetBuildStage("Setting up the wallets")
 	/**Set up wallets**/
 	ownerKeys := make([]string, tn.LDD.Nodes)
 	secretMinerKeys := make([]string, tn.LDD.Nodes)
@@ -42,7 +41,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 		res1, _ := client.DockerExec(localNodeNum, "beam-wallet --command export_owner_key --pass password") //ign err
 
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 
 		re := regexp.MustCompile(`(?m)^Owner([A-z|0-9|\s|\:|\/|\+|\=])*$`)
 		ownKLine := re.FindAllString(res1, -1)[0]
@@ -60,7 +59,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		secretMinerKeys[absoluteNodeNum] = strings.Split(secMLine, " ")[3]
 		mux.Unlock()
 
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 
@@ -70,7 +69,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 		ips = append(ips, node.Ip)
 	}
-	buildState.SetBuildStage("Creating node configuration files")
+	tn.BuildState.SetBuildStage("Creating node configuration files")
 	/**Create node config files**/
 
 	err = helpers.CreateConfigs(tn, "/beam/beam-node.cfg",
@@ -117,9 +116,9 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 
-	buildState.SetBuildStage("Starting beam")
+	tn.BuildState.SetBuildStage("Starting beam")
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		defer buildState.IncrementBuildProgress()
+		defer tn.BuildState.IncrementBuildProgress()
 		miningFlag := ""
 		if absoluteNodeNum >= int(beamConf.Validators) {
 			miningFlag = " --mining_threads 1"

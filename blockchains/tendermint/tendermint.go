@@ -37,9 +37,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	//Ensure that genesis file has same chain_id
 	peers := []string{}
 	validators := []Validator{}
-	buildState := tn.BuildState
-	buildState.SetBuildSteps(1 + (tn.LDD.Nodes * 4))
-	buildState.SetBuildStage("Initializing the nodes")
+	tn.BuildState.SetBuildSteps(1 + (tn.LDD.Nodes * 4))
+	tn.BuildState.SetBuildStage("Initializing the nodes")
 
 	mux := sync.Mutex{}
 	err := helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
@@ -69,7 +68,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			log.Println(err)
 			return err
 		}
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 		var genesis map[string]interface{}
 		err = json.Unmarshal([]byte(res), &genesis)
 
@@ -110,14 +109,14 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			validators = append(validators, validator)
 			mux.Unlock()
 		}
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	buildState.SetBuildStage("Propogating the genesis file")
+	tn.BuildState.SetBuildStage("Propogating the genesis file")
 
 	//distribute the created genensis file among the nodes
 	err = helpers.CopyBytesToAllNodes(tn, GetGenesisFile(validators), "/root/.tendermint/config/genesis.json")
@@ -126,9 +125,9 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 
-	buildState.SetBuildStage("Starting tendermint")
+	tn.BuildState.SetBuildStage("Starting tendermint")
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		defer buildState.IncrementBuildProgress()
+		defer tn.BuildState.IncrementBuildProgress()
 		peersCpy := make([]string, len(peers))
 		copy(peersCpy, peers)
 		return client.DockerExecdLog(localNodeNum, fmt.Sprintf("tendermint node --proxy_app=kvstore --p2p.persistent_peers=%s",

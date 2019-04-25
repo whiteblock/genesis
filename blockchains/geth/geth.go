@@ -28,7 +28,6 @@ const ETH_NET_STATS_PORT = 3338
 Build builds out a fresh new ethereum test network using geth
 */
 func Build(tn *testnet.TestNet) ([]string, error) {
-	buildState := tn.BuildState
 	clients := tn.GetFlatClients()
 	mux := sync.Mutex{}
 	ethconf, err := NewConf(tn.LDD.Params)
@@ -37,11 +36,11 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 
-	buildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes))
+	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes))
 
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 
-	buildState.SetBuildStage("Distributing secrets")
+	tn.BuildState.SetBuildStage("Distributing secrets")
 	/**Copy over the password file**/
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
 		_, err := client.DockerExec(localNodeNum, "mkdir -p /geth")
@@ -64,12 +63,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		}
 	}
 
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 
 	/**Create the wallets**/
 	wallets := make([]string, tn.LDD.Nodes)
 	rawWallets := make([]string, tn.LDD.Nodes)
-	buildState.SetBuildStage("Creating the wallets")
+	tn.BuildState.SetBuildStage("Creating the wallets")
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		gethResults, err := client.DockerExec(localNodeNum, "geth --datadir /geth/ --password /geth/passwd account new")
@@ -91,7 +90,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		wallets[absoluteNodeNum] = address
 		mux.Unlock()
 
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 
 		res, err := client.DockerExec(localNodeNum, "bash -c 'cat /geth/keystore/*'")
 		if err != nil {
@@ -110,7 +109,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 
 	fmt.Printf("%v\n%v\n", wallets, rawWallets)
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 	unlock := ""
 
 	for i, wallet := range wallets {
@@ -121,16 +120,16 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 	fmt.Printf("unlock = %s\n%+v\n\n", wallets, unlock)
 
-	buildState.IncrementBuildProgress()
-	buildState.SetBuildStage("Creating the genesis block")
-	err = createGenesisfile(ethconf, tn.LDD, wallets, buildState)
+	tn.BuildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Creating the genesis block")
+	err = createGenesisfile(ethconf, tn.LDD, wallets, tn.BuildState)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	buildState.IncrementBuildProgress()
-	buildState.SetBuildStage("Bootstrapping network")
+	tn.BuildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Bootstrapping network")
 
 	err = helpers.CopyToAllNodes(tn, "CustomGenesis.json", "/geth/")
 	if err != nil {
@@ -158,7 +157,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	staticNodes := make([]string, tn.LDD.Nodes)
 
-	buildState.SetBuildStage("Initializing geth")
+	tn.BuildState.SetBuildStage("Initializing geth")
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		ip := tn.Nodes[absoluteNodeNum].Ip
@@ -189,7 +188,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		staticNodes[absoluteNodeNum] = enode
 		mux.Unlock()
 
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 	if err != nil {
@@ -203,8 +202,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 
-	buildState.IncrementBuildProgress()
-	buildState.SetBuildStage("Starting geth")
+	tn.BuildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Starting geth")
 	//Copy static-nodes to every server
 	err = helpers.CopyBytesToAllNodes(tn, string(out), "/geth/static-nodes.json")
 	if err != nil {
@@ -214,7 +213,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		ip := tn.Nodes[absoluteNodeNum].Ip
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 
 		gethCmd := fmt.Sprintf(
 			`geth --datadir /geth/ --maxpeers %d --networkid %d --rpc --nodiscover --rpcaddr %s`+
@@ -233,14 +232,14 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			return err
 		}
 
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 
 	err = setupEthNetStats(clients[0])
 	if err != nil {
@@ -271,7 +270,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			log.Println(err)
 			return err
 		}
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 	return nil, err

@@ -20,16 +20,15 @@ func init() {
 Build builds out a fresh new artemis test network
 */
 func Build(tn *testnet.TestNet) ([]string, error) {
-	buildState := tn.BuildState
 	artemisConf, err := NewConf(tn.LDD.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	buildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
+	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		defer buildState.IncrementBuildProgress()
+		defer tn.BuildState.IncrementBuildProgress()
 		_, err := client.DockerExec(localNodeNum, "rm /artemis/config/config.toml")
 		return err
 	})
@@ -53,7 +52,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		} else {
 			peers = peers + "\"" + peer + "\""
 		}
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 	}
 
 	peers = peers + "]"
@@ -70,7 +69,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			return []byte(artemisNodeConfig), err
 		})
 
-	buildState.SetBuildStage("Starting Artemis")
+	tn.BuildState.SetBuildStage("Starting Artemis")
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		artemisCmd := `artemis -c /artemis/config/config.toml -o /artemis/data/data.json 2>&1 | tee /output.log`
 
@@ -86,7 +85,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			return err
 		}
 
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 
 		_, err = client.DockerExecd(localNodeNum,
 			fmt.Sprintf("bash -c 'while :;do artemis-log-parser --influx \"http://%s:8086\" --node \"%s%d\" "+
