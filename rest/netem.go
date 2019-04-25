@@ -5,6 +5,7 @@ import (
 	netem "../net"
 	status "../status"
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -114,7 +115,7 @@ func getNet(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(out)
 }
 
-func addOutage(w http.ResponseWriter, r *http.Request) {
+func removeOrAddOutage(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	testnetId := params["testnetId"]
 	nodeNum1, err := strconv.Atoi(params["node1"])
@@ -151,55 +152,14 @@ func addOutage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 404)
 		return
 	}
-
-	err = netem.MakeOutage(node1, node2)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 500)
-		return
+	switch r.Method {
+	case "POST":
+		err = netem.MakeOutage(node1, node2)
+	case "DELETE":
+		err = netem.RemoveOutage(node1, node2)
+	default:
+		err = fmt.Errorf("Unexpected http method")
 	}
-	w.Write([]byte("Success"))
-}
-
-func removeOutage(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	testnetId := params["testnetId"]
-	nodeNum1, err := strconv.Atoi(params["node1"])
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 400)
-		return
-	}
-
-	nodeNum2, err := strconv.Atoi(params["node2"])
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 400)
-		return
-	}
-
-	nodes, err := db.GetAllNodesByTestNet(testnetId)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 404)
-		return
-	}
-
-	node1, err := db.GetNodeByAbsNum(nodes, nodeNum1)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 404)
-		return
-	}
-
-	node2, err := db.GetNodeByAbsNum(nodes, nodeNum2)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 404)
-		return
-	}
-
-	err = netem.RemoveOutage(node1, node2)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 500)

@@ -125,11 +125,11 @@ func StartServer() {
 	router.HandleFunc("/resources/{blockchain}/{file}", getConfFile).Methods("GET")
 	router.HandleFunc("/resources/{blockchain}/{file}/", getConfFile).Methods("GET")
 
-	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}", addOutage).Methods("POST")
-	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}/", addOutage).Methods("POST")
+	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}", removeOrAddOutage).Methods("POST")
+	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}/", removeOrAddOutage).Methods("POST")
 
-	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}", removeOutage).Methods("DELETE")
-	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}/", removeOutage).Methods("DELETE")
+	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}", removeOrAddOutage).Methods("DELETE")
+	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}/", removeOrAddOutage).Methods("DELETE")
 
 	router.HandleFunc("/outage/{testnetId}", removeAllOutages).Methods("DELETE")
 	router.HandleFunc("/outage/{testnetId}/", removeAllOutages).Methods("DELETE")
