@@ -77,7 +77,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		ip := tn.Nodes[absoluteNodeNum].Ip
 		if absoluteNodeNum != 0 {
 			//init everything
-			_, err = client.DockerExec(localNodeNum, "gaiad init --chain-id=whiteblock whiteblock")
+			_, err := client.DockerExec(localNodeNum, "gaiad init --chain-id=whiteblock whiteblock")
 			if err != nil {
 				log.Println(res)
 				return err
@@ -85,7 +85,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		}
 
 		//Get the node id
-		res, err = client.DockerExec(localNodeNum, "gaiad tendermint show-node-id")
+		res, err := client.DockerExec(localNodeNum, "gaiad tendermint show-node-id")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -100,7 +100,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	buildState.SetBuildStage("Copying the genesis file to each node")
 
-	err = helpers.CopyToAllNodes(tn, genesisFile, "/root/.gaiad/config/genesis.json")
+	err = helpers.CopyBytesToAllNodes(tn, genesisFile, "/root/.gaiad/config/genesis.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -110,8 +110,10 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		defer buildState.IncrementBuildProgress()
+		peersCpy := make([]string, len(peers))
+		copy(peersCpy, peers)
 		_, err := client.DockerExecd(localNodeNum, fmt.Sprintf("gaiad start --p2p.persistent_peers=%s",
-			strings.Join(append(peers[:absoluteNodeNum], peers[absoluteNodeNum+1:]...), ",")))
+			strings.Join(append(peersCpy[:absoluteNodeNum], peersCpy[absoluteNodeNum+1:]...), ",")))
 		return err
 	})
 	return nil, err
