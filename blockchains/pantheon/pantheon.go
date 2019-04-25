@@ -327,39 +327,30 @@ func PrepareGeth(client *ssh.Client, panconf *PanConf, nodes int, buildState *st
 	toCreate := panconf.Accounts
 	wg := &sync.WaitGroup{}
 	mux := &sync.Mutex{}
-	for i := 0; i < 40 && i < int(toCreate); i++ {
+	for i := 0; i < int(toCreate); i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for {
-				mux.Lock()
-				if toCreate == 0 {
-					mux.Unlock()
-					break
-				}
-				toCreate--
-				mux.Unlock()
-
-				gethResults, err := client.Run("docker exec wb_service0 geth --datadir /geth/ --password /geth/passwd account new")
-				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
-					return
-				}
-
-				addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
-				addrRaw := addressPattern.FindAllString(gethResults, -1)
-				if len(addrRaw) < 1 {
-					buildState.ReportError(fmt.Errorf("Unable to get addresses"))
-					return
-				}
-				address := addrRaw[0]
-				address = address[1 : len(address)-1]
-
-				mux.Lock()
-				addresses = append(addresses, address)
-				mux.Unlock()
+			gethResults, err := client.Run("docker exec wb_service0 geth --datadir /geth/ --password /geth/passwd account new")
+			if err != nil {
+				log.Println(err)
+				buildState.ReportError(err)
+				return
 			}
+
+			addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
+			addrRaw := addressPattern.FindAllString(gethResults, -1)
+			if len(addrRaw) < 1 {
+				buildState.ReportError(fmt.Errorf("Unable to get addresses"))
+				return
+			}
+			address := addrRaw[0]
+			address = address[1 : len(address)-1]
+
+			mux.Lock()
+			addresses = append(addresses, address)
+			mux.Unlock()
+
 		}()
 	}
 	wg.Wait()
