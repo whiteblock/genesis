@@ -5,6 +5,7 @@ import (
 	manager "../manager"
 	state "../state"
 	status "../status"
+	testnet "../testnet"
 	util "../util"
 	"encoding/json"
 	"fmt"
@@ -163,14 +164,14 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 	testnetId := params["id"]
 	node := params["num"]
 	log.Printf("%s %s\n", testnetId, node)
-	bs, err := state.GetBuildStateById(testnetId)
+	tn,err := testnet.RestoreTestNet(testnetId)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
 		return
 	}
-	cmdRaw, ok := bs.Get(node)
-	fmt.Printf("%#v\n", bs.GetExtras())
+	cmdRaw, ok := tn.BuildState.Get(node)
+	fmt.Printf("%#v\n", tn.BuildState.GetExtras())
 	if !ok {
 		log.Printf("Node %s not found", node)
 		http.Error(w, fmt.Sprintf("Node %s not found", node), 404)
@@ -205,6 +206,7 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
+	
 	err = client.DockerExecdLogAppend(cmd.Node, cmd.Cmdline)
 	if err != nil {
 		log.Println(err)

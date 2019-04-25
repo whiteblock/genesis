@@ -158,7 +158,5 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 			}
 		}
 	}
-	fmt.Printf("TESTNET=%+v\n", tn)
-
 	return tn.BuildState.GetError()
 }

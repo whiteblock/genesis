@@ -150,7 +150,7 @@ func copyOverSshKeysToNewNodes(tn *testnet.TestNet) error {
 		return err
 	}
 
-	return helpers.CopyBytesToAllNodes(tn, string(privKey), "/root/.ssh/id_rsa")
+	return helpers.CopyBytesToAllNewNodes(tn, string(privKey), "/root/.ssh/id_rsa")
 }
 
 func declareNode(node *db.Node, details *db.DeploymentDetails) error {

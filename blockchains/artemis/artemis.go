@@ -73,7 +73,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	buildState.SetBuildStage("Starting Artemis")
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		artemisCmd := `artemis -c /artemis/config/config.toml -o /artemis/data/data.json 2>&1 | tee /output.log`
-		_, err = client.DockerExecd(localNodeNum, "tmux new -s whiteblock -d")
+
+		_, err := client.DockerExecd(localNodeNum, "tmux new -s whiteblock -d")
 		if err != nil {
 			log.Println(err)
 			return err

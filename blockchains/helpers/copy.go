@@ -41,7 +41,7 @@ func CopyAllToServers(tn *testnet.TestNet, srcDst ...string) error {
 	return tn.BuildState.GetError()
 }
 
-func CopyToAllNodes(tn *testnet.TestNet, srcDst ...string) error {
+func copyToAllNodes(tn *testnet.TestNet, useNew bool, srcDst ...string) error {
 	if len(srcDst)%2 != 0 {
 		return fmt.Errorf("Invalid number of variadic arguments, must be given an even number of them")
 	}
@@ -50,6 +50,9 @@ func CopyToAllNodes(tn *testnet.TestNet, srcDst ...string) error {
 	wg := sync.WaitGroup{}
 
 	preOrderedNodes := tn.PreOrderNodes()
+	if useNew {
+		preOrderedNodes = tn.PreOrderNewNodes()
+	}
 	for sid, nodes := range preOrderedNodes {
 		for j := 0; j < len(srcDst)/2; j++ {
 			sem.Acquire(ctx, 1)
@@ -92,7 +95,15 @@ func CopyToAllNodes(tn *testnet.TestNet, srcDst ...string) error {
 	return tn.BuildState.GetError()
 }
 
-func CopyBytesToAllNodes(tn *testnet.TestNet, dataDst ...string) error {
+func CopyToAllNodes(tn *testnet.TestNet, srcDst ...string) error {
+	return copyToAllNodes(tn, false, srcDst...)
+}
+
+func CopyToAllNewNodes(tn *testnet.TestNet, srcDst ...string) error {
+	return copyToAllNodes(tn, true, srcDst...)
+}
+
+func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, dataDst ...string) error {
 	fmted := []string{}
 	for i := 0; i < len(dataDst)/2; i++ {
 		tmpFilename, err := util.GetUUIDString()
@@ -104,7 +115,15 @@ func CopyBytesToAllNodes(tn *testnet.TestNet, dataDst ...string) error {
 		fmted = append(fmted, tmpFilename)
 		fmted = append(fmted, dataDst[i*2+1])
 	}
-	return CopyToAllNodes(tn, fmted...)
+	return copyToAllNodes(tn, useNew, fmted...)
+}
+
+func CopyBytesToAllNodes(tn *testnet.TestNet, dataDst ...string) error {
+	return copyBytesToAllNodes(tn, false, dataDst...)
+}
+
+func CopyBytesToAllNewNodes(tn *testnet.TestNet, dataDst ...string) error {
+	return copyBytesToAllNodes(tn, true, dataDst...)
 }
 
 func SingleCp(client *ssh.Client, buildState *state.BuildState, localNodeId int, data []byte, dest string) error {
