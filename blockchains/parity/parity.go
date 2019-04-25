@@ -111,7 +111,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		for i, rawWallet := range rawWallets {
-			_, err = client.DockerExec(localNodeNum, fmt.Sprintf("bash -c 'echo \"%s\">/parity/account%d'", rawWallet, i))
+			_, err := client.DockerExec(localNodeNum, fmt.Sprintf("bash -c 'echo \"%s\">/parity/account%d'", rawWallet, i))
 			if err != nil {
 				log.Println(err)
 				return err
@@ -149,7 +149,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		enode := ""
 		for len(enode) == 0 {
-			ip := tn.Nodes[absoluteNodeNum]
+			ip := tn.Nodes[absoluteNodeNum].Ip
 			res, err := client.KeepTryRun(
 				fmt.Sprintf(
 					`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json" `+
@@ -187,7 +187,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		ip := tn.Nodes[absoluteNodeNum]
+		ip := tn.Nodes[absoluteNodeNum].Ip
 		for i, enode := range enodes {
 			if i == absoluteNodeNum {
 				continue

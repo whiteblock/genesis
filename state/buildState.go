@@ -192,12 +192,12 @@ func (this *BuildState) DoneBuilding() {
 		}
 	} else {
 		wg := sync.WaitGroup{} //Wait for completion, to prevent a potential race
-		for _, fn := range this.errorCleanupFuncs {
+		for i := range this.errorCleanupFuncs {
 			wg.Add(1)
-			go func() {
+			go func(fn *func()) {
 				defer wg.Done()
-				fn()
-			}()
+				(*fn)()
+			}(&this.errorCleanupFuncs[i])
 		}
 		wg.Wait()
 	}
