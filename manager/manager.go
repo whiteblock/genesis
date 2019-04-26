@@ -35,14 +35,14 @@ func init() {
 
 // AddTestNet implements the build command. All blockchains Build command must be
 // implemented here, other it will not be called during the build process.
-func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
+func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 	if details.Servers == nil || len(details.Servers) == 0 {
 		err := fmt.Errorf("missing servers")
 		log.Println(err)
 		return err
 	}
 	//STEP 1: SETUP THE TESTNET
-	tn, err := testnet.NewTestNet(*details, testNetId)
+	tn, err := testnet.NewTestNet(*details, testnetID)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -59,7 +59,7 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 	}
 
 	buildState.Async(func() {
-		declareTestnet(testNetId, details)
+		declareTestnet(testnetID, details)
 	})
 
 	//STEP 3: GET THE SERVICES
@@ -112,7 +112,7 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 		return err
 	}
 
-	err = db.InsertBuild(*details, testNetId)
+	err = db.InsertBuild(*details, testnetID)
 	if err != nil {
 		log.Println(err)
 		buildState.ReportError(err)
@@ -127,10 +127,10 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 	return nil
 }
 
-func declareTestnet(testnetId string, details *db.DeploymentDetails) error {
+func declareTestnet(testnetID string, details *db.DeploymentDetails) error {
 
 	data := map[string]interface{}{
-		"id":        testnetId,
+		"id":        testnetID,
 		"kind":      details.Blockchain,
 		"num_nodes": details.Nodes,
 		"image":     details.Images[0],
@@ -144,6 +144,7 @@ func declareTestnet(testnetId string, details *db.DeploymentDetails) error {
 	return err
 }
 
+// DeleteTestNet destroys all of the nodes of a testnet
 func DeleteTestNet(testnetID string) error {
 	tn, err := testnet.RestoreTestNet(testnetID)
 	if err != nil {
@@ -179,6 +180,7 @@ func GetDefaults(blockchain string) ([]byte, error) {
 	return helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
 }
 
+// GetServices returns the services used by the given blockchain
 func GetServices(blockchain string) []util.Service {
 	var services []util.Service
 	switch blockchain {
