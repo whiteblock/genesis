@@ -30,6 +30,7 @@ func PurgeTestNetwork(tn *testnet.TestNet) error {
 		return nil
 	})
 }
+
 // Destroy is an alias of PurgeTestNetwork
 func Destroy(tn *testnet.TestNet) error {
 	return PurgeTestNetwork(tn)

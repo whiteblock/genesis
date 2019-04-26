@@ -6,7 +6,6 @@ import (
 	"net"
 )
 
-
 // ReservedIps indicates the number of ip addresses reserved in
 // a cluster's subnet
 const ReservedIps uint32 = 3

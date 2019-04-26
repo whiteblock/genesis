@@ -39,7 +39,6 @@ type Config struct {
 	BridgePrefix       string  `json:"bridge-prefix"`
 }
 
-
 // LoadFromEnv loads the configuration from the Environment
 func (c *Config) LoadFromEnv() {
 	var err error
@@ -247,6 +246,7 @@ func (c *Config) AutoFillMissing() {
 		c.BridgePrefix = "wb_bridge"
 	}
 }
+
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
 var NodesPerCluster uint32
 
@@ -273,7 +273,6 @@ func LoadConfig() *Config {
 
 	return conf
 }
-
 
 // GetConfig gets a pointer to the global config object.
 // Do not modify c object

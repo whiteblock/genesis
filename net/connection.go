@@ -27,9 +27,9 @@ func NewConnections(nodes int) *Connections {
 
 //RemoveAll will mark all of the given connections as not
 //connected
-func (this *Connections) RemoveAll(conns []Connection) {
+func (mesh *Connections) RemoveAll(conns []Connection) {
 	for _, conn := range conns {
-		this.cons[conn.From][conn.To] = false
+		mesh.cons[conn.From][conn.To] = false
 	}
 }
 
@@ -87,14 +87,14 @@ func containsPeer(peers []int, peer int) bool {
 }
 
 //Networks calculates the distinct, completely separate partitions in the network
-func (this *Connections) Networks() [][]int {
+func (mesh *Connections) Networks() [][]int {
 	nodes := []int{}
 	nodesFinalized := []int{}
 	nodesToTry := []int{}
 
 	out := [][]int{}
 
-	for len(nodesFinalized) < len(this.cons) {
+	for len(nodesFinalized) < len(mesh.cons) {
 		//fmt.Printf("\n\nNodes : %#v\n Nodes Finalized: %#v\nNodes To Try%#v\n\n",nodes,nodesFinalized,nodesToTry)
 		if len(nodesToTry) == 0 {
 			if len(nodes) > 0 {
@@ -102,9 +102,9 @@ func (this *Connections) Networks() [][]int {
 				out = append(out, nodes)
 				nodes = []int{}
 			}
-			for i := 0; i < len(this.cons); i++ {
+			for i := 0; i < len(mesh.cons); i++ {
 				if !containsPeer(nodesFinalized, i) {
-					nodesToTry = findPossiblePeers(this.cons, i)
+					nodesToTry = findPossiblePeers(mesh.cons, i)
 					nodes = []int{i}
 					nodes = mergeUniquePeers(nodes, nodesToTry)
 					break
@@ -112,7 +112,7 @@ func (this *Connections) Networks() [][]int {
 			}
 
 		} else {
-			newPeers := findPossiblePeers(this.cons, nodesToTry[0])
+			newPeers := findPossiblePeers(mesh.cons, nodesToTry[0])
 			nodes = mergeUniquePeers(nodes, []int{nodesToTry[0]})
 			newPeers = filterPeers(newPeers, nodes)
 			if len(nodesToTry) > 1 {

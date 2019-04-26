@@ -18,7 +18,7 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, absNum int, relNum int) {
 		DockerKill(tn.Clients[server.ID], relNum)
 		DockerNetworkDestroy(tn.Clients[server.ID], relNum)
 	})
-	err := DockerNetworkCreate(tn, server.ID, server.SubnetID, relNum) 
+	err := DockerNetworkCreate(tn, server.ID, server.SubnetID, relNum)
 	if err != nil {
 		log.Println(err)
 		tn.BuildState.ReportError(err)
