@@ -14,7 +14,7 @@ import (
 	"sync/atomic"
 )
 
-//This code is full of potential race conditons but these race conditons are extremely rare
+//This code is full of potential race conditions but these race conditons are extremely rare
 /*
    CustomError is a custom wrapper for a go error, which
    has What containing error.Error()
