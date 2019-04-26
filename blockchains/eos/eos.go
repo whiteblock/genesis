@@ -1,3 +1,4 @@
+//Package eos handles eos specific functionality
 package eos
 
 import (
@@ -21,11 +22,7 @@ func init() {
 	conf = util.GetConfig()
 }
 
-/**
- * Setup the EOS test net
- * @param  int      nodes       The number of producers to make
- * @param  []Server servers     The list of relevant servers
- */
+// Build builds out a fresh new ethereum test network using geth
 func Build(tn *testnet.TestNet) ([]string, error) {
 	clients := tn.GetFlatClients()
 	buildState := tn.BuildState
@@ -33,7 +30,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, fmt.Errorf("cannot build network with less than 2 nodes")
 	}
 
-	eosconf, err := NewConf(tn.LDD.Params)
+	eosconf, err := newConf(tn.LDD.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -83,7 +80,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		}
 		keyPair := strings.Split(data, "\n")
 		if len(data) < 10 {
-			return util.KeyPair{}, fmt.Errorf("Unexpected create key output %s\n", keyPair)
+			return util.KeyPair{}, fmt.Errorf("unexpected create key output %s\n", keyPair)
 		}
 		return util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]}, nil
 	})
@@ -330,8 +327,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 				masterKeyPair.PublicKey,
 				keyPair.PublicKey,
 				eosconf.BpNetStake,
-				eosconf.BpCpuStake,
-				eosconf.BpRam),
+				eosconf.BpCPUStake,
+				eosconf.BpRAM),
 			fmt.Sprintf(`cleos -u http://%s:8889 transfer eosio %s "%d SYS"`,
 				masterIP,
 				eosGetproducername(absoluteNodeNum),
@@ -430,8 +427,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 					masterKeyPair.PublicKey,
 					accountKeyPair.PublicKey,
 					eosconf.AccountNetStake,
-					eosconf.AccountCpuStake,
-					eosconf.AccountRam))
+					eosconf.AccountCPUStake,
+					eosconf.AccountRAM))
 			fmt.Println(res)
 			if err != nil {
 				log.Println(err)
@@ -561,6 +558,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	return out, nil
 }
 
+// Add handles adding a node to the eos testnet
+// TODO
 func Add(tn *testnet.TestNet) ([]string, error) {
 	return nil, nil
 }

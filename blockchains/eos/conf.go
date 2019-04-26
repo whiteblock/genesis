@@ -7,21 +7,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/mustache"
-	"io/ioutil"
 	"log"
 	"time"
 )
 
-type EosConf struct {
+type eosConf struct {
 	UserAccounts                   int64    `json:"userAccounts"`
 	BlockProducers                 int64    `json:"validators"`
-	AccountCpuStake                int64    `json:"accountCpuStake"`
-	AccountRam                     int64    `json:"accountRam"`
+	AccountCPUStake                int64    `json:"accountCpuStake"`
+	AccountRAM                     int64    `json:"accountRam"`
 	AccountNetStake                int64    `json:"accountNetStake"`
 	AccountFunds                   int64    `json:"accountFunds"`
-	BpCpuStake                     int64    `json:"bpCpuStake"`
+	BpCPUStake                     int64    `json:"bpCpuStake"`
 	BpNetStake                     int64    `json:"bpNetStake"`
-	BpRam                          int64    `json:"bpRam"`
+	BpRAM                          int64    `json:"bpRam"`
 	BpFunds                        int64    `json:"bpFunds"`
 	MaxBlockNetUsage               int64    `json:"maxBlockNetUsage"`
 	TargetBlockNetUsagePct         int64    `json:"targetBlockNetUsagePct"`
@@ -30,17 +29,17 @@ type EosConf struct {
 	NetUsageLeeway                 int64    `json:"netUsageLeeway"`
 	ContextFreeDiscountNetUsageNum int64    `json:"contextFreeDiscountNetUsageNum"`
 	ContextFreeDiscountNetUsageDen int64    `json:"contextFreeDiscountNetUsageDen"`
-	MaxBlockCpuUsage               int64    `json:"maxBlockCpuUsage"`
-	TargetBlockCpuUsagePct         int64    `json:"targetBlockCpuUsagePct"`
-	MaxTransactionCpuUsage         int64    `json:"maxTransactionCpuUsage"`
-	MinTransactionCpuUsage         int64    `json:"minTransactionCpuUsage"`
+	MaxBlockCPUUsage               int64    `json:"maxBlockCpuUsage"`
+	TargetBlockCPUUsagePct         int64    `json:"targetBlockCpuUsagePct"`
+	MaxTransactionCPUUsage         int64    `json:"maxTransactionCpuUsage"`
+	MinTransactionCPUUsage         int64    `json:"minTransactionCpuUsage"`
 	MaxTransactionLifetime         int64    `json:"maxTransactionLifetime"`
 	DeferredTrxExpirationWindow    int64    `json:"deferredTrxExpirationWindow"`
 	MaxTransactionDelay            int64    `json:"maxTransactionDelay"`
 	MaxInlineActionSize            int64    `json:"maxInlineActionSize"`
 	MaxInlineActionDepth           int64    `json:"maxInlineActionDepth"`
 	MaxAuthorityDepth              int64    `json:"maxAuthorityDepth"`
-	InitialChainId                 string   `json:"initialChainId"`
+	InitialChainID                 string   `json:"initialChainId"`
 	ChainStateDbSizeMb             int64    `json:"chainStateDbSizeMb"`
 	ReversibleBlocksDbSizeMb       int64    `json:"reversibleBlocksDbSizeMb"`
 	ContractsConsole               bool     `json:"contractsConsole"`
@@ -59,8 +58,8 @@ type EosConf struct {
 	ConfigExtras                   []string `json:"configExtras"`
 }
 
-func NewConf(data map[string]interface{}) (*EosConf, error) {
-	out := new(EosConf)
+func newConf(data map[string]interface{}) (*eosConf, error) {
+	out := new(eosConf)
 	json.Unmarshal([]byte(GetDefaults()), out)
 	if data == nil {
 		return out, nil
@@ -111,22 +110,22 @@ func NewConf(data map[string]interface{}) (*EosConf, error) {
 		return nil, err
 	}
 
-	err = util.GetJSONInt64(data, "maxBlockCpuUsage", &out.MaxBlockCpuUsage)
+	err = util.GetJSONInt64(data, "maxBlockCpuUsage", &out.MaxBlockCPUUsage)
 	if err != nil {
 		return nil, err
 	}
 
-	err = util.GetJSONInt64(data, "targetBlockCpuUsagePct", &out.TargetBlockCpuUsagePct)
+	err = util.GetJSONInt64(data, "targetBlockCpuUsagePct", &out.TargetBlockCPUUsagePct)
 	if err != nil {
 		return nil, err
 	}
 
-	err = util.GetJSONInt64(data, "maxTransactionCpuUsage", &out.MaxTransactionCpuUsage)
+	err = util.GetJSONInt64(data, "maxTransactionCpuUsage", &out.MaxTransactionCPUUsage)
 	if err != nil {
 		return nil, err
 	}
 
-	err = util.GetJSONInt64(data, "minTransactionCpuUsage", &out.MinTransactionCpuUsage)
+	err = util.GetJSONInt64(data, "minTransactionCpuUsage", &out.MinTransactionCPUUsage)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +160,7 @@ func NewConf(data map[string]interface{}) (*EosConf, error) {
 		return nil, err
 	}
 
-	err = util.GetJSONString(data, "initialChainId", &out.InitialChainId)
+	err = util.GetJSONString(data, "initialChainId", &out.InitialChainID)
 	if err != nil {
 		return nil, err
 	}
@@ -246,12 +245,12 @@ func NewConf(data map[string]interface{}) (*EosConf, error) {
 		return nil, err
 	}
 
-	err = util.GetJSONInt64(data, "accountCpuStake", &out.AccountCpuStake)
+	err = util.GetJSONInt64(data, "accountCpuStake", &out.AccountCPUStake)
 	if err != nil {
 		return nil, err
 	}
 
-	err = util.GetJSONInt64(data, "accountRam", &out.AccountRam)
+	err = util.GetJSONInt64(data, "accountRam", &out.AccountRAM)
 	if err != nil {
 		return nil, err
 	}
@@ -266,12 +265,12 @@ func NewConf(data map[string]interface{}) (*EosConf, error) {
 		return nil, err
 	}
 
-	err = util.GetJSONInt64(data, "bpCpuStake", &out.BpCpuStake)
+	err = util.GetJSONInt64(data, "bpCpuStake", &out.BpCPUStake)
 	if err != nil {
 		return nil, err
 	}
 
-	err = util.GetJSONInt64(data, "bpRam", &out.BpRam)
+	err = util.GetJSONInt64(data, "bpRam", &out.BpRAM)
 	if err != nil {
 		return nil, err
 	}
@@ -289,29 +288,29 @@ func NewConf(data map[string]interface{}) (*EosConf, error) {
 	return out, nil
 }
 
-func (this *EosConf) GenerateGenesis(masterPublicKey string, details *db.DeploymentDetails) (string, error) {
+func (econf *eosConf) GenerateGenesis(masterPublicKey string, details *db.DeploymentDetails) (string, error) {
 
 	filler := util.ConvertToStringMap(map[string]interface{}{
 		"initialTimestamp":               time.Now().Format("2006-01-02T15-04-05.000"),
 		"initialKey":                     masterPublicKey,
-		"maxBlockNetUsage":               this.MaxBlockNetUsage,
-		"targetBlockNetUsagePct":         this.TargetBlockNetUsagePct,
-		"maxTransactionNetUsage":         this.MaxTransactionNetUsage,
-		"basePerTransactionNetUsage":     this.BasePerTransactionNetUsage,
-		"netUsageLeeway":                 this.NetUsageLeeway,
-		"contextFreeDiscountNetUsageNum": this.ContextFreeDiscountNetUsageNum,
-		"contextFreeDiscountNetUsageDen": this.ContextFreeDiscountNetUsageDen,
-		"maxBlockCpuUsage":               this.MaxBlockCpuUsage,
-		"targetBlockCpuUsagePct":         this.TargetBlockCpuUsagePct,
-		"maxTransactionCpuUsage":         this.MaxTransactionCpuUsage,
-		"minTransactionCpuUsage":         this.MinTransactionCpuUsage,
-		"maxTransactionLifetime":         this.MaxTransactionLifetime,
-		"deferredTrxExpirationWindow":    this.DeferredTrxExpirationWindow,
-		"maxTransactionDelay":            this.MaxTransactionDelay,
-		"maxInlineActionSize":            this.MaxInlineActionSize,
-		"maxInlineActionDepth":           this.MaxInlineActionDepth,
-		"maxAuthorityDepth":              this.MaxAuthorityDepth,
-		"initialChainId":                 this.InitialChainId,
+		"maxBlockNetUsage":               econf.MaxBlockNetUsage,
+		"targetBlockNetUsagePct":         econf.TargetBlockNetUsagePct,
+		"maxTransactionNetUsage":         econf.MaxTransactionNetUsage,
+		"basePerTransactionNetUsage":     econf.BasePerTransactionNetUsage,
+		"netUsageLeeway":                 econf.NetUsageLeeway,
+		"contextFreeDiscountNetUsageNum": econf.ContextFreeDiscountNetUsageNum,
+		"contextFreeDiscountNetUsageDen": econf.ContextFreeDiscountNetUsageDen,
+		"maxBlockCpuUsage":               econf.MaxBlockCPUUsage,
+		"targetBlockCpuUsagePct":         econf.TargetBlockCPUUsagePct,
+		"maxTransactionCpuUsage":         econf.MaxTransactionCPUUsage,
+		"minTransactionCpuUsage":         econf.MinTransactionCPUUsage,
+		"maxTransactionLifetime":         econf.MaxTransactionLifetime,
+		"deferredTrxExpirationWindow":    econf.DeferredTrxExpirationWindow,
+		"maxTransactionDelay":            econf.MaxTransactionDelay,
+		"maxInlineActionSize":            econf.MaxInlineActionSize,
+		"maxInlineActionDepth":           econf.MaxInlineActionDepth,
+		"maxAuthorityDepth":              econf.MaxAuthorityDepth,
+		"initialChainId":                 econf.InitialChainID,
 	})
 
 	dat, err := helpers.GetBlockchainConfig("eos", 0, "genesis.json.mustache", details)
@@ -322,58 +321,60 @@ func (this *EosConf) GenerateGenesis(masterPublicKey string, details *db.Deploym
 	return mustache.Render(string(dat), filler)
 }
 
-func (this *EosConf) GenerateConfig() string {
+func (econf *eosConf) GenerateConfig() string {
 
 	out := []string{
 		"bnet-endpoint = 0.0.0.0:4321",
 		"bnet-no-trx = false",
 		"blocks-dir = /datadir/blocks/",
-		fmt.Sprintf("chain-state-db-size-mb = %d", this.ChainStateDbSizeMb),
-		fmt.Sprintf("reversible-blocks-db-size-mb = %d", this.ReversibleBlocksDbSizeMb),
-		fmt.Sprintf("contracts-console = %v", this.ContractsConsole),
+		fmt.Sprintf("chain-state-db-size-mb = %d", econf.ChainStateDbSizeMb),
+		fmt.Sprintf("reversible-blocks-db-size-mb = %d", econf.ReversibleBlocksDbSizeMb),
+		fmt.Sprintf("contracts-console = %v", econf.ContractsConsole),
 		"https-client-validate-peers = 0",
-		fmt.Sprintf("p2p-max-nodes-per-host = %d", this.P2pMaxNodesPerHost),
-		fmt.Sprintf("allowed-connection = %s", this.AllowedConnection),
-		fmt.Sprintf("max-clients = %d", this.MaxClients),
-		fmt.Sprintf("connection-cleanup-period = %d", this.ConnectionCleanupPeriod),
-		fmt.Sprintf("network-version-match = %d", this.NetworkVersionMatch),
-		fmt.Sprintf("sync-fetch-span = %d", this.SyncFetchSpan),
-		fmt.Sprintf("pause-on-startup = %v", this.PauseOnStartup),
-		fmt.Sprintf("max-transaction-time = %d", this.MaxTransactionTime),
-		fmt.Sprintf("max-irreversible-block-age = %d", this.MaxIrreversibleBlockAge),
-		fmt.Sprintf("keosd-provider-timeout = %d", this.KeosdProviderTimeout),
-		fmt.Sprintf("txn-reference-block-lag = %d", this.TxnReferenceBlockLag),
+		fmt.Sprintf("p2p-max-nodes-per-host = %d", econf.P2pMaxNodesPerHost),
+		fmt.Sprintf("allowed-connection = %s", econf.AllowedConnection),
+		fmt.Sprintf("max-clients = %d", econf.MaxClients),
+		fmt.Sprintf("connection-cleanup-period = %d", econf.ConnectionCleanupPeriod),
+		fmt.Sprintf("network-version-match = %d", econf.NetworkVersionMatch),
+		fmt.Sprintf("sync-fetch-span = %d", econf.SyncFetchSpan),
+		fmt.Sprintf("pause-on-startup = %v", econf.PauseOnStartup),
+		fmt.Sprintf("max-transaction-time = %d", econf.MaxTransactionTime),
+		fmt.Sprintf("max-irreversible-block-age = %d", econf.MaxIrreversibleBlockAge),
+		fmt.Sprintf("keosd-provider-timeout = %d", econf.KeosdProviderTimeout),
+		fmt.Sprintf("txn-reference-block-lag = %d", econf.TxnReferenceBlockLag),
 
 		"access-control-allow-credentials = false",
 		"http-server-address = 0.0.0.0:8889",
 		"p2p-listen-endpoint = 0.0.0.0:8999",
 	}
-	for _, plugin := range this.Plugins {
+	for _, plugin := range econf.Plugins {
 		out = append(out, "plugin = "+plugin)
 	}
-	for _, extra := range this.ConfigExtras {
+	for _, extra := range econf.ConfigExtras {
 		out = append(out, extra)
 	}
 	return util.CombineConfig(out)
 }
 
+// GetDefaults fetchs eos related parameter defaults
 func GetDefaults() string {
-
-	dat, err := ioutil.ReadFile("./resources/eos/defaults.json")
+	dat, err := helpers.GetStaticBlockchainConfig("eos", "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
 	return string(dat)
 }
 
+// GetParams fetchs eos related parameters
 func GetParams() string {
-	dat, err := ioutil.ReadFile("./resources/eos/params.json")
+	dat, err := helpers.GetStaticBlockchainConfig("eos", "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
 	return string(dat)
 }
 
+// GetServices returns the services which are used by eos
 func GetServices() []util.Service {
 	return nil
 }
