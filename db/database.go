@@ -16,9 +16,6 @@ var dataLoc = os.Getenv("HOME") + "/.config/whiteblock/.gdata"
 //ServerTable contains name of the server table
 const ServerTable string = "servers"
 
-//TestTable contains name of the testnet table
-const TestTable string = "testnets"
-
 //NodesTable contains name of the nodes table
 const NodesTable string = "nodes"
 
@@ -62,14 +59,6 @@ func dbInit() {
 		"max INTEGER",
 		"name TEXT")
 
-	testSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s,%s,%s);",
-		TestTable,
-		"id TEXT",
-		"blockchain TEXT NOT NULL",
-		"nodes INTERGER",
-		"image TEXT NOT NULL",
-		"ts INTEGER")
-
 	nodesSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s);",
 		NodesTable,
 		"id TEXT",
@@ -105,10 +94,7 @@ func dbInit() {
 	if err != nil {
 		panic(err)
 	}
-	_, err = db.Exec(testSchema)
-	if err != nil {
-		panic(err)
-	}
+
 	_, err = db.Exec(nodesSchema)
 	if err != nil {
 		panic(err)
@@ -121,13 +107,13 @@ func dbInit() {
 	if err != nil {
 		panic(err)
 	}
-	InsertLocalServers(db)
+	insertLocalServers(db)
 	SetVersion(Version)
 }
 
-//InsertLocalServers adds the default server(s) to the servers database, allowing immediate use of the application
+//insertLocalServers adds the default server(s) to the servers database, allowing immediate use of the application
 //without having to register a server
-func InsertLocalServers(db *sql.DB) {
+func insertLocalServers(db *sql.DB) {
 	InsertServer("cloud",
 		Server{
 			Addr:     "127.0.0.1",
