@@ -33,7 +33,7 @@ func AddNodes(tn *testnet.TestNet) error {
 
 		if tn.Servers[serverIndex].Max <= tn.Servers[serverIndex].Nodes {
 			if len(availibleServers) == 1 {
-				return fmt.Errorf("Cannot build that many nodes with the availible resources")
+				return fmt.Errorf("cannot build that many nodes with the availible resources")
 			}
 			availibleServers = append(availibleServers[:serverIndex], availibleServers[serverIndex+1:]...)
 			i--
