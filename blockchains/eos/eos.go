@@ -105,7 +105,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	var accountNames []string
 	for i := 0; i < int(eosconf.UserAccounts); i++ {
-		accountNames = append(accountNames, eos_getRegularName(i))
+		accountNames = append(accountNames, eosGetregularname(i))
 	}
 	accountKeyPairs, err := km.GetMappedKeyPairs(accountNames, clients[0])
 	if err != nil {
@@ -126,7 +126,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			return err
 		}
 		mux.Lock()
-		clientPasswords[ip], err = eos_createWallet(client, localNodeNum)
+		clientPasswords[ip], err = eosCreatewallet(client, localNodeNum)
 		mux.Unlock()
 		if err != nil {
 			log.Println(err)
@@ -204,8 +204,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 		err = clients[0].DockerExecdLog(0,
 			fmt.Sprintf(`nodeos -e -p eosio --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s`,
-				eos_getKeyPairFlag(keyPairs[masterIP]),
-				eos_getPTPFlags(tn.Nodes, 0)))
+				eosGetkeypairflag(keyPairs[masterIP]),
+				eosGetptpflags(tn.Nodes, 0)))
 		fmt.Println(res)
 		if err != nil {
 			log.Println(err)
@@ -326,7 +326,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		_, err = clients[0].KeepTryDockerExecAll(0,
 			fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "%d SYS" --stake-cpu "%d SYS" --buy-ram-kbytes %d`,
 				masterIP,
-				eos_getProducerName(absoluteNodeNum),
+				eosGetproducername(absoluteNodeNum),
 				masterKeyPair.PublicKey,
 				keyPair.PublicKey,
 				eosconf.BpNetStake,
@@ -334,7 +334,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 				eosconf.BpRam),
 			fmt.Sprintf(`cleos -u http://%s:8889 transfer eosio %s "%d SYS"`,
 				masterIP,
-				eos_getProducerName(absoluteNodeNum),
+				eosGetproducername(absoluteNodeNum),
 				eosconf.BpFunds))
 		return err
 	})
@@ -356,17 +356,17 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 		client.DockerExec(localNodeNum, "mkdir -p /datadir/blocks")
 
-		p2pFlags := eos_getPTPFlags(tn.Nodes, absoluteNodeNum)
+		p2pFlags := eosGetptpflags(tn.Nodes, absoluteNodeNum)
 		prodFlags := ""
 
 		if absoluteNodeNum <= int(eosconf.BlockProducers) {
-			prodFlags = " -p " + eos_getProducerName(absoluteNodeNum) + " "
+			prodFlags = " -p " + eosGetproducername(absoluteNodeNum) + " "
 		}
 
 		err := client.DockerExecdLog(localNodeNum,
 			fmt.Sprintf(`nodeos --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s %s`,
 				prodFlags,
-				eos_getKeyPairFlag(kp),
+				eosGetkeypairflag(kp),
 				p2pFlags))
 		//fmt.Println(res)
 		if err != nil {
@@ -398,7 +398,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			fmt.Sprintf("cleos --wallet-url http://%s:8900 -u http://%s:8889 system regproducer %s %s https://whiteblock.io/%s",
 				masterIP,
 				masterIP,
-				eos_getProducerName(absoluteNodeNum),
+				eosGetproducername(absoluteNodeNum),
 				keyPairs[ip].PublicKey,
 				keyPairs[ip].PublicKey))
 		fmt.Println(res)
@@ -488,7 +488,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 					fmt.Sprintf("cleos -u http://%s:8889 system voteproducer prods %s %s",
 						masterIP,
 						name,
-						eos_getProducerName(prod)))
+						eosGetproducername(prod)))
 				fmt.Println(res)
 				if err != nil {
 					log.Println(err)
@@ -565,7 +565,7 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 	return nil, nil
 }
 
-func eos_createWallet(client *ssh.Client, node int) (string, error) {
+func eosCreatewallet(client *ssh.Client, node int) (string, error) {
 	data, err := client.DockerExec(node, "cleos wallet create --to-console | tail -n 1")
 	if err != nil {
 		return "", err
@@ -581,11 +581,11 @@ func eos_createWallet(client *ssh.Client, node int) (string, error) {
 	return data, nil
 }
 
-func eos_getKeyPairFlag(keyPair util.KeyPair) string {
+func eosGetkeypairflag(keyPair util.KeyPair) string {
 	return fmt.Sprintf("--signature-provider %s=KEY:%s", keyPair.PublicKey, keyPair.PrivateKey)
 }
 
-func eos_getProducerName(num int) string {
+func eosGetproducername(num int) string {
 	if num == 0 {
 		return "eosio"
 	}
@@ -603,7 +603,7 @@ func eos_getProducerName(num int) string {
 	return "prod" + out
 }
 
-func eos_getRegularName(num int) string {
+func eosGetregularname(num int) string {
 
 	out := ""
 	//num -= blockProducers
@@ -620,7 +620,7 @@ func eos_getRegularName(num int) string {
 	return "user" + out
 }
 
-func eos_getPTPFlags(nodes []db.Node, exclude int) string {
+func eosGetptpflags(nodes []db.Node, exclude int) string {
 	flags := ""
 	for i, node := range nodes {
 		if i == exclude {

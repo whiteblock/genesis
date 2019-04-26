@@ -22,7 +22,7 @@ func init() {
 	conf = util.GetConfig()
 }
 
-const ETH_NET_STATS_PORT = 3338
+const EthNetStatsPort = 3338
 
 /*
 Build builds out a fresh new ethereum test network using geth
@@ -252,7 +252,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		absName := fmt.Sprintf("%s%d", conf.NodePrefix, absoluteNodeNum)
 		sedCmd := fmt.Sprintf(`sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`, absName)
 		sedCmd2 := fmt.Sprintf(`sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:%d"/g' /eth-net-intelligence-api/app.json`,
-			util.GetGateway(server.SubnetID, absoluteNodeNum), ETH_NET_STATS_PORT)
+			util.GetGateway(server.SubnetID, absoluteNodeNum), EthNetStatsPort)
 		sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`, ip)
 
 		//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
@@ -348,7 +348,7 @@ func createGenesisfile(ethconf *EthConf, details *db.DeploymentDetails, wallets 
  */
 func setupEthNetStats(client *ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf(
-		"docker exec -d wb_service0 bash -c 'cd /eth-netstats && WS_SECRET=second PORT=%d npm start'", ETH_NET_STATS_PORT))
+		"docker exec -d wb_service0 bash -c 'cd /eth-netstats && WS_SECRET=second PORT=%d npm start'", EthNetStatsPort))
 	if err != nil {
 		log.Println(err)
 		return err
