@@ -18,8 +18,8 @@ type BuildStatus struct {
 /*
    Check the current status of the build
 */
-func CheckBuildStatus(buildId string) (string, error) {
-	bs, err := state.GetBuildStateById(buildId)
+func CheckBuildStatus(buildID string) (string, error) {
+	bs, err := state.GetBuildStateByID(buildID)
 	if err != nil {
 		log.Println(err)
 		return "", err

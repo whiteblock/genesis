@@ -35,7 +35,7 @@ func RestoreTestNet(buildID string) (*TestNet, error) {
 		log.Println(err)
 		return nil, err
 	}
-	bs, err := state.GetBuildStateById(buildID)
+	bs, err := state.GetBuildStateByID(buildID)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -68,7 +68,7 @@ func NewTestNet(details db.DeploymentDetails, buildID string) (*TestNet, error) 
 	out.LDD = &details
 	out.mux = &sync.RWMutex{}
 
-	out.BuildState, err = state.GetBuildStateById(buildID)
+	out.BuildState, err = state.GetBuildStateByID(buildID)
 	if err != nil {
 		log.Println(err)
 		return nil, err

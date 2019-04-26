@@ -1,6 +1,4 @@
-/*
-   Handles global state that can be changed
-*/
+// Package state provides utilities to manage state
 package state
 
 import (
@@ -15,18 +13,15 @@ import (
 )
 
 //This code is full of potential race conditions but these race conditons are extremely rare
-/*
-   CustomError is a custom wrapper for a go error, which
-   has What containing error.Error()
-*/
+
+// CustomError is a custom wrapper for a go error, which
+// has What containing error.Error()
 type CustomError struct {
 	What string `json:"what"`
 	err  error
 }
 
-/*
-   Packages the build state nicely into an object
-*/
+// BuildState packages the build state nicely into an object
 type BuildState struct {
 	errMutex  *sync.RWMutex
 	extraMux  *sync.RWMutex
@@ -48,7 +43,7 @@ type BuildState struct {
 	asyncWaiter       *sync.WaitGroup
 
 	Servers []int
-	BuildId string
+	BuildID string
 
 	BuildError CustomError
 	BuildStage string
@@ -60,7 +55,8 @@ type BuildState struct {
 	BuildTotal    uint64
 }
 
-func NewBuildState(servers []int, buildId string) *BuildState {
+//NewBuildState creates a new build state for the given servers with the given buildID
+func NewBuildState(servers []int, buildID string) *BuildState {
 	out := new(BuildState)
 
 	out.errMutex = &sync.RWMutex{}
@@ -83,7 +79,7 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	out.errorCleanupFuncs = []func(){}
 
 	out.Servers = servers
-	out.BuildId = buildId
+	out.BuildID = buildID
 	out.BuildError = CustomError{What: "", err: nil}
 	out.BuildStage = ""
 
@@ -92,7 +88,7 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	out.BuildProgress = 0
 	out.BuildTotal = 1
 
-	err := os.MkdirAll("/tmp/"+buildId, 0755)
+	err := os.MkdirAll("/tmp/"+buildID, 0755)
 	if err != nil {
 		panic(err) //Fatal error
 	}
@@ -100,6 +96,8 @@ func NewBuildState(servers []int, buildId string) *BuildState {
 	return out
 }
 
+// RestoreBuildState creates a BuildState from the previous BuildState
+// with the same BuildID. If one does not exist, it returns an error.
 func RestoreBuildState(buildID string) (*BuildState, error) {
 	out := new(BuildState)
 	err := db.GetMetaP(buildID, out)
@@ -119,233 +117,225 @@ func RestoreBuildState(buildID string) (*BuildState, error) {
 	return out, nil
 }
 
-/*
-Set a function to be executed at some point during the build.
-All these functions must complete before the build is considered finished.
-*/
-func (this *BuildState) Async(fn func()) {
-	this.asyncWaiter.Add(1)
+// Async Set a function to be executed at some point during the build.
+// All these functions must complete before the build is considered finished.
+func (bs *BuildState) Async(fn func()) {
+	bs.asyncWaiter.Add(1)
 	go func() {
-		defer this.asyncWaiter.Done()
+		defer bs.asyncWaiter.Done()
 		fn()
 	}()
 }
 
-func (this *BuildState) Freeze() error {
+// Freeze freezes the build
+func (bs *BuildState) Freeze() error {
 	log.Println("Freezing the build")
-	this.mutex.Lock()
-	if this.Frozen {
-		this.mutex.Unlock()
+	bs.mutex.Lock()
+	if bs.Frozen {
+		bs.mutex.Unlock()
 		return fmt.Errorf("already frozen")
 	}
-	if this.stopping {
-		this.mutex.Unlock()
+	if bs.stopping {
+		bs.mutex.Unlock()
 		return fmt.Errorf("build terminating")
 	}
 
-	this.Frozen = true
-	this.mutex.Unlock() //Must occur before freeze lock to prevent full seizing
+	bs.Frozen = true
+	bs.mutex.Unlock() //Must occur before freeze lock to prevent full seizing
 
-	this.freeze.Lock()
+	bs.freeze.Lock()
 
 	return nil
 }
 
-func (this *BuildState) Unfreeze() error {
+// Unfreeze unfreezes the build
+func (bs *BuildState) Unfreeze() error {
 	log.Println("Thawing the build")
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-	if !this.Frozen {
+	bs.mutex.Lock()
+	defer bs.mutex.Unlock()
+	if !bs.Frozen {
 		return fmt.Errorf("not currently frozen")
 	}
-	this.freeze.Unlock()
-	this.Frozen = false
+	bs.freeze.Unlock()
+	bs.Frozen = false
 	return nil
 }
 
-func (this *BuildState) AddFreezePoint(freezePoint float64) {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
+// AddFreezePoint adds a point at which the build will freeze in the future
+func (bs *BuildState) AddFreezePoint(freezePoint float64) {
+	bs.mutex.Lock()
+	defer bs.mutex.Unlock()
 
 	i := 0
-	for ; i < len(this.breakpoints); i++ { //find insertion index
-		if this.breakpoints[i] > freezePoint {
+	for ; i < len(bs.breakpoints); i++ { //find insertion index
+		if bs.breakpoints[i] > freezePoint {
 			break
-		} else if this.breakpoints[i] == freezePoint {
+		} else if bs.breakpoints[i] == freezePoint {
 			return //no duplicates
 		}
 	}
-	this.breakpoints = append(append(this.breakpoints[:i], freezePoint), this.breakpoints[i:]...)
+	bs.breakpoints = append(append(bs.breakpoints[:i], freezePoint), bs.breakpoints[i:]...)
 }
 
-/*
-   DoneBuilding signals that the building process has finished and releases the
-   build lock.
-*/
-func (this *BuildState) DoneBuilding() {
-	//TODO add file cleanup
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
+// DoneBuilding signals that the building process has finished and releases the
+// build lock.
+func (bs *BuildState) DoneBuilding() {
+	bs.mutex.Lock()
+	defer bs.mutex.Unlock()
 
-	if this.ErrorFree() {
-		err := this.Store()
+	if bs.ErrorFree() {
+		err := bs.Store()
 		if err != nil {
 			log.Println(err)
 		}
 	} else {
-		this.extraMux.RLock()
+		bs.extraMux.RLock()
 		wg := sync.WaitGroup{} //Wait for completion, to prevent a potential race
-		for i := range this.errorCleanupFuncs {
+		for i := range bs.errorCleanupFuncs {
 			wg.Add(1)
 			go func(fn *func()) {
 				defer wg.Done()
 				(*fn)()
-			}(&this.errorCleanupFuncs[i])
+			}(&bs.errorCleanupFuncs[i])
 		}
-		this.extraMux.RUnlock()
+		bs.extraMux.RUnlock()
 		wg.Wait()
 	}
-	atomic.StoreUint64(&this.BuildProgress, this.BuildTotal)
-	this.BuildStage = "Finished"
-	this.building = false
-	this.stopping = false
-	this.asyncWaiter.Wait() //Wait for the async calls to complete
-	os.RemoveAll("/tmp/" + this.BuildId)
-	for _, fn := range this.defers {
+	atomic.StoreUint64(&bs.BuildProgress, bs.BuildTotal)
+	bs.BuildStage = "Finished"
+	bs.building = false
+	bs.stopping = false
+	bs.asyncWaiter.Wait() //Wait for the async calls to complete
+	os.RemoveAll("/tmp/" + bs.BuildID)
+	for _, fn := range bs.defers {
 		go fn() //No need to wait to confirm completion
 	}
 }
 
-func (this *BuildState) Done() bool {
-	return !this.building
+// Done checks if the build is done
+func (bs *BuildState) Done() bool {
+	return !bs.building
 }
 
-/*
-   ReportError stores the given error to be passed onto any
-   who query the build status.
-*/
-func (this *BuildState) ReportError(err error) {
-	this.errMutex.Lock()
-	defer this.errMutex.Unlock()
-	this.BuildError = CustomError{What: err.Error(), err: err}
+// ReportError stores the given error to be passed onto any
+// who query the build status.
+func (bs *BuildState) ReportError(err error) {
+	bs.errMutex.Lock()
+	defer bs.errMutex.Unlock()
+	bs.BuildError = CustomError{What: err.Error(), err: err}
 	log.Println("An error has been reported :" + err.Error())
 }
 
-/*
-   Stop checks if the stop signal has been sent. If this returns true,
-   a building process should return. The ssh client checks this for you.
-*/
-func (this *BuildState) Stop() bool {
-	if this == nil { //golang allows for nil.Stop() to be a thing...
+// Stop checks if the stop signal has been sent. If bs returns true,
+// a building process should return. The ssh client checks bs for you.
+func (bs *BuildState) Stop() bool {
+	if bs == nil { //golang allows for nil.Stop() to be a thing...
 		return false
 	}
 
-	this.freeze.RLock() //Catch on freeze
-	this.freeze.RUnlock()
+	bs.freeze.RLock() //Catch on freeze
+	bs.freeze.RUnlock()
 
-	if len(this.breakpoints) > 0 { //Don't take the lock overhead if there aren't any breakpoints
-		this.freezeMux.Lock()
-		if this.breakpoints[0] >= this.GetProgress() {
-			if len(this.breakpoints) > 1 {
-				this.breakpoints = this.breakpoints[1:]
+	if len(bs.breakpoints) > 0 { //Don't take the lock overhead if there aren't any breakpoints
+		bs.freezeMux.Lock()
+		if bs.breakpoints[0] >= bs.GetProgress() {
+			if len(bs.breakpoints) > 1 {
+				bs.breakpoints = bs.breakpoints[1:]
 			} else {
-				this.breakpoints = []float64{}
+				bs.breakpoints = []float64{}
 			}
-			this.Freeze()
-			this.freeze.RLock()
+			bs.Freeze()
+			bs.freeze.RLock()
 		}
-		this.freezeMux.Unlock()
+		bs.freezeMux.Unlock()
 	}
 
-	this.stopMux.RLock()
-	isStopping := this.stopping
-	defer this.stopMux.RUnlock()
+	bs.stopMux.RLock()
+	isStopping := bs.stopping
+	defer bs.stopMux.RUnlock()
 	return isStopping
 }
 
-/*
-   SignalStop flags that the current build should be stopped, if there is
-   a current build. Returns an error if there is no build in progress
-*/
-func (this *BuildState) SignalStop() error {
-	this.stopMux.Lock()
-	defer this.stopMux.Unlock()
-	this.Unfreeze()
-	this.mutex.RLock()
-	defer this.mutex.RUnlock()
+// SignalStop flags that the current build should be stopped, if there is
+// a current build. Returns an error if there is no build in progress
+func (bs *BuildState) SignalStop() error {
+	bs.stopMux.Lock()
+	defer bs.stopMux.Unlock()
+	bs.Unfreeze()
+	bs.mutex.RLock()
+	defer bs.mutex.RUnlock()
 
-	if this.building {
-		this.ReportError(fmt.Errorf("build stopped by user"))
-		this.stopping = true
+	if bs.building {
+		bs.ReportError(fmt.Errorf("build stopped by user"))
+		bs.stopping = true
 		return nil
 	}
 	return fmt.Errorf("no build in progress")
 }
 
-/*
-   ErrorFree checks that there has not been an error reported with
-   ReportError
-*/
-func (this *BuildState) ErrorFree() bool {
-	this.errMutex.RLock()
-	defer this.errMutex.RUnlock()
-	return this.BuildError.err == nil
+// ErrorFree checks that there has not been an error reported with
+// ReportError
+func (bs *BuildState) ErrorFree() bool {
+	bs.errMutex.RLock()
+	defer bs.errMutex.RUnlock()
+	return bs.BuildError.err == nil
 }
 
-/*
-   GetError gets the currently stored error
-*/
-func (this *BuildState) GetError() error {
-	this.errMutex.RLock()
-	defer this.errMutex.RUnlock()
-	return this.BuildError.err
+// GetError gets the currently stored error
+func (bs *BuildState) GetError() error {
+	bs.errMutex.RLock()
+	defer bs.errMutex.RUnlock()
+	return bs.BuildError.err
 }
 
-/*
-	Insert a value into the state store, currently only supports string
-	and []string on the other side
-*/
-func (this *BuildState) SetExt(key string, value interface{}) error {
+// SetExt inserts a key value pair into the external state store, currently only supports string
+// and []string on the other side
+func (bs *BuildState) SetExt(key string, value interface{}) error {
 	switch value.(type) {
 	case string:
 	case []string:
 	default:
 		return fmt.Errorf("unsupported type for value")
 	}
-	this.extraMux.Lock()
-	defer this.extraMux.Unlock()
-	this.ExternExtras[key] = value
+	bs.extraMux.Lock()
+	defer bs.extraMux.Unlock()
+	bs.ExternExtras[key] = value
 	return nil
 }
 
-func (this *BuildState) GetExt(key string) (interface{}, bool) {
-	this.extraMux.RLock()
-	defer this.extraMux.RUnlock()
-	res, ok := this.ExternExtras[key]
+// GetExt gets a value based on the given key from the external state store
+func (bs *BuildState) GetExt(key string) (interface{}, bool) {
+	bs.extraMux.RLock()
+	defer bs.extraMux.RUnlock()
+	res, ok := bs.ExternExtras[key]
 	return res, ok
 }
 
-func (this *BuildState) GetExtExtras() ([]byte, error) {
-	this.extraMux.RLock()
-	defer this.extraMux.RUnlock()
-	return json.Marshal(this.ExternExtras)
+// GetExtExtras gets the entire external state store as JSON
+func (bs *BuildState) GetExtExtras() ([]byte, error) {
+	bs.extraMux.RLock()
+	defer bs.extraMux.RUnlock()
+	return json.Marshal(bs.ExternExtras)
 }
 
-func (this *BuildState) Set(key string, value interface{}) {
-	this.extraMux.Lock()
-	defer this.extraMux.Unlock()
-	this.Extras[key] = value
+// Set stores a key value pair
+func (bs *BuildState) Set(key string, value interface{}) {
+	bs.extraMux.Lock()
+	defer bs.extraMux.Unlock()
+	bs.Extras[key] = value
 }
 
-func (this *BuildState) Get(key string) (interface{}, bool) {
-	this.extraMux.RLock()
-	defer this.extraMux.RUnlock()
-	out, ok := this.Extras[key]
+//Get fetches a value as interface from the given key
+func (bs *BuildState) Get(key string) (interface{}, bool) {
+	bs.extraMux.RLock()
+	defer bs.extraMux.RUnlock()
+	out, ok := bs.Extras[key]
 	return out, ok
 }
 
-func (this *BuildState) GetP(key string, out interface{}) bool {
-	tmp, ok := this.Get(key)
+//GetP gets the value for key and puts it in the object that out is pointing to
+func (bs *BuildState) GetP(key string, out interface{}) bool {
+	tmp, ok := bs.Get(key)
 	if !ok {
 		return false
 	}
@@ -362,86 +352,76 @@ func (this *BuildState) GetP(key string, out interface{}) bool {
 	return true
 }
 
-func (this *BuildState) GetExtras() map[string]interface{} {
-	return this.Extras
+//GetExtras returns the internal state store as a map[string]interface
+func (bs *BuildState) GetExtras() map[string]interface{} {
+	return bs.Extras
 }
 
-/*
-	Write writes data to a file, creating it if it doesn't exist,
-   	deleting and recreating it if it does.
-*/
-func (this *BuildState) Write(file string, data string) error {
-	this.mutex.Lock()
-	this.files = append(this.files, file)
-	this.mutex.Unlock()
-	return ioutil.WriteFile("/tmp/"+this.BuildId+"/"+file, []byte(data), 0664)
+// Write writes data to a file, creating it if it doesn't exist,
+// deleting and recreating it if it does, should be used instead of golangs internal
+// io library as bs one provides automatic file cleanup and seperation of files among
+// different builds.
+func (bs *BuildState) Write(file string, data string) error {
+	bs.mutex.Lock()
+	bs.files = append(bs.files, file)
+	bs.mutex.Unlock()
+	return ioutil.WriteFile("/tmp/"+bs.BuildID+"/"+file, []byte(data), 0664)
 }
 
-/*
-	Add a function to be executed asynchronously after the build is completed.
-*/
-func (this *BuildState) Defer(fn func()) {
-	this.extraMux.Lock()
-	defer this.extraMux.Unlock()
-	this.defers = append(this.defers, fn)
+// Defer adds a function to be executed asynchronously after the build is completed.
+func (bs *BuildState) Defer(fn func()) {
+	bs.extraMux.Lock()
+	defer bs.extraMux.Unlock()
+	bs.defers = append(bs.defers, fn)
 
 }
 
-func (this *BuildState) OnError(fn func()) {
-	this.extraMux.Lock()
-	defer this.extraMux.Unlock()
-	this.errorCleanupFuncs = append(this.errorCleanupFuncs, fn)
+// OnError adds a function to be executed upon a build finishing in the error state
+func (bs *BuildState) OnError(fn func()) {
+	bs.extraMux.Lock()
+	defer bs.extraMux.Unlock()
+	bs.errorCleanupFuncs = append(bs.errorCleanupFuncs, fn)
 }
 
-/*
-   SetDeploySteps sets the number of steps in the deployment process.
-   Should be given a number equivalent to the number of times
-   IncrementDeployProgress will be called.
-*/
-func (this *BuildState) SetDeploySteps(steps int) {
-	atomic.StoreUint64(&this.DeployTotal, uint64(steps))
+// SetDeploySteps sets the number of steps in the deployment process.
+// Should be given a number equivalent to the number of times
+// IncrementDeployProgress will be called.
+func (bs *BuildState) SetDeploySteps(steps int) {
+	atomic.StoreUint64(&bs.DeployTotal, uint64(steps))
 }
 
-/*
-   IncrementDeployProgress increments the deploy process by one step.
-*/
-func (this *BuildState) IncrementDeployProgress() {
-	atomic.AddUint64(&this.DeployProgress, 1)
+// IncrementDeployProgress increments the deploy process by one step. This is thread safe.
+func (bs *BuildState) IncrementDeployProgress() {
+	atomic.AddUint64(&bs.DeployProgress, 1)
 }
 
-/*
-   FinishDeploy signals that the deployment process has finished and the
-   blockchain specific process will begin.
-*/
-func (this *BuildState) FinishDeploy() {
-	atomic.StoreUint64(&this.DeployProgress, atomic.LoadUint64(&this.DeployTotal))
+// FinishDeploy signals that the deployment process has finished and the
+// blockchain specific process will begin.
+func (bs *BuildState) FinishDeploy() {
+	atomic.StoreUint64(&bs.DeployProgress, atomic.LoadUint64(&bs.DeployTotal))
 }
 
-/*
-   SetBuildSteps sets the number of steps in the blockchain specific
-   build process. Must be equivalent to the number of times IncrementBuildProgress()
-   will be called.
-*/
-func (this *BuildState) SetBuildSteps(steps int) {
-	atomic.StoreUint64(&this.BuildTotal, uint64(steps+1)) //stay one step ahead to prevent early termination
+// SetBuildSteps sets the number of steps in the blockchain specific
+// build process. Must be equivalent to the number of times IncrementBuildProgress()
+// will be called.
+func (bs *BuildState) SetBuildSteps(steps int) {
+	atomic.StoreUint64(&bs.BuildTotal, uint64(steps+1)) //stay one step ahead to prevent early termination
 }
 
-/*
-   IncrementBuildProgress increments the build progress by one step.
-*/
-func (this *BuildState) IncrementBuildProgress() {
-	if atomic.LoadUint64(&this.BuildProgress) < atomic.LoadUint64(&this.BuildTotal) {
-		atomic.AddUint64(&this.BuildProgress, 1)
-	}
+// IncrementBuildProgress increments the build progress by one step.
+func (bs *BuildState) IncrementBuildProgress() {
+	atomic.AddUint64(&bs.BuildProgress, 1)
 }
 
-func (this *BuildState) GetProgress() float64 {
-	dp := atomic.LoadUint64(&this.DeployProgress)
-	dt := atomic.LoadUint64(&this.DeployTotal)
-	bp := atomic.LoadUint64(&this.BuildProgress)
-	bt := atomic.LoadUint64(&this.BuildTotal)
+// GetProgress gets the progress as a percentage, within the range
+// 0.0% - 100.0%
+func (bs *BuildState) GetProgress() float64 {
+	dp := atomic.LoadUint64(&bs.DeployProgress)
+	dt := atomic.LoadUint64(&bs.DeployTotal)
+	bp := atomic.LoadUint64(&bs.BuildProgress)
+	bt := atomic.LoadUint64(&bs.BuildTotal)
 
-	var out float64 = 0
+	var out float64
 	if dp == 0 || dt == 0 {
 		return out
 	}
@@ -453,62 +433,69 @@ func (this *BuildState) GetProgress() float64 {
 	if bt == 0 {
 		return out
 	}
-	return out + (float64(bp)/float64(bt))*75.0
+	out += (float64(bp) / float64(bt)) * 75.0
+	if !bs.Done() && out >= 100.0 {
+		out = 99.99 //Out cannot be 100% unless the build is completed
+	}
+	return out
 }
 
-/*
-   SetBuildStage updates the text which will be displayed along with the
-   build progress percentage when the status of the build is queried.
-*/
-func (this *BuildState) SetBuildStage(stage string) {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-	this.BuildStage = stage
+// SetBuildStage updates the text which will be displayed along with the
+// build progress percentage when the status of the build is queried.
+func (bs *BuildState) SetBuildStage(stage string) {
+	bs.mutex.Lock()
+	defer bs.mutex.Unlock()
+	bs.BuildStage = stage
 
 }
 
-func (this *BuildState) Reset() {
+// Reset sets the build state back the beginning. Used for when
+// additional nodes are being added, as the stores may want to be reused
+func (bs *BuildState) Reset() {
 
-	this.building = true
-	this.Frozen = false
-	this.stopping = false
+	bs.building = true
+	bs.Frozen = false
+	bs.stopping = false
 
-	this.breakpoints = []float64{}
+	bs.breakpoints = []float64{}
 
-	this.files = []string{}
-	this.defers = []func(){}
+	bs.files = []string{}
+	bs.defers = []func(){}
 
-	this.BuildError = CustomError{What: "", err: nil}
-	this.BuildStage = ""
+	bs.BuildError = CustomError{What: "", err: nil}
+	bs.BuildStage = ""
 
-	this.DeployProgress = 0
-	this.DeployTotal = 0
-	this.BuildProgress = 0
-	this.BuildTotal = 0
+	bs.DeployProgress = 0
+	bs.DeployTotal = 0
+	bs.BuildProgress = 0
+	bs.BuildTotal = 0
 
-	err := os.MkdirAll("/tmp/"+this.BuildId, 0755)
+	err := os.MkdirAll("/tmp/"+bs.BuildID, 0755)
 	if err != nil {
 		panic(err) //Fatal error
 	}
 	fmt.Println("BUILD has been reset!")
 }
 
-func (this *BuildState) Marshal() string {
-	this.mutex.RLock()
-	defer this.mutex.RUnlock()
-	if this.ErrorFree() { //error should be null if there is not an error
-		return fmt.Sprintf("{\"progress\":%f,\"error\":null,\"stage\":\"%s\",\"frozen\":%v}", this.GetProgress(), this.BuildStage, this.Frozen)
+//Marshal turns the BuildState into json representing the current progress of the build
+func (bs *BuildState) Marshal() string {
+	bs.mutex.RLock()
+	defer bs.mutex.RUnlock()
+	if bs.ErrorFree() { //error should be null if there is not an error
+		return fmt.Sprintf("{\"progress\":%f,\"error\":null,\"stage\":\"%s\",\"frozen\":%v}", bs.GetProgress(), bs.BuildStage, bs.Frozen)
 	}
 	//otherwise give the error as an object
 	out, _ := json.Marshal(
-		map[string]interface{}{"progress": this.GetProgress(), "error": this.BuildError, "stage": this.BuildStage, "frozen": this.Frozen})
+		map[string]interface{}{"progress": bs.GetProgress(), "error": bs.BuildError, "stage": bs.BuildStage, "frozen": bs.Frozen})
 	return string(out)
 }
 
-func (this *BuildState) Store() error {
-	return db.SetMeta(this.BuildId, *this)
+//Store saves the BuildState for later retrieval
+func (bs *BuildState) Store() error {
+	return db.SetMeta(bs.BuildID, *bs)
 }
 
-func (this *BuildState) Destroy() error {
-	return db.DeleteMeta(this.BuildId)
+//Destroy deletes all storage of the BuildState
+func (bs *BuildState) Destroy() error {
+	return db.DeleteMeta(bs.BuildID)
 }

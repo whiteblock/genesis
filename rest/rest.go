@@ -201,7 +201,7 @@ func stopBuild(w http.ResponseWriter, r *http.Request) {
 func freezeBuild(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	bState, err := state.GetBuildStateById(params["id"])
+	bState, err := state.GetBuildStateByID(params["id"])
 	if err != nil {
 		http.Error(w, err.Error(), 404)
 		return
@@ -218,7 +218,7 @@ func freezeBuild(w http.ResponseWriter, r *http.Request) {
 func thawBuild(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	bState, err := state.GetBuildStateById(params["id"])
+	bState, err := state.GetBuildStateByID(params["id"])
 	if err != nil {
 		http.Error(w, err.Error(), 404)
 		return

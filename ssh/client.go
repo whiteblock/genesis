@@ -128,7 +128,7 @@ func (sshClient *Client) Run(command string) (string, error) {
 	if conf.Verbose {
 		fmt.Printf("Running command: %s\n", command)
 	}
-	bs := state.GetBuildStateByServerId(sshClient.serverID)
+	bs := state.GetBuildStateByServerID(sshClient.serverID)
 	defer session.Close()
 	if bs.Stop() {
 		return "", bs.GetError()
@@ -154,7 +154,7 @@ func (sshClient *Client) Run(command string) (string, error) {
 func (sshClient *Client) KeepTryRun(command string) (string, error) {
 	var res string
 	var err error
-	bs := state.GetBuildStateByServerId(sshClient.serverID)
+	bs := state.GetBuildStateByServerID(sshClient.serverID)
 	if bs.Stop() {
 		return "", bs.GetError()
 	}
@@ -216,7 +216,7 @@ func (sshClient *Client) logSanitizeAndStore(node int, command string) {
 	if strings.Count(command, "'") != strings.Count(command, "\\'") {
 		panic("DockerExecdLog commands cannot contain unescaped ' characters")
 	}
-	bs := state.GetBuildStateByServerId(sshClient.serverID)
+	bs := state.GetBuildStateByServerID(sshClient.serverID)
 	bs.Set(fmt.Sprintf("%d", node), util.Command{Cmdline: command, ServerID: sshClient.serverID, Node: node})
 }
 
@@ -285,8 +285,8 @@ func (sshClient *Client) Scp(src string, dest string) error {
 		fmt.Printf("Remote copying %s to %s...", src, dest)
 	}
 	if !strings.HasPrefix(src, "./") && src[0] != '/' {
-		bs := state.GetBuildStateByServerId(sshClient.serverID)
-		src = "/tmp/" + bs.BuildId + "/" + src
+		bs := state.GetBuildStateByServerID(sshClient.serverID)
+		src = "/tmp/" + bs.BuildID + "/" + src
 	}
 
 	session, err := sshClient.getSession()

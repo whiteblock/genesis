@@ -94,7 +94,7 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		//Ignore error and continue
 	}
-	bs, err := state.GetBuildStateById(testnetId)
+	bs, err := state.GetBuildStateByID(testnetId)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Testnet is down, build a new one", 409)

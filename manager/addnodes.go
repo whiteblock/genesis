@@ -19,7 +19,7 @@ import (
 // It is worth noting that any missing information from the given
 // deployment details will be filled in from the origin build.
 func AddNodes(details *db.DeploymentDetails, testnetID string) error {
-	buildState, err := state.GetBuildStateById(testnetID)
+	buildState, err := state.GetBuildStateByID(testnetID)
 	if err != nil {
 		log.Println(err)
 		return err

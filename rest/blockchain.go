@@ -95,7 +95,7 @@ func getBlockChainParams(w http.ResponseWriter, r *http.Request) {
 func getBlockChainState(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	buildId := params["buildId"]
-	buildState, err := state.GetBuildStateById(buildId)
+	buildState, err := state.GetBuildStateByID(buildId)
 	if err != nil {
 		http.Error(w, err.Error(), 404)
 		return
