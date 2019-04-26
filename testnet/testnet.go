@@ -1,3 +1,4 @@
+//Package testnet helps to manage and control current testnets
 package testnet
 
 import (
@@ -11,23 +12,30 @@ import (
 	"sync"
 )
 
-/*
-	Represents a testnet and some state on that testnet. Should also contain the details needed to
-	rebuild this testnet.
-*/
+// TestNet represents a testnet and some state on that testnet. Should also contain the details needed to
+// rebuild tn testnet.
 type TestNet struct {
-	TestNetID       string
-	Servers         []db.Server
-	Nodes           []db.Node
+	TestNetID string
+	//Servers contains the servers on which the testnet resides
+	Servers []db.Server
+	//Nodes contains the active nodes in the network, including the newly built nodes
+	Nodes []db.Node
+	//NewlyBuiltNodes contains only the nodes created in the last/in progress build event
 	NewlyBuiltNodes []db.Node
-	Clients         map[int]*ssh.Client
-	BuildState      *state.BuildState
-	Details         []db.DeploymentDetails
+	//Clients is a map of server ids to ssh clients
+	Clients map[int]*ssh.Client
+	//BuildState is the build state for the test net
+	BuildState *state.BuildState
+	//Details contains all of the past deployments to tn test net
+	Details []db.DeploymentDetails
+	//CombinedDetails contains all of the deployments merged into one
 	CombinedDetails db.DeploymentDetails
-	LDD             *db.DeploymentDetails //ptr to latest deployment details
-	mux             *sync.RWMutex
+	//LDD is a pointer to latest deployment details
+	LDD *db.DeploymentDetails
+	mux *sync.RWMutex
 }
 
+//RestoreTestNet fetches a testnet which already exists.
 func RestoreTestNet(buildID string) (*TestNet, error) {
 	out := new(TestNet)
 	err := db.GetMetaP("testnet_"+buildID, out)
@@ -56,6 +64,7 @@ func RestoreTestNet(buildID string) (*TestNet, error) {
 	return out, nil
 }
 
+// NewTestNet creates a new TestNet
 func NewTestNet(details db.DeploymentDetails, buildID string) (*TestNet, error) {
 	var err error
 	out := new(TestNet)
@@ -97,87 +106,94 @@ func NewTestNet(details db.DeploymentDetails, buildID string) (*TestNet, error) 
 	return out, nil
 }
 
-func (this *TestNet) AddNode(node db.Node) int {
-	this.mux.Lock()
-	defer this.mux.Unlock()
-	node.AbsoluteNum = len(this.Nodes)
-	this.NewlyBuiltNodes = append(this.NewlyBuiltNodes, node)
-	this.Nodes = append(this.Nodes, node)
+//AddNode adds a node to the testnet and returns the new nodes absolute number
+func (tn *TestNet) AddNode(node db.Node) int {
+	tn.mux.Lock()
+	defer tn.mux.Unlock()
+	node.AbsoluteNum = len(tn.Nodes)
+	tn.NewlyBuiltNodes = append(tn.NewlyBuiltNodes, node)
+	tn.Nodes = append(tn.Nodes, node)
 	return node.AbsoluteNum
 }
 
-func (this *TestNet) AddDetails(dd db.DeploymentDetails) error {
-	this.mux.Lock()
-	defer this.mux.Unlock()
-	this.Details = append(this.Details, dd)
+// AddDetails adds the details of a new deployment to the TestNet
+func (tn *TestNet) AddDetails(dd db.DeploymentDetails) error {
+	tn.mux.Lock()
+	defer tn.mux.Unlock()
+	tn.Details = append(tn.Details, dd)
 	//MERGE
 	tmp, err := json.Marshal(dd)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	this.LDD = &this.Details[len(this.Details)-1]
+	tn.LDD = &tn.Details[len(tn.Details)-1]
 
-	oldCD := this.CombinedDetails
-	err = json.Unmarshal(tmp, &this.CombinedDetails)
+	oldCD := tn.CombinedDetails
+	err = json.Unmarshal(tmp, &tn.CombinedDetails)
 	if err != nil {
 		log.Println(err)
 	}
 
 	/**Handle Files**/
-	this.CombinedDetails.Files = oldCD.Files
+	tn.CombinedDetails.Files = oldCD.Files
 	if dd.Files != nil && len(dd.Files) > 0 {
-		if this.CombinedDetails.Files == nil {
-			this.CombinedDetails.Files = make([]map[string]string, oldCD.Nodes)
+		if tn.CombinedDetails.Files == nil {
+			tn.CombinedDetails.Files = make([]map[string]string, oldCD.Nodes)
 		}
-		if len(this.CombinedDetails.Files) < oldCD.Nodes {
-			for i := len(this.CombinedDetails.Files); i < oldCD.Nodes; i++ {
-				this.CombinedDetails.Files = append(this.CombinedDetails.Files, map[string]string{})
+		if len(tn.CombinedDetails.Files) < oldCD.Nodes {
+			for i := len(tn.CombinedDetails.Files); i < oldCD.Nodes; i++ {
+				tn.CombinedDetails.Files = append(tn.CombinedDetails.Files, map[string]string{})
 			}
 		}
 		for _, files := range dd.Files {
-			this.CombinedDetails.Files = append(this.CombinedDetails.Files, files)
+			tn.CombinedDetails.Files = append(tn.CombinedDetails.Files, files)
 		}
 	}
 
 	/**Handle Nodes**/
-	this.CombinedDetails.Nodes = oldCD.Nodes + dd.Nodes
+	tn.CombinedDetails.Nodes = oldCD.Nodes + dd.Nodes
 
 	/**Handle Images***/
 	if dd.Images != nil && len(dd.Images) > 0 {
-		if this.CombinedDetails.Images == nil {
-			this.CombinedDetails.Images = make([]string, oldCD.Nodes)
+		if tn.CombinedDetails.Images == nil {
+			tn.CombinedDetails.Images = make([]string, oldCD.Nodes)
 		}
-		if len(this.CombinedDetails.Images) < oldCD.Nodes {
-			for i := len(this.CombinedDetails.Images); i < oldCD.Nodes; i++ {
-				this.CombinedDetails.Images = append(this.CombinedDetails.Images, this.CombinedDetails.Images[0])
+		if len(tn.CombinedDetails.Images) < oldCD.Nodes {
+			for i := len(tn.CombinedDetails.Images); i < oldCD.Nodes; i++ {
+				tn.CombinedDetails.Images = append(tn.CombinedDetails.Images, tn.CombinedDetails.Images[0])
 			}
 		}
 		for _, image := range dd.Images {
-			this.CombinedDetails.Images = append(this.CombinedDetails.Images, image)
+			tn.CombinedDetails.Images = append(tn.CombinedDetails.Images, image)
 		}
 	}
 	return nil
 }
 
-func (this *TestNet) FinishedBuilding() {
-	this.BuildState.DoneBuilding()
-	this.NewlyBuiltNodes = []db.Node{}
-	this.Store()
+// FinishedBuilding empties the NewlyBuiltNodes, signals DoneBuilding on the BuildState, and
+// stores the current data of tn testnet
+func (tn *TestNet) FinishedBuilding() {
+	tn.BuildState.DoneBuilding()
+	tn.NewlyBuiltNodes = []db.Node{}
+	tn.Store()
 }
 
-func (this *TestNet) GetFlatClients() []*ssh.Client {
+// GetFlatClients takes the clients map and turns it into an array
+// for easy iterator
+func (tn *TestNet) GetFlatClients() []*ssh.Client {
 	out := []*ssh.Client{}
-	this.mux.RLock()
-	defer this.mux.RUnlock()
-	for _, client := range this.Clients {
+	tn.mux.RLock()
+	defer tn.mux.RUnlock()
+	for _, client := range tn.Clients {
 		out = append(out, client)
 	}
 	return out
 }
 
-func (this *TestNet) GetServer(id int) *db.Server {
-	for _, server := range this.Servers {
+//GetServer retrieves a server the TestNet resides on by id
+func (tn *TestNet) GetServer(id int) *db.Server {
+	for _, server := range tn.Servers {
 		if server.Id == id {
 			return &server
 		}
@@ -185,52 +201,58 @@ func (this *TestNet) GetServer(id int) *db.Server {
 	return nil
 }
 
-func (this *TestNet) GetLastestDeploymentDetails() *db.DeploymentDetails {
-	this.mux.RLock()
-	defer this.mux.RUnlock()
-	return &this.Details[len(this.Details)-1]
+//GetLastestDeploymentDetails gets a pointer to the latest deployment details
+func (tn *TestNet) GetLastestDeploymentDetails() *db.DeploymentDetails {
+	tn.mux.RLock()
+	defer tn.mux.RUnlock()
+	return &tn.Details[len(tn.Details)-1]
 }
 
-func (this *TestNet) PreOrderNodes() map[int][]db.Node {
-	this.mux.RLock()
-	defer this.mux.RUnlock()
+//PreOrderNodes sorts the nodes into buckets by server id
+func (tn *TestNet) PreOrderNodes() map[int][]db.Node {
+	tn.mux.RLock()
+	defer tn.mux.RUnlock()
 
 	out := make(map[int][]db.Node)
-	for _, server := range this.Servers {
+	for _, server := range tn.Servers {
 		out[server.Id] = []db.Node{}
 	}
 
-	for _, node := range this.Nodes {
+	for _, node := range tn.Nodes {
 		out[node.Server] = append(out[node.Server], node)
 	}
 	return out
 }
 
-func (this *TestNet) PreOrderNewNodes() map[int][]db.Node {
-	this.mux.RLock()
-	defer this.mux.RUnlock()
+//PreOrderNewNodes sorts the newly built nodes into buckets by server id
+func (tn *TestNet) PreOrderNewNodes() map[int][]db.Node {
+	tn.mux.RLock()
+	defer tn.mux.RUnlock()
 
 	out := make(map[int][]db.Node)
-	for _, server := range this.Servers {
+	for _, server := range tn.Servers {
 		out[server.Id] = []db.Node{}
 	}
 
-	for _, node := range this.NewlyBuiltNodes {
+	for _, node := range tn.NewlyBuiltNodes {
 		out[node.Server] = append(out[node.Server], node)
 	}
 	return out
 }
 
-func (this *TestNet) Store() {
-	db.SetMeta("testnet_"+this.TestNetID, *this)
+//Store stores the TestNets data for later retrieval
+func (tn *TestNet) Store() {
+	db.SetMeta("testnet_"+tn.TestNetID, *tn)
 }
 
-func (this *TestNet) Destroy() error {
-	return db.DeleteMeta("testnet_" + this.TestNetID)
+//Destroy removes all the testnets data
+func (tn *TestNet) Destroy() error {
+	return db.DeleteMeta("testnet_" + tn.TestNetID)
 }
 
-func (this *TestNet) StoreNodes(labels []string) error {
-	for i, node := range this.NewlyBuiltNodes {
+//StoreNodes stores the newly built nodes into the database with their labels.
+func (tn *TestNet) StoreNodes(labels []string) error {
+	for i, node := range tn.NewlyBuiltNodes {
 		if labels != nil {
 			node.Label = labels[i]
 		}
