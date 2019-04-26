@@ -410,7 +410,7 @@ func (this *Client) Close() {
 
 func sshConnect(host string) (*ssh.Client, error) {
 
-	key, err := ioutil.ReadFile(conf.SshKey)
+	key, err := ioutil.ReadFile(conf.SSHKey)
 	if err != nil {
 		log.Println(err)
 		return nil, err

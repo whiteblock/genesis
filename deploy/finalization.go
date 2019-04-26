@@ -19,8 +19,8 @@ import (
    Finalization methods for the docker build process. Will be run immediately following their deployment
 */
 func finalize(tn *testnet.TestNet) error {
-	if conf.HandleNodeSshKeys {
-		err := copyOverSshKeys(tn, false)
+	if conf.HandleNodeSSHKeys {
+		err := copyOverSSHKeys(tn, false)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -34,8 +34,8 @@ func finalize(tn *testnet.TestNet) error {
    Finalization methods for the docker build process. Will be run immediately following their deployment
 */
 func finalizeNewNodes(tn *testnet.TestNet) error {
-	if conf.HandleNodeSshKeys {
-		err := copyOverSshKeys(tn, true)
+	if conf.HandleNodeSSHKeys {
+		err := copyOverSSHKeys(tn, true)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -72,7 +72,7 @@ func alwaysRunFinalize(tn *testnet.TestNet) {
    Copy over the ssh public key to each node to allow for the user to ssh into each node.
    The public key comes from the nodes public key specified in the configuration
 */
-func copyOverSshKeys(tn *testnet.TestNet, newOnly bool) error {
+func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 	tmp, err := ioutil.ReadFile(conf.NodesPublicKey)
 	pubKey := string(tmp)
 	pubKey = strings.Trim(pubKey, "\t\n\v\r")

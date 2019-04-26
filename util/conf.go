@@ -11,7 +11,7 @@ import (
 
 type Config struct {
 	SSHUser            string  `json:"ssh-user"`
-	SshKey             string  `json:"ssh-key"`
+	SSHKey             string  `json:"ssh-key"`
 	ServerBits         uint32  `json:"server-bits"`
 	ClusterBits        uint32  `json:"cluster-bits"`
 	NodeBits           uint32  `json:"node-bits"`
@@ -30,10 +30,10 @@ type Config struct {
 	ServicePrefix      string  `json:"service-prefix"`
 	NodesPublicKey     string  `json:"nodes-public-key"`
 	NodesPrivateKey    string  `json:"nodes-private-key"`
-	HandleNodeSshKeys  bool    `json:"handle-node-ssh-keys"`
+	HandleNodeSSHKeys  bool    `json:"handle-node-ssh-keys"`
 	MaxNodes           int     `json:"max-nodes"`
 	MaxNodeMemory      string  `json:"max-node-memory"`
-	MaxNodeCpu         float64 `json:"max-node-cpu"`
+	MaxNodeCPU         float64 `json:"max-node-cpu"`
 	BridgePrefix       string  `json:"bridge-prefix"`
 }
 
@@ -52,7 +52,7 @@ func (this *Config) LoadFromEnv() {
 	}
 	val, exists = os.LookupEnv("RSA_KEY")
 	if exists {
-		this.SshKey = val
+		this.SSHKey = val
 	}
 
 	_, exists = os.LookupEnv("VERBOSE")
@@ -152,7 +152,7 @@ func (this *Config) LoadFromEnv() {
 
 	_, exists = os.LookupEnv("HANDLE_NODES_SSH_KEYS")
 	if exists {
-		this.HandleNodeSshKeys = true
+		this.HandleNodeSSHKeys = true
 	}
 
 	val, exists = os.LookupEnv("MAX_NODES")
@@ -172,7 +172,7 @@ func (this *Config) LoadFromEnv() {
 
 	val, exists = os.LookupEnv("MAX_NODE_CPU")
 	if exists {
-		this.MaxNodeCpu, err = strconv.ParseFloat(val, 64)
+		this.MaxNodeCPU, err = strconv.ParseFloat(val, 64)
 		if err != nil {
 			fmt.Println("Invalid ENV value for MAX_NODE_CPU")
 			os.Exit(1)
@@ -195,9 +195,9 @@ func (c *Config) AutoFillMissing() {
 	if len(c.Listen) == 0 {
 		c.Listen = "127.0.0.1:8000"
 	}
-	if len(c.SshKey) == 0 {
+	if len(c.SSHKey) == 0 {
 		home := os.Getenv("HOME")
-		c.SshKey = home + "/.ssh/id_rsa"
+		c.SSHKey = home + "/.ssh/id_rsa"
 	}
 	if c.ServerBits <= 0 {
 		fmt.Println("Warning: Using default server bits")

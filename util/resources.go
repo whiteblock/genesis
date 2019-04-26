@@ -96,13 +96,13 @@ func (this Resources) Validate() error {
 	}
 
 	if !this.NoCpuLimits() {
-		c1 := conf.MaxNodeCpu
+		c1 := conf.MaxNodeCPU
 		c2, err := strconv.ParseFloat(this.Cpus, 64)
 		if err != nil {
 			return err
 		}
 		if c2 > c1 {
-			return fmt.Errorf("assigning too much CPU: max is %f", conf.MaxNodeCpu)
+			return fmt.Errorf("assigning too much CPU: max is %f", conf.MaxNodeCPU)
 		}
 	}
 
@@ -119,7 +119,7 @@ func (this Resources) ValidateAndSetDefaults() error {
 		return err
 	}
 	if this.NoCpuLimits() {
-		this.Cpus = fmt.Sprintf("%f", conf.MaxNodeCpu)
+		this.Cpus = fmt.Sprintf("%f", conf.MaxNodeCPU)
 	}
 	if this.NoMemoryLimits() {
 		this.Memory = conf.MaxNodeMemory
