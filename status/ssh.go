@@ -11,11 +11,9 @@ var _clients = map[int]*ssh.Client{}
 
 var _mux = sync.Mutex{}
 
-/*
-   GetClient retrieves the ssh client for running a command
-   on a remote server based on server id. It will create one if it
-   does not exist.
-*/
+// GetClient retrieves the ssh client for running a command
+// on a remote server based on server id. It will create one if it
+// does not exist.
 func GetClient(id int) (*ssh.Client, error) {
 	cli, ok := _clients[id]
 	if !ok || cli == nil {
@@ -36,10 +34,8 @@ func GetClient(id int) (*ssh.Client, error) {
 	return cli, nil
 }
 
-/*
-   GetClients functions similar to GetClient, except that it takes in
-   an array of server ids and outputs an array of clients
-*/
+// GetClients functions similar to GetClient, except that it takes in
+// an array of server ids and outputs an array of clients
 func GetClients(servers []int) ([]*ssh.Client, error) {
 
 	out := make([]*ssh.Client, len(servers))
@@ -54,6 +50,8 @@ func GetClients(servers []int) ([]*ssh.Client, error) {
 	return out, nil
 }
 
+// GetClientsFromNodes gets all of the ssh clients you need for
+// communication with the given nodes
 func GetClientsFromNodes(nodes []db.Node) ([]*ssh.Client, error) {
 	serverIds := db.GetUniqueServerIDs(nodes)
 	return GetClients(serverIds)

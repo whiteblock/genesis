@@ -1,6 +1,4 @@
-/*
-Handles functions related to the current state of the network
-*/
+// Package status handles functions related to the current state of the network
 package status
 
 import (
@@ -8,16 +6,8 @@ import (
 	"log"
 )
 
-type BuildStatus struct {
-	Error    state.CustomError `json:"error"`
-	Progress float64           `json:"progress"`
-	Stage    string            `json:"stage"`
-	Frozen   bool              `json:"frozen"`
-}
-
-/*
-   Check the current status of the build
-*/
+// CheckBuildStatus checks the current status of the build relating to the
+// given build id
 func CheckBuildStatus(buildID string) (string, error) {
 	bs, err := state.GetBuildStateByID(buildID)
 	if err != nil {

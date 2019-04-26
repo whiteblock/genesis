@@ -5,28 +5,15 @@ import (
 	"log"
 )
 
-/*
-   Get the servers used in the latest testnet, populated with the
-   ips of all the nodes
-*/
+// GetLatestServers gets the servers used in the latest testnet, populated with the
+// ips of all the nodes
 func GetLatestServers(testnetID string) ([]db.Server, error) {
 	nodes, err := db.GetAllNodesByTestNet(testnetID)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	serverIDs := []int{}
-	for _, node := range nodes {
-		shouldAdd := true
-		for _, id := range serverIDs {
-			if id == node.Server {
-				shouldAdd = false
-			}
-		}
-		if shouldAdd {
-			serverIDs = append(serverIDs, node.Server)
-		}
-	}
+	serverIDs := db.GetUniqueServerIDs(nodes)
 
 	servers, err := db.GetServers(serverIDs)
 	if err != nil {
