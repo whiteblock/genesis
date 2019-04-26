@@ -421,7 +421,7 @@ func sshConnect(host string) (*ssh.Client, error) {
 		return nil, err
 	}
 	sshConfig := &ssh.ClientConfig{
-		User: conf.SshUser,
+		User: conf.SSHUser,
 		Auth: []ssh.AuthMethod{
 			// Use the PublicKeys method for remote authentication.
 			ssh.PublicKeys(signer),

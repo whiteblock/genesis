@@ -10,7 +10,7 @@ import (
 )
 
 type Config struct {
-	SshUser            string  `json:"ssh-user"`
+	SSHUser            string  `json:"ssh-user"`
 	SshKey             string  `json:"ssh-key"`
 	ServerBits         uint32  `json:"server-bits"`
 	ClusterBits        uint32  `json:"cluster-bits"`
@@ -44,7 +44,7 @@ func (this *Config) LoadFromEnv() {
 	var err error
 	val, exists := os.LookupEnv("RSA_USER")
 	if exists {
-		this.SshUser = val
+		this.SSHUser = val
 	}
 	val, exists = os.LookupEnv("LISTEN")
 	if exists {
@@ -188,8 +188,8 @@ func (this *Config) LoadFromEnv() {
    Fill in the missing essential values with the defaults.
 */
 func (c *Config) AutoFillMissing() {
-	if len(c.SshUser) == 0 {
-		c.SshUser = "appo"
+	if len(c.SSHUser) == 0 {
+		c.SSHUser = "appo"
 	}
 
 	if len(c.Listen) == 0 {

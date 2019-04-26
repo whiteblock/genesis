@@ -9,13 +9,13 @@ import (
 
 //Point represents a basic 2D coordinate point
 type Point struct {
+	//X represents the position on the x axis
 	X int `json:"x"`
+	//Y represents the position on the y axis
 	Y int `json:"y"`
 }
 
-/*
-   Create a distance matrix, of all the distances between the given points
-*/
+// Distances creates a distance matrix, of all the distances between the given points
 func Distances(pnts []Point) [][]float64 {
 	out := make([][]float64, len(pnts))
 	for i := range pnts {
