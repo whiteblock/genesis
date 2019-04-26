@@ -14,7 +14,7 @@ type panConf struct {
 	MaxPeers              int64  `json:"maxPeers"`
 	GasLimit              int64  `json:"gasLimit"`
 	Consensus             string `json:"consensus"`
-	FixedDifficulty       int64  `json:"fixedDifficulty`
+	FixedDifficulty       int64  `json:"fixedDifficulty"`
 	BlockPeriodSeconds    int64  `json:"blockPeriodSeconds"`
 	Epoch                 int64  `json:"epoch"`
 	RequestTimeoutSeconds int64  `json:"requesttimeoutseconds"`
