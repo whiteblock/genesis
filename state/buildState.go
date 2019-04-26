@@ -136,11 +136,11 @@ func (this *BuildState) Freeze() error {
 	this.mutex.Lock()
 	if this.Frozen {
 		this.mutex.Unlock()
-		return fmt.Errorf("Already frozen")
+		return fmt.Errorf("already frozen")
 	}
 	if this.stopping {
 		this.mutex.Unlock()
-		return fmt.Errorf("The build is terminating")
+		return fmt.Errorf("build terminating")
 	}
 
 	this.Frozen = true
@@ -156,7 +156,7 @@ func (this *BuildState) Unfreeze() error {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 	if !this.Frozen {
-		return fmt.Errorf("Not currently frozen")
+		return fmt.Errorf("not currently frozen")
 	}
 	this.freeze.Unlock()
 	this.Frozen = false
@@ -275,11 +275,11 @@ func (this *BuildState) SignalStop() error {
 	defer this.mutex.RUnlock()
 
 	if this.building {
-		this.ReportError(fmt.Errorf("Build stopped by user"))
+		this.ReportError(fmt.Errorf("build stopped by user"))
 		this.stopping = true
 		return nil
 	}
-	return fmt.Errorf("No build in progress")
+	return fmt.Errorf("no build in progress")
 }
 
 /*
@@ -310,7 +310,7 @@ func (this *BuildState) SetExt(key string, value interface{}) error {
 	case string:
 	case []string:
 	default:
-		return fmt.Errorf("Unsupported type for value")
+		return fmt.Errorf("unsupported type for value")
 	}
 	this.extraMux.Lock()
 	defer this.extraMux.Unlock()

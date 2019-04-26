@@ -82,7 +82,7 @@ func GetBuildStateById(buildId string) (*BuildState, error) {
 	bs, err := RestoreBuildState(buildId)
 	if err != nil || bs == nil {
 		log.Println(err)
-		return nil, fmt.Errorf("Couldn't find the request build")
+		return nil, fmt.Errorf("couldn't find the request build")
 	}
 	buildStates = append(buildStates, bs)
 	serversInUse = append(serversInUse, bs.Servers...)
@@ -102,7 +102,7 @@ func AcquireBuilding(servers []int, buildId string) error {
 	for _, id := range serversInUse {
 		for _, id2 := range servers {
 			if id == id2 {
-				return fmt.Errorf("Error: Build in progress on server %d", id)
+				return fmt.Errorf("error: Build in progress on server %d", id)
 			}
 		}
 	}
@@ -137,7 +137,7 @@ func SignalStop(buildId string) error {
 		return err
 	}
 	if bs == nil {
-		return fmt.Errorf("Build \"%s\" does not exist", buildId)
+		return fmt.Errorf("build \"%s\" does not exist", buildId)
 	}
 	log.Printf("Sending stop signal to build:%s\n", buildId)
 	return bs.SignalStop()
