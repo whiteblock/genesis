@@ -283,7 +283,7 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 	return nil, nil
 }
 
-// MakeFakeAccounts creates ethereum addresses which can be marked as funded to produce a 
+// MakeFakeAccounts creates ethereum addresses which can be marked as funded to produce a
 // larger initial state
 func MakeFakeAccounts(accs int) []string {
 	out := make([]string, accs)

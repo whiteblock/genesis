@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-type RChainConf struct {
+type rChainConf struct {
 	NoUpnp               bool   `json:"noUpnp"`
 	DefaultTimeout       int64  `json:"defaultTimeout"`
 	MapSize              int64  `json:"mapSize"`
@@ -21,8 +21,8 @@ type RChainConf struct {
 	Command              string `json:"command"`
 }
 
-func NewRChainConf(data map[string]interface{}) (*RChainConf, error) {
-	out := new(RChainConf)
+func newRChainConf(data map[string]interface{}) (*rChainConf, error) {
+	out := new(rChainConf)
 	err := json.Unmarshal([]byte(GetDefaults()), out)
 	if data == nil {
 		return out, err
@@ -35,6 +35,7 @@ func NewRChainConf(data map[string]interface{}) (*RChainConf, error) {
 	return out, json.Unmarshal(tmp, out)
 }
 
+// GetServices returns the services which are used by rchain
 func GetServices() []util.Service {
 	return []util.Service{
 		{
@@ -49,6 +50,7 @@ func GetServices() []util.Service {
 	}
 }
 
+// GetParams fetchs artemis related parameters
 func GetParams() string {
 	dat, err := ioutil.ReadFile("./resources/rchain/params.json")
 	if err != nil {
@@ -57,6 +59,7 @@ func GetParams() string {
 	return string(dat)
 }
 
+// GetDefaults fetchs artemis related parameter defaults
 func GetDefaults() string {
 	dat, err := ioutil.ReadFile("./resources/rchain/defaults.json")
 	if err != nil {

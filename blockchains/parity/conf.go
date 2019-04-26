@@ -111,7 +111,6 @@ func GetServices() []util.Service {
 	}
 }
 
-
 func buildConfig(pconf *parityConf, details *db.DeploymentDetails, wallets []string, passwordFile string, node int) (string, error) {
 
 	dat, err := helpers.GetBlockchainConfig("parity", node, "config.toml.template", details)
