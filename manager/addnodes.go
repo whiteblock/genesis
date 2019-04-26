@@ -66,47 +66,29 @@ func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 	switch details.Blockchain {
 	case "eos":
 		labels, err = eos.Add(tn)
-		if err != nil {
-			buildState.ReportError(err)
-			log.Println(err)
-			return err
-		}
 	case "ethereum":
 		fallthrough
 	case "geth":
 		labels, err = geth.Add(tn)
-		if err != nil {
-			buildState.ReportError(err)
-			log.Println(err)
-			return err
-		}
 	case "syscoin":
 		labels, err = sys.Add(tn)
-		if err != nil {
-			buildState.ReportError(err)
-			log.Println(err)
-			return err
-		}
 	case "rchain":
 		labels, err = rchain.Add(tn)
-		if err != nil {
-			buildState.ReportError(err)
-			log.Println(err)
-			return err
-		}
 	case "beam":
 		labels, err = beam.Add(tn)
-		if err != nil {
-			buildState.ReportError(err)
-			log.Println(err)
-			return err
-		}
+
 	case "generic":
 		log.Println("Built in generic mode")
 	default:
 		buildState.ReportError(fmt.Errorf("unknown blockchain"))
 		return fmt.Errorf("unknown blockchain")
 	}
+	if err != nil {
+		buildState.ReportError(err)
+		log.Println(err)
+		return err
+	}
+
 	err = tn.StoreNodes(labels)
 	if err != nil {
 		log.Println(err.Error())
