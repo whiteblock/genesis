@@ -56,7 +56,7 @@ func (this *KeyMaster) GenerateKeyPair(client *ssh.Client) (util.KeyPair, error)
 	if this.generator != nil {
 		return this.generator(client)
 	}
-	return util.KeyPair{}, fmt.Errorf("No generator provided")
+	return util.KeyPair{}, fmt.Errorf("no generator provided")
 }
 
 func (this *KeyMaster) GetKeyPair(client *ssh.Client) (util.KeyPair, error) {

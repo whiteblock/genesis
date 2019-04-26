@@ -110,7 +110,7 @@ func dockerRunCmd(subnetID int, resources util.Resources, node int, image string
 	if !resources.NoMemoryLimits() {
 		mem, err := resources.GetMemory()
 		if err != nil {
-			return "", fmt.Errorf("Invalid value for memory")
+			return "", fmt.Errorf("invalid value for memory")
 		}
 		command += fmt.Sprintf(" --memory %d", mem)
 	}

@@ -38,7 +38,7 @@ func init() {
 // implemented here, other it will not be called during the build process.
 func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 	if details.Servers == nil || len(details.Servers) == 0 {
-		err := fmt.Errorf("Missing servers")
+		err := fmt.Errorf("missing servers")
 		log.Println(err)
 		return err
 	}
@@ -105,7 +105,7 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 		log.Println("Built in generic mode")
 	default:
 		buildState.ReportError(fmt.Errorf("Unknown blockchain"))
-		return fmt.Errorf("Unknown blockchain")
+		return fmt.Errorf("unknown blockchain")
 	}
 	if err != nil {
 		buildState.ReportError(err)

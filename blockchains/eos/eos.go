@@ -30,7 +30,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	clients := tn.GetFlatClients()
 	buildState := tn.BuildState
 	if tn.LDD.Nodes < 2 {
-		return nil, fmt.Errorf("Cannot build less than 2 nodes")
+		return nil, fmt.Errorf("cannot build network with less than 2 nodes")
 	}
 
 	eosconf, err := NewConf(tn.LDD.Params)
@@ -39,7 +39,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 	if eosconf.BlockProducers < 2 {
-		return nil, fmt.Errorf("Cannot build eos with only one BP")
+		return nil, fmt.Errorf("cannot build eos network with only one block producer")
 	}
 	eosconf.BlockProducers++
 	err = buildState.SetExt("accounts", fmt.Sprintf("%d", eosconf.UserAccounts))

@@ -80,7 +80,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
 		addresses := addressPattern.FindAllString(gethResults, -1)
 		if len(addresses) < 1 {
-			return fmt.Errorf("Unable to get addresses")
+			return fmt.Errorf("unable to get addresses")
 		}
 		address := addresses[0]
 		address = address[1 : len(address)-1]

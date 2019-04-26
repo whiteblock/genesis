@@ -17,7 +17,7 @@ func CopyToServers(tn *testnet.TestNet, src string, dst string) error {
 
 func CopyAllToServers(tn *testnet.TestNet, srcDst ...string) error {
 	if len(srcDst)%2 != 0 {
-		return fmt.Errorf("Invalid number of variadic arguments, must be given an even number of them")
+		return fmt.Errorf("invalid number of variadic arguments, must be given an even number of them")
 	}
 	wg := sync.WaitGroup{}
 	for _, client := range tn.Clients {
@@ -41,7 +41,7 @@ func CopyAllToServers(tn *testnet.TestNet, srcDst ...string) error {
 
 func copyToAllNodes(tn *testnet.TestNet, useNew bool, srcDst ...string) error {
 	if len(srcDst)%2 != 0 {
-		return fmt.Errorf("Invalid number of variadic arguments, must be given an even number of them")
+		return fmt.Errorf("invalid number of variadic arguments, must be given an even number of them")
 	}
 	wg := sync.WaitGroup{}
 

@@ -26,7 +26,7 @@ func NewConf(data map[string]interface{}) (ArtemisConf, error) {
 	err = util.GetJSONInt64(data, "validators", &val) //Check provided validators
 	if err == nil {
 		if val < 4 || val%2 != 0 {
-			return nil, fmt.Errorf("Invalid number of validators (%d). Validators must be an even number and greater than 3.", val)
+			return nil, fmt.Errorf("invalid number of validators (%d): must be an even number and greater than 3", val)
 		}
 	}
 	out := new(ArtemisConf)

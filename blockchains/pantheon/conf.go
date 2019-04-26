@@ -86,7 +86,7 @@ func NewConf(data map[string]interface{}) (*PanConf, error) {
 		case string:
 			out.InitBalance = initBalance.(string)
 		default:
-			return nil, fmt.Errorf("Incorrect type for initBalance given")
+			return nil, fmt.Errorf("incorrect type for initBalance given")
 		}
 	}
 

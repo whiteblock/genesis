@@ -76,7 +76,7 @@ func (this *Client) getSession() (*Session, error) {
 	}
 	if client == nil {
 		this.sem.Release(1)
-		return nil, fmt.Errorf("Client is nil! Error(\"%s\")", err.Error())
+		return nil, fmt.Errorf("error(\"%s\"): client is nil", err.Error())
 	}
 	if err != nil {
 		this.sem.Release(1)

@@ -40,11 +40,11 @@ func Distances(pnts []Point) [][]float64 {
 */
 func Distribute(nodes []string, dist []int) ([][]string, error) {
 	if len(nodes) < 2 {
-		return nil, errors.New("Cannot distribute a series smaller than 1")
+		return nil, errors.New("cannot distribute a series smaller than 1")
 	}
 	for _, d := range dist {
 		if d >= len(nodes) {
-			return nil, errors.New("Cannot distribute among more nodes than those that are given")
+			return nil, errors.New("cannot distribute among more nodes than those that are provided")
 		}
 	}
 	s1 := rand.NewSource(time.Now().UnixNano())
@@ -109,10 +109,10 @@ func GenerateworstCaseNetwork(nodes int) [][]int {
 */
 func GenerateUniformRandMeshNetwork(nodes int, conns int) ([][]int, error) {
 	if conns < 1 {
-		return nil, errors.New("Each node must have atleast one connection")
+		return nil, errors.New("each node must have at least one connection")
 	}
 	if conns >= nodes {
-		return nil, errors.New("Too many connection to distribute without duplicates")
+		return nil, errors.New("too many connection to distribute without duplicates")
 	}
 	s1 := rand.NewSource(time.Now().UnixNano())
 	rng := rand.New(s1)

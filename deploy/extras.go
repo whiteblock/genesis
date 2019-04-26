@@ -40,7 +40,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 
 	_, hasDockerfile := prebuild["dockerfile"] //Must be base64
 	if !hasDockerfile {
-		return fmt.Errorf("Cannot build without being given a dockerfile")
+		return fmt.Errorf("cannot build without being given a dockerfile")
 	}
 
 	dockerfile, err := base64.StdEncoding.DecodeString(prebuild["dockerfile"].(string))
