@@ -14,12 +14,10 @@ import (
 	"log"
 )
 
-/*
-   AddNodes allows for nodes to be added to the network.
-   The nodes don't need to be of the same type of the original build.
-   It is worth noting that any missing information from the given
-   deployment details will be filled in from the origin build.
-*/
+// AddNodes allows for nodes to be added to the network.
+// The nodes don't need to be of the same type of the original build.
+// It is worth noting that any missing information from the given
+// deployment details will be filled in from the origin build.
 func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 	buildState, err := state.GetBuildStateById(testnetID)
 	if err != nil {
@@ -64,7 +62,7 @@ func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 		buildState.ReportError(err)
 		return err
 	}
-	var labels []string = nil
+	var labels []string
 	switch details.Blockchain {
 	case "eos":
 		labels, err = eos.Add(tn)

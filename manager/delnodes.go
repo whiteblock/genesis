@@ -8,15 +8,13 @@ import (
 	"log"
 )
 
-/*
-   DelNodes simply attempts to remove the given number of nodes from the
-   network.
-*/
-func DelNodes(num int, testnetId string) error {
+// DelNodes simply attempts to remove the given number of nodes from the
+// network.
+func DelNodes(num int, testnetID string) error {
 	//buildState := state.GetBuildStateByServerId(details.Servers[0])
 	//defer buildState.DoneBuilding()
 
-	nodes, err := db.GetAllNodesByTestNet(testnetId)
+	nodes, err := db.GetAllNodesByTestNet(testnetID)
 	if err != nil {
 		log.Println(err)
 		//buildState.ReportError(err)
@@ -29,7 +27,7 @@ func DelNodes(num int, testnetId string) error {
 		return err
 	}
 
-	servers, err := status.GetLatestServers(testnetId)
+	servers, err := status.GetLatestServers(testnetID)
 	if err != nil {
 		log.Println(err)
 		//buildState.ReportError(err)

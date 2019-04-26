@@ -1,8 +1,5 @@
-/*
-   Contains functions for managing the testnets.
-   Handles creating test nets, adding/removing nodes from testnets, and keeps track of the
-   ssh clients for each server
-*/
+// Package manager contains functions for managing the testnets.
+// Handles creating test nets, adding/removing nodes from testnets
 package manager
 
 import (
@@ -75,7 +72,7 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 	}
 	fmt.Println("Built the docker containers")
 
-	var labels []string = nil
+	var labels []string
 
 	switch details.Blockchain {
 	case "eos":
@@ -155,12 +152,10 @@ func DeleteTestNet(testnetID string) error {
 	return deploy.Destroy(tn)
 }
 
-/*
-   GetParams fetches the name and type of each availible
-   blockchain specific parameter for the given blockchain.
-   Ensure that the blockchain you have implemented is included
-   in the switch statement.
-*/
+// GetParams fetches the name and type of each availible
+// blockchain specific parameter for the given blockchain.
+// Ensure that the blockchain you have implemented is included
+// in the switch statement.
 func GetParams(blockchain string) ([]byte, error) {
 	if blockchain == "ethereum" {
 		return GetParams("geth")
@@ -168,11 +163,9 @@ func GetParams(blockchain string) ([]byte, error) {
 	return helpers.GetStaticBlockchainConfig(blockchain, "params.json")
 }
 
-/*
-   GetDefaults gets the default parameters for a blockchain. Ensure that
-   the blockchain you have implemented is included in the switch
-   statement.
-*/
+// GetDefaults gets the default parameters for a blockchain. Ensure that
+// the blockchain you have implemented is included in the switch
+// statement.
 func GetDefaults(blockchain string) ([]byte, error) {
 	if blockchain == "ethereum" {
 		return GetParams("geth")
