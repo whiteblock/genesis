@@ -15,6 +15,7 @@ import (
 
 const allowNoKeyAcess = true
 
+//GetKey gets the key information from the whiteblock API endpoint by key id
 func GetKey(kid string) (map[string]string, error) {
 	res, err := util.HTTPRequest("GET", "https://api.whiteblock.io/public/jwt-keys", "")
 	if err != nil {
@@ -36,7 +37,7 @@ func GetKey(kid string) (map[string]string, error) {
 	return nil, fmt.Errorf("could not find a matching entry for the kid")
 }
 
-func AuthN(next http.Handler) http.Handler {
+func authN(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		next.ServeHTTP(w, r) //bypass

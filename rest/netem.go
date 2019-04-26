@@ -25,7 +25,7 @@ func handleNet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nodes, err := db.GetAllNodesByTestNet(params["testnetId"])
+	nodes, err := db.GetAllNodesByTestNet(params["testnetID"])
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), 500)
@@ -56,7 +56,7 @@ func handleNetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nodes, err := db.GetAllNodesByTestNet(params["testnetId"])
+	nodes, err := db.GetAllNodesByTestNet(params["testnetID"])
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), 500)
@@ -75,7 +75,7 @@ func handleNetAll(w http.ResponseWriter, r *http.Request) {
 func stopNet(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	nodes, err := db.GetAllNodesByTestNet(params["testnetId"])
+	nodes, err := db.GetAllNodesByTestNet(params["testnetID"])
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), 500)
@@ -90,7 +90,7 @@ func stopNet(w http.ResponseWriter, r *http.Request) {
 func getNet(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	servers, err := status.GetLatestServers(params["testnetId"])
+	servers, err := status.GetLatestServers(params["testnetID"])
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
@@ -117,7 +117,7 @@ func getNet(w http.ResponseWriter, r *http.Request) {
 
 func removeOrAddOutage(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	testnetId := params["testnetId"]
+	testnetID := params["testnetID"]
 	nodeNum1, err := strconv.Atoi(params["node1"])
 	if err != nil {
 		log.Println(err)
@@ -132,7 +132,7 @@ func removeOrAddOutage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nodes, err := db.GetAllNodesByTestNet(testnetId)
+	nodes, err := db.GetAllNodesByTestNet(testnetID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
@@ -180,7 +180,7 @@ func partitionOutage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 400)
 		return
 	}
-	nodes, err := db.GetAllNodesByTestNet(params["testnetId"])
+	nodes, err := db.GetAllNodesByTestNet(params["testnetID"])
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
@@ -199,7 +199,7 @@ func partitionOutage(w http.ResponseWriter, r *http.Request) {
 func removeAllOutages(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	servers, err := status.GetLatestServers(params["testnetId"])
+	servers, err := status.GetLatestServers(params["testnetID"])
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
@@ -226,7 +226,7 @@ func removeAllOutages(w http.ResponseWriter, r *http.Request) {
 func getAllOutages(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	servers, err := status.GetLatestServers(params["testnetId"])
+	servers, err := status.GetLatestServers(params["testnetID"])
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
@@ -270,7 +270,7 @@ func getAllOutages(w http.ResponseWriter, r *http.Request) {
 
 func getAllPartitions(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	nodes, err := db.GetAllNodesByTestNet(params["testnetId"])
+	nodes, err := db.GetAllNodesByTestNet(params["testnetID"])
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)

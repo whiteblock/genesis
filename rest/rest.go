@@ -1,6 +1,4 @@
-/*
-	Implements the REST interface which is used to communicate with this module
-*/
+// Package rest implements the REST interface which is used to communicate with this module
 package rest
 
 import (
@@ -20,12 +18,10 @@ func init() {
 	conf = util.GetConfig()
 }
 
-/*
-	Starts the rest server, blocking the calling thread from returning
-*/
+// StartServer starts the rest server, blocking the calling thread from returning
 func StartServer() {
 	router := mux.NewRouter()
-	router.Use(AuthN)
+	router.Use(authN)
 	router.HandleFunc("/servers", getAllServerInfo).Methods("GET")
 	router.HandleFunc("/servers/", getAllServerInfo).Methods("GET")
 
@@ -45,8 +41,8 @@ func StartServer() {
 	router.HandleFunc("/testnets/{id}/nodes/", getTestNetNodes).Methods("GET")
 
 	/**Management Functions**/
-	router.HandleFunc("/status/nodes/{testnetId}", nodesStatus).Methods("GET")
-	router.HandleFunc("/status/nodes/{testnetId}/", nodesStatus).Methods("GET")
+	router.HandleFunc("/status/nodes/{testnetID}", nodesStatus).Methods("GET")
+	router.HandleFunc("/status/nodes/{testnetID}/", nodesStatus).Methods("GET")
 
 	router.HandleFunc("/status/build/{id}", buildStatus).Methods("GET")
 	router.HandleFunc("/status/build/{id}/", buildStatus).Methods("GET")
@@ -54,35 +50,35 @@ func StartServer() {
 	router.HandleFunc("/params/{blockchain}", getBlockChainParams).Methods("GET")
 	router.HandleFunc("/params/{blockchain}/", getBlockChainParams).Methods("GET")
 
-	router.HandleFunc("/state/{buildId}", getBlockChainState).Methods("GET")
-	router.HandleFunc("/state/{buildId}/", getBlockChainState).Methods("GET")
+	router.HandleFunc("/state/{buildID}", getBlockChainState).Methods("GET")
+	router.HandleFunc("/state/{buildID}/", getBlockChainState).Methods("GET")
 
 	router.HandleFunc("/defaults/{blockchain}", getBlockChainDefaults).Methods("GET")
 	router.HandleFunc("/defaults/{blockchain}/", getBlockChainDefaults).Methods("GET")
 
-	router.HandleFunc("/log/{testnetId}/{node}", getBlockChainLog).Methods("GET")
-	router.HandleFunc("/log/{testnetId}/{node}/", getBlockChainLog).Methods("GET")
+	router.HandleFunc("/log/{testnetID}/{node}", getBlockChainLog).Methods("GET")
+	router.HandleFunc("/log/{testnetID}/{node}/", getBlockChainLog).Methods("GET")
 
-	router.HandleFunc("/log/{testnetId}/{node}/{lines}", getBlockChainLog).Methods("GET")
-	router.HandleFunc("/log/{testnetId}/{node}/{lines}/", getBlockChainLog).Methods("GET")
+	router.HandleFunc("/log/{testnetID}/{node}/{lines}", getBlockChainLog).Methods("GET")
+	router.HandleFunc("/log/{testnetID}/{node}/{lines}/", getBlockChainLog).Methods("GET")
 
 	router.HandleFunc("/nodes/{id}", getTestNetNodes).Methods("GET")
 	router.HandleFunc("/nodes/{id}/", getTestNetNodes).Methods("GET")
 
-	router.HandleFunc("/nodes/{testnetid}", addNodes).Methods("POST")
-	router.HandleFunc("/nodes/{testnetid}/", addNodes).Methods("POST")
+	router.HandleFunc("/nodes/{testnetID}", addNodes).Methods("POST")
+	router.HandleFunc("/nodes/{testnetID}/", addNodes).Methods("POST")
 
 	router.HandleFunc("/nodes/{id}/{num}", delNodes).Methods("DELETE") //Completely remove x nodes
 	router.HandleFunc("/nodes/{id}/{num}/", delNodes).Methods("DELETE")
 
-	router.HandleFunc("/nodes/restart/{testnetid}/{num}", restartNode).Methods("POST")
-	router.HandleFunc("/nodes/restart/{testnetid}/{num}/", restartNode).Methods("POST")
+	router.HandleFunc("/nodes/restart/{testnetID}/{num}", restartNode).Methods("POST")
+	router.HandleFunc("/nodes/restart/{testnetID}/{num}/", restartNode).Methods("POST")
 
-	router.HandleFunc("/nodes/raise/{testnetid}/{node}/{signal}", signalNode).Methods("POST")
-	router.HandleFunc("/nodes/raise/{testnetid}/{node}/{signal}/", signalNode).Methods("POST")
+	router.HandleFunc("/nodes/raise/{testnetID}/{node}/{signal}", signalNode).Methods("POST")
+	router.HandleFunc("/nodes/raise/{testnetID}/{node}/{signal}/", signalNode).Methods("POST")
 
-	router.HandleFunc("/nodes/kill/{testnetid}/{node}", killNode).Methods("POST")
-	router.HandleFunc("/nodes/kill/{testnetid}/{node}/", killNode).Methods("POST")
+	router.HandleFunc("/nodes/kill/{testnetID}/{node}", killNode).Methods("POST")
+	router.HandleFunc("/nodes/kill/{testnetID}/{node}/", killNode).Methods("POST")
 
 	router.HandleFunc("/build/{id}", stopBuild).Methods("DELETE")
 	router.HandleFunc("/build/{id}/", stopBuild).Methods("DELETE")
@@ -101,17 +97,17 @@ func StartServer() {
 	router.HandleFunc("/build/freeze/{id}", thawBuild).Methods("DELETE")
 	router.HandleFunc("/build/freeze/{id}/", thawBuild).Methods("DELETE")
 
-	router.HandleFunc("/emulate/{testnetId}", getNet).Methods("GET")
-	router.HandleFunc("/emulate/{testnetId}/", getNet).Methods("GET")
+	router.HandleFunc("/emulate/{testnetID}", getNet).Methods("GET")
+	router.HandleFunc("/emulate/{testnetID}/", getNet).Methods("GET")
 
-	router.HandleFunc("/emulate/{testnetId}", stopNet).Methods("DELETE")
-	router.HandleFunc("/emulate/{testnetId}/", stopNet).Methods("DELETE")
+	router.HandleFunc("/emulate/{testnetID}", stopNet).Methods("DELETE")
+	router.HandleFunc("/emulate/{testnetID}/", stopNet).Methods("DELETE")
 
-	router.HandleFunc("/emulate/{testnetId}", handleNet).Methods("POST")
-	router.HandleFunc("/emulate/{testnetId}/", handleNet).Methods("POST")
+	router.HandleFunc("/emulate/{testnetID}", handleNet).Methods("POST")
+	router.HandleFunc("/emulate/{testnetID}/", handleNet).Methods("POST")
 
-	router.HandleFunc("/emulate/all/{testnetId}", handleNetAll).Methods("POST")
-	router.HandleFunc("/emulate/all/{testnetId}/", handleNetAll).Methods("POST")
+	router.HandleFunc("/emulate/all/{testnetID}", handleNetAll).Methods("POST")
+	router.HandleFunc("/emulate/all/{testnetID}/", handleNetAll).Methods("POST")
 
 	router.HandleFunc("/resources/{blockchain}", getConfFiles).Methods("GET")
 	router.HandleFunc("/resources/{blockchain}/", getConfFiles).Methods("GET")
@@ -119,39 +115,39 @@ func StartServer() {
 	router.HandleFunc("/resources/{blockchain}/{file}", getConfFile).Methods("GET")
 	router.HandleFunc("/resources/{blockchain}/{file}/", getConfFile).Methods("GET")
 
-	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}", removeOrAddOutage).Methods("POST")
-	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}/", removeOrAddOutage).Methods("POST")
+	router.HandleFunc("/outage/{testnetID}/{node1}/{node2}", removeOrAddOutage).Methods("POST")
+	router.HandleFunc("/outage/{testnetID}/{node1}/{node2}/", removeOrAddOutage).Methods("POST")
 
-	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}", removeOrAddOutage).Methods("DELETE")
-	router.HandleFunc("/outage/{testnetId}/{node1}/{node2}/", removeOrAddOutage).Methods("DELETE")
+	router.HandleFunc("/outage/{testnetID}/{node1}/{node2}", removeOrAddOutage).Methods("DELETE")
+	router.HandleFunc("/outage/{testnetID}/{node1}/{node2}/", removeOrAddOutage).Methods("DELETE")
 
-	router.HandleFunc("/outage/{testnetId}", removeAllOutages).Methods("DELETE")
-	router.HandleFunc("/outage/{testnetId}/", removeAllOutages).Methods("DELETE")
+	router.HandleFunc("/outage/{testnetID}", removeAllOutages).Methods("DELETE")
+	router.HandleFunc("/outage/{testnetID}/", removeAllOutages).Methods("DELETE")
 
-	router.HandleFunc("/outage/{testnetId}", getAllOutages).Methods("GET")
-	router.HandleFunc("/outage/{testnetId}/", getAllOutages).Methods("GET")
+	router.HandleFunc("/outage/{testnetID}", getAllOutages).Methods("GET")
+	router.HandleFunc("/outage/{testnetID}/", getAllOutages).Methods("GET")
 
-	router.HandleFunc("/outage/{testnetId}/{node}", getAllOutages).Methods("GET")
-	router.HandleFunc("/outage/{testnetId}/{node}/", getAllOutages).Methods("GET")
+	router.HandleFunc("/outage/{testnetID}/{node}", getAllOutages).Methods("GET")
+	router.HandleFunc("/outage/{testnetID}/{node}/", getAllOutages).Methods("GET")
 
-	router.HandleFunc("/outage/partition/{testnetId}", partitionOutage).Methods("POST")
-	router.HandleFunc("/outage/partition/{testnetId}/", partitionOutage).Methods("POST")
+	router.HandleFunc("/outage/partition/{testnetID}", partitionOutage).Methods("POST")
+	router.HandleFunc("/outage/partition/{testnetID}/", partitionOutage).Methods("POST")
 
-	router.HandleFunc("/partition/{testnetId}", getAllPartitions).Methods("GET")
-	router.HandleFunc("/partition/{testnetId}/", getAllPartitions).Methods("GET")
+	router.HandleFunc("/partition/{testnetID}", getAllPartitions).Methods("GET")
+	router.HandleFunc("/partition/{testnetID}/", getAllPartitions).Methods("GET")
 
 	http.ListenAndServe(conf.Listen, router)
 }
 
 func nodesStatus(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	testnetId, ok := params["testnetId"]
+	testnetID, ok := params["testnetID"]
 	if !ok {
 		http.Error(w, "Missing testnet id", 400)
 		return
 	}
 
-	nodes, err := db.GetAllNodesByTestNet(testnetId)
+	nodes, err := db.GetAllNodesByTestNet(testnetID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 400)
@@ -169,12 +165,12 @@ func nodesStatus(w http.ResponseWriter, r *http.Request) {
 
 func buildStatus(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	buildId, ok := params["id"]
+	buildID, ok := params["id"]
 	if !ok {
 		http.Error(w, "Missing build id", 400)
 		return
 	}
-	res, err := status.CheckBuildStatus(buildId)
+	res, err := status.CheckBuildStatus(buildID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
@@ -185,12 +181,12 @@ func buildStatus(w http.ResponseWriter, r *http.Request) {
 
 func stopBuild(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	buildId, ok := params["id"]
+	buildID, ok := params["id"]
 	if !ok {
 		http.Error(w, "Missing build id", 400)
 		return
 	}
-	err := state.SignalStop(buildId)
+	err := state.SignalStop(buildID)
 	if err != nil {
 		http.Error(w, err.Error(), 412)
 		return

@@ -78,9 +78,9 @@ func getTestNetNodes(w http.ResponseWriter, r *http.Request) {
 func addNodes(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	testnetId := params["testnetid"]
+	testnetID := params["testnetID"]
 
-	tn, err := db.GetBuildByTestnet(testnetId)
+	tn, err := db.GetBuildByTestnet(testnetID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Could not find the given testnet id", 400)
@@ -94,7 +94,7 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		//Ignore error and continue
 	}
-	bs, err := state.GetBuildStateByID(testnetId)
+	bs, err := state.GetBuildStateByID(testnetID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Testnet is down, build a new one", 409)
@@ -102,7 +102,7 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
 	}
 	bs.Reset()
 	w.Write([]byte("Adding the nodes"))
-	go manager.AddNodes(&tn, testnetId)
+	go manager.AddNodes(&tn, testnetID)
 }
 
 func delNodes(w http.ResponseWriter, r *http.Request) {
@@ -114,31 +114,31 @@ func delNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	testnetId := params["id"]
+	testnetID := params["id"]
 
-	tn, err := db.GetBuildByTestnet(testnetId)
+	tn, err := db.GetBuildByTestnet(testnetID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Could not find the given testnet id", 400)
 		return
 	}
 
-	err = state.AcquireBuilding(tn.Servers, testnetId) //TODO: THIS IS WRONG
+	err = state.AcquireBuilding(tn.Servers, testnetID) //TODO: THIS IS WRONG
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "There is a build in progress", 409)
 		return
 	}
 	w.Write([]byte("Deleting the nodes"))
-	go manager.DelNodes(num, testnetId)
+	go manager.DelNodes(num, testnetID)
 }
 
 func restartNode(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	testnetId := params["id"]
+	testnetID := params["id"]
 	node := params["num"]
-	log.Printf("%s %s\n", testnetId, node)
-	tn, err := testnet.RestoreTestNet(testnetId)
+	log.Printf("%s %s\n", testnetID, node)
+	tn, err := testnet.RestoreTestNet(testnetID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
@@ -192,7 +192,7 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 
 func signalNode(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	testnetID := params["testnetid"]
+	testnetID := params["testnetID"]
 	node := params["node"]
 	nodeNum, err := strconv.Atoi(node)
 	if err != nil {
@@ -245,10 +245,10 @@ func signalNode(w http.ResponseWriter, r *http.Request) {
 
 func killNode(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	testnetId := params["testnetid"]
+	testnetID := params["testnetID"]
 	node := params["node"]
-	log.Printf("%s %s\n", testnetId, node)
-	tn, err := testnet.RestoreTestNet(testnetId)
+	log.Printf("%s %s\n", testnetID, node)
+	tn, err := testnet.RestoreTestNet(testnetID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
