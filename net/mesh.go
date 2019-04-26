@@ -25,9 +25,7 @@ type Link struct {
 	Reorder     float64 `json:"reorder"`
 }
 
-/*
-   Create a calculator which can be used to calculate latency
-*/
+//GetDefaultCalculator creates a calculator which can be used to calculate latency
 func GetDefaultCalculator() *Calculator { //TODO: improve the equations
 	return &Calculator{
 		Loss: func(dist float64) float64 {
@@ -63,6 +61,8 @@ func GetDefaultCalculator() *Calculator { //TODO: improve the equations
 	}
 }
 
+// CreateLinks generates a naive representation of a mesh network, which includes
+// basic network impairments based on the distance between the points
 func CreateLinks(pnts []util.Point, c *Calculator) [][]Link {
 	if c == nil {
 		c = GetDefaultCalculator()

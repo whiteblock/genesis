@@ -1,19 +1,18 @@
 package netconf
 
-import (
-//"fmt"
-
-)
-
+//Connection represents a uni-directional connection
 type Connection struct {
 	To   int `json:"to"`
 	From int `json:"from"`
 }
 
+//Connections represents a graph of the network connections
 type Connections struct {
 	cons [][]bool //[from][to]
 }
 
+//NewConnections creates a Connections object with all connections marked
+//as open
 func NewConnections(nodes int) *Connections {
 	out := new(Connections)
 	out.cons = make([][]bool, nodes)
@@ -26,6 +25,8 @@ func NewConnections(nodes int) *Connections {
 	return out
 }
 
+//RemoveAll will mark all of the given connections as not
+//connected
 func (this *Connections) RemoveAll(conns []Connection) {
 	for _, conn := range conns {
 		this.cons[conn.From][conn.To] = false
@@ -85,6 +86,7 @@ func containsPeer(peers []int, peer int) bool {
 	return false
 }
 
+//Networks calculates the distinct, completely separate partitions in the network
 func (this *Connections) Networks() [][]int {
 	nodes := []int{}
 	nodesFinalized := []int{}
