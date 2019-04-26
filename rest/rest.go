@@ -38,9 +38,6 @@ func StartServer() {
 	router.HandleFunc("/testnets/", createTestNet).Methods("POST") //Create new test net
 	router.HandleFunc("/testnets", createTestNet).Methods("POST")  //Create new test net
 
-	router.HandleFunc("/testnets/{id}", getTestNetInfo).Methods("GET")
-	router.HandleFunc("/testnets/{id}/", getTestNetInfo).Methods("GET")
-
 	router.HandleFunc("/testnets/{id}", deleteTestNet).Methods("DELETE")
 	router.HandleFunc("/testnets/{id}/", deleteTestNet).Methods("DELETE")
 

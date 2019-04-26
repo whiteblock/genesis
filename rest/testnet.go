@@ -52,22 +52,6 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-
-	//log.Println(fmt.Sprintf("Attempting to find tn with id %d",id))
-	testNet, err := db.GetTestNet(params["id"])
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "Test net does not exist", 404)
-		return
-	}
-	err = json.NewEncoder(w).Encode(testNet)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
 func deleteTestNet(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	err := manager.DeleteTestNet(params["id"])
