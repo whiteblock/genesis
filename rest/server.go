@@ -1,7 +1,7 @@
 package rest
 
 import (
-	db "../db"
+	"../db"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"

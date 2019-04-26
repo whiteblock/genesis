@@ -1,7 +1,7 @@
 package rchain
 
 import (
-	util "../../util"
+	"../../util"
 	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
@@ -37,7 +37,7 @@ func NewRChainConf(data map[string]interface{}) (*RChainConf, error) {
 
 func GetServices() []util.Service {
 	return []util.Service{
-		util.Service{
+		{
 			Name:  "wb_influx_proxy",
 			Image: "gcr.io/wb-genesis/bitbucket.org/whiteblockio/influx-proxy:master",
 			Env: map[string]string{

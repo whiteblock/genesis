@@ -1,11 +1,11 @@
 package deploy
 
 import (
-	helpers "../blockchains/helpers"
-	db "../db"
+	"../blockchains/helpers"
+	"../db"
 	netem "../net"
-	ssh "../ssh"
-	testnet "../testnet"
+	"../ssh"
+	"../testnet"
 )
 
 /*

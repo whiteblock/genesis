@@ -9,9 +9,9 @@ func TestGetInfoFromIP(t *testing.T) {
 	conf.NodeBits = 2
 	conf.ClusterBits = 14
 	tests := map[string][]int{
-		"10.1.0.2":  []int{1, 0},
-		"10.27.0.6": []int{27, 1},
-		"10.0.0.10": []int{0, 2},
+		"10.1.0.2":  {1, 0},
+		"10.27.0.6": {27, 1},
+		"10.0.0.10": {0, 2},
 	}
 	for test, expected := range tests {
 		server, node := GetInfoFromIP(test)

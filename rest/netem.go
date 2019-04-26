@@ -1,9 +1,9 @@
 package rest
 
 import (
-	db "../db"
+	"../db"
 	netem "../net"
-	status "../status"
+	"../status"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"

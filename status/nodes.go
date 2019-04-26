@@ -1,9 +1,9 @@
 package status
 
 import (
-	db "../db"
-	ssh "../ssh"
-	util "../util"
+	"../db"
+	"../ssh"
+	"../util"
 	"fmt"
 	"log"
 	"strconv"

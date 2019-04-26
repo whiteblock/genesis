@@ -1,12 +1,12 @@
 package rchain
 
 import (
-	db "../../db"
-	ssh "../../ssh"
-	state "../../state"
-	testnet "../../testnet"
-	util "../../util"
-	helpers "../helpers"
+	"../../db"
+	"../../ssh"
+	"../../state"
+	"../../testnet"
+	"../../util"
+	"../helpers"
 	"fmt"
 	"github.com/Whiteblock/mustache"
 	"log"
@@ -56,7 +56,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	km, err := helpers.NewKeyMaster(tn.LDD, "rchain")
 	keyPairs := make([]util.KeyPair, tn.LDD.Nodes)
 
-	for i, _ := range keyPairs {
+	for i := range keyPairs {
 		keyPairs[i], err = km.GetKeyPair(clients[0])
 		if err != nil {
 			log.Println(err)

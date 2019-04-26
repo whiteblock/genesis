@@ -1,9 +1,9 @@
 package helpers
 
 import (
-	db "../../db"
-	ssh "../../ssh"
-	util "../../util"
+	"../../db"
+	"../../ssh"
+	"../../util"
 	"encoding/json"
 	"fmt"
 	"log"

@@ -17,7 +17,7 @@ type Point struct {
 */
 func Distances(pnts []Point) [][]float64 {
 	out := make([][]float64, len(pnts))
-	for i, _ := range pnts {
+	for i := range pnts {
 		out[i] = make([]float64, len(pnts))
 	}
 
@@ -51,7 +51,7 @@ func Distribute(nodes []string, dist []int) ([][]string, error) {
 	r1 := rand.New(s1)
 
 	out := [][]string{}
-	for i, _ := range nodes {
+	for i := range nodes {
 		conns := []string{}
 		for j := 0; j < dist[i]; j++ {
 			newConnIndex := r1.Intn(len(nodes))

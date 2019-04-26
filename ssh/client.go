@@ -1,8 +1,8 @@
 package ssh
 
 import (
-	state "../state"
-	util "../util"
+	"../state"
+	"../util"
 	"context"
 	"fmt"
 	"github.com/Whiteblock/scp"

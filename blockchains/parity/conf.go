@@ -1,9 +1,9 @@
 package parity
 
 import (
-	db "../../db"
-	util "../../util"
-	helpers "../helpers"
+	"../../db"
+	"../../util"
+	"../helpers"
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/mustache"
@@ -99,7 +99,7 @@ func GetDefaults() string {
 
 func GetServices() []util.Service {
 	return []util.Service{
-		util.Service{
+		{
 			Name:  "Geth",
 			Image: "gcr.io/whiteblock/ethereum:latest",
 			Env:   nil,

@@ -1,9 +1,9 @@
 package deploy
 
 import (
-	db "../db"
-	testnet "../testnet"
-	util "../util"
+	"../db"
+	"../testnet"
+	"../util"
 	"fmt"
 	"log"
 	"sync"
@@ -22,7 +22,7 @@ func AddNodes(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Provisioning the nodes")
 
 	availibleServers := make([]int, len(tn.Servers))
-	for i, _ := range availibleServers {
+	for i := range availibleServers {
 		availibleServers[i] = i
 	}
 	index := 0

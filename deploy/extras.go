@@ -1,11 +1,11 @@
 package deploy
 
 import (
-	helpers "../blockchains/helpers"
-	db "../db"
-	ssh "../ssh"
-	testnet "../testnet"
-	util "../util"
+	"../blockchains/helpers"
+	"../db"
+	"../ssh"
+	"../testnet"
+	"../util"
 	"encoding/base64"
 	"fmt"
 	"log"

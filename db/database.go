@@ -4,14 +4,14 @@ Package db manages persistent state and keeps track of previous and current buil
 package db
 
 import (
-	util "../util"
+	"../util"
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //needed for db
 	"os"
 )
 
-var dataLoc string = os.Getenv("HOME") + "/.config/whiteblock/.gdata"
+var dataLoc = os.Getenv("HOME") + "/.config/whiteblock/.gdata"
 
 //ServerTable contains name of the server table
 const ServerTable string = "servers"

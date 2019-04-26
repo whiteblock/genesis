@@ -1,10 +1,10 @@
 package helpers
 
 import (
-	db "../../db"
-	ssh "../../ssh"
-	testnet "../../testnet"
-	util "../../util"
+	"../../db"
+	"../../ssh"
+	"../../testnet"
+	"../../util"
 	"log"
 	"sync"
 )

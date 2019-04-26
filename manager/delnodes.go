@@ -1,9 +1,9 @@
 package manager
 
 import (
-	db "../db"
-	deploy "../deploy"
-	status "../status"
+	"../db"
+	"../deploy"
+	"../status"
 	"fmt"
 	"log"
 )

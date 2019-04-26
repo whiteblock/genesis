@@ -4,10 +4,10 @@
 package rest
 
 import (
-	db "../db"
-	state "../state"
-	status "../status"
-	util "../util"
+	"../db"
+	"../state"
+	"../status"
+	"../util"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"log"

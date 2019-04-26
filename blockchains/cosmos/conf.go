@@ -1,8 +1,8 @@
 package cosmos
 
 import (
-	util "../../util"
-	helpers "../helpers"
+	"../../util"
+	"../helpers"
 )
 
 func GetParams() string {

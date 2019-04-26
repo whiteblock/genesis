@@ -1,7 +1,7 @@
 package geth
 
 import (
-	util "../../util"
+	"../../util"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -103,7 +103,7 @@ func GetDefaults() string {
 
 func GetServices() []util.Service {
 	return []util.Service{
-		util.Service{
+		{
 			Name:    "ethNetStats",
 			Image:   "gcr.io/whiteblock/ethnetstats:dev",
 			Env:     nil,

@@ -1,8 +1,8 @@
 package status
 
 import (
-	db "../db"
-	ssh "../ssh"
+	"../db"
+	"../ssh"
 	"log"
 	"sync"
 )

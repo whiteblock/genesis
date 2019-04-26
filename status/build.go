@@ -4,7 +4,7 @@ Handles functions related to the current state of the network
 package status
 
 import (
-	state "../state"
+	"../state"
 	"log"
 )
 

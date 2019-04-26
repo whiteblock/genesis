@@ -1,11 +1,11 @@
 package rest
 
 import (
-	db "../db"
-	manager "../manager"
-	state "../state"
-	status "../status"
-	util "../util"
+	"../db"
+	"../manager"
+	"../state"
+	"../status"
+	"../util"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"

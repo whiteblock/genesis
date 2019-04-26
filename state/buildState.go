@@ -4,7 +4,7 @@
 package state
 
 import (
-	db "../db"
+	"../db"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"

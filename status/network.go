@@ -1,7 +1,7 @@
 package status
 
 import (
-	db "../db"
+	"../db"
 	"github.com/Whiteblock/go.uuid"
 	"log"
 )
@@ -49,7 +49,7 @@ func GetLatestServers(testnetId string) ([]db.Server, error) {
 		return nil, err
 	}
 	for _, node := range nodes {
-		for i, _ := range servers {
+		for i := range servers {
 			if servers[i].Ips == nil {
 				servers[i].Ips = []string{}
 			}

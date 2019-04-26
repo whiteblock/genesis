@@ -6,26 +6,26 @@
 package manager
 
 import (
-	artemis "../blockchains/artemis"
-	beam "../blockchains/beam"
-	cosmos "../blockchains/cosmos"
-	eos "../blockchains/eos"
-	geth "../blockchains/geth"
-	helpers "../blockchains/helpers"
-	pantheon "../blockchains/pantheon"
-	parity "../blockchains/parity"
-	rchain "../blockchains/rchain"
+	"../blockchains/artemis"
+	"../blockchains/beam"
+	"../blockchains/cosmos"
+	"../blockchains/eos"
+	"../blockchains/geth"
+	"../blockchains/helpers"
+	"../blockchains/pantheon"
+	"../blockchains/parity"
+	"../blockchains/rchain"
 	sys "../blockchains/syscoin"
-	tendermint "../blockchains/tendermint"
+	"../blockchains/tendermint"
 	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
-	db "../db"
-	deploy "../deploy"
-	testnet "../testnet"
-	util "../util"
+	"../db"
+	"../deploy"
+	"../testnet"
+	"../util"
 )
 
 var conf *util.Config

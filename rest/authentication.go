@@ -7,7 +7,7 @@ import (
 	"net/http"
 	//"strings"
 
-	util "../util"
+	"../util"
 	//"crypto/x509"
 	//"encoding/pem"
 	//"github.com/Whiteblock/jwt-go"
@@ -33,7 +33,7 @@ func GetKey(kid string) (map[string]string, error) {
 			return keys[i], nil
 		}
 	}
-	return nil, fmt.Errorf("Could not find a matching entry for the kid")
+	return nil, fmt.Errorf("could not find a matching entry for the kid")
 }
 
 func AuthN(next http.Handler) http.Handler {

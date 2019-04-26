@@ -1,7 +1,7 @@
 package tendermint
 
 import (
-	util "../../util"
+	"../../util"
 	"io/ioutil"
 )
 

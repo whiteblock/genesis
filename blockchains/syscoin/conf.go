@@ -1,7 +1,7 @@
 package syscoin
 
 import (
-	util "../../util"
+	"../../util"
 	"encoding/json"
 	"io/ioutil"
 	"log"

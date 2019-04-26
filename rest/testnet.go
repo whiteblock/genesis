@@ -1,12 +1,12 @@
 package rest
 
 import (
-	db "../db"
-	manager "../manager"
-	state "../state"
-	status "../status"
-	testnet "../testnet"
-	util "../util"
+	"../db"
+	"../manager"
+	"../state"
+	"../status"
+	"../testnet"
+	"../util"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"

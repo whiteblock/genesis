@@ -1,7 +1,7 @@
 package pantheon
 
 import (
-	util "../../util"
+	"../../util"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -111,7 +111,7 @@ func GetDefaults() string {
 
 func GetServices() []util.Service {
 	return []util.Service{
-		util.Service{ //Include a geth node for transaction signing
+		{ //Include a geth node for transaction signing
 			Name:  "geth",
 			Image: "gcr.io/whiteblock/geth:master",
 			Env:   nil,

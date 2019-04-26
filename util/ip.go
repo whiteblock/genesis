@@ -21,7 +21,7 @@ func InetNtoa(ip uint32) string {
 		(ip&(0x0FF<<0x018))>>0x018,
 		(ip&(0x0FF<<0x010))>>0x010,
 		(ip&(0x0FF<<0x08))>>0x08,
-		(ip & 0x0FF))
+		ip & 0x0FF)
 }
 
 /*
@@ -29,9 +29,9 @@ func InetNtoa(ip uint32) string {
    the current IP scheme
 */
 func GetNodeIP(server int, node int) string {
-	var ip uint32 = conf.IPPrefix << (conf.NodeBits + conf.ClusterBits + conf.ServerBits)
-	var clusterShift uint32 = conf.NodeBits
-	var serverShift uint32 = conf.NodeBits + conf.ClusterBits
+	var ip = conf.IPPrefix << (conf.NodeBits + conf.ClusterBits + conf.ServerBits)
+	var clusterShift = conf.NodeBits
+	var serverShift = conf.NodeBits + conf.ClusterBits
 	var clusterLast uint32 = (1 << conf.ClusterBits) - 1
 	//set server bits
 	ip += uint32(server) << serverShift
@@ -76,7 +76,7 @@ func GetInfoFromIP(ipStr string) (int, int) {
    base on the current IP scheme
 */
 func GetGateway(server int, node int) string {
-	var ip uint32 = conf.IPPrefix << (conf.NodeBits + conf.ClusterBits + conf.ServerBits)
+	var ip = conf.IPPrefix << (conf.NodeBits + conf.ClusterBits + conf.ServerBits)
 	clusterShift := conf.NodeBits
 	serverShift := conf.NodeBits + conf.ClusterBits
 	//set server bits
@@ -114,8 +114,8 @@ func GetSubnet() int {
    GetWholeNetworkIp gets the network ip of the whole network for a server.
 */
 func GetWholeNetworkIp(server int) string {
-	var ip uint32 = conf.IPPrefix << (conf.NodeBits + conf.ClusterBits + conf.ServerBits)
-	var serverShift uint32 = conf.NodeBits + conf.ClusterBits
+	var ip = conf.IPPrefix << (conf.NodeBits + conf.ClusterBits + conf.ServerBits)
+	var serverShift = conf.NodeBits + conf.ClusterBits
 	//set server bits
 	ip += uint32(server) << serverShift
 	return InetNtoa(ip)
@@ -125,7 +125,7 @@ func GetWholeNetworkIp(server int) string {
    GetNetworkAddress gets the network address of the cluster the given node belongs to.
 */
 func GetNetworkAddress(server int, node int) string {
-	var ip uint32 = conf.IPPrefix << (conf.NodeBits + conf.ClusterBits + conf.ServerBits)
+	var ip = conf.IPPrefix << (conf.NodeBits + conf.ClusterBits + conf.ServerBits)
 	clusterShift := conf.NodeBits
 	serverShift := conf.NodeBits + conf.ClusterBits
 	//set server bits

@@ -1,7 +1,7 @@
 package db
 
 import (
-	util "../util"
+	"../util"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"log"

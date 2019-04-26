@@ -1,9 +1,9 @@
 package artemis
 
 import (
-	db "../../db"
-	util "../../util"
-	helpers "../helpers"
+	"../../db"
+	"../../util"
+	"../helpers"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -53,7 +53,7 @@ func GetDefaults() string {
 
 func GetServices() []util.Service {
 	return []util.Service{
-		util.Service{
+		{
 			Name:  "wb_influx_proxy",
 			Image: "gcr.io/wb-genesis/bitbucket.org/whiteblockio/influx-proxy:master",
 			Env: map[string]string{

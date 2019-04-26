@@ -1,9 +1,9 @@
 package eos
 
 import (
-	db "../../db"
-	util "../../util"
-	helpers "../helpers"
+	"../../db"
+	"../../util"
+	"../helpers"
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/mustache"

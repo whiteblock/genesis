@@ -1,10 +1,10 @@
 package netconf
 
 import (
-	db "../db"
-	ssh "../ssh"
-	status "../status"
-	util "../util"
+	"../db"
+	"../ssh"
+	"../status"
+	"../util"
 	"fmt"
 	"log"
 	"strconv"

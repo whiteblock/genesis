@@ -1,11 +1,11 @@
 package helpers
 
 import (
-	db "../../db"
-	ssh "../../ssh"
-	state "../../state"
-	testnet "../../testnet"
-	util "../../util"
+	"../../db"
+	"../../ssh"
+	"../../state"
+	"../../testnet"
+	"../../util"
 	"fmt"
 	"log"
 	"sync"

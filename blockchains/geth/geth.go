@@ -1,12 +1,12 @@
 package geth
 
 import (
-	db "../../db"
-	ssh "../../ssh"
-	state "../../state"
-	testnet "../../testnet"
-	util "../../util"
-	helpers "../helpers"
+	"../../db"
+	"../../ssh"
+	"../../state"
+	"../../testnet"
+	"../../util"
+	"../helpers"
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/mustache"

@@ -1,11 +1,11 @@
 package beam
 
 import (
-	db "../../db"
-	ssh "../../ssh"
-	testnet "../../testnet"
-	util "../../util"
-	helpers "../helpers"
+	"../../db"
+	"../../ssh"
+	"../../testnet"
+	"../../util"
+	"../helpers"
 	"fmt"
 	"log"
 	"regexp"

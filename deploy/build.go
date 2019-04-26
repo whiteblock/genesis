@@ -1,15 +1,15 @@
 package deploy
 
 import (
-	db "../db"
-	testnet "../testnet"
-	util "../util"
+	"../db"
+	"../testnet"
+	"../util"
 	"fmt"
 	"log"
 	"sync"
 )
 
-var conf *util.Config = util.GetConfig()
+var conf = util.GetConfig()
 
 func BuildNode(tn *testnet.TestNet, server *db.Server, absNum int, relNum int) {
 	tn.BuildState.OnError(func() {
@@ -70,7 +70,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 	tn.BuildState.SetBuildStage("Provisioning the nodes")
 
 	availibleServers := make([]int, len(tn.Servers))
-	for i, _ := range availibleServers {
+	for i := range availibleServers {
 		availibleServers[i] = i
 	}
 

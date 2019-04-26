@@ -1,11 +1,11 @@
 package tendermint
 
 import (
-	db "../../db"
-	ssh "../../ssh"
-	testnet "../../testnet"
-	util "../../util"
-	helpers "../helpers"
+	"../../db"
+	"../../ssh"
+	"../../testnet"
+	"../../util"
+	"../helpers"
 	"encoding/json"
 	"fmt"
 	"log"

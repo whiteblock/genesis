@@ -4,10 +4,10 @@
 package netconf
 
 import (
-	db "../db"
-	ssh "../ssh"
-	status "../status"
-	util "../util"
+	"../db"
+	"../ssh"
+	"../status"
+	"../util"
 	"fmt"
 	"log"
 	"regexp"
@@ -29,7 +29,7 @@ import (
 [ rate RATE [PACKETOVERHEAD] [CELLSIZE] [CELLOVERHEAD]]
 */
 
-var conf *util.Config = util.GetConfig()
+var conf = util.GetConfig()
 
 type Netconf struct {
 	Node        int     `json:"node"`

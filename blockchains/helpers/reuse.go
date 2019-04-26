@@ -1,9 +1,9 @@
 package helpers
 
 import (
-	db "../../db"
-	ssh "../../ssh"
-	state "../../state"
+	"../../db"
+	"../../ssh"
+	"../../state"
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"

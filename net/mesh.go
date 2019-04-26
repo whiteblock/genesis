@@ -1,7 +1,7 @@
 package netconf
 
 import (
-	util "../util"
+	"../util"
 	"math"
 )
 

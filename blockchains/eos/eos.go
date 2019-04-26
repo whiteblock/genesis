@@ -1,11 +1,11 @@
 package eos
 
 import (
-	db "../../db"
-	ssh "../../ssh"
-	testnet "../../testnet"
-	util "../../util"
-	helpers "../helpers"
+	"../../db"
+	"../../ssh"
+	"../../testnet"
+	"../../util"
+	"../helpers"
 	"context"
 	"fmt"
 	"golang.org/x/sync/semaphore"

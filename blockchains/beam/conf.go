@@ -1,9 +1,9 @@
 package beam
 
 import (
-	db "../../db"
-	util "../../util"
-	helpers "../helpers"
+	"../../db"
+	"../../util"
+	"../helpers"
 	"github.com/Whiteblock/mustache"
 	"io/ioutil"
 )

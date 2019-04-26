@@ -1,8 +1,8 @@
 package manager
 
 import (
-	db "../db"
-	util "../util"
+	"../db"
+	"../util"
 	"fmt"
 	"log"
 )

@@ -1,8 +1,8 @@
 package main
 
 import (
-	rest "./rest"
-	util "./util"
+	"./rest"
+	"./util"
 	"log"
 )
 

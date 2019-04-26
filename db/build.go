@@ -1,7 +1,7 @@
 package db
 
 import (
-	util "../util"
+	"../util"
 	"encoding/json"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //Bring db in
@@ -149,7 +149,7 @@ func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 		return DeploymentDetails{}, err
 	}
 	if len(details) == 0 {
-		return DeploymentDetails{}, fmt.Errorf("No results found")
+		return DeploymentDetails{}, fmt.Errorf("no results found")
 	}
 	return details[0], nil
 }
@@ -167,7 +167,7 @@ func GetLastBuildByKid(kid string) (DeploymentDetails, error) {
 		return DeploymentDetails{}, err
 	}
 	if len(details) == 0 {
-		return DeploymentDetails{}, fmt.Errorf("No results found")
+		return DeploymentDetails{}, fmt.Errorf("no results found")
 	}
 	return details[0], nil
 }

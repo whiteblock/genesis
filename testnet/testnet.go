@@ -1,10 +1,10 @@
 package testnet
 
 import (
-	db "../db"
-	ssh "../ssh"
-	state "../state"
-	status "../status"
+	"../db"
+	"../ssh"
+	"../state"
+	"../status"
 	"encoding/json"
 	"fmt"
 	"log"

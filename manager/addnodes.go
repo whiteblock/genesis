@@ -1,15 +1,15 @@
 package manager
 
 import (
-	beam "../blockchains/beam"
-	eos "../blockchains/eos"
-	geth "../blockchains/geth"
-	rchain "../blockchains/rchain"
+	"../blockchains/beam"
+	"../blockchains/eos"
+	"../blockchains/geth"
+	"../blockchains/rchain"
 	sys "../blockchains/syscoin"
-	db "../db"
-	deploy "../deploy"
-	state "../state"
-	testnet "../testnet"
+	"../db"
+	"../deploy"
+	"../state"
+	"../testnet"
 	"fmt"
 	"log"
 )
@@ -54,8 +54,8 @@ func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 	}
 
 	if details.Nodes > conf.MaxNodes {
-		buildState.ReportError(fmt.Errorf("Too many nodes"))
-		return fmt.Errorf("Too many nodes")
+		buildState.ReportError(fmt.Errorf("too many nodes"))
+		return fmt.Errorf("too many nodes")
 	}
 
 	err = deploy.AddNodes(tn)
@@ -106,8 +106,8 @@ func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 	case "generic":
 		log.Println("Built in generic mode")
 	default:
-		buildState.ReportError(fmt.Errorf("Unknown blockchain"))
-		return fmt.Errorf("Unknown blockchain")
+		buildState.ReportError(fmt.Errorf("unknown blockchain"))
+		return fmt.Errorf("unknown blockchain")
 	}
 	err = tn.StoreNodes(labels)
 	if err != nil {

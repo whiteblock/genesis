@@ -1,13 +1,13 @@
 package deploy
 
 import (
-	helpers "../blockchains/helpers"
-	db "../db"
-	ssh "../ssh"
-	state "../state"
-	status "../status"
-	testnet "../testnet"
-	util "../util"
+	"../blockchains/helpers"
+	"../db"
+	"../ssh"
+	"../state"
+	"../status"
+	"../testnet"
+	"../util"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
