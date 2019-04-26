@@ -130,7 +130,7 @@ func declareNode(node *db.Node, tn *testnet.TestNet) error {
 
 	data := map[string]interface{}{
 		"id":         node.ID,
-		"ip_address": node.Ip,
+		"ip_address": node.IP,
 		"image":      image,
 		"kind":       tn.LDD.Blockchain,
 		"version":    "unknown",

@@ -180,7 +180,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	for i, node := range tn.Nodes {
 		enodeAddress = fmt.Sprintf("enode://%s@%s:%d",
 			pubKeys[i],
-			node.Ip,
+			node.IP,
 			p2pPort)
 		if i < len(pubKeys)-1 {
 			enodes = enodes + "\"" + enodeAddress + "\"" + ","

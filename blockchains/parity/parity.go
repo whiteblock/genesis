@@ -148,7 +148,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		enode := ""
 		for len(enode) == 0 {
-			ip := tn.Nodes[absoluteNodeNum].Ip
+			ip := tn.Nodes[absoluteNodeNum].IP
 			res, err := client.KeepTryRun(
 				fmt.Sprintf(
 					`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json" `+
@@ -206,7 +206,7 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 
 func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 	return helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, _ int, absoluteNodeNum int) error {
-		ip := tn.Nodes[absoluteNodeNum].Ip
+		ip := tn.Nodes[absoluteNodeNum].IP
 		for i, enode := range enodes {
 			if i == absoluteNodeNum {
 				continue

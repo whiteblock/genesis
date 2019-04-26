@@ -42,7 +42,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	mux := sync.Mutex{}
 	err := helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		ip := tn.Nodes[absoluteNodeNum].Ip
+		ip := tn.Nodes[absoluteNodeNum].IP
 		//init everything
 		_, err := client.DockerExec(localNodeNum, "tendermint init")
 		if err != nil {

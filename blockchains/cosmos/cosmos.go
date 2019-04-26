@@ -72,7 +72,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	mux := sync.Mutex{}
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		ip := tn.Nodes[absoluteNodeNum].Ip
+		ip := tn.Nodes[absoluteNodeNum].IP
 		if absoluteNodeNum != 0 {
 			//init everything
 			_, err := client.DockerExec(localNodeNum, "gaiad init --chain-id=whiteblock whiteblock")

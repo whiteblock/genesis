@@ -104,7 +104,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	{
 		err = clients[0].DockerExecdLog(0,
 			fmt.Sprintf("%s run --standalone --data-dir \"/datadir\" --host %s --bonds-file /bonds.txt --has-faucet",
-				rchainConf.Command, tn.Nodes[0].Ip))
+				rchainConf.Command, tn.Nodes[0].IP))
 		buildState.IncrementBuildProgress()
 		if err != nil {
 			log.Println(err)
@@ -163,7 +163,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		if absoluteNodeNum == 0 {
 			return nil
 		}
-		ip := tn.Nodes[absoluteNodeNum].Ip
+		ip := tn.Nodes[absoluteNodeNum].IP
 		mux.Lock()
 		isValidator := validators < rchainConf.Validators
 		validators++
@@ -281,7 +281,7 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 	mux := sync.Mutex{}
 	err = helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		ip := tn.Nodes[absoluteNodeNum].Ip
+		ip := tn.Nodes[absoluteNodeNum].IP
 
 		mux.Lock()
 		isValidator := validators < rchainConf.Validators

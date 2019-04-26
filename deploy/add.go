@@ -52,7 +52,7 @@ func AddNodes(tn *testnet.TestNet) error {
 
 		absNum := tn.AddNode(db.Node{
 			ID: nodeID, TestNetID: tn.TestNetID, Server: serverID,
-			LocalID: tn.Servers[serverIndex].Nodes, Ip: util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes))})
+			LocalID: tn.Servers[serverIndex].Nodes, IP: util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes))})
 
 		tn.Servers[serverIndex].Nodes++
 

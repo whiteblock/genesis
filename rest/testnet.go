@@ -43,7 +43,7 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tn.SetJwt(jwt)
-	id, err := status.GetNextTestNetId()
+	id, err := util.GetUUIDString()
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Error Generating a new UUID", 500)

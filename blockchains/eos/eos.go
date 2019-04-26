@@ -53,7 +53,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	ctx := context.TODO()
 	mux := sync.Mutex{}
 
-	masterIP := tn.Nodes[0].Ip
+	masterIP := tn.Nodes[0].IP
 	masterServerIP := tn.Servers[0].Addr
 
 	clientPasswords := make(map[string]string)
@@ -101,7 +101,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 	buildState.IncrementBuildProgress()
 
-	masterKeyPair := keyPairs[tn.Nodes[0].Ip]
+	masterKeyPair := keyPairs[tn.Nodes[0].IP]
 
 	var accountNames []string
 	for i := 0; i < int(eosconf.UserAccounts); i++ {
@@ -119,7 +119,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		/**Start keosd**/
-		ip := tn.Nodes[absoluteNodeNum].Ip
+		ip := tn.Nodes[absoluteNodeNum].IP
 		_, err = client.DockerExecd(localNodeNum, "keosd --http-server-address 0.0.0.0:8900")
 		if err != nil {
 			log.Println(err)
@@ -160,7 +160,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	})
 
 	password := clientPasswords[masterIP]
-	passwordNormal := clientPasswords[tn.Nodes[1].Ip]
+	passwordNormal := clientPasswords[tn.Nodes[1].IP]
 	buildState.IncrementBuildProgress()
 
 	buildState.SetBuildStage("Building genesis block")
@@ -316,7 +316,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		if absoluteNodeNum == 0 || absoluteNodeNum > int(eosconf.BlockProducers) {
 			return nil
 		}
-		keyPair := keyPairs[tn.Nodes[absoluteNodeNum].Ip]
+		keyPair := keyPairs[tn.Nodes[absoluteNodeNum].IP]
 
 		_, err = clients[0].DockerExec(0, fmt.Sprintf("cleos wallet import --private-key %s", keyPair.PrivateKey)) //ignore return
 		if err != nil {
@@ -351,7 +351,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		if absoluteNodeNum == 0 {
 			return nil
 		}
-		ip := tn.Nodes[absoluteNodeNum].Ip
+		ip := tn.Nodes[absoluteNodeNum].IP
 		kp := keyPairs[ip]
 
 		client.DockerExec(localNodeNum, "mkdir -p /datadir/blocks")
@@ -388,7 +388,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		if absoluteNodeNum == 0 || absoluteNodeNum > int(eosconf.BlockProducers) {
 			return nil
 		}
-		ip := tn.Nodes[absoluteNodeNum].Ip
+		ip := tn.Nodes[absoluteNodeNum].IP
 		if absoluteNodeNum%5 == 0 {
 			clients[0].DockerExec(0, fmt.Sprintf("cleos -u http://%s:8889 wallet unlock --password %s",
 				masterIP, password)) //ignore
@@ -554,7 +554,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	out := []string{}
 
 	for _, node := range tn.Nodes {
-		out = append(out, clientPasswords[node.Ip])
+		out = append(out, clientPasswords[node.IP])
 	}
 
 	buildState.IncrementBuildProgress()
@@ -626,7 +626,7 @@ func eos_getPTPFlags(nodes []db.Node, exclude int) string {
 		if i == exclude {
 			continue
 		}
-		flags += fmt.Sprintf("--p2p-peer-address %s:8999 ", node.Ip)
+		flags += fmt.Sprintf("--p2p-peer-address %s:8999 ", node.IP)
 	}
 	return flags
 }

@@ -35,31 +35,49 @@ type DeploymentDetails struct {
 	/*
 	   Resources: The resources per node
 	*/
-	Resources    []util.Resources       `json:"resources"`
-	Environments []map[string]string    `json:"environments"`
-	Files        []map[string]string    `json:"files"`
-	Logs         []map[string]string    `json:"logs"`
-	Extras       map[string]interface{} `json:"extras"`
-	jwt          string
-	kid          string
+	Resources []util.Resources `json:"resources"`
+	/*
+		Environments is the environment variables to be passed to each node.
+		If it doesn't exist for a node, it defaults first to index 0.
+	*/
+	Environments []map[string]string `json:"environments"`
+	/*
+		Custom files for each node
+	*/
+	Files []map[string]string `json:"files"`
+	/*
+		Logs to keep track of for each node
+	*/
+	Logs []map[string]string `json:"logs"`
+
+	/*
+		Fairly Arbitrary extras for when additional customizations are added.
+	*/
+	Extras map[string]interface{} `json:"extras"`
+	jwt    string
+	kid    string
 }
 
-func (this *DeploymentDetails) SetJwt(jwt string) error {
-	this.jwt = jwt
-	kid, err := util.GetKidFromJwt(this.GetJwt())
+//SetJwt stores the callers jwt
+func (dd *DeploymentDetails) SetJwt(jwt string) error {
+	dd.jwt = jwt
+	kid, err := util.GetKidFromJwt(dd.GetJwt())
 
-	this.kid = kid
+	dd.kid = kid
 	return err
 }
 
-func (this DeploymentDetails) GetJwt() string {
-	return this.jwt
+//GetJwt gets the jwt of the creator of this build
+func (dd DeploymentDetails) GetJwt() string {
+	return dd.jwt
 }
 
-func (this DeploymentDetails) GetKid() string {
-	return this.kid
+//GetKid gets the kid of the jwt of the creator of this build
+func (dd DeploymentDetails) GetKid() string {
+	return dd.kid
 }
 
+//QueryBuilds fetches DeploymentDetails based on the given SQL select query
 func QueryBuilds(query string) ([]DeploymentDetails, error) {
 	rows, err := db.Query(query)
 	if err != nil {
@@ -154,9 +172,7 @@ func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 	return details[0], nil
 }
 
-/*
-GetBuildByTestnet gets the build paramters based off testnet id
-*/
+//GetLastBuildByKid gets the build paramters based off kid
 func GetLastBuildByKid(kid string) (DeploymentDetails, error) {
 
 	details, err := QueryBuilds(fmt.Sprintf(
@@ -172,9 +188,7 @@ func GetLastBuildByKid(kid string) (DeploymentDetails, error) {
 	return details[0], nil
 }
 
-/*
-InsertBuild inserts a build
-*/
+//InsertBuild inserts a build
 func InsertBuild(dd DeploymentDetails, testnetID string) error {
 
 	tx, err := db.Begin()

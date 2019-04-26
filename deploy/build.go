@@ -99,7 +99,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 
 		tn.AddNode(db.Node{
 			ID: nodeID, TestNetID: tn.TestNetID, Server: serverID,
-			LocalID: tn.Servers[serverIndex].Nodes, Ip: util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes))})
+			LocalID: tn.Servers[serverIndex].Nodes, IP: util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes))})
 		tn.Servers[serverIndex].Ips = append(tn.Servers[serverIndex].Ips, util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes))) //TODO: REMOVE
 		tn.Servers[serverIndex].Nodes++
 

@@ -65,7 +65,7 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 func handleConf(tn *testnet.TestNet, sysconf *SysConf) ([]string, error) {
 	ips := []string{}
 	for _, node := range tn.Nodes {
-		ips = append(ips, node.Ip)
+		ips = append(ips, node.IP)
 	}
 
 	noMasterNodes := int(float64(len(ips)) * (float64(sysconf.PercOfMNodes) / float64(100)))

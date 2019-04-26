@@ -67,7 +67,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	for _, node := range tn.Nodes {
 
-		ips = append(ips, node.Ip)
+		ips = append(ips, node.IP)
 	}
 	tn.BuildState.SetBuildStage("Creating node configuration files")
 	/**Create node config files**/

@@ -55,6 +55,6 @@ func GetClients(servers []int) ([]*ssh.Client, error) {
 }
 
 func GetClientsFromNodes(nodes []db.Node) ([]*ssh.Client, error) {
-	serverIds := db.GetUniqueServerIds(nodes)
+	serverIds := db.GetUniqueServerIDs(nodes)
 	return GetClients(serverIds)
 }

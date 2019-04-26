@@ -3,10 +3,11 @@ package db
 import (
 	"encoding/json"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" //Include sqlite as the db
 	"log"
 )
 
+//SetMeta stores a key value pair in the sql-lite database as json
 func SetMeta(key string, value interface{}) error {
 	tx, err := db.Begin()
 	if err != nil {
@@ -44,6 +45,7 @@ func SetMeta(key string, value interface{}) error {
 	return nil
 }
 
+//GetMeta returns the value stored at key as interface
 func GetMeta(key string) (interface{}, error) {
 	row := db.QueryRow(fmt.Sprintf("SELECT value FROM meta WHERE key = \"%s\"", key))
 	var data []byte
@@ -57,6 +59,7 @@ func GetMeta(key string) (interface{}, error) {
 	return out, err
 }
 
+//GetMetaP fetches the value of key and returns it to v, v should be a pointer
 func GetMetaP(key string, v interface{}) error {
 	row := db.QueryRow(fmt.Sprintf("SELECT value FROM meta WHERE key = \"%s\"", key))
 	var data []byte
@@ -68,6 +71,7 @@ func GetMetaP(key string, v interface{}) error {
 	return json.Unmarshal(data, &v)
 }
 
+//DeleteMeta deletes the value stored at key
 func DeleteMeta(key string) error {
 	_, err := db.Exec(fmt.Sprintf("DELETE FROM meta WHERE key = \"%s\"", key))
 	return err

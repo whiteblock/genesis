@@ -125,10 +125,8 @@ func dbInit() {
 	SetVersion(Version)
 }
 
-/*
-   InsertLocalServers adds the default server(s) to the servers database, allowing immediate use of the application
-   without having to register a server
-*/
+//InsertLocalServers adds the default server(s) to the servers database, allowing immediate use of the application
+//without having to register a server
 func InsertLocalServers(db *sql.DB) {
 	InsertServer("cloud",
 		Server{

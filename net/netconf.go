@@ -113,7 +113,7 @@ func Apply(client *ssh.Client, netconf Netconf, serverId int) error {
 */
 func ApplyAll(netconfs []Netconf, nodes []db.Node) error {
 	for _, netconf := range netconfs {
-		node, err := db.GetNodeByLocalId(nodes, netconf.Node)
+		node, err := db.GetNodeByLocalID(nodes, netconf.Node)
 		if err != nil {
 			log.Println(err)
 			return err

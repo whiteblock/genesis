@@ -2,48 +2,33 @@ package status
 
 import (
 	"../db"
-	"github.com/Whiteblock/go.uuid"
 	"log"
 )
-
-/*
-   GetNextTestNetId gets the next testnet id. Used for
-   getting the id of a testnet that is in progress of being built
-*/
-func GetNextTestNetId() (string, error) {
-	uid, err := uuid.NewV4()
-	if err != nil {
-		log.Println(err)
-		return "", err
-	}
-	str := uid.String()
-	return str, nil
-}
 
 /*
    Get the servers used in the latest testnet, populated with the
    ips of all the nodes
 */
-func GetLatestServers(testnetId string) ([]db.Server, error) {
-	nodes, err := db.GetAllNodesByTestNet(testnetId)
+func GetLatestServers(testnetID string) ([]db.Server, error) {
+	nodes, err := db.GetAllNodesByTestNet(testnetID)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	serverIds := []int{}
+	serverIDs := []int{}
 	for _, node := range nodes {
 		shouldAdd := true
-		for _, id := range serverIds {
+		for _, id := range serverIDs {
 			if id == node.Server {
 				shouldAdd = false
 			}
 		}
 		if shouldAdd {
-			serverIds = append(serverIds, node.Server)
+			serverIDs = append(serverIDs, node.Server)
 		}
 	}
 
-	servers, err := db.GetServers(serverIds)
+	servers, err := db.GetServers(serverIDs)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -54,7 +39,7 @@ func GetLatestServers(testnetId string) ([]db.Server, error) {
 				servers[i].Ips = []string{}
 			}
 			if node.Server == servers[i].Id {
-				servers[i].Ips = append(servers[i].Ips, node.Ip)
+				servers[i].Ips = append(servers[i].Ips, node.IP)
 			}
 			servers[i].Nodes++
 		}

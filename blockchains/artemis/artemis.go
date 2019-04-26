@@ -48,7 +48,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		peer = fmt.Sprintf("%s://whiteblock-node%d@%s:%d",
 			artemisConf["networkMode"],
 			node.LocalID,
-			node.Ip,
+			node.IP,
 			port,
 		)
 		if i != len(tn.Nodes)-1 {

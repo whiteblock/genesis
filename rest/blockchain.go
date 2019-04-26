@@ -144,7 +144,7 @@ func getBlockChainLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	node, err := db.GetNodeByLocalId(nodes, nodeNum)
+	node, err := db.GetNodeByLocalID(nodes, nodeNum)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)

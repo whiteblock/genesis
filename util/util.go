@@ -151,16 +151,6 @@ func Rm(directories ...string) error {
 }
 
 /*
-   Mkdir creates a directory
-*/
-func Mkdir(directory string) error {
-	if conf.Verbose {
-		fmt.Printf("Creating directory %s\n", directory)
-	}
-	return os.MkdirAll(directory, 0755)
-}
-
-/*
    Lsr lists the contents of a directory recursively
 */
 func Lsr(_dir string) ([]string, error) {
