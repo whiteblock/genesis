@@ -11,10 +11,8 @@ import (
 	"sync"
 )
 
-func CopyToServers(tn *testnet.TestNet, src string, dst string) error {
-	return CopyAllToServers(tn, src, dst)
-}
-
+// CopyAllToServers copies all of the src files to all of the servers within the given testnet.
+// This can handle multiple pairs in form of ...,source,destination,source2,destination2
 func CopyAllToServers(tn *testnet.TestNet, srcDst ...string) error {
 	if len(srcDst)%2 != 0 {
 		return fmt.Errorf("invalid number of variadic arguments, must be given an even number of them")
@@ -85,10 +83,14 @@ func copyToAllNodes(tn *testnet.TestNet, useNew bool, srcDst ...string) error {
 	return tn.BuildState.GetError()
 }
 
+// CopyToAllNodes copies files writen with BuildState's write function over to all of the nodes.
+// Can handle multiple files, in pairs of src and dst
 func CopyToAllNodes(tn *testnet.TestNet, srcDst ...string) error {
 	return copyToAllNodes(tn, false, srcDst...)
 }
 
+// CopyToAllNewNodes copies files writen with BuildState's write function over to all of the newly built nodes.
+// Can handle multiple files, in pairs of src and dst
 func CopyToAllNewNodes(tn *testnet.TestNet, srcDst ...string) error {
 	return copyToAllNodes(tn, true, srcDst...)
 }
@@ -108,15 +110,19 @@ func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, dataDst ...string) er
 	return copyToAllNodes(tn, useNew, fmted...)
 }
 
+// CopyBytesToAllNodes functions similiarly to CopyToAllNodes, except it operates on data and dst pairs instead of
+// src and dest pairs, so you can just pass data directly to all of the nodes without having to call buildState.Write first.
 func CopyBytesToAllNodes(tn *testnet.TestNet, dataDst ...string) error {
 	return copyBytesToAllNodes(tn, false, dataDst...)
 }
 
+// CopyBytesToAllNewNodes is CopyBytesToAllNodes but only operates on newly built nodes
 func CopyBytesToAllNewNodes(tn *testnet.TestNet, dataDst ...string) error {
 	return copyBytesToAllNodes(tn, true, dataDst...)
 }
 
-func SingleCp(client *ssh.Client, buildState *state.BuildState, localNodeId int, data []byte, dest string) error {
+// SingleCp copies over data to the given dest on node localNodeID.
+func SingleCp(client *ssh.Client, buildState *state.BuildState, localNodeID int, data []byte, dest string) error {
 	tmpFilename, err := util.GetUUIDString()
 	if err != nil {
 		log.Println(err)
@@ -136,15 +142,20 @@ func SingleCp(client *ssh.Client, buildState *state.BuildState, localNodeId int,
 		return err
 	}
 
-	return client.DockerCp(localNodeId, intermediateDst, dest)
+	return client.DockerCp(localNodeID, intermediateDst, dest)
 }
 
+// FileDest represents a transfer of data
 type FileDest struct {
-	Data        []byte
-	Dest        string
-	LocalNodeId int
+	// Data is the data to be transfered
+	Data []byte
+	// Dest is the destination for the data
+	Dest string
+	// LocalNodeID is the local node number of the node to which the data will be transfered
+	LocalNodeID int
 }
 
+//CopyBytesToNodeFiles executes the file transfers represented by the given file dests.
 func CopyBytesToNodeFiles(client *ssh.Client, buildState *state.BuildState, transfers ...FileDest) error {
 	wg := sync.WaitGroup{}
 
@@ -152,7 +163,7 @@ func CopyBytesToNodeFiles(client *ssh.Client, buildState *state.BuildState, tran
 		wg.Add(1)
 		go func(transfer FileDest) {
 			defer wg.Done()
-			err := SingleCp(client, buildState, transfer.LocalNodeId, transfer.Data, transfer.Dest)
+			err := SingleCp(client, buildState, transfer.LocalNodeID, transfer.Data, transfer.Dest)
 			if err != nil {
 				log.Println(err)
 				buildState.ReportError(err)
@@ -200,10 +211,14 @@ func createConfigs(tn *testnet.TestNet, dest string, useNew bool, fn func(int, i
 	return tn.BuildState.GetError()
 }
 
-func CreateConfigsNewNodes(tn *testnet.TestNet, dest string, fn func(int, int, int) ([]byte, error)) error {
-	return createConfigs(tn, dest, true, fn)
-}
-
+// CreateConfigs allows for individual generation of configuration files with error propogation.
+// For each node, fn will be called, with (Server ID, local node number, absolute node number), and it will expect
+// to have the configuration file returned or error.
 func CreateConfigs(tn *testnet.TestNet, dest string, fn func(int, int, int) ([]byte, error)) error {
 	return createConfigs(tn, dest, false, fn)
+}
+
+// CreateConfigsNewNodes is CreateConfigs but it only operates on new nodes
+func CreateConfigsNewNodes(tn *testnet.TestNet, dest string, fn func(int, int, int) ([]byte, error)) error {
+	return createConfigs(tn, dest, true, fn)
 }
