@@ -3,13 +3,15 @@ package db
 import (
 	"../util"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" //use sqlite
 	"log"
 )
 
+// Version represents the database version, upon change of this constant, the database will
+// be purged
 const Version = "2.2.3"
 
-func Check() error {
+func check() error {
 	row := db.QueryRow("SELECT value FROM meta WHERE key = \"version\"")
 	var version string
 	err := row.Scan(&version)
@@ -25,7 +27,7 @@ func Check() error {
 }
 
 func checkAndUpdate() {
-	if Check() != nil {
+	if check() != nil {
 		log.Println("Updating the database...")
 		util.Rm(dataLoc)
 		db = getDB()
