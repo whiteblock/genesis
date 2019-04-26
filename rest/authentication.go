@@ -16,7 +16,7 @@ import (
 const allowNoKeyAcess = true
 
 func GetKey(kid string) (map[string]string, error) {
-	res, err := util.HttpRequest("GET", "https://api.whiteblock.io/public/jwt-keys", "")
+	res, err := util.HTTPRequest("GET", "https://api.whiteblock.io/public/jwt-keys", "")
 	if err != nil {
 		log.Println(err)
 		return nil, err

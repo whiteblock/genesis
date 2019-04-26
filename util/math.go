@@ -35,10 +35,8 @@ func Distances(pnts []Point) [][]float64 {
 	return out
 }
 
-/*
-   Distribute generates a roughly uniform random distribution for connections
-   among nodes.
-*/
+// Distribute generates a roughly uniform random distribution for connections
+// among nodes.
 func Distribute(nodes []string, dist []int) ([][]string, error) {
 	if len(nodes) < 2 {
 		return nil, errors.New("cannot distribute a series smaller than 1")
@@ -80,9 +78,7 @@ func Distribute(nodes []string, dist []int) ([][]string, error) {
 	return out, nil
 }
 
-/*
-   Generates a random path through all nodes
-*/
+// GenerateworstCaseNetwork generates a random path through all nodes
 func GenerateworstCaseNetwork(nodes int) [][]int {
 	out := make([][]int, nodes)
 
@@ -105,9 +101,8 @@ func GenerateworstCaseNetwork(nodes int) [][]int {
 	return out
 }
 
-/*
-   Generate a random mesh network that ensures that there is always a path between all the nodes
-*/
+// GenerateUniformRandMeshNetwork generates a random mesh network that ensures
+// that there is always a path between all the nodes
 func GenerateUniformRandMeshNetwork(nodes int, conns int) ([][]int, error) {
 	if conns < 1 {
 		return nil, errors.New("each node must have at least one connection")
@@ -133,7 +128,6 @@ func GenerateUniformRandMeshNetwork(nodes int, conns int) ([][]int, error) {
 			if add {
 				out[i] = append(out[i], node)
 			}
-
 		}
 	}
 	return out, nil

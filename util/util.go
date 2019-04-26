@@ -101,13 +101,13 @@ func GetKidFromJwt(jwt string) (string, error) {
 		return "", fmt.Errorf("given empty string for JWT")
 	}
 	headerb64 := strings.Split(jwt, ".")[0]
-	headerJson, err := base64.StdEncoding.DecodeString(headerb64)
+	headerJSON, err := base64.StdEncoding.DecodeString(headerb64)
 	if err != nil {
 		log.Println(err)
 		return "", err
 	}
 	var header map[string]interface{}
-	err = json.Unmarshal(headerJson, &header)
+	err = json.Unmarshal(headerJSON, &header)
 	if err != nil {
 		log.Println(err)
 		return "", err

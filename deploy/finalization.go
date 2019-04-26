@@ -140,7 +140,7 @@ func declareNode(node *db.Node, tn *testnet.TestNet) error {
 		log.Println(err)
 		return err
 	}
-	_, err = util.JwtHttpRequest("POST", "https://api.whiteblock.io/testnets/"+node.TestNetID+"/nodes", tn.LDD.GetJwt(), string(rawData))
+	_, err = util.JwtHTTPRequest("POST", "https://api.whiteblock.io/testnets/"+node.TestNetID+"/nodes", tn.LDD.GetJwt(), string(rawData))
 	return err
 }
 

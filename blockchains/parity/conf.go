@@ -118,7 +118,7 @@ func BuildConfig(pconf *ParityConf, details *db.DeploymentDetails, wallets []str
 		log.Println(err)
 		return "", err
 	}
-	var tmp interface{}
+	var tmp map[string]interface{}
 
 	raw, err := json.Marshal(*pconf)
 	if err != nil {
@@ -250,7 +250,7 @@ func BuildPoaConfig(pconf *ParityConf, details *db.DeploymentDetails, wallets []
 		log.Println(err)
 		return "", err
 	}
-	var tmp interface{}
+	var tmp map[string]interface{}
 
 	raw, err := json.Marshal(*pconf)
 	if err != nil {

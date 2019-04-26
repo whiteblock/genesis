@@ -29,7 +29,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	fetchedConfChan := make(chan string)
 
 	go func(artemisConf ArtemisConf) {
-		res, err := util.HttpRequest("GET", artemisConf["constantsSource"].(string), "")
+		res, err := util.HTTPRequest("GET", artemisConf["constantsSource"].(string), "")
 		if err != nil {
 			log.Println(err)
 			tn.BuildState.ReportError(err)
