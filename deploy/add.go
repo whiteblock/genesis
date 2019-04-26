@@ -9,10 +9,8 @@ import (
 	"sync"
 )
 
-/*
-   Add nodes to the network instead of building independently. Functions similarly to build, except that it
-   does not destroy the previous network when building.
-*/
+// AddNodes adds nodes to the network instead of building independently. Functions similarly to build, except that it
+// does not destroy the previous network when building.
 func AddNodes(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetDeploySteps(2 * tn.LDD.Nodes)

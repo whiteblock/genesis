@@ -13,17 +13,13 @@ import (
 
 /**Quick naive interface to Docker calls over ssh*/
 
-/*
-   Kill a single node by index on a server
-*/
+// DockerKill kills a single node by index on a server
 func DockerKill(client *ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker rm -f %s%d", conf.NodePrefix, node))
 	return err
 }
 
-/*
-   Kill all nodes on a server
-*/
+// DockerKillAll kills all nodes on a server
 func DockerKillAll(client *ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s\")", conf.NodePrefix))
 	return err
@@ -41,9 +37,7 @@ func dockerNetworkCreateCmd(subnet string, gateway string, network int, name str
 		name)
 }
 
-/*
-   Create a docker network for a node
-*/
+// DockerNetworkCreate creates a docker network for a node
 func DockerNetworkCreate(tn *testnet.TestNet, serverID int, subnetID int, node int) error {
 	command := dockerNetworkCreateCmd(
 		util.GetNetworkAddress(subnetID, node),
@@ -56,20 +50,20 @@ func DockerNetworkCreate(tn *testnet.TestNet, serverID int, subnetID int, node i
 	return err
 }
 
+//DockerNetworkDestroy tears down a single docker network
 func DockerNetworkDestroy(client *ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker network rm %s%d", conf.NodeNetworkPrefix, node))
 	return err
 }
 
-/*
-   Remove all whiteblock networks on a node
-*/
+// DockerNetworkDestroyAll removes all whiteblock networks on a node
 func DockerNetworkDestroyAll(client *ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf(
 		"for net in $(docker network ls | grep %s | awk '{print $1}'); do docker network rm $net; done", conf.NodeNetworkPrefix))
 	return err
 }
 
+// DockerLogin is an abstraction of docker login
 func DockerLogin(client *ssh.Client, username string, password string) error {
 	user := strings.Replace(username, "\"", "\\\"", -1) //Escape the quotes
 	pass := strings.Replace(password, "\"", "\\\"", -1) //Escape the quotes
@@ -77,14 +71,13 @@ func DockerLogin(client *ssh.Client, username string, password string) error {
 	return err
 }
 
+// DockerLogout is an abstraction of docker logout
 func DockerLogout(client *ssh.Client) error {
 	_, err := client.Run("docker logout")
 	return err
 }
 
-/*
-   Pull an image on all the given servers
-*/
+// DockerPull pulls an image on all the given servers
 func DockerPull(clients []*ssh.Client, image string) error {
 	for _, client := range clients {
 		_, err := client.Run("docker pull " + image)
@@ -124,9 +117,7 @@ func dockerRunCmd(subnetID int, resources util.Resources, node int, image string
 	return command, nil
 }
 
-/*
-   Starts a node
-*/
+// DockerRun starts a node
 func DockerRun(tn *testnet.TestNet, serverID int, subnetID int, resources util.Resources, node int, image string, env map[string]string) error {
 	command, err := dockerRunCmd(subnetID, resources, node, image, env)
 	if err != nil {
@@ -160,9 +151,7 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 		image)
 }
 
-/*
-   Stop all services and remove the service network from a server
-*/
+// DockerStopServices stops all services and remove the service network from a server
 func DockerStopServices(tn *testnet.TestNet) error {
 	return helpers.AllServerExecCon(tn, func(client *ssh.Client, _ *db.Server) error {
 		_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)", conf.ServicePrefix))
@@ -174,9 +163,7 @@ func DockerStopServices(tn *testnet.TestNet) error {
 	})
 }
 
-/*
-   Creates the service network and starts all the services on a server
-*/
+// DockerStartServices creates the service network and starts all the services on a server
 func DockerStartServices(tn *testnet.TestNet, services []util.Service) error {
 	gateway, subnet, err := util.GetServiceNetwork()
 	if err != nil {

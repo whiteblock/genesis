@@ -1,3 +1,4 @@
+// Package deploy provides functions for building out nodes and test networks
 package deploy
 
 import (
@@ -11,6 +12,7 @@ import (
 
 var conf = util.GetConfig()
 
+// BuildNode builds out a single node in a testnet
 func BuildNode(tn *testnet.TestNet, server *db.Server, absNum int, relNum int) {
 	tn.BuildState.OnError(func() {
 		DockerKill(tn.Clients[server.Id], relNum)
@@ -26,7 +28,7 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, absNum int, relNum int) {
 
 	resource := tn.LDD.Resources[0]
 	image := tn.LDD.Images[0]
-	var env map[string]string = nil
+	var env map[string]string
 
 	if len(tn.LDD.Resources) > absNum {
 		resource = tn.LDD.Resources[absNum]
@@ -49,10 +51,8 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, absNum int, relNum int) {
 	tn.BuildState.IncrementDeployProgress()
 }
 
-/*
-   Build out the given docker network infrastructure according to the given parameters, and return
-   the given array of servers, with ips updated for the nodes added to that server
-*/
+// Build builds out the given docker network infrastructure according to the given parameters, and return
+// the given array of servers, with ips updated for the nodes added to that server
 func Build(tn *testnet.TestNet, services []util.Service) error {
 	tn.BuildState.SetDeploySteps(3*tn.LDD.Nodes + 2 + len(services))
 	defer tn.BuildState.FinishDeploy()
