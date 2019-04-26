@@ -26,7 +26,7 @@ func finalize(tn *testnet.TestNet) error {
 			return err
 		}
 	}
-
+	alwaysRunFinalize(tn)
 	return nil
 }
 
@@ -41,6 +41,7 @@ func finalizeNewNodes(tn *testnet.TestNet) error {
 			return err
 		}
 	}
+	alwaysRunFinalize(tn)
 	return nil
 }
 
@@ -48,15 +49,16 @@ func alwaysRunFinalize(tn *testnet.TestNet) {
 
 	tn.BuildState.Async(func() {
 		for _, node := range tn.NewlyBuiltNodes {
-			err := declareNode(&node, tn.LDD)
+			err := declareNode(&node, tn)
 			if err != nil {
 				log.Println(err)
 			}
 		}
 	})
-
+	newNodes := make([]db.Node, len(tn.NewlyBuiltNodes))
+	copy(newNodes, tn.NewlyBuiltNodes)
 	tn.BuildState.Defer(func() {
-		for i, node := range tn.NewlyBuiltNodes {
+		for i, node := range newNodes {
 			err := finalizeNode(node, tn.LDD, tn.BuildState, i)
 			if err != nil {
 				log.Println(err)
@@ -118,17 +120,27 @@ func copyOverSshKeys(tn *testnet.TestNet, newOnly bool) error {
 	return helpers.CopyBytesToAllNodes(tn, string(privKey), "/root/.ssh/id_rsa")
 }
 
-func declareNode(node *db.Node, details *db.DeploymentDetails) error {
+func declareNode(node *db.Node, tn *testnet.TestNet) error {
+
+	image := tn.LDD.Images[0]
+
+	if len(tn.LDD.Images) > node.AbsoluteNum {
+		image = tn.LDD.Images[node.AbsoluteNum]
+	}
+
 	data := map[string]interface{}{
-		"id":         node.TestNetID,
+		"id":         node.ID,
 		"ip_address": node.Ip,
+		"image":      image,
+		"kind":       tn.LDD.Blockchain,
+		"version":    "unknown",
 	}
 	rawData, err := json.Marshal(data)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	_, err = util.JwtHttpRequest("POST", "https://api.whiteblock.io/testnets/"+node.TestNetID+"/nodes", details.GetJwt(), string(rawData))
+	_, err = util.JwtHttpRequest("POST", "https://api.whiteblock.io/testnets/"+node.TestNetID+"/nodes", tn.LDD.GetJwt(), string(rawData))
 	return err
 }
 

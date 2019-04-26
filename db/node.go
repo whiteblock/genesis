@@ -35,6 +35,10 @@ type Node struct {
 	   Label is the string given to the node by the build process
 	*/
 	Label string `json:"label"`
+
+	Image string `json:"image"`
+
+	Blockchain string `json:"blockchain"`
 }
 
 /*

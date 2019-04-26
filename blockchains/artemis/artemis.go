@@ -65,14 +65,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	tn.BuildState.SetBuildStage("Creating node configuration files")
 	/**Create node config files**/
 	fetchedConf := <-fetchedConfChan
-	fmt.Println("FETCHED=" + fetchedConf)
 
 	constantsIndex := strings.Index(fetchedConf, "[constants]")
 	if constantsIndex == -1 {
 		return nil, fmt.Errorf("Couldn't find \"[constants]\" in file fetched from given source")
 	}
 	rawConstants := fetchedConf[constantsIndex:]
-	fmt.Printf("RAW CONSTANTS=%s\n", rawConstants)
 	err = helpers.CreateConfigs(tn, "/artemis/config/config.toml",
 		func(serverId int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
 			defer tn.BuildState.IncrementBuildProgress()
@@ -83,6 +81,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	tn.BuildState.SetBuildStage("Starting Artemis")
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+		defer tn.BuildState.IncrementBuildProgress()
+
 		artemisCmd := `artemis -c /artemis/config/config.toml -o /artemis/data/data.json 2>&1 | tee /output.log`
 
 		_, err := client.DockerExecd(localNodeNum, "tmux new -s whiteblock -d")
@@ -92,17 +92,6 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		}
 
 		_, err = client.DockerExecd(localNodeNum, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", artemisCmd))
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		tn.BuildState.IncrementBuildProgress()
-
-		_, err = client.DockerExecd(localNodeNum,
-			fmt.Sprintf("bash -c 'while :;do artemis-log-parser --influx \"http://%s:8086\" --node \"%s%d\" "+
-				"/artemis/data/data.json 2>&1 >> /parser.log; done'",
-				util.GetGateway(server.SubnetID, localNodeNum), conf.NodePrefix, absoluteNodeNum))
 		return err
 	})
 	if err != nil {
