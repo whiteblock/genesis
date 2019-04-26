@@ -10,9 +10,9 @@ import (
 	"log"
 )
 
-type ParityConf struct {
+type parityConf struct {
 	BlockReward               int64  `json:"blockReward"`
-	ChainId                   int64  `json:"chainId"`
+	ChainID                   int64  `json:"chainId"`
 	Consensus                 string `json:"consensus"` //TODO
 	Difficulty                int64  `json:"difficulty"`
 	DifficultyBoundDivisor    int64  `json:"difficultyBoundDivisor"`
@@ -39,7 +39,7 @@ type ParityConf struct {
 	MinGasLimit               int64  `json:"minGasLimit"`
 	MinimumDifficulty         int64  `json:"minimumDifficulty"`
 	NetworkDiscovery          bool   `json:"networkDiscovery"`
-	NetworkId                 int64  `json:"networkId"`
+	NetworkID                 int64  `json:"networkId"`
 	PriceUpdatePeriod         string `json:"priceUpdatePeriod"`
 	RefuseServiceTransactions bool   `json:"refuseServiceTransactions"`
 	RelaySet                  string `json:"relaySet"`
@@ -55,17 +55,17 @@ type ParityConf struct {
 	TxQueueSize               int64  `json:"txQueueSize"`
 	TxQueueStrategy           string `json:"txQueueStrategy"`
 	TxTimeLimit               int64  `json:"txTimeLimit"`
-	UsdPerEth                 string `json:"usdPerEth"`
-	UsdPerTx                  string `json:"usdPerTx"`
-	ValidateChainIdTransition int64  `json:"validateChainIdTransition"`
+	USDPerEth                 string `json:"usdPerEth"`
+	USDPerTX                  string `json:"usdPerTx"`
+	ValidateChainIDTransition int64  `json:"validateChainIdTransition"`
 	WorkQueueSize             int64  `json:"workQueueSize"`
 }
 
 /**
  * Fills in the defaults for missing parts,
  */
-func NewConf(data map[string]interface{}) (*ParityConf, error) {
-	out := new(ParityConf)
+func newConf(data map[string]interface{}) (*parityConf, error) {
+	out := new(parityConf)
 	err := json.Unmarshal([]byte(GetDefaults()), out)
 	fmt.Printf("%+v\n", *out)
 	if data == nil {
@@ -82,6 +82,7 @@ func NewConf(data map[string]interface{}) (*ParityConf, error) {
 	return out, err
 }
 
+// GetParams fetchs parity related parameters
 func GetParams() string {
 	dat, err := helpers.GetStaticBlockchainConfig("parity", "params.json")
 	if err != nil {
@@ -89,6 +90,8 @@ func GetParams() string {
 	}
 	return string(dat)
 }
+
+// GetDefaults fetchs parity related parameter defaults
 func GetDefaults() string {
 	dat, err := helpers.GetStaticBlockchainConfig("parity", "defaults.json")
 	if err != nil {
@@ -97,6 +100,7 @@ func GetDefaults() string {
 	return string(dat)
 }
 
+// GetServices returns the services which are used by artemis
 func GetServices() []util.Service {
 	return []util.Service{
 		{
@@ -107,11 +111,8 @@ func GetServices() []util.Service {
 	}
 }
 
-/*
-   passwordFile
-   unlock
-*/
-func BuildConfig(pconf *ParityConf, details *db.DeploymentDetails, wallets []string, passwordFile string, node int) (string, error) {
+
+func buildConfig(pconf *parityConf, details *db.DeploymentDetails, wallets []string, passwordFile string, node int) (string, error) {
 
 	dat, err := helpers.GetBlockchainConfig("parity", node, "config.toml.template", details)
 	if err != nil {
@@ -140,11 +141,11 @@ func BuildConfig(pconf *ParityConf, details *db.DeploymentDetails, wallets []str
 	}
 	mp["unlock"] = string(raw)
 	mp["passwordFile"] = fmt.Sprintf("[\"%s\"]", passwordFile)
-	mp["networkId"] = fmt.Sprintf("%d", pconf.NetworkId)
+	mp["networkId"] = fmt.Sprintf("%d", pconf.NetworkID)
 	return mustache.Render(string(dat), mp)
 }
 
-func BuildPoaSpec(pconf *ParityConf, details *db.DeploymentDetails, wallets []string) (string, error) {
+func buildPoaSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []string) (string, error) {
 
 	accounts := make(map[string]interface{})
 	for _, wallet := range wallets {
@@ -163,11 +164,11 @@ func BuildPoaSpec(pconf *ParityConf, details *db.DeploymentDetails, wallets []st
 		"validators":                validators,
 		"difficulty":                fmt.Sprintf("0x%x", pconf.Difficulty),
 		"gasLimit":                  fmt.Sprintf("0x%x", pconf.GasLimit),
-		"networkId":                 fmt.Sprintf("0x%x", pconf.NetworkId),
+		"networkId":                 fmt.Sprintf("0x%x", pconf.NetworkID),
 		"maximumExtraDataSize":      fmt.Sprintf("0x%x", pconf.MaximumExtraDataSize),
 		"minGasLimit":               fmt.Sprintf("0x%x", pconf.MinGasLimit),
 		"gasLimitBoundDivisor":      fmt.Sprintf("0x%x", pconf.GasLimitBoundDivisor),
-		"validateChainIdTransition": pconf.ValidateChainIdTransition,
+		"validateChainIdTransition": pconf.ValidateChainIDTransition,
 		"eip155Transition":          pconf.EIP155Transition,
 		"eip140Transition":          pconf.EIP140Transition,
 		"eip211Transition":          pconf.EIP211Transition,
@@ -183,7 +184,7 @@ func BuildPoaSpec(pconf *ParityConf, details *db.DeploymentDetails, wallets []st
 	return mustache.Render(string(dat), filler)
 }
 
-func BuildSpec(pconf *ParityConf, details *db.DeploymentDetails, wallets []string) (string, error) {
+func buildSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []string) (string, error) {
 
 	accounts := make(map[string]interface{})
 	for _, wallet := range wallets {
@@ -199,7 +200,7 @@ func BuildSpec(pconf *ParityConf, details *db.DeploymentDetails, wallets []strin
 		"blockReward":            fmt.Sprintf("0x%x", pconf.BlockReward),
 		"difficulty":             fmt.Sprintf("0x%x", pconf.Difficulty),
 		"gasLimit":               fmt.Sprintf("0x%x", pconf.GasLimit),
-		"networkId":              fmt.Sprintf("0x%x", pconf.NetworkId),
+		"networkId":              fmt.Sprintf("0x%x", pconf.NetworkID),
 		"maximumExtraDataSize":   fmt.Sprintf("0x%x", pconf.MaximumExtraDataSize),
 		"minGasLimit":            fmt.Sprintf("0x%x", pconf.MinGasLimit),
 		"gasLimitBoundDivisor":   fmt.Sprintf("0x%x", pconf.GasLimitBoundDivisor),
@@ -213,7 +214,7 @@ func BuildSpec(pconf *ParityConf, details *db.DeploymentDetails, wallets []strin
 	return mustache.Render(string(dat), filler)
 }
 
-func GethSpec(pconf *ParityConf, wallets []string) (string, error) {
+func gethSpec(pconf *parityConf, wallets []string) (string, error) {
 	accounts := make(map[string]interface{})
 	for _, wallet := range wallets {
 		accounts[wallet] = map[string]interface{}{
@@ -222,7 +223,7 @@ func GethSpec(pconf *ParityConf, wallets []string) (string, error) {
 	}
 
 	tmp := map[string]interface{}{
-		"chainId":        pconf.NetworkId,
+		"chainId":        pconf.NetworkID,
 		"difficulty":     fmt.Sprintf("0x%x", pconf.Difficulty),
 		"gasLimit":       fmt.Sprintf("0x%x", pconf.GasLimit),
 		"homesteadBlock": 0,
@@ -243,7 +244,7 @@ func GethSpec(pconf *ParityConf, wallets []string) (string, error) {
    passwordFile
    unlock
 */
-func BuildPoaConfig(pconf *ParityConf, details *db.DeploymentDetails, wallets []string, passwordFile string, i int) (string, error) {
+func buildPoaConfig(pconf *parityConf, details *db.DeploymentDetails, wallets []string, passwordFile string, i int) (string, error) {
 
 	dat, err := helpers.GetBlockchainConfig("parity", i, "config.toml.poa.mustache", details)
 	if err != nil {
@@ -272,7 +273,7 @@ func BuildPoaConfig(pconf *ParityConf, details *db.DeploymentDetails, wallets []
 	}
 	mp["unlock"] = string(raw)
 	mp["passwordFile"] = fmt.Sprintf("[\"%s\"]", passwordFile)
-	mp["networkId"] = fmt.Sprintf("%d", pconf.NetworkId)
+	mp["networkId"] = fmt.Sprintf("%d", pconf.NetworkID)
 	mp["signer"] = fmt.Sprintf("\"%s\"", wallets[i])
 	return mustache.Render(string(dat), mp)
 }

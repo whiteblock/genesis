@@ -1,3 +1,4 @@
+//Package artemis handles artemis specific functionality
 package artemis
 
 import (
@@ -17,19 +18,17 @@ func init() {
 	conf = util.GetConfig()
 }
 
-/*
-Build builds out a fresh new artemis test network
-*/
+// Build builds out a fresh new artemis test network
 func Build(tn *testnet.TestNet) ([]string, error) {
-	artemisConf, err := NewConf(tn.LDD.Params)
+	aconf, err := newConf(tn.LDD.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 	fetchedConfChan := make(chan string)
 
-	go func(artemisConf ArtemisConf) {
-		res, err := util.HTTPRequest("GET", artemisConf["constantsSource"].(string), "")
+	go func(aconf artemisConf) {
+		res, err := util.HTTPRequest("GET", aconf["constantsSource"].(string), "")
 		if err != nil {
 			log.Println(err)
 			tn.BuildState.ReportError(err)
@@ -37,7 +36,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		}
 		fetchedConfChan <- string(res)
 
-	}(artemisConf)
+	}(aconf)
 
 	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
 
@@ -46,7 +45,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	var peer string
 	for i, node := range tn.Nodes {
 		peer = fmt.Sprintf("%s://whiteblock-node%d@%s:%d",
-			artemisConf["networkMode"],
+			aconf["networkMode"],
 			node.LocalID,
 			node.IP,
 			port,
@@ -75,7 +74,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		func(serverId int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
 			defer tn.BuildState.IncrementBuildProgress()
 			identity := fmt.Sprintf("0x%.8x", absoluteNodeNum)
-			artemisNodeConfig, err := makeNodeConfig(artemisConf, identity, peers, absoluteNodeNum, tn.LDD, rawConstants)
+			artemisNodeConfig, err := makeNodeConfig(aconf, identity, peers, absoluteNodeNum, tn.LDD, rawConstants)
 			return []byte(artemisNodeConfig), err
 		})
 
@@ -102,6 +101,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	return nil, nil
 }
 
+// Add handles adding a node to the artemis testnet
+// TODO
 func Add(tn *testnet.TestNet) ([]string, error) {
 	return nil, nil
 }

@@ -1,3 +1,4 @@
+//Package parity handles parity specific functionality
 package parity
 
 import (
@@ -22,12 +23,10 @@ func init() {
 	conf = util.GetConfig()
 }
 
-/*
-Build builds out a fresh new ethereum test network
-*/
+// Build builds out a fresh new ethereum test network using parity
 func Build(tn *testnet.TestNet) ([]string, error) {
 	mux := sync.Mutex{}
-	pconf, err := NewConf(tn.LDD.Params)
+	pconf, err := newConf(tn.LDD.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -200,6 +199,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 /***************************************************************************************************************************/
 
+// Add handles adding a node to the geth testnet
+// TODO
 func Add(tn *testnet.TestNet) ([]string, error) {
 	return nil, nil
 }
@@ -226,9 +227,9 @@ func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 	})
 }
 
-func setupPOA(tn *testnet.TestNet, pconf *ParityConf, wallets []string) error {
+func setupPOA(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 	//Create the chain spec files
-	spec, err := BuildPoaSpec(pconf, tn.LDD, wallets)
+	spec, err := buildPoaSpec(pconf, tn.LDD, wallets)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -243,7 +244,7 @@ func setupPOA(tn *testnet.TestNet, pconf *ParityConf, wallets []string) error {
 	//handle configuration file
 	return helpers.CreateConfigs(tn, "/parity/config.toml",
 		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
-			configToml, err := BuildPoaConfig(pconf, tn.LDD, wallets, "/parity/passwd", absoluteNodeNum)
+			configToml, err := buildPoaConfig(pconf, tn.LDD, wallets, "/parity/passwd", absoluteNodeNum)
 			if err != nil {
 				log.Println(err)
 				return nil, err
@@ -252,7 +253,7 @@ func setupPOA(tn *testnet.TestNet, pconf *ParityConf, wallets []string) error {
 		})
 }
 
-func setupPOW(tn *testnet.TestNet, pconf *ParityConf, wallets []string) error {
+func setupPOW(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 	//Start up the geth node
 	err := setupGeth(tn.GetFlatClients()[0], tn.BuildState, pconf, wallets)
 	if err != nil {
@@ -262,7 +263,7 @@ func setupPOW(tn *testnet.TestNet, pconf *ParityConf, wallets []string) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	//Create the chain spec files
-	spec, err := BuildSpec(pconf, tn.LDD, wallets)
+	spec, err := buildSpec(pconf, tn.LDD, wallets)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -270,7 +271,7 @@ func setupPOW(tn *testnet.TestNet, pconf *ParityConf, wallets []string) error {
 	//create config file
 	err = helpers.CreateConfigs(tn, "/parity/config.toml",
 		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
-			configToml, err := BuildConfig(pconf, tn.LDD, wallets, "/parity/passwd", absoluteNodeNum)
+			configToml, err := buildConfig(pconf, tn.LDD, wallets, "/parity/passwd", absoluteNodeNum)
 			if err != nil {
 				log.Println(err)
 				return nil, err
@@ -283,9 +284,9 @@ func setupPOW(tn *testnet.TestNet, pconf *ParityConf, wallets []string) error {
 		spec, "/parity/spec.json")
 }
 
-func setupGeth(client *ssh.Client, buildState *state.BuildState, pconf *ParityConf, wallets []string) error {
+func setupGeth(client *ssh.Client, buildState *state.BuildState, pconf *parityConf, wallets []string) error {
 
-	gethConf, err := GethSpec(pconf, wallets)
+	gethConf, err := gethSpec(pconf, wallets)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -326,7 +327,7 @@ func setupGeth(client *ssh.Client, buildState *state.BuildState, pconf *ParityCo
 	address := addresses[0][1 : len(addresses[0])-1]
 
 	_, err = client.Run(
-		fmt.Sprintf("docker exec wb_service0 geth --datadir /geth/ --networkid %d init /geth/genesis.json", pconf.NetworkId))
+		fmt.Sprintf("docker exec wb_service0 geth --datadir /geth/ --networkid %d init /geth/genesis.json", pconf.NetworkID))
 	if err != nil {
 		log.Println(err)
 		return err
@@ -336,7 +337,7 @@ func setupGeth(client *ssh.Client, buildState *state.BuildState, pconf *ParityCo
 
 	_, err = client.Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --networkid %d --rpc  --rpcaddr 0.0.0.0`+
 		` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --unlock="%s"`+
-		` --password /geth/passwd --etherbase %s --nodiscover`, pconf.NetworkId, address, address))
+		` --password /geth/passwd --etherbase %s --nodiscover`, pconf.NetworkID, address, address))
 	if err != nil {
 		log.Println(err)
 		return err

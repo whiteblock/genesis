@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 )
 
-type PanConf struct {
-	NetworkId             int64  `json:"networkId"`
+type panConf struct {
+	NetworkID             int64  `json:"networkId"`
 	Difficulty            int64  `json:"difficulty"`
 	InitBalance           string `json:"initBalance"`
 	MaxPeers              int64  `json:"maxPeers"`
@@ -24,16 +24,16 @@ type PanConf struct {
 /**
  * Fills in the defaults for missing parts,
  */
-func NewConf(data map[string]interface{}) (*PanConf, error) {
+func newConf(data map[string]interface{}) (*panConf, error) {
 
-	out := new(PanConf)
+	out := new(panConf)
 	err := json.Unmarshal([]byte(GetDefaults()), out)
 
 	if data == nil {
 		return out, nil
 	}
 
-	err = util.GetJSONInt64(data, "networkId", &out.NetworkId)
+	err = util.GetJSONInt64(data, "networkId", &out.NetworkID)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +93,7 @@ func NewConf(data map[string]interface{}) (*PanConf, error) {
 	return out, nil
 }
 
+// GetParams fetchs pantheon related parameters
 func GetParams() string {
 	dat, err := ioutil.ReadFile("./resources/pantheon/params.json")
 	if err != nil {
@@ -101,6 +102,7 @@ func GetParams() string {
 	return string(dat)
 }
 
+// GetDefaults fetchs pantheon related parameter defaults
 func GetDefaults() string {
 	dat, err := ioutil.ReadFile("./resources/pantheon/defaults.json")
 	if err != nil {
@@ -109,6 +111,7 @@ func GetDefaults() string {
 	return string(dat)
 }
 
+// GetServices returns the services which are used by artemis
 func GetServices() []util.Service {
 	return []util.Service{
 		{ //Include a geth node for transaction signing

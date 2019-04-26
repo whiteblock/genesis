@@ -11,9 +11,9 @@ import (
 	"log"
 )
 
-type ArtemisConf map[string]interface{}
+type artemisConf map[string]interface{}
 
-func NewConf(data map[string]interface{}) (ArtemisConf, error) {
+func newConf(data map[string]interface{}) (artemisConf, error) {
 	rawDefaults := GetDefaults()
 	defaults := map[string]interface{}{}
 
@@ -29,12 +29,13 @@ func NewConf(data map[string]interface{}) (ArtemisConf, error) {
 			return nil, fmt.Errorf("invalid number of validators (%d): must be an even number and greater than 3", val)
 		}
 	}
-	out := new(ArtemisConf)
-	*out = ArtemisConf(util.MergeStringMaps(defaults, data))
+	out := new(artemisConf)
+	*out = artemisConf(util.MergeStringMaps(defaults, data))
 
 	return *out, nil
 }
 
+// GetParams fetchs artemis related parameters
 func GetParams() string {
 	dat, err := helpers.GetStaticBlockchainConfig("artemis", "params.json")
 	if err != nil {
@@ -43,6 +44,7 @@ func GetParams() string {
 	return string(dat)
 }
 
+// GetDefaults fetchs artemis related parameter defaults
 func GetDefaults() string {
 	dat, err := helpers.GetStaticBlockchainConfig("artemis", "defaults.json")
 	if err != nil {
@@ -51,6 +53,7 @@ func GetDefaults() string {
 	return string(dat)
 }
 
+// GetServices returns the services which are used by artemis
 func GetServices() []util.Service {
 	return []util.Service{
 		{
@@ -65,9 +68,9 @@ func GetServices() []util.Service {
 	}
 }
 
-func makeNodeConfig(artemisConf ArtemisConf, identity string, peers string, node int, details *db.DeploymentDetails, constantsRaw string) (string, error) {
+func makeNodeConfig(aconf artemisConf, identity string, peers string, node int, details *db.DeploymentDetails, constantsRaw string) (string, error) {
 
-	artConf, err := util.CopyMap(artemisConf)
+	artConf, err := util.CopyMap(aconf)
 	if err != nil {
 		log.Println(err)
 		return "", err

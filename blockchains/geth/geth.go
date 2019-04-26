@@ -1,3 +1,4 @@
+//Package geth handles geth specific functionality
 package geth
 
 import (
@@ -22,15 +23,13 @@ func init() {
 	conf = util.GetConfig()
 }
 
-const EthNetStatsPort = 3338
+const ethNetStatsPort = 3338
 
-/*
-Build builds out a fresh new ethereum test network using geth
-*/
+// Build builds out a fresh new ethereum test network using geth
 func Build(tn *testnet.TestNet) ([]string, error) {
 	clients := tn.GetFlatClients()
 	mux := sync.Mutex{}
-	ethconf, err := NewConf(tn.LDD.Params)
+	ethconf, err := newConf(tn.LDD.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -163,7 +162,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		ip := tn.Nodes[absoluteNodeNum].IP
 		//Load the CustomGenesis file
 		_, err := client.DockerExec(localNodeNum,
-			fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/CustomGenesis.json", ethconf.NetworkId))
+			fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/CustomGenesis.json", ethconf.NetworkID))
 		if err != nil {
 			log.Println(err)
 			return err
@@ -171,7 +170,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n", absoluteNodeNum)
 		gethResults, err := client.DockerExec(localNodeNum,
 			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
-				"geth --rpc --datadir /geth/ --networkid %d console'", ethconf.NetworkId))
+				"geth --rpc --datadir /geth/ --networkid %d console'", ethconf.NetworkID))
 		if err != nil {
 			log.Println(err)
 			return err
@@ -220,7 +219,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 				` --rpcapi "web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
 				` --password /geth/passwd --etherbase %s console  2>&1 | tee %s`,
 			ethconf.MaxPeers,
-			ethconf.NetworkId,
+			ethconf.NetworkID,
 			ip,
 			unlock,
 			wallets[absoluteNodeNum],
@@ -252,7 +251,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		absName := fmt.Sprintf("%s%d", conf.NodePrefix, absoluteNodeNum)
 		sedCmd := fmt.Sprintf(`sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`, absName)
 		sedCmd2 := fmt.Sprintf(`sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:%d"/g' /eth-net-intelligence-api/app.json`,
-			util.GetGateway(server.SubnetID, absoluteNodeNum), EthNetStatsPort)
+			util.GetGateway(server.SubnetID, absoluteNodeNum), ethNetStatsPort)
 		sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`, ip)
 
 		//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
@@ -278,33 +277,32 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 /***************************************************************************************************************************/
 
+// Add handles adding a node to the geth testnet
+// TODO
 func Add(tn *testnet.TestNet) ([]string, error) {
 	return nil, nil
 }
 
+// MakeFakeAccounts creates ethereum addresses which can be marked as funded to produce a 
+// larger initial state
 func MakeFakeAccounts(accs int) []string {
 	out := make([]string, accs)
 	for i := 1; i <= accs; i++ {
-		acc := fmt.Sprintf("%X", i)
-		for j := len(acc); j < 40; j++ {
-			acc = "0" + acc
-		}
-		acc = "0x" + acc
-		out[i-1] = acc
+		out[i-1] = fmt.Sprintf("0x%.40x", i)
 	}
 	return out
 }
 
 /**
  * Create the custom genesis file for Ethereum
- * @param  *EthConf ethconf     The chain configuration
+ * @param  *ethConf ethconf     The chain configuration
  * @param  []string wallets     The wallets to be allocated a balance
  */
 
-func createGenesisfile(ethconf *EthConf, details *db.DeploymentDetails, wallets []string, buildState *state.BuildState) error {
+func createGenesisfile(ethconf *ethConf, details *db.DeploymentDetails, wallets []string, buildState *state.BuildState) error {
 
 	genesis := map[string]interface{}{
-		"chainId":        ethconf.NetworkId,
+		"chainId":        ethconf.NetworkID,
 		"homesteadBlock": ethconf.HomesteadBlock,
 		"eip155Block":    ethconf.Eip155Block,
 		"eip158Block":    ethconf.Eip158Block,
@@ -348,7 +346,7 @@ func createGenesisfile(ethconf *EthConf, details *db.DeploymentDetails, wallets 
  */
 func setupEthNetStats(client *ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf(
-		"docker exec -d wb_service0 bash -c 'cd /eth-netstats && WS_SECRET=second PORT=%d npm start'", EthNetStatsPort))
+		"docker exec -d wb_service0 bash -c 'cd /eth-netstats && WS_SECRET=second PORT=%d npm start'", ethNetStatsPort))
 	if err != nil {
 		log.Println(err)
 		return err

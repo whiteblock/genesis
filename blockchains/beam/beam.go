@@ -1,3 +1,4 @@
+//Package beam handles beam specific functionality
 package beam
 
 import (
@@ -21,8 +22,9 @@ func init() {
 
 const port int = 10000
 
+// Build builds out a fresh new beam test network
 func Build(tn *testnet.TestNet) ([]string, error) {
-	beamConf, err := NewConf(tn.LDD.Params)
+	bConf, err := newConf(tn.LDD.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -76,7 +78,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		func(_ int, _ int, absoluteNodeNum int) ([]byte, error) {
 			ipsCpy := make([]string, len(ips))
 			copy(ipsCpy, ips)
-			beamNodeConfig, err := makeNodeConfig(beamConf, ownerKeys[absoluteNodeNum],
+			beamNodeConfig, err := makeNodeConfig(bConf, ownerKeys[absoluteNodeNum],
 				secretMinerKeys[absoluteNodeNum], tn.LDD, absoluteNodeNum)
 			if err != nil {
 				log.Println(err)
@@ -120,7 +122,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		miningFlag := ""
-		if absoluteNodeNum >= int(beamConf.Validators) {
+		if absoluteNodeNum >= int(bConf.Validators) {
 			miningFlag = " --mining_threads 1"
 		}
 		_, err := client.DockerExecd(localNodeNum, fmt.Sprintf("beam-node%s", miningFlag))
@@ -134,6 +136,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	return nil, err
 }
 
+// Add handles adding nodes to the testnet
 func Add(tn *testnet.TestNet) ([]string, error) {
 	return nil, nil
 }

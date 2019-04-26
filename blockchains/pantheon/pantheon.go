@@ -1,3 +1,4 @@
+//Package pantheon handles artemis specific functionality
 package pantheon
 
 import (
@@ -20,15 +21,13 @@ func init() {
 	conf = util.GetConfig()
 }
 
-/*
-Build builds out a fresh new ethereum test network using pantheon
-*/
+// Build builds out a fresh new ethereum test network using pantheon
 func Build(tn *testnet.TestNet) ([]string, error) {
 	buildState := tn.BuildState
 	wg := sync.WaitGroup{}
 	mux := sync.Mutex{}
 
-	panconf, err := NewConf(tn.LDD.Params)
+	panconf, err := newConf(tn.LDD.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -45,7 +44,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	extraAccChan := make(chan []string)
 
 	go func() {
-		accs, err := PrepareGeth(tn.GetFlatClients()[0], panconf, tn.LDD.Nodes, buildState)
+		accs, err := prepareGeth(tn.GetFlatClients()[0], panconf, tn.LDD.Nodes, buildState)
 		if err != nil {
 			log.Println(err)
 			buildState.ReportError(err)
@@ -232,7 +231,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	return privKeys, err
 }
 
-func createGenesisfile(panconf *PanConf, details *db.DeploymentDetails, address []string, buildState *state.BuildState, ibftExtraData string) error {
+func createGenesisfile(panconf *panConf, details *db.DeploymentDetails, address []string, buildState *state.BuildState, ibftExtraData string) error {
 	alloc := map[string]map[string]string{}
 	for _, addr := range address {
 		alloc[addr] = map[string]string{
@@ -255,7 +254,7 @@ func createGenesisfile(panconf *PanConf, details *db.DeploymentDetails, address 
 	}
 
 	genesis := map[string]interface{}{
-		"chainId":    panconf.NetworkId,
+		"chainId":    panconf.NetworkID,
 		"difficulty": fmt.Sprintf("0x0%X", panconf.Difficulty),
 		"gasLimit":   fmt.Sprintf("0x0%X", panconf.GasLimit),
 		"consensus":  panconf.Consensus,
@@ -298,7 +297,7 @@ func createStaticNodesFile(list string, buildState *state.BuildState) error {
 	return buildState.Write("static-nodes.json", list)
 }
 
-func PrepareGeth(client *ssh.Client, panconf *PanConf, nodes int, buildState *state.BuildState) ([]string, error) {
+func prepareGeth(client *ssh.Client, panconf *panConf, nodes int, buildState *state.BuildState) ([]string, error) {
 	addresses := []string{}
 	passwd := ""
 	for i := 0; int64(i) < panconf.Accounts+int64(nodes); i++ {
@@ -357,7 +356,7 @@ func PrepareGeth(client *ssh.Client, panconf *PanConf, nodes int, buildState *st
 	return addresses, nil
 }
 
-func startGeth(client *ssh.Client, panconf *PanConf, addresses []string, privKeys []string, buildState *state.BuildState) error {
+func startGeth(client *ssh.Client, panconf *panConf, addresses []string, privKeys []string, buildState *state.BuildState) error {
 	serviceIps, err := util.GetServiceIps(GetServices())
 	if err != nil {
 		log.Println(err)
@@ -397,7 +396,7 @@ func startGeth(client *ssh.Client, panconf *PanConf, addresses []string, privKey
 	}
 	_, err = client.Run(fmt.Sprintf(`docker exec -itd wb_service0 bash -ic 'geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
 		` --rpcapi "admin,web3,db,eth,net,personal" --rpccorsdomain "0.0.0.0" --nodiscover --unlock="%s"`+
-		` --password /geth/passwd --networkid %d console 2>&1 >> /output.log'`, unlock, panconf.NetworkId))
+		` --password /geth/passwd --networkid %d console 2>&1 >> /output.log'`, unlock, panconf.NetworkID))
 	if err != nil {
 		log.Println(err)
 		return err

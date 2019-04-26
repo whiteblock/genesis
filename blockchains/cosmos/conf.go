@@ -5,6 +5,7 @@ import (
 	"../helpers"
 )
 
+// GetParams fetchs cosmos related parameters
 func GetParams() string {
 	dat, err := helpers.GetStaticBlockchainConfig("cosmos", "params.json")
 	if err != nil {
@@ -13,6 +14,7 @@ func GetParams() string {
 	return string(dat)
 }
 
+// GetDefaults fetchs cosmos related parameter defaults
 func GetDefaults() string {
 	dat, err := helpers.GetStaticBlockchainConfig("cosmos", "defaults.json")
 	if err != nil {
@@ -21,6 +23,7 @@ func GetDefaults() string {
 	return string(dat)
 }
 
+// GetServices returns the services which are used by cosmos
 func GetServices() []util.Service {
 	return nil
 }

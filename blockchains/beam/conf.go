@@ -8,14 +8,14 @@ import (
 	"io/ioutil"
 )
 
-type BeamConf struct {
+type beamConf struct {
 	Validators int64 `json:"validators"`
 	TxNodes    int64 `json:"txNodes"`
 	NilNodes   int64 `json:"nilNodes"`
 }
 
-func NewConf(data map[string]interface{}) (*BeamConf, error) {
-	out := new(BeamConf)
+func newConf(data map[string]interface{}) (*beamConf, error) {
+	out := new(beamConf)
 
 	err := util.GetJSONInt64(data, "validators", &out.Validators)
 	if err != nil {
@@ -34,6 +34,7 @@ func NewConf(data map[string]interface{}) (*BeamConf, error) {
 	return out, nil
 }
 
+// GetParams fetchs beam related parameters
 func GetParams() string {
 	dat, err := ioutil.ReadFile("./resources/beam/params.json")
 	if err != nil {
@@ -42,6 +43,7 @@ func GetParams() string {
 	return string(dat)
 }
 
+// GetDefaults fetchs beam related parameter defaults
 func GetDefaults() string {
 	dat, err := ioutil.ReadFile("./resources/beam/defaults.json")
 	if err != nil {
@@ -50,11 +52,12 @@ func GetDefaults() string {
 	return string(dat)
 }
 
+// GetServices returns the services which are used by artemis
 func GetServices() []util.Service {
 	return nil
 }
 
-func makeNodeConfig(bconf *BeamConf, keyOwner string, keyMine string, details *db.DeploymentDetails, node int) (string, error) {
+func makeNodeConfig(bconf *beamConf, keyOwner string, keyMine string, details *db.DeploymentDetails, node int) (string, error) {
 
 	filler := util.ConvertToStringMap(map[string]interface{}{
 		"keyOwner": keyOwner,

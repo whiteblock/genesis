@@ -1,3 +1,4 @@
+//Package cosmos handles cosmos specific functionality
 package cosmos
 
 import (
@@ -18,6 +19,7 @@ func init() {
 	conf = util.GetConfig()
 }
 
+// Build builds out a fresh new cosmos test network
 func Build(tn *testnet.TestNet) ([]string, error) {
 	tn.BuildState.SetBuildSteps(4 + (tn.LDD.Nodes * 2))
 
@@ -88,9 +90,9 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			log.Println(err)
 			return err
 		}
-		nodeId := res[:len(res)-1]
+		nodeID := res[:len(res)-1]
 		mux.Lock()
-		peers[absoluteNodeNum] = fmt.Sprintf("%s@%s:26656", nodeId, ip)
+		peers[absoluteNodeNum] = fmt.Sprintf("%s@%s:26656", nodeID, ip)
 		mux.Unlock()
 		tn.BuildState.IncrementBuildProgress()
 		return nil
@@ -117,6 +119,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	return nil, err
 }
 
+// Add handles adding a node to the cosmos testnet
+// TODO
 func Add(tn *testnet.TestNet) ([]string, error) {
 	return nil, nil
 }

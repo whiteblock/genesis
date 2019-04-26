@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 )
 
-type EthConf struct {
+type ethConf struct {
 	ExtraAccounts  int64  `json:"extraAccounts"`
-	NetworkId      int64  `json:"networkId"`
+	NetworkID      int64  `json:"networkId"`
 	Difficulty     int64  `json:"difficulty"`
 	InitBalance    string `json:"initBalance"`
 	MaxPeers       int64  `json:"maxPeers"`
@@ -22,8 +22,8 @@ type EthConf struct {
 /**
  * Fills in the defaults for missing parts,
  */
-func NewConf(data map[string]interface{}) (*EthConf, error) {
-	out := new(EthConf)
+func newConf(data map[string]interface{}) (*ethConf, error) {
+	out := new(ethConf)
 	err := json.Unmarshal([]byte(GetDefaults()), out)
 
 	if data == nil {
@@ -35,7 +35,7 @@ func NewConf(data map[string]interface{}) (*EthConf, error) {
 		return nil, err
 	}
 
-	err = util.GetJSONInt64(data, "networkId", &out.NetworkId)
+	err = util.GetJSONInt64(data, "networkId", &out.NetworkID)
 	if err != nil {
 		return nil, err
 	}
@@ -85,6 +85,7 @@ func NewConf(data map[string]interface{}) (*EthConf, error) {
 	return out, nil
 }
 
+// GetParams fetchs artemis related parameters
 func GetParams() string {
 	dat, err := ioutil.ReadFile("./resources/geth/params.json")
 	if err != nil {
@@ -93,6 +94,7 @@ func GetParams() string {
 	return string(dat)
 }
 
+// GetDefaults fetchs artemis related parameter defaults
 func GetDefaults() string {
 	dat, err := ioutil.ReadFile("./resources/geth/defaults.json")
 	if err != nil {
@@ -101,6 +103,7 @@ func GetDefaults() string {
 	return string(dat)
 }
 
+// GetServices returns the services which are used by artemis
 func GetServices() []util.Service {
 	return []util.Service{
 		{
