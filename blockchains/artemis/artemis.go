@@ -68,7 +68,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	constantsIndex := strings.Index(fetchedConf, "[constants]")
 	if constantsIndex == -1 {
-		return nil, fmt.Errorf("Couldn't find \"[constants]\" in file fetched from given source")
+		return nil, fmt.Errorf("couldn't find \"[constants]\" in file fetched from given source")
 	}
 	rawConstants := fetchedConf[constantsIndex:]
 	err = helpers.CreateConfigs(tn, "/artemis/config/config.toml",

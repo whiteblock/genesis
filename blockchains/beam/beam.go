@@ -76,16 +76,16 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		func(_ int, _ int, absoluteNodeNum int) ([]byte, error) {
 			ipsCpy := make([]string, len(ips))
 			copy(ipsCpy, ips)
-			beam_node_config, err := makeNodeConfig(beamConf, ownerKeys[absoluteNodeNum],
+			beamNodeConfig, err := makeNodeConfig(beamConf, ownerKeys[absoluteNodeNum],
 				secretMinerKeys[absoluteNodeNum], tn.LDD, absoluteNodeNum)
 			if err != nil {
 				log.Println(err)
 				return nil, err
 			}
 			for _, ip := range append(ipsCpy[:absoluteNodeNum], ipsCpy[absoluteNodeNum+1:]...) {
-				beam_node_config += fmt.Sprintf("peer=%s:%d\n", ip, port)
+				beamNodeConfig += fmt.Sprintf("peer=%s:%d\n", ip, port)
 			}
-			return []byte(beam_node_config), nil
+			return []byte(beamNodeConfig), nil
 		})
 	if err != nil {
 		log.Println(err)
@@ -93,7 +93,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 	err = helpers.CreateConfigs(tn, "/beam/beam-wallet.cfg",
 		func(_ int, _ int, absoluteNodeNum int) ([]byte, error) {
-			beam_wallet_config := []string{
+			beamWalletConfig := []string{
 				"# Emission.Value0=800000000",
 				"# Emission.Drop0=525600",
 				"# Emission.Drop1=2102400",
@@ -109,7 +109,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 				"# AllowPublicUtxos=0",
 				"# FakePoW=0",
 			}
-			return []byte(util.CombineConfig(beam_wallet_config)), nil
+			return []byte(util.CombineConfig(beamWalletConfig)), nil
 		})
 	if err != nil {
 		log.Println(err)

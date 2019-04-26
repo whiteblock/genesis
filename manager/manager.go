@@ -104,7 +104,7 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 	case "generic":
 		log.Println("Built in generic mode")
 	default:
-		buildState.ReportError(fmt.Errorf("Unknown blockchain"))
+		buildState.ReportError(fmt.Errorf("unknown blockchain"))
 		return fmt.Errorf("unknown blockchain")
 	}
 	if err != nil {

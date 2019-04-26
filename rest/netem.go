@@ -158,7 +158,7 @@ func removeOrAddOutage(w http.ResponseWriter, r *http.Request) {
 	case "DELETE":
 		err = netem.RemoveOutage(node1, node2)
 	default:
-		err = fmt.Errorf("Unexpected http method")
+		err = fmt.Errorf("unexpected http method")
 	}
 	if err != nil {
 		log.Println(err)

@@ -280,16 +280,16 @@ func (this *Client) DockerRead(node int, file string, lines int) (string, error)
    the given node.
 */
 func (this *Client) DockerMultiExec(node int, commands []string) (string, error) {
-	merged_command := ""
+	mergedCommand := ""
 
 	for _, command := range commands {
-		if len(merged_command) != 0 {
-			merged_command += "&&"
+		if len(mergedCommand) != 0 {
+			mergedCommand += "&&"
 		}
-		merged_command += fmt.Sprintf("docker exec -d %s%d %s", conf.NodePrefix, node, command)
+		mergedCommand += fmt.Sprintf("docker exec -d %s%d %s", conf.NodePrefix, node, command)
 	}
 
-	return this.Run(merged_command)
+	return this.Run(mergedCommand)
 }
 
 /*
@@ -297,16 +297,16 @@ func (this *Client) DockerMultiExec(node int, commands []string) (string, error)
    failure
 */
 func (this *Client) KTDockerMultiExec(node int, commands []string) (string, error) {
-	merged_command := ""
+	mergedCommand := ""
 
 	for _, command := range commands {
-		if len(merged_command) != 0 {
-			merged_command += "&&"
+		if len(mergedCommand) != 0 {
+			mergedCommand += "&&"
 		}
-		merged_command += fmt.Sprintf("docker exec -d %s%d %s", conf.NodePrefix, node, command)
+		mergedCommand += fmt.Sprintf("docker exec -d %s%d %s", conf.NodePrefix, node, command)
 	}
 
-	return this.KeepTryRun(merged_command)
+	return this.KeepTryRun(mergedCommand)
 }
 
 /*
