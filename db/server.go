@@ -2,26 +2,27 @@ package db
 
 import (
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" //sqlite
 	"log"
 	"regexp"
 )
 
+// Server represents a server on which genesis can build
 type Server struct {
-	/*
-	   Address of the server which is accessible from genesis
-	*/
-	Addr     string   `json:"addr"`
-	Nodes    int      `json:"nodes"`
-	Max      int      `json:"max"`
-	Id       int      `json:"id"`
+	// Addr is the address of the server which is accessible by genesis
+	Addr string `json:"addr"`
+	// Nodes is the number of nodes currently on this server
+	Nodes int `json:"nodes"`
+	// Max is the maximum number of nodes that server supports
+	Max int `json:"max"`
+	//Id is the ID of the server
+	Id int `json:"id"`
+	//SubnetID is the number used in the IP scheme for nodes on this server
 	SubnetID int      `json:"subnetID"`
-	Ips      []string `json:"ips"`
+	Ips      []string //To be removed
 }
 
-/*
-   Ensure that a server object contains valid data
-*/
+// Validate ensures that the  server object contains valid data
 func (s Server) Validate() error {
 	var re = regexp.MustCompile(`(?m)[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}`)
 	if !re.Match([]byte(s.Addr)) {
@@ -39,9 +40,7 @@ func (s Server) Validate() error {
 	return nil
 }
 
-/*
-   Get all of the servers, indexed by name
-*/
+// GetAllServers gets all of the servers, indexed by name
 func GetAllServers() (map[string]Server, error) {
 
 	rows, err := db.Query(fmt.Sprintf("SELECT id,server_id,addr,nodes,max,name FROM %s", ServerTable))
@@ -65,9 +64,7 @@ func GetAllServers() (map[string]Server, error) {
 	return allServers, nil
 }
 
-/*
-   Get servers from their ids
-*/
+//GetServers gets servers from their ids
 func GetServers(ids []int) ([]Server, error) {
 	var servers []Server
 	for _, id := range ids {
@@ -81,9 +78,7 @@ func GetServers(ids []int) ([]Server, error) {
 	return servers, nil
 }
 
-/*
-   Get a server by id
-*/
+//GetServer gets a server by its id
 func GetServer(id int) (Server, string, error) {
 	var name string
 	var server Server
@@ -109,9 +104,7 @@ func GetServer(id int) (Server, string, error) {
 	return server, name, nil
 }
 
-/*
-   Insert a new server into the database
-*/
+//InsertServer inserts a new server into the database
 func InsertServer(name string, server Server) (int, error) {
 
 	tx, err := db.Begin()
@@ -139,18 +132,14 @@ func InsertServer(name string, server Server) (int, error) {
 	return int(id), err
 }
 
-/*
-   Delete a server by id
-*/
+// DeleteServer deletes a server by id
 func DeleteServer(id int) error {
 
 	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %d", ServerTable, id))
 	return err
 }
 
-/*
-   Update a server by id
-*/
+//UpdateServer updates a server by id
 func UpdateServer(id int, server Server) error {
 
 	tx, err := db.Begin()
@@ -175,9 +164,7 @@ func UpdateServer(id int, server Server) error {
 	return tx.Commit()
 }
 
-/*
-   Update the number of nodes a server has
-*/
+//UpdateServerNodes update the number of nodes a server has
 func UpdateServerNodes(id int, nodes int) error {
 
 	tx, err := db.Begin()
@@ -200,9 +187,7 @@ func UpdateServerNodes(id int, nodes int) error {
 
 }
 
-/*
-   Get the ips of the hosts for a testnet
-*/
+//GetHostIPsByTestNet gets the ips of the hosts for a testnet
 func GetHostIPsByTestNet(id int) ([]string, error) {
 
 	rows, err := db.Query(fmt.Sprintf("SELECT addr FROM %s INNER JOIN %s ON %s.id == %s.server WHERE %s.id == %d GROUP BY %s.id",
