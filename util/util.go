@@ -1,8 +1,6 @@
-/*
-   Provides a multitude of support functions to
-   help make development easier. Use of these functions should be prefered,
-   as it allows for easier maintainence.
-*/
+// Package util provides a multitude of support functions to
+// help make development easier. Use of these functions should be prefered,
+// as it allows for easier maintainence.
 package util
 
 import (
@@ -19,11 +17,9 @@ import (
 	"strings"
 )
 
-/*
-   Sends an http request and returns the body. Gives an error if the http request failed
-   or returned a non success code.
-*/
-func HttpRequest(method string, url string, bodyData string) ([]byte, error) {
+// HTTPRequest Sends a HTTP request and returns the body. Gives an error if the http request failed
+// or returned a non success code.
+func HTTPRequest(method string, url string, bodyData string) ([]byte, error) {
 	//log.Println("URL IS "+url)
 	body := strings.NewReader(bodyData)
 	req, err := http.NewRequest(method, url, body)
@@ -53,7 +49,9 @@ func HttpRequest(method string, url string, bodyData string) ([]byte, error) {
 	return []byte(buf.String()), nil
 }
 
-func JwtHttpRequest(method string, url string, jwt string, bodyData string) (string, error) {
+// JwtHTTPRequest is similar to HttpRequest, but it have the content-type set as application/json and it will
+// put the given jwt in the auth header
+func JwtHTTPRequest(method string, url string, jwt string, bodyData string) (string, error) {
 	body := strings.NewReader(bodyData)
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
@@ -83,6 +81,7 @@ func JwtHttpRequest(method string, url string, jwt string, bodyData string) (str
 	return buf.String(), nil
 }
 
+// ExtractJwt will attempt to extract and return the jwt from the auth header
 func ExtractJwt(r *http.Request) (string, error) {
 	tokenString := r.Header.Get("Authorization")
 
@@ -96,6 +95,7 @@ func ExtractJwt(r *http.Request) (string, error) {
 	return splt[1], nil
 }
 
+//GetKidFromJwt will attempt to extract the kid from the given jwt
 func GetKidFromJwt(jwt string) (string, error) {
 	if len(jwt) == 0 {
 		return "", fmt.Errorf("given empty string for JWT")
@@ -123,6 +123,7 @@ func GetKidFromJwt(jwt string) (string, error) {
 	return kid, nil
 }
 
+//GetUUIDString generates a new UUID
 func GetUUIDString() (string, error) {
 	uid, err := uuid.NewV4()
 	return uid.String(), err
@@ -130,9 +131,7 @@ func GetUUIDString() (string, error) {
 
 /****Basic Linux Functions****/
 
-/*
-   Rm removes all of the given directories or files
-*/
+// Rm removes all of the given directories or files. Convenience function for os.RemoveAll
 func Rm(directories ...string) error {
 	for _, directory := range directories {
 		if conf.Verbose {
@@ -150,9 +149,7 @@ func Rm(directories ...string) error {
 	return nil
 }
 
-/*
-   Lsr lists the contents of a directory recursively
-*/
+// Lsr lists the contents of a directory recursively
 func Lsr(_dir string) ([]string, error) {
 	dir := _dir
 	if dir[len(dir)-1:] != "/" {
@@ -177,10 +174,8 @@ func Lsr(_dir string) ([]string, error) {
 	return out, nil
 }
 
-/*
-   CombineConfig combines an Array with \n as the delimiter.
-   Useful for generating configuration files.
-*/
+// CombineConfig combines an Array with \n as the delimiter.
+// Useful for generating configuration files. DEPRECATED
 func CombineConfig(entries []string) string {
 	out := ""
 	for _, entry := range entries {
@@ -216,9 +211,7 @@ func CombineConfig(entries []string) string {
 	return resultsRaw.String(), nil
 }*/
 
-/*
-   GetPath extracts the base path of the given path
-*/
+// GetPath extracts the base path of the given path
 func GetPath(path string) string {
 	index := strings.LastIndex(path, "/")
 	if index != -1 {
@@ -227,10 +220,10 @@ func GetPath(path string) string {
 	return path[:index]
 }
 
-/*
-   GetJSONNumber checks and extracts a json.Number from data[field].
-   Will return an error if data[field] does not exist or is of the wrong type.
-*/
+/******* JSON helper functions *******/
+
+// GetJSONNumber checks and extracts a json.Number from data[field].
+// Will return an error if data[field] does not exist or is of the wrong type.
 func GetJSONNumber(data map[string]interface{}, field string) (json.Number, error) {
 	rawValue, exists := data[field]
 	if exists && rawValue != nil {
@@ -247,10 +240,8 @@ func GetJSONNumber(data map[string]interface{}, field string) (json.Number, erro
 	return "", fmt.Errorf("incorrect type for %s", field)
 }
 
-/*
-   GetJSONInt64 checks and extracts a int64 from data[field].
-   Will return an error if data[field] does not exist or is of the wrong type.
-*/
+// GetJSONInt64 checks and extracts a int64 from data[field].
+// Will return an error if data[field] does not exist or is of the wrong type.
 func GetJSONInt64(data map[string]interface{}, field string, out *int64) error {
 	rawValue, exists := data[field]
 	if exists && rawValue != nil {
@@ -269,10 +260,8 @@ func GetJSONInt64(data map[string]interface{}, field string, out *int64) error {
 	return nil
 }
 
-/*
-   GetJSONInt64 checks and extracts a []string from data[field].
-   Will return an error if data[field] does not exist or is of the wrong type.
-*/
+// GetJSONStringArr checks and extracts a []string from data[field].
+// Will return an error if data[field] does not exist or is of the wrong type.
 func GetJSONStringArr(data map[string]interface{}, field string, out *[]string) error {
 	rawValue, exists := data[field]
 	if exists && rawValue != nil {
@@ -291,10 +280,8 @@ func GetJSONStringArr(data map[string]interface{}, field string, out *[]string) 
 	return nil
 }
 
-/*
-   GetJSONInt64 checks and extracts a string from data[field].
-   Will return an error if data[field] does not exist or is of the wrong type.
-*/
+// GetJSONString checks and extracts a string from data[field].
+// Will return an error if data[field] does not exist or is of the wrong type.
 func GetJSONString(data map[string]interface{}, field string, out *string) error {
 	rawValue, exists := data[field]
 	if exists && rawValue != nil {
@@ -313,10 +300,8 @@ func GetJSONString(data map[string]interface{}, field string, out *string) error
 	return nil
 }
 
-/*
-   GetJSONInt64 checks and extracts a bool from data[field].
-   Will return an error if data[field] does not exist or is of the wrong type.
-*/
+// GetJSONBool checks and extracts a bool from data[field].
+// Will return an error if data[field] does not exist or is of the wrong type.
 func GetJSONBool(data map[string]interface{}, field string, out *bool) error {
 	rawValue, exists := data[field]
 	if exists && rawValue != nil {
@@ -335,6 +320,8 @@ func GetJSONBool(data map[string]interface{}, field string, out *bool) error {
 	return nil
 }
 
+// MergeStringMaps merges two maps of string to interface together and returns it
+// If there are conflicting keys, the value in m2 will be choosen.
 func MergeStringMaps(m1 map[string]interface{}, m2 map[string]interface{}) map[string]interface{} {
 	out := make(map[string]interface{})
 	for k1, v1 := range m1 {
@@ -347,9 +334,9 @@ func MergeStringMaps(m1 map[string]interface{}, m2 map[string]interface{}) map[s
 	return out
 }
 
-func ConvertToStringMap(in interface{}) map[string]string {
+// ConvertToStringMap converts a map of string to interface to a map of string to json
+func ConvertToStringMap(data map[string]interface{}) map[string]string {
 
-	data := in.(map[string]interface{})
 	out := make(map[string]string)
 
 	for key, value := range data {
@@ -359,11 +346,12 @@ func ConvertToStringMap(in interface{}) map[string]string {
 	return out
 }
 
+// FormatError produced a standard error for execution.
 func FormatError(res string, err error) error {
 	return fmt.Errorf("%s\n%s", res, err.Error())
 }
 
-// Map performs a deep copy of the given map m.
+// CopyMap performs a deep copy of the given map m.
 func CopyMap(m map[string]interface{}) (map[string]interface{}, error) {
 	var out map[string]interface{}
 	tmp, err := json.Marshal(m)

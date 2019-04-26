@@ -5,10 +5,9 @@ import (
 	"strings"
 )
 
-/*
-   Check if the given string only contains standard ASCII characters, which can fit
-   in a signed char
-*/
+// ValidateAscii checks if the given string only contains standard ASCII characters, which can fit
+// in a signed char
+
 func ValidateAscii(str string) error {
 	for _, c := range str {
 		if c > 127 {
@@ -18,10 +17,8 @@ func ValidateAscii(str string) error {
 	return nil
 }
 
-/*
-   Similar to ValidateAscii, except that it excludes control characters from the set of acceptable characters.
-   Any character 127 > c > 31 is considered valid
-*/
+// ValidateNormalAscii is similar to ValidateAscii, except that it excludes control characters from the set of acceptable characters.
+// Any character 127 > c > 31 is considered valid
 func ValidateNormalAscii(str string) error {
 	for _, c := range str {
 		if c > 126 || c < 32 {
@@ -31,9 +28,7 @@ func ValidateNormalAscii(str string) error {
 	return nil
 }
 
-/*
-   Check to make sure there is nothing malicous in the file path
-*/
+// ValidateFilePath check to make sure there is nothing malicous in the file path
 func ValidateFilePath(path string) error {
 	if len(path) == 0 {
 		return fmt.Errorf("cannot be empty")
@@ -52,6 +47,8 @@ func ValidateFilePath(path string) error {
 	return ValidateNormalAscii(path)
 }
 
+// ValidNormalCharacter checks to make sure a character is within a safe range to naively
+// prevent most bash injects (Not for security, only for debugging)
 func ValidNormalCharacter(chr rune) bool {
 	return (chr >= '+' && chr <= ':') ||
 		(chr >= 'A' && chr <= 'Z') ||
@@ -59,10 +56,12 @@ func ValidNormalCharacter(chr rune) bool {
 		(chr == ' ' || chr == '_')
 }
 
-func ValidateCommandLine(image string) error {
-	for _, c := range image {
+// ValidateCommandLine naively checks for ppntential accidental bash injections. Like ValidNormalCharacter,
+// is not too be considered useful for security, only for picking up on potential bugs.
+func ValidateCommandLine(str string) error {
+	for _, c := range str {
 		if !ValidNormalCharacter(c) {
-			return fmt.Errorf("docker image contains invalid character \"%c\"", c)
+			return fmt.Errorf("\"%s\" contains invalid character '%c'", str, c)
 		}
 	}
 	return nil

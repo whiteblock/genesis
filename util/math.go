@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+//Point represents a basic 2D coordinate point
 type Point struct {
 	X int `json:"x"`
 	Y int `json:"y"`
