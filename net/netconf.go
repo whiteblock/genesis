@@ -1,6 +1,4 @@
-/*
-   Allows the ability for the simulation of network conditions accross nodes.
-*/
+//Package netconf provides the basic functionality for the simulation of network conditions accross nodes.
 package netconf
 
 import (
@@ -31,6 +29,7 @@ import (
 
 var conf = util.GetConfig()
 
+//Netconf is a representation of the impairments applied to a node
 type Netconf struct {
 	Node        int     `json:"node"`
 	Limit       int     `json:"limit"`
@@ -42,11 +41,9 @@ type Netconf struct {
 	Reorder     float64 `json:"reorder"`
 }
 
-/*
-   CreateCommands generates the commands needed to obtain the desired
-   network conditions
-*/
-func CreateCommands(netconf Netconf, serverId int) []string {
+// CreateCommands generates the commands needed to obtain the desired
+// network conditions
+func CreateCommands(netconf Netconf, serverID int) []string {
 	const offset int = 6
 	out := []string{
 		fmt.Sprintf("sudo tc qdisc del dev %s%d root", conf.BridgePrefix, netconf.Node),
@@ -55,7 +52,7 @@ func CreateCommands(netconf Netconf, serverId int) []string {
 		fmt.Sprintf("sudo tc filter add dev %s%d parent 1:0 protocol ip pref 55 handle %d fw flowid 2:1",
 			conf.BridgePrefix, netconf.Node, offset),
 		fmt.Sprintf("sudo iptables -t mangle -A PREROUTING  ! -d %s -j MARK --set-mark %d",
-			util.GetGateway(serverId, netconf.Node), offset),
+			util.GetGateway(serverID, netconf.Node), offset),
 	}
 
 	if netconf.Limit > 0 {
@@ -89,11 +86,9 @@ func CreateCommands(netconf Netconf, serverId int) []string {
 	return out
 }
 
-/*
-   Apply applies the given network config.
-*/
-func Apply(client *ssh.Client, netconf Netconf, serverId int) error {
-	cmds := CreateCommands(netconf, serverId)
+//Apply applies the given network config.
+func Apply(client *ssh.Client, netconf Netconf, serverID int) error {
+	cmds := CreateCommands(netconf, serverID)
 	for i, cmd := range cmds {
 		_, err := client.Run(cmd)
 		if i == 0 {
@@ -108,9 +103,7 @@ func Apply(client *ssh.Client, netconf Netconf, serverId int) error {
 	return nil
 }
 
-/*
-   ApplyAll applies all of the given netconfs
-*/
+//ApplyAll applies all of the given netconfs
 func ApplyAll(netconfs []Netconf, nodes []db.Node) error {
 	for _, netconf := range netconfs {
 		node, err := db.GetNodeByLocalID(nodes, netconf.Node)
@@ -132,9 +125,7 @@ func ApplyAll(netconfs []Netconf, nodes []db.Node) error {
 	return nil
 }
 
-/*
-   ApplyToAll applies the given netconf to `nodes` nodes in the network on the given server
-*/
+//ApplyToAll applies the given netconf to `nodes` nodes in the network on the given server
 func ApplyToAll(netconf Netconf, nodes []db.Node) error {
 	for _, node := range nodes {
 		netconf.Node = node.LocalID
@@ -159,9 +150,7 @@ func ApplyToAll(netconf Netconf, nodes []db.Node) error {
 	return nil
 }
 
-/*
-   RemoveAll removes network conditions from the given number of nodes
-*/
+//RemoveAll removes network conditions from the given nodes
 func RemoveAll(nodes []db.Node) error {
 	for _, node := range nodes {
 		client, err := status.GetClient(node.Server)
@@ -175,9 +164,7 @@ func RemoveAll(nodes []db.Node) error {
 	return nil
 }
 
-/*
-   RemoveAll removes network conditions from the given number of nodes
-*/
+//RemoveAllOnServer removes network conditions from the given number of nodes on the given client
 func RemoveAllOnServer(client *ssh.Client, nodes int) {
 	for i := 0; i < nodes; i++ {
 		client.Run(
@@ -253,7 +240,7 @@ func parseItems(items []string, nconf *Netconf) error {
 	return nil
 }
 
-//5 start index
+//GetConfigOnServer gets the network impairments present on a server
 func GetConfigOnServer(client *ssh.Client) ([]Netconf, error) {
 	res, err := client.Run("tc qdisc show | grep wb_bridge | grep netem || true")
 	if err != nil {

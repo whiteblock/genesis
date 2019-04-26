@@ -5,6 +5,7 @@ import (
 	"math"
 )
 
+//Calculator contains functions used to calculate network impairments based on a distance
 type Calculator struct {
 	Loss        func(float64) float64
 	Delay       func(float64) int
@@ -14,6 +15,7 @@ type Calculator struct {
 	Reorder     func(float64) float64
 }
 
+//Link is a naive representation of a network link
 type Link struct {
 	EgressNode  int     `json:"egressNode"`  //redundant info
 	IngressNode int     `json:"ingressNode"` //redundant info
