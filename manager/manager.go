@@ -112,16 +112,6 @@ func AddTestNet(details *db.DeploymentDetails, testNetId string) error {
 		log.Println(err)
 		return err
 	}
-	err = db.InsertTestNet(db.TestNet{
-		Id: testNetId, Blockchain: details.Blockchain,
-		Nodes: details.Nodes, Image: details.Images[0], //fix
-		Ts: time.Now().Unix()})
-
-	if err != nil {
-		log.Println(err)
-		buildState.ReportError(err)
-		return err
-	}
 
 	err = db.InsertBuild(*details, testNetId)
 	if err != nil {
