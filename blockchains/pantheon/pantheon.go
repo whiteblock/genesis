@@ -250,7 +250,7 @@ func createGenesisfile(panconf *panConf, details *db.DeploymentDetails, address 
 		consensusParams["epoch"] = panconf.Epoch
 		consensusParams["requesttimeoutseconds"] = panconf.RequestTimeoutSeconds
 	case "ethash":
-		consensusParams["fixeddifficulty"] = panconf.EthashDifficulty
+		consensusParams["fixeddifficulty"] = panconf.FixedDifficulty
 	}
 
 	genesis := map[string]interface{}{

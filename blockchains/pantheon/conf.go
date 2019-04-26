@@ -14,7 +14,7 @@ type panConf struct {
 	MaxPeers              int64  `json:"maxPeers"`
 	GasLimit              int64  `json:"gasLimit"`
 	Consensus             string `json:"consensus"`
-	EthashDifficulty      int64  `json:"fixeddifficulty`
+	FixedDifficulty       int64  `json:"fixeddifficulty`
 	BlockPeriodSeconds    int64  `json:"blockPeriodSeconds"`
 	Epoch                 int64  `json:"epoch"`
 	RequestTimeoutSeconds int64  `json:"requesttimeoutseconds"`
@@ -58,7 +58,7 @@ func newConf(data map[string]interface{}) (*panConf, error) {
 		return nil, err
 	}
 
-	err = util.GetJSONInt64(data, "fixeddifficulty", &out.EthashDifficulty)
+	err = util.GetJSONInt64(data, "fixeddifficulty", &out.FixedDifficulty)
 	if err != nil {
 		return nil, err
 	}
