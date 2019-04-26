@@ -87,18 +87,18 @@ func ExtractJwt(r *http.Request) (string, error) {
 	tokenString := r.Header.Get("Authorization")
 
 	if len(tokenString) == 0 {
-		return "", fmt.Errorf("Missing JWT in Authorization header")
+		return "", fmt.Errorf("missing JWT in authorization header")
 	}
 	splt := strings.Split(tokenString, " ")
 	if len(splt) < 2 {
-		return "", fmt.Errorf("Invalid Auth header")
+		return "", fmt.Errorf("invalid auth header")
 	}
 	return splt[1], nil
 }
 
 func GetKidFromJwt(jwt string) (string, error) {
 	if len(jwt) == 0 {
-		return "", fmt.Errorf("Given empty string for jwt")
+		return "", fmt.Errorf("given empty string for JWT")
 	}
 	headerb64 := strings.Split(jwt, ".")[0]
 	headerJson, err := base64.StdEncoding.DecodeString(headerb64)
@@ -118,7 +118,7 @@ func GetKidFromJwt(jwt string) (string, error) {
 	}
 	kid, ok := kidAsI.(string)
 	if !ok {
-		return "", fmt.Errorf("kid is not string as expected.")
+		return "", fmt.Errorf("kid is not string as expected")
 	}
 	return kid, nil
 }
@@ -248,13 +248,13 @@ func GetJSONNumber(data map[string]interface{}, field string) (json.Number, erro
 		case json.Number:
 			value, valid := rawValue.(json.Number)
 			if !valid {
-				return "", fmt.Errorf("Invalid json number")
+				return "", fmt.Errorf("invalid JSON number")
 			}
 			return value, nil
 
 		}
 	}
-	return "", fmt.Errorf("Incorrect type for %s given", field)
+	return "", fmt.Errorf("incorrect type for %s", field)
 }
 
 /*
@@ -273,7 +273,7 @@ func GetJSONInt64(data map[string]interface{}, field string, out *int64) error {
 			*out = value
 			return nil
 		default:
-			return fmt.Errorf("Incorrect type for %s given", field)
+			return fmt.Errorf("incorrect type for %s", field)
 		}
 	}
 	return nil
@@ -290,12 +290,12 @@ func GetJSONStringArr(data map[string]interface{}, field string, out *[]string) 
 		case []string:
 			value, valid := rawValue.([]string)
 			if !valid {
-				return fmt.Errorf("Invalid string array")
+				return fmt.Errorf("invalid string array")
 			}
 			*out = value
 			return nil
 		default:
-			return fmt.Errorf("Incorrect type for %s given", field)
+			return fmt.Errorf("incorrect type for %s", field)
 		}
 	}
 	return nil
@@ -312,12 +312,12 @@ func GetJSONString(data map[string]interface{}, field string, out *string) error
 		case string:
 			value, valid := rawValue.(string)
 			if !valid {
-				return fmt.Errorf("Invalid string")
+				return fmt.Errorf("invalid string")
 			}
 			*out = value
 			return nil
 		default:
-			return fmt.Errorf("Incorrect type for %s given", field)
+			return fmt.Errorf("incorrect type for %s", field)
 		}
 	}
 	return nil
@@ -334,12 +334,12 @@ func GetJSONBool(data map[string]interface{}, field string, out *bool) error {
 		case bool:
 			value, valid := rawValue.(bool)
 			if !valid {
-				return fmt.Errorf("Invalid bool")
+				return fmt.Errorf("invalid bool")
 			}
 			*out = value
 			return nil
 		default:
-			return fmt.Errorf("Incorrect type for %s given", field)
+			return fmt.Errorf("incorrect type for %s", field)
 		}
 	}
 	return nil

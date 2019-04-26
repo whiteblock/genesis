@@ -19,7 +19,7 @@ func Check() error {
 	}
 	if version != Version {
 		//Old version, previous database is now invalid
-		return fmt.Errorf("Needs update")
+		return fmt.Errorf("needs update")
 	}
 	return nil
 }

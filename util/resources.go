@@ -91,7 +91,7 @@ func (this Resources) Validate() error {
 			return err
 		}
 		if m2 > m1 {
-			return fmt.Errorf("Cannot give each node that much RAM, max is %s", conf.MaxNodeMemory)
+			return fmt.Errorf("assigning too much RAM: max is %s", conf.MaxNodeMemory)
 		}
 	}
 
@@ -102,7 +102,7 @@ func (this Resources) Validate() error {
 			return err
 		}
 		if c2 > c1 {
-			return fmt.Errorf("Cannot give each node that much CPU, max is %f", conf.MaxNodeCpu)
+			return fmt.Errorf("assigning too much CPU: max is %f", conf.MaxNodeCpu)
 		}
 	}
 

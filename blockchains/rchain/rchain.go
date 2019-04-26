@@ -226,7 +226,7 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 	}
 	iEnode, ok := tn.BuildState.Get("bootnode")
 	if !ok {
-		err = fmt.Errorf("Missing bootnode, has rchain been built before?")
+		err = fmt.Errorf("rebuild: missing bootnode")
 		log.Println(err)
 		return nil, err
 	}
@@ -267,7 +267,7 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 	}
 
 	if !ok {
-		err = fmt.Errorf("Missing key pairs, has rchain been built before?")
+		err = fmt.Errorf("rebuild: missing key pairs")
 		log.Println(err)
 		return nil, err
 	}

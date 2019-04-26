@@ -25,16 +25,16 @@ type Server struct {
 func (s Server) Validate() error {
 	var re = regexp.MustCompile(`(?m)[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}`)
 	if !re.Match([]byte(s.Addr)) {
-		return fmt.Errorf("Addr is invalid")
+		return fmt.Errorf("invalid addr")
 	}
 	if s.Nodes < 0 {
-		return fmt.Errorf("Nodes is invalid")
+		return fmt.Errorf("invalid nodes")
 	}
 	if s.Nodes > s.Max {
-		return fmt.Errorf("Max is invalid")
+		return fmt.Errorf("invalid max")
 	}
 	if s.SubnetID < 1 {
-		return fmt.Errorf("SubnetID is invalid")
+		return fmt.Errorf("invalid SubnetID")
 	}
 	return nil
 }
@@ -96,7 +96,7 @@ func GetServer(id int) (Server, string, error) {
 	}
 
 	if !rows.Next() {
-		return server, name, fmt.Errorf("Not found")
+		return server, name, fmt.Errorf("not found")
 	}
 	defer rows.Close()
 	err = rows.Scan(&server.Id, &server.SubnetID, &server.Addr,

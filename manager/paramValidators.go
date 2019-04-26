@@ -20,12 +20,12 @@ func validateResources(details *db.DeploymentDetails) error {
 
 func validateNumOfNodes(details *db.DeploymentDetails) error {
 	if details.Nodes > conf.MaxNodes {
-		err := fmt.Errorf("Too many nodes, max of %d nodes.", conf.MaxNodes)
+		err := fmt.Errorf("too many nodes: max of %d nodes", conf.MaxNodes)
 		return err
 	}
 
 	if details.Nodes < 1 {
-		err := fmt.Errorf("You must have atleast 1 node")
+		err := fmt.Errorf("must have at least 1 node")
 		return err
 	}
 	return nil
@@ -53,7 +53,7 @@ func validateBlockchain(details *db.DeploymentDetails) error {
 
 func checkForNilOrMissing(details *db.DeploymentDetails) error {
 	if details.Servers == nil {
-		err := fmt.Errorf("servers cannot be null.")
+		err := fmt.Errorf("servers cannot be null")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -61,7 +61,7 @@ func checkForNilOrMissing(details *db.DeploymentDetails) error {
 	}
 
 	if len(details.Servers) == 0 {
-		err := fmt.Errorf("servers cannot be empty.")
+		err := fmt.Errorf("servers cannot be empty")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -77,7 +77,7 @@ func checkForNilOrMissing(details *db.DeploymentDetails) error {
 	}
 
 	if details.Images == nil {
-		err := fmt.Errorf("images cannot be null.")
+		err := fmt.Errorf("images cannot be null")
 		if err != nil {
 			log.Println(err)
 			return err

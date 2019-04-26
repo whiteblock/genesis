@@ -53,7 +53,7 @@ func GetTestNet(id string) (TestNet, error) {
 	err := row.Scan(&testnet.Id, &testnet.Blockchain, &testnet.Nodes, &testnet.Image, &testnet.Ts)
 
 	if err == sql.ErrNoRows {
-		return testnet, errors.New("Not Found")
+		return testnet, errors.New("testnet not Found")
 	}
 
 	return testnet, err
