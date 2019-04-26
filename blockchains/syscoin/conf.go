@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-type SysConf struct {
+type sysConf struct {
 	Options []string `json:"options"`
 	Extras  []string `json:"extras"`
 
@@ -25,8 +25,8 @@ type SysConf struct {
 	Validators      int64 `json:"validators"`
 }
 
-func NewConf(data map[string]interface{}) (*SysConf, error) {
-	out := new(SysConf)
+func newConf(data map[string]interface{}) (*sysConf, error) {
+	out := new(sysConf)
 	err := json.Unmarshal([]byte(GetDefaults()), out)
 
 	if data == nil {
@@ -97,60 +97,61 @@ func NewConf(data map[string]interface{}) (*SysConf, error) {
 	return out, nil
 }
 
-func (this *SysConf) Generate() string {
+func (sconf *sysConf) Generate() string {
 	out := ""
-	for _, opt := range this.Options {
+	for _, opt := range sconf.Options {
 		out += opt + "=1\n"
 	}
 	out += "[regtest]\n"
 	out += "rpcuser=user\n"
 	out += "rpcpassword=password\n"
-	for _, extra := range this.Extras {
+	for _, extra := range sconf.Extras {
 		extra += extra + "\n"
 	}
 
 	return out
 }
 
-func (this *SysConf) GenerateReceiver() string {
-	out := this.Generate()
+func (sconf *sysConf) GenerateReceiver() string {
+	out := sconf.Generate()
 
-	for _, opt := range this.ReceiverOptions {
+	for _, opt := range sconf.ReceiverOptions {
 		out += opt + "=1\n"
 	}
 
-	for _, extra := range this.ReceiverExtras {
+	for _, extra := range sconf.ReceiverExtras {
 		extra += extra + "\n"
 	}
 	return out
 }
 
-func (this *SysConf) GenerateSender() string {
-	out := this.Generate()
+func (sconf *sysConf) GenerateSender() string {
+	out := sconf.Generate()
 
-	for _, opt := range this.SenderOptions {
+	for _, opt := range sconf.SenderOptions {
 		out += opt + "=1\n"
 	}
 
-	for _, extra := range this.SenderExtras {
+	for _, extra := range sconf.SenderExtras {
 		extra += extra + "\n"
 	}
 	return out
 }
 
-func (this *SysConf) GenerateMN() string {
-	out := this.Generate()
+func (sconf *sysConf) GenerateMN() string {
+	out := sconf.Generate()
 
-	for _, opt := range this.MNOptions {
+	for _, opt := range sconf.MNOptions {
 		out += opt + "=1\n"
 	}
 
-	for _, extra := range this.MNExtras {
+	for _, extra := range sconf.MNExtras {
 		extra += extra + "\n"
 	}
 	return out
 }
 
+// GetParams fetchs syscoin related parameters
 func GetParams() string {
 	dat, err := ioutil.ReadFile("./resources/syscoin/params.json")
 	if err != nil {
@@ -159,6 +160,7 @@ func GetParams() string {
 	return string(dat)
 }
 
+// GetDefaults fetchs syscoin related parameter defaults
 func GetDefaults() string {
 	dat, err := ioutil.ReadFile("./resources/syscoin/defaults.json")
 	if err != nil {
@@ -167,6 +169,7 @@ func GetDefaults() string {
 	return string(dat)
 }
 
+// GetServices returns the services which are used by syscoin
 func GetServices() []util.Service {
 	return nil
 	/*return []util.Service{

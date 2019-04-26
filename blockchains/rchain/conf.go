@@ -50,7 +50,7 @@ func GetServices() []util.Service {
 	}
 }
 
-// GetParams fetchs artemis related parameters
+// GetParams fetchs rchain related parameters
 func GetParams() string {
 	dat, err := ioutil.ReadFile("./resources/rchain/params.json")
 	if err != nil {
@@ -59,7 +59,7 @@ func GetParams() string {
 	return string(dat)
 }
 
-// GetDefaults fetchs artemis related parameter defaults
+// GetDefaults fetchs rchain related parameter defaults
 func GetDefaults() string {
 	dat, err := ioutil.ReadFile("./resources/rchain/defaults.json")
 	if err != nil {

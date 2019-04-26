@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 )
 
+// GetParams fetchs tendermint related parameters
 func GetParams() string {
 	dat, err := ioutil.ReadFile("./resources/tendermint/params.json")
 	if err != nil {
@@ -13,6 +14,7 @@ func GetParams() string {
 	return string(dat)
 }
 
+// GetDefaults fetchs tendermint related parameter defaults
 func GetDefaults() string {
 	dat, err := ioutil.ReadFile("./resources/tendermint/defaults.json")
 	if err != nil {
@@ -21,6 +23,7 @@ func GetDefaults() string {
 	return string(dat)
 }
 
+// GetServices returns the services which are used by tendermint
 func GetServices() []util.Service {
 	return nil
 }

@@ -1,3 +1,4 @@
+//Package syscoin handles syscoin specific functionality
 package syscoin
 
 import (
@@ -6,7 +7,6 @@ import (
 	"../../testnet"
 	"../../util"
 	"../helpers"
-	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -18,20 +18,14 @@ func init() {
 	conf = util.GetConfig()
 }
 
-/**
- * Sets up Syscoin Testnet in Regtest mode
- * @param {[type]} data    map[string]interface{}   The configuration optiosn given by the client
- * @param {[type]} nodes   int                      The number of nodes to build
- * @param {[type]} servers []db.Server)             The servers to be built on
- * @return ([]string,error [description]
- */
+// RegTest sets up Syscoin Testnet in Regtest mode
 func RegTest(tn *testnet.TestNet) ([]string, error) {
 	if tn.LDD.Nodes < 3 {
 		log.Println("Tried to build syscoin with not enough nodes")
-		return nil, errors.New("not enough nodes")
+		return nil, fmt.Errorf("not enough nodes")
 	}
 
-	sysconf, err := NewConf(tn.LDD.Params)
+	sysconf, err := newConf(tn.LDD.Params)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -58,11 +52,13 @@ func RegTest(tn *testnet.TestNet) ([]string, error) {
 	return out, err
 }
 
+// Add handles adding a node to the artemis testnet
+// TODO
 func Add(tn *testnet.TestNet) ([]string, error) {
 	return nil, nil
 }
 
-func handleConf(tn *testnet.TestNet, sysconf *SysConf) ([]string, error) {
+func handleConf(tn *testnet.TestNet, sysconf *sysConf) ([]string, error) {
 	ips := []string{}
 	for _, node := range tn.Nodes {
 		ips = append(ips, node.IP)
