@@ -24,7 +24,7 @@ func Check() error {
 	return nil
 }
 
-func CheckAndUpdate() {
+func checkAndUpdate() {
 	if Check() != nil {
 		log.Println("Updating the database...")
 		util.Rm(dataLoc)
@@ -33,7 +33,7 @@ func CheckAndUpdate() {
 	}
 }
 
-func SetVersion(version string) error {
+func setVersion(version string) error {
 	tx, err := db.Begin()
 
 	if err != nil {

@@ -29,7 +29,7 @@ var db *sql.DB
 func init() {
 	db = getDB()
 	db.SetMaxOpenConns(50)
-	CheckAndUpdate()
+	checkAndUpdate()
 }
 func getDB() *sql.DB {
 	if _, err := os.Stat(dataLoc); os.IsNotExist(err) {
@@ -108,7 +108,7 @@ func dbInit() {
 		panic(err)
 	}
 	insertLocalServers(db)
-	SetVersion(Version)
+	setVersion(Version)
 }
 
 //insertLocalServers adds the default server(s) to the servers database, allowing immediate use of the application
