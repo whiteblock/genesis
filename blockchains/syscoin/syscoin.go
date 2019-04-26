@@ -28,7 +28,7 @@ func init() {
 func RegTest(tn *testnet.TestNet) ([]string, error) {
 	if tn.LDD.Nodes < 3 {
 		log.Println("Tried to build syscoin with not enough nodes")
-		return nil, errors.New("Tried to build syscoin with not enough nodes")
+		return nil, errors.New("not enough nodes")
 	}
 
 	sysconf, err := NewConf(tn.LDD.Params)

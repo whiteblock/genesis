@@ -112,7 +112,8 @@ func GetNode(id string) (Node, error) {
 	var node Node
 
 	if row.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.IP, &node.Label, &node.AbsoluteNum) == sql.ErrNoRows {
-		return node, errors.New("Not Found")
+		return node, errors.New("not found")
+
 	}
 
 	return node, nil
@@ -177,7 +178,7 @@ func GetNodeByLocalID(nodes []Node, localID int) (Node, error) {
 		}
 	}
 
-	return Node{}, errors.New("Couldn't find the given node")
+	return Node{}, errors.New("node not found")
 }
 
 //GetNodeByAbsNum finds a node based on its absolute node number
@@ -188,7 +189,7 @@ func GetNodeByAbsNum(nodes []Node, absNum int) (Node, error) {
 		}
 	}
 
-	return Node{}, errors.New("Couldn't find the given node")
+	return Node{}, errors.New("node not found")
 }
 
 //DivideNodesByAbsMatch spits the given nodes into nodes which have their absnum in the
@@ -208,7 +209,7 @@ func DivideNodesByAbsMatch(nodes []Node, nodeNums []int) ([]Node, []Node, error)
 			}
 		}
 		if index == -1 {
-			return nil, nil, fmt.Errorf("Couldn't find node %d", num)
+			return nil, nil, fmt.Errorf("node %d not found", num)
 		}
 		matches = append(matches, notMatches[index])
 		if len(notMatches) == index-1 {

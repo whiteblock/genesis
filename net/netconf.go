@@ -208,7 +208,7 @@ func parseItems(items []string, nconf *Netconf) error {
 			re := regexp.MustCompile(`(?m)[0-9]+\.[0-9]+`)
 			matches := re.FindAllString(items[2*i+1], -1)
 			if len(matches) == 0 {
-				return fmt.Errorf("Unexpected delay value \"%s\"", items[2*i+1])
+				return fmt.Errorf("unexpected delay value \"%s\"", items[2*i+1])
 			}
 
 			val, err := strconv.ParseFloat(matches[0], 64)

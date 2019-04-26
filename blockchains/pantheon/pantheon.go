@@ -341,7 +341,7 @@ func PrepareGeth(client *ssh.Client, panconf *PanConf, nodes int, buildState *st
 			addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
 			addrRaw := addressPattern.FindAllString(gethResults, -1)
 			if len(addrRaw) < 1 {
-				buildState.ReportError(fmt.Errorf("Unable to get addresses"))
+				buildState.ReportError(fmt.Errorf("unable to get addresses"))
 				return
 			}
 			address := addrRaw[0]

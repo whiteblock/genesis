@@ -321,7 +321,7 @@ func setupGeth(client *ssh.Client, buildState *state.BuildState, pconf *ParityCo
 	addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
 	addresses := addressPattern.FindAllString(res, -1)
 	if len(addresses) < 1 {
-		return fmt.Errorf("Unable to get addresses")
+		return fmt.Errorf("unable to get addresses")
 	}
 	address := addresses[0][1 : len(addresses[0])-1]
 

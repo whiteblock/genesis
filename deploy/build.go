@@ -69,24 +69,24 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 
 	tn.BuildState.SetBuildStage("Provisioning the nodes")
 
-	availibleServers := make([]int, len(tn.Servers))
-	for i := range availibleServers {
-		availibleServers[i] = i
+	availableServers := make([]int, len(tn.Servers))
+	for i := range availableServers {
+		availableServers[i] = i
 	}
 
 	index := 0
 	for i := 0; i < tn.LDD.Nodes; i++ {
-		serverIndex := availibleServers[index]
+		serverIndex := availableServers[index]
 		serverID := tn.Servers[serverIndex].Id
 
 		if tn.Servers[serverIndex].Max <= tn.Servers[serverIndex].Nodes {
-			if len(availibleServers) == 1 {
+			if len(availableServers) == 1 {
 				return fmt.Errorf("cannot build that many nodes with the availible resources")
 			}
-			availibleServers = append(availibleServers[:serverIndex], availibleServers[serverIndex+1:]...)
+			availableServers = append(availableServers[:serverIndex], availableServers[serverIndex+1:]...)
 			i--
 			index++
-			index = index % len(availibleServers)
+			index = index % len(availableServers)
 			continue
 		}
 		relNum := len(tn.Servers[serverIndex].Ips)
@@ -110,7 +110,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 		}(&tn.Servers[serverIndex], i, relNum)
 
 		index++
-		index = index % len(availibleServers)
+		index = index % len(availableServers)
 	}
 
 	if services != nil { //Maybe distribute the services over multiple servers
