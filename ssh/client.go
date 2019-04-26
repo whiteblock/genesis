@@ -28,7 +28,7 @@ const maxConnections int = 50
 type Client struct {
 	clients  []*ssh.Client
 	host     string
-	serverId int
+	serverID int
 	mux      *sync.RWMutex
 	sem      *semaphore.Weighted
 }
@@ -37,7 +37,7 @@ type Client struct {
    NewClient creates an instance of Client, with a connection to the
    host server given.
 */
-func NewClient(host string, serverId int) (*Client, error) {
+func NewClient(host string, serverID int) (*Client, error) {
 	out := new(Client)
 	for i := maxConnections; i > 0; i -= 5 {
 		client, err := sshConnect(host)
@@ -48,7 +48,7 @@ func NewClient(host string, serverId int) (*Client, error) {
 		out.clients = append(out.clients, client)
 	}
 	out.host = host
-	out.serverId = serverId
+	out.serverID = serverID
 	out.mux = &sync.RWMutex{}
 	out.sem = semaphore.NewWeighted(int64(maxConnections))
 	return out, nil
@@ -137,7 +137,7 @@ func (this *Client) Run(command string) (string, error) {
 	if conf.Verbose {
 		fmt.Printf("Running command: %s\n", command)
 	}
-	bs := state.GetBuildStateByServerId(this.serverId)
+	bs := state.GetBuildStateByServerId(this.serverID)
 	defer session.Close()
 	if bs.Stop() {
 		return "", bs.GetError()
@@ -165,7 +165,7 @@ func (this *Client) Run(command string) (string, error) {
 func (this *Client) KeepTryRun(command string) (string, error) {
 	var res string
 	var err error
-	bs := state.GetBuildStateByServerId(this.serverId)
+	bs := state.GetBuildStateByServerId(this.serverID)
 	if bs.Stop() {
 		return "", bs.GetError()
 	}
@@ -237,8 +237,8 @@ func (this *Client) logSanitizeAndStore(node int, command string) {
 	if strings.Count(command, "'") != strings.Count(command, "\\'") {
 		panic("DockerExecdLog commands cannot contain unescaped ' characters")
 	}
-	bs := state.GetBuildStateByServerId(this.serverId)
-	bs.Set(fmt.Sprintf("%d", node), util.Command{Cmdline: command, ServerId: this.serverId, Node: node})
+	bs := state.GetBuildStateByServerId(this.serverID)
+	bs.Set(fmt.Sprintf("%d", node), util.Command{Cmdline: command, ServerID: this.serverID, Node: node})
 }
 
 /*
@@ -318,7 +318,7 @@ func (this *Client) Scp(src string, dest string) error {
 		fmt.Printf("Remote copying %s to %s...", src, dest)
 	}
 	if !strings.HasPrefix(src, "./") && src[0] != '/' {
-		bs := state.GetBuildStateByServerId(this.serverId)
+		bs := state.GetBuildStateByServerId(this.serverID)
 		src = "/tmp/" + bs.BuildId + "/" + src
 	}
 

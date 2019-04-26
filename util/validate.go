@@ -5,10 +5,9 @@ import (
 	"strings"
 )
 
-// ValidateAscii checks if the given string only contains standard ASCII characters, which can fit
+// ValidateASCII checks if the given string only contains standard ASCII characters, which can fit
 // in a signed char
-
-func ValidateAscii(str string) error {
+func ValidateASCII(str string) error {
 	for _, c := range str {
 		if c > 127 {
 			return fmt.Errorf("character %c is not ASCII", c)
@@ -17,9 +16,9 @@ func ValidateAscii(str string) error {
 	return nil
 }
 
-// ValidateNormalAscii is similar to ValidateAscii, except that it excludes control characters from the set of acceptable characters.
+// ValidateNormalASCII is similar to ValidateAscii, except that it excludes control characters from the set of acceptable characters.
 // Any character 127 > c > 31 is considered valid
-func ValidateNormalAscii(str string) error {
+func ValidateNormalASCII(str string) error {
 	for _, c := range str {
 		if c > 126 || c < 32 {
 			return fmt.Errorf("invalid character %c", c)
@@ -44,7 +43,7 @@ func ValidateFilePath(path string) error {
 		return fmt.Errorf("given path contains unusual characters")
 	}
 
-	return ValidateNormalAscii(path)
+	return ValidateNormalASCII(path)
 }
 
 // ValidNormalCharacter checks to make sure a character is within a safe range to naively

@@ -153,7 +153,7 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 	}
 	cmd := cmdRaw.(util.Command)
 
-	client, err := status.GetClient(cmd.ServerId)
+	client, err := status.GetClient(cmd.ServerID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 500)
@@ -262,7 +262,7 @@ func killNode(w http.ResponseWriter, r *http.Request) {
 	}
 	cmd := cmdRaw.(util.Command)
 
-	client, err := status.GetClient(cmd.ServerId)
+	client, err := status.GetClient(cmd.ServerID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 500)

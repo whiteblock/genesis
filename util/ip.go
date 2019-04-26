@@ -6,16 +6,13 @@ import (
 	"net"
 )
 
-/*
-   ReservedIps indicates the number of ip addresses reserved in
-   a cluster's subnet
-*/
+
+// ReservedIps indicates the number of ip addresses reserved in
+// a cluster's subnet
 const ReservedIps uint32 = 3
 
-/*
-   InetNtoa converts the IP address, given in network byte order,
-   to a string in IPv4 dotted-decimal notation.
-*/
+// InetNtoa converts the IP address, given in network byte order,
+// to a string in IPv4 dotted-decimal notation.
 func InetNtoa(ip uint32) string {
 	return fmt.Sprintf("%d.%d.%d.%d",
 		(ip&(0x0FF<<0x018))>>0x018,
@@ -24,10 +21,8 @@ func InetNtoa(ip uint32) string {
 		ip&0x0FF)
 }
 
-/*
-   GetNodeIP calculates the IP address of a node, based on
-   the current IP scheme
-*/
+// GetNodeIP calculates the IP address of a node, based on
+// the current IP scheme
 func GetNodeIP(server int, node int) string {
 	var ip = conf.IPPrefix << (conf.NodeBits + conf.ClusterBits + conf.ServerBits)
 	var clusterShift = conf.NodeBits
@@ -46,13 +41,11 @@ func GetNodeIP(server int, node int) string {
 	return InetNtoa(ip)
 }
 
-/*
-	GetInfoFromIP returns the server number and the node number calculated from the given
-	IPv4 address based on the current IP scheme.
-*/
+// GetInfoFromIP returns the server number and the node number calculated from the given
+// IPv4 address based on the current IP scheme.
 func GetInfoFromIP(ipStr string) (int, int) {
 	ipBytes := net.ParseIP(ipStr).To4()
-	var rawIP uint32 = 0
+	var rawIP uint32
 	for _, ipByte := range ipBytes {
 		rawIP = rawIP << 8
 		rawIP += uint32(ipByte)
@@ -71,10 +64,8 @@ func GetInfoFromIP(ipStr string) (int, int) {
 	return int(server), int(node)
 }
 
-/*
-   GetGateway calculates the gateway IP address for a node,
-   base on the current IP scheme
-*/
+// GetGateway calculates the gateway IP address for a node,
+// base on the current IP scheme
 func GetGateway(server int, node int) string {
 	var ip = conf.IPPrefix << (conf.NodeBits + conf.ClusterBits + conf.ServerBits)
 	clusterShift := conf.NodeBits
@@ -84,14 +75,12 @@ func GetGateway(server int, node int) string {
 	//set cluster bits
 	cluster := uint32(uint32(node) / NodesPerCluster)
 	ip += cluster << clusterShift
-	ip += 1
+	ip++
 	return InetNtoa(ip)
 }
 
-/*
-   GetGateways calculates the gateway IP addresses for all of the nodes
-   on a server.
-*/
+// GetGateways calculates the gateway IP addresses for all of the nodes
+// on a server.
 func GetGateways(server int, nodes int) []string {
 	clusters := uint32((uint32(nodes) - (uint32(nodes) % NodesPerCluster)) / NodesPerCluster)
 	out := []string{}
@@ -103,17 +92,13 @@ func GetGateways(server int, nodes int) []string {
 	return out
 }
 
-/*
-   GetSubnet calculates the subnet based on the IP scheme
-*/
+// GetSubnet calculates the subnet based on the IP scheme
 func GetSubnet() int {
 	return 32 - int(conf.NodeBits)
 }
 
-/*
-   GetWholeNetworkIp gets the network ip of the whole network for a server.
-*/
-func GetWholeNetworkIp(server int) string {
+// GetWholeNetworkIP gets the network ip of the whole network for a server.
+func GetWholeNetworkIP(server int) string {
 	var ip = conf.IPPrefix << (conf.NodeBits + conf.ClusterBits + conf.ServerBits)
 	var serverShift = conf.NodeBits + conf.ClusterBits
 	//set server bits
@@ -121,9 +106,7 @@ func GetWholeNetworkIp(server int) string {
 	return InetNtoa(ip)
 }
 
-/*
-   GetNetworkAddress gets the network address of the cluster the given node belongs to.
-*/
+// GetNetworkAddress gets the network address of the cluster the given node belongs to.
 func GetNetworkAddress(server int, node int) string {
 	var ip = conf.IPPrefix << (conf.NodeBits + conf.ClusterBits + conf.ServerBits)
 	clusterShift := conf.NodeBits
@@ -136,9 +119,7 @@ func GetNetworkAddress(server int, node int) string {
 	return fmt.Sprintf("%s/%d", InetNtoa(ip), GetSubnet())
 }
 
-/*
-   inc increments an ip address by 1
-*/
+// inc increments an ip address by 1
 func inc(ip net.IP) {
 	for i := len(ip) - 1; i >= 0; i-- {
 		ip[i]++
@@ -148,10 +129,8 @@ func inc(ip net.IP) {
 	}
 }
 
-/*
-   GetServiceIps creates a map of the service names to their ip addresses. Useful
-   for determining the ip address of a service.
-*/
+// GetServiceIps creates a map of the service names to their ip addresses. Useful
+// for determining the ip address of a service.
 func GetServiceIps(services []Service) (map[string]string, error) {
 	out := make(map[string]string)
 	ip, ipnet, err := net.ParseCIDR(conf.ServiceNetwork)
@@ -172,9 +151,7 @@ func GetServiceIps(services []Service) (map[string]string, error) {
 	return out, nil
 }
 
-/*
-   GetServiceNetwork gets the network address in CIDR of the service network
-*/
+// GetServiceNetwork gets the network address in CIDR of the service network
 func GetServiceNetwork() (string, string, error) {
 	ip, ipnet, err := net.ParseCIDR(conf.ServiceNetwork)
 	if err != nil {

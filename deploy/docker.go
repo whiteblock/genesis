@@ -103,7 +103,7 @@ func dockerRunCmd(subnetID int, resources util.Resources, node int, image string
 	command := "docker run -itd --entrypoint /bin/sh "
 	command += fmt.Sprintf("--network %s%d", conf.NodeNetworkPrefix, node)
 
-	if !resources.NoCpuLimits() {
+	if !resources.NoCPULimits() {
 		command += fmt.Sprintf(" --cpus %s", resources.Cpus)
 	}
 

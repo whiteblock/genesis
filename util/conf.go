@@ -9,6 +9,8 @@ import (
 	"strconv"
 )
 
+// Config groups all of the global configuration parameters into
+// a single struct
 type Config struct {
 	SSHUser            string  `json:"ssh-user"`
 	SSHKey             string  `json:"ssh-key"`
@@ -37,32 +39,31 @@ type Config struct {
 	BridgePrefix       string  `json:"bridge-prefix"`
 }
 
-/*
-   Load the configuration from the Environment
-*/
-func (this *Config) LoadFromEnv() {
+
+// LoadFromEnv loads the configuration from the Environment
+func (c *Config) LoadFromEnv() {
 	var err error
 	val, exists := os.LookupEnv("RSA_USER")
 	if exists {
-		this.SSHUser = val
+		c.SSHUser = val
 	}
 	val, exists = os.LookupEnv("LISTEN")
 	if exists {
-		this.Listen = val
+		c.Listen = val
 	}
 	val, exists = os.LookupEnv("RSA_KEY")
 	if exists {
-		this.SSHKey = val
+		c.SSHKey = val
 	}
 
 	_, exists = os.LookupEnv("VERBOSE")
 	if exists {
-		this.Verbose = true
+		c.Verbose = true
 	}
 	val, exists = os.LookupEnv("SERVER_BITS")
 	if exists {
 		tmp, err := strconv.ParseUint(val, 0, 32)
-		this.ServerBits = uint32(tmp)
+		c.ServerBits = uint32(tmp)
 		if err != nil {
 			fmt.Println("Invalid ENV value for SERVER_BITS")
 			os.Exit(1)
@@ -71,7 +72,7 @@ func (this *Config) LoadFromEnv() {
 	val, exists = os.LookupEnv("CLUSTER_BITS")
 	if exists {
 		tmp, err := strconv.ParseUint(val, 0, 32)
-		this.ClusterBits = uint32(tmp)
+		c.ClusterBits = uint32(tmp)
 		if err != nil {
 			fmt.Println("Invalid ENV value for CLUSTER_BITS")
 			os.Exit(1)
@@ -80,7 +81,7 @@ func (this *Config) LoadFromEnv() {
 	val, exists = os.LookupEnv("NODE_BITS")
 	if exists {
 		tmp, err := strconv.ParseUint(val, 0, 32)
-		this.NodeBits = uint32(tmp)
+		c.NodeBits = uint32(tmp)
 		if err != nil {
 			fmt.Println("Invalid ENV value for NODE_BITS")
 			os.Exit(1)
@@ -88,7 +89,7 @@ func (this *Config) LoadFromEnv() {
 	}
 	val, exists = os.LookupEnv("THREAD_LIMIT")
 	if exists {
-		this.ThreadLimit, err = strconv.ParseInt(val, 0, 64)
+		c.ThreadLimit, err = strconv.ParseInt(val, 0, 64)
 		if err != nil {
 			fmt.Println("Invalid ENV value for THREAD_LIMIT")
 			os.Exit(1)
@@ -97,7 +98,7 @@ func (this *Config) LoadFromEnv() {
 	val, exists = os.LookupEnv("IP_PREFIX")
 	if exists {
 		tmp, err := strconv.ParseUint(val, 0, 32)
-		this.IPPrefix = uint32(tmp)
+		c.IPPrefix = uint32(tmp)
 		if err != nil {
 			fmt.Println("Invalid ENV value for IP_PREFIX")
 			os.Exit(1)
@@ -105,60 +106,60 @@ func (this *Config) LoadFromEnv() {
 	}
 	val, exists = os.LookupEnv("DOCKER_OUTPUT_FILE")
 	if exists {
-		this.DockerOutputFile = val
+		c.DockerOutputFile = val
 	}
 	val, exists = os.LookupEnv("INFLUX")
 	if exists {
-		this.Influx = val
+		c.Influx = val
 	}
 	val, exists = os.LookupEnv("INFLUX_USER")
 	if exists {
-		this.InfluxUser = val
+		c.InfluxUser = val
 	}
 	val, exists = os.LookupEnv("INFLUX_PASSWORD")
 	if exists {
-		this.InfluxPassword = val
+		c.InfluxPassword = val
 	}
 	val, exists = os.LookupEnv("SERVICE_NETWORK")
 	if exists {
-		this.ServiceNetwork = val
+		c.ServiceNetwork = val
 	}
 	val, exists = os.LookupEnv("SERVICE_NETWORK_NAME")
 	if exists {
-		this.ServiceNetworkName = val
+		c.ServiceNetworkName = val
 	}
 	val, exists = os.LookupEnv("NODE_PREFIX")
 	if exists {
-		this.NodePrefix = val
+		c.NodePrefix = val
 	}
 	val, exists = os.LookupEnv("NODE_NETWORK_PREFIX")
 	if exists {
-		this.NodeNetworkPrefix = val
+		c.NodeNetworkPrefix = val
 	}
 	val, exists = os.LookupEnv("SERVICE_PREFIX")
 	if exists {
-		this.ServicePrefix = val
+		c.ServicePrefix = val
 	}
 
 	val, exists = os.LookupEnv("NODES_PUBLIC_KEY")
 	if exists {
-		this.NodesPublicKey = val
+		c.NodesPublicKey = val
 	}
 
 	val, exists = os.LookupEnv("NODES_PRIVATE_KEY")
 	if exists {
-		this.NodesPrivateKey = val
+		c.NodesPrivateKey = val
 	}
 
 	_, exists = os.LookupEnv("HANDLE_NODES_SSH_KEYS")
 	if exists {
-		this.HandleNodeSSHKeys = true
+		c.HandleNodeSSHKeys = true
 	}
 
 	val, exists = os.LookupEnv("MAX_NODES")
 	if exists {
 		tmp, err := strconv.ParseInt(val, 0, 32)
-		this.MaxNodes = int(tmp)
+		c.MaxNodes = int(tmp)
 		if err != nil {
 			fmt.Println("Invalid ENV value for MAX_NODES")
 			os.Exit(1)
@@ -167,12 +168,12 @@ func (this *Config) LoadFromEnv() {
 
 	val, exists = os.LookupEnv("MAX_NODE_MEMORY")
 	if exists {
-		this.MaxNodeMemory = val
+		c.MaxNodeMemory = val
 	}
 
 	val, exists = os.LookupEnv("MAX_NODE_CPU")
 	if exists {
-		this.MaxNodeCPU, err = strconv.ParseFloat(val, 64)
+		c.MaxNodeCPU, err = strconv.ParseFloat(val, 64)
 		if err != nil {
 			fmt.Println("Invalid ENV value for MAX_NODE_CPU")
 			os.Exit(1)
@@ -180,13 +181,11 @@ func (this *Config) LoadFromEnv() {
 	}
 	val, exists = os.LookupEnv("BRIDGE_PREFIX")
 	if exists {
-		this.BridgePrefix = val
+		c.BridgePrefix = val
 	}
 }
 
-/*
-   Fill in the missing essential values with the defaults.
-*/
+// AutoFillMissing fills in the missing essential values with the defaults.
 func (c *Config) AutoFillMissing() {
 	if len(c.SSHUser) == 0 {
 		c.SSHUser = "appo"
@@ -248,10 +247,10 @@ func (c *Config) AutoFillMissing() {
 		c.BridgePrefix = "wb_bridge"
 	}
 }
-
+//NodesPerCluster represents the maximum number of nodes allowed in a cluster
 var NodesPerCluster uint32
 
-var conf *Config = nil
+var conf *Config
 
 func init() {
 	LoadConfig()
@@ -260,9 +259,7 @@ func init() {
 	NodesPerCluster = (1 << conf.NodeBits) - ReservedIps
 }
 
-/*
-   The config from a file
-*/
+// LoadConfig loads the config from the configuration file
 func LoadConfig() *Config {
 
 	conf = new(Config)
@@ -277,10 +274,9 @@ func LoadConfig() *Config {
 	return conf
 }
 
-/*
-   Get a pointer to the global config object.
-   Do not modify this object
-*/
+
+// GetConfig gets a pointer to the global config object.
+// Do not modify c object
 func GetConfig() *Config {
 	if conf == nil {
 		LoadConfig()

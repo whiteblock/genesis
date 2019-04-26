@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestValidateAscii(t *testing.T) {
+func TestValidateASCII(t *testing.T) {
 	tests := map[string]bool{
 		"\u0432\u8977":            true,
 		"helloworld":              false,
@@ -12,7 +12,7 @@ func TestValidateAscii(t *testing.T) {
 		"how are you doing\u8333": true,
 	}
 	for test, expected := range tests {
-		err := ValidateAscii(test)
+		err := ValidateASCII(test)
 		if (err != nil) != expected {
 			if expected {
 				t.Errorf("ValidateAscii(\"%s\") passed when should have failed", test)
@@ -24,7 +24,7 @@ func TestValidateAscii(t *testing.T) {
 
 }
 
-func TestValidateNormalAscii(t *testing.T) {
+func TestValidateNormalASCII(t *testing.T) {
 	tests := map[string]bool{
 		"\u0432\u8977":            true,
 		"helloworld":              false,
@@ -32,7 +32,7 @@ func TestValidateNormalAscii(t *testing.T) {
 		"how are you doing\u8333": true,
 	}
 	for test, expected := range tests {
-		err := ValidateNormalAscii(test)
+		err := ValidateNormalASCII(test)
 		if (err != nil) != expected {
 			if expected {
 				t.Errorf("ValidateNormalAscii(\"%s\") passed when should have failed", test)
