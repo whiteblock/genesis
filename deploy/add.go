@@ -35,8 +35,7 @@ func AddNodes(tn *testnet.TestNet) error {
 			}
 			availableServers = append(availableServers[:serverIndex], availableServers[serverIndex+1:]...)
 			i--
-			index++
-			index = index % len(availableServers)
+			index = (index + 1) % len(availableServers)
 			continue
 		}
 
@@ -60,8 +59,7 @@ func AddNodes(tn *testnet.TestNet) error {
 			BuildNode(tn, server, absNum, relNum)
 		}(&tn.Servers[serverIndex], absNum, relNum)
 
-		index++
-		index = index % len(availableServers)
+		index = (index + 1) % len(availableServers)
 	}
 	wg.Wait()
 

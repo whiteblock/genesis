@@ -85,8 +85,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 			}
 			availableServers = append(availableServers[:serverIndex], availableServers[serverIndex+1:]...)
 			i--
-			index++
-			index = index % len(availableServers)
+			index = (index + 1) % len(availableServers)
 			continue
 		}
 		relNum := len(tn.Servers[serverIndex].Ips)
@@ -109,8 +108,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 			BuildNode(tn, server, absNum, relNum)
 		}(&tn.Servers[serverIndex], i, relNum)
 
-		index++
-		index = index % len(availableServers)
+		index = (index + 1) % len(availableServers)
 	}
 
 	if services != nil { //Maybe distribute the services over multiple servers

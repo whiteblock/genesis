@@ -4,7 +4,7 @@
     ["initBalance","string"],
     ["gasLimit","int"],
     ["consensus","string"],
-    ["fixeddifficulty","int"],
+    ["fixedDifficulty","int"],
     ["blockPeriodSeconds","int"],
     ["epoch","int"],
     ["requesttimeoutseconds","int"],
