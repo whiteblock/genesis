@@ -16,16 +16,6 @@ import (
 	"strings"
 )
 
-func getAllTestNets(w http.ResponseWriter, r *http.Request) {
-	testNets, err := db.GetAllTestNets()
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "There are no test nets", 204)
-		return
-	}
-	json.NewEncoder(w).Encode(testNets)
-}
-
 func createTestNet(w http.ResponseWriter, r *http.Request) {
 	tn := &db.DeploymentDetails{}
 	decoder := json.NewDecoder(r.Body)

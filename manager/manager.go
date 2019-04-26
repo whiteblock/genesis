@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"time"
 
 	"../db"
 	"../deploy"
