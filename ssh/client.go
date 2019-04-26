@@ -39,7 +39,7 @@ type Client struct {
 */
 func NewClient(host string, serverId int) (*Client, error) {
 	out := new(Client)
-	for i := conf.ThreadLimit; i > 0; i -= 5 {
+	for i := maxConnections; i > 0; i -= 5 {
 		client, err := sshConnect(host)
 		if err != nil {
 			log.Println(err)

@@ -6,9 +6,7 @@ import (
 	state "../../state"
 	testnet "../../testnet"
 	util "../../util"
-	"context"
 	"fmt"
-	"golang.org/x/sync/semaphore"
 	"log"
 	"sync"
 )
@@ -45,8 +43,6 @@ func copyToAllNodes(tn *testnet.TestNet, useNew bool, srcDst ...string) error {
 	if len(srcDst)%2 != 0 {
 		return fmt.Errorf("Invalid number of variadic arguments, must be given an even number of them")
 	}
-	sem := semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
 	wg := sync.WaitGroup{}
 
 	preOrderedNodes := tn.PreOrderNodes()
@@ -55,13 +51,11 @@ func copyToAllNodes(tn *testnet.TestNet, useNew bool, srcDst ...string) error {
 	}
 	for sid, nodes := range preOrderedNodes {
 		for j := 0; j < len(srcDst)/2; j++ {
-			sem.Acquire(ctx, 1)
 			rdy := make(chan bool, 1)
 			wg.Add(1)
 			intermediateDst := "/home/appo/" + srcDst[2*j]
 
 			go func(sid int, j int, rdy chan bool) {
-				defer sem.Release(1)
 				defer wg.Done()
 				ScpAndDeferRemoval(tn.Clients[sid], tn.BuildState, srcDst[2*j], intermediateDst)
 				rdy <- true
@@ -72,11 +66,9 @@ func copyToAllNodes(tn *testnet.TestNet, useNew bool, srcDst ...string) error {
 				defer wg.Done()
 				<-rdy
 				for i := range nodes {
-					sem.Acquire(ctx, 1)
 					wg.Add(1)
 					go func(node *db.Node, j int, intermediateDst string) {
 						defer wg.Done()
-						defer sem.Release(1)
 						err := tn.Clients[node.Server].DockerCp(node.LocalID, intermediateDst, srcDst[2*j+1])
 						if err != nil {
 							log.Println(err)
@@ -90,8 +82,6 @@ func copyToAllNodes(tn *testnet.TestNet, useNew bool, srcDst ...string) error {
 	}
 
 	wg.Wait()
-	sem.Acquire(ctx, conf.ThreadLimit)
-	sem.Release(conf.ThreadLimit)
 	return tn.BuildState.GetError()
 }
 
