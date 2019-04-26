@@ -88,19 +88,10 @@ func SumResUsage(c *ssh.Client, name string) (Comp, error) {
 // CheckNodeStatus checks the status of the nodes in the current testnet
 func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 
-	serverIds := []int{}
+	serverIDs := db.GetUniqueServerIDs(nodes)
 	out := make([]NodeStatus, len(nodes))
 
 	for _, node := range nodes {
-		push := true
-		for _, id := range serverIds {
-			if id == node.Server {
-				push = false
-			}
-		}
-		if push {
-			serverIds = append(serverIds, node.Server)
-		}
 		//fmt.Printf("ABS = %d; REL=%d;NAME=%s%d\n", node.AbsoluteNum, node.LocalID, conf.NodePrefix, node.LocalID)
 		out[node.AbsoluteNum] = NodeStatus{
 			Name:      fmt.Sprintf("%s%d", conf.NodePrefix, node.LocalID),
@@ -108,10 +99,10 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 			Server:    node.Server,
 			Up:        false,
 			Resources: Comp{-1, -1, -1},
-		} //local id to testnet
+		}
 
 	}
-	servers, err := db.GetServers(serverIds)
+	servers, err := db.GetServers(serverIDs)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -120,7 +111,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 	wg := sync.WaitGroup{}
 
 	for _, server := range servers {
-		client, err := GetClient(server.Id)
+		client, err := GetClient(server.ID)
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -137,9 +128,9 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 				continue
 			}
 
-			index := FindNodeIndex(out, name, server.Id)
+			index := FindNodeIndex(out, name, server.ID)
 			if index == -1 {
-				log.Printf("name=\"%s\",server=%d\n", name, server.Id)
+				log.Printf("name=\"%s\",server=%d\n", name, server.ID)
 				continue
 			}
 			wg.Add(1)

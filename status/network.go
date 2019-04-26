@@ -25,7 +25,7 @@ func GetLatestServers(testnetID string) ([]db.Server, error) {
 			if servers[i].Ips == nil {
 				servers[i].Ips = []string{}
 			}
-			if node.Server == servers[i].Id {
+			if node.Server == servers[i].ID {
 				servers[i].Ips = append(servers[i].Ips, node.IP)
 			}
 			servers[i].Nodes++

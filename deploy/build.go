@@ -15,10 +15,10 @@ var conf = util.GetConfig()
 // BuildNode builds out a single node in a testnet
 func BuildNode(tn *testnet.TestNet, server *db.Server, absNum int, relNum int) {
 	tn.BuildState.OnError(func() {
-		DockerKill(tn.Clients[server.Id], relNum)
-		DockerNetworkDestroy(tn.Clients[server.Id], relNum)
+		DockerKill(tn.Clients[server.ID], relNum)
+		DockerNetworkDestroy(tn.Clients[server.ID], relNum)
 	})
-	err := DockerNetworkCreate(tn, server.Id, server.SubnetID, relNum) //RACE
+	err := DockerNetworkCreate(tn, server.ID, server.SubnetID, relNum) 
 	if err != nil {
 		log.Println(err)
 		tn.BuildState.ReportError(err)
@@ -41,7 +41,7 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, absNum int, relNum int) {
 		env = tn.LDD.Environments[absNum]
 	}
 
-	err = DockerRun(tn, server.Id, server.SubnetID, resource, relNum, image, env)
+	err = DockerRun(tn, server.ID, server.SubnetID, resource, relNum, image, env)
 	if err != nil {
 		log.Println(err)
 		tn.BuildState.ReportError(err)
@@ -77,7 +77,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 	index := 0
 	for i := 0; i < tn.LDD.Nodes; i++ {
 		serverIndex := availableServers[index]
-		serverID := tn.Servers[serverIndex].Id
+		serverID := tn.Servers[serverIndex].ID
 
 		if tn.Servers[serverIndex].Max <= tn.Servers[serverIndex].Nodes {
 			if len(availableServers) == 1 {

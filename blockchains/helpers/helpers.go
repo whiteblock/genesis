@@ -57,7 +57,7 @@ func AllServerExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server) erro
 		wg.Add(1)
 		go func(server *db.Server) {
 			defer wg.Done()
-			err := fn(tn.Clients[server.Id], server)
+			err := fn(tn.Clients[server.ID], server)
 			if err != nil {
 				log.Println(err)
 				tn.BuildState.ReportError(err)

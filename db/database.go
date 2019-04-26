@@ -120,6 +120,6 @@ func insertLocalServers(db *sql.DB) {
 			Nodes:    0,
 			Max:      conf.MaxNodes,
 			SubnetID: 1,
-			Id:       -1,
+			ID:       -1,
 			Ips:      []string{}})
 }

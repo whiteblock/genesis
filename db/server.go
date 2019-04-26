@@ -15,9 +15,9 @@ type Server struct {
 	Nodes int `json:"nodes"`
 	// Max is the maximum number of nodes that server supports
 	Max int `json:"max"`
-	//Id is the ID of the server
-	Id int `json:"id"`
-	//SubnetID is the number used in the IP scheme for nodes on this server
+	// ID is the ID of the server
+	ID int `json:"id"`
+	// SubnetID is the number used in the IP scheme for nodes on this server
 	SubnetID int      `json:"subnetID"`
 	Ips      []string //To be removed
 }
@@ -52,7 +52,7 @@ func GetAllServers() (map[string]Server, error) {
 	for rows.Next() {
 		var name string
 		var server Server
-		err := rows.Scan(&server.Id, &server.SubnetID, &server.Addr,
+		err := rows.Scan(&server.ID, &server.SubnetID, &server.Addr,
 			&server.Nodes, &server.Max, &name)
 		if err != nil {
 			log.Println(err)
@@ -94,7 +94,7 @@ func GetServer(id int) (Server, string, error) {
 		return server, name, fmt.Errorf("not found")
 	}
 	defer rows.Close()
-	err = rows.Scan(&server.Id, &server.SubnetID, &server.Addr,
+	err = rows.Scan(&server.ID, &server.SubnetID, &server.Addr,
 		&server.Nodes, &server.Max, &name)
 	if err != nil {
 		log.Println(err)
@@ -157,7 +157,7 @@ func UpdateServer(id int, server Server) error {
 		server.Addr,
 		server.Nodes,
 		server.Max,
-		server.Id)
+		server.ID)
 	if err != nil {
 		return err
 	}

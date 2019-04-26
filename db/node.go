@@ -232,8 +232,8 @@ func GetUniqueServerIDs(nodes []Node) []int {
 	out := []int{}
 	for _, node := range nodes {
 		shouldAdd := true
-		for _, serverID := range out {//Check to make sure the serverID is not already in out
-			if node.Server == serverID { 
+		for _, serverID := range out { //Check to make sure the serverID is not already in out
+			if node.Server == serverID {
 				shouldAdd = false
 			}
 		}

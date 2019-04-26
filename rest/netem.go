@@ -98,7 +98,7 @@ func getNet(w http.ResponseWriter, r *http.Request) {
 	}
 	out := []netem.Netconf{}
 	for _, server := range servers {
-		client, err := status.GetClient(server.Id)
+		client, err := status.GetClient(server.ID)
 		if err != nil {
 			log.Println(err)
 			http.Error(w, err.Error(), 404)
@@ -207,7 +207,7 @@ func removeAllOutages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, server := range servers {
-		client, err := status.GetClient(server.Id)
+		client, err := status.GetClient(server.ID)
 		if err != nil {
 			log.Println(err)
 			http.Error(w, err.Error(), 404)
@@ -234,7 +234,7 @@ func getAllOutages(w http.ResponseWriter, r *http.Request) {
 	}
 	out := []netem.Connection{}
 	for _, server := range servers {
-		client, err := status.GetClient(server.Id)
+		client, err := status.GetClient(server.ID)
 		if err != nil {
 			log.Println(err)
 			http.Error(w, err.Error(), 404)

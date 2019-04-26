@@ -54,7 +54,7 @@ func RestoreTestNet(buildID string) (*TestNet, error) {
 
 	out.Clients = map[int]*ssh.Client{}
 	for _, server := range out.Servers {
-		out.Clients[server.Id], err = status.GetClient(server.Id)
+		out.Clients[server.ID], err = status.GetClient(server.ID)
 		if err != nil {
 			log.Println(err)
 			out.BuildState.ReportError(err)
@@ -96,7 +96,7 @@ func NewTestNet(details db.DeploymentDetails, buildID string) (*TestNet, error) 
 	out.Clients = map[int]*ssh.Client{}
 
 	for _, server := range out.Servers {
-		out.Clients[server.Id], err = status.GetClient(server.Id)
+		out.Clients[server.ID], err = status.GetClient(server.ID)
 		if err != nil {
 			log.Println(err)
 			out.BuildState.ReportError(err)
@@ -194,7 +194,7 @@ func (tn *TestNet) GetFlatClients() []*ssh.Client {
 //GetServer retrieves a server the TestNet resides on by id
 func (tn *TestNet) GetServer(id int) *db.Server {
 	for _, server := range tn.Servers {
-		if server.Id == id {
+		if server.ID == id {
 			return &server
 		}
 	}
@@ -215,7 +215,7 @@ func (tn *TestNet) PreOrderNodes() map[int][]db.Node {
 
 	out := make(map[int][]db.Node)
 	for _, server := range tn.Servers {
-		out[server.Id] = []db.Node{}
+		out[server.ID] = []db.Node{}
 	}
 
 	for _, node := range tn.Nodes {
@@ -231,7 +231,7 @@ func (tn *TestNet) PreOrderNewNodes() map[int][]db.Node {
 
 	out := make(map[int][]db.Node)
 	for _, server := range tn.Servers {
-		out[server.Id] = []db.Node{}
+		out[server.ID] = []db.Node{}
 	}
 
 	for _, node := range tn.NewlyBuiltNodes {

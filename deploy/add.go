@@ -27,7 +27,7 @@ func AddNodes(tn *testnet.TestNet) error {
 
 	for i := 0; i < tn.LDD.Nodes; i++ {
 		serverIndex := availableServers[index]
-		serverID := tn.Servers[serverIndex].Id
+		serverID := tn.Servers[serverIndex].ID
 
 		if tn.Servers[serverIndex].Max <= tn.Servers[serverIndex].Nodes {
 			if len(availableServers) == 1 {
