@@ -12,6 +12,7 @@ import (
 	"sync"
 )
 
+//RemoveAllOutages removes all blocked connections on a server via the given client
 func RemoveAllOutages(client *ssh.Client) error {
 	res, err := client.Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD || true")
 	if err != nil {
@@ -43,7 +44,7 @@ func RemoveAllOutages(client *ssh.Client) error {
 	return nil
 }
 
-func MakeOutageCommands(node1 db.Node, node2 db.Node) []string {
+func makeOutageCommands(node1 db.Node, node2 db.Node) []string {
 	return []string{
 		fmt.Sprintf("FORWARD -i %s%d -d %s -j DROP", conf.BridgePrefix, node1.AbsoluteNum, node2.IP),
 		fmt.Sprintf("FORWARD -i %s%d -d %s -j DROP", conf.BridgePrefix, node2.AbsoluteNum, node1.IP),
@@ -55,7 +56,7 @@ func mkrmOutage(node1 db.Node, node2 db.Node, create bool) error {
 	if !create {
 		flag = "-D"
 	}
-	cmds := MakeOutageCommands(node1, node2)
+	cmds := makeOutageCommands(node1, node2)
 
 	client, err := status.GetClient(node1.Server)
 	if err != nil {
@@ -81,14 +82,17 @@ func mkrmOutage(node1 db.Node, node2 db.Node, create bool) error {
 	return nil
 }
 
+//MakeOutage removes the ability for the given nodes to connect
 func MakeOutage(node1 db.Node, node2 db.Node) error {
 	return mkrmOutage(node1, node2, true)
 }
 
+//RemoveOutage returns the ability for the given nodes to connect
 func RemoveOutage(node1 db.Node, node2 db.Node) error {
 	return mkrmOutage(node1, node2, false)
 }
 
+//CreatePartitionOutage causes the two sides to be unable to communicate with one and the other
 func CreatePartitionOutage(side1 []db.Node, side2 []db.Node) { //Doesn't report errors yet
 	wg := sync.WaitGroup{}
 	for _, node1 := range side1 {
@@ -106,6 +110,7 @@ func CreatePartitionOutage(side1 []db.Node, side2 []db.Node) { //Doesn't report 
 	wg.Wait()
 }
 
+//GetCutConnections fetches the cut connections on a server
 //TODO: Naive Implementation, does not yet take multiple servers into account
 func GetCutConnections(client *ssh.Client) ([]Connection, error) {
 	res, err := client.Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD | awk '{print $4,$6}' | sed -e 's/\\/32//g' || true")
@@ -144,6 +149,7 @@ func GetCutConnections(client *ssh.Client) ([]Connection, error) {
 	return out, nil
 }
 
+//CalculatePartitions calculates the current partitions in the network
 func CalculatePartitions(nodes []db.Node) ([][]int, error) {
 	clients, err := status.GetClientsFromNodes(nodes)
 	if err != nil {
