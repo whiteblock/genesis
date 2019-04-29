@@ -27,6 +27,7 @@ func finalize(tn *testnet.TestNet) error {
 		}
 	}
 	alwaysRunFinalize(tn)
+	handlePostBuild(tn)
 	return nil
 }
 
@@ -42,6 +43,7 @@ func finalizeNewNodes(tn *testnet.TestNet) error {
 		}
 	}
 	alwaysRunFinalize(tn)
+	handlePostBuild(tn)
 	return nil
 }
 

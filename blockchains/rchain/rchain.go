@@ -54,6 +54,20 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		log.Println(err)
 		return nil, err
 	}
+	/**Check to make sure the rnode command is valid**/
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
+		_, err := client.DockerExec(localNodeNum, fmt.Sprintf("%s --help", rConf.Command))
+		if err != nil {
+			fmt.Println(err)
+			return fmt.Errorf("could not find command \"%s\"", rConf.Command)
+		}
+		return nil
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
 	buildState.IncrementBuildProgress()
 	km, err := helpers.NewKeyMaster(tn.LDD, "rchain")
 	keyPairs := make([]util.KeyPair, tn.LDD.Nodes)
