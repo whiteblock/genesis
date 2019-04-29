@@ -7,6 +7,7 @@ import (
 	"../../state"
 	"../../testnet"
 	"../../util"
+	"../ethereum"
 	"../helpers"
 	"../registrar"
 	"encoding/json"
@@ -14,7 +15,6 @@ import (
 	"github.com/Whiteblock/mustache"
 	"log"
 	"regexp"
-	"strings"
 	"sync"
 )
 
@@ -69,7 +69,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	{
 		var data string
 		for i := 1; i <= tn.LDD.Nodes; i++ {
-			data += "second\n"
+			data += "password\n"
 		}
 		err = helpers.CopyBytesToAllNodes(tn, data, "/geth/passwd")
 		if err != nil {
@@ -81,41 +81,27 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	tn.BuildState.IncrementBuildProgress()
 
 	/**Create the wallets**/
-	wallets := make([]string, tn.LDD.Nodes)
-	rawWallets := make([]string, tn.LDD.Nodes)
 	tn.BuildState.SetBuildStage("Creating the wallets")
 
+	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		gethResults, err := client.DockerExec(localNodeNum, "geth --datadir /geth/ --password /geth/passwd account new")
-		if err != nil {
-			log.Println(err)
-			return err
+		for i, account := range accounts {
+			_, err := client.DockerExec(localNodeNum, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			_, err = client.DockerExec(localNodeNum,
+				fmt.Sprintf("geth --datadir /geth/ --password /geth/passwd account import --password /geth/passwd /geth/pk%d", i))
+			if err != nil {
+				log.Println(err)
+				return err
+			}
 		}
-
-		addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
-		addresses := addressPattern.FindAllString(gethResults, -1)
-		if len(addresses) < 1 {
-			return fmt.Errorf("unable to get addresses")
-		}
-		address := addresses[0]
-		address = address[1 : len(address)-1]
-
-		//fmt.Printf("Created wallet with address: %s\n",address)
-		mux.Lock()
-		wallets[absoluteNodeNum] = address
-		mux.Unlock()
-
-		tn.BuildState.IncrementBuildProgress()
-
-		res, err := client.DockerExec(localNodeNum, "bash -c 'cat /geth/keystore/*'")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		mux.Lock()
-		rawWallets[absoluteNodeNum] = strings.Replace(res, "\"", "\\\"", -1)
-		mux.Unlock()
-
 		return nil
 	})
 	if err != nil {
@@ -123,21 +109,19 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 
-	fmt.Printf("%v\n%v\n", wallets, rawWallets)
 	tn.BuildState.IncrementBuildProgress()
 	unlock := ""
 
-	for i, wallet := range wallets {
+	for i, account := range accounts {
 		if i != 0 {
 			unlock += ","
 		}
-		unlock += wallet
+		unlock += account.HexAddress()
 	}
-	fmt.Printf("unlock = %s\n%+v\n\n", wallets, unlock)
 
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Creating the genesis block")
-	err = createGenesisfile(ethconf, tn.LDD, wallets, tn.BuildState)
+	err = createGenesisfile(ethconf, tn.LDD, accounts, tn.BuildState)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -147,24 +131,6 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	tn.BuildState.SetBuildStage("Bootstrapping network")
 
 	err = helpers.CopyToAllNodes(tn, "CustomGenesis.json", "/geth/")
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		for i := range rawWallets {
-			if i == absoluteNodeNum {
-				continue
-			}
-			_, err := client.DockerExec(localNodeNum,
-				fmt.Sprintf("bash -c 'echo \"%s\">>/geth/keystore/account%d'", rawWallets[i], i))
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-		}
-		return nil
-	})
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -238,7 +204,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			ethconf.NetworkID,
 			ip,
 			unlock,
-			wallets[absoluteNodeNum],
+			accounts[absoluteNodeNum].HexAddress(),
 			conf.DockerOutputFile)
 
 		_, err := client.DockerExecdit(localNodeNum, fmt.Sprintf("bash -ic '%s'", gethCmd))
@@ -288,6 +254,9 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
+	for _, account := range accounts {
+		tn.BuildState.SetExt(account.HexAddress(), account.HexPrivateKey())
+	}
 	return nil, err
 }
 
@@ -315,7 +284,7 @@ func MakeFakeAccounts(accs int) []string {
  * @param  []string wallets     The wallets to be allocated a balance
  */
 
-func createGenesisfile(ethconf *ethConf, details *db.DeploymentDetails, wallets []string, buildState *state.BuildState) error {
+func createGenesisfile(ethconf *ethConf, details *db.DeploymentDetails, accounts []*ethereum.Account, buildState *state.BuildState) error {
 
 	genesis := map[string]interface{}{
 		"chainId":        ethconf.NetworkID,
@@ -326,8 +295,8 @@ func createGenesisfile(ethconf *ethConf, details *db.DeploymentDetails, wallets 
 		"gasLimit":       fmt.Sprintf("0x0%X", ethconf.GasLimit),
 	}
 	alloc := map[string]map[string]string{}
-	for _, wallet := range wallets {
-		alloc[wallet] = map[string]string{
+	for _, account := range accounts {
+		alloc[account.HexAddress()] = map[string]string{
 			"balance": ethconf.InitBalance,
 		}
 	}
