@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"log"
+	"strings"
 )
 
 // Account represents an ethereum account
@@ -29,7 +30,7 @@ func (acc Account) HexPublicKey() string {
 
 // HexAddress gets the address in hex format
 func (acc Account) HexAddress() string {
-	return acc.Address.Hex()
+	return strings.ToLower(acc.Address.Hex())
 }
 
 // MarshalJSON handles the marshaling of Acount into JSON, so that
