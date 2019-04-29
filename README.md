@@ -1,14 +1,14 @@
-#Genesis
+# Genesis
 
 [![Maintainability](https://api.codeclimate.com/v1/badges/4aae8bc608f619f0990e/maintainability)](https://codeclimate.com/repos/5cb0ac61f5eb734088003e71/maintainability)
 
-##Installation
+## Installation
 * clone repository
 * `cd router`
 * `go get`
 * `go build`
 
-##Configuration
+## Configuration
 Configuration options are located in `config.json` in the same directory as the binary
 
 * __ssh-user__: The default username for ssh
@@ -40,7 +40,7 @@ Configuration options are located in `config.json` in the same directory as the 
 * __max-node-cpu__: Set the max cpus per node that a client can use
       
 
-###Config Environment Overrides
+### Config Environment Overrides
 These will override what is set in the config.json file, and allow configuration via
 only ENV variables
 
@@ -71,12 +71,12 @@ only ENV variables
 * `MAX_NODE_MEMORY`
 * `MAX_NODE_CPU`
 
-###Additional Information
+### Additional Information
 * Config order of priority ENV -> config file -> defaults
 * `ssh-user`,`ssh-password` and `rsa-user`, `rsa-key` are both used, starting with pass auth then falling back to key auth
 
 
-##IP Scheme
+## IP Scheme
 We are using ipv4 so each address will have 32 bits.
 
 The following assumptions will be made
@@ -104,13 +104,14 @@ Note the following rules
 * (2^__D__ - 3) * (2^__C__) = The max number of nodes on a server
 * (2^__D__ - 3) * (2^__C__) * (2^__B__) = The maximum number of nodes that could be on the platform
 
-###What is a cluster?
+### What is a cluster?
 
 Each cluster corresponds to a subnet,docker network,and vlan. 
+
 Containers in the same cluster will have minimal latency applied to them. In the majority of cases
 it is best to just have one node per cluster, allowing for latency control between all of the nodes.
 
-###How is it all calculated?
+### How is it all calculated?
 
 Given a node number __X__ and a `serverId` of __Y__,
 Let __Z__ be the cluster number,
@@ -122,27 +123,42 @@ __I__ = (__A__ * 2^(__B__+__C__+__D__) ) + ( __Y__ * 2^(__B__+__C__) ) + (__Z__ 
 
 if __Z__ == (2^__C__ - 1) then __I__ = __I__ - 2
 
-####Explaination
+#### Explaination
 First get the cluster the node is in
+
 Then construct the IP one segment at a time through addition
+
 Due to the restrictions, each piece will fit neatly into place without overlap
+
 Finally, check if it is not the last cluster on the server,
+
 add 1 to the ip address if it is not the last cluster. 
 
-####Example
+#### Example
 Given a node number(__X__) of 2 and a `serverId`(__Y__) of 3
-Given the IP Scheme of __A__ = 10, __B__ = 8, __C__ = 14, __D__ = 2
+
+Given the IP Scheme of `__A__ = 10, __B__ = 8, __C__ = 14, __D__ = 2`
+```
 __Z__ = floor(2/(2^2 - 3))
 __Z__ = 2
+```
 It is going to be in cluster 2
+
 Now, for the construction of the IP
-Visually, it can be represented as 
+
+Visually, it can be represented as
+```
 IP = AAAAAAAA BBBBBBBB CCCCCCCC CCCCCCDD
+```
 The values are simply placed inside the bit space of the IP address as represented,
 with the exception of the __D__ bits, which needs to be calculated
-calculate this number as (2 % (2^2 - 3) + 2) or 2
-Then since (__Z__ != (2^__C__ - 1)) 2 != 16383, the value remains 2
+
+calculate this number as `(2 % (2^2 - 3) + 2)` or 2
+
+Then since `(__Z__ != (2^__C__ - 1)) 2 != 16383`, the value remains 2
+
 Finally, construct IP
+```
 Part A = 00001010
 Part B = 00000011
 Part C = 00000000000010
@@ -150,27 +166,30 @@ Part D = 10
 IP = 00001010 00000011 00000000000010 10
    = 00001010 00000011 00000000 00001010
    = 10       3        0        10
+```
 
 The gateway is calculated in a similar way, except take Part D to always equal 1
 
+```
 Gateway IP = 00001010 00000011 00000000000010 01
            = 00001010 00000011 00000000 00001001
            = 10       3        0        9
+```
 
 Finally the subnet is 32 - __D__
 
 Resulting in
+```
 IP = 10.3.0.10
 Gateway IP = 10.3.0.9
 Subnet = 10.3.0.8/30
+```
 
+## REST API
 
-
-##REST API
-
-###GET /servers/
+### GET /servers/
 Get the current registered servers
-#####RESPONSE
+##### RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
@@ -199,16 +218,16 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
     "server2_name":{...}...
 }
 ```
-#####EXAMPLE
+##### EXAMPLE
 ```
 curl -XGET http://localhost:8000/servers/
 ```
 
-###PUT /servers/{name}
-####PRIVATE
+### PUT /servers/{name}
+#### PRIVATE
 Register and add a new server to be 
 controlled by the instance
-#####BODY
+##### BODY
 ```
 {
     "addr":(string),
@@ -232,23 +251,23 @@ controlled by the instance
     ]
 }
 ```
-#####RESPONSE
+##### RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 <server id>
 ```
 
-#####EXAMPLE
+##### EXAMPLE
 ```bash
 curl -X PUT http://localhost:8000/servers/foxtrot -d \
 '{"addr":"172.16.6.5","iaddr":{"ip":"10.254.6.100","gateway":"10.254.6.1","subnet":24},
 "nodes":0,"max":10,"serverID":6,"id":-1,"iface":"eth0","switches":[{"addr":"172.16.1.1","iface":"eno3","brand":1,"id":5}],"ips":null}}'
 ```
 
-###GET /servers/{id}
+### GET /servers/{id}
 Get a server by id
-#####RESPONSE
+##### RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
@@ -275,25 +294,25 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 }
 ```
 
-###DELETE /servers/{id}
-####PRIVATE
+### DELETE /servers/{id}
+#### PRIVATE
 Delete a server
-#####RESPONSE
+##### RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
 ```
 
-#####EXAMPLE
+##### EXAMPLE
 ```bash
 curl -X DELETE http://localhost:8000/servers/5
 ```
 
-###UPDATE /servers/{id}
-####PRIVATE
+### UPDATE /servers/{id}
+#### PRIVATE
 Update server information
-#####BODY
+##### BODY
 ```
 {
     "addr":(string),
@@ -317,23 +336,23 @@ Update server information
     ]
 }
 ```
-#####RESPONSE
+##### RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
 ```
 
-#####EXAMPLE
+##### EXAMPLE
 ```bash
 curl -X UPDATE http://localhost:8000/servers/5 -d \
  '{"addr":"172.16.4.5","iaddr":{"ip":"10.254.4.100","gateway":"10.254.4.1","subnet":24}, 
  "nodes":0,"max":30,"id":5,"serverID":4,"iface":"eno3","switches":[{"addr":"172.16.1.1","iface":"eth4","brand":1,"id":3}],"ips":null}'
 ```
 
-###GET /testnets/
+### GET /testnets/
 Get all testnets which are currently running
-#####RESPONSE
+##### RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
@@ -348,9 +367,9 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 ]
 ```
 
-###POST /testnets/
+### POST /testnets/
 Add and deploy a new testnet
-#####BODY
+##### BODY
 ```
 {
     "servers":[(int),(int)...],
@@ -364,21 +383,21 @@ Add and deploy a new testnet
     "params":(Object containing params specific to the chain/client being built)
 }
 ```
-#####RESPONSE
+##### RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
 ```
-#####EXAMPLE
+##### EXAMPLE
 ```bash
 curl -X POST http://localhost:8000/testnets/ -d '{"servers":[3],"blockchain":"ethereum","nodes":3,"image":"ethereum:latest",
 "resources":[{"cpus":"2.0","memory":"10gb"}],"environments"{"BLAH":"blah"},"files":{"config.json":"base64 of file"},"params":null}'
 ```
 
-###GET /testnets/{id}
+### GET /testnets/{id}
 Get data on a single testnet
-#####RESPONSE
+##### RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
@@ -390,10 +409,10 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 }
 ```
 
-###GET /testnets/{id}/nodes/
-####PRIVATE
+### GET /testnets/{id}/nodes/
+#### PRIVATE
 Get the nodes in a testnet
-#####RESPONSE
+##### RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
@@ -409,9 +428,9 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 ```
 
 
-###GET /status/nodes/{testnetid}
+### GET /status/nodes/{testnetid}
 Get the nodes that are running in the given testnet
-#####RESPONSE
+##### RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
@@ -424,14 +443,14 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
     },...
 ]
 ```
-#####EXAMPLE
+##### EXAMPLE
 ```bash
 curl -XGET http://localhost:8000/status/nodes/
 ```
 
-###GET /params/{blockchain}/
+### GET /params/{blockchain}/
 Get the build params for a blockchain
-#####RESPONSE
+##### RESPONSE
 ```json
 [
     {"chainId":"int"},
@@ -445,14 +464,14 @@ Get the build params for a blockchain
     {"eip158Block":"int"}
 ]
 ```
-#####EXAMPLE
+##### EXAMPLE
 ```bash
 curl -X GET http://localhost:8000/params/ethereum
 ```
 
-###GET /defaults/{blockchain}
+### GET /defaults/{blockchain}
 Get the default parameters for a blockchain
-#####RESPONSE
+##### RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
@@ -468,29 +487,29 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
     "eip158Block":0
 }
 ```
-#####EXAMPLE
+##### EXAMPLE
 ```bash
 curl -X GET http://localhost:8000/defaults/ethereum
 ```
 
-###GET /log/{server}/{node}
+### GET /log/{server}/{node}
 Get both stdout and stderr from the blockchain process
 
-#####RESPONSE
+##### RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 <The contents>
 ```
 
-#####EXAMPLE
+##### EXAMPLE
 ```bash
 curl -X POST http://localhost:8000/exec/4/0 -d 'ls'
 ```
 
-###GET /nodes/{testnetid}
+### GET /nodes/{testnetid}
 Get the nodes for the latest testnet
-#####RESPONSE
+##### RESPONSE
 ```json
 [
     {
@@ -511,23 +530,23 @@ Get the nodes for the latest testnet
     }
 ]
 ```
-#####EXAMPLE
+##### EXAMPLE
 ```bash
 curl -X GET http://localhost:8000/nodes
 ```
 
-###DELETE /build/{buildid}
+### DELETE /build/{buildid}
 Stop the given build
-#####RESPONSE
+##### RESPONSE
 `Stop signal has been sent...`
-#####EXAMPLE
+##### EXAMPLE
 ```bash
 curl -X DELETE http://localhost:8000/build
 ```
 
-###POST /nodes/{num}
+### POST /nodes/{num}
 Add {num} nodes to the current test net (Body is optional)
-#####BODY
+##### BODY
 ```
 {
     "servers":[(int),(int)...],
@@ -541,97 +560,97 @@ Add {num} nodes to the current test net (Body is optional)
     "params":(Object containing params specific to the chain/client being built)
 }
 ```
-#####RESPONSE
+##### RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
 ```
-#####EXAMPLE
+##### EXAMPLE
 ```bash
 curl -X POST http://localhost:8000/nodes/3 -d '{"servers":[3],"blockchain":"ethereum","nodes":3,"image":"ethereum:latest",
 "resources":{"cpus":"2.0","memory":"10gb"},"params":null}'
 ```
 
 
-###DELETE /nodes/{num}
+### DELETE /nodes/{num}
 Delete {num} nodes from the testnet
-#####BODY
-#####RESPONSE
+##### BODY
+##### RESPONSE
 ```
 HTTP/1.1 200 OK
 Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
 ```
-#####EXAMPLE
+##### EXAMPLE
 ```bash
 curl -X DELETE http://localhost:8000/nodes/5 
 ```
 
 
-###DELETE /emulate/{testnetId}
+### DELETE /emulate/{testnetId}
 Turn off emulate for a whole testnet 
-####BODY
+#### BODY
 
-####EXAMPLE
+#### EXAMPLE
 ```bash
 curl -X DELETE http://localhost:8000/emulate/9e09efe8_d7a3_4429_832c_447d876194c8
 ```
 
-###POST /emulate/{testnetId}
+### POST /emulate/{testnetId}
 Set emulation for a node or nodes
-####BODY
+#### BODY
 TODO
-####EXAMPLE
+#### EXAMPLE
 ```bash
 curl -X POST http://localhost:8000/emulate/9e09efe8_d7a3_4429_832c_447d876194c8
 ```
 
-###POST /emulate/all/{testnetId}
+### POST /emulate/all/{testnetId}
 Set emulation for a whole testnet
-####BODY
+#### BODY
 TODO
-####EXAMPLE
+#### EXAMPLE
 ```bash
 curl -X POST http://localhost:8000/emulate/all/9e09efe8_d7a3_4429_832c_447d876194c8
 ```
 
-###GET /resources/{blockchain}
+### GET /resources/{blockchain}
 
-####BODY
+#### BODY
 TODO
-####EXAMPLE
+#### EXAMPLE
 ```bash
 curl -X POST http://localhost:8000/resources/geth
 ```
 
-###GET /resources/{blockchain}/{file}
+### GET /resources/{blockchain}/{file}
 
-####BODY
+#### BODY
 TODO
-####EXAMPLE
+#### EXAMPLE
 ```bash
 curl -X GET http://localhost:8000/resources/geth/genesis.json
 ```
 
-###POST /resources/{blockchain}/{file}
+### POST /resources/{blockchain}/{file}
 
-####BODY
+#### BODY
 TODO
-####EXAMPLE
+#### EXAMPLE
 ```bash
 curl -X POST http://localhost:8000/resources/geth/genesis.json
 ```
 
 
 
-##Blockchain Specific Parameters
+## Blockchain Specific Parameters
 
-###Geth (Go-Ethereum)
+### Geth (Go-Ethereum)
 __Note:__ Any configuration option can be left out, and this entire section can even be null,
 the example contains all of the defaults
 
-####Options
+#### Options
 * `chainId`: The chain id set in the genesis.conf
 * `networkId`: The network id
 * `difficulty`: The initial difficulty set in the genesis.conf file
@@ -642,7 +661,7 @@ the example contains all of the defaults
 * `eip155Block`: Set in genesis.conf
 * `eip158Block`: Set in genesis.conf
 
-####Example (using defaults)
+#### Example (using defaults)
 ```json
 {
     "chainId":15468,
@@ -656,9 +675,9 @@ the example contains all of the defaults
     "eip158Block":0
 }
 ```
-###Syscoin (RegTest)
+### Syscoin (RegTest)
 
-####Options
+#### Options
 * `rpcUser`: The username credential
 * `rpcPass`: The password credential
 * `masterNodeConns`: The number of connections to set up for the master nodes
@@ -675,7 +694,7 @@ the example contains all of the defaults
 * `receiverExtras`: Extra options to add to the config file for receivers
 * `mnExtras`: Extra options to add to the config file for master nodes
 
-####Example (using defaults)
+#### Example (using defaults)
 ```json
 {
     "rpcUser":"username",
