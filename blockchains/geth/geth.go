@@ -8,6 +8,7 @@ import (
 	"../../testnet"
 	"../../util"
 	"../helpers"
+	"../registrar"
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/mustache"
@@ -21,6 +22,21 @@ var conf *util.Config
 
 func init() {
 	conf = util.GetConfig()
+
+	registrar.RegisterBuild("geth", Build)
+	registrar.RegisterBuild("ethereum", Build) //ethereum default to geth
+
+	registrar.RegisterAddNodes("geth", Add)
+	registrar.RegisterAddNodes("ethereum", Add)
+
+	registrar.RegisterServices("geth", GetServices)
+	registrar.RegisterServices("ethereum", GetServices)
+
+	registrar.RegisterDefaults("geth", GetDefaults)
+	registrar.RegisterDefaults("ethereum", GetDefaults)
+
+	registrar.RegisterParams("geth", GetParams)
+	registrar.RegisterParams("ethereum", GetParams)
 }
 
 const ethNetStatsPort = 3338

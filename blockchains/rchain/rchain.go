@@ -8,6 +8,7 @@ import (
 	"../../testnet"
 	"../../util"
 	"../helpers"
+	"../registrar"
 	"fmt"
 	"github.com/Whiteblock/mustache"
 	"log"
@@ -20,6 +21,13 @@ var conf *util.Config
 
 func init() {
 	conf = util.GetConfig()
+
+	blockchain := "rchain"
+	registrar.RegisterBuild(blockchain, Build)
+	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterParams(blockchain, GetParams)
 }
 
 // Build builds out a fresh new rchain test network

@@ -1,11 +1,7 @@
 package manager
 
 import (
-	"../blockchains/beam"
-	"../blockchains/eos"
-	"../blockchains/geth"
-	"../blockchains/rchain"
-	sys "../blockchains/syscoin"
+	"../blockchains/registrar"
 	"../db"
 	"../deploy"
 	"../state"
@@ -62,27 +58,14 @@ func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 		buildState.ReportError(err)
 		return err
 	}
-	var labels []string
-	switch details.Blockchain {
-	case "eos":
-		labels, err = eos.Add(tn)
-	case "ethereum":
-		fallthrough
-	case "geth":
-		labels, err = geth.Add(tn)
-	case "syscoin":
-		labels, err = sys.Add(tn)
-	case "rchain":
-		labels, err = rchain.Add(tn)
-	case "beam":
-		labels, err = beam.Add(tn)
 
-	case "generic":
-		log.Println("Built in generic mode")
-	default:
-		buildState.ReportError(fmt.Errorf("unknown blockchain"))
-		return fmt.Errorf("unknown blockchain")
+	addNodesFn, err := registrar.GetAddNodeFunc(details.Blockchain)
+	if err != nil {
+		log.Println(err)
+		buildState.ReportError(err)
+		return err
 	}
+	labels, err := addNodesFn(tn)
 	if err != nil {
 		buildState.ReportError(err)
 		log.Println(err)

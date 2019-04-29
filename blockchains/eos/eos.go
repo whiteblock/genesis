@@ -7,6 +7,7 @@ import (
 	"../../testnet"
 	"../../util"
 	"../helpers"
+	"../registrar"
 	"context"
 	"fmt"
 	"golang.org/x/sync/semaphore"
@@ -20,6 +21,12 @@ var conf *util.Config
 
 func init() {
 	conf = util.GetConfig()
+	blockchain := "eos"
+	registrar.RegisterBuild(blockchain, Build)
+	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterParams(blockchain, GetParams)
 }
 
 // Build builds out a fresh new ethereum test network using geth

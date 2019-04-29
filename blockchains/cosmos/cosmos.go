@@ -7,6 +7,7 @@ import (
 	"../../testnet"
 	"../../util"
 	"../helpers"
+	"../registrar"
 	"fmt"
 	"log"
 	"strings"
@@ -17,6 +18,12 @@ var conf *util.Config
 
 func init() {
 	conf = util.GetConfig()
+	blockchain := "cosmos"
+	registrar.RegisterBuild(blockchain, Build)
+	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterParams(blockchain, GetParams)
 }
 
 // Build builds out a fresh new cosmos test network

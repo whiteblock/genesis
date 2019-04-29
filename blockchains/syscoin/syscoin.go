@@ -7,6 +7,7 @@ import (
 	"../../testnet"
 	"../../util"
 	"../helpers"
+	"../registrar"
 	"fmt"
 	"log"
 	"sync"
@@ -16,6 +17,18 @@ var conf *util.Config
 
 func init() {
 	conf = util.GetConfig()
+	blockchain := "syscoin"
+	registrar.RegisterBuild(blockchain, RegTest)
+	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterParams(blockchain, GetParams)
+	blockchain = "sys"
+	registrar.RegisterBuild(blockchain, RegTest)
+	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterParams(blockchain, GetParams)
 }
 
 // RegTest sets up Syscoin Testnet in Regtest mode

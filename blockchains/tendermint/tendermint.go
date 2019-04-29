@@ -7,6 +7,7 @@ import (
 	"../../testnet"
 	"../../util"
 	"../helpers"
+	"../registrar"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -31,6 +32,12 @@ var conf *util.Config
 
 func init() {
 	conf = util.GetConfig()
+	blockchain := "tendermint"
+	registrar.RegisterBuild(blockchain, Build)
+	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterParams(blockchain, GetParams)
 }
 
 //ExecStart=/usr/bin/tendermint node --proxy_app=kvstore --p2p.persistent_peers=167b80242c300bf0ccfb3ced3dec60dc2a81776e@165.227.41.206:26656,3c7a5920811550c04bf7a0b2f1e02ab52317b5e6@165.227.43.146:26656,303a1a4312c30525c99ba66522dd81cca56a361a@159.89.115.32:26656,b686c2a7f4b1b46dca96af3a0f31a6a7beae0be4@159.89.119.125:26656
@@ -137,6 +144,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			strings.Join(append(peersCpy[:absoluteNodeNum], peersCpy[absoluteNodeNum+1:]...), ",")))
 	})
 	return nil, err
+}
+
+// Add handles adding a node to the tendermint testnet
+// TODO
+func Add(tn *testnet.TestNet) ([]string, error) {
+	return nil, nil
 }
 
 func getGenesisFile(vdtrs []validator) string {

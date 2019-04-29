@@ -7,6 +7,7 @@ import (
 	"../../testnet"
 	"../../util"
 	"../helpers"
+	"../registrar"
 	"fmt"
 	"log"
 	"regexp"
@@ -18,6 +19,12 @@ var conf *util.Config
 
 func init() {
 	conf = util.GetConfig()
+	blockchain := "beam"
+	registrar.RegisterBuild(blockchain, Build)
+	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterParams(blockchain, GetParams)
 }
 
 const port int = 10000

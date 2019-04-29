@@ -8,6 +8,7 @@ import (
 	"../../testnet"
 	"../../util"
 	"../helpers"
+	"../registrar"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -21,6 +22,12 @@ var conf *util.Config
 
 func init() {
 	conf = util.GetConfig()
+	blockchain := "parity"
+	registrar.RegisterBuild(blockchain, Build)
+	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterParams(blockchain, GetParams)
 }
 
 // Build builds out a fresh new ethereum test network using parity

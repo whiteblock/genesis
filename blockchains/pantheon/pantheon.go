@@ -8,6 +8,7 @@ import (
 	"../../testnet"
 	"../../util"
 	"../helpers"
+	"../registrar"
 	"fmt"
 	"github.com/Whiteblock/mustache"
 	"log"
@@ -19,6 +20,12 @@ var conf *util.Config
 
 func init() {
 	conf = util.GetConfig()
+	blockchain := "pantheon"
+	registrar.RegisterBuild(blockchain, Build)
+	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterParams(blockchain, GetParams)
 }
 
 // Build builds out a fresh new ethereum test network using pantheon
@@ -402,4 +409,10 @@ func startGeth(client *ssh.Client, panconf *panConf, addresses []string, privKey
 		return err
 	}
 	return nil
+}
+
+// Add handles adding a node to the pantheon testnet
+// TODO
+func Add(tn *testnet.TestNet) ([]string, error) {
+	return nil, nil
 }

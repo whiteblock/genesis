@@ -3,25 +3,26 @@
 package manager
 
 import (
-	"../blockchains/artemis"
-	"../blockchains/beam"
-	"../blockchains/cosmos"
-	"../blockchains/eos"
-	"../blockchains/geth"
 	"../blockchains/helpers"
-	"../blockchains/pantheon"
-	"../blockchains/parity"
-	"../blockchains/rchain"
-	sys "../blockchains/syscoin"
-	"../blockchains/tendermint"
-	"encoding/json"
-	"fmt"
-	"log"
-
+	"../blockchains/registrar"
 	"../db"
 	"../deploy"
 	"../testnet"
 	"../util"
+	"encoding/json"
+	"fmt"
+	"log"
+	//Put the relative path to your blockchain library below this line, otherwise it won't be compiled
+	_ "../blockchains/artemis"
+	_ "../blockchains/beam"
+	_ "../blockchains/cosmos"
+	_ "../blockchains/eos"
+	_ "../blockchains/geth"
+	_ "../blockchains/pantheon"
+	_ "../blockchains/parity"
+	_ "../blockchains/rchain"
+	_ "../blockchains/syscoin"
+	_ "../blockchains/tendermint"
 )
 
 var conf *util.Config
@@ -60,8 +61,13 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 	})
 
 	//STEP 3: GET THE SERVICES
-	services := GetServices(details.Blockchain)
-
+	servicesFn, err := registrar.GetServiceFunc(details.Blockchain)
+	if err != nil {
+		log.Println(err)
+		buildState.ReportError(err)
+		return err
+	}
+	services := servicesFn()
 	//STEP 4: BUILD OUT THE DOCKER CONTAINERS AND THE NETWORK
 
 	err = deploy.Build(tn, services)
@@ -72,37 +78,13 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 	}
 	fmt.Println("Built the docker containers")
 
-	var labels []string
-
-	switch details.Blockchain {
-	case "eos":
-		labels, err = eos.Build(tn)
-	case "ethereum":
-		fallthrough
-	case "geth":
-		labels, err = geth.Build(tn)
-	case "parity":
-		labels, err = parity.Build(tn)
-	case "artemis":
-		labels, err = artemis.Build(tn)
-	case "pantheon":
-		labels, err = pantheon.Build(tn)
-	case "syscoin":
-		labels, err = sys.RegTest(tn)
-	case "rchain":
-		labels, err = rchain.Build(tn)
-	case "beam":
-		labels, err = beam.Build(tn)
-	case "tendermint":
-		labels, err = tendermint.Build(tn)
-	case "cosmos":
-		labels, err = cosmos.Build(tn)
-	case "generic":
-		log.Println("Built in generic mode")
-	default:
-		buildState.ReportError(fmt.Errorf("unknown blockchain"))
-		return fmt.Errorf("unknown blockchain")
+	buildFn, err := registrar.GetBuildFunc(details.Blockchain)
+	if err != nil {
+		log.Println(err)
+		buildState.ReportError(err)
+		return err
 	}
+	labels, err := buildFn(tn)
 	if err != nil {
 		buildState.ReportError(err)
 		log.Println(err)
@@ -171,34 +153,4 @@ func GetDefaults(blockchain string) ([]byte, error) {
 		return GetParams("geth")
 	}
 	return helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
-}
-
-// GetServices returns the services used by the given blockchain
-func GetServices(blockchain string) []util.Service {
-	var services []util.Service
-	switch blockchain {
-	case "ethereum":
-		fallthrough
-	case "geth":
-		services = geth.GetServices()
-	case "parity":
-		services = parity.GetServices()
-	case "pantheon":
-		services = pantheon.GetServices()
-	case "artemis":
-		services = artemis.GetServices()
-	case "eos":
-		services = eos.GetServices()
-	case "syscoin":
-		services = sys.GetServices()
-	case "rchain":
-		services = rchain.GetServices()
-	case "beam":
-		services = beam.GetServices()
-	case "tendermint":
-		services = tendermint.GetServices()
-	case "cosmos":
-		services = cosmos.GetServices()
-	}
-	return services
 }
