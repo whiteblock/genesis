@@ -23,6 +23,7 @@ func init() {
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
 	registrar.RegisterParams(blockchain, GetParams)
+	registrar.RegisterAdditionalLogs(blockchain, []string{"/artemis/data/log.json"})
 }
 
 // Build builds out a fresh new artemis test network

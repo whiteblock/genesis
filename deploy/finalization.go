@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"../blockchains/helpers"
+	"../blockchains/registrar"
 	"../db"
 	"../ssh"
 	"../state"
@@ -163,6 +164,10 @@ func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state
 		for _, file := range logFiles { //Eventually may need to handle the names as well
 			files += " " + file
 		}
+	}
+	logFiles := registrar.GetAdditionalLogs(details.Blockchain)
+	for _,logFile := range logFiles {
+		files += " " + logFile
 	}
 
 	_, err = client.DockerExecd(node.LocalID,
