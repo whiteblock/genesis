@@ -136,7 +136,7 @@ func GetSupportedBlockchains() []string {
 	mux.RLock()
 	defer mux.RUnlock()
 	out := []string{}
-	for blockchain, _ := range buildFuncs {
+	for blockchain := range buildFuncs {
 		out = append(out, blockchain)
 	}
 	return out
