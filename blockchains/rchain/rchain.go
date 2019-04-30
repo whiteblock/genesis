@@ -64,7 +64,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 	/**Check to make sure the rnode command is valid**/
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
-		_, err := client.DockerExec(localNodeNum, fmt.Sprintf("%s --help", rConf.Command))
+		_, err := client.DockerExec(localNodeNum, fmt.Sprintf("bash -c '%s --help'", rConf.Command))
 		if err != nil {
 			fmt.Println(err)
 			return fmt.Errorf("could not find command \"%s\"", rConf.Command)
@@ -79,24 +79,37 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	buildState.IncrementBuildProgress()
 	km, err := helpers.NewKeyMaster(tn.LDD, "rchain")
 	keyPairs := make([]util.KeyPair, tn.LDD.Nodes)
-
+	validatorKeyPairs := make([]util.KeyPair, rConf.Validators)
 	for i := range keyPairs {
 		keyPairs[i], err = km.GetKeyPair(clients[0])
+		if i > 0 && i-1 < len(validatorKeyPairs) {
+			validatorKeyPairs[i-1] = keyPairs[i]
+		}
 		if err != nil {
 			log.Println(err)
 			return nil, err
 		}
 	}
+	for i := len(keyPairs) - 1; i < len(validatorKeyPairs); i++ {
+		validatorKeyPairs[i], err = km.GetKeyPair(clients[0])
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+	}
+	fmt.Printf("Keypairs = %#v\n", keyPairs)
+	fmt.Printf("BalidatorKeyPairs = %#v\n", validatorKeyPairs)
 	buildState.Set("keyPairs", keyPairs)
+	buildState.Set("validatorKeyPairs", validatorKeyPairs)
 
 	buildState.IncrementBuildProgress()
 
 	buildState.SetBuildStage("Setting up bonds")
 	/**Setup bonds**/
 	{
-		bonds := make([]string, tn.LDD.Nodes)
-		for i, keyPair := range keyPairs {
-			bonds[i] = fmt.Sprintf("%s 1000000", keyPair.PublicKey)
+		bonds := make([]string, len(validatorKeyPairs))
+		for i, keyPair := range validatorKeyPairs {
+			bonds[i] = fmt.Sprintf("%s %d", keyPair.PublicKey, rConf.BondsValue)
 		}
 		buildState.IncrementBuildProgress()
 		err = buildState.Write("bonds.txt", util.CombineConfig(bonds))

@@ -19,6 +19,7 @@ type rChainConf struct {
 	ValidatorCount       int64  `json:"validatorCount"`
 	SigAlgorithm         string `json:"sigAlgorithm"`
 	Command              string `json:"command"`
+	BondsValue           int64  `json:"bondsValue"`
 }
 
 func newRChainConf(data map[string]interface{}) (*rChainConf, error) {
@@ -27,6 +28,7 @@ func newRChainConf(data map[string]interface{}) (*rChainConf, error) {
 	if data == nil {
 		return out, err
 	}
+	log.Printf("Default %+v\n", *out)
 	tmp, err := json.Marshal(data)
 	if err != nil {
 		log.Println(err)
