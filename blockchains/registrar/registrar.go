@@ -15,7 +15,7 @@ var (
 	serviceFuncs  = map[string]func() []util.Service{}
 	paramsFuncs   = map[string]func() string{}
 	defaultsFuncs = map[string]func() string{}
-	logFiles      = map[string][]string{}
+	logFiles      = map[string]map[string]string{}
 )
 
 // RegisterBuild associates a blockchain name with a build process
@@ -53,8 +53,8 @@ func RegisterDefaults(blockchain string, fn func() string) {
 	defaultsFuncs[blockchain] = fn
 }
 
-// RegisterAdditionalLogs associates a blockchain name with an array of additional logs
-func RegisterAdditionalLogs(blockchain string, logs []string) {
+// RegisterAdditionalLogs associates a blockchain name with a map of additional logs
+func RegisterAdditionalLogs(blockchain string, logs map[string]string) {
 	mux.Lock()
 	defer mux.Unlock()
 	logFiles[blockchain] = logs
@@ -121,7 +121,7 @@ func GetDefaultsFunc(blockchain string) (func() string, error) {
 }
 
 // GetAdditionalLogs get additional logs of the blockchain if there are any
-func GetAdditionalLogs(blockchain string) []string {
+func GetAdditionalLogs(blockchain string) map[string]string {
 	mux.RLock()
 	defer mux.RUnlock()
 	return logFiles[blockchain]

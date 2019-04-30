@@ -153,7 +153,7 @@ func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state
 		log.Println(err)
 		return err
 	}
-	files := conf.DockerOutputFile
+	files := details.Blockchain + " " + conf.DockerOutputFile
 	if details.Logs != nil && len(details.Logs) > 0 {
 		var logFiles map[string]string
 		if len(details.Logs) == 1 || len(details.Logs) <= absNum {
@@ -161,18 +161,18 @@ func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state
 		} else {
 			logFiles = details.Logs[absNum]
 		}
-		for _, file := range logFiles { //Eventually may need to handle the names as well
-			files += " " + file
+		for name, file := range logFiles { //Eventually may need to handle the names as well
+			files += " " + name + " " + file
 		}
 	}
 	logFiles := registrar.GetAdditionalLogs(details.Blockchain)
-	for _,logFile := range logFiles {
-		files += " " + logFile
+	for name, logFile := range logFiles {
+		files += " " + name + " " + logFile
 	}
 
 	_, err = client.DockerExecd(node.LocalID,
-		fmt.Sprintf("nibbler --node-type %s --jwt %s --testnet %s --node %s %s",
-			details.Blockchain, details.GetJwt(), node.TestNetID, node.ID, files))
+		fmt.Sprintf("nibbler --jwt %s --testnet %s --node %s %s",
+			details.GetJwt(), node.TestNetID, node.ID, files))
 	if err != nil {
 		log.Println(err)
 	}
