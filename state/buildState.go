@@ -294,6 +294,7 @@ func (bs *BuildState) SetExt(key string, value interface{}) error {
 	switch value.(type) {
 	case string:
 	case []string:
+	case map[string]string:
 	default:
 		return fmt.Errorf("unsupported type for value")
 	}

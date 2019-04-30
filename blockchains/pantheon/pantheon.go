@@ -1,4 +1,4 @@
-//Package pantheon handles artemis specific functionality
+//Package pantheon handles pantheon specific functionality
 package pantheon
 
 import (

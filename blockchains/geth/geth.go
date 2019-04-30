@@ -255,7 +255,10 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil
 	})
 	for _, account := range accounts {
-		tn.BuildState.SetExt(account.HexAddress(), account.HexPrivateKey())
+		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
+			"privateKey": account.HexPrivateKey(),
+			"publicKey":  account.HexPublicKey(),
+		})
 	}
 	return nil, err
 }
