@@ -47,6 +47,7 @@ func (acc Account) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// NewAccount creates an account from a SECP256K1 ECDSA private key
 func NewAccount(privKey *ecdsa.PrivateKey) *Account {
 	pubKey := privKey.Public().(*ecdsa.PublicKey)
 	addr := crypto.PubkeyToAddress(*pubKey)
@@ -63,6 +64,7 @@ func GenerateEthereumAddress() (*Account, error) {
 	return NewAccount(privKey), nil
 }
 
+// CreateAccountFromHex creates an account from a hex encoded private key
 func CreateAccountFromHex(hexPK string) (*Account, error) {
 	privKey, err := crypto.HexToECDSA(hexPK)
 	if err != nil {

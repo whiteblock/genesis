@@ -88,12 +88,6 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		buildState.IncrementBuildProgress()
 		addr := acc.HexAddress()
 
-		/*_, err = client.DockerExec(localNodeNum, "mkdir /pantheon/data")
-		if err != nil {
-			log.Println(err)
-			return err
-		}*/
-
 		_, err = client.DockerExec(localNodeNum, "bash -c 'echo \"[\\\""+addr[2:]+"\\\"]\" >> /pantheon/data/toEncode.json'")
 		if err != nil {
 			log.Println(err)
@@ -219,7 +213,10 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return err
 	})
 	for _, account := range accounts {
-		tn.BuildState.SetExt(account.HexAddress(), account.HexPrivateKey())
+		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
+			"privateKey": account.HexPrivateKey(),
+			"publicKey":  account.HexPublicKey(),
+		})
 	}
 	return nil, err
 }
