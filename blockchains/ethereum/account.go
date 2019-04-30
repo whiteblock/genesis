@@ -25,7 +25,7 @@ func (acc Account) HexPrivateKey() string {
 
 // HexPublicKey gets the public key in hex format
 func (acc Account) HexPublicKey() string {
-	return hex.EncodeToString(crypto.FromECDSAPub(acc.PublicKey))
+	return hex.EncodeToString(crypto.FromECDSAPub(acc.PublicKey))[2:]
 }
 
 // HexAddress gets the address in hex format
@@ -47,6 +47,12 @@ func (acc Account) MarshalJSON() ([]byte, error) {
 	})
 }
 
+func NewAccount(privKey *ecdsa.PrivateKey) *Account {
+	pubKey := privKey.Public().(*ecdsa.PublicKey)
+	addr := crypto.PubkeyToAddress(*pubKey)
+	return &Account{PrivateKey: privKey, PublicKey: pubKey, Address: addr}
+}
+
 // GenerateEthereumAddress generates a new, random Ethereum account
 func GenerateEthereumAddress() (*Account, error) {
 	privKey, err := crypto.GenerateKey()
@@ -54,9 +60,16 @@ func GenerateEthereumAddress() (*Account, error) {
 		log.Println(err)
 		return nil, err
 	}
-	pubKey := privKey.Public().(*ecdsa.PublicKey)
-	addr := crypto.PubkeyToAddress(*pubKey)
-	return &Account{PrivateKey: privKey, PublicKey: pubKey, Address: addr}, nil
+	return NewAccount(privKey), nil
+}
+
+func CreateAccountFromHex(hexPK string) (*Account, error) {
+	privKey, err := crypto.HexToECDSA(hexPK)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return NewAccount(privKey), nil
 }
 
 // GenerateAccounts is a convience function to generate an arbitrary number of accounts
@@ -72,4 +85,22 @@ func GenerateAccounts(accounts int) ([]*Account, error) {
 		out = append(out, acc)
 	}
 	return out, nil
+}
+
+//ExtractAddresses turns an array of accounts into an array of addresses
+func ExtractAddresses(accs []*Account) []string {
+	out := make([]string, len(accs))
+	for i := range accs {
+		out[i] = accs[i].HexAddress()
+	}
+	return out
+}
+
+//ExtractAddressesNoPrefix turns an array of accounts into an array of addresses without the 0x prefix
+func ExtractAddressesNoPrefix(accs []*Account) []string {
+	out := make([]string, len(accs))
+	for i := range accs {
+		out[i] = accs[i].HexAddress()[2:]
+	}
+	return out
 }

@@ -7,12 +7,12 @@ import (
 	"../../state"
 	"../../testnet"
 	"../../util"
+	"../ethereum"
 	"../helpers"
 	"../registrar"
 	"fmt"
 	"github.com/Whiteblock/mustache"
 	"log"
-	"regexp"
 	"sync"
 )
 
@@ -43,12 +43,10 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	buildState.SetBuildSteps(6*tn.LDD.Nodes + 2)
 	buildState.IncrementBuildProgress()
 
-	addresses := make([]string, tn.LDD.Nodes)
-	pubKeys := make([]string, tn.LDD.Nodes)
-	privKeys := make([]string, tn.LDD.Nodes)
 	rlpEncodedData := make([]string, tn.LDD.Nodes)
+	accounts := make([]*ethereum.Account, tn.LDD.Nodes)
 
-	extraAccChan := make(chan []string)
+	extraAccChan := make(chan []*ethereum.Account)
 
 	go func() {
 		accs, err := prepareGeth(tn.GetFlatClients()[0], panconf, tn.LDD.Nodes, buildState)
@@ -64,12 +62,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	buildState.SetBuildStage("Setting Up Accounts")
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		_, err := client.DockerExec(localNodeNum,
-			"pantheon --data-path=/pantheon/data public-key export-address --to=/pantheon/data/nodeAddress")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
+
 		buildState.IncrementBuildProgress()
 		_, err = client.DockerExec(localNodeNum,
 			"pantheon --data-path=/pantheon/data public-key export --to=/pantheon/data/publicKey")
@@ -78,39 +71,30 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			return err
 		}
 
-		addr, err := client.DockerExec(localNodeNum, "cat /pantheon/data/nodeAddress")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		addrs := string(addr[2:])
-
-		mux.Lock()
-		addresses[absoluteNodeNum] = addrs
-		mux.Unlock()
-
-		key, err := client.DockerExec(localNodeNum, "cat /pantheon/data/publicKey")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		buildState.IncrementBuildProgress()
-
-		mux.Lock()
-		pubKeys[absoluteNodeNum] = key[2:]
-		mux.Unlock()
-
 		privKey, err := client.DockerExec(localNodeNum, "cat /pantheon/data/key")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
-		mux.Lock()
-		privKeys[absoluteNodeNum] = privKey[2:]
-		mux.Unlock()
+		acc, err := ethereum.CreateAccountFromHex(privKey[2:])
+		if err != nil {
+			log.Println(err)
+			return err
+		}
 
-		_, err = client.DockerExec(localNodeNum, "bash -c 'echo \"[\\\""+addrs+"\\\"]\" >> /pantheon/data/toEncode.json'")
+		mux.Lock()
+		accounts[absoluteNodeNum] = acc
+		mux.Unlock()
+		buildState.IncrementBuildProgress()
+		addr := acc.HexAddress()
+
+		/*_, err = client.DockerExec(localNodeNum, "mkdir /pantheon/data")
+		if err != nil {
+			log.Println(err)
+			return err
+		}*/
+
+		_, err = client.DockerExec(localNodeNum, "bash -c 'echo \"[\\\""+addr[2:]+"\\\"]\" >> /pantheon/data/toEncode.json'")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -152,7 +136,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 	//<- extraAccChan
 	extraAccs := <-extraAccChan
-	addresses = append(addresses, extraAccs...)
+	accounts = append(accounts, extraAccs...)
 
 	wg.Add(1)
 	defer wg.Wait()
@@ -164,7 +148,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		   client does not support wallet management, so this acts as an easy work around.
 		*/
 		clients := tn.GetFlatClients()
-		err := startGeth(clients[0], panconf, addresses, privKeys, buildState)
+		err := startGeth(clients[0], panconf, accounts, buildState)
 		if err != nil {
 			log.Println(err)
 			buildState.ReportError(err)
@@ -174,7 +158,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	/* Create Genesis File */
 	buildState.SetBuildStage("Generating Genesis File")
-	err = createGenesisfile(panconf, tn.LDD, addresses, buildState, rlpEncodedData[0])
+	err = createGenesisfile(panconf, tn, accounts, rlpEncodedData[0])
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -182,14 +166,13 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	p2pPort := 30303
 	enodes := "["
-	var enodeAddress string
 	for i, node := range tn.Nodes {
-		enodeAddress = fmt.Sprintf("enode://%s@%s:%d",
-			pubKeys[i],
+		enodeAddress := fmt.Sprintf("enode://%s@%s:%d",
+			accounts[i].HexPublicKey(),
 			node.IP,
 			p2pPort)
-		if i < len(pubKeys)-1 {
-			enodes = enodes + "\"" + enodeAddress + "\"" + ","
+		if i != 0 {
+			enodes = enodes + ",\"" + enodeAddress + "\""
 		} else {
 			enodes = enodes + "\"" + enodeAddress + "\""
 		}
@@ -226,7 +209,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	/* Start the nodes */
 	buildState.SetBuildStage("Starting Pantheon")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
 		err := client.DockerExecdLog(localNodeNum, fmt.Sprintf(
 			`pantheon --config-file=/pantheon/config.toml --data-path=/pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
 				`--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,TXPOOL,WEB3" `+
@@ -235,13 +218,16 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		buildState.IncrementBuildProgress()
 		return err
 	})
-	return privKeys, err
+	for _, account := range accounts {
+		tn.BuildState.SetExt(account.HexAddress(), account.HexPrivateKey())
+	}
+	return nil, err
 }
 
-func createGenesisfile(panconf *panConf, details *db.DeploymentDetails, address []string, buildState *state.BuildState, ibftExtraData string) error {
+func createGenesisfile(panconf *panConf, tn *testnet.TestNet, accounts []*ethereum.Account, ibftExtraData string) error {
 	alloc := map[string]map[string]string{}
-	for _, addr := range address {
-		alloc[addr] = map[string]string{
+	for _, acc := range accounts {
+		alloc[acc.HexAddress()] = map[string]string{
 			"balance": panconf.InitBalance,
 		}
 	}
@@ -274,8 +260,8 @@ func createGenesisfile(panconf *panConf, details *db.DeploymentDetails, address 
 		fallthrough
 	case "ethash":
 		extraData := "0x0000000000000000000000000000000000000000000000000000000000000000"
-		for i := 0; i < len(address) && i < details.Nodes; i++ {
-			extraData += address[i]
+		for i := 0; i < len(accounts) && i < tn.LDD.Nodes; i++ {
+			extraData += accounts[i].HexAddress()[2:]
 		}
 		extraData += "000000000000000000000000000000000000000000000000000000000000000000" +
 			"0000000000000000000000000000000000000000000000000000000000000000"
@@ -284,7 +270,7 @@ func createGenesisfile(panconf *panConf, details *db.DeploymentDetails, address 
 
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
-	dat, err := helpers.GetBlockchainConfig("pantheon", 0, "genesis.json", details)
+	dat, err := helpers.GetBlockchainConfig("pantheon", 0, "genesis.json", tn.LDD)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -296,7 +282,7 @@ func createGenesisfile(panconf *panConf, details *db.DeploymentDetails, address 
 		return err
 	}
 	fmt.Println("Writing Genesis File Locally")
-	return buildState.Write("genesis.json", data)
+	return tn.BuildState.Write("genesis.json", data)
 
 }
 
@@ -304,8 +290,7 @@ func createStaticNodesFile(list string, buildState *state.BuildState) error {
 	return buildState.Write("static-nodes.json", list)
 }
 
-func prepareGeth(client *ssh.Client, panconf *panConf, nodes int, buildState *state.BuildState) ([]string, error) {
-	addresses := []string{}
+func prepareGeth(client *ssh.Client, panconf *panConf, nodes int, buildState *state.BuildState) ([]*ethereum.Account, error) {
 	passwd := ""
 	for i := 0; int64(i) < panconf.Accounts+int64(nodes); i++ {
 		passwd += "second\n"
@@ -331,39 +316,17 @@ func prepareGeth(client *ssh.Client, panconf *panConf, nodes int, buildState *st
 	}
 
 	toCreate := panconf.Accounts
-	wg := &sync.WaitGroup{}
-	mux := &sync.Mutex{}
-	for i := 0; i < int(toCreate); i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			gethResults, err := client.Run("docker exec wb_service0 geth --datadir /geth/ --password /geth/passwd account new")
-			if err != nil {
-				log.Println(err)
-				buildState.ReportError(err)
-				return
-			}
 
-			addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
-			addrRaw := addressPattern.FindAllString(gethResults, -1)
-			if len(addrRaw) < 1 {
-				buildState.ReportError(fmt.Errorf("unable to get addresses"))
-				return
-			}
-			address := addrRaw[0]
-			address = address[1 : len(address)-1]
-
-			mux.Lock()
-			addresses = append(addresses, address)
-			mux.Unlock()
-
-		}()
+	accounts, err := ethereum.GenerateAccounts(int(toCreate))
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
-	wg.Wait()
-	return addresses, nil
+
+	return accounts, nil
 }
 
-func startGeth(client *ssh.Client, panconf *panConf, addresses []string, privKeys []string, buildState *state.BuildState) error {
+func startGeth(client *ssh.Client, panconf *panConf, accounts []*ethereum.Account, buildState *state.BuildState) error {
 	serviceIps, err := util.GetServiceIps(GetServices())
 	if err != nil {
 		log.Println(err)
@@ -374,32 +337,42 @@ func startGeth(client *ssh.Client, panconf *panConf, addresses []string, privKey
 		log.Println(err)
 		return err
 	}
-	err = buildState.SetExt("accounts", addresses)
+	err = buildState.SetExt("accounts", ethereum.ExtractAddressesNoPrefix(accounts))
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	unlock := ""
-	for i, privKey := range privKeys {
-		_, err = client.Run(fmt.Sprintf(`docker exec wb_service0 bash -c 'echo -n "%s" > /geth/pk%d' `, privKey, i))
-		if err != nil {
-			log.Println(err)
-			return err
-		}
+	wg := &sync.WaitGroup{}
 
-		_, err = client.Run(fmt.Sprintf(`docker exec wb_service0 geth --datadir /geth/ account import --password /geth/passwd /geth/pk%d`, i))
-		if err != nil {
-			log.Println(err)
-			return err
-		}
+	for i, account := range accounts {
+		wg.Add(1)
+		go func(account *ethereum.Account, i int) {
+			defer wg.Done()
+
+			_, err := client.Run(fmt.Sprintf("docker exec wb_service0 bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			_, err = client.Run(
+				fmt.Sprintf("docker exec wb_service0 geth "+
+					"--datadir /geth/ --password /geth/passwd account import --password /geth/passwd /geth/pk%d", i))
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+		}(account, i)
 	}
+	wg.Wait()
 
-	for i, addr := range addresses {
+	unlock := ""
+	for i, account := range accounts {
 		if i != 0 {
 			unlock += ","
 		}
-		unlock += "0x" + addr
+		unlock += account.HexAddress()
 	}
 	_, err = client.Run(fmt.Sprintf(`docker exec -itd wb_service0 bash -ic 'geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
 		` --rpcapi "admin,web3,db,eth,net,personal" --rpccorsdomain "0.0.0.0" --nodiscover --unlock="%s"`+
