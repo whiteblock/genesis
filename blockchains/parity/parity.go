@@ -41,7 +41,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	tn.BuildState.SetBuildSteps(9 + (7 * tn.LDD.Nodes))
 	//Make the data directories
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
 		_, err := client.DockerExec(localNodeNum, "mkdir -p /parity")
 		return err
 	})
@@ -69,7 +69,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	/**Create the wallets**/
 	wallets := make([]string, tn.LDD.Nodes)
 	rawWallets := make([]string, tn.LDD.Nodes)
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		res, err := client.DockerExec(localNodeNum, "parity --base-path=/parity/ --password=/parity/passwd account new")
 		if err != nil {
 			log.Println(err)

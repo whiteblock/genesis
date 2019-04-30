@@ -25,11 +25,11 @@ func StartServer() {
 	router.HandleFunc("/servers", getAllServerInfo).Methods("GET")
 	router.HandleFunc("/servers/", getAllServerInfo).Methods("GET")
 
-	router.HandleFunc("/servers/{name}", addNewServer).Methods("PUT") //Private
+	router.HandleFunc("/servers/{name}", addNewServer).Methods("PUT")
 
 	router.HandleFunc("/servers/{id}", getServerInfo).Methods("GET")
-	router.HandleFunc("/servers/{id}", deleteServer).Methods("DELETE")     //Private
-	router.HandleFunc("/servers/{id}", updateServerInfo).Methods("UPDATE") //Private
+	router.HandleFunc("/servers/{id}", deleteServer).Methods("DELETE")
+	router.HandleFunc("/servers/{id}", updateServerInfo).Methods("UPDATE")
 
 	router.HandleFunc("/testnets/", createTestNet).Methods("POST") //Create new test net
 	router.HandleFunc("/testnets", createTestNet).Methods("POST")  //Create new test net
@@ -135,6 +135,9 @@ func StartServer() {
 
 	router.HandleFunc("/partition/{testnetID}", getAllPartitions).Methods("GET")
 	router.HandleFunc("/partition/{testnetID}/", getAllPartitions).Methods("GET")
+
+	router.HandleFunc("/blockchains", getAllSupportedBlockchains).Methods("GET")
+	router.HandleFunc("/blockchains/", getAllSupportedBlockchains).Methods("GET")
 
 	http.ListenAndServe(conf.Listen, router)
 }

@@ -9,6 +9,9 @@ import (
 )
 
 var (
+	//mux is actually not needed because all Register calls should be done via the init call, which
+	//means that there should not be a race condition. However, golang does not provide any
+	//method of enforcement for this to my knowledge.
 	mux           = &sync.RWMutex{}
 	buildFuncs    = map[string]func(*testnet.TestNet) ([]string, error){}
 	addFuncs      = map[string]func(*testnet.TestNet) ([]string, error){}
@@ -32,7 +35,7 @@ func RegisterAddNodes(blockchain string, fn func(*testnet.TestNet) ([]string, er
 	addFuncs[blockchain] = fn
 }
 
-// RegisterAddNodes associates a blockchain name with a function that gets its required services
+// RegisterServices associates a blockchain name with a function that gets its required services
 func RegisterServices(blockchain string, fn func() []util.Service) {
 	mux.Lock()
 	defer mux.Unlock()
@@ -60,7 +63,7 @@ func RegisterAdditionalLogs(blockchain string, logs map[string]string) {
 	logFiles[blockchain] = logs
 }
 
-// GetBuildFunc get the build function associated with the given blockchain name or error != nil if
+// GetBuildFunc gets the build function associated with the given blockchain name or error != nil if
 // it is not found
 func GetBuildFunc(blockchain string) (func(*testnet.TestNet) ([]string, error), error) {
 	mux.RLock()
@@ -72,7 +75,7 @@ func GetBuildFunc(blockchain string) (func(*testnet.TestNet) ([]string, error), 
 	return out, nil
 }
 
-// GetAddNodeFunc get the add node function associated with the given blockchain name or error != nil if
+// GetAddNodeFunc gets the add node function associated with the given blockchain name or error != nil if
 // it is not found
 func GetAddNodeFunc(blockchain string) (func(*testnet.TestNet) ([]string, error), error) {
 	mux.RLock()
@@ -84,7 +87,7 @@ func GetAddNodeFunc(blockchain string) (func(*testnet.TestNet) ([]string, error)
 	return out, nil
 }
 
-// GetServiceFunc get the service function associated with the given blockchain name or error != nil if
+// GetServiceFunc gets the service function associated with the given blockchain name or error != nil if
 // it is not found
 func GetServiceFunc(blockchain string) (func() []util.Service, error) {
 	mux.RLock()
@@ -120,9 +123,21 @@ func GetDefaultsFunc(blockchain string) (func() string, error) {
 	return out, nil
 }
 
-// GetAdditionalLogs get additional logs of the blockchain if there are any
+// GetAdditionalLogs gets additional logs of the blockchain if there are any
 func GetAdditionalLogs(blockchain string) map[string]string {
 	mux.RLock()
 	defer mux.RUnlock()
 	return logFiles[blockchain]
+}
+
+// GetSupportedBlockchains gets the blockchains which have a registered
+// Build function
+func GetSupportedBlockchains() []string {
+	mux.RLock()
+	defer mux.RUnlock()
+	out := []string{}
+	for blockchain, _ := range buildFuncs {
+		out = append(out, blockchain)
+	}
+	return out
 }

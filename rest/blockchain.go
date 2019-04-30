@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"../blockchains/registrar"
 	"../db"
 	"../manager"
 	"../state"
@@ -164,4 +165,8 @@ func getBlockChainLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte(res))
+}
+
+func getAllSupportedBlockchains(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(registrar.GetSupportedBlockchains())
 }

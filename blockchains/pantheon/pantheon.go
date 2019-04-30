@@ -184,11 +184,9 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 
-	err = helpers.CreateConfigs(tn, "/pantheon/config.toml",
-		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
-			return helpers.GetBlockchainConfig("pantheon", absoluteNodeNum, "config.toml", tn.LDD)
-		})
-
+	err = helpers.CreateConfigs(tn, "/pantheon/config.toml", func(_ int, _ int, absoluteNodeNum int) ([]byte, error) {
+		return helpers.GetBlockchainConfig("pantheon", absoluteNodeNum, "config.toml", tn.LDD)
+	})
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -334,7 +332,7 @@ func startGeth(client *ssh.Client, panconf *panConf, accounts []*ethereum.Accoun
 		log.Println(err)
 		return err
 	}
-	err = buildState.SetExt("accounts", ethereum.ExtractAddressesNoPrefix(accounts))
+	err = buildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
 	if err != nil {
 		log.Println(err)
 		return err
