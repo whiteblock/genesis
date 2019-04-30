@@ -97,8 +97,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			return nil, err
 		}
 	}
-	fmt.Printf("Keypairs = %#v\n", keyPairs)
-	fmt.Printf("BalidatorKeyPairs = %#v\n", validatorKeyPairs)
+	//fmt.Printf("Keypairs = %#v\n", keyPairs)
+	//fmt.Printf("BalidatorKeyPairs = %#v\n", validatorKeyPairs)
 	buildState.Set("keyPairs", keyPairs)
 	buildState.Set("validatorKeyPairs", validatorKeyPairs)
 

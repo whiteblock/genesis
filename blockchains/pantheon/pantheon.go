@@ -30,8 +30,6 @@ func init() {
 
 // Build builds out a fresh new ethereum test network using pantheon
 func Build(tn *testnet.TestNet) ([]string, error) {
-	buildState := tn.BuildState
-	wg := sync.WaitGroup{}
 	mux := sync.Mutex{}
 
 	panconf, err := newConf(tn.LDD.Params)
@@ -40,8 +38,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 
-	buildState.SetBuildSteps(6*tn.LDD.Nodes + 2)
-	buildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildSteps(6*tn.LDD.Nodes + 2)
+	tn.BuildState.IncrementBuildProgress()
 
 	rlpEncodedData := make([]string, tn.LDD.Nodes)
 	accounts := make([]*ethereum.Account, tn.LDD.Nodes)
@@ -49,21 +47,21 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	extraAccChan := make(chan []*ethereum.Account)
 
 	go func() {
-		accs, err := prepareGeth(tn.GetFlatClients()[0], panconf, tn.LDD.Nodes, buildState)
+		accs, err := prepareGeth(tn.GetFlatClients()[0], panconf, tn)
 		if err != nil {
 			log.Println(err)
-			buildState.ReportError(err)
+			tn.BuildState.ReportError(err)
 			extraAccChan <- nil
 			return
 		}
 		extraAccChan <- accs
 	}()
 
-	buildState.SetBuildStage("Setting Up Accounts")
+	tn.BuildState.SetBuildStage("Setting Up Accounts")
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
 
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 		_, err = client.DockerExec(localNodeNum,
 			"pantheon --data-path=/pantheon/data public-key export --to=/pantheon/data/publicKey")
 		if err != nil {
@@ -71,7 +69,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			return err
 		}
 
-		privKey, err := client.DockerExec(localNodeNum, "cat /pantheon/data/key")
+		privKey, err := client.DockerRead(localNodeNum, "/pantheon/data/key", -1)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -85,7 +83,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		mux.Lock()
 		accounts[absoluteNodeNum] = acc
 		mux.Unlock()
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 		addr := acc.HexAddress()
 
 		_, err = client.DockerExec(localNodeNum, "bash -c 'echo \"[\\\""+addr[2:]+"\\\"]\" >> /pantheon/data/toEncode.json'")
@@ -108,7 +106,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			return err
 		}
 
-		rlpEncoded, err := client.DockerExec(localNodeNum, "bash -c 'cat /pantheon/rlpEncodedExtraData'")
+		rlpEncoded, err := client.DockerRead(localNodeNum, "/pantheon/rlpEncodedExtraData", -1)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -118,10 +116,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		rlpEncodedData[absoluteNodeNum] = rlpEncoded
 		mux.Unlock()
 
-		//fmt.Println(rlpEncodedData)
-
-		buildState.IncrementBuildProgress()
-		return err
+		tn.BuildState.IncrementBuildProgress()
+		return nil
 
 	})
 	if err != nil {
@@ -132,26 +128,24 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	extraAccs := <-extraAccChan
 	accounts = append(accounts, extraAccs...)
 
-	wg.Add(1)
-	defer wg.Wait()
-	go func() {
-		defer wg.Done()
+	tn.BuildState.Async(func() {
+
 		/*
 		   Set up a geth node, which is not part of the blockchain network,
 		   to sign the transactions in place of the pantheon client. The pantheon
 		   client does not support wallet management, so this acts as an easy work around.
 		*/
 		clients := tn.GetFlatClients()
-		err := startGeth(clients[0], panconf, accounts, buildState)
+		err := startGeth(clients[0], panconf, accounts, tn.BuildState)
 		if err != nil {
 			log.Println(err)
-			buildState.ReportError(err)
+			tn.BuildState.ReportError(err)
 			return
 		}
-	}()
+	})
 
 	/* Create Genesis File */
-	buildState.SetBuildStage("Generating Genesis File")
+	tn.BuildState.SetBuildStage("Generating Genesis File")
 	err = createGenesisfile(panconf, tn, accounts, rlpEncodedData[0])
 	if err != nil {
 		log.Println(err)
@@ -170,14 +164,14 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		} else {
 			enodes = enodes + "\"" + enodeAddress + "\""
 		}
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 	}
 
 	enodes = enodes + "]"
 
 	/* Create Static Nodes File */
-	buildState.SetBuildStage("Setting Up Static Peers")
-	buildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Setting Up Static Peers")
+	tn.BuildState.IncrementBuildProgress()
 	err = helpers.CopyBytesToAllNodes(tn, enodes, "/pantheon/data/static-nodes.json")
 	if err != nil {
 		log.Println(err)
@@ -192,7 +186,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 	/* Copy static-nodes & genesis files to each node */
-	buildState.SetBuildStage("Distributing Files")
+	tn.BuildState.SetBuildStage("Distributing Files")
 	err = helpers.CopyToAllNodes(tn, "genesis.json", "/pantheon/genesis/genesis.json")
 	if err != nil {
 		log.Println(err)
@@ -200,14 +194,14 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 
 	/* Start the nodes */
-	buildState.SetBuildStage("Starting Pantheon")
+	tn.BuildState.SetBuildStage("Starting Pantheon")
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
 		err := client.DockerExecdLog(localNodeNum, fmt.Sprintf(
 			`pantheon --config-file=/pantheon/config.toml --data-path=/pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
 				`--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,TXPOOL,WEB3" `+
 				` --p2p-port=%d --rpc-http-port=8545 --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"`,
 			p2pPort))
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 		return err
 	})
 	for _, account := range accounts {
@@ -285,12 +279,12 @@ func createStaticNodesFile(list string, buildState *state.BuildState) error {
 	return buildState.Write("static-nodes.json", list)
 }
 
-func prepareGeth(client *ssh.Client, panconf *panConf, nodes int, buildState *state.BuildState) ([]*ethereum.Account, error) {
+func prepareGeth(client *ssh.Client, panconf *panConf, tn *testnet.TestNet) ([]*ethereum.Account, error) {
 	passwd := ""
-	for i := 0; int64(i) < panconf.Accounts+int64(nodes); i++ {
+	for i := 0; int64(i) < panconf.Accounts+int64(tn.LDD.Nodes); i++ {
 		passwd += "second\n"
 	}
-	err := buildState.Write("passwd2", passwd)
+	err := tn.BuildState.Write("passwd2", passwd)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -299,7 +293,7 @@ func prepareGeth(client *ssh.Client, panconf *panConf, nodes int, buildState *st
 	client.Run(`docker exec wb_service0 mkdir /geth/`)
 
 	err = client.Scp("passwd2", "/home/appo/passwd2")
-	buildState.Defer(func() { client.Run("rm /home/appo/passwd2") })
+	tn.BuildState.Defer(func() { client.Run("rm /home/appo/passwd2") })
 	if err != nil {
 		log.Println(err)
 		return nil, err
