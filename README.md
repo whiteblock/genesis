@@ -189,8 +189,6 @@ Get the current registered servers
 
 ### RESPONSE
 ```
-HTTP/1.1 200 OK
-Date: Mon, 22 Oct 2018 15:31:18 GMT
 {
     "server_name":{
         "addr":(string),
@@ -216,10 +214,12 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
     "server2_name":{...}...
 }
 ```
+
 ### EXAMPLE
 ```bash
 curl -XGET http://localhost:8000/servers/
 ```
+
 
 ## PUT /servers/{name}
 Register and add a new server to be 
@@ -238,25 +238,21 @@ controlled by the instance
 
 ### RESPONSE
 ```
-HTTP/1.1 200 OK
-Date: Mon, 22 Oct 2018 15:31:18 GMT
 <server id>
 ```
 
 ### EXAMPLE
 ```bash
 curl -X PUT http://localhost:8000/servers/foxtrot -d \
-'{"addr":"172.16.6.5","iaddr":{"ip":"10.254.6.100","gateway":"10.254.6.1","subnet":24},
-"nodes":0,"max":10,"serverID":6,"id":-1,"iface":"eth0","switches":[{"addr":"172.16.1.1","iface":"eno3","brand":1,"id":5}],"ips":null}}'
+'{"addr":"172.16.6.5","nodes":0,"max":10,"subnetID":6,"id":-1}'
 ```
+
 
 ## GET /servers/{id}
 Get a server by id
 
 ### RESPONSE
 ```
-HTTP/1.1 200 OK
-Date: Mon, 22 Oct 2018 15:31:18 GMT
 {
     "addr":(string),
     "nodes":(int),
@@ -271,8 +267,6 @@ Remove a server
 
 ### RESPONSE
 ```
-HTTP/1.1 200 OK
-Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
 ```
 
@@ -296,8 +290,6 @@ Update server information
 ```
 ### RESPONSE
 ```
-HTTP/1.1 200 OK
-Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
 ```
 
@@ -307,19 +299,20 @@ curl -X UPDATE http://localhost:8000/servers/5 -d \
  '{"addr":"172.16.4.5","nodes":0,"max":30,"id":5,"subnetID":4}'
 ```
 
-### POST /testnets/
+## POST /testnets/
 Add and deploy a new testnet
-##### BODY
+
+### BODY
 ```
-<json object representing the build
+<json object representing the build, see example and details after it>
 ```
-##### RESPONSE
+
+### RESPONSE
 ```
-HTTP/1.1 200 OK
-Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
 ```
-##### EXAMPLE
+
+### EXAMPLE
 ```bash
 curl -X POST http://localhost:8000/testnets/ -d '{
     "servers":[1],
@@ -382,6 +375,7 @@ curl -X POST http://localhost:8000/testnets/ -d '{
 }'
 ```
 
+### DETAILS
 * servers : The servers on which to build
 * blockchain: The blockchain to build out
 * nodes: The total number of nodes to build
@@ -406,19 +400,12 @@ curl -X POST http://localhost:8000/testnets/ -d '{
   * pull: Force an update of all of the used images. 
 
 
-## GET /testnets/{id}
-Get data on a single testnet
+## DELETE /testnets/{id}
+Tears down a testnet
 
 ### RESPONSE
 ```
-HTTP/1.1 200 OK
-Date: Mon, 22 Oct 2018 15:31:18 GMT
-{
-    "id":(int),
-    "blockchain":(string),
-    "nodes":(int),
-    "image":(string)
-}
+Success
 ```
 
 ## GET /testnets/{id}/nodes/
@@ -426,8 +413,6 @@ Get the nodes in a testnet
 
 ### RESPONSE
 ```
-HTTP/1.1 200 OK
-Date: Mon, 22 Oct 2018 15:31:18 GMT
 [
     {
         "id":(string),
@@ -444,9 +429,7 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
 Get the nodes that are running in the given testnet
 
 ### RESPONSE
-```
-HTTP/1.1 200 OK
-Date: Mon, 22 Oct 2018 15:31:18 GMT
+```json
 [
     {
     "ip": "10.1.0.2",
@@ -458,9 +441,10 @@ Date: Mon, 22 Oct 2018 15:31:18 GMT
     },
     "server": 1,
     "up": true
-  },...
+  }
 ]
 ```
+
 ### EXAMPLE
 ```bash
 curl -XGET http://localhost:8000/status/nodes/
@@ -478,6 +462,7 @@ Get the build params for a blockchain
     ["eip158Block","int"]
 ]
 ```
+
 ### EXAMPLE
 ```bash
 curl -X GET http://localhost:8000/params/ethereum
@@ -511,8 +496,6 @@ Get both stdout and stderr from the blockchain process
 
 ### RESPONSE
 ```
-HTTP/1.1 200 OK
-Date: Mon, 22 Oct 2018 15:31:18 GMT
 <The contents>
 ```
 
@@ -563,8 +546,6 @@ the testnet id
 
 ### RESPONSE
 ```
-HTTP/1.1 200 OK
-Date: Mon, 22 Oct 2018 15:31:18 GMT
 Success
 ```
 
@@ -595,7 +576,11 @@ curl -X DELETE http://localhost:8000/emulate/9e09efe8_d7a3_4429_832c_447d876194c
 Set emulation for a node or nodes
 
 ### BODY
-TODO
+```json
+[{"node":1,"limit":1000,"loss":0,"delay":5000,"rate":"","duplicate":0,"corrupt":0,"reorder":0},
+ {"node":2,"limit":1000,"loss":0,"delay":5000,"rate":"","duplicate":0,"corrupt":0,"reorder":0},
+ {"node":0,"limit":1000,"loss":0,"delay":5000,"rate":"","duplicate":0,"corrupt":0,"reorder":0}]
+```
 
 ### EXAMPLE
 ```bash
@@ -606,11 +591,13 @@ curl -X POST http://localhost:8000/emulate/9e09efe8_d7a3_4429_832c_447d876194c8
 Set emulation for a whole testnet
 
 ### BODY
-TODO
+```json
+{"limit":1000,"loss":0,"delay":5000,"rate":"","duplicate":0,"corrupt":0,"reorder":0}
+```
 
 ### EXAMPLE
 ```bash
-curl -X POST http://localhost:8000/emulate/all/9e09efe8_d7a3_4429_832c_447d876194c8
+curl -X POST http://localhost:8000/emulate/all/9e09efe8_d7a3_4429_832c_447d876194c8 
 ```
 
 ## GET /resources/{blockchain}
@@ -630,14 +617,64 @@ Get the static file resources used by genesis for the given blockchain
 curl -X POST http://localhost:8000/resources/geth
 ```
 
-### GET /resources/{blockchain}/{file}
+## GET /resources/{blockchain}/{file}
+Gets the contents of that file resource for the given blockchain
 
-#### BODY
-TODO
-#### EXAMPLE
+### EXAMPLE
 ```bash
 curl -X GET http://localhost:8000/resources/geth/genesis.json
 ```
+
+
+## GET /build
+
+## GET /build/{id}
+
+## POST /build/freeze/{id}
+Pause the given build
+
+## POST /build/thaw/{id}
+Unpause the given build
+
+## DELETE /build/freeze/{id}
+Unpause the given build
+
+## GET /emulate/{testnetID}
+Get the current network conditions for the testnet
+
+## POST /nodes/restart/{testnetID}/{num}
+Restart a node on a testnet
+
+## POST /nodes/raise/{testnetID}/{node}/{signal}
+Send a signal to the main process of the given node 
+
+## POST /nodes/kill/{testnetID}/{node}
+Attempt to kill the given node
+
+## POST /outage/{testnetID}/{node1}/{node2}
+Prevent the given node1 and node2 from establishing a connection with each other
+
+## DELETE /outage/{testnetID}/{node1}/{node2}
+Allow the given node1 and node2 to establish a connection with each other
+
+## DELETE /outage/{testnetID}
+Remove all blocked connections from a testnet
+
+## GET /outage/{testnetID}
+Get the currently blocked connections
+
+## GET /outage/{testnetID}/{node}
+Get the blocked connections for the given node
+
+## POST /outage/partition/{testnetID}
+Create a network partition on a testnet
+
+## GET /outage/partition/{testnetID}
+Get the partitions on the testnet
+
+## GET /blockchains
+Get the currently supported blockchains by genesis
+
 
 
 # Blockchain Specific Parameters

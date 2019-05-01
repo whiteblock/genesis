@@ -16,7 +16,7 @@ type Node struct {
 	/*
 	   TestNetId is the id of the testnet to which the node belongs to
 	*/
-	TestNetID string `json:"testNetId"`
+	TestNetID string `json:"testnetId"`
 	/*
 	   Server is the id of the server on which the node resides
 	*/
