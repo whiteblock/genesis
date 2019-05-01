@@ -130,11 +130,11 @@ func StartServer() {
 	router.HandleFunc("/outage/{testnetID}/{node}", getAllOutages).Methods("GET")
 	router.HandleFunc("/outage/{testnetID}/{node}/", getAllOutages).Methods("GET")
 
-	router.HandleFunc("/outage/partition/{testnetID}", partitionOutage).Methods("POST")
-	router.HandleFunc("/outage/partition/{testnetID}/", partitionOutage).Methods("POST")
+	router.HandleFunc("/partition/{testnetID}", partitionOutage).Methods("POST")
+	router.HandleFunc("/partition/{testnetID}/", partitionOutage).Methods("POST")
 
-	router.HandleFunc("/outage/partition/{testnetID}", getAllPartitions).Methods("GET")
-	router.HandleFunc("/outage/partition/{testnetID}/", getAllPartitions).Methods("GET")
+	router.HandleFunc("/partition/{testnetID}", getAllPartitions).Methods("GET")
+	router.HandleFunc("/partition/{testnetID}/", getAllPartitions).Methods("GET")
 
 	router.HandleFunc("/blockchains", getAllSupportedBlockchains).Methods("GET")
 	router.HandleFunc("/blockchains/", getAllSupportedBlockchains).Methods("GET")

@@ -666,10 +666,10 @@ Get the currently blocked connections
 ## GET /outage/{testnetID}/{node}
 Get the blocked connections for the given node
 
-## POST /outage/partition/{testnetID}
+## POST /partition/{testnetID}
 Create a network partition on a testnet
 
-## GET /outage/partition/{testnetID}
+## GET /partition/{testnetID}
 Get the partitions on the testnet
 
 ## GET /blockchains
