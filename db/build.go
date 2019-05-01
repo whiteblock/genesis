@@ -96,8 +96,9 @@ func QueryBuilds(query string) ([]DeploymentDetails, error) {
 		var logs []byte
 		var extras []byte
 		var images []byte
+		var files []byte
 
-		err = rows.Scan(&servers, &build.Blockchain, &build.Nodes, &images, &params, &resources, &environment, &logs, &extras, &build.kid)
+		err = rows.Scan(&servers, &build.Blockchain, &build.Nodes, &images, &params, &resources, &files, &environment, &logs, &extras, &build.kid)
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -116,6 +117,12 @@ func QueryBuilds(query string) ([]DeploymentDetails, error) {
 		}
 
 		err = json.Unmarshal(resources, &build.Resources)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+
+		err = json.Unmarshal(files, &build.Files)
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -153,7 +160,7 @@ func QueryBuilds(query string) ([]DeploymentDetails, error) {
 GetAllBuilds gets all of the builds done by a user
 */
 func GetAllBuilds() ([]DeploymentDetails, error) {
-	return QueryBuilds(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,environment,logs,extras,kid FROM %s", BuildsTable))
+	return QueryBuilds(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid FROM %s", BuildsTable))
 }
 
 /*
@@ -161,7 +168,7 @@ GetBuildByTestnet gets the build paramters based off testnet id
 */
 func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 
-	details, err := QueryBuilds(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,environment,logs,extras,kid FROM %s WHERE testnet = \"%s\"", BuildsTable, id))
+	details, err := QueryBuilds(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid FROM %s WHERE testnet = \"%s\"", BuildsTable, id))
 	if err != nil {
 		log.Println(err)
 		return DeploymentDetails{}, err
@@ -176,7 +183,7 @@ func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 func GetLastBuildByKid(kid string) (DeploymentDetails, error) {
 
 	details, err := QueryBuilds(fmt.Sprintf(
-		"SELECT servers,blockchain,nodes,image,params,resources,environment,logs,extras,kid FROM %s"+
+		"SELECT servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid FROM %s"+
 			" WHERE kid = \"%s\" ORDER BY id DESC LIMIT 1", BuildsTable, kid))
 	if err != nil {
 		log.Println(err)
@@ -198,7 +205,8 @@ func InsertBuild(dd DeploymentDetails, testnetID string) error {
 		return err
 	}
 
-	stmt, err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (testnet,servers,blockchain,nodes,image,params,resources,environment,logs,extras,kid) VALUES (?,?,?,?,?,?,?,?,?,?,?)", BuildsTable))
+	stmt, err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (testnet,servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid)"+
+		" VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", BuildsTable))
 
 	if err != nil {
 		log.Println(err)
@@ -213,6 +221,7 @@ func InsertBuild(dd DeploymentDetails, testnetID string) error {
 	logs, _ := json.Marshal(dd.Logs)
 	extras, _ := json.Marshal(dd.Extras)
 	images, _ := json.Marshal(dd.Images)
+	files, _ := json.Marshal(dd.Files)
 	environment, err := json.Marshal(dd.Environments)
 	if err != nil {
 		log.Println(err)
@@ -220,7 +229,7 @@ func InsertBuild(dd DeploymentDetails, testnetID string) error {
 	}
 
 	_, err = stmt.Exec(testnetID, string(servers), dd.Blockchain, dd.Nodes, string(images),
-		string(params), string(resources), string(environment), string(logs), string(extras), dd.kid)
+		string(params), string(resources), string(files), string(environment), string(logs), string(extras), dd.kid)
 
 	if err != nil {
 		log.Println(err)

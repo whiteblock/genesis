@@ -9,7 +9,7 @@ import (
 
 // Version represents the database version, upon change of this constant, the database will
 // be purged
-const Version = "2.2.3"
+const Version = "2.2.4"
 
 func check() error {
 	row := db.QueryRow("SELECT value FROM meta WHERE key = \"version\"")

@@ -139,7 +139,8 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 	dockerPull, ok := prebuild["pull"]
 	if ok && dockerPull.(bool) { //Slightly frail
 		wg := sync.WaitGroup{}
-		for _, image := range tn.LDD.Images { //OPTMZ
+		images := util.GetUniqueStrings(tn.LDD.Images)
+		for _, image := range images {
 			wg.Add(1)
 			go func(image string) {
 				defer wg.Done()
