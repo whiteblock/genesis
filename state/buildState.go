@@ -27,12 +27,11 @@ type BuildState struct {
 	extraMux  *sync.RWMutex
 	freeze    *sync.RWMutex
 	mutex     *sync.RWMutex
-	stopMux   *sync.RWMutex
 	freezeMux *sync.RWMutex
 
-	building bool
-	Frozen   bool
-	stopping bool
+	building int32 //0 or 1. Made into atomic to reduce mutex hell
+	frozen   int32 //0 or 1. Made into atomic to reduce mutex hell
+	stopping int32 //0 or 1. Made into atomic to reduce mutex hell
 
 	breakpoints       []float64              //must be in ascending order
 	ExternExtras      map[string]interface{} //will be exported
@@ -63,13 +62,12 @@ func NewBuildState(servers []int, buildID string) *BuildState {
 	out.extraMux = &sync.RWMutex{}
 	out.freeze = &sync.RWMutex{}
 	out.mutex = &sync.RWMutex{}
-	out.stopMux = &sync.RWMutex{}
 	out.freezeMux = &sync.RWMutex{}
 	out.asyncWaiter = &sync.WaitGroup{}
 
-	out.building = true
-	out.Frozen = false
-	out.stopping = false
+	out.building = 1
+	out.frozen = 0
+	out.stopping = 0
 
 	out.breakpoints = []float64{}
 	out.ExternExtras = map[string]interface{}{}
@@ -109,7 +107,6 @@ func RestoreBuildState(buildID string) (*BuildState, error) {
 	out.extraMux = &sync.RWMutex{}
 	out.freeze = &sync.RWMutex{}
 	out.mutex = &sync.RWMutex{}
-	out.stopMux = &sync.RWMutex{}
 	out.freezeMux = &sync.RWMutex{}
 	out.asyncWaiter = &sync.WaitGroup{}
 
@@ -130,18 +127,17 @@ func (bs *BuildState) Async(fn func()) {
 // Freeze freezes the build
 func (bs *BuildState) Freeze() error {
 	log.Println("Freezing the build")
-	bs.mutex.Lock()
-	if bs.Frozen {
+
+	if atomic.LoadInt32(&bs.frozen) != 0 {
 		bs.mutex.Unlock()
 		return fmt.Errorf("already frozen")
 	}
-	if bs.stopping {
-		bs.mutex.Unlock()
+	if atomic.LoadInt32(&bs.stopping) != 0 {
+
 		return fmt.Errorf("build terminating")
 	}
 
-	bs.Frozen = true
-	bs.mutex.Unlock() //Must occur before freeze lock to prevent full seizing
+	atomic.StoreInt32(&bs.frozen, 1)
 
 	bs.freeze.Lock()
 
@@ -151,14 +147,17 @@ func (bs *BuildState) Freeze() error {
 // Unfreeze unfreezes the build
 func (bs *BuildState) Unfreeze() error {
 	log.Println("Thawing the build")
-	bs.mutex.Lock()
-	defer bs.mutex.Unlock()
-	if !bs.Frozen {
+
+	if atomic.LoadInt32(&bs.frozen) == 0 {
 		return fmt.Errorf("not currently frozen")
 	}
 	bs.freeze.Unlock()
-	bs.Frozen = false
+	atomic.StoreInt32(&bs.frozen, 0)
 	return nil
+}
+
+func (bs *BuildState) IsFrozen() bool {
+	return atomic.LoadInt32(&bs.frozen) != 0
 }
 
 // AddFreezePoint adds a point at which the build will freeze in the future
@@ -180,8 +179,6 @@ func (bs *BuildState) AddFreezePoint(freezePoint float64) {
 // DoneBuilding signals that the building process has finished and releases the
 // build lock.
 func (bs *BuildState) DoneBuilding() {
-	bs.mutex.Lock()
-	defer bs.mutex.Unlock()
 
 	if bs.ErrorFree() {
 		err := bs.Store()
@@ -202,10 +199,14 @@ func (bs *BuildState) DoneBuilding() {
 		wg.Wait()
 	}
 	bs.asyncWaiter.Wait() //Wait for the async calls to complete
+
+	bs.mutex.Lock()
 	atomic.StoreUint64(&bs.BuildProgress, bs.BuildTotal)
 	bs.BuildStage = "Finished"
-	bs.building = false
-	bs.stopping = false
+	bs.mutex.Unlock()
+
+	atomic.StoreInt32(&bs.building, 0)
+	atomic.StoreInt32(&bs.stopping, 0)
 	os.RemoveAll("/tmp/" + bs.BuildID)
 	for _, fn := range bs.defers {
 		go fn() //No need to wait to confirm completion
@@ -214,7 +215,7 @@ func (bs *BuildState) DoneBuilding() {
 
 // Done checks if the build is done
 func (bs *BuildState) Done() bool {
-	return !bs.building
+	return atomic.LoadInt32(&bs.building) == 0
 }
 
 // ReportError stores the given error to be passed onto any
@@ -229,9 +230,6 @@ func (bs *BuildState) ReportError(err error) {
 // Stop checks if the stop signal has been sent. If bs returns true,
 // a building process should return. The ssh client checks bs for you.
 func (bs *BuildState) Stop() bool {
-	if bs == nil { //golang allows for nil.Stop() to be a thing...
-		return false
-	}
 
 	bs.freeze.RLock() //Catch on freeze
 	bs.freeze.RUnlock()
@@ -250,25 +248,19 @@ func (bs *BuildState) Stop() bool {
 		bs.freezeMux.Unlock()
 	}
 
-	bs.stopMux.RLock()
-	isStopping := bs.stopping
-	defer bs.stopMux.RUnlock()
-	return isStopping
+	return atomic.LoadInt32(&bs.stopping) != 0
 }
 
 // SignalStop flags that the current build should be stopped, if there is
 // a current build. Returns an error if there is no build in progress
 func (bs *BuildState) SignalStop() error {
-	bs.stopMux.Lock()
-	defer bs.stopMux.Unlock()
-	bs.Unfreeze()
-	bs.mutex.Lock()
-	defer bs.mutex.Unlock()
 
-	if bs.building {
+	bs.Unfreeze() //Unfeeze in order to actually stop the build via error propogation
+
+	if atomic.LoadInt32(&bs.building) != 0 {
 		bs.ReportError(fmt.Errorf("build stopped by user"))
-		bs.stopping = true
-		bs.building = false
+		atomic.StoreInt32(&bs.stopping, 1)
+		atomic.StoreInt32(&bs.building, 0)
 		return nil
 	}
 	return fmt.Errorf("no build in progress")
@@ -454,10 +446,9 @@ func (bs *BuildState) SetBuildStage(stage string) {
 // Reset sets the build state back the beginning. Used for when
 // additional nodes are being added, as the stores may want to be reused
 func (bs *BuildState) Reset() {
-
-	bs.building = true
-	bs.Frozen = false
-	bs.stopping = false
+	atomic.StoreInt32(&bs.building, 1)
+	atomic.StoreInt32(&bs.frozen, 0)
+	atomic.StoreInt32(&bs.stopping, 0)
 
 	bs.breakpoints = []float64{}
 
@@ -467,10 +458,10 @@ func (bs *BuildState) Reset() {
 	bs.BuildError = CustomError{What: "", err: nil}
 	bs.BuildStage = ""
 
-	bs.DeployProgress = 0
-	bs.DeployTotal = 0
-	bs.BuildProgress = 0
-	bs.BuildTotal = 0
+	atomic.StoreUint64(&bs.DeployProgress, 0)
+	atomic.StoreUint64(&bs.DeployTotal, 1)
+	atomic.StoreUint64(&bs.BuildProgress, 0)
+	atomic.StoreUint64(&bs.BuildTotal, 1)
 
 	err := os.MkdirAll("/tmp/"+bs.BuildID, 0755)
 	if err != nil {
@@ -484,11 +475,11 @@ func (bs *BuildState) Marshal() string {
 	bs.mutex.RLock()
 	defer bs.mutex.RUnlock()
 	if bs.ErrorFree() { //error should be null if there is not an error
-		return fmt.Sprintf("{\"progress\":%f,\"error\":null,\"stage\":\"%s\",\"frozen\":%v}", bs.GetProgress(), bs.BuildStage, bs.Frozen)
+		return fmt.Sprintf("{\"progress\":%f,\"error\":null,\"stage\":\"%s\",\"frozen\":%v}", bs.GetProgress(), bs.BuildStage, bs.IsFrozen())
 	}
 	//otherwise give the error as an object
 	out, _ := json.Marshal(
-		map[string]interface{}{"progress": bs.GetProgress(), "error": bs.BuildError, "stage": bs.BuildStage, "frozen": bs.Frozen})
+		map[string]interface{}{"progress": bs.GetProgress(), "error": bs.BuildError, "stage": bs.BuildStage, "frozen": bs.IsFrozen()})
 	return string(out)
 }
 
