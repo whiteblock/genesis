@@ -3,6 +3,7 @@ package deploy
 import (
 	"../blockchains/helpers"
 	"../db"
+	"../docker"
 	netem "../net"
 	"../ssh"
 	"../testnet"
@@ -15,13 +16,13 @@ func PurgeTestNetwork(tn *testnet.TestNet) error {
 	if tn.BuildState != nil {
 		tn.BuildState.SetBuildStage("Tearing down the previous testnet")
 	}
-	DockerStopServices(tn)
+	docker.StopServices(tn)
 	return helpers.AllServerExecCon(tn, func(client *ssh.Client, server *db.Server) error {
-		DockerKillAll(client)
+		docker.KillAll(client)
 		if tn.BuildState != nil {
 			tn.BuildState.IncrementDeployProgress()
 		}
-		DockerNetworkDestroyAll(client)
+		docker.NetworkDestroyAll(client)
 		if tn.BuildState != nil {
 			tn.BuildState.IncrementDeployProgress()
 		}

@@ -1,4 +1,5 @@
-package deploy
+//Package docker provides a quick naive interface to Docker calls over ssh
+package docker
 
 import (
 	"../blockchains/helpers"
@@ -11,16 +12,20 @@ import (
 	"strings"
 )
 
-/**Quick naive interface to Docker calls over ssh*/
+var conf *util.Config
+
+func init() {
+	conf = util.GetConfig()
+}
 
 // DockerKill kills a single node by index on a server
-func DockerKill(client *ssh.Client, node int) error {
+func Kill(client *ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker rm -f %s%d", conf.NodePrefix, node))
 	return err
 }
 
 // DockerKillAll kills all nodes on a server
-func DockerKillAll(client *ssh.Client) error {
+func KillAll(client *ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s\")", conf.NodePrefix))
 	return err
 }
@@ -37,8 +42,8 @@ func dockerNetworkCreateCmd(subnet string, gateway string, network int, name str
 		name)
 }
 
-// DockerNetworkCreate creates a docker network for a node
-func DockerNetworkCreate(tn *testnet.TestNet, serverID int, subnetID int, node int) error {
+// NetworkCreate creates a docker network for a node
+func NetworkCreate(tn *testnet.TestNet, serverID int, subnetID int, node int) error {
 	command := dockerNetworkCreateCmd(
 		util.GetNetworkAddress(subnetID, node),
 		util.GetGateway(subnetID, node),
@@ -50,35 +55,35 @@ func DockerNetworkCreate(tn *testnet.TestNet, serverID int, subnetID int, node i
 	return err
 }
 
-//DockerNetworkDestroy tears down a single docker network
-func DockerNetworkDestroy(client *ssh.Client, node int) error {
+// NetworkDestroy tears down a single docker network
+func NetworkDestroy(client *ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker network rm %s%d", conf.NodeNetworkPrefix, node))
 	return err
 }
 
-// DockerNetworkDestroyAll removes all whiteblock networks on a node
-func DockerNetworkDestroyAll(client *ssh.Client) error {
+// NetworkDestroyAll removes all whiteblock networks on a node
+func NetworkDestroyAll(client *ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf(
 		"for net in $(docker network ls | grep %s | awk '{print $1}'); do docker network rm $net; done", conf.NodeNetworkPrefix))
 	return err
 }
 
-// DockerLogin is an abstraction of docker login
-func DockerLogin(client *ssh.Client, username string, password string) error {
+// Login is an abstraction of docker login
+func Login(client *ssh.Client, username string, password string) error {
 	user := strings.Replace(username, "\"", "\\\"", -1) //Escape the quotes
 	pass := strings.Replace(password, "\"", "\\\"", -1) //Escape the quotes
 	_, err := client.Run(fmt.Sprintf("docker login -u \"%s\" -p \"%s\"", user, pass))
 	return err
 }
 
-// DockerLogout is an abstraction of docker logout
-func DockerLogout(client *ssh.Client) error {
+// Logout is an abstraction of docker logout
+func Logout(client *ssh.Client) error {
 	_, err := client.Run("docker logout")
 	return err
 }
 
-// DockerPull pulls an image on all the given servers
-func DockerPull(clients []*ssh.Client, image string) error {
+// Pull pulls an image on all the given servers
+func Pull(clients []*ssh.Client, image string) error {
 	for _, client := range clients {
 		_, err := client.Run("docker pull " + image)
 		if err != nil {
@@ -89,37 +94,40 @@ func DockerPull(clients []*ssh.Client, image string) error {
 	return nil
 }
 
-/*
-   Makes a docker run command to start a node
-*/
-func dockerRunCmd(subnetID int, resources util.Resources, node int, image string, env map[string]string) (string, error) {
+// dockerRunCmd makes a docker run command to start a node
+func dockerRunCmd(c Container) (string, error) {
 	command := "docker run -itd --entrypoint /bin/sh "
-	command += fmt.Sprintf("--network %s%d", conf.NodeNetworkPrefix, node)
+	command += fmt.Sprintf("--network %s", c.GetNetworkName())
 
-	if !resources.NoCPULimits() {
-		command += fmt.Sprintf(" --cpus %s", resources.Cpus)
+	if !c.GetResources().NoCPULimits() {
+		command += fmt.Sprintf(" --cpus %s", c.GetResources().Cpus)
 	}
 
-	if !resources.NoMemoryLimits() {
-		mem, err := resources.GetMemory()
+	if !c.GetResources().NoMemoryLimits() {
+		mem, err := c.GetResources().GetMemory()
 		if err != nil {
 			return "", fmt.Errorf("invalid value for memory")
 		}
 		command += fmt.Sprintf(" --memory %d", mem)
 	}
-	for key, value := range env {
+	for key, value := range c.GetEnvironment() {
 		command += fmt.Sprintf(" -e \"%s=%s\"", key, value)
 	}
-	command += fmt.Sprintf(" --ip %s", util.GetNodeIP(subnetID, node))
-	command += fmt.Sprintf(" --hostname %s%d", conf.NodePrefix, node)
-	command += fmt.Sprintf(" --name %s%d", conf.NodePrefix, node)
-	command += " " + image
+	ip, err := c.GetIP()
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	command += fmt.Sprintf(" --ip %s", ip)
+	command += fmt.Sprintf(" --hostname %s", c.GetName())
+	command += fmt.Sprintf(" --name %s", c.GetName())
+	command += " " + c.GetImage()
 	return command, nil
 }
 
-// DockerRun starts a node
-func DockerRun(tn *testnet.TestNet, serverID int, subnetID int, resources util.Resources, node int, image string, env map[string]string) error {
-	command, err := dockerRunCmd(subnetID, resources, node, image, env)
+// Run starts a node
+func Run(tn *testnet.TestNet, serverID int, container Container) error {
+	command, err := dockerRunCmd(container)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -152,7 +160,7 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 }
 
 // DockerStopServices stops all services and remove the service network from a server
-func DockerStopServices(tn *testnet.TestNet) error {
+func StopServices(tn *testnet.TestNet) error {
 	return helpers.AllServerExecCon(tn, func(client *ssh.Client, _ *db.Server) error {
 		_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)", conf.ServicePrefix))
 		client.Run("docker network rm " + conf.ServiceNetworkName)
@@ -164,7 +172,7 @@ func DockerStopServices(tn *testnet.TestNet) error {
 }
 
 // DockerStartServices creates the service network and starts all the services on a server
-func DockerStartServices(tn *testnet.TestNet, services []util.Service) error {
+func StartServices(tn *testnet.TestNet, services []util.Service) error {
 	gateway, subnet, err := util.GetServiceNetwork()
 	if err != nil {
 		log.Println(err)

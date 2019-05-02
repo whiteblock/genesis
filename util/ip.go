@@ -22,7 +22,10 @@ func InetNtoa(ip uint32) string {
 
 // GetNodeIP calculates the IP address of a node, based on
 // the current IP scheme
-func GetNodeIP(server int, node int) string {
+func GetNodeIP(server int, network int, index int) (string, error) {
+	if uint32(index) >= (1<<conf.NodeBits)-ReservedIps {
+		return "", fmt.Errorf("index %d is too high to fit in the network", index)
+	}
 	var ip = conf.IPPrefix << (conf.NodeBits + conf.ClusterBits + conf.ServerBits)
 	var clusterShift = conf.NodeBits
 	var serverShift = conf.NodeBits + conf.ClusterBits
@@ -30,19 +33,23 @@ func GetNodeIP(server int, node int) string {
 	//set server bits
 	ip += uint32(server) << serverShift
 	//set cluster bits
-	cluster := uint32(uint32(node) / NodesPerCluster)
+	cluster := uint32(network)
 	//fmt.Printf("CLUSTER IS %d\n",cluster)
 	ip += cluster << clusterShift
 	//set the node bits
-	if cluster != clusterLast {
-		ip += uint32(node)%NodesPerCluster + 2
+
+	if index == 0 && cluster == clusterLast {
+		return InetNtoa(ip), nil
+	} else {
+		ip += 2 + uint32(index)
 	}
-	return InetNtoa(ip)
+
+	return InetNtoa(ip), nil
 }
 
 // GetInfoFromIP returns the server number and the node number calculated from the given
-// IPv4 address based on the current IP scheme.
-func GetInfoFromIP(ipStr string) (int, int) {
+// IPv4 address based on the current IP scheme. (server,network,index)
+func GetInfoFromIP(ipStr string) (int, int, int) {
 	ipBytes := net.ParseIP(ipStr).To4()
 	var rawIP uint32
 	for _, ipByte := range ipBytes {
@@ -52,36 +59,34 @@ func GetInfoFromIP(ipStr string) (int, int) {
 	var clusterLast uint32 = (1 << conf.ClusterBits) - 1
 	server := (rawIP >> (conf.NodeBits + conf.ClusterBits)) & ((1 << conf.ServerBits) - 1)
 	cluster := (rawIP >> conf.NodeBits) & ((1 << conf.ClusterBits) - 1)
-	var node uint32
+	var index uint32 = (rawIP & ((1 << conf.NodeBits) - 1))
 
 	if cluster != clusterLast {
-		node = (rawIP & ((1 << conf.NodeBits) - 1)) - 2
-	} else {
-		node = 0
+		index -= 2
+	} else if cluster == clusterLast && index != 0 {
+		index -= 2
 	}
-	node = node + (cluster * NodesPerCluster)
-	return int(server), int(node)
+	return int(server), int(cluster), int(index)
 }
 
 // GetGateway calculates the gateway IP address for a node,
 // base on the current IP scheme
-func GetGateway(server int, node int) string {
+func GetGateway(server int, network int) string {
 	var ip = conf.IPPrefix << (conf.NodeBits + conf.ClusterBits + conf.ServerBits)
 	clusterShift := conf.NodeBits
 	serverShift := conf.NodeBits + conf.ClusterBits
 	//set server bits
 	ip += uint32(server) << serverShift
 	//set cluster bits
-	cluster := uint32(uint32(node) / NodesPerCluster)
-	ip += cluster << clusterShift
+	ip += uint32(network) << clusterShift
 	ip++
 	return InetNtoa(ip)
 }
 
 // GetGateways calculates the gateway IP addresses for all of the nodes
 // on a server.
-func GetGateways(server int, nodes int) []string {
-	clusters := uint32((uint32(nodes) - (uint32(nodes) % NodesPerCluster)) / NodesPerCluster)
+func GetGateways(server int, networks int) []string {
+	clusters := uint32(networks)
 	out := []string{}
 	var i uint32
 	for i = 0; i < clusters; i++ {
@@ -106,15 +111,14 @@ func GetWholeNetworkIP(server int) string {
 }
 
 // GetNetworkAddress gets the network address of the cluster the given node belongs to.
-func GetNetworkAddress(server int, node int) string {
+func GetNetworkAddress(server int, network int) string {
 	var ip = conf.IPPrefix << (conf.NodeBits + conf.ClusterBits + conf.ServerBits)
 	clusterShift := conf.NodeBits
 	serverShift := conf.NodeBits + conf.ClusterBits
 	//set server bits
 	ip += uint32(server) << serverShift
 	//set cluster bits
-	cluster := uint32(uint32(node) / NodesPerCluster)
-	ip += cluster << clusterShift
+	ip += uint32(network) << clusterShift
 	return fmt.Sprintf("%s/%d", InetNtoa(ip), GetSubnet())
 }
 

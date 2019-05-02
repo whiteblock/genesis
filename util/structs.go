@@ -30,3 +30,11 @@ type EndPoint struct {
 	User string `json:"user"`
 	Pass string `json:"pass"`
 }
+
+type Node interface {
+	GetID() string
+	GetServer() int
+	GetAbsNum() int
+	GetLocalNum() int
+	GetIP() string
+}

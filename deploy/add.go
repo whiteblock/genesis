@@ -39,25 +39,28 @@ func AddNodes(tn *testnet.TestNet) error {
 			continue
 		}
 
-		relNum := tn.Servers[serverIndex].Nodes
-
 		nodeID, err := util.GetUUIDString()
 		if err != nil {
 			log.Println(err)
 			return err
 		}
+		nodeIP, err := util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes), 0)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
 
-		absNum := tn.AddNode(db.Node{
+		node := tn.AddNode(db.Node{
 			ID: nodeID, TestNetID: tn.TestNetID, Server: serverID,
-			LocalID: tn.Servers[serverIndex].Nodes, IP: util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes))})
+			LocalID: tn.Servers[serverIndex].Nodes, IP: nodeIP})
 
 		tn.Servers[serverIndex].Nodes++
 
 		wg.Add(1)
-		go func(server *db.Server, absNum int, relNum int) {
+		go func(server *db.Server, node *db.Node) {
 			defer wg.Done()
-			BuildNode(tn, server, absNum, relNum)
-		}(&tn.Servers[serverIndex], absNum, relNum)
+			BuildNode(tn, server, node)
+		}(&tn.Servers[serverIndex], node)
 
 		index = (index + 1) % len(availableServers)
 	}

@@ -16,26 +16,31 @@ import (
 // rebuild tn testnet.
 type TestNet struct {
 	TestNetID string
-	//Servers contains the servers on which the testnet resides
+	// Servers contains the servers on which the testnet resides
 	Servers []db.Server
-	//Nodes contains the active nodes in the network, including the newly built nodes
+	// Nodes contains the active nodes in the network, including the newly built nodes
 	Nodes []db.Node
-	//NewlyBuiltNodes contains only the nodes created in the last/in progress build event
+	// NewlyBuiltNodes contains only the nodes created in the last/in progress build event
 	NewlyBuiltNodes []db.Node
-	//Clients is a map of server ids to ssh clients
+
+	SideCars []db.SideCar
+
+	NewlyBuiltSideCars []db.SideCar
+
+	// Clients is a map of server ids to ssh clients
 	Clients map[int]*ssh.Client
-	//BuildState is the build state for the test net
+	// BuildState is the build state for the test net
 	BuildState *state.BuildState
-	//Details contains all of the past deployments to tn test net
+	// Details contains all of the past deployments to tn test net
 	Details []db.DeploymentDetails
-	//CombinedDetails contains all of the deployments merged into one
+	// CombinedDetails contains all of the deployments merged into one
 	CombinedDetails db.DeploymentDetails
-	//LDD is a pointer to latest deployment details
+	// LDD is a pointer to latest deployment details
 	LDD *db.DeploymentDetails
 	mux *sync.RWMutex
 }
 
-//RestoreTestNet fetches a testnet which already exists.
+// RestoreTestNet fetches a testnet which already exists.
 func RestoreTestNet(buildID string) (*TestNet, error) {
 	out := new(TestNet)
 	err := db.GetMetaP("testnet_"+buildID, out)
@@ -106,14 +111,22 @@ func NewTestNet(details db.DeploymentDetails, buildID string) (*TestNet, error) 
 	return out, nil
 }
 
-//AddNode adds a node to the testnet and returns the new nodes absolute number
-func (tn *TestNet) AddNode(node db.Node) int {
+// AddNode adds a node to the testnet and returns a pointer to that node.
+func (tn *TestNet) AddNode(node db.Node) *db.Node {
 	tn.mux.Lock()
 	defer tn.mux.Unlock()
 	node.AbsoluteNum = len(tn.Nodes)
 	tn.NewlyBuiltNodes = append(tn.NewlyBuiltNodes, node)
 	tn.Nodes = append(tn.Nodes, node)
-	return node.AbsoluteNum
+	return &tn.Nodes[node.AbsoluteNum]
+}
+
+// AddSideCar adds a side car to the testnet
+func (tn *TestNet) AddSideCar(node db.SideCar) {
+	tn.mux.Lock()
+	defer tn.mux.Unlock()
+	tn.NewlyBuiltSideCars = append(tn.NewlyBuiltSideCars, node)
+	tn.SideCars = append(tn.SideCars, node)
 }
 
 // AddDetails adds the details of a new deployment to the TestNet
@@ -191,7 +204,7 @@ func (tn *TestNet) GetFlatClients() []*ssh.Client {
 	return out
 }
 
-//GetServer retrieves a server the TestNet resides on by id
+// GetServer retrieves a server the TestNet resides on by id
 func (tn *TestNet) GetServer(id int) *db.Server {
 	for _, server := range tn.Servers {
 		if server.ID == id {
@@ -201,14 +214,14 @@ func (tn *TestNet) GetServer(id int) *db.Server {
 	return nil
 }
 
-//GetLastestDeploymentDetails gets a pointer to the latest deployment details
+// GetLastestDeploymentDetails gets a pointer to the latest deployment details
 func (tn *TestNet) GetLastestDeploymentDetails() *db.DeploymentDetails {
 	tn.mux.RLock()
 	defer tn.mux.RUnlock()
 	return &tn.Details[len(tn.Details)-1]
 }
 
-//PreOrderNodes sorts the nodes into buckets by server id
+// PreOrderNodes sorts the nodes into buckets by server id
 func (tn *TestNet) PreOrderNodes() map[int][]db.Node {
 	tn.mux.RLock()
 	defer tn.mux.RUnlock()
@@ -224,7 +237,7 @@ func (tn *TestNet) PreOrderNodes() map[int][]db.Node {
 	return out
 }
 
-//PreOrderNewNodes sorts the newly built nodes into buckets by server id
+// PreOrderNewNodes sorts the newly built nodes into buckets by server id
 func (tn *TestNet) PreOrderNewNodes() map[int][]db.Node {
 	tn.mux.RLock()
 	defer tn.mux.RUnlock()
@@ -240,17 +253,17 @@ func (tn *TestNet) PreOrderNewNodes() map[int][]db.Node {
 	return out
 }
 
-//Store stores the TestNets data for later retrieval
+// Store stores the TestNets data for later retrieval
 func (tn *TestNet) Store() {
 	db.SetMeta("testnet_"+tn.TestNetID, *tn)
 }
 
-//Destroy removes all the testnets data
+// Destroy removes all the testnets data
 func (tn *TestNet) Destroy() error {
 	return db.DeleteMeta("testnet_" + tn.TestNetID)
 }
 
-//StoreNodes stores the newly built nodes into the database with their labels.
+// StoreNodes stores the newly built nodes into the database with their labels.
 func (tn *TestNet) StoreNodes(labels []string) error {
 	for i, node := range tn.NewlyBuiltNodes {
 		if labels != nil {

@@ -3,6 +3,7 @@ package deploy
 import (
 	"../blockchains/helpers"
 	"../db"
+	"../docker"
 	"../ssh"
 	"../testnet"
 	"../util"
@@ -92,12 +93,12 @@ func handleDockerAuth(tn *testnet.TestNet, auth map[string]interface{}) error {
 	for _, client := range tn.Clients {
 		wg.Add(1)
 		go func(client *ssh.Client) { //TODO add validation
-			err := DockerLogin(client, auth["username"].(string), auth["password"].(string))
+			err := docker.Login(client, auth["username"].(string), auth["password"].(string))
 			if err != nil {
 				log.Println(err)
 				tn.BuildState.ReportError(err)
 			}
-			tn.BuildState.Defer(func() { DockerLogout(client) })
+			tn.BuildState.Defer(func() { docker.Logout(client) })
 		}(client)
 	}
 
@@ -145,7 +146,7 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 			wg.Add(1)
 			go func(image string) {
 				defer wg.Done()
-				err := DockerPull(tn.GetFlatClients(), image) //OPTMZ
+				err := docker.Pull(tn.GetFlatClients(), image) //OPTMZ
 				if err != nil {
 					log.Println(err)
 					tn.BuildState.ReportError(err)

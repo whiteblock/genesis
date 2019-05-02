@@ -3,6 +3,7 @@ package deploy
 
 import (
 	"../db"
+	"../docker"
 	"../testnet"
 	"../util"
 	"fmt"
@@ -13,12 +14,12 @@ import (
 var conf = util.GetConfig()
 
 // BuildNode builds out a single node in a testnet
-func BuildNode(tn *testnet.TestNet, server *db.Server, absNum int, relNum int) {
-	tn.BuildState.OnError(func() {
-		DockerKill(tn.Clients[server.ID], relNum)
-		DockerNetworkDestroy(tn.Clients[server.ID], relNum)
-	})
-	err := DockerNetworkCreate(tn, server.ID, server.SubnetID, relNum)
+func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
+	/*tn.BuildState.OnError(func() {
+		docker.Kill(tn.Clients[server.ID], node.LocalID)
+		docker.NetworkDestroy(tn.Clients[server.ID], node.LocalID)
+	})*/
+	err := docker.NetworkCreate(tn, server.ID, server.SubnetID, node.LocalID)
 	if err != nil {
 		log.Println(err)
 		tn.BuildState.ReportError(err)
@@ -27,21 +28,21 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, absNum int, relNum int) {
 	tn.BuildState.IncrementDeployProgress()
 
 	resource := tn.LDD.Resources[0]
-	image := tn.LDD.Images[0]
+	node.Image = tn.LDD.Images[0]
 	var env map[string]string
 
-	if len(tn.LDD.Resources) > absNum {
-		resource = tn.LDD.Resources[absNum]
+	if len(tn.LDD.Resources) > node.AbsoluteNum {
+		resource = tn.LDD.Resources[node.AbsoluteNum]
 	}
-	if len(tn.LDD.Images) > absNum {
-		image = tn.LDD.Images[absNum]
-	}
-
-	if tn.LDD.Environments != nil && len(tn.LDD.Environments) > absNum && tn.LDD.Environments[absNum] != nil {
-		env = tn.LDD.Environments[absNum]
+	if len(tn.LDD.Images) > node.AbsoluteNum {
+		node.Image = tn.LDD.Images[node.AbsoluteNum]
 	}
 
-	err = DockerRun(tn, server.ID, server.SubnetID, resource, relNum, image, env)
+	if tn.LDD.Environments != nil && len(tn.LDD.Environments) > node.AbsoluteNum && tn.LDD.Environments[node.AbsoluteNum] != nil {
+		env = tn.LDD.Environments[node.AbsoluteNum]
+	}
+
+	err = docker.Run(tn, server.ID, docker.NewNodeContainer(node, env, resource, server.SubnetID))
 	if err != nil {
 		log.Println(err)
 		tn.BuildState.ReportError(err)
@@ -88,25 +89,30 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 			index = (index + 1) % len(availableServers)
 			continue
 		}
-		relNum := len(tn.Servers[serverIndex].Ips)
 
 		nodeID, err := util.GetUUIDString()
 		if err != nil {
 			log.Println(err)
 			return err
 		}
+		nodeIP, err := util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes), 0)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
 
-		tn.AddNode(db.Node{
+		node := tn.AddNode(db.Node{
 			ID: nodeID, TestNetID: tn.TestNetID, Server: serverID,
-			LocalID: tn.Servers[serverIndex].Nodes, IP: util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes))})
-		tn.Servers[serverIndex].Ips = append(tn.Servers[serverIndex].Ips, util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes))) //TODO: REMOVE
+			LocalID: tn.Servers[serverIndex].Nodes, IP: nodeIP})
+
+		tn.Servers[serverIndex].Ips = append(tn.Servers[serverIndex].Ips, nodeIP) //TODO: REMOVE
 		tn.Servers[serverIndex].Nodes++
 
 		wg.Add(1)
-		go func(server *db.Server, absNum int, relNum int) {
+		go func(server *db.Server, node *db.Node) {
 			defer wg.Done()
-			BuildNode(tn, server, absNum, relNum)
-		}(&tn.Servers[serverIndex], i, relNum)
+			BuildNode(tn, server, node)
+		}(&tn.Servers[serverIndex], node)
 
 		index = (index + 1) % len(availableServers)
 	}
@@ -115,7 +121,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := DockerStartServices(tn, services)
+			err := docker.StartServices(tn, services)
 			if err != nil {
 				log.Println(err)
 				tn.BuildState.ReportError(err)

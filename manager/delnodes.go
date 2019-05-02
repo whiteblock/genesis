@@ -2,7 +2,7 @@ package manager
 
 import (
 	"../db"
-	"../deploy"
+	"../docker"
 	"../status"
 	"fmt"
 	"log"
@@ -43,14 +43,14 @@ func DelNodes(num int, testnetID string) error {
 			return err
 		}
 		for i := len(server.Ips); i > 0; i++ {
-			err = deploy.DockerKill(client, i)
+			err = docker.Kill(client, i)
 			if err != nil {
 				log.Println(err.Error())
 				//buildState.ReportError(err)
 				return err
 			}
 
-			err = deploy.DockerNetworkDestroy(client, i)
+			err = docker.NetworkDestroy(client, i)
 			if err != nil {
 				log.Println(err.Error())
 				//buildState.ReportError(err)
