@@ -201,11 +201,11 @@ func (bs *BuildState) DoneBuilding() {
 		bs.extraMux.RUnlock()
 		wg.Wait()
 	}
+	bs.asyncWaiter.Wait() //Wait for the async calls to complete
 	atomic.StoreUint64(&bs.BuildProgress, bs.BuildTotal)
 	bs.BuildStage = "Finished"
 	bs.building = false
 	bs.stopping = false
-	bs.asyncWaiter.Wait() //Wait for the async calls to complete
 	os.RemoveAll("/tmp/" + bs.BuildID)
 	for _, fn := range bs.defers {
 		go fn() //No need to wait to confirm completion
@@ -262,12 +262,13 @@ func (bs *BuildState) SignalStop() error {
 	bs.stopMux.Lock()
 	defer bs.stopMux.Unlock()
 	bs.Unfreeze()
-	bs.mutex.RLock()
-	defer bs.mutex.RUnlock()
+	bs.mutex.Lock()
+	defer bs.mutex.Unlock()
 
 	if bs.building {
 		bs.ReportError(fmt.Errorf("build stopped by user"))
 		bs.stopping = true
+		bs.building = false
 		return nil
 	}
 	return fmt.Errorf("no build in progress")

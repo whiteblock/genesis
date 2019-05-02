@@ -138,6 +138,7 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 	//Force docker pull
 	dockerPull, ok := prebuild["pull"]
 	if ok && dockerPull.(bool) { //Slightly frail
+		tn.BuildState.SetBuildStage("Pulling your images")
 		wg := sync.WaitGroup{}
 		images := util.GetUniqueStrings(tn.LDD.Images)
 		for _, image := range images {

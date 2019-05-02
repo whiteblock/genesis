@@ -65,6 +65,7 @@ func alwaysRunFinalize(tn *testnet.TestNet) {
 			err := finalizeNode(node, tn.LDD, tn.BuildState, i)
 			if err != nil {
 				log.Println(err)
+				tn.BuildState.ReportError(err)
 			}
 		}
 	})
@@ -177,5 +178,5 @@ func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state
 		log.Println(err)
 	}
 
-	return nil
+	return err
 }

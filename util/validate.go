@@ -52,7 +52,7 @@ func ValidNormalCharacter(chr rune) bool {
 	return (chr >= '+' && chr <= ':') ||
 		(chr >= 'A' && chr <= 'Z') ||
 		(chr >= 'a' && chr <= 'z') ||
-		(chr == ' ' || chr == '_')
+		(chr == ' ' || chr == '_' || chr == '@')
 }
 
 // ValidateCommandLine naively checks for ppntential accidental bash injections. Like ValidNormalCharacter,
