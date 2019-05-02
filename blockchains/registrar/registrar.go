@@ -15,9 +15,12 @@ var (
 	mux           = &sync.RWMutex{}
 	buildFuncs    = map[string]func(*testnet.TestNet) ([]string, error){}
 	addFuncs      = map[string]func(*testnet.TestNet) ([]string, error){}
-	serviceFuncs  = map[string]func() []util.Service{}
-	paramsFuncs   = map[string]func() string{}
-	defaultsFuncs = map[string]func() string{}
+
+	
+
+	serviceFuncs  = map[string]func() ([]util.Service) {}
+	paramsFuncs   = map[string]func() (string) {}
+	defaultsFuncs = map[string]func() (string) {}
 	logFiles      = map[string]map[string]string{}
 )
 

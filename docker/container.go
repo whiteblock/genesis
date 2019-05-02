@@ -72,11 +72,17 @@ func (cd *ContainerDetails) GetIP() (string, error) {
 	case SideCar:
 		return util.GetNodeIP(cd.SubnetID, cd.Node, cd.NetworkIndex)
 	}
-	panic("Unknown type")
+	panic("Unsupported type")
 }
 
 func (cd *ContainerDetails) GetName() string {
-	return fmt.Sprintf("%s%d", conf.NodePrefix, cd.Node)
+	switch cd.Type{
+	case Node:
+		return fmt.Sprintf("%s%d", conf.NodePrefix, cd.Node)
+	case SideCar:
+		return fmt.Sprintf("%s%d-%d", conf.NodePrefix, cd.Node,cd.NetworkIndex)
+	}
+	panic("Unsupported type")
 }
 
 func (cd *ContainerDetails) GetNetworkName() string {

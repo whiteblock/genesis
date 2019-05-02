@@ -5,6 +5,7 @@ import (
 	"../db"
 	"../docker"
 	"../testnet"
+	"../blockchains/registrar"
 	"../util"
 	"fmt"
 	"log"
@@ -13,12 +14,56 @@ import (
 
 var conf = util.GetConfig()
 
+func BuildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node){
+	sidecars,err := registrar.GetBlockchainSideCars(tn.LDD.Blockchain)
+	if err != nil {
+		log.Println(err)//do not report
+		return
+	}
+
+	for i,sidecar := range sidecars {
+		sideCarDetails,err := registrar.GetSideCar(sidecar)
+		if err != nil {
+			log.Println(err)
+			tn.BuildState.ReportError(err)
+			return
+		}
+
+		sidecarIP, err := util.GetNodeIP(server.SubnetID, node.LocalID, 0)
+		if err != nil {
+			log.Println(err)
+			tn.BuildState.ReportError(err)
+			return
+		}
+
+		scNode := db.SideCar{
+			NodeID : node.ID,
+			AbsoluteNodeNum : node.AbsoluteNum,
+			TestnetID: node.TestNetID,
+			Server: node.Server,
+			LocalID: node.LocalID,
+			NetworkIndex: i+1,
+			IP: sidecarIP,
+			Image: sideCarDetails.Image,
+			Type: sidecar,
+		}
+
+		err = docker.Run(tn, server.ID, docker.NewSideCarContainer(&scNode, nil, util.Resources{}, server.SubnetID))
+		if err != nil {
+			log.Println(err)
+			tn.BuildState.ReportError(err)
+			return
+		}
+	}
+}
+
 // BuildNode builds out a single node in a testnet
 func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 	/*tn.BuildState.OnError(func() {
 		docker.Kill(tn.Clients[server.ID], node.LocalID)
 		docker.NetworkDestroy(tn.Clients[server.ID], node.LocalID)
 	})*/
+	defer BuildSideCars(tn,server,node)//Needs to be handled better
 	err := docker.NetworkCreate(tn, server.ID, server.SubnetID, node.LocalID)
 	if err != nil {
 		log.Println(err)
@@ -26,7 +71,7 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 		return
 	}
 	tn.BuildState.IncrementDeployProgress()
-
+	
 	resource := tn.LDD.Resources[0]
 	node.Image = tn.LDD.Images[0]
 	var env map[string]string
