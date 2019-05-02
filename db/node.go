@@ -39,6 +39,26 @@ type Node struct {
 	Blockchain string `json:"blockchain"`
 }
 
+func (n Node) GetAbsoluteNumber() int{
+	return n.AbsoluteNum
+}
+
+func (n Node) GetIP() string{
+	return n.IP
+}
+
+func (n Node) GetRelativeNumber() int{
+	return n.LocalID
+}
+
+func (n Node) GetServerID() int{
+	return n.Server
+}
+
+func (n Node) GetTestNetID() string{
+	return n.TestNetID
+}
+
 //GetAllNodesByServer gets all nodes that have ever existed on a server
 func GetAllNodesByServer(serverID int) ([]Node, error) {
 

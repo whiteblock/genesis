@@ -28,3 +28,25 @@ type SideCar struct {
 	// Type is the type of sidecar
 	Type string `json:"type"`
 }
+
+
+
+func (n SideCar) GetAbsoluteNumber() int{
+	return n.AbsoluteNum
+}
+
+func (n SideCar) GetIP() string{
+	return n.IP
+}
+
+func (n SideCar) GetRelativeNumber() int{
+	return n.LocalID
+}
+
+func (n SideCar) GetServerID() int{
+	return n.Server
+}
+
+func (n SideCar) GetTestNetID() string{
+	return n.TestnetID
+}

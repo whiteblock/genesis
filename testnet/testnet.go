@@ -277,3 +277,20 @@ func (tn *TestNet) StoreNodes(labels []string) error {
 	}
 	return nil
 }
+
+//TODO doc
+func GetSSHNodes() []ssh.Node {
+	if this.BuildState.Done() {//VRFY
+		return this.SideCars
+	}
+	return this.Nodes
+}
+
+//TODO doc
+func GetNewSSHNodes() []ssh.Node {
+	if this.BuildState.Done() { //VRFY 
+		return this.NewlyBuiltSideCars
+	}
+	return this.NewlyBuiltNodes
+	
+}
