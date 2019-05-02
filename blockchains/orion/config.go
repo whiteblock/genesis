@@ -94,8 +94,12 @@ func GetServices() []util.Service {
 }
 
 func makeNodeConfig(orionconf *orionConf, node int, details *db.DeploymentDetails) (string, error) {
-	filler := details.Params
-	err := json.Unmarshal([]byte(GetDefaults()), &filler)
+	filler,err := util.CopyMap(details.Params)
+	if err != nil {
+		log.Println(err)
+		return "", nil
+	}
+	err = json.Unmarshal([]byte(GetDefaults()), &filler)
 	if err != nil {
 		log.Println(err)
 		return "", nil
