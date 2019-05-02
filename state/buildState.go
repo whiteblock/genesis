@@ -23,11 +23,10 @@ type CustomError struct {
 
 // BuildState packages the build state nicely into an object
 type BuildState struct {
-	errMutex  *sync.RWMutex
-	extraMux  *sync.RWMutex
-	freeze    *sync.RWMutex
-	mutex     *sync.RWMutex
-	freezeMux *sync.RWMutex
+	errMutex *sync.RWMutex
+	extraMux *sync.RWMutex
+	freeze   *sync.RWMutex
+	mutex    *sync.RWMutex
 
 	building int32 //0 or 1. Made into atomic to reduce mutex hell
 	frozen   int32 //0 or 1. Made into atomic to reduce mutex hell
@@ -62,7 +61,6 @@ func NewBuildState(servers []int, buildID string) *BuildState {
 	out.extraMux = &sync.RWMutex{}
 	out.freeze = &sync.RWMutex{}
 	out.mutex = &sync.RWMutex{}
-	out.freezeMux = &sync.RWMutex{}
 	out.asyncWaiter = &sync.WaitGroup{}
 
 	out.building = 1
@@ -107,7 +105,6 @@ func RestoreBuildState(buildID string) (*BuildState, error) {
 	out.extraMux = &sync.RWMutex{}
 	out.freeze = &sync.RWMutex{}
 	out.mutex = &sync.RWMutex{}
-	out.freezeMux = &sync.RWMutex{}
 	out.asyncWaiter = &sync.WaitGroup{}
 
 	out.Reset()
@@ -235,7 +232,7 @@ func (bs *BuildState) Stop() bool {
 	bs.freeze.RUnlock()
 
 	if len(bs.breakpoints) > 0 { //Don't take the lock overhead if there aren't any breakpoints
-		bs.freezeMux.Lock()
+		bs.mutex.Lock()
 		if bs.breakpoints[0] >= bs.GetProgress() {
 			if len(bs.breakpoints) > 1 {
 				bs.breakpoints = bs.breakpoints[1:]
@@ -245,7 +242,7 @@ func (bs *BuildState) Stop() bool {
 			bs.Freeze()
 			bs.freeze.RLock()
 		}
-		bs.freezeMux.Unlock()
+		bs.mutex.Unlock()
 	}
 
 	return atomic.LoadInt32(&bs.stopping) != 0
