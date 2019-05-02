@@ -1,0 +1,9 @@
+{
+    "nodeurl":"http://127.0.0.1:8080/",
+    "nodeport":8080,
+    "clienturl":"http://127.0.0.1:8888/",
+    "clientport":8888,
+    "tls":"off",
+    "nodenetworkinterface":"0.0.0.0",
+    "clientnetworkinterface":"0.0.0.0"
+}

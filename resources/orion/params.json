@@ -1,0 +1,11 @@
+[
+    ["nodeurl","string"],
+    ["nodeport","int"],
+    ["clienturl","string"],
+    ["clientport","int"],
+    ["publickeys","string"],
+    ["privatekeys","string"],
+    ["tls","string"],
+    ["nodenetworkinterface","string"],
+    ["clientnetworkinterface","string"]
+]
