@@ -35,6 +35,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		log.Println(err)
 		return nil, err
 	}
+	fmt.Println(orionconf)
 
 	tn.BuildState.SetBuildSteps(6*tn.LDD.Nodes + 2)
 	tn.BuildState.IncrementBuildProgress()
@@ -45,14 +46,6 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return err
 	})
 
-	
-
-
-
-
-
-
-
 	err = helpers.CreateConfigs(tn, "/orion/data/orion.conf",
 		func(serverId int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
 			defer tn.BuildState.IncrementBuildProgress()
@@ -60,28 +53,9 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			return []byte(orionNodeConfig), err
 		})
 
-
-
-
-
-
-
-
-
-
-
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		defer tn.BuildState.IncrementBuildProgress()
-
-		orionCmd := `orion -g nodeKey`
-
-		_, err := client.DockerExecd(localNodeNum, "cd /orion/data/ ")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		_, err = client.DockerExecd(localNodeNum, fmt.Sprintf("%s", orionCmd))
+		_, err := client.DockerExec(localNodeNum, "bash -c 'cd /orion/data && orion -g nodeKey'")
 		return err
 	})
 	if err != nil {
@@ -89,6 +63,14 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+		defer tn.BuildState.IncrementBuildProgress()
+		return client.DockerExecdLog(localNodeNum, "orion /orion/data/orion.conf")
+	})
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 
 	return nil, err
 }

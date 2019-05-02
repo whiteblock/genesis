@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"../helpers"
 	"github.com/Whiteblock/mustache"
+	"log"
 )
 
 type orionConf struct {
@@ -94,10 +95,15 @@ func GetServices() []util.Service {
 
 func makeNodeConfig(orionconf *orionConf, node int, details *db.DeploymentDetails) (string, error) {
 	filler := details.Params
-	dat, err := helpers.GetBlockchainConfig("orion", node, "orion.config.mustache", details)
+	err := json.Unmarshal([]byte(GetDefaults()), &filler)
+	if err != nil {
+		log.Println(err)
+		return "", nil
+	}
+	dat, err := helpers.GetBlockchainConfig("orion", node, "orion.conf.mustache", details)
 	if err != nil {
 		return "", err
 	}
-	data, err := mustache.Render(string(dat), filler)
+	data, err := mustache.Render(string(dat), util.ConvertToStringMap(filler))
 	return data, err
 }
