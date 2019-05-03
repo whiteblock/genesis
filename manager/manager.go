@@ -25,8 +25,11 @@ import (
 	_ "../blockchains/rchain"
 	_ "../blockchains/syscoin"
 	_ "../blockchains/tendermint"
+	_ "../blockchains/orion"
+
 	//side cars
 	_ "../sidecars/geth"
+	
 )
 
 var conf *util.Config
