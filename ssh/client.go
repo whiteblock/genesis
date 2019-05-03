@@ -168,27 +168,27 @@ func (sshClient *Client) KeepTryRun(command string) (string, error) {
 }
 
 // DockerExec executes a command inside of a node
-func (sshClient *Client) DockerExec(node int, command string) (string, error) {
-	return sshClient.Run(fmt.Sprintf("docker exec %s%d %s", conf.NodePrefix, node, command))
+func (sshClient *Client) DockerExec(node Node, command string) (string, error) {
+	return sshClient.Run(fmt.Sprintf("docker exec %s %s", node.GetNodeName(), command))
 }
 
 // DockerCp copies a file on a remote machine from source to the dest in the node
-func (sshClient *Client) DockerCp(node int, source string, dest string) error {
-	_, err := sshClient.Run(fmt.Sprintf("docker cp %s %s%d:%s", source, conf.NodePrefix, node, dest))
+func (sshClient *Client) DockerCp(node Node, source string, dest string) error {
+	_, err := sshClient.Run(fmt.Sprintf("docker cp %s %s:%s", source, node.GetNodeName(), dest))
 	return err
 }
 
 // KeepTryDockerExec is like KeepTryRun for nodes
-func (sshClient *Client) KeepTryDockerExec(node int, command string) (string, error) {
-	return sshClient.KeepTryRun(fmt.Sprintf("docker exec %s%d %s", conf.NodePrefix, node, command))
+func (sshClient *Client) KeepTryDockerExec(node Node, command string) (string, error) {
+	return sshClient.KeepTryRun(fmt.Sprintf("docker exec %s %s", node.GetNodeName(), command))
 }
 
 // KeepTryDockerExecAll is like KeepTryRun for nodes, but can handle more than one command.
 // Executes the given commands in order.
-func (sshClient *Client) KeepTryDockerExecAll(node int, commands ...string) ([]string, error) {
+func (sshClient *Client) KeepTryDockerExecAll(node Node, commands ...string) ([]string, error) {
 	out := []string{}
 	for _, command := range commands {
-		res, err := sshClient.KeepTryRun(fmt.Sprintf("docker exec %s%d %s", conf.NodePrefix, node, command))
+		res, err := sshClient.KeepTryRun(fmt.Sprintf("docker exec %s %s", node.GetNodeName(), command))
 		if err != nil {
 			return nil, err
 		}
@@ -200,64 +200,64 @@ func (sshClient *Client) KeepTryDockerExecAll(node int, commands ...string) ([]s
 // DockerExecd runs the given command, and then returns immediately.
 // This function will not return the output of the command.
 // This is useful if you are starting a persistent process inside a container
-func (sshClient *Client) DockerExecd(node int, command string) (string, error) {
-	return sshClient.Run(fmt.Sprintf("docker exec -d %s%d %s", conf.NodePrefix, node, command))
+func (sshClient *Client) DockerExecd(node Node, command string) (string, error) {
+	return sshClient.Run(fmt.Sprintf("docker exec -d %s %s", node.GetNodeName(), command))
 }
 
 // DockerExecdit runs the given command, and then returns immediately.
 // This function will not return the output of the command.
 // This is useful if you are starting a persistent process inside a container.
 // Also flags the session as interactive and sets up a virtual tty.
-func (sshClient *Client) DockerExecdit(node int, command string) (string, error) {
-	return sshClient.Run(fmt.Sprintf("docker exec -itd %s%d %s", conf.NodePrefix, node, command))
+func (sshClient *Client) DockerExecdit(node Node, command string) (string, error) {
+	return sshClient.Run(fmt.Sprintf("docker exec -itd %s %s", node.GetNodeName(), command))
 }
 
-func (sshClient *Client) logSanitizeAndStore(node int, command string) {
+func (sshClient *Client) logSanitizeAndStore(node Node, command string) {
 	if strings.Count(command, "'") != strings.Count(command, "\\'") {
 		panic("DockerExecdLog commands cannot contain unescaped ' characters")
 	}
 	bs := state.GetBuildStateByServerID(sshClient.serverID)
-	bs.Set(fmt.Sprintf("%d", node), util.Command{Cmdline: command, ServerID: sshClient.serverID, Node: node})
+	bs.Set(fmt.Sprintf("%d", node.GetAbsoluteNumber()), util.Command{Cmdline: command, ServerID: sshClient.serverID, Node: node.GetRelativeNumber()})
 }
 
 // DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs.
 // Should only be used for the blockchain process.
-func (sshClient *Client) DockerExecdLog(node int, command string) error {
+func (sshClient *Client) DockerExecdLog(node Node, command string) error {
 	sshClient.logSanitizeAndStore(node, command)
 
-	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s%d bash -c '%s 2>&1 > %s'", conf.NodePrefix,
-		node, command, conf.DockerOutputFile))
+	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s bash -c '%s 2>&1 > %s'", node.GetNodeName(),
+		command, conf.DockerOutputFile))
 	return err
 }
 
 // DockerExecdLogAppend will cause the stdout and stderr of the command to be stored in the logs.
 // Should only be used for the blockchain process. Will append to existing logs.
-func (sshClient *Client) DockerExecdLogAppend(node int, command string) error {
+func (sshClient *Client) DockerExecdLogAppend(node Node, command string) error {
 	sshClient.logSanitizeAndStore(node, command)
-	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s%d bash -c '%s 2>&1 >> %s'", conf.NodePrefix,
-		node, command, conf.DockerOutputFile))
+	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s bash -c '%s 2>&1 >> %s'", node.GetNodeName(),
+		command, conf.DockerOutputFile))
 	return err
 }
 
 // DockerRead will read a file on a node, if lines > -1 then
 // it will return the last `lines` lines of the file
-func (sshClient *Client) DockerRead(node int, file string, lines int) (string, error) {
+func (sshClient *Client) DockerRead(node Node, file string, lines int) (string, error) {
 	if lines > -1 {
-		return sshClient.Run(fmt.Sprintf("docker exec %s%d tail -n %d %s", conf.NodePrefix, node, lines, file))
+		return sshClient.Run(fmt.Sprintf("docker exec %s tail -n %d %s", node.GetNodeName(), lines, file))
 	}
-	return sshClient.Run(fmt.Sprintf("docker exec %s%d cat %s", conf.NodePrefix, node, file))
+	return sshClient.Run(fmt.Sprintf("docker exec %s cat %s", node.GetNodeName(), file))
 }
 
 // DockerMultiExec will run all of the given commands strung together with && on
 // the given node.
-func (sshClient *Client) DockerMultiExec(node int, commands []string) (string, error) {
+func (sshClient *Client) DockerMultiExec(node Node, commands []string) (string, error) {
 	mergedCommand := ""
 
 	for _, command := range commands {
 		if len(mergedCommand) != 0 {
 			mergedCommand += "&&"
 		}
-		mergedCommand += fmt.Sprintf("docker exec -d %s%d %s", conf.NodePrefix, node, command)
+		mergedCommand += fmt.Sprintf("docker exec -d %s %s", node.GetNodeName(), command)
 	}
 
 	return sshClient.Run(mergedCommand)
@@ -265,14 +265,14 @@ func (sshClient *Client) DockerMultiExec(node int, commands []string) (string, e
 
 // KTDockerMultiExec is like DockerMultiExec, except it keeps attempting the command after
 // failure
-func (sshClient *Client) KTDockerMultiExec(node int, commands []string) (string, error) {
+func (sshClient *Client) KTDockerMultiExec(node Node, commands []string) (string, error) {
 	mergedCommand := ""
 
 	for _, command := range commands {
 		if len(mergedCommand) != 0 {
 			mergedCommand += "&&"
 		}
-		mergedCommand += fmt.Sprintf("docker exec -d %s%d %s", conf.NodePrefix, node, command)
+		mergedCommand += fmt.Sprintf("docker exec -d %s %s", node.GetNodeName(), command)
 	}
 
 	return sshClient.KeepTryRun(mergedCommand)

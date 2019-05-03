@@ -80,11 +80,11 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	peers := make([]string, tn.LDD.Nodes)
 	mux := sync.Mutex{}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		ip := tn.Nodes[absoluteNodeNum].IP
-		if absoluteNodeNum != 0 {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+		ip := tn.Nodes[node.GetAbsoluteNumber()].IP
+		if node.GetAbsoluteNumber() != 0 {
 			//init everything
-			_, err := client.DockerExec(localNodeNum, "gaiad init --chain-id=whiteblock whiteblock")
+			_, err := client.DockerExec(node, "gaiad init --chain-id=whiteblock whiteblock")
 			if err != nil {
 				log.Println(res)
 				return err
@@ -92,14 +92,14 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		}
 
 		//Get the node id
-		res, err := client.DockerExec(localNodeNum, "gaiad tendermint show-node-id")
+		res, err := client.DockerExec(node, "gaiad tendermint show-node-id")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 		nodeID := res[:len(res)-1]
 		mux.Lock()
-		peers[absoluteNodeNum] = fmt.Sprintf("%s@%s:26656", nodeID, ip)
+		peers[node.GetAbsoluteNumber()] = fmt.Sprintf("%s@%s:26656", nodeID, ip)
 		mux.Unlock()
 		tn.BuildState.IncrementBuildProgress()
 		return nil
@@ -115,12 +115,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	tn.BuildState.SetBuildStage("Starting cosmos")
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server,node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		peersCpy := make([]string, len(peers))
 		copy(peersCpy, peers)
-		_, err := client.DockerExecd(localNodeNum, fmt.Sprintf("gaiad start --p2p.persistent_peers=%s",
-			strings.Join(append(peersCpy[:absoluteNodeNum], peersCpy[absoluteNodeNum+1:]...), ",")))
+		_, err := client.DockerExecd(node, fmt.Sprintf("gaiad start --p2p.persistent_peers=%s",
+			strings.Join(append(peersCpy[:node.GetAbsoluteNumber()], peersCpy[node.GetAbsoluteNumber()+1:]...), ",")))
 		return err
 	})
 	return nil, err

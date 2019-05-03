@@ -222,34 +222,46 @@ func (tn *TestNet) GetLastestDeploymentDetails() *db.DeploymentDetails {
 }
 
 // PreOrderNodes sorts the nodes into buckets by server id
-func (tn *TestNet) PreOrderNodes() map[int][]db.Node {
+func (tn *TestNet) PreOrderNodes(sidecar bool) map[int][]ssh.Node {
 	tn.mux.RLock()
 	defer tn.mux.RUnlock()
 
-	out := make(map[int][]db.Node)
+	out := make(map[int][]ssh.Node)
 	for _, server := range tn.Servers {
-		out[server.ID] = []db.Node{}
+		out[server.ID] = []ssh.Node{}
 	}
-
-	for _, node := range tn.Nodes {
-		out[node.Server] = append(out[node.Server], node)
+	if sidecar {
+		for _, node := range tn.SideCars {
+			out[node.Server] = append(out[node.Server], node)
+		}
+	}else{
+		for _, node := range tn.Nodes {
+			out[node.Server] = append(out[node.Server], node)
+		}
 	}
+	
 	return out
 }
 
 // PreOrderNewNodes sorts the newly built nodes into buckets by server id
-func (tn *TestNet) PreOrderNewNodes() map[int][]db.Node {
+func (tn *TestNet) PreOrderNewNodes(sidecar bool) map[int][]ssh.Node {
 	tn.mux.RLock()
 	defer tn.mux.RUnlock()
 
-	out := make(map[int][]db.Node)
+	out := make(map[int][]ssh.Node)
 	for _, server := range tn.Servers {
-		out[server.ID] = []db.Node{}
+		out[server.ID] = []ssh.Node{}
 	}
-
-	for _, node := range tn.NewlyBuiltNodes {
-		out[node.Server] = append(out[node.Server], node)
+	if sidecar {
+		for _, node := range tn.NewlyBuiltSideCars {
+			out[node.Server] = append(out[node.Server], node)
+		}
+	}else{
+		for _, node := range tn.NewlyBuiltNodes {
+			out[node.Server] = append(out[node.Server], node)
+		}
 	}
+	
 	return out
 }
 
@@ -279,18 +291,33 @@ func (tn *TestNet) StoreNodes(labels []string) error {
 }
 
 //TODO doc
-func GetSSHNodes() []ssh.Node {
-	if this.BuildState.Done() {//VRFY
-		return this.SideCars
+func (tn *TestNet) GetSSHNodes(sidecar bool) []ssh.Node {
+	out := []ssh.Node{}
+	if sidecar {//VRFY
+		for _,node := range tn.SideCars{
+			out = append(out,node)
+		}
+		
+	}else{
+		for _,node := range tn.Nodes{
+			out = append(out,node)
+		}
 	}
-	return this.Nodes
+	return out
 }
 
 //TODO doc
-func GetNewSSHNodes() []ssh.Node {
-	if this.BuildState.Done() { //VRFY 
-		return this.NewlyBuiltSideCars
+func (tn *TestNet) GetNewSSHNodes(sidecar bool) []ssh.Node {
+	out := []ssh.Node{}
+	if sidecar {//VRFY
+		for _,node := range tn.NewlyBuiltSideCars{
+			out = append(out,node)
+		}
+		
+	}else{
+		for _,node := range tn.NewlyBuiltNodes{
+			out = append(out,node)
+		}
 	}
-	return this.NewlyBuiltNodes
-	
+	return out
 }

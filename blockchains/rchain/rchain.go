@@ -178,11 +178,11 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	buildState.Set("rConf", *rConf)
 
 	err = helpers.CreateConfigs(tn, "/datadir/rnode.conf",
-		func(serverNum int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
-			if absoluteNodeNum == 0 {
+		func(node ssh.Node) ([]byte, error) {
+			if node.GetAbsoluteNumber() == 0 {
 				return nil, nil
 			}
-			return createConfigFile(tn.LDD, enode, rConf, services["wb_influx_proxy"], buildState, absoluteNodeNum)
+			return createConfigFile(enode, rConf, services["wb_influx_proxy"], node.GetAbsoluteNumber())
 		})
 
 	buildState.SetBuildStage("Configuring the other rchain nodes")
@@ -195,12 +195,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	var validators int64
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer buildState.IncrementBuildProgress()
-		if absoluteNodeNum == 0 {
+		if node.GetAbsoluteNumber() == 0 {
 			return nil
 		}
-		ip := tn.Nodes[absoluteNodeNum].IP
+		ip := tn.Nodes[node.GetAbsoluteNumber()].IP
 		mux.Lock()
 		isValidator := validators < rConf.Validators
 		validators++
@@ -208,27 +208,27 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		if isValidator {
 			err := client.DockerExecdLog(localNodeNum,
 				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
-					rConf.Command, enode, keyPairs[absoluteNodeNum].PrivateKey, ip))
+					rConf.Command, enode, keyPairs[node.GetAbsoluteNumber()].PrivateKey, node.GetIP()))
 			return err
 		}
 		return client.DockerExecdLog(localNodeNum,
 			fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s",
-				rConf.Command, enode, ip))
+				rConf.Command, enode, node.GetIP()))
 	})
 	return nil, err
 }
 
-func createFirstConfigFile(details *db.DeploymentDetails, client *ssh.Client, node int, rConf *rChainConf, influxIP string, buildState *state.BuildState) error {
+func createFirstConfigFile(tn *testnet.TestNet, client *ssh.Client, node ssh.Node, rConf *rChainConf, influxIP string) error {
 
 	raw := map[string]interface{}{
 		"influxIp":       influxIP,
 		"validatorCount": rConf.ValidatorCount,
 		"standalone":     true,
 	}
-	raw = util.MergeStringMaps(raw, details.Params) //Allow arbitrary custom options for rchain
+	raw = util.MergeStringMaps(raw, tn.LDD.Params) //Allow arbitrary custom options for rchain
 
 	filler := util.ConvertToStringMap(raw)
-	dat, err := helpers.GetBlockchainConfig("rchain", 0, "rchain.conf.mustache", details)
+	dat, err := helpers.GetBlockchainConfig("rchain", 0, "rchain.conf.mustache", tn.LDD)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -238,13 +238,13 @@ func createFirstConfigFile(details *db.DeploymentDetails, client *ssh.Client, no
 		log.Println(err)
 		return nil
 	}
-	err = buildState.Write("rnode.conf", data)
+	err = tn.BuildState.Write("rnode.conf", data)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 	err = client.Scp("rnode.conf", "/home/appo/rnode.conf")
-	buildState.Defer(func() { client.Run("rm -f ~/rnode.conf") })
+	tn.BuildState.Defer(func() { client.Run("rm -f ~/rnode.conf") })
 	if err != nil {
 		log.Println(err)
 		return err
@@ -291,14 +291,14 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 		keyPairs = append(keyPairs, kp)
 	}
 
-	err = helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
+	err = helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		_, err := client.DockerExec(localNodeNum, "mkdir /datadir")
+		_, err := client.DockerExec(node, "mkdir /datadir")
 		return err
 	})
 
-	err = helpers.CreateConfigsNewNodes(tn, "/datadir/rnode.conf", func(_ int, _ int, absoluteNodeNum int) ([]byte, error) {
-		return createConfigFile(&tn.CombinedDetails, enode, rConf, services["wb_influx_proxy"], tn.BuildState, absoluteNodeNum)
+	err = helpers.CreateConfigsNewNodes(tn, "/datadir/rnode.conf", func(node ssh.Node) ([]byte, error) {
+		return createConfigFile(&tn.CombinedDetails, enode, rConf, services["wb_influx_proxy"], tn.BuildState, node.GetAbsoluteNumber())
 	})
 	if err != nil {
 		log.Println(err)
@@ -318,9 +318,8 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 	/**Start up the rest of the nodes**/
 	var validators int64
 	mux := sync.Mutex{}
-	err = helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		ip := tn.Nodes[absoluteNodeNum].IP
 
 		mux.Lock()
 		isValidator := validators < rConf.Validators
@@ -330,17 +329,17 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 		if isValidator {
 			err = client.DockerExecdLog(localNodeNum,
 				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
-					rConf.Command, enode, keyPairs[absoluteNodeNum].PrivateKey, ip))
+					rConf.Command, enode, keyPairs[node.GetAbsoluteNumber()].PrivateKey, node.GetIP()))
 			return err
 		}
 		return client.DockerExecdLog(localNodeNum,
 			fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s",
-				rConf.Command, enode, ip))
+				rConf.Command, enode, node.GetIP()))
 	})
 	return nil, err
 }
 
-func createConfigFile(details *db.DeploymentDetails, bootnodeAddr string, rConf *rChainConf,
+func createConfigFile(tn *testnet.TestNet, bootnodeAddr string, rConf *rChainConf,
 	influxIP string, buildState *state.BuildState, node int) ([]byte, error) {
 
 	raw := map[string]interface{}{
@@ -349,11 +348,11 @@ func createConfigFile(details *db.DeploymentDetails, bootnodeAddr string, rConf 
 		"standalone":     false,
 	}
 
-	raw = util.MergeStringMaps(raw, details.Params) //Allow arbitrary custom options for rchain
+	raw = util.MergeStringMaps(raw, tn.LDD.Params) //Allow arbitrary custom options for rchain
 
 	filler := util.ConvertToStringMap(raw)
 	filler["bootstrap"] = fmt.Sprintf("bootstrap = \"%s\"", bootnodeAddr)
-	dat, err := helpers.GetBlockchainConfig("rchain", node, "rchain.conf.mustache", details)
+	dat, err := helpers.GetBlockchainConfig("rchain", node, "rchain.conf.mustache", tn.LDD)
 	if err != nil {
 		log.Println(err)
 		return nil, err

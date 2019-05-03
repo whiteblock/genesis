@@ -1,4 +1,4 @@
-//Package helpers contains functions to help make the task of deploying a blockchain easier and faster
+// Package helpers contains functions to help make the task of deploying a blockchain easier and faster
 package helpers
 
 import (
@@ -19,24 +19,27 @@ func init() {
 /*
 	fn func(client *ssh.Client, server &db.Server,localNodeNum int,absoluteNodeNum int)(error)
 */
-func allNodeExecCon(tn *testnet.TestNet, useNew bool, fn func(*ssh.Client, *db.Server, int, int) error) error {
-	nodes := tn.Nodes
+func allNodeExecCon(tn *testnet.TestNet, useNew bool,sideCar bool, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
+	var nodes []ssh.Node
 	if useNew {
-		nodes = tn.NewlyBuiltNodes
+		nodes = tn.GetNewSSHNodes(sideCar)
+	}else{
+		nodes = tn.GetSSHNodes(sideCar)
 	}
+
 	wg := sync.WaitGroup{}
 	for _, node := range nodes {
 
 		wg.Add(1)
-		go func(client *ssh.Client, server *db.Server, localID int, absNum int) {
+		go func(client *ssh.Client, server *db.Server, node ssh.Node) {
 			defer wg.Done()
-			err := fn(client, server, localID, absNum)
+			err := fn(client, server, node)
 			if err != nil {
 				log.Println(err)
 				tn.BuildState.ReportError(err)
 				return
 			}
-		}(tn.Clients[node.Server], tn.GetServer(node.Server), node.LocalID, node.AbsoluteNum)
+		}(tn.Clients[node.GetServerID()], tn.GetServer(node.GetServerID()), node)
 
 	}
 	wg.Wait()
@@ -49,13 +52,21 @@ func allNodeExecCon(tn *testnet.TestNet, useNew bool, fn func(*ssh.Client, *db.S
 // number of that node on the server and the absolute number of the node in the testnet. If any of the calls to fn
 // return a non-nil error value, one of those errors will be returned. Currently there is no guarentee as to which one,
 // however this should be implemented in the future.
-func AllNodeExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, int, int) error) error {
-	return allNodeExecCon(tn, false, fn)
+func AllNodeExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
+	return allNodeExecCon(tn, false,false, fn)
 }
 
-//AllNewNodeExecCon is AllNodeExecCon but executes only for new nodes
-func AllNewNodeExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, int, int) error) error {
-	return allNodeExecCon(tn, true, fn)
+// AllNewNodeExecCon is AllNodeExecCon but executes only for new nodes
+func AllNewNodeExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
+	return allNodeExecCon(tn, true,false, fn)
+}
+
+func AllNodeExecConSC(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
+	return allNodeExecCon(tn, false,true, fn)
+}
+
+func AllNewNodeExecConSC(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
+	return allNodeExecCon(tn, true,true, fn)
 }
 
 // AllServerExecCon executes fn for every server in the testnet. Is sementatically similar to

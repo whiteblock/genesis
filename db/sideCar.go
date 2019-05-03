@@ -1,5 +1,8 @@
 package db
 
+import(
+	"fmt"
+)
 //SideCar represents a supporting node within the network
 type SideCar struct {
 	ID string `json:"id"`
@@ -30,23 +33,26 @@ type SideCar struct {
 }
 
 
-
-func (n SideCar) GetAbsoluteNumber() int{
-	return n.AbsoluteNum
+func (n SideCar) GetAbsoluteNumber() int {
+	return n.AbsoluteNodeNum
 }
 
-func (n SideCar) GetIP() string{
+func (n SideCar) GetIP() string {
 	return n.IP
 }
 
-func (n SideCar) GetRelativeNumber() int{
+func (n SideCar) GetRelativeNumber() int {
 	return n.LocalID
 }
 
-func (n SideCar) GetServerID() int{
+func (n SideCar) GetServerID() int {
 	return n.Server
 }
 
-func (n SideCar) GetTestNetID() string{
+func (n SideCar) GetTestNetID() string {
 	return n.TestnetID
+}
+
+func (n SideCar) GetNodeName() string {
+	return fmt.Sprintf("%s%d-%d", conf.NodePrefix, n.AbsoluteNodeNum,n.NetworkIndex)
 }

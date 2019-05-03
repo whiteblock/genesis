@@ -59,7 +59,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	tn.BuildState.SetBuildStage("Distributing secrets")
 	/**Copy over the password file**/
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		_, err := client.DockerExec(localNodeNum, "mkdir -p /geth")
 		return err
 	})
@@ -90,7 +90,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		log.Println(err)
 		return nil, err
 	}
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, account := range accounts {
 			_, err := client.DockerExec(localNodeNum, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
 			if err != nil {
@@ -142,7 +142,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	tn.BuildState.SetBuildStage("Initializing geth")
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		ip := tn.Nodes[absoluteNodeNum].IP
 		//Load the CustomGenesis file
 		_, err := client.DockerExec(localNodeNum,
@@ -194,7 +194,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		ip := tn.Nodes[absoluteNodeNum].IP
 		tn.BuildState.IncrementBuildProgress()
 
@@ -230,7 +230,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		ip := tn.Nodes[absoluteNodeNum].IP
 		absName := fmt.Sprintf("%s%d", conf.NodePrefix, absoluteNodeNum)
 		sedCmd := fmt.Sprintf(`sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`, absName)
@@ -289,7 +289,7 @@ func MakeFakeAccounts(accs int) []string {
  * @param  []string wallets     The wallets to be allocated a balance
  */
 
-func createGenesisfile(ethconf *ethConf, details *db.DeploymentDetails, accounts []*ethereum.Account, buildState *state.BuildState) error {
+func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) error {
 
 	genesis := map[string]interface{}{
 		"chainId":        ethconf.NetworkID,
@@ -315,7 +315,7 @@ func createGenesisfile(ethconf *ethConf, details *db.DeploymentDetails, accounts
 		}
 	}
 	genesis["alloc"] = alloc
-	dat, err := helpers.GetBlockchainConfig("geth", 0, "genesis.json", details)
+	dat, err := helpers.GetBlockchainConfig("geth", 0, "genesis.json", tn.LDD)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -326,7 +326,7 @@ func createGenesisfile(ethconf *ethConf, details *db.DeploymentDetails, accounts
 		log.Println(err)
 		return err
 	}
-	return buildState.Write("CustomGenesis.json", data)
+	return tn.BuildState.Write("CustomGenesis.json", data)
 
 }
 

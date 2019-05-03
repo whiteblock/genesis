@@ -44,11 +44,11 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	secretMinerKeys := make([]string, tn.LDD.Nodes)
 	mux := sync.Mutex{}
 	// walletIDs := []string{}
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 
-		client.DockerExec(localNodeNum, "beam-wallet --command init --pass password") //ign err
+		client.DockerExec(node, "beam-wallet --command init --pass password") //ign err
 
-		res1, _ := client.DockerExec(localNodeNum, "beam-wallet --command export_owner_key --pass password") //ign err
+		res1, _ := client.DockerExec(node, "beam-wallet --command export_owner_key --pass password") //ign err
 
 		tn.BuildState.IncrementBuildProgress()
 
@@ -56,16 +56,16 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		ownKLine := re.FindAllString(res1, -1)[0]
 
 		mux.Lock()
-		ownerKeys[absoluteNodeNum] = strings.Split(ownKLine, " ")[3]
+		ownerKeys[node.GetAbsoluteNumber()] = strings.Split(ownKLine, " ")[3]
 		mux.Unlock()
 
-		res2, _ := client.DockerExec(localNodeNum, "beam-wallet --command export_miner_key --subkey=1 --pass password") //ign err
+		res2, _ := client.DockerExec(node, "beam-wallet --command export_miner_key --subkey=1 --pass password") //ign err
 
 		re = regexp.MustCompile(`(?m)^Secret([A-z|0-9|\s|\:|\/|\+|\=])*$`)
 		secMLine := re.FindAllString(res2, -1)[0]
 
 		mux.Lock()
-		secretMinerKeys[absoluteNodeNum] = strings.Split(secMLine, " ")[3]
+		secretMinerKeys[node.GetAbsoluteNumber()] = strings.Split(secMLine, " ")[3]
 		mux.Unlock()
 
 		tn.BuildState.IncrementBuildProgress()
@@ -82,16 +82,16 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	/**Create node config files**/
 
 	err = helpers.CreateConfigs(tn, "/beam/beam-node.cfg",
-		func(_ int, _ int, absoluteNodeNum int) ([]byte, error) {
+		func(node ssh.Node) ([]byte, error) {
 			ipsCpy := make([]string, len(ips))
 			copy(ipsCpy, ips)
-			beamNodeConfig, err := makeNodeConfig(bConf, ownerKeys[absoluteNodeNum],
-				secretMinerKeys[absoluteNodeNum], tn.LDD, absoluteNodeNum)
+			beamNodeConfig, err := makeNodeConfig(bConf, ownerKeys[node.GetAbsoluteNumber()],
+				secretMinerKeys[node.GetAbsoluteNumber()], tn.LDD, node.GetAbsoluteNumber())
 			if err != nil {
 				log.Println(err)
 				return nil, err
 			}
-			for _, ip := range append(ipsCpy[:absoluteNodeNum], ipsCpy[absoluteNodeNum+1:]...) {
+			for _, ip := range append(ipsCpy[:node.GetAbsoluteNumber()], ipsCpy[node.GetAbsoluteNumber()+1:]...) {
 				beamNodeConfig += fmt.Sprintf("peer=%s:%d\n", ip, port)
 			}
 			return []byte(beamNodeConfig), nil
@@ -101,7 +101,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 	err = helpers.CreateConfigs(tn, "/beam/beam-wallet.cfg",
-		func(_ int, _ int, absoluteNodeNum int) ([]byte, error) {
+		func(_ ssh.Node) ([]byte, error) {
 			beamWalletConfig := []string{
 				"# Emission.Value0=800000000",
 				"# Emission.Drop0=525600",
@@ -126,10 +126,10 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 
 	tn.BuildState.SetBuildStage("Starting beam")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		miningFlag := ""
-		if absoluteNodeNum >= int(bConf.Validators) {
+		if node.GetAbsoluteNumber() >= int(bConf.Validators) {
 			miningFlag = " --mining_threads 1"
 		}
 		_, err := client.DockerExecd(localNodeNum, fmt.Sprintf("beam-node%s", miningFlag))

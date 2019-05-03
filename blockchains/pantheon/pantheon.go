@@ -61,17 +61,17 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	tn.BuildState.SetBuildStage("Setting Up Accounts")
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 
 		tn.BuildState.IncrementBuildProgress()
-		_, err = client.DockerExec(localNodeNum,
+		_, err = client.DockerExec(node,
 			"pantheon --data-path=/pantheon/data public-key export --to=/pantheon/data/publicKey")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
-		privKey, err := client.DockerRead(localNodeNum, "/pantheon/data/key", -1)
+		privKey, err := client.DockerRead(node, "/pantheon/data/key", -1)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -83,39 +83,39 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		}
 
 		mux.Lock()
-		accounts[absoluteNodeNum] = acc
+		accounts[node.GetAbsoluteNumber()] = acc
 		mux.Unlock()
 		tn.BuildState.IncrementBuildProgress()
 		addr := acc.HexAddress()
 
-		_, err = client.DockerExec(localNodeNum, "bash -c 'echo \"[\\\""+addr[2:]+"\\\"]\" >> /pantheon/data/toEncode.json'")
+		_, err = client.DockerExec(node, "bash -c 'echo \"[\\\""+addr[2:]+"\\\"]\" >> /pantheon/data/toEncode.json'")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
-		_, err = client.DockerExec(localNodeNum, "mkdir /pantheon/genesis")
+		_, err = client.DockerExec(node, "mkdir /pantheon/genesis")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
 		// used for IBFT2 extraData
-		_, err = client.DockerExec(localNodeNum,
+		_, err = client.DockerExec(node,
 			"pantheon rlp encode --from=/pantheon/data/toEncode.json --to=/pantheon/rlpEncodedExtraData")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
-		rlpEncoded, err := client.DockerRead(localNodeNum, "/pantheon/rlpEncodedExtraData", -1)
+		rlpEncoded, err := client.DockerRead(node, "/pantheon/rlpEncodedExtraData", -1)
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
 		mux.Lock()
-		rlpEncodedData[absoluteNodeNum] = rlpEncoded
+		rlpEncodedData[node.GetAbsoluteNumber()] = rlpEncoded
 		mux.Unlock()
 
 		tn.BuildState.IncrementBuildProgress()
@@ -180,8 +180,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 
-	err = helpers.CreateConfigs(tn, "/pantheon/config.toml", func(_ int, _ int, absoluteNodeNum int) ([]byte, error) {
-		return helpers.GetBlockchainConfig("pantheon", absoluteNodeNum, "config.toml", tn.LDD)
+	err = helpers.CreateConfigs(tn, "/pantheon/config.toml", func(node ssh.Node) ([]byte, error) {
+		return helpers.GetBlockchainConfig("pantheon", node.GetAbsoluteNumber(), "config.toml", tn.LDD)
 	})
 	if err != nil {
 		log.Println(err)
@@ -197,14 +197,13 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	/* Start the nodes */
 	tn.BuildState.SetBuildStage("Starting Pantheon")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
-		err := client.DockerExecdLog(localNodeNum, fmt.Sprintf(
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+		defer tn.BuildState.IncrementBuildProgress()
+		return client.DockerExecdLog(node, fmt.Sprintf(
 			`pantheon --config-file=/pantheon/config.toml --data-path=/pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
 				`--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,TXPOOL,WEB3" `+
 				` --p2p-port=%d --rpc-http-port=8545 --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"`,
 			p2pPort))
-		tn.BuildState.IncrementBuildProgress()
-		return err
 	})
 	for _, account := range accounts {
 		tn.BuildState.SetExt(account.HexAddress(), map[string]string{

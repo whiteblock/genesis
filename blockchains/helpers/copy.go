@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"../../db"
 	"../../ssh"
 	"../../state"
 	"../../testnet"
@@ -37,15 +36,17 @@ func CopyAllToServers(tn *testnet.TestNet, srcDst ...string) error {
 	return tn.BuildState.GetError()
 }
 
-func copyToAllNodes(tn *testnet.TestNet, useNew bool, srcDst ...string) error {
+func copyToAllNodes(tn *testnet.TestNet, useNew bool,sidecar bool, srcDst ...string) error {
 	if len(srcDst)%2 != 0 {
 		return fmt.Errorf("invalid number of variadic arguments, must be given an even number of them")
 	}
 	wg := sync.WaitGroup{}
-
-	preOrderedNodes := tn.PreOrderNodes()
+	var preOrderedNodes map[int][]ssh.Node
+	
 	if useNew {
-		preOrderedNodes = tn.PreOrderNewNodes()
+		preOrderedNodes = tn.PreOrderNewNodes(sidecar)
+	}else{
+		preOrderedNodes = tn.PreOrderNodes(sidecar)
 	}
 	for sid, nodes := range preOrderedNodes {
 		for j := 0; j < len(srcDst)/2; j++ {
@@ -60,20 +61,20 @@ func copyToAllNodes(tn *testnet.TestNet, useNew bool, srcDst ...string) error {
 			}(sid, j, rdy)
 
 			wg.Add(1)
-			go func(nodes []db.Node, j int, intermediateDst string, rdy chan bool) {
+			go func(nodes []ssh.Node, j int, intermediateDst string, rdy chan bool) {
 				defer wg.Done()
 				<-rdy
 				for i := range nodes {
 					wg.Add(1)
-					go func(node *db.Node, j int, intermediateDst string) {
+					go func(node ssh.Node, j int, intermediateDst string) {
 						defer wg.Done()
-						err := tn.Clients[node.Server].DockerCp(node.LocalID, intermediateDst, srcDst[2*j+1])
+						err := tn.Clients[node.GetServerID()].DockerCp(node, intermediateDst, srcDst[2*j+1])
 						if err != nil {
 							log.Println(err)
 							tn.BuildState.ReportError(err)
 							return
 						}
-					}(&nodes[i], j, intermediateDst)
+					}(nodes[i], j, intermediateDst)
 				}
 			}(nodes, j, intermediateDst, rdy)
 		}
@@ -86,16 +87,28 @@ func copyToAllNodes(tn *testnet.TestNet, useNew bool, srcDst ...string) error {
 // CopyToAllNodes copies files writen with BuildState's write function over to all of the nodes.
 // Can handle multiple files, in pairs of src and dst
 func CopyToAllNodes(tn *testnet.TestNet, srcDst ...string) error {
-	return copyToAllNodes(tn, false, srcDst...)
+	return copyToAllNodes(tn, false,false, srcDst...)
 }
 
 // CopyToAllNewNodes copies files writen with BuildState's write function over to all of the newly built nodes.
 // Can handle multiple files, in pairs of src and dst
 func CopyToAllNewNodes(tn *testnet.TestNet, srcDst ...string) error {
-	return copyToAllNodes(tn, true, srcDst...)
+	return copyToAllNodes(tn, true,false, srcDst...)
 }
 
-func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, dataDst ...string) error {
+// CopyToAllNodes copies files writen with BuildState's write function over to all of the nodes.
+// Can handle multiple files, in pairs of src and dst
+func CopyToAllNodesSC(tn *testnet.TestNet, srcDst ...string) error {
+	return copyToAllNodes(tn, false,true, srcDst...)
+}
+
+// CopyToAllNewNodes copies files writen with BuildState's write function over to all of the newly built nodes.
+// Can handle multiple files, in pairs of src and dst
+func CopyToAllNewNodesSC(tn *testnet.TestNet, srcDst ...string) error {
+	return copyToAllNodes(tn, true,true, srcDst...)
+}
+
+func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool,sidecar bool, dataDst ...string) error {
 	fmted := []string{}
 	for i := 0; i < len(dataDst)/2; i++ {
 		tmpFilename, err := util.GetUUIDString()
@@ -107,22 +120,31 @@ func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, dataDst ...string) er
 		fmted = append(fmted, tmpFilename)
 		fmted = append(fmted, dataDst[i*2+1])
 	}
-	return copyToAllNodes(tn, useNew, fmted...)
+	return copyToAllNodes(tn, useNew,sidecar, fmted...)
 }
 
 // CopyBytesToAllNodes functions similiarly to CopyToAllNodes, except it operates on data and dst pairs instead of
 // src and dest pairs, so you can just pass data directly to all of the nodes without having to call buildState.Write first.
 func CopyBytesToAllNodes(tn *testnet.TestNet, dataDst ...string) error {
-	return copyBytesToAllNodes(tn, false, dataDst...)
+	return copyBytesToAllNodes(tn, false,false, dataDst...)
 }
 
 // CopyBytesToAllNewNodes is CopyBytesToAllNodes but only operates on newly built nodes
 func CopyBytesToAllNewNodes(tn *testnet.TestNet, dataDst ...string) error {
-	return copyBytesToAllNodes(tn, true, dataDst...)
+	return copyBytesToAllNodes(tn, true,false, dataDst...)
+}
+
+func CopyBytesToAllNodesSC(tn *testnet.TestNet, dataDst ...string) error {
+	return copyBytesToAllNodes(tn, false,true, dataDst...)
+}
+
+// CopyBytesToAllNewNodes is CopyBytesToAllNodes but only operates on newly built nodes
+func CopyBytesToAllNewNodesSC(tn *testnet.TestNet, dataDst ...string) error {
+	return copyBytesToAllNodes(tn, true,true, dataDst...)
 }
 
 // SingleCp copies over data to the given dest on node localNodeID.
-func SingleCp(client *ssh.Client, buildState *state.BuildState, localNodeID int, data []byte, dest string) error {
+func SingleCp(client *ssh.Client, buildState *state.BuildState, node ssh.Node, data []byte, dest string) error {
 	tmpFilename, err := util.GetUUIDString()
 	if err != nil {
 		log.Println(err)
@@ -142,10 +164,10 @@ func SingleCp(client *ssh.Client, buildState *state.BuildState, localNodeID int,
 		return err
 	}
 
-	return client.DockerCp(localNodeID, intermediateDst, dest)
+	return client.DockerCp(node, intermediateDst, dest)
 }
 
-// FileDest represents a transfer of data
+/*// FileDest represents a transfer of data
 type FileDest struct {
 	// Data is the data to be transfered
 	Data []byte
@@ -173,22 +195,24 @@ func CopyBytesToNodeFiles(client *ssh.Client, buildState *state.BuildState, tran
 	}
 	wg.Wait()
 	return buildState.GetError()
-}
+}*/
 
 /*
 	fn func(serverid int, localNodeNum int, absoluteNodeNum int) ([]byte, error)
 */
-func createConfigs(tn *testnet.TestNet, dest string, useNew bool, fn func(int, int, int) ([]byte, error)) error {
-	nodes := tn.Nodes
+func createConfigs(tn *testnet.TestNet, dest string, useNew bool, sidecar bool,fn func(ssh.Node) ([]byte, error)) error {
+	var nodes []ssh.Node
 	if useNew {
-		nodes = tn.NewlyBuiltNodes
+		nodes = tn.GetNewSSHNodes(sidecar)
+	}else{
+		nodes = tn.GetSSHNodes(sidecar)
 	}
 	wg := sync.WaitGroup{}
 	for _, node := range nodes {
 		wg.Add(1)
-		go func(client *ssh.Client, serverID int, localID int, absNum int) {
+		go func(client *ssh.Client, node ssh.Node) {
 			defer wg.Done()
-			data, err := fn(serverID, localID, absNum)
+			data, err := fn(node)
 			if err != nil {
 				log.Println(err)
 				tn.BuildState.ReportError(err)
@@ -197,14 +221,14 @@ func createConfigs(tn *testnet.TestNet, dest string, useNew bool, fn func(int, i
 			if data == nil {
 				return //skip if nil
 			}
-			err = SingleCp(client, tn.BuildState, localID, data, dest)
+			err = SingleCp(client, tn.BuildState, node, data, dest)
 			if err != nil {
 				log.Println(err)
 				tn.BuildState.ReportError(err)
 				return
 			}
 
-		}(tn.Clients[node.Server], node.Server, node.LocalID, node.AbsoluteNum)
+		}(tn.Clients[node.GetServerID()], node)
 	}
 
 	wg.Wait()
@@ -214,11 +238,21 @@ func createConfigs(tn *testnet.TestNet, dest string, useNew bool, fn func(int, i
 // CreateConfigs allows for individual generation of configuration files with error propogation.
 // For each node, fn will be called, with (Server ID, local node number, absolute node number), and it will expect
 // to have the configuration file returned or error.
-func CreateConfigs(tn *testnet.TestNet, dest string, fn func(int, int, int) ([]byte, error)) error {
-	return createConfigs(tn, dest, false, fn)
+func CreateConfigs(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
+	return createConfigs(tn, dest, false,false, fn)
 }
 
 // CreateConfigsNewNodes is CreateConfigs but it only operates on new nodes
-func CreateConfigsNewNodes(tn *testnet.TestNet, dest string, fn func(int, int, int) ([]byte, error)) error {
-	return createConfigs(tn, dest, true, fn)
+func CreateConfigsNewNodes(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
+	return createConfigs(tn, dest, true,false, fn)
+}
+
+
+func CreateConfigsSC(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
+	return createConfigs(tn, dest, false,true, fn)
+}
+
+// CreateConfigsNewNodes is CreateConfigs but it only operates on new nodes
+func CreateConfigsNewNodesSC(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
+	return createConfigs(tn, dest, true,true, fn)
 }
