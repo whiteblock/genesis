@@ -223,7 +223,7 @@ func (tn *TestNet) GetLastestDeploymentDetails() *db.DeploymentDetails {
 }
 
 // PreOrderNodes sorts the nodes into buckets by server id
-func (tn *TestNet) PreOrderNodes(sidecar bool) map[int][]ssh.Node {
+func (tn *TestNet) PreOrderNodes(newNodes bool, sidecar bool) map[int][]ssh.Node {
 	tn.mux.RLock()
 	defer tn.mux.RUnlock()
 
@@ -231,12 +231,20 @@ func (tn *TestNet) PreOrderNodes(sidecar bool) map[int][]ssh.Node {
 	for _, server := range tn.Servers {
 		out[server.ID] = []ssh.Node{}
 	}
-	if sidecar {
+	if !newNodes && sidecar {
 		for _, node := range tn.SideCars {
 			out[node.Server] = append(out[node.Server], node)
 		}
-	} else {
+	} else if !newNodes && !sidecar {
 		for _, node := range tn.Nodes {
+			out[node.Server] = append(out[node.Server], node)
+		}
+	} else if newNodes && sidecar {
+		for _, node := range tn.NewlyBuiltSideCars {
+			out[node.Server] = append(out[node.Server], node)
+		}
+	} else {
+		for _, node := range tn.NewlyBuiltNodes {
 			out[node.Server] = append(out[node.Server], node)
 		}
 	}
@@ -252,15 +260,6 @@ func (tn *TestNet) PreOrderNewNodes(sidecar bool) map[int][]ssh.Node {
 	out := make(map[int][]ssh.Node)
 	for _, server := range tn.Servers {
 		out[server.ID] = []ssh.Node{}
-	}
-	if sidecar {
-		for _, node := range tn.NewlyBuiltSideCars {
-			out[node.Server] = append(out[node.Server], node)
-		}
-	} else {
-		for _, node := range tn.NewlyBuiltNodes {
-			out[node.Server] = append(out[node.Server], node)
-		}
 	}
 
 	return out
@@ -293,30 +292,20 @@ func (tn *TestNet) StoreNodes(labels []string) error {
 
 // GetSSHNodes gets all nodes or sidecars wrapper in the
 // ssh Node interface
-func (tn *TestNet) GetSSHNodes(sidecar bool) []ssh.Node {
+func (tn *TestNet) GetSSHNodes(newNodes bool, sidecar bool) []ssh.Node {
 	out := []ssh.Node{}
-	if sidecar { //VRFY
+	if !newNodes && sidecar {
 		for _, node := range tn.SideCars {
 			out = append(out, node)
 		}
-
-	} else {
+	} else if !newNodes && !sidecar {
 		for _, node := range tn.Nodes {
 			out = append(out, node)
 		}
-	}
-	return out
-}
-
-// GetNewSSHNodes gets newly build nodes or sidecars wrapper in the
-// ssh Node interface
-func (tn *TestNet) GetNewSSHNodes(sidecar bool) []ssh.Node {
-	out := []ssh.Node{}
-	if sidecar { //VRFY
+	} else if newNodes && sidecar {
 		for _, node := range tn.NewlyBuiltSideCars {
 			out = append(out, node)
 		}
-
 	} else {
 		for _, node := range tn.NewlyBuiltNodes {
 			out = append(out, node)

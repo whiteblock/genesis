@@ -20,13 +20,7 @@ func init() {
 	fn func(client *ssh.Client, server &db.Server,localNodeNum int,absoluteNodeNum int)(error)
 */
 func allNodeExecCon(tn *testnet.TestNet, useNew bool, sideCar bool, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
-	var nodes []ssh.Node
-	if useNew {
-		nodes = tn.GetNewSSHNodes(sideCar)
-	} else {
-		nodes = tn.GetSSHNodes(sideCar)
-	}
-
+	nodes := tn.GetSSHNodes(useNew, sideCar)
 	wg := sync.WaitGroup{}
 	for _, node := range nodes {
 

@@ -41,13 +41,8 @@ func copyToAllNodes(tn *testnet.TestNet, useNew bool, sidecar bool, srcDst ...st
 		return fmt.Errorf("invalid number of variadic arguments, must be given an even number of them")
 	}
 	wg := sync.WaitGroup{}
-	var preOrderedNodes map[int][]ssh.Node
+	preOrderedNodes := tn.PreOrderNodes(useNew, sidecar)
 
-	if useNew {
-		preOrderedNodes = tn.PreOrderNewNodes(sidecar)
-	} else {
-		preOrderedNodes = tn.PreOrderNodes(sidecar)
-	}
 	for sid, nodes := range preOrderedNodes {
 		for j := 0; j < len(srcDst)/2; j++ {
 			rdy := make(chan bool, 1)
@@ -200,12 +195,7 @@ func CopyBytesToNodeFiles(client *ssh.Client, buildState *state.BuildState, tran
 	fn func(serverid int, localNodeNum int, absoluteNodeNum int) ([]byte, error)
 */
 func createConfigs(tn *testnet.TestNet, dest string, useNew bool, sidecar bool, fn func(ssh.Node) ([]byte, error)) error {
-	var nodes []ssh.Node
-	if useNew {
-		nodes = tn.GetNewSSHNodes(sidecar)
-	} else {
-		nodes = tn.GetSSHNodes(sidecar)
-	}
+	nodes := tn.GetSSHNodes(useNew, sidecar)
 	wg := sync.WaitGroup{}
 	for _, node := range nodes {
 		wg.Add(1)
