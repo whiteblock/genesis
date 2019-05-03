@@ -6,7 +6,6 @@ import (
 	"../../util"
 	"encoding/json"
 	"fmt"
-	"log"
 )
 
 // KeyMaster is a static resource key manager

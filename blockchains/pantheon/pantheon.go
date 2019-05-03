@@ -51,7 +51,6 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	go func() {
 		accs, err := prepareGeth(tn.GetFlatClients()[0], panconf, tn)
 		if err != nil {
-			log.Println(err)
 			tn.BuildState.ReportError(err)
 			extraAccChan <- nil
 			return
@@ -67,19 +66,16 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		_, err = client.DockerExec(node,
 			"pantheon --data-path=/pantheon/data public-key export --to=/pantheon/data/publicKey")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 
 		privKey, err := client.DockerRead(node, "/pantheon/data/key", -1)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		acc, err := ethereum.CreateAccountFromHex(privKey[2:])
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 
 		mux.Lock()
@@ -90,28 +86,24 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 		_, err = client.DockerExec(node, "bash -c 'echo \"[\\\""+addr[2:]+"\\\"]\" >> /pantheon/data/toEncode.json'")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 
 		_, err = client.DockerExec(node, "mkdir /pantheon/genesis")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 
 		// used for IBFT2 extraData
 		_, err = client.DockerExec(node,
 			"pantheon rlp encode --from=/pantheon/data/toEncode.json --to=/pantheon/rlpEncodedExtraData")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 
 		rlpEncoded, err := client.DockerRead(node, "/pantheon/rlpEncodedExtraData", -1)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 
 		mux.Lock()
@@ -123,8 +115,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	//<- extraAccChan
 	extraAccs := <-extraAccChan
@@ -140,7 +131,6 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		clients := tn.GetFlatClients()
 		err := startGeth(clients[0], panconf, accounts, tn.BuildState)
 		if err != nil {
-			log.Println(err)
 			tn.BuildState.ReportError(err)
 			return
 		}
@@ -150,8 +140,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	tn.BuildState.SetBuildStage("Generating Genesis File")
 	err = createGenesisfile(panconf, tn, accounts, rlpEncodedData[0])
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	p2pPort := 30303
@@ -184,15 +173,13 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return helpers.GetBlockchainConfig("pantheon", node.GetAbsoluteNumber(), "config.toml", tn.LDD)
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	/* Copy static-nodes & genesis files to each node */
 	tn.BuildState.SetBuildStage("Distributing Files")
 	err = helpers.CopyToAllNodes(tn, "genesis.json", "/pantheon/genesis/genesis.json")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	/* Start the nodes */
@@ -262,14 +249,12 @@ func createGenesisfile(panconf *panConf, tn *testnet.TestNet, accounts []*ethere
 	genesis["consensusParams"] = consensusParams
 	dat, err := helpers.GetBlockchainConfig("pantheon", 0, "genesis.json", tn.LDD)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	data, err := mustache.Render(string(dat), util.ConvertToStringMap(genesis))
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	fmt.Println("Writing Genesis File Locally")
 	return tn.BuildState.Write("genesis.json", data)
@@ -296,21 +281,18 @@ func prepareGeth(client *ssh.Client, panconf *panConf, tn *testnet.TestNet) ([]*
 	err = client.Scp("passwd2", "/home/appo/passwd2")
 	tn.BuildState.Defer(func() { client.Run("rm /home/appo/passwd2") })
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	_, err = client.Run("docker cp /home/appo/passwd2 wb_service0:/geth/passwd")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	toCreate := panconf.Accounts
 
 	accounts, err := ethereum.GenerateAccounts(int(toCreate))
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	return accounts, nil
@@ -319,18 +301,15 @@ func prepareGeth(client *ssh.Client, panconf *panConf, tn *testnet.TestNet) ([]*
 func startGeth(client *ssh.Client, panconf *panConf, accounts []*ethereum.Account, buildState *state.BuildState) error {
 	serviceIps, err := util.GetServiceIps(GetServices())
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	err = buildState.SetExt("signer_ip", serviceIps["geth"])
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	err = buildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	wg := &sync.WaitGroup{}
@@ -368,8 +347,7 @@ func startGeth(client *ssh.Client, panconf *panConf, accounts []*ethereum.Accoun
 		` --rpcapi "admin,web3,db,eth,net,personal" --rpccorsdomain "0.0.0.0" --nodiscover --unlock="%s"`+
 		` --password /geth/passwd --networkid %d console 2>&1 >> /output.log'`, unlock, panconf.NetworkID))
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	return nil
 }

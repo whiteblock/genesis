@@ -36,8 +36,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	mux := sync.Mutex{}
 	pconf, err := newConf(tn.LDD.Params)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	tn.BuildState.SetBuildSteps(9 + (7 * tn.LDD.Nodes))
@@ -47,8 +46,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return err
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
 
@@ -61,8 +59,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		tn.BuildState.IncrementBuildProgress()
 		err = helpers.CopyBytesToAllNodes(tn, data, "/parity/passwd")
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		tn.BuildState.IncrementBuildProgress()
 	}
@@ -73,8 +70,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		res, err := client.DockerExec(node, "parity --base-path=/parity/ --password=/parity/passwd account new")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 
 		if len(res) == 0 {
@@ -87,8 +83,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 		res, err = client.DockerExec(node, "bash -c 'cat /parity/keys/ethereum/*'")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		tn.BuildState.IncrementBuildProgress()
 
@@ -98,8 +93,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	/***********************************************************SPLIT************************************************************/
 	switch pconf.Consensus {
@@ -109,8 +103,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		err = setupPOA(tn, pconf, wallets)
 	}
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	/***********************************************************SPLIT************************************************************/
@@ -119,23 +112,20 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		for i, rawWallet := range rawWallets {
 			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\">/parity/account%d'", rawWallet, i))
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 
 			_, err = client.DockerExec(node,
 				fmt.Sprintf("parity --base-path=/parity/ --chain /parity/spec.json --password=/parity/passwd account import /parity/account%d", i))
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 		}
 		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	//util.Write("tmp/config.toml",configToml)
@@ -145,8 +135,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`, wallets[node.GetAbsoluteNumber()]))
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	//Start peering via curl
 	time.Sleep(time.Duration(5 * time.Second))
@@ -162,22 +151,19 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 					node.GetIP()))
 
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 			var result map[string]interface{}
 
 			err = json.Unmarshal([]byte(res), &result)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 			fmt.Println(result)
 
 			err = util.GetJSONString(result, "result", &enode)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 		}
 		tn.BuildState.IncrementBuildProgress()
@@ -187,15 +173,13 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	storeGethParameters(tn, pconf, wallets, enodes)
 
 	err = peerAllNodes(tn, enodes)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	tn.BuildState.IncrementBuildProgress()
@@ -223,8 +207,7 @@ func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 					node.GetIP(), enode))
 			tn.BuildState.IncrementBuildProgress()
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 		}
 		return nil
@@ -262,14 +245,12 @@ func setupPOA(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 	//Create the chain spec files
 	spec, err := buildPoaSpec(pconf, tn.LDD, wallets)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	err = helpers.CopyBytesToAllNodes(tn, spec, "/parity/spec.json")
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	//handle configuration file
@@ -277,8 +258,7 @@ func setupPOA(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 		func(node ssh.Node) ([]byte, error) {
 			configToml, err := buildPoaConfig(pconf, tn.LDD, wallets, "/parity/passwd", node.GetAbsoluteNumber())
 			if err != nil {
-				log.Println(err)
-				return nil, err
+				return nil, util.LogError(err)
 			}
 			return []byte(configToml), nil
 		})
@@ -290,16 +270,14 @@ func setupPOW(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 	//Create the chain spec files
 	spec, err := buildSpec(pconf, tn.LDD, wallets)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	//create config file
 	err = helpers.CreateConfigs(tn, "/parity/config.toml",
 		func(node ssh.Node) ([]byte, error) {
 			configToml, err := buildConfig(pconf, tn.LDD, wallets, "/parity/passwd", node.GetAbsoluteNumber())
 			if err != nil {
-				log.Println(err)
-				return nil, err
+				return nil, util.LogError(err)
 			}
 			return []byte(configToml), nil
 		})

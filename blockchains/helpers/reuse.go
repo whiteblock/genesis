@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
-	"log"
 )
 
 // ScpAndDeferRemoval Copy a file over to a server, and then defer it for removal after the build is completed
