@@ -4,8 +4,8 @@ import (
 	"../db"
 	"../docker"
 	"../status"
+	"../util"
 	"fmt"
-	"log"
 )
 
 // DelNodes simply attempts to remove the given number of nodes from the
@@ -16,9 +16,8 @@ func DelNodes(num int, testnetID string) error {
 
 	nodes, err := db.GetAllNodesByTestNet(testnetID)
 	if err != nil {
-		log.Println(err)
 		//buildState.ReportError(err)
-		return err
+		return util.LogError(err)
 	}
 
 	if num >= len(nodes) {
@@ -29,32 +28,28 @@ func DelNodes(num int, testnetID string) error {
 
 	servers, err := status.GetLatestServers(testnetID)
 	if err != nil {
-		log.Println(err)
 		//buildState.ReportError(err)
-		return err
+		return util.LogError(err)
 	}
 
 	toRemove := num
 	for _, server := range servers {
 		client, err := status.GetClient(server.ID)
 		if err != nil {
-			log.Println(err.Error())
 			//buildState.ReportError(err)
-			return err
+			return util.LogError(err)
 		}
 		for i := len(server.Ips); i > 0; i++ {
 			err = docker.Kill(client, i)
 			if err != nil {
-				log.Println(err.Error())
 				//buildState.ReportError(err)
-				return err
+				return util.LogError(err)
 			}
 
 			err = docker.NetworkDestroy(client, i)
 			if err != nil {
-				log.Println(err.Error())
 				//buildState.ReportError(err)
-				return err
+				return util.LogError(err)
 			}
 
 			toRemove--

@@ -367,6 +367,9 @@ func CopyMap(m map[string]interface{}) (map[string]interface{}, error) {
 // LogError acts like log.Println() but takes in an error and returns that error.
 // Used to help reduce code clutter from all the log.Println(err) in the code
 func LogError(err error) error {
-	log.Output(2, err.Error()) //returns an error but is ignored in Golang's implementation
+	if err != nil { // don't log if the error is nil
+		log.Output(2, err.Error()) //returns an error but is ignored in Golang's implementation
+	}
+
 	return err
 }

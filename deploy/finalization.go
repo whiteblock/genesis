@@ -23,8 +23,7 @@ func finalize(tn *testnet.TestNet) error {
 	if conf.HandleNodeSSHKeys {
 		err := copyOverSSHKeys(tn, false)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 	}
 	alwaysRunFinalize(tn)
@@ -39,8 +38,7 @@ func finalizeNewNodes(tn *testnet.TestNet) error {
 	if conf.HandleNodeSSHKeys {
 		err := copyOverSSHKeys(tn, true)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 	}
 	alwaysRunFinalize(tn)
@@ -64,7 +62,6 @@ func alwaysRunFinalize(tn *testnet.TestNet) {
 		for i, node := range newNodes {
 			err := finalizeNode(node, tn.LDD, tn.BuildState, i)
 			if err != nil {
-				log.Println(err)
 				tn.BuildState.ReportError(err)
 			}
 		}
@@ -81,14 +78,12 @@ func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 	pubKey := string(tmp)
 	pubKey = strings.Trim(pubKey, "\t\n\v\r")
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	privKey, err := ioutil.ReadFile(conf.NodesPrivateKey)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	fn := func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
@@ -96,13 +91,11 @@ func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 
 		_, err := client.DockerExec(node, "mkdir -p /root/.ssh/")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		_, err = client.DockerExec(node, fmt.Sprintf(`bash -c 'echo "%s" >> /root/.ssh/authorized_keys'`, pubKey))
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 
 		_, err = client.DockerExecd(node, "service ssh start")
@@ -115,8 +108,7 @@ func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 		err = helpers.AllNodeExecCon(tn, fn)
 	}
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	if newOnly {
 		return helpers.CopyBytesToAllNewNodes(tn, string(privKey), "/root/.ssh/id_rsa")
@@ -141,8 +133,7 @@ func declareNode(node *db.Node, tn *testnet.TestNet) error {
 	}
 	rawData, err := json.Marshal(data)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	_, err = util.JwtHTTPRequest("POST", "https://api.whiteblock.io/testnets/"+node.TestNetID+"/nodes", tn.LDD.GetJwt(), string(rawData))
 	return err
@@ -151,8 +142,7 @@ func declareNode(node *db.Node, tn *testnet.TestNet) error {
 func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state.BuildState, absNum int) error {
 	client, err := status.GetClient(node.Server)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	files := details.Blockchain + " " + conf.DockerOutputFile
 	if details.Logs != nil && len(details.Logs) > 0 {
@@ -174,9 +164,5 @@ func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state
 	_, err = client.DockerExecd(node,
 		fmt.Sprintf("nibbler --jwt %s --testnet %s --node %s %s",
 			details.GetJwt(), node.TestNetID, node.ID, files))
-	if err != nil {
-		log.Println(err)
-	}
-
-	return err
+	return util.LogError(err)
 }

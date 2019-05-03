@@ -1,11 +1,11 @@
 package db
 
 import (
+	"../util"
 	"database/sql"
 	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //Include sqlite as the db
-	"log"
 )
 
 //Node represents a node within the network
@@ -74,7 +74,7 @@ func GetAllNodesByServer(serverID int) ([]Node, error) {
 
 	rows, err := db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s WHERE server = %d", NodesTable, serverID))
 	if err != nil {
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	defer rows.Close()
 
@@ -83,7 +83,7 @@ func GetAllNodesByServer(serverID int) ([]Node, error) {
 		var node Node
 		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.ID, &node.Label, &node.AbsoluteNum)
 		if err != nil {
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		nodes = append(nodes, node)
 	}
@@ -96,8 +96,7 @@ func GetAllNodesByTestNet(testID string) ([]Node, error) {
 
 	rows, err := db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s WHERE test_net = \"%s\"", NodesTable, testID))
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	defer rows.Close()
 
@@ -105,8 +104,7 @@ func GetAllNodesByTestNet(testID string) ([]Node, error) {
 		var node Node
 		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.IP, &node.Label, &node.AbsoluteNum)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		nodes = append(nodes, node)
 	}
@@ -118,7 +116,7 @@ func GetAllNodes() ([]Node, error) {
 
 	rows, err := db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s", NodesTable))
 	if err != nil {
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	defer rows.Close()
 	nodes := []Node{}
@@ -127,7 +125,7 @@ func GetAllNodes() ([]Node, error) {
 		var node Node
 		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.IP, &node.Label, &node.AbsoluteNum)
 		if err != nil {
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		nodes = append(nodes, node)
 	}
@@ -154,13 +152,13 @@ func InsertNode(node Node) (int, error) {
 
 	tx, err := db.Begin()
 	if err != nil {
-		return -1, err
+		return -1, util.LogError(err)
 	}
 
 	stmt, err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (id,test_net,server,local_id,ip,label,abs_num) VALUES (?,?,?,?,?,?,?)", NodesTable))
 
 	if err != nil {
-		return -1, err
+		return -1, util.LogError(err)
 	}
 
 	defer stmt.Close()
@@ -218,7 +216,6 @@ func GetNodeByAbsNum(nodes []Node, absNum int) (Node, error) {
 			return node, nil
 		}
 	}
-
 	return Node{}, errors.New("node not found")
 }
 

@@ -86,7 +86,6 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 
 	buildFn, err := registrar.GetBuildFunc(details.Blockchain)
 	if err != nil {
-		log.Println(err)
 		buildState.ReportError(err)
 		return err
 	}
@@ -94,26 +93,22 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 	labels, err := buildFn(tn)
 	if err != nil {
 		buildState.ReportError(err)
-		log.Println(err)
 		return err
 	}
 
 	err = handleSideCars(tn, false)
 	if err != nil {
 		buildState.ReportError(err)
-		log.Println(err)
 		return err
 	}
 
 	err = db.InsertBuild(*details, testnetID)
 	if err != nil {
-		log.Println(err)
 		buildState.ReportError(err)
 		return err
 	}
 	err = tn.StoreNodes(labels)
 	if err != nil {
-		log.Println(err)
 		buildState.ReportError(err)
 		return err
 	}
@@ -136,14 +131,12 @@ func handleSideCars(tn *testnet.TestNet, append bool) error {
 		}
 
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		go func() {
 			defer wg.Done()
 			err := buildFn(tn)
 			if err != nil {
-				log.Println(err)
 				tn.BuildState.ReportError(err)
 			}
 		}()
@@ -162,8 +155,7 @@ func declareTestnet(testnetID string, details *db.DeploymentDetails) error {
 	}
 	rawData, err := json.Marshal(data)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	_, err = util.JwtHTTPRequest("POST", "https://api.whiteblock.io/testnets", details.GetJwt(), string(rawData))
 	return err
@@ -173,8 +165,7 @@ func declareTestnet(testnetID string, details *db.DeploymentDetails) error {
 func DeleteTestNet(testnetID string) error {
 	tn, err := testnet.RestoreTestNet(testnetID)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	return deploy.Destroy(tn)

@@ -1,9 +1,9 @@
 package db
 
 import (
+	"../util"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //sqlite
-	"log"
 	"regexp"
 )
 
@@ -55,8 +55,7 @@ func GetAllServers() (map[string]Server, error) {
 		err := rows.Scan(&server.ID, &server.SubnetID, &server.Addr,
 			&server.Nodes, &server.Max, &name)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 
 		allServers[name] = server
@@ -70,8 +69,7 @@ func GetServers(ids []int) ([]Server, error) {
 	for _, id := range ids {
 		server, _, err := GetServer(id)
 		if err != nil {
-			log.Println(err)
-			return servers, err
+			return servers, util.LogError(err)
 		}
 		servers = append(servers, server)
 	}
@@ -86,8 +84,7 @@ func GetServer(id int) (Server, string, error) {
 	rows, err := db.Query(fmt.Sprintf("SELECT id,server_id,addr,nodes,max,name FROM %s WHERE id = %d",
 		ServerTable, id))
 	if err != nil {
-		log.Println(err)
-		return server, name, err
+		return server, name, util.LogError(err)
 	}
 
 	if !rows.Next() {
@@ -97,8 +94,7 @@ func GetServer(id int) (Server, string, error) {
 	err = rows.Scan(&server.ID, &server.SubnetID, &server.Addr,
 		&server.Nodes, &server.Max, &name)
 	if err != nil {
-		log.Println(err)
-		return server, name, err
+		return server, name, util.LogError(err)
 	}
 
 	return server, name, nil
@@ -109,14 +105,12 @@ func InsertServer(name string, server Server) (int, error) {
 
 	tx, err := db.Begin()
 	if err != nil {
-		log.Println(err)
-		return -1, err
+		return -1, util.LogError(err)
 	}
 
 	stmt, err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (addr,server_id,nodes,max,name) VALUES (?,?,?,?,?)", ServerTable))
 	if err != nil {
-		log.Println(err)
-		return -1, err
+		return -1, util.LogError(err)
 	}
 
 	defer stmt.Close()
@@ -124,8 +118,7 @@ func InsertServer(name string, server Server) (int, error) {
 	res, err := stmt.Exec(server.Addr, server.SubnetID,
 		server.Nodes, server.Max, name)
 	if err != nil {
-		log.Println(err)
-		return -1, err
+		return -1, util.LogError(err)
 	}
 	tx.Commit()
 	id, err := res.LastInsertId()
@@ -144,12 +137,12 @@ func UpdateServer(id int, server Server) error {
 
 	tx, err := db.Begin()
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
 
 	stmt, err := tx.Prepare(fmt.Sprintf("UPDATE %s SET server_id = ?,addr = ?, nodes = ?, max = ? WHERE id = ? ", ServerTable))
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
 	defer stmt.Close()
 
@@ -159,7 +152,7 @@ func UpdateServer(id int, server Server) error {
 		server.Max,
 		server.ID)
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
 	return tx.Commit()
 }
@@ -169,19 +162,19 @@ func UpdateServerNodes(id int, nodes int) error {
 
 	tx, err := db.Begin()
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
 
 	stmt, err := tx.Prepare(fmt.Sprintf("UPDATE %s SET nodes = ? WHERE id = ?", ServerTable))
 
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(nodes, id)
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
 	return tx.Commit()
 
@@ -202,7 +195,7 @@ func GetHostIPsByTestNet(id int) ([]string, error) {
 	ips := []string{}
 
 	if err != nil {
-		return ips, err
+		return ips, util.LogError(err)
 	}
 
 	defer rows.Close()
@@ -211,7 +204,7 @@ func GetHostIPsByTestNet(id int) ([]string, error) {
 		var ip string
 		err = rows.Scan(&ip)
 		if err != nil {
-			return ips, err
+			return ips, util.LogError(err)
 		}
 
 		ips = append(ips, ip)

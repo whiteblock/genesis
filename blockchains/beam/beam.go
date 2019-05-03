@@ -9,7 +9,6 @@ import (
 	"../helpers"
 	"../registrar"
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 	"sync"
@@ -33,8 +32,7 @@ const port int = 10000
 func Build(tn *testnet.TestNet) ([]string, error) {
 	bConf, err := newConf(tn.LDD.Params)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
 
@@ -96,8 +94,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			return []byte(beamNodeConfig), nil
 		})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	err = helpers.CreateConfigs(tn, "/beam/beam-wallet.cfg",
 		func(_ ssh.Node) ([]byte, error) {
@@ -120,8 +117,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			return []byte(util.CombineConfig(beamWalletConfig)), nil
 		})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	tn.BuildState.SetBuildStage("Starting beam")

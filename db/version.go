@@ -16,8 +16,7 @@ func check() error {
 	var version string
 	err := row.Scan(&version)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	if version != Version {
 		//Old version, previous database is now invalid
@@ -39,15 +38,13 @@ func setVersion(version string) error {
 	tx, err := db.Begin()
 
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	stmt, err := tx.Prepare("INSERT INTO meta (key,value) VALUES (?,?)")
 
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	defer stmt.Close()
@@ -55,14 +52,12 @@ func setVersion(version string) error {
 	_, err = stmt.Exec("version", version)
 
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	return nil

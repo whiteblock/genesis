@@ -61,7 +61,6 @@ func RestoreTestNet(buildID string) (*TestNet, error) {
 	for _, server := range out.Servers {
 		out.Clients[server.ID], err = status.GetClient(server.ID)
 		if err != nil {
-			log.Println(err)
 			out.BuildState.ReportError(err)
 			return nil, err
 		}
@@ -91,7 +90,6 @@ func NewTestNet(details db.DeploymentDetails, buildID string) (*TestNet, error) 
 	// FETCH THE SERVERS
 	out.Servers, err = db.GetServers(details.Servers)
 	if err != nil {
-		log.Println(err)
 		out.BuildState.ReportError(err)
 		return nil, err
 	}
@@ -103,7 +101,6 @@ func NewTestNet(details db.DeploymentDetails, buildID string) (*TestNet, error) 
 	for _, server := range out.Servers {
 		out.Clients[server.ID], err = status.GetClient(server.ID)
 		if err != nil {
-			log.Println(err)
 			out.BuildState.ReportError(err)
 			return nil, err
 		}
