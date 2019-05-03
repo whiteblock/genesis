@@ -41,13 +41,11 @@ func AddNodes(tn *testnet.TestNet) error {
 
 		nodeID, err := util.GetUUIDString()
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		nodeIP, err := util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes), 0)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 
 		node := tn.AddNode(db.Node{
@@ -73,7 +71,6 @@ func AddNodes(tn *testnet.TestNet) error {
 		defer wg.Done()
 		err := finalizeNewNodes(tn)
 		if err != nil {
-			log.Println(err)
 			tn.BuildState.ReportError(err)
 			return
 		}

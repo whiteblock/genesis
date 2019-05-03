@@ -24,14 +24,12 @@ func buildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 	for i, sidecar := range sidecars {
 		sideCarDetails, err := registrar.GetSideCar(sidecar)
 		if err != nil {
-			log.Println(err)
 			tn.BuildState.ReportError(err)
 			return
 		}
 
 		sidecarIP, err := util.GetNodeIP(server.SubnetID, node.LocalID, i+1)
 		if err != nil {
-			log.Println(err)
 			tn.BuildState.ReportError(err)
 			return
 		}
@@ -50,7 +48,6 @@ func buildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 		tn.AddSideCar(scNode)
 		err = docker.Run(tn, server.ID, docker.NewSideCarContainer(&scNode, nil, util.Resources{}, server.SubnetID))
 		if err != nil {
-			log.Println(err)
 			tn.BuildState.ReportError(err)
 			return
 		}
@@ -66,7 +63,6 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 	defer buildSideCars(tn, server, node) //Needs to be handled better
 	err := docker.NetworkCreate(tn, server.ID, server.SubnetID, node.LocalID)
 	if err != nil {
-		log.Println(err)
 		tn.BuildState.ReportError(err)
 		return
 	}
@@ -89,7 +85,6 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 
 	err = docker.Run(tn, server.ID, docker.NewNodeContainer(node, env, resource, server.SubnetID))
 	if err != nil {
-		log.Println(err)
 		tn.BuildState.ReportError(err)
 		return
 	}
@@ -108,8 +103,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 
 	err := handlePreBuildExtras(tn)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	PurgeTestNetwork(tn)
 
@@ -137,13 +131,11 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 
 		nodeID, err := util.GetUUIDString()
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		nodeIP, err := util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes), 0)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 
 		node := tn.AddNode(db.Node{
@@ -168,7 +160,6 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 			defer wg.Done()
 			err := docker.StartServices(tn, services)
 			if err != nil {
-				log.Println(err)
 				tn.BuildState.ReportError(err)
 				return
 			}
@@ -183,7 +174,6 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 		defer wg.Done()
 		err = finalize(tn)
 		if err != nil {
-			log.Println(err)
 			tn.BuildState.ReportError(err)
 			return
 		}

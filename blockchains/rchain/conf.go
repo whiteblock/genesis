@@ -1,10 +1,10 @@
 package rchain
 
 import (
+	"../helpers"
 	"../../util"
 	"encoding/base64"
 	"encoding/json"
-	"io/ioutil"
 	"log"
 )
 
@@ -26,13 +26,12 @@ func newRChainConf(data map[string]interface{}) (*rChainConf, error) {
 	out := new(rChainConf)
 	err := json.Unmarshal([]byte(GetDefaults()), out)
 	if data == nil {
-		return out, err
+		return out, util.LogError(err)
 	}
 	log.Printf("Default %+v\n", *out)
 	tmp, err := json.Marshal(data)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	return out, json.Unmarshal(tmp, out)
 }
@@ -54,7 +53,7 @@ func GetServices() []util.Service {
 
 // GetParams fetchs rchain related parameters
 func GetParams() string {
-	dat, err := ioutil.ReadFile("./resources/rchain/params.json")
+	dat, err := helpers.GetStaticBlockchainConfig("rchain", "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -63,7 +62,7 @@ func GetParams() string {
 
 // GetDefaults fetchs rchain related parameter defaults
 func GetDefaults() string {
-	dat, err := ioutil.ReadFile("./resources/rchain/defaults.json")
+	dat, err := helpers.GetStaticBlockchainConfig("rchain", "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}

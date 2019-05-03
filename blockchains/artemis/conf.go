@@ -72,8 +72,7 @@ func makeNodeConfig(aconf artemisConf, identity string, peers string, node int, 
 
 	artConf, err := util.CopyMap(aconf)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", util.LogError(err)
 	}
 	artConf["identity"] = identity
 	filler := util.ConvertToStringMap(artConf)
@@ -83,14 +82,13 @@ func makeNodeConfig(aconf artemisConf, identity string, peers string, node int, 
 	var validators int64
 	err = util.GetJSONInt64(details.Params, "validators", &validators)
 	if err != nil {
-		return "", err
+		return "", util.LogError(err)
 	}
 
 	filler["validators"] = fmt.Sprintf("%d", validators)
 	dat, err := helpers.GetBlockchainConfig("artemis", node, "artemis-config.toml.mustache", details)
 	if err != nil {
-		return "", err
+		return "", util.LogError(err)
 	}
-	data, err := mustache.Render(string(dat), filler)
-	return data, err
+	return mustache.Render(string(dat), filler)
 }
