@@ -88,8 +88,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			beamNodeConfig, err := makeNodeConfig(bConf, ownerKeys[node.GetAbsoluteNumber()],
 				secretMinerKeys[node.GetAbsoluteNumber()], tn.LDD, node.GetAbsoluteNumber())
 			if err != nil {
-				log.Println(err)
-				return nil, err
+				return nil, util.LogError(err)
 			}
 			for _, ip := range append(ipsCpy[:node.GetAbsoluteNumber()], ipsCpy[node.GetAbsoluteNumber()+1:]...) {
 				beamNodeConfig += fmt.Sprintf("peer=%s:%d\n", ip, port)
@@ -134,8 +133,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		}
 		_, err := client.DockerExecd(node, fmt.Sprintf("beam-node%s", miningFlag))
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		return client.DockerExecdLog(node, fmt.Sprintf("beam-wallet --command listen -n 0.0.0.0:%d --pass password", port))
 	})

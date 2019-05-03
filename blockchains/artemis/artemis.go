@@ -9,7 +9,6 @@ import (
 	"../helpers"
 	"../registrar"
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -31,15 +30,13 @@ func init() {
 func Build(tn *testnet.TestNet) ([]string, error) {
 	aconf, err := newConf(tn.LDD.Params)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	fetchedConfChan := make(chan string)
 
 	go func(aconf artemisConf) {
 		res, err := util.HTTPRequest("GET", aconf["constantsSource"].(string), "")
 		if err != nil {
-			log.Println(err)
 			tn.BuildState.ReportError(err)
 			return
 		}
@@ -95,16 +92,14 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 		_, err := client.DockerExecd(node, "tmux new -s whiteblock -d")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 
 		_, err = client.DockerExecd(node, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", artemisCmd))
 		return err
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	return nil, nil

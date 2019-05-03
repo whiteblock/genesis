@@ -80,8 +80,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 	km, err := helpers.NewKeyMaster(tn.LDD, "eos")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	km.AddGenerator(func(client *ssh.Client) (util.KeyPair, error) {
 		data, err := client.DockerExec(masterNode, "cleos create key --to-console | awk '{print $3}'")
@@ -97,14 +96,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	keyPairs, err := km.GetServerKeyPairs(tn.Servers, clients)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	contractKeyPairs, err := km.GetMappedKeyPairs(contractAccounts, masterClient)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	buildState.IncrementBuildProgress()
 
@@ -116,8 +113,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 	accountKeyPairs, err := km.GetMappedKeyPairs(accountNames, masterClient)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	//buildState.SetBuildStage("Starting up keos")
 
@@ -129,15 +125,13 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		ip := tn.Nodes[node.GetAbsoluteNumber()].IP
 		_, err = client.DockerExecd(node, "keosd --http-server-address 0.0.0.0:8900")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		mux.Lock()
 		clientPasswords[ip], err = eosCreatewallet(client, node)
 		mux.Unlock()
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 
 		cmds := []string{}
@@ -145,8 +139,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			if len(cmds) > 50 {
 				_, err := client.KTDockerMultiExec(node, cmds)
 				if err != nil {
-					log.Println(err)
-					return err
+					return util.LogError(err)
 				}
 				buildState.IncrementBuildProgress()
 				cmds = []string{}
@@ -158,8 +151,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		if len(cmds) > 0 {
 			_, err := client.KTDockerMultiExec(node, cmds)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 		}
 		buildState.IncrementBuildProgress()
@@ -173,8 +165,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	buildState.SetBuildStage("Building genesis block")
 	genesis, err := eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey, tn.LDD)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	buildState.IncrementBuildProgress()
@@ -184,8 +175,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return err
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	err = helpers.CopyBytesToAllNodes(tn,
@@ -201,22 +191,18 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	buildState.SetBuildStage("Starting EOS BIOS boot sequence")
 	{
 
-		res, err := masterClient.KeepTryDockerExec(masterNode, fmt.Sprintf("cleos wallet import --private-key %s",
+		_, err = masterClient.KeepTryDockerExec(masterNode, fmt.Sprintf("cleos wallet import --private-key %s",
 			keyPairs[masterIP].PrivateKey))
-		fmt.Println(res)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 
 		err = masterClient.DockerExecdLog(masterNode,
 			fmt.Sprintf(`nodeos -e -p eosio --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s`,
 				eosGetkeypairflag(keyPairs[masterIP]),
 				eosGetptpflags(tn.Nodes, 0)))
-		fmt.Println(res)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 
 	}
