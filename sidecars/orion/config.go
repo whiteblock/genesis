@@ -11,13 +11,13 @@ import (
 )
 
 type orionConf struct {
-	Nodeurl                string `json:"nodeurl"`
-	Nodeport               int64  `json:"nodeport"`
-	Clienturl              string `json:"clienturl"`
-	Clientport             int64  `json:"clientport"`
-	Tls                    string `json:"tls"`
-	Nodenetworkinterface   string `json:"nodenetworkinterface"`
-	Clientnetworkinterface string `json:"clientnetworkinterface"`
+	NodeURL                string `json:"nodeURL"`
+	NodePort               int64  `json:"nodePort"`
+	ClientURL              string `json:"clientURL"`
+	ClientPort             int64  `json:"clientPort"`
+	TLS                    string `json:"tls"`
+	NodeNetworkInterface   string `json:"nodeNetworkInterface"`
+	ClientNetworkInterface string `json:"clientNetworkInterface"`
 }
 
 /**
@@ -26,24 +26,24 @@ type orionConf struct {
 func newConf(tn *testnet.TestNet) (*orionConf, error) {
 
 	out := new(orionConf)
-	err := json.Unmarshal([]byte(GetDefaults()), out)
+	err := json.Unmarshal([]byte(getDefaults()), out)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	tn.BuildState.GetP("nodeurl", &out.Nodeurl)
-	tn.BuildState.GetP("nodeport", &out.Nodeport)
-	tn.BuildState.GetP("clienturl", &out.Clienturl)
-	tn.BuildState.GetP("clientport", &out.Clientport)
-	tn.BuildState.GetP("tls", &out.Tls)
-	tn.BuildState.GetP("nodenetworkinterface", &out.Nodenetworkinterface)
-	tn.BuildState.GetP("clientnetworkinterface", &out.Clientnetworkinterface)
+	tn.BuildState.GetP("nodeURL", &out.NodeURL)
+	tn.BuildState.GetP("nodePort", &out.NodePort)
+	tn.BuildState.GetP("clientURL", &out.ClientURL)
+	tn.BuildState.GetP("clientPort", &out.ClientPort)
+	tn.BuildState.GetP("tls", &out.TLS)
+	tn.BuildState.GetP("nodeNetworkInterface", &out.NodeNetworkInterface)
+	tn.BuildState.GetP("clientNetworkInterface", &out.ClientNetworkInterface)
 
 	return out, nil
 }
 
-// GetParams fetchs pantheon related parameters
-func GetParams() string {
+// getParams fetchs orion related parameters
+func getParams() string {
 	dat, err := helpers.GetStaticBlockchainConfig("orion", "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
@@ -51,8 +51,8 @@ func GetParams() string {
 	return string(dat)
 }
 
-// GetDefaults fetchs pantheon related parameter defaults
-func GetDefaults() string {
+// getDefaults fetchs orion related parameter defaults
+func getDefaults() string {
 	dat, err := helpers.GetStaticBlockchainConfig("orion", "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
@@ -71,7 +71,7 @@ func makeNodeConfig(orionconf *orionConf, node int, details *db.DeploymentDetail
 		log.Println(err)
 		return "", nil
 	}
-	err = json.Unmarshal([]byte(GetDefaults()), &filler)
+	err = json.Unmarshal([]byte(getDefaults()), &filler)
 	if err != nil {
 		log.Println(err)
 		return "", nil

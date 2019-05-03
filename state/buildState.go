@@ -8,9 +8,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"runtime"
 	"sync"
 	"sync/atomic"
-	"runtime"
 )
 
 //This code is full of potential race conditions but these race conditons are extremely rare

@@ -23,11 +23,11 @@ func init() {
 	registrar.RegisterSideCar(sidecar, registrar.SideCar{
 		Image: "gcr.io/whiteblock/orion:dev",
 	})
-	registrar.RegisterBuildSideCar(sidecar, Build)
-	registrar.RegisterAddSideCar(sidecar, Add)
+	registrar.RegisterBuildSideCar(sidecar, build)
+	registrar.RegisterAddSideCar(sidecar, add)
 }
 
-func Build(tn *testnet.TestNet) ( error) {
+func build(tn *testnet.TestNet) error {
 	// mux := sync.Mutex{}
 
 	orionconf, err := newConf(tn)
@@ -75,6 +75,6 @@ func Build(tn *testnet.TestNet) ( error) {
 	return nil
 }
 
-func Add(tn *testnet.TestNet) (error) {
+func add(tn *testnet.TestNet) error {
 	return nil
 }
