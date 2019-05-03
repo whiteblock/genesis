@@ -25,7 +25,6 @@ func CopyAllToServers(tn *testnet.TestNet, srcDst ...string) error {
 				tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("rm -rf %s", srcDst[2*j+1])) })
 				err := client.Scp(srcDst[2*j], srcDst[2*j+1])
 				if err != nil {
-					log.Println(err)
 					tn.BuildState.ReportError(err)
 					return
 				}
@@ -65,7 +64,6 @@ func copyToAllNodes(tn *testnet.TestNet, useNew bool, sidecar bool, srcDst ...st
 						defer wg.Done()
 						err := tn.Clients[node.GetServerID()].DockerCp(node, intermediateDst, srcDst[2*j+1])
 						if err != nil {
-							log.Println(err)
 							tn.BuildState.ReportError(err)
 							return
 						}
@@ -106,8 +104,7 @@ func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, sidecar bool, dataDst
 	for i := 0; i < len(dataDst)/2; i++ {
 		tmpFilename, err := util.GetUUIDString()
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		err = tn.BuildState.Write(tmpFilename, dataDst[i*2])
 		fmted = append(fmted, tmpFilename)
@@ -154,8 +151,7 @@ func SingleCp(client *ssh.Client, buildState *state.BuildState, node ssh.Node, d
 	buildState.Defer(func() { client.Run("rm " + intermediateDst) })
 	err = client.Scp(tmpFilename, intermediateDst)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	return client.DockerCp(node, intermediateDst, dest)
@@ -203,7 +199,6 @@ func createConfigs(tn *testnet.TestNet, dest string, useNew bool, sidecar bool, 
 			defer wg.Done()
 			data, err := fn(node)
 			if err != nil {
-				log.Println(err)
 				tn.BuildState.ReportError(err)
 				return
 			}
@@ -212,7 +207,6 @@ func createConfigs(tn *testnet.TestNet, dest string, useNew bool, sidecar bool, 
 			}
 			err = SingleCp(client, tn.BuildState, node, data, dest)
 			if err != nil {
-				log.Println(err)
 				tn.BuildState.ReportError(err)
 				return
 			}

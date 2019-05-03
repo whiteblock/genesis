@@ -6,7 +6,6 @@ import (
 	"../../ssh"
 	"../../testnet"
 	"../../util"
-	"log"
 	"sync"
 )
 
@@ -29,7 +28,6 @@ func allNodeExecCon(tn *testnet.TestNet, useNew bool, sideCar bool, fn func(*ssh
 			defer wg.Done()
 			err := fn(client, server, node)
 			if err != nil {
-				log.Println(err)
 				tn.BuildState.ReportError(err)
 				return
 			}
@@ -76,7 +74,6 @@ func AllServerExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server) erro
 			defer wg.Done()
 			err := fn(tn.Clients[server.ID], server)
 			if err != nil {
-				log.Println(err)
 				tn.BuildState.ReportError(err)
 				return
 			}
