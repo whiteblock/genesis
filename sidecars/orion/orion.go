@@ -6,8 +6,8 @@ import (
 	"../../testnet"
 	"../../util"
 	// "../../state"
-	"../helpers"
-	"../registrar"
+	"../../blockchains/helpers"
+	"../../blockchains/registrar"
 	"fmt"
 	"log"
 	// "strings"
@@ -19,62 +19,62 @@ var conf *util.Config
 
 func init() {
 	conf = util.GetConfig()
-	blockchain := "orion"
-	registrar.RegisterBuild(blockchain, Build)
-	registrar.RegisterAddNodes(blockchain, Add)
-	registrar.RegisterServices(blockchain, GetServices)
-	registrar.RegisterDefaults(blockchain, GetDefaults)
-	registrar.RegisterParams(blockchain, GetParams)
+	sidecar := "orion"
+	registrar.RegisterSideCar(sidecar, registrar.SideCar{
+		Image: "gcr.io/whiteblock/orion:dev",
+	})
+	registrar.RegisterBuildSideCar(sidecar, Build)
+	registrar.RegisterAddSideCar(sidecar, Add)
 }
 
-func Build(tn *testnet.TestNet) ([]string, error) {
+func Build(tn *testnet.TestNet) error {
 	// mux := sync.Mutex{}
 
-	orionconf, err := newConf(tn.LDD.Params)
+	orionconf, err := newConf(tn)
 	if err != nil {
 		log.Println(err)
-		return nil, err
+		return err
 	}
 	fmt.Println(orionconf)
 
 	tn.BuildState.SetBuildSteps(6*tn.LDD.Nodes + 2)
 	tn.BuildState.IncrementBuildProgress()
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
+	err = helpers.AllNodeExecConSC(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		_, err = client.DockerExec(localNodeNum, "mkdir /orion/data")
+		_, err = client.DockerExec(node, "mkdir /orion/data")
 		return err
 	})
 
-	err = helpers.CreateConfigs(tn, "/orion/data/orion.conf",
-		func(serverId int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+	err = helpers.CreateConfigsSC(tn, "/orion/data/orion.conf",
+		func(node ssh.Node) ([]byte, error) {
 			defer tn.BuildState.IncrementBuildProgress()
-			orionNodeConfig, err := makeNodeConfig(orionconf, absoluteNodeNum, tn.LDD)
+			orionNodeConfig, err := makeNodeConfig(orionconf, node.GetAbsoluteNumber(), tn.LDD)
 			return []byte(orionNodeConfig), err
 		})
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		_, err := client.DockerExec(localNodeNum, "bash -c 'cd /orion/data && orion -g nodeKey'")
+		_, err := client.DockerExec(node, "bash -c 'cd /orion/data && orion -g nodeKey'")
 		return err
 	})
 	if err != nil {
 		log.Println(err)
-		return nil, err
+		return err
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		return client.DockerExecdLog(localNodeNum, "orion /orion/data/orion.conf")
+		return client.DockerExecdLog(node, "orion /orion/data/orion.conf")
 	})
 	if err != nil {
 		log.Println(err)
-		return nil, err
+		return err
 	}
 
-	return nil, err
+	return nil
 }
 
-func Add(tn *testnet.TestNet) ([]string, error) {
-	return nil, nil
+func Add(tn *testnet.TestNet) error {
+	return nil
 }
