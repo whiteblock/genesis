@@ -126,7 +126,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		/**Start keosd**/
-		ip := tn.Nodes[absoluteNodeNum].IP
+		ip := tn.Nodes[node.GetAbsoluteNumber()].IP
 		_, err = client.DockerExecd(node, "keosd --http-server-address 0.0.0.0:8900")
 		if err != nil {
 			log.Println(err)
@@ -201,7 +201,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	buildState.SetBuildStage("Starting EOS BIOS boot sequence")
 	{
 
-		res, err := masterClient.KeepTryDockerExec(0, fmt.Sprintf("cleos wallet import --private-key %s",
+		res, err := masterClient.KeepTryDockerExec(masterNode, fmt.Sprintf("cleos wallet import --private-key %s",
 			keyPairs[masterIP].PrivateKey))
 		fmt.Println(res)
 		if err != nil {
@@ -209,7 +209,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			return nil, err
 		}
 
-		err = masterClient.DockerExecdLog(0,
+		err = masterClient.DockerExecdLog(masterNode,
 			fmt.Sprintf(`nodeos -e -p eosio --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s`,
 				eosGetkeypairflag(keyPairs[masterIP]),
 				eosGetptpflags(tn.Nodes, 0)))
@@ -320,7 +320,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer buildState.IncrementBuildProgress()
-		if absoluteNodeNum == 0 || absoluteNodeNum > int(eosconf.BlockProducers) {
+		if node.GetAbsoluteNumber() == 0 || node.GetAbsoluteNumber() > int(eosconf.BlockProducers) {
 			return nil
 		}
 		keyPair := keyPairs[node.GetIP()]
@@ -358,7 +358,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		if node.GetAbsoluteNumber() == 0 {
 			return nil
 		}
-		kp := keyPairs[ip]
+		kp := keyPairs[node.GetIP()]
 
 		client.DockerExec(node, "mkdir -p /datadir/blocks")
 
@@ -572,7 +572,7 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 	return nil, nil
 }
 
-func eosCreatewallet(client *ssh.Client, node int) (string, error) {
+func eosCreatewallet(client *ssh.Client, node ssh.Node) (string, error) {
 	data, err := client.DockerExec(node, "cleos wallet create --to-console | tail -n 1")
 	if err != nil {
 		return "", err

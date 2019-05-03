@@ -51,17 +51,16 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	tn.BuildState.SetBuildStage("Initializing the nodes")
 
 	mux := sync.Mutex{}
-	err := helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		ip := tn.Nodes[absoluteNodeNum].IP
+	err := helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		//init everything
-		_, err := client.DockerExec(localNodeNum, "tendermint init")
+		_, err := client.DockerExec(node, "tendermint init")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
 		//Get the node id
-		res, err := client.DockerExec(localNodeNum, "tendermint show_node_id")
+		res, err := client.DockerExec(node, "tendermint show_node_id")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -69,11 +68,11 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		nodeID := res[:len(res)-1]
 
 		mux.Lock()
-		peers = append(peers, fmt.Sprintf("%s@%s:26656", nodeID, ip))
+		peers = append(peers, fmt.Sprintf("%s@%s:26656", nodeID, node.GetIP()))
 		mux.Unlock()
 
 		//Get the validators
-		res, err = client.DockerExec(localNodeNum, "cat /root/.tendermint/config/genesis.json")
+		res, err = client.DockerExec(node, "cat /root/.tendermint/config/genesis.json")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -136,12 +135,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 
 	tn.BuildState.SetBuildStage("Starting tendermint")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		peersCpy := make([]string, len(peers))
 		copy(peersCpy, peers)
-		return client.DockerExecdLog(localNodeNum, fmt.Sprintf("tendermint node --proxy_app=kvstore --p2p.persistent_peers=%s",
-			strings.Join(append(peersCpy[:absoluteNodeNum], peersCpy[absoluteNodeNum+1:]...), ",")))
+		return client.DockerExecdLog(node, fmt.Sprintf("tendermint node --proxy_app=kvstore --p2p.persistent_peers=%s",
+			strings.Join(append(peersCpy[:node.GetAbsoluteNumber()], peersCpy[node.GetAbsoluteNumber()+1:]...), ",")))
 	})
 	return nil, err
 }

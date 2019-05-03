@@ -132,12 +132,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		if node.GetAbsoluteNumber() >= int(bConf.Validators) {
 			miningFlag = " --mining_threads 1"
 		}
-		_, err := client.DockerExecd(localNodeNum, fmt.Sprintf("beam-node%s", miningFlag))
+		_, err := client.DockerExecd(node, fmt.Sprintf("beam-node%s", miningFlag))
 		if err != nil {
 			log.Println(err)
 			return err
 		}
-		return client.DockerExecdLog(localNodeNum, fmt.Sprintf("beam-wallet --command listen -n 0.0.0.0:%d --pass password", port))
+		return client.DockerExecdLog(node, fmt.Sprintf("beam-wallet --command listen -n 0.0.0.0:%d --pass password", port))
 	})
 
 	return nil, err

@@ -91,21 +91,21 @@ func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 		return err
 	}
 
-	fn := func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
+	fn := func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementDeployProgress()
 
-		_, err := client.DockerExec(localNodeNum, "mkdir -p /root/.ssh/")
+		_, err := client.DockerExec(node, "mkdir -p /root/.ssh/")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
-		_, err = client.DockerExec(localNodeNum, fmt.Sprintf(`bash -c 'echo "%s" >> /root/.ssh/authorized_keys'`, pubKey))
+		_, err = client.DockerExec(node, fmt.Sprintf(`bash -c 'echo "%s" >> /root/.ssh/authorized_keys'`, pubKey))
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
-		_, err = client.DockerExecd(localNodeNum, "service ssh start")
+		_, err = client.DockerExecd(node, "service ssh start")
 		return err
 	}
 

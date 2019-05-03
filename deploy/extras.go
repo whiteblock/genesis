@@ -28,8 +28,8 @@ func distributeNibbler(tn *testnet.TestNet) {
 		if err != nil {
 			log.Println(err)
 		}
-		err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
-			_, err := client.DockerExec(localNodeNum, "chmod +x /usr/local/bin/nibbler")
+		err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+			_, err := client.DockerExec(node, "chmod +x /usr/local/bin/nibbler")
 			return err
 		})
 		if err != nil {

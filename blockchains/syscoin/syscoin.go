@@ -56,9 +56,9 @@ func RegTest(tn *testnet.TestNet) ([]string, error) {
 	fmt.Printf("done\n")
 
 	tn.BuildState.SetBuildStage("Launching the nodes")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		return client.DockerExecdLog(localNodeNum,
+		return client.DockerExecdLog(node,
 			"syscoind -conf=\"/syscoin/datadir/regtest.conf\" -datadir=\"/syscoin/datadir/\"")
 	})
 
@@ -107,9 +107,9 @@ func handleConf(tn *testnet.TestNet, sysconf *sysConf) ([]string, error) {
 		return nil, err
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		_, err := client.DockerExec(localNodeNum, "mkdir -p /syscoin/datadir")
+		_, err := client.DockerExec(node, "mkdir -p /syscoin/datadir")
 		return err
 	})
 	if err != nil {
@@ -120,15 +120,15 @@ func handleConf(tn *testnet.TestNet, sysconf *sysConf) ([]string, error) {
 	mux := sync.Mutex{}
 	labels := make([]string, len(ips))
 	err = helpers.CreateConfigs(tn, "/syscoin/datadir/regtest.conf",
-		func(serverID int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+		func(node ssh.Node) ([]byte, error) {
 			defer tn.BuildState.IncrementBuildProgress()
 			confData := ""
 			maxConns := 1
 			label := ""
-			if absoluteNodeNum < noMasterNodes { //Master Node
+			if node.GetAbsoluteNumber() < noMasterNodes { //Master Node
 				confData += sysconf.GenerateMN()
 				label = "Master Node"
-			} else if absoluteNodeNum%2 == 0 { //Sender
+			} else if node.GetAbsoluteNumber()%2 == 0 { //Sender
 				confData += sysconf.GenerateSender()
 				label = "Sender"
 			} else { //Receiver
@@ -137,10 +137,10 @@ func handleConf(tn *testnet.TestNet, sysconf *sysConf) ([]string, error) {
 			}
 
 			mux.Lock()
-			labels[absoluteNodeNum] = label
+			labels[node.GetAbsoluteNumber()] = label
 			mux.Unlock()
 			confData += "rpcport=8369\nport=8370\n"
-			for _, conn := range connsDist[absoluteNodeNum] {
+			for _, conn := range connsDist[node.GetAbsoluteNumber()] {
 				confData += fmt.Sprintf("connect=%s:8370\n", conn)
 				maxConns += 4
 			}

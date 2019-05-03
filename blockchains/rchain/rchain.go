@@ -206,12 +206,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		validators++
 		mux.Unlock()
 		if isValidator {
-			err := client.DockerExecdLog(localNodeNum,
+			err := client.DockerExecdLog(node,
 				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
 					rConf.Command, enode, keyPairs[node.GetAbsoluteNumber()].PrivateKey, node.GetIP()))
 			return err
 		}
-		return client.DockerExecdLog(localNodeNum,
+		return client.DockerExecdLog(node,
 			fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s",
 				rConf.Command, enode, node.GetIP()))
 	})

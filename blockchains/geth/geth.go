@@ -4,7 +4,6 @@ package geth
 import (
 	"../../db"
 	"../../ssh"
-	"../../state"
 	"../../testnet"
 	"../../util"
 	"../ethereum"
@@ -60,7 +59,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	tn.BuildState.SetBuildStage("Distributing secrets")
 	/**Copy over the password file**/
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
-		_, err := client.DockerExec(localNodeNum, "mkdir -p /geth")
+		_, err := client.DockerExec(node, "mkdir -p /geth")
 		return err
 	})
 	if err != nil {
@@ -92,12 +91,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, account := range accounts {
-			_, err := client.DockerExec(localNodeNum, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
+			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
 			if err != nil {
 				log.Println(err)
 				return err
 			}
-			_, err = client.DockerExec(localNodeNum,
+			_, err = client.DockerExec(node,
 				fmt.Sprintf("geth --datadir /geth/ --password /geth/passwd account import --password /geth/passwd /geth/pk%d", i))
 			if err != nil {
 				log.Println(err)
@@ -123,7 +122,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Creating the genesis block")
-	err = createGenesisfile(ethconf, tn.LDD, accounts, tn.BuildState)
+	err = createGenesisfile(ethconf, tn, accounts)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -143,16 +142,15 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	tn.BuildState.SetBuildStage("Initializing geth")
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
-		ip := tn.Nodes[absoluteNodeNum].IP
 		//Load the CustomGenesis file
-		_, err := client.DockerExec(localNodeNum,
+		_, err := client.DockerExec(node,
 			fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/CustomGenesis.json", ethconf.NetworkID))
 		if err != nil {
 			log.Println(err)
 			return err
 		}
-		fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n", absoluteNodeNum)
-		gethResults, err := client.DockerExec(localNodeNum,
+		fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n", node.GetAbsoluteNumber())
+		gethResults, err := client.DockerExec(node,
 			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
 				"geth --rpc --datadir /geth/ --networkid %d console'", ethconf.NetworkID))
 		if err != nil {
@@ -165,10 +163,10 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		//fmt.Printf("ENODE fetched is: %s\n",enode)
 		enodeAddressPattern := regexp.MustCompile(`\[\:\:\]|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})`)
 
-		enode = enodeAddressPattern.ReplaceAllString(enode, ip)
+		enode = enodeAddressPattern.ReplaceAllString(enode, node.GetIP())
 
 		mux.Lock()
-		staticNodes[absoluteNodeNum] = enode
+		staticNodes[node.GetAbsoluteNumber()] = enode
 		mux.Unlock()
 
 		tn.BuildState.IncrementBuildProgress()
@@ -195,7 +193,6 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
-		ip := tn.Nodes[absoluteNodeNum].IP
 		tn.BuildState.IncrementBuildProgress()
 
 		gethCmd := fmt.Sprintf(
@@ -204,12 +201,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 				` --password /geth/passwd --etherbase %s console  2>&1 | tee %s`,
 			ethconf.MaxPeers,
 			ethconf.NetworkID,
-			ip,
+			node.GetIP(),
 			unlock,
-			accounts[absoluteNodeNum].HexAddress(),
+			accounts[node.GetAbsoluteNumber()].HexAddress(),
 			conf.DockerOutputFile)
 
-		_, err := client.DockerExecdit(localNodeNum, fmt.Sprintf("bash -ic '%s'", gethCmd))
+		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
 		if err != nil {
 			log.Println(err)
 			return err
@@ -231,15 +228,14 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
-		ip := tn.Nodes[absoluteNodeNum].IP
-		absName := fmt.Sprintf("%s%d", conf.NodePrefix, absoluteNodeNum)
+		absName := fmt.Sprintf("%s%d", conf.NodePrefix, node.GetAbsoluteNumber())
 		sedCmd := fmt.Sprintf(`sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`, absName)
 		sedCmd2 := fmt.Sprintf(`sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:%d"/g' /eth-net-intelligence-api/app.json`,
-			util.GetGateway(server.SubnetID, absoluteNodeNum), ethNetStatsPort)
-		sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`, ip)
+			util.GetGateway(server.SubnetID, node.GetAbsoluteNumber()), ethNetStatsPort)
+		sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`, node.GetIP())
 
 		//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
-		_, err := client.DockerMultiExec(localNodeNum, []string{
+		_, err := client.DockerMultiExec(node, []string{
 			sedCmd,
 			sedCmd2,
 			sedCmd3})
@@ -248,7 +244,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			log.Println(err)
 			return err
 		}
-		_, err = client.DockerExecd(localNodeNum, "bash -c 'cd /eth-net-intelligence-api && pm2 start app.json'")
+		_, err = client.DockerExecd(node, "bash -c 'cd /eth-net-intelligence-api && pm2 start app.json'")
 		if err != nil {
 			log.Println(err)
 			return err

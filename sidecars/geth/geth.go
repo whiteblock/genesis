@@ -33,10 +33,13 @@ func Build(tn *testnet.TestNet) (error) {
 	var accounts []*ethereum.Account
 	var mine bool
 	var peers []string
+	var conf map[string]string 
 	tn.BuildState.GetP("networkID",&networkID)
 	tn.BuildState.GetP("accounts",&accounts)
 	tn.BuildState.GetP("mine",&mine)
 	tn.BuildState.GetP("peers",&peers)
+	tn.BuildState.GetP("gethConf",&conf)
+
 
 	err := helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server,  node ssh.Node) error {
 		_,err := client.DockerExec(node,"mkdir -p /geth")
@@ -48,7 +51,7 @@ func Build(tn *testnet.TestNet) (error) {
 	}
 
 	err = helpers.CreateConfigsSC(tn, "/geth/genesis.json",func(node ssh.Node) ([]byte, error) {
-		gethConf, err := gethSpec(pconf, ethereum.ExtractAddresses(accounts))
+		gethConf, err := gethSpec(conf, ethereum.ExtractAddresses(accounts))
 		return []byte(gethConf),err
 	})
 	if err != nil {
@@ -150,18 +153,18 @@ func Add(tn *testnet.TestNet) (error) {
 }
 
 
-func gethSpec(pconf *parityConf, wallets []string) (string, error) {
+func gethSpec(conf map[string]string, wallets []string) (string, error) {
 	accounts := make(map[string]interface{})
 	for _, wallet := range wallets {
 		accounts[wallet] = map[string]interface{}{
-			"balance": pconf.InitBalance,
+			"balance": conf["initBalance"],
 		}
 	}
 
 	tmp := map[string]interface{}{
-		"chainId":        pconf.NetworkID,
-		"difficulty":     fmt.Sprintf("0x%x", pconf.Difficulty),
-		"gasLimit":       fmt.Sprintf("0x%x", pconf.GasLimit),
+		"chainId":        conf["networkID"],
+		"difficulty":     conf["difficulty"],
+		"gasLimit":       conf["gasLimit"],
 		"homesteadBlock": 0,
 		"eip155Block":    10,
 		"eip158Block":    10,

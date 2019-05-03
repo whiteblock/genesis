@@ -32,45 +32,49 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	tn.BuildState.SetBuildStage("Setting up the first node")
 	clients := tn.GetFlatClients()
+
+	masterNode := tn.Nodes[0]
+	masterClient := tn.Clients[masterNode.Server]
 	/**
 	 * Set up first node
 	 */
-	_, err := clients[0].DockerExec(0, "gaiad init --chain-id=whiteblock whiteblock")
+	_, err := masterClient.DockerExec(tn.Nodes[0], "gaiad init --chain-id=whiteblock whiteblock")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 	tn.BuildState.IncrementBuildProgress()
-	_, err = clients[0].DockerExec(0, "bash -c 'echo \"password\\n\" | gaiacli keys add validator -ojson'")
+	_, err = masterClient.DockerExec(tn.Nodes[0], "bash -c 'echo \"password\\n\" | gaiacli keys add validator -ojson'")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	res, err := clients[0].DockerExec(0, "gaiacli keys show validator -a")
+	res, err := masterClient.DockerExec(tn.Nodes[0], "gaiacli keys show validator -a")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 	tn.BuildState.IncrementBuildProgress()
-	_, err = clients[0].DockerExec(0, fmt.Sprintf("gaiad add-genesis-account %s 100000000stake,100000000validatortoken", res[:len(res)-1]))
+	_, err = masterClient.DockerExec(tn.Nodes[0], fmt.Sprintf("gaiad add-genesis-account %s 100000000stake,100000000validatortoken", 
+		   							 res[:len(res)-1]))
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	_, err = clients[0].DockerExec(0, "bash -c 'echo \"password\\n\" | gaiad gentx --name validator'")
+	_, err = masterClient.DockerExec(tn.Nodes[0], "bash -c 'echo \"password\\n\" | gaiad gentx --name validator'")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 	tn.BuildState.IncrementBuildProgress()
-	_, err = clients[0].DockerExec(0, "gaiad collect-gentxs")
+	_, err = masterClient.DockerExec(tn.Nodes[0], "gaiad collect-gentxs")
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	genesisFile, err := clients[0].DockerExec(0, "cat /root/.gaiad/config/genesis.json")
+	genesisFile, err := masterClient.DockerExec(tn.Nodes[0], "cat /root/.gaiad/config/genesis.json")
 	if err != nil {
 		log.Println(err)
 		return nil, err
