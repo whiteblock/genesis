@@ -9,7 +9,6 @@ import (
 	"../helpers"
 	"../registrar"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 )
@@ -39,44 +38,37 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	 */
 	_, err := masterClient.DockerExec(tn.Nodes[0], "gaiad init --chain-id=whiteblock whiteblock")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
 	_, err = masterClient.DockerExec(tn.Nodes[0], "bash -c 'echo \"password\\n\" | gaiacli keys add validator -ojson'")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	res, err := masterClient.DockerExec(tn.Nodes[0], "gaiacli keys show validator -a")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
 	_, err = masterClient.DockerExec(tn.Nodes[0], fmt.Sprintf("gaiad add-genesis-account %s 100000000stake,100000000validatortoken",
 		res[:len(res)-1]))
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	_, err = masterClient.DockerExec(tn.Nodes[0], "bash -c 'echo \"password\\n\" | gaiad gentx --name validator'")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
 	_, err = masterClient.DockerExec(tn.Nodes[0], "gaiad collect-gentxs")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	genesisFile, err := masterClient.DockerExec(tn.Nodes[0], "cat /root/.gaiad/config/genesis.json")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Initializing the rest of the nodes")
@@ -89,16 +81,14 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			//init everything
 			_, err := client.DockerExec(node, "gaiad init --chain-id=whiteblock whiteblock")
 			if err != nil {
-				log.Println(res)
-				return err
+				return util.LogError(err)
 			}
 		}
 
 		//Get the node id
 		res, err := client.DockerExec(node, "gaiad tendermint show-node-id")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		nodeID := res[:len(res)-1]
 		mux.Lock()
@@ -112,8 +102,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	err = helpers.CopyBytesToAllNodes(tn, genesisFile, "/root/.gaiad/config/genesis.json")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	tn.BuildState.SetBuildStage("Starting cosmos")
