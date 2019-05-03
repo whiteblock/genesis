@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"log"
@@ -45,6 +46,29 @@ func (acc Account) MarshalJSON() ([]byte, error) {
 		PublicKey:  acc.HexPublicKey(),
 		Address:    acc.HexAddress(),
 	})
+}
+
+// UnmarshalJSON handles the conversion from json to account
+func (acc *Account) UnmarshalJSON(data []byte) error {
+	var tmp map[string]string
+	err := json.Unmarshal(data, &tmp)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	pk, ok := tmp["privateKey"]
+	if !ok {
+		return fmt.Errorf("Missing field \"privateKey\"")
+	}
+	newAcc, err := CreateAccountFromHex(pk)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	acc.PrivateKey = newAcc.PrivateKey
+	acc.PublicKey = newAcc.PublicKey
+	acc.Address = newAcc.Address
+	return nil
 }
 
 // NewAccount creates an account from a SECP256K1 ECDSA private key

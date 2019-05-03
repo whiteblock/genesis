@@ -90,7 +90,7 @@ func getBlockChainParams(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 404)
 		return
 	}
-	log.Println(string(blockchainParams))
+	//log.Println(string(blockchainParams))
 	w.Write(blockchainParams)
 }
 

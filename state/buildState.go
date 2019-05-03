@@ -10,6 +10,7 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
+	"runtime"
 )
 
 //This code is full of potential race conditions but these race conditons are extremely rare
@@ -221,7 +222,13 @@ func (bs *BuildState) ReportError(err error) {
 	bs.errMutex.Lock()
 	defer bs.errMutex.Unlock()
 	bs.BuildError = CustomError{What: err.Error(), err: err}
-	log.Println("An error has been reported :" + err.Error())
+
+	_, file, line, ok := runtime.Caller(1)
+	if !ok {
+		file = "???"
+		line = 0
+	}
+	fmt.Printf("%v:%v Reported an error: %s\n", file, line, err)
 }
 
 // Stop checks if the stop signal has been sent. If bs returns true,
@@ -335,6 +342,7 @@ func (bs *BuildState) GetP(key string, out interface{}) bool {
 		log.Println(err)
 		return false
 	}
+	//fmt.Printf("Converting %s\n\n",string(tmpBytes))
 	err = json.Unmarshal(tmpBytes, out)
 	if err != nil {
 		log.Println(err)

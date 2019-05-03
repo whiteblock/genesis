@@ -29,7 +29,7 @@ func BuildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 			return
 		}
 
-		sidecarIP, err := util.GetNodeIP(server.SubnetID, node.LocalID, 0)
+		sidecarIP, err := util.GetNodeIP(server.SubnetID, node.LocalID, i+1)
 		if err != nil {
 			log.Println(err)
 			tn.BuildState.ReportError(err)
@@ -47,7 +47,7 @@ func BuildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 			Image:           sideCarDetails.Image,
 			Type:            sidecar,
 		}
-
+		tn.AddSideCar(scNode)
 		err = docker.Run(tn, server.ID, docker.NewSideCarContainer(&scNode, nil, util.Resources{}, server.SubnetID))
 		if err != nil {
 			log.Println(err)

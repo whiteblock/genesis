@@ -4,15 +4,15 @@ package parity
 import (
 	"../../db"
 	"../../ssh"
-	"../../state"
+	//"../../state"
 	"../../testnet"
 	"../../util"
+	"../ethereum"
 	"../helpers"
 	"../registrar"
 	"encoding/json"
 	"fmt"
 	"log"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -28,7 +28,7 @@ func init() {
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
 	registrar.RegisterParams(blockchain, GetParams)
-	//registrar.RegisterBlockchainSideCars(blockchain, []string{"geth"})
+	registrar.RegisterBlockchainSideCars(blockchain, []string{"geth"})
 }
 
 // Build builds out a fresh new ethereum test network using parity
@@ -190,6 +190,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		log.Println(err)
 		return nil, err
 	}
+	storeGethParameters(tn, pconf, wallets, enodes)
 
 	err = peerAllNodes(tn, enodes)
 	if err != nil {
@@ -198,9 +199,6 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 
 	tn.BuildState.IncrementBuildProgress()
-	if pconf.Consensus == "ethash" {
-		return nil, peerWithGeth(tn.GetFlatClients()[0], tn.BuildState, enodes)
-	}
 	return nil, nil
 }
 
@@ -233,6 +231,33 @@ func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 	})
 }
 
+func storeGethParameters(tn *testnet.TestNet, pconf *parityConf, wallets []string, enodes []string) {
+	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
+	if err != nil {
+		log.Println(err)
+	}
+
+	tn.BuildState.Set("networkID", pconf.NetworkID)
+	tn.BuildState.Set("accounts", accounts)
+	switch pconf.Consensus {
+	case "ethash":
+		tn.BuildState.Set("mine", true)
+	case "poa":
+		tn.BuildState.Set("mine", false)
+	}
+
+	tn.BuildState.Set("peers", enodes)
+
+	tn.BuildState.Set("gethConf", map[string]interface{}{
+		"networkID":   pconf.NetworkID,
+		"initBalance": pconf.InitBalance,
+		"difficulty":  fmt.Sprintf("0x%x", pconf.Difficulty),
+		"gasLimit":    fmt.Sprintf("0x%x", pconf.GasLimit),
+	})
+
+	tn.BuildState.Set("wallets", wallets)
+}
+
 func setupPOA(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 	//Create the chain spec files
 	spec, err := buildPoaSpec(pconf, tn.LDD, wallets)
@@ -260,12 +285,6 @@ func setupPOA(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 }
 
 func setupPOW(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
-	//Start up the geth node
-	err := setupGeth(tn.GetFlatClients()[0], tn.BuildState, pconf, wallets)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
 	tn.BuildState.IncrementBuildProgress()
 
 	//Create the chain spec files
@@ -288,92 +307,4 @@ func setupPOW(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 	//Copy over the config file, spec file, and the accounts
 	return helpers.CopyBytesToAllNodes(tn,
 		spec, "/parity/spec.json")
-}
-
-func setupGeth(client *ssh.Client, buildState *state.BuildState, pconf *parityConf, wallets []string) error {
-
-	gethConf, err := gethSpec(pconf, wallets)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	err = buildState.Write("genesis.json", gethConf)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	err = client.Scp("genesis.json", "/home/appo/genesis.json")
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	buildState.Defer(func() { client.Run("rm /home/appo/genesis.json") })
-
-	buildState.IncrementBuildProgress()
-
-	_, err = client.FastMultiRun(
-		"docker exec wb_service0 mkdir -p /geth",
-		"docker cp /home/appo/genesis.json wb_service0:/geth/",
-		"docker exec wb_service0 bash -c 'echo second >> /geth/passwd'")
-
-	res, err := client.Run("docker exec wb_service0 geth --datadir /geth/ --password /geth/passwd account new")
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	buildState.IncrementBuildProgress()
-
-	addressPattern := regexp.MustCompile(`\{[A-z|0-9]+\}`)
-	addresses := addressPattern.FindAllString(res, -1)
-	if len(addresses) < 1 {
-		return fmt.Errorf("unable to get addresses")
-	}
-	address := addresses[0][1 : len(addresses[0])-1]
-
-	_, err = client.Run(
-		fmt.Sprintf("docker exec wb_service0 geth --datadir /geth/ --networkid %d init /geth/genesis.json", pconf.NetworkID))
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	buildState.IncrementBuildProgress()
-
-	_, err = client.Run(fmt.Sprintf(`docker exec -d wb_service0 geth --datadir /geth/ --networkid %d --rpc  --rpcaddr 0.0.0.0`+
-		` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --unlock="%s"`+
-		` --password /geth/passwd --etherbase %s --nodiscover`, pconf.NetworkID, address, address))
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	if !pconf.DontMine {
-		_, err = client.KeepTryRun(
-			`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json" ` +
-				` -d '{ "method": "miner_start", "params": [8], "id": 3, "jsonrpc": "2.0" }'`)
-	} else {
-		_, err = client.KeepTryRun(
-			`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json" ` +
-				` -d '{ "method": "miner_stop", "params": [], "id": 3, "jsonrpc": "2.0" }'`)
-	}
-	return err
-}
-
-func peerWithGeth(client *ssh.Client, buildState *state.BuildState, enodes []string) error {
-	for _, enode := range enodes {
-		_, err := client.KeepTryRun(
-			fmt.Sprintf(
-				`curl -sS -X POST http://172.30.0.2:8545 -H "Content-Type: application/json" `+
-					` -d '{ "method": "admin_addPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
-				enode))
-		buildState.IncrementBuildProgress()
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-	}
-
-	buildState.IncrementBuildProgress()
-	return nil
 }

@@ -2,18 +2,18 @@
 package geth
 
 import (
-	"../../testnet"
-	"../../blockchains/registrar"
-	"../../blockchains/helpers"
 	"../../blockchains/ethereum"
-	"../../util"
-	"../../ssh"
+	"../../blockchains/helpers"
+	"../../blockchains/registrar"
 	"../../db"
-	"fmt"
-	"log"
+	"../../ssh"
+	"../../testnet"
+	"../../util"
 	"encoding/json"
-	"sync"
+	"fmt"
 	"github.com/Whiteblock/mustache"
+	"log"
+	"sync"
 )
 
 var conf *util.Config
@@ -22,29 +22,31 @@ func init() {
 	conf = util.GetConfig()
 
 	sidecar := "geth"
-	registrar.RegisterSideCar(sidecar,registrar.SideCar{
-		Image:"gcr.io/whiteblock/geth:dev",
+	registrar.RegisterSideCar(sidecar, registrar.SideCar{
+		Image: "gcr.io/whiteblock/geth:dev",
 	})
 	registrar.RegisterBuildSideCar(sidecar, Build)
 	registrar.RegisterAddSideCar(sidecar, Add)
 }
 
 // Build builds out a fresh new ethereum test network using geth
-func Build(tn *testnet.TestNet) (error) {
+func Build(tn *testnet.TestNet) error {
 	var networkID int64
 	var accounts []*ethereum.Account
 	var mine bool
 	var peers []string
-	var conf map[string]string 
-	tn.BuildState.GetP("networkID",&networkID)
-	tn.BuildState.GetP("accounts",&accounts)
-	tn.BuildState.GetP("mine",&mine)
-	tn.BuildState.GetP("peers",&peers)
-	tn.BuildState.GetP("gethConf",&conf)
+	var conf map[string]interface{}
+	var wallets []string
 
+	tn.BuildState.GetP("networkID", &networkID)
+	tn.BuildState.GetP("accounts", &accounts)
+	tn.BuildState.GetP("mine", &mine)
+	tn.BuildState.GetP("peers", &peers)
+	tn.BuildState.GetP("gethConf", &conf)
+	tn.BuildState.GetP("wallets", &wallets)
 
-	err := helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server,  node ssh.Node) error {
-		_,err := client.DockerExec(node,"mkdir -p /geth")
+	err := helpers.AllNodeExecConSC(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+		_, err := client.DockerExec(node, "mkdir -p /geth")
 		return err
 	})
 	if err != nil {
@@ -52,9 +54,13 @@ func Build(tn *testnet.TestNet) (error) {
 		return err
 	}
 
-	err = helpers.CreateConfigsSC(tn, "/geth/genesis.json",func(node ssh.Node) ([]byte, error) {
+	err = helpers.CreateConfigsSC(tn, "/geth/genesis.json", func(node ssh.Node) ([]byte, error) {
+		if wallets != nil {
+			gethConf, err := gethSpec(conf, wallets)
+			return []byte(gethConf), err
+		}
 		gethConf, err := gethSpec(conf, ethereum.ExtractAddresses(accounts))
-		return []byte(gethConf),err
+		return []byte(gethConf), err
 	})
 	if err != nil {
 		log.Println(err)
@@ -67,14 +73,13 @@ func Build(tn *testnet.TestNet) (error) {
 		for range accounts {
 			data += "password\n"
 		}
-		err = helpers.CopyBytesToAllNodes(tn, data, "/geth/passwd")
+		err = helpers.CopyBytesToAllNodesSC(tn, data, "/geth/passwd")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 	}
 
-	
 	out, err := json.Marshal(peers)
 	if err != nil {
 		log.Println(err)
@@ -82,13 +87,13 @@ func Build(tn *testnet.TestNet) (error) {
 	}
 
 	//Copy static-nodes to every server
-	err = helpers.CopyBytesToAllNodes(tn, string(out), "/geth/static-nodes.json")
+	err = helpers.CopyBytesToAllNodesSC(tn, string(out), "/geth/static-nodes.json")
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server,  node ssh.Node) error{
+	err = helpers.AllNodeExecConSC(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		_, err = client.DockerExec(node,
 			fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/genesis.json", networkID))
 		if err != nil {
@@ -102,7 +107,7 @@ func Build(tn *testnet.TestNet) (error) {
 			go func(account *ethereum.Account, i int) {
 				defer wg.Done()
 
-				_, err := client.DockerExec(node,fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
+				_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
 				if err != nil {
 					tn.BuildState.ReportError(err)
 					log.Println(err)
@@ -129,13 +134,23 @@ func Build(tn *testnet.TestNet) (error) {
 		}
 		flags := ""
 
-		if mine {
-			flags = " --mine"
+		if accounts != nil && len(accounts) > 0 {
+			flags += fmt.Sprintf(" --etherbase %s", accounts[node.GetAbsoluteNumber()%len(accounts)].HexAddress())
 		}
 
-		_, err := client.DockerExecdit(node,fmt.Sprintf(` bash -ic 'geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
-			` --rpcapi "admin,web3,db,eth,net,personal" --rpccorsdomain "0.0.0.0"%s --nodiscover --unlock="%s"`+
-			` --password /geth/passwd --networkid %d console 2>&1 >> /output.log'`, flags,unlock, networkID))
+		_, err := client.DockerExecdit(node, fmt.Sprintf(` bash -ic 'geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
+			` --rpcapi "admin,web3,miner,db,eth,net,personal,debug,txpool" --rpccorsdomain "0.0.0.0"%s --nodiscover --unlock="%s"`+
+			` --password /geth/passwd --networkid %d --verbosity 5 console 2>&1 >> /output.log'`, flags, unlock, networkID))
+
+		if mine {
+			_, err = client.KeepTryRun(
+				fmt.Sprintf(`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json" `+
+					` -d '{ "method": "miner_start", "params": [1], "id": 3, "jsonrpc": "2.0" }'`, node.GetIP()))
+		} else {
+			_, err = client.KeepTryRun(
+				fmt.Sprintf(`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json" `+
+					` -d '{ "method": "miner_stop", "params": [], "id": 3, "jsonrpc": "2.0" }'`, node.GetIP()))
+		}
 		return err
 	})
 	if err != nil {
@@ -150,12 +165,11 @@ func Build(tn *testnet.TestNet) (error) {
 
 // Add handles adding a node to the geth testnet
 // TODO
-func Add(tn *testnet.TestNet) (error) {
+func Add(tn *testnet.TestNet) error {
 	return nil
 }
 
-
-func gethSpec(conf map[string]string, wallets []string) (string, error) {
+func gethSpec(conf map[string]interface{}, wallets []string) (string, error) {
 	accounts := make(map[string]interface{})
 	for _, wallet := range wallets {
 		accounts[wallet] = map[string]interface{}{

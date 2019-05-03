@@ -123,6 +123,7 @@ func (tn *TestNet) AddNode(node db.Node) *db.Node {
 
 // AddSideCar adds a side car to the testnet
 func (tn *TestNet) AddSideCar(node db.SideCar) {
+	fmt.Println("Side car added")
 	tn.mux.Lock()
 	defer tn.mux.Unlock()
 	tn.NewlyBuiltSideCars = append(tn.NewlyBuiltSideCars, node)
