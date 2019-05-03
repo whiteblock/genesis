@@ -40,9 +40,8 @@ func GetNodeIP(server int, network int, index int) (string, error) {
 
 	if index == 0 && cluster == clusterLast {
 		return InetNtoa(ip), nil
-	} else {
-		ip += 2 + uint32(index)
 	}
+	ip += 2 + uint32(index)
 
 	return InetNtoa(ip), nil
 }

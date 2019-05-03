@@ -98,7 +98,7 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 		return err
 	}
 
-	err = handleBuildSideCars(tn)
+	err = handleSideCars(tn, false)
 	if err != nil {
 		buildState.ReportError(err)
 		log.Println(err)
@@ -120,7 +120,7 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 	return nil
 }
 
-func handleBuildSideCars(tn *testnet.TestNet) error {
+func handleSideCars(tn *testnet.TestNet, append bool) error {
 	sidecars, err := registrar.GetBlockchainSideCars(tn.LDD.Blockchain)
 	if err != nil || sidecars == nil || len(sidecars) == 0 {
 		return nil //Not an error, just means that the blockchain doesn't have any sidecars
@@ -128,33 +128,13 @@ func handleBuildSideCars(tn *testnet.TestNet) error {
 	wg := sync.WaitGroup{}
 	wg.Add(len(sidecars))
 	for _, sidecar := range sidecars { //In future, should probably check all the sidecars before running any builds
-		buildFn, err := registrar.GetBuildSideCar(sidecar)
-		if err != nil {
-			log.Println(err)
-			return err
+		var buildFn func(*testnet.TestNet) error
+		if append {
+			buildFn, err = registrar.GetAddSideCar(sidecar)
+		} else {
+			buildFn, err = registrar.GetBuildSideCar(sidecar)
 		}
-		go func() {
-			defer wg.Done()
-			err := buildFn(tn)
-			if err != nil {
-				log.Println(err)
-				tn.BuildState.ReportError(err)
-			}
-		}()
-	}
-	wg.Wait()
-	return nil
-}
 
-func handleAddSideCars(tn *testnet.TestNet) error {
-	sidecars, err := registrar.GetBlockchainSideCars(tn.LDD.Blockchain)
-	if err != nil || sidecars == nil || len(sidecars) == 0 {
-		return nil //Not an error, just means that the blockchain doesn't have any sidecars
-	}
-	wg := sync.WaitGroup{}
-	wg.Add(len(sidecars))
-	for _, sidecar := range sidecars { //In future, should probably check all the sidecars before running any builds
-		buildFn, err := registrar.GetBuildSideCar(sidecar)
 		if err != nil {
 			log.Println(err)
 			return err

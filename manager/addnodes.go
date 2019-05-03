@@ -72,7 +72,7 @@ func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 		return err
 	}
 
-	err = handleBuildSideCars(tn)
+	err = handleSideCars(tn, true)
 	if err != nil {
 		buildState.ReportError(err)
 		log.Println(err)
