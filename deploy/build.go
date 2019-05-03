@@ -14,7 +14,7 @@ import (
 
 var conf = util.GetConfig()
 
-func BuildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
+func buildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 	sidecars, err := registrar.GetBlockchainSideCars(tn.LDD.Blockchain)
 	if err != nil {
 		log.Println(err) //do not report
@@ -63,7 +63,7 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 		docker.Kill(tn.Clients[server.ID], node.LocalID)
 		docker.NetworkDestroy(tn.Clients[server.ID], node.LocalID)
 	})*/
-	defer BuildSideCars(tn, server, node) //Needs to be handled better
+	defer buildSideCars(tn, server, node) //Needs to be handled better
 	err := docker.NetworkCreate(tn, server.ID, server.SubnetID, node.LocalID)
 	if err != nil {
 		log.Println(err)

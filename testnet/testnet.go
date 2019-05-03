@@ -291,7 +291,8 @@ func (tn *TestNet) StoreNodes(labels []string) error {
 	return nil
 }
 
-//TODO doc
+// GetSSHNodes gets all nodes or sidecars wrapper in the 
+// ssh Node interface
 func (tn *TestNet) GetSSHNodes(sidecar bool) []ssh.Node {
 	out := []ssh.Node{}
 	if sidecar { //VRFY
@@ -307,7 +308,8 @@ func (tn *TestNet) GetSSHNodes(sidecar bool) []ssh.Node {
 	return out
 }
 
-//TODO doc
+// GetNewSSHNodes gets newly build nodes or sidecars wrapper in the 
+// ssh Node interface
 func (tn *TestNet) GetNewSSHNodes(sidecar bool) []ssh.Node {
 	out := []ssh.Node{}
 	if sidecar { //VRFY
