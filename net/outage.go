@@ -133,7 +133,7 @@ func GetCutConnections(client *ssh.Client) ([]Connection, error) {
 		if len(cutPair) != 2 {
 			return nil, fmt.Errorf("unexpected result \"%s\" for cut pair", cut)
 		}
-		_, toNode,_ := util.GetInfoFromIP(cutPair[0])
+		_, toNode, _ := util.GetInfoFromIP(cutPair[0])
 
 		if len(cutPair[1]) <= len(conf.BridgePrefix) {
 			return nil, fmt.Errorf("unexpected source interface, found \"%s\"", cutPair[1])

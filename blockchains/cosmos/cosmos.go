@@ -55,8 +55,8 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil, err
 	}
 	tn.BuildState.IncrementBuildProgress()
-	_, err = masterClient.DockerExec(tn.Nodes[0], fmt.Sprintf("gaiad add-genesis-account %s 100000000stake,100000000validatortoken", 
-		   							 res[:len(res)-1]))
+	_, err = masterClient.DockerExec(tn.Nodes[0], fmt.Sprintf("gaiad add-genesis-account %s 100000000stake,100000000validatortoken",
+		res[:len(res)-1]))
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -118,7 +118,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	tn.BuildState.SetBuildStage("Starting cosmos")
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server,node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		peersCpy := make([]string, len(peers))
 		copy(peersCpy, peers)

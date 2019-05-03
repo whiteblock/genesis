@@ -234,12 +234,12 @@ func (tn *TestNet) PreOrderNodes(sidecar bool) map[int][]ssh.Node {
 		for _, node := range tn.SideCars {
 			out[node.Server] = append(out[node.Server], node)
 		}
-	}else{
+	} else {
 		for _, node := range tn.Nodes {
 			out[node.Server] = append(out[node.Server], node)
 		}
 	}
-	
+
 	return out
 }
 
@@ -256,12 +256,12 @@ func (tn *TestNet) PreOrderNewNodes(sidecar bool) map[int][]ssh.Node {
 		for _, node := range tn.NewlyBuiltSideCars {
 			out[node.Server] = append(out[node.Server], node)
 		}
-	}else{
+	} else {
 		for _, node := range tn.NewlyBuiltNodes {
 			out[node.Server] = append(out[node.Server], node)
 		}
 	}
-	
+
 	return out
 }
 
@@ -293,14 +293,14 @@ func (tn *TestNet) StoreNodes(labels []string) error {
 //TODO doc
 func (tn *TestNet) GetSSHNodes(sidecar bool) []ssh.Node {
 	out := []ssh.Node{}
-	if sidecar {//VRFY
-		for _,node := range tn.SideCars{
-			out = append(out,node)
+	if sidecar { //VRFY
+		for _, node := range tn.SideCars {
+			out = append(out, node)
 		}
-		
-	}else{
-		for _,node := range tn.Nodes{
-			out = append(out,node)
+
+	} else {
+		for _, node := range tn.Nodes {
+			out = append(out, node)
 		}
 	}
 	return out
@@ -309,14 +309,14 @@ func (tn *TestNet) GetSSHNodes(sidecar bool) []ssh.Node {
 //TODO doc
 func (tn *TestNet) GetNewSSHNodes(sidecar bool) []ssh.Node {
 	out := []ssh.Node{}
-	if sidecar {//VRFY
-		for _,node := range tn.NewlyBuiltSideCars{
-			out = append(out,node)
+	if sidecar { //VRFY
+		for _, node := range tn.NewlyBuiltSideCars {
+			out = append(out, node)
 		}
-		
-	}else{
-		for _,node := range tn.NewlyBuiltNodes{
-			out = append(out,node)
+
+	} else {
+		for _, node := range tn.NewlyBuiltNodes {
+			out = append(out, node)
 		}
 	}
 	return out

@@ -1,10 +1,10 @@
 package ssh
 
-type Node interface{
+type Node interface {
 	GetAbsoluteNumber() int
 	GetIP() string
 	GetRelativeNumber() int
 	GetServerID() int
-	GetTestNetID() string	
+	GetTestNetID() string
 	GetNodeName() string
 }

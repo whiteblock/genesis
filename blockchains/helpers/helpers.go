@@ -19,11 +19,11 @@ func init() {
 /*
 	fn func(client *ssh.Client, server &db.Server,localNodeNum int,absoluteNodeNum int)(error)
 */
-func allNodeExecCon(tn *testnet.TestNet, useNew bool,sideCar bool, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
+func allNodeExecCon(tn *testnet.TestNet, useNew bool, sideCar bool, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
 	var nodes []ssh.Node
 	if useNew {
 		nodes = tn.GetNewSSHNodes(sideCar)
-	}else{
+	} else {
 		nodes = tn.GetSSHNodes(sideCar)
 	}
 
@@ -53,20 +53,20 @@ func allNodeExecCon(tn *testnet.TestNet, useNew bool,sideCar bool, fn func(*ssh.
 // return a non-nil error value, one of those errors will be returned. Currently there is no guarentee as to which one,
 // however this should be implemented in the future.
 func AllNodeExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
-	return allNodeExecCon(tn, false,false, fn)
+	return allNodeExecCon(tn, false, false, fn)
 }
 
 // AllNewNodeExecCon is AllNodeExecCon but executes only for new nodes
 func AllNewNodeExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
-	return allNodeExecCon(tn, true,false, fn)
+	return allNodeExecCon(tn, true, false, fn)
 }
 
 func AllNodeExecConSC(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
-	return allNodeExecCon(tn, false,true, fn)
+	return allNodeExecCon(tn, false, true, fn)
 }
 
 func AllNewNodeExecConSC(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
-	return allNodeExecCon(tn, true,true, fn)
+	return allNodeExecCon(tn, true, true, fn)
 }
 
 // AllServerExecCon executes fn for every server in the testnet. Is sementatically similar to

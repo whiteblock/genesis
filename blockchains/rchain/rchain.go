@@ -183,7 +183,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			if node.GetAbsoluteNumber() == 0 {
 				return nil, nil
 			}
-			return createConfigFile(tn,enode, rConf, services["wb_influx_proxy"], node.GetAbsoluteNumber())
+			return createConfigFile(tn, enode, rConf, services["wb_influx_proxy"], node.GetAbsoluteNumber())
 		})
 
 	buildState.SetBuildStage("Configuring the other rchain nodes")

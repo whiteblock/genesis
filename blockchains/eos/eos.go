@@ -59,7 +59,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	masterIP := tn.Nodes[0].IP
 	masterServerIP := tn.Servers[0].Addr
-	
+
 	masterNode := tn.Nodes[0]
 	masterClient := tn.Clients[masterNode.Server]
 
@@ -178,7 +178,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 
 	buildState.IncrementBuildProgress()
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server,node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer buildState.IncrementBuildProgress()
 		_, err = client.DockerExec(node, "mkdir /datadir/")
 		return err
@@ -474,7 +474,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		if node > int(eosconf.BlockProducers) {
 			node = int(eosconf.BlockProducers)
 		}
-		masterClient.DockerExec(tn.Nodes[1], fmt.Sprintf("cleos -u http://%s:8889 wallet unlock --password %s",//BUG: bad assumption
+		masterClient.DockerExec(tn.Nodes[1], fmt.Sprintf("cleos -u http://%s:8889 wallet unlock --password %s", //BUG: bad assumption
 			masterIP, passwordNormal))
 		n := 0
 		for _, name := range accountNames {
@@ -489,7 +489,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			go func(masterServerIP string, masterIP string, name string, prod int) {
 				defer sem.Release(1)
 
-				res, err := masterClient.KeepTryDockerExec(tn.Nodes[1],//BUG
+				res, err := masterClient.KeepTryDockerExec(tn.Nodes[1], //BUG
 					fmt.Sprintf("cleos -u http://%s:8889 system voteproducer prods %s %s",
 						masterIP,
 						name,

@@ -76,11 +76,11 @@ func (cd *ContainerDetails) GetIP() (string, error) {
 }
 
 func (cd *ContainerDetails) GetName() string {
-	switch cd.Type{
+	switch cd.Type {
 	case Node:
 		return fmt.Sprintf("%s%d", conf.NodePrefix, cd.Node)
 	case SideCar:
-		return fmt.Sprintf("%s%d-%d", conf.NodePrefix, cd.Node,cd.NetworkIndex)
+		return fmt.Sprintf("%s%d-%d", conf.NodePrefix, cd.Node, cd.NetworkIndex)
 	}
 	panic("Unsupported type")
 }

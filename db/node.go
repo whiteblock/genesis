@@ -63,8 +63,6 @@ func (n Node) GetNodeName() string {
 	return fmt.Sprintf("%s%d", conf.NodePrefix, n.AbsoluteNum)
 }
 
-
-
 //GetAllNodesByServer gets all nodes that have ever existed on a server
 func GetAllNodesByServer(serverID int) ([]Node, error) {
 

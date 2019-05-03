@@ -37,7 +37,7 @@ func init() {
 	registrar.RegisterParams("geth", GetParams)
 	registrar.RegisterParams("ethereum", GetParams)
 
-	registrar.RegisterBlockchainSideCars("geth",[]string{"geth"})
+	registrar.RegisterBlockchainSideCars("geth", []string{"geth"})
 }
 
 const ethNetStatsPort = 3338

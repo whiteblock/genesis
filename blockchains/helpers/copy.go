@@ -36,16 +36,16 @@ func CopyAllToServers(tn *testnet.TestNet, srcDst ...string) error {
 	return tn.BuildState.GetError()
 }
 
-func copyToAllNodes(tn *testnet.TestNet, useNew bool,sidecar bool, srcDst ...string) error {
+func copyToAllNodes(tn *testnet.TestNet, useNew bool, sidecar bool, srcDst ...string) error {
 	if len(srcDst)%2 != 0 {
 		return fmt.Errorf("invalid number of variadic arguments, must be given an even number of them")
 	}
 	wg := sync.WaitGroup{}
 	var preOrderedNodes map[int][]ssh.Node
-	
+
 	if useNew {
 		preOrderedNodes = tn.PreOrderNewNodes(sidecar)
-	}else{
+	} else {
 		preOrderedNodes = tn.PreOrderNodes(sidecar)
 	}
 	for sid, nodes := range preOrderedNodes {
@@ -87,28 +87,28 @@ func copyToAllNodes(tn *testnet.TestNet, useNew bool,sidecar bool, srcDst ...str
 // CopyToAllNodes copies files writen with BuildState's write function over to all of the nodes.
 // Can handle multiple files, in pairs of src and dst
 func CopyToAllNodes(tn *testnet.TestNet, srcDst ...string) error {
-	return copyToAllNodes(tn, false,false, srcDst...)
+	return copyToAllNodes(tn, false, false, srcDst...)
 }
 
 // CopyToAllNewNodes copies files writen with BuildState's write function over to all of the newly built nodes.
 // Can handle multiple files, in pairs of src and dst
 func CopyToAllNewNodes(tn *testnet.TestNet, srcDst ...string) error {
-	return copyToAllNodes(tn, true,false, srcDst...)
+	return copyToAllNodes(tn, true, false, srcDst...)
 }
 
 // CopyToAllNodes copies files writen with BuildState's write function over to all of the nodes.
 // Can handle multiple files, in pairs of src and dst
 func CopyToAllNodesSC(tn *testnet.TestNet, srcDst ...string) error {
-	return copyToAllNodes(tn, false,true, srcDst...)
+	return copyToAllNodes(tn, false, true, srcDst...)
 }
 
 // CopyToAllNewNodes copies files writen with BuildState's write function over to all of the newly built nodes.
 // Can handle multiple files, in pairs of src and dst
 func CopyToAllNewNodesSC(tn *testnet.TestNet, srcDst ...string) error {
-	return copyToAllNodes(tn, true,true, srcDst...)
+	return copyToAllNodes(tn, true, true, srcDst...)
 }
 
-func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool,sidecar bool, dataDst ...string) error {
+func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, sidecar bool, dataDst ...string) error {
 	fmted := []string{}
 	for i := 0; i < len(dataDst)/2; i++ {
 		tmpFilename, err := util.GetUUIDString()
@@ -120,27 +120,27 @@ func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool,sidecar bool, dataDst 
 		fmted = append(fmted, tmpFilename)
 		fmted = append(fmted, dataDst[i*2+1])
 	}
-	return copyToAllNodes(tn, useNew,sidecar, fmted...)
+	return copyToAllNodes(tn, useNew, sidecar, fmted...)
 }
 
 // CopyBytesToAllNodes functions similiarly to CopyToAllNodes, except it operates on data and dst pairs instead of
 // src and dest pairs, so you can just pass data directly to all of the nodes without having to call buildState.Write first.
 func CopyBytesToAllNodes(tn *testnet.TestNet, dataDst ...string) error {
-	return copyBytesToAllNodes(tn, false,false, dataDst...)
+	return copyBytesToAllNodes(tn, false, false, dataDst...)
 }
 
 // CopyBytesToAllNewNodes is CopyBytesToAllNodes but only operates on newly built nodes
 func CopyBytesToAllNewNodes(tn *testnet.TestNet, dataDst ...string) error {
-	return copyBytesToAllNodes(tn, true,false, dataDst...)
+	return copyBytesToAllNodes(tn, true, false, dataDst...)
 }
 
 func CopyBytesToAllNodesSC(tn *testnet.TestNet, dataDst ...string) error {
-	return copyBytesToAllNodes(tn, false,true, dataDst...)
+	return copyBytesToAllNodes(tn, false, true, dataDst...)
 }
 
 // CopyBytesToAllNewNodes is CopyBytesToAllNodes but only operates on newly built nodes
 func CopyBytesToAllNewNodesSC(tn *testnet.TestNet, dataDst ...string) error {
-	return copyBytesToAllNodes(tn, true,true, dataDst...)
+	return copyBytesToAllNodes(tn, true, true, dataDst...)
 }
 
 // SingleCp copies over data to the given dest on node localNodeID.
@@ -200,11 +200,11 @@ func CopyBytesToNodeFiles(client *ssh.Client, buildState *state.BuildState, tran
 /*
 	fn func(serverid int, localNodeNum int, absoluteNodeNum int) ([]byte, error)
 */
-func createConfigs(tn *testnet.TestNet, dest string, useNew bool, sidecar bool,fn func(ssh.Node) ([]byte, error)) error {
+func createConfigs(tn *testnet.TestNet, dest string, useNew bool, sidecar bool, fn func(ssh.Node) ([]byte, error)) error {
 	var nodes []ssh.Node
 	if useNew {
 		nodes = tn.GetNewSSHNodes(sidecar)
-	}else{
+	} else {
 		nodes = tn.GetSSHNodes(sidecar)
 	}
 	wg := sync.WaitGroup{}
@@ -239,20 +239,19 @@ func createConfigs(tn *testnet.TestNet, dest string, useNew bool, sidecar bool,f
 // For each node, fn will be called, with (Server ID, local node number, absolute node number), and it will expect
 // to have the configuration file returned or error.
 func CreateConfigs(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
-	return createConfigs(tn, dest, false,false, fn)
+	return createConfigs(tn, dest, false, false, fn)
 }
 
 // CreateConfigsNewNodes is CreateConfigs but it only operates on new nodes
 func CreateConfigsNewNodes(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
-	return createConfigs(tn, dest, true,false, fn)
+	return createConfigs(tn, dest, true, false, fn)
 }
 
-
 func CreateConfigsSC(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
-	return createConfigs(tn, dest, false,true, fn)
+	return createConfigs(tn, dest, false, true, fn)
 }
 
 // CreateConfigsNewNodes is CreateConfigs but it only operates on new nodes
 func CreateConfigsNewNodesSC(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
-	return createConfigs(tn, dest, true,true, fn)
+	return createConfigs(tn, dest, true, true, fn)
 }

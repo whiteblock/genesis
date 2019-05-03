@@ -12,15 +12,13 @@ var (
 	//mux is actually not needed because all Register calls should be done via the init call, which
 	//means that there should not be a race condition. However, golang does not provide any
 	//method of enforcement for this to my knowledge.
-	mux           = &sync.RWMutex{}
-	buildFuncs    = map[string]func(*testnet.TestNet) ([]string, error){}
-	addFuncs      = map[string]func(*testnet.TestNet) ([]string, error){}
+	mux        = &sync.RWMutex{}
+	buildFuncs = map[string]func(*testnet.TestNet) ([]string, error){}
+	addFuncs   = map[string]func(*testnet.TestNet) ([]string, error){}
 
-	
-
-	serviceFuncs  = map[string]func() ([]util.Service) {}
-	paramsFuncs   = map[string]func() (string) {}
-	defaultsFuncs = map[string]func() (string) {}
+	serviceFuncs  = map[string]func() []util.Service{}
+	paramsFuncs   = map[string]func() string{}
+	defaultsFuncs = map[string]func() string{}
 	logFiles      = map[string]map[string]string{}
 )
 
