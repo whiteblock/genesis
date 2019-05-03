@@ -12,7 +12,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/mustache"
-	"log"
 	"regexp"
 	"sync"
 )
@@ -47,8 +46,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	mux := sync.Mutex{}
 	ethconf, err := newConf(tn.LDD.Params)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes))
@@ -62,8 +60,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return err
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	/**Create the Password files**/
 	{
@@ -73,8 +70,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		}
 		err = helpers.CopyBytesToAllNodes(tn, data, "/geth/passwd")
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 	}
 
@@ -85,28 +81,24 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, account := range accounts {
 			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 			_, err = client.DockerExec(node,
 				fmt.Sprintf("geth --datadir /geth/ --password /geth/passwd account import --password /geth/passwd /geth/pk%d", i))
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 		}
 		return nil
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	tn.BuildState.IncrementBuildProgress()
@@ -123,8 +115,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	tn.BuildState.SetBuildStage("Creating the genesis block")
 	err = createGenesisfile(ethconf, tn, accounts)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	tn.BuildState.IncrementBuildProgress()
@@ -132,8 +123,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	err = helpers.CopyToAllNodes(tn, "CustomGenesis.json", "/geth/")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	staticNodes := make([]string, tn.LDD.Nodes)
@@ -145,16 +135,14 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		_, err := client.DockerExec(node,
 			fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/CustomGenesis.json", ethconf.NetworkID))
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n", node.GetAbsoluteNumber())
 		gethResults, err := client.DockerExec(node,
 			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
 				"geth --rpc --datadir /geth/ --networkid %d console'", ethconf.NetworkID))
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		//fmt.Printf("RAWWWWWWWWWWWW%s\n\n\n",gethResults)
 		enodePattern := regexp.MustCompile(`enode:\/\/[A-z|0-9]+@(\[\:\:\]|([0-9]|\.)+)\:[0-9]+`)
@@ -172,14 +160,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	out, err := json.Marshal(staticNodes)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	tn.BuildState.IncrementBuildProgress()
@@ -187,8 +173,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	//Copy static-nodes to every server
 	err = helpers.CopyBytesToAllNodes(tn, string(out), "/geth/static-nodes.json")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
@@ -207,23 +192,20 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 
 		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
 
 	err = setupEthNetStats(clients[0])
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
@@ -240,13 +222,11 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			sedCmd3})
 
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		_, err = client.DockerExecd(node, "bash -c 'cd /eth-net-intelligence-api && pm2 start app.json'")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		tn.BuildState.IncrementBuildProgress()
 		return nil
@@ -302,7 +282,6 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 	}
 
 	accs := MakeFakeAccounts(int(ethconf.ExtraAccounts))
-	log.Println("Finished making fake accounts")
 
 	for _, wallet := range accs {
 		alloc[wallet] = map[string]string{
@@ -312,14 +291,12 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 	genesis["alloc"] = alloc
 	dat, err := helpers.GetBlockchainConfig("geth", 0, "genesis.json", tn.LDD)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	data, err := mustache.Render(string(dat), util.ConvertToStringMap(genesis))
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	return tn.BuildState.Write("CustomGenesis.json", data)
 
@@ -333,8 +310,7 @@ func setupEthNetStats(client *ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf(
 		"docker exec -d wb_service0 bash -c 'cd /eth-netstats && WS_SECRET=second PORT=%d npm start'", ethNetStatsPort))
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	return nil
 }
