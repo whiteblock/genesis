@@ -31,7 +31,6 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	tn.BuildState.SetBuildSteps(4 + (tn.LDD.Nodes * 2))
 
 	tn.BuildState.SetBuildStage("Setting up the first node")
-	clients := tn.GetFlatClients()
 
 	masterNode := tn.Nodes[0]
 	masterClient := tn.Clients[masterNode.Server]

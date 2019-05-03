@@ -181,7 +181,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		}
 		tn.BuildState.IncrementBuildProgress()
 		mux.Lock()
-		enodes[absoluteNodeNum] = enode
+		enodes[node.GetAbsoluteNumber()] = enode
 		mux.Unlock()
 		return nil
 	})

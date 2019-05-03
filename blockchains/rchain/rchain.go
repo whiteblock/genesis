@@ -4,7 +4,6 @@ package rchain
 import (
 	"../../db"
 	"../../ssh"
-	"../../state"
 	"../../testnet"
 	"../../util"
 	"../helpers"
@@ -33,7 +32,9 @@ func init() {
 // Build builds out a fresh new rchain test network
 func Build(tn *testnet.TestNet) ([]string, error) {
 	buildState := tn.BuildState
-	clients := tn.GetFlatClients()
+	masterNode := tn.Nodes[0]
+	masterClient := tn.Clients[masterNode.Server]
+
 	rConf, err := newRChainConf(tn.LDD.Params)
 	if err != nil {
 		log.Println(err)
@@ -51,20 +52,20 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	/**Make the data directories**/
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		buildState.IncrementBuildProgress()
-		_, err := client.DockerExec(localNodeNum, "mkdir /datadir")
+		_, err := client.DockerExec(node, "mkdir /datadir")
 		return err
 	})
 	/**Setup the first node**/
-	err = createFirstConfigFile(tn.LDD, clients[0], 0, rConf, services["wb_influx_proxy"], tn.BuildState)
+	err = createFirstConfigFile(tn, masterClient, masterNode, rConf, services["wb_influx_proxy"])
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 	/**Check to make sure the rnode command is valid**/
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
-		_, err := client.DockerExec(localNodeNum, fmt.Sprintf("bash -c '%s --help'", rConf.Command))
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+		_, err := client.DockerExec(node, fmt.Sprintf("bash -c '%s --help'", rConf.Command))
 		if err != nil {
 			fmt.Println(err)
 			return fmt.Errorf("could not find command \"%s\"", rConf.Command)
@@ -81,7 +82,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	keyPairs := make([]util.KeyPair, tn.LDD.Nodes)
 	validatorKeyPairs := make([]util.KeyPair, rConf.Validators)
 	for i := range keyPairs {
-		keyPairs[i], err = km.GetKeyPair(clients[0])
+		keyPairs[i], err = km.GetKeyPair(masterClient)
 		if i > 0 && i-1 < len(validatorKeyPairs) {
 			validatorKeyPairs[i-1] = keyPairs[i]
 		}
@@ -91,7 +92,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		}
 	}
 	for i := len(keyPairs) - 1; i < len(validatorKeyPairs); i++ {
-		validatorKeyPairs[i], err = km.GetKeyPair(clients[0])
+		validatorKeyPairs[i], err = km.GetKeyPair(masterClient)
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -119,15 +120,15 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		}
 		buildState.IncrementBuildProgress()
 
-		err = clients[0].Scp("bonds.txt", "/home/appo/bonds.txt")
+		err = masterClient.Scp("bonds.txt", "/home/appo/bonds.txt")
 		if err != nil {
 			log.Println(err)
 			return nil, err
 		}
 		buildState.IncrementBuildProgress()
-		buildState.Defer(func() { clients[0].Run("rm -f /home/appo/bonds.txt") })
+		buildState.Defer(func() { masterClient.Run("rm -f /home/appo/bonds.txt") })
 
-		err = clients[0].DockerCp(0, "/home/appo/bonds.txt", "/bonds.txt")
+		err = masterClient.DockerCp(masterNode, "/home/appo/bonds.txt", "/bonds.txt")
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -139,9 +140,9 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	buildState.SetBuildStage("Starting the boot node")
 	var enode string
 	{
-		err = clients[0].DockerExecdLog(0,
+		err = masterClient.DockerExecdLog(masterNode,
 			fmt.Sprintf("%s run --standalone --data-dir \"/datadir\" --host %s --bonds-file /bonds.txt --has-faucet",
-				rConf.Command, tn.Nodes[0].IP))
+				rConf.Command, masterNode.IP))
 		buildState.IncrementBuildProgress()
 		if err != nil {
 			log.Println(err)
@@ -152,7 +153,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		for i := 0; i < 1000; i++ {
 			fmt.Println("Checking if the boot node is ready...")
 			time.Sleep(time.Duration(1 * time.Second))
-			output, err := clients[0].DockerExec(0, fmt.Sprintf("cat %s", conf.DockerOutputFile))
+			output, err := masterClient.DockerExec(masterNode, fmt.Sprintf("cat %s", conf.DockerOutputFile))
 			if err != nil {
 				log.Println(err)
 				return nil, err
@@ -182,7 +183,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			if node.GetAbsoluteNumber() == 0 {
 				return nil, nil
 			}
-			return createConfigFile(enode, rConf, services["wb_influx_proxy"], node.GetAbsoluteNumber())
+			return createConfigFile(tn,enode, rConf, services["wb_influx_proxy"], node.GetAbsoluteNumber())
 		})
 
 	buildState.SetBuildStage("Configuring the other rchain nodes")
@@ -200,7 +201,6 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		if node.GetAbsoluteNumber() == 0 {
 			return nil
 		}
-		ip := tn.Nodes[node.GetAbsoluteNumber()].IP
 		mux.Lock()
 		isValidator := validators < rConf.Validators
 		validators++
@@ -298,7 +298,7 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 	})
 
 	err = helpers.CreateConfigsNewNodes(tn, "/datadir/rnode.conf", func(node ssh.Node) ([]byte, error) {
-		return createConfigFile(&tn.CombinedDetails, enode, rConf, services["wb_influx_proxy"], tn.BuildState, node.GetAbsoluteNumber())
+		return createConfigFile(tn, enode, rConf, services["wb_influx_proxy"], node.GetAbsoluteNumber())
 	})
 	if err != nil {
 		log.Println(err)
@@ -327,12 +327,12 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 		mux.Unlock()
 
 		if isValidator {
-			err = client.DockerExecdLog(localNodeNum,
+			err = client.DockerExecdLog(node,
 				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
 					rConf.Command, enode, keyPairs[node.GetAbsoluteNumber()].PrivateKey, node.GetIP()))
 			return err
 		}
-		return client.DockerExecdLog(localNodeNum,
+		return client.DockerExecdLog(node,
 			fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s",
 				rConf.Command, enode, node.GetIP()))
 	})
@@ -340,7 +340,7 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 }
 
 func createConfigFile(tn *testnet.TestNet, bootnodeAddr string, rConf *rChainConf,
-	influxIP string, buildState *state.BuildState, node int) ([]byte, error) {
+	influxIP string, node int) ([]byte, error) {
 
 	raw := map[string]interface{}{
 		"influxIp":       influxIP,
@@ -348,11 +348,11 @@ func createConfigFile(tn *testnet.TestNet, bootnodeAddr string, rConf *rChainCon
 		"standalone":     false,
 	}
 
-	raw = util.MergeStringMaps(raw, tn.LDD.Params) //Allow arbitrary custom options for rchain
+	raw = util.MergeStringMaps(raw, tn.CombinedDetails.Params) //Allow arbitrary custom options for rchain
 
 	filler := util.ConvertToStringMap(raw)
 	filler["bootstrap"] = fmt.Sprintf("bootstrap = \"%s\"", bootnodeAddr)
-	dat, err := helpers.GetBlockchainConfig("rchain", node, "rchain.conf.mustache", tn.LDD)
+	dat, err := helpers.GetBlockchainConfig("rchain", node, "rchain.conf.mustache", &tn.CombinedDetails)
 	if err != nil {
 		log.Println(err)
 		return nil, err

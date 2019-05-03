@@ -171,7 +171,7 @@ func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state
 		files += " " + name + " " + logFile
 	}
 
-	_, err = client.DockerExecd(node.LocalID,
+	_, err = client.DockerExecd(node,
 		fmt.Sprintf("nibbler --jwt %s --testnet %s --node %s %s",
 			details.GetJwt(), node.TestNetID, node.ID, files))
 	if err != nil {

@@ -80,26 +80,26 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 	rawConstants := fetchedConf[constantsIndex:]
 	err = helpers.CreateConfigs(tn, "/artemis/config/config.toml",
-		func(serverId int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
+		func(node ssh.Node) ([]byte, error) {
 			defer tn.BuildState.IncrementBuildProgress()
-			identity := fmt.Sprintf("0x%.8x", absoluteNodeNum)
-			artemisNodeConfig, err := makeNodeConfig(aconf, identity, peers, absoluteNodeNum, tn.LDD, rawConstants)
+			identity := fmt.Sprintf("0x%.8x", node.GetAbsoluteNumber())
+			artemisNodeConfig, err := makeNodeConfig(aconf, identity, peers, node.GetAbsoluteNumber(), tn.LDD, rawConstants)
 			return []byte(artemisNodeConfig), err
 		})
 
 	tn.BuildState.SetBuildStage("Starting Artemis")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 
 		artemisCmd := `artemis -c /artemis/config/config.toml -o /artemis/data/log.json 2>&1 | tee /output.log`
 
-		_, err := client.DockerExecd(localNodeNum, "tmux new -s whiteblock -d")
+		_, err := client.DockerExecd(node, "tmux new -s whiteblock -d")
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 
-		_, err = client.DockerExecd(localNodeNum, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", artemisCmd))
+		_, err = client.DockerExecd(node, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", artemisCmd))
 		return err
 	})
 	if err != nil {

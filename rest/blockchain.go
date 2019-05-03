@@ -158,7 +158,7 @@ func getBlockChainLog(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 404)
 		return
 	}
-	res, err := client.DockerRead(node.LocalID, conf.DockerOutputFile, lines)
+	res, err := client.DockerRead(node, conf.DockerOutputFile, lines)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, fmt.Sprintf("%s %s", res, err.Error()), 500)

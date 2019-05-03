@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"log"
 	"encoding/json"
+	"sync"
+	"github.com/Whiteblock/mustache"
 )
 
 var conf *util.Config
@@ -73,17 +75,17 @@ func Build(tn *testnet.TestNet) (error) {
 	}
 
 	
-	out, err := json.Marshal(staticNodes)
+	out, err := json.Marshal(peers)
 	if err != nil {
 		log.Println(err)
-		return nil, err
+		return err
 	}
 
 	//Copy static-nodes to every server
 	err = helpers.CopyBytesToAllNodes(tn, string(out), "/geth/static-nodes.json")
 	if err != nil {
 		log.Println(err)
-		return nil, err
+		return err
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server,  node ssh.Node) error{
