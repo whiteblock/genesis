@@ -18,13 +18,13 @@ func init() {
 	conf = util.GetConfig()
 }
 
-// DockerKill kills a single node by index on a server
+// Kill kills a single node by index on a server
 func Kill(client *ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker rm -f %s%d", conf.NodePrefix, node))
 	return err
 }
 
-// DockerKillAll kills all nodes on a server
+// KillAll kills all nodes on a server
 func KillAll(client *ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s\")", conf.NodePrefix))
 	return err
@@ -159,7 +159,7 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 		image)
 }
 
-// DockerStopServices stops all services and remove the service network from a server
+// StopServices stops all services and remove the service network from a server
 func StopServices(tn *testnet.TestNet) error {
 	return helpers.AllServerExecCon(tn, func(client *ssh.Client, _ *db.Server) error {
 		_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)", conf.ServicePrefix))
@@ -171,7 +171,7 @@ func StopServices(tn *testnet.TestNet) error {
 	})
 }
 
-// DockerStartServices creates the service network and starts all the services on a server
+// StartServices creates the service network and starts all the services on a server
 func StartServices(tn *testnet.TestNet, services []util.Service) error {
 	gateway, subnet, err := util.GetServiceNetwork()
 	if err != nil {

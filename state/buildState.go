@@ -154,6 +154,7 @@ func (bs *BuildState) Unfreeze() error {
 	return nil
 }
 
+// IsFrozen check if the build is currently frozen
 func (bs *BuildState) IsFrozen() bool {
 	return atomic.LoadInt32(&bs.frozen) != 0
 }

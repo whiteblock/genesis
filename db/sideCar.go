@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-//SideCar represents a supporting node within the network
+// SideCar represents a supporting node within the network
 type SideCar struct {
 	ID string `json:"id"`
 
@@ -33,26 +33,32 @@ type SideCar struct {
 	Type string `json:"type"`
 }
 
+// GetAbsoluteNumber gets the absolute node number of the corresponding ndoe
 func (n SideCar) GetAbsoluteNumber() int {
 	return n.AbsoluteNodeNum
 }
 
+// GetIP gets the ip address of this side car
 func (n SideCar) GetIP() string {
 	return n.IP
 }
 
+// GetRelativeNumber gets the local id of the corresponding node
 func (n SideCar) GetRelativeNumber() int {
 	return n.LocalID
 }
 
+// GetServerID gets the id of the server this side car resides on
 func (n SideCar) GetServerID() int {
 	return n.Server
 }
 
+// GetTestNetID gets the id of the testnet this side car is a part of
 func (n SideCar) GetTestNetID() string {
 	return n.TestnetID
 }
 
+// GetNodeName gets the whiteblock name of this side car
 func (n SideCar) GetNodeName() string {
 	return fmt.Sprintf("%s%d-%d", conf.NodePrefix, n.AbsoluteNodeNum, n.NetworkIndex)
 }

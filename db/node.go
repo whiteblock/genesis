@@ -39,26 +39,32 @@ type Node struct {
 	Blockchain string `json:"blockchain"`
 }
 
+// GetAbsoluteNumber gets the absolute number of the node in the testnet
 func (n Node) GetAbsoluteNumber() int {
 	return n.AbsoluteNum
 }
 
+// GetIP gets the ip address of this node
 func (n Node) GetIP() string {
 	return n.IP
 }
 
+// GetRelativeNumber gets the local id of the node
 func (n Node) GetRelativeNumber() int {
 	return n.LocalID
 }
 
+// GetServerID gets the id of the server on which this node resides
 func (n Node) GetServerID() int {
 	return n.Server
 }
 
+// GetTestNetID gets the id of the testnet this node is a part of
 func (n Node) GetTestNetID() string {
 	return n.TestNetID
 }
 
+// GetNodeName gets the whiteblock name of this node
 func (n Node) GetNodeName() string {
 	return fmt.Sprintf("%s%d", conf.NodePrefix, n.AbsoluteNum)
 }
