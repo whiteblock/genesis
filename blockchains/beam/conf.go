@@ -5,6 +5,7 @@ import (
 	"../../util"
 	"../helpers"
 	"github.com/Whiteblock/mustache"
+	"io/ioutil"
 )
 
 type beamConf struct {
@@ -35,7 +36,7 @@ func newConf(data map[string]interface{}) (*beamConf, error) {
 
 // GetParams fetchs beam related parameters
 func GetParams() string {
-	dat, err := helpers.GetStaticBlockchainConfig("beam", "params.json")
+	dat, err := ioutil.ReadFile("./resources/beam/params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -44,7 +45,7 @@ func GetParams() string {
 
 // GetDefaults fetchs beam related parameter defaults
 func GetDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig("beam", "defaults.json")
+	dat, err := ioutil.ReadFile("./resources/beam/defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
