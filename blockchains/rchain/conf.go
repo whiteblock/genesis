@@ -1,8 +1,8 @@
 package rchain
 
 import (
-	"../helpers"
 	"../../util"
+	"../helpers"
 	"encoding/base64"
 	"encoding/json"
 	"log"

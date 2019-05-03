@@ -175,7 +175,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			return createConfigFile(tn, enode, rConf, services["wb_influx_proxy"], node.GetAbsoluteNumber())
 		})
 	if err != nil {
-		return nil,util.LogError(err)
+		return nil, util.LogError(err)
 	}
 	buildState.SetBuildStage("Configuring the other rchain nodes")
 	/**Copy config files to the rest of the nodes**/
@@ -274,10 +274,9 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 
 	helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		client.DockerExec(node, "mkdir /datadir")//Don't bother checking for errors, ok if dir exists
+		client.DockerExec(node, "mkdir /datadir") //Don't bother checking for errors, ok if dir exists
 		return nil
 	})
-
 
 	err = helpers.CreateConfigsNewNodes(tn, "/datadir/rnode.conf", func(node ssh.Node) ([]byte, error) {
 		return createConfigFile(tn, enode, rConf, services["wb_influx_proxy"], node.GetAbsoluteNumber())
@@ -285,8 +284,8 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 	if err != nil {
 		log.Println(err)
 		return nil, util.LogError(err)
-	}//VRFY check why this commented out section existed
-	/*if !ok { 
+	} //VRFY check why this commented out section existed
+	/*if !ok {
 		return nil, util.LogError(fmt.Errorf("rebuild: missing key pairs"))
 	}*/
 	tn.BuildState.SetBuildStage("Configuring the other rchain nodes")
