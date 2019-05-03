@@ -235,7 +235,9 @@ func (bs *BuildState) ReportError(err error) {
 // Stop checks if the stop signal has been sent. If bs returns true,
 // a building process should return. The ssh client checks bs for you.
 func (bs *BuildState) Stop() bool {
-
+	if bs == nil {
+		return false //When the buildstate is nil, don't stop
+	}
 	bs.freeze.RLock() //Catch on freeze
 	bs.freeze.RUnlock()
 

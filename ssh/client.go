@@ -243,9 +243,9 @@ func (sshClient *Client) DockerExecdLogAppend(node Node, command string) error {
 // it will return the last `lines` lines of the file
 func (sshClient *Client) DockerRead(node Node, file string, lines int) (string, error) {
 	if lines > -1 {
-		return sshClient.Run(fmt.Sprintf("docker exec %s tail -n %d %s", node.GetNodeName(), lines, file))
+		return sshClient.DockerExec(node, fmt.Sprintf("tail -n %d %s", lines, file))
 	}
-	return sshClient.Run(fmt.Sprintf("docker exec %s cat %s", node.GetNodeName(), file))
+	return sshClient.DockerExec(node, fmt.Sprintf("cat %s", file))
 }
 
 func (sshClient *Client) dockerMultiExec(node Node, commands []string, kt bool) (string, error) {
