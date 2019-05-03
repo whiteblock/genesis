@@ -55,7 +55,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		_, err := client.DockerExec(localNodeNum, "bash -c 'cd /orion/data && orion -g nodeKey'")
+		_, err := client.DockerExec(localNodeNum, "bash -c 'cd /orion/data && echo \"\" | orion -g nodeKey'")
 		return err
 	})
 	if err != nil {
