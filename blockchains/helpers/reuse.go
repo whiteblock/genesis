@@ -15,7 +15,6 @@ func ScpAndDeferRemoval(client *ssh.Client, buildState *state.BuildState, src st
 	buildState.Defer(func() { client.Run(fmt.Sprintf("rm -rf %s", dst)) })
 	err := client.Scp(src, dst)
 	if err != nil {
-		log.Println(err)
 		buildState.ReportError(err)
 		return
 	}

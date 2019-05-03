@@ -32,23 +32,19 @@ func NewKeyMaster(details *db.DeploymentDetails, blockchain string) (*KeyMaster,
 	out := new(KeyMaster)
 	dat, err := GetStaticBlockchainConfig(blockchain, "privatekeys.json")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	err = json.Unmarshal(dat, &out.PrivateKeys)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	dat, err = GetStaticBlockchainConfig(blockchain, "publickeys.json")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	err = json.Unmarshal(dat, &out.PublicKeys)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	out.index = 0
 	return out, nil
@@ -87,8 +83,7 @@ func (km *KeyMaster) GetMappedKeyPairs(args []string, client *ssh.Client) (map[s
 	for _, arg := range args {
 		keyPair, err := km.GetKeyPair(client)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		keyPairs[arg] = keyPair
 	}
