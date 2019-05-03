@@ -248,9 +248,7 @@ func (sshClient *Client) DockerRead(node Node, file string, lines int) (string, 
 	return sshClient.Run(fmt.Sprintf("docker exec %s cat %s", node.GetNodeName(), file))
 }
 
-// DockerMultiExec will run all of the given commands strung together with && on
-// the given node.
-func (sshClient *Client) DockerMultiExec(node Node, commands []string) (string, error) {
+func (sshClient *Client) dockerMultiExec(node Node, commands []string, kt bool) (string, error) {
 	mergedCommand := ""
 
 	for _, command := range commands {
@@ -259,23 +257,22 @@ func (sshClient *Client) DockerMultiExec(node Node, commands []string) (string, 
 		}
 		mergedCommand += fmt.Sprintf("docker exec -d %s %s", node.GetNodeName(), command)
 	}
-
+	if kt {
+		return sshClient.KeepTryRun(mergedCommand)
+	}
 	return sshClient.Run(mergedCommand)
+}
+
+// DockerMultiExec will run all of the given commands strung together with && on
+// the given node.
+func (sshClient *Client) DockerMultiExec(node Node, commands []string) (string, error) {
+	return sshClient.dockerMultiExec(node, commands, false)
 }
 
 // KTDockerMultiExec is like DockerMultiExec, except it keeps attempting the command after
 // failure
 func (sshClient *Client) KTDockerMultiExec(node Node, commands []string) (string, error) {
-	mergedCommand := ""
-
-	for _, command := range commands {
-		if len(mergedCommand) != 0 {
-			mergedCommand += "&&"
-		}
-		mergedCommand += fmt.Sprintf("docker exec -d %s %s", node.GetNodeName(), command)
-	}
-
-	return sshClient.KeepTryRun(mergedCommand)
+	return sshClient.dockerMultiExec(node, commands, true)
 }
 
 // Scp is a wrapper for the scp command. Can be used to copy
