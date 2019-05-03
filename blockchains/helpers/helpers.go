@@ -61,10 +61,12 @@ func AllNewNodeExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, ssh
 	return allNodeExecCon(tn, true, false, fn)
 }
 
+// AllNodeExecConSC is AllNodeExecCon but executes only for sidecar nodes
 func AllNodeExecConSC(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
 	return allNodeExecCon(tn, false, true, fn)
 }
 
+// AllNewNodeExecConSC is AllNewNodeExecCon but executes only for sidecar nodes
 func AllNewNodeExecConSC(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
 	return allNodeExecCon(tn, true, true, fn)
 }

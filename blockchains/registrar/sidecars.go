@@ -5,7 +5,9 @@ import (
 	"fmt"
 )
 
+// SideCar represents the side car registration details needed for building or other purposes
 type SideCar struct {
+	// Image is the docker image to build the side car from
 	Image string
 }
 
@@ -55,6 +57,7 @@ func GetBlockchainSideCars(blockchain string) ([]string, error) {
 	return out, nil
 }
 
+// GetAddSideCar gets the function to add a sidecar
 func GetAddSideCar(sideCarName string) (func(*testnet.TestNet) error, error) {
 	mux.RLock()
 	defer mux.RUnlock()
@@ -65,6 +68,7 @@ func GetAddSideCar(sideCarName string) (func(*testnet.TestNet) error, error) {
 	return out, nil
 }
 
+// GetBuildSideCar gets the function to build a sidecar
 func GetBuildSideCar(sideCarName string) (func(*testnet.TestNet) error, error) {
 	mux.RLock()
 	defer mux.RUnlock()
@@ -75,6 +79,7 @@ func GetBuildSideCar(sideCarName string) (func(*testnet.TestNet) error, error) {
 	return out, nil
 }
 
+// GetSideCar gets the details about a sidecar
 func GetSideCar(sideCarName string) (*SideCar, error) {
 	mux.Lock()
 	defer mux.Unlock()

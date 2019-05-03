@@ -96,14 +96,12 @@ func CopyToAllNewNodes(tn *testnet.TestNet, srcDst ...string) error {
 	return copyToAllNodes(tn, true, false, srcDst...)
 }
 
-// CopyToAllNodes copies files writen with BuildState's write function over to all of the nodes.
-// Can handle multiple files, in pairs of src and dst
+// CopyToAllNodesSC is CopyToAllNodes for side cars
 func CopyToAllNodesSC(tn *testnet.TestNet, srcDst ...string) error {
 	return copyToAllNodes(tn, false, true, srcDst...)
 }
 
-// CopyToAllNewNodes copies files writen with BuildState's write function over to all of the newly built nodes.
-// Can handle multiple files, in pairs of src and dst
+// CopyToAllNewNodesSC is CopyToAllNewNodes for side cars
 func CopyToAllNewNodesSC(tn *testnet.TestNet, srcDst ...string) error {
 	return copyToAllNodes(tn, true, true, srcDst...)
 }
@@ -134,11 +132,12 @@ func CopyBytesToAllNewNodes(tn *testnet.TestNet, dataDst ...string) error {
 	return copyBytesToAllNodes(tn, true, false, dataDst...)
 }
 
+// CopyBytesToAllNodesSC is CopyBytesToAllNodes but only operates on sidecar nodes
 func CopyBytesToAllNodesSC(tn *testnet.TestNet, dataDst ...string) error {
 	return copyBytesToAllNodes(tn, false, true, dataDst...)
 }
 
-// CopyBytesToAllNewNodes is CopyBytesToAllNodes but only operates on newly built nodes
+// CopyBytesToAllNewNodesSC is CopyBytesToAllNewNodes but only operates on sidecar nodes
 func CopyBytesToAllNewNodesSC(tn *testnet.TestNet, dataDst ...string) error {
 	return copyBytesToAllNodes(tn, true, true, dataDst...)
 }
@@ -247,11 +246,12 @@ func CreateConfigsNewNodes(tn *testnet.TestNet, dest string, fn func(ssh.Node) (
 	return createConfigs(tn, dest, true, false, fn)
 }
 
+// CreateConfigsSC is CreateConfigs but it only operates on side cars
 func CreateConfigsSC(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
 	return createConfigs(tn, dest, false, true, fn)
 }
 
-// CreateConfigsNewNodes is CreateConfigs but it only operates on new nodes
+// CreateConfigsNewNodesSC is CreateConfigsNewNodes but it only operates on side cars
 func CreateConfigsNewNodesSC(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
 	return createConfigs(tn, dest, true, true, fn)
 }
