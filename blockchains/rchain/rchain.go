@@ -37,8 +37,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	rConf, err := newRChainConf(tn.LDD.Params)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	buildState.SetBuildSteps(9 + (len(tn.Servers) * 2) + (tn.LDD.Nodes * 2))
 	buildState.SetBuildStage("Setting up data collection")
@@ -46,8 +45,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	services, err := util.GetServiceIps(GetServices())
 	buildState.IncrementBuildProgress()
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	/**Make the data directories**/
@@ -60,21 +58,19 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	/**Setup the first node**/
 	err = createFirstConfigFile(tn, masterClient, masterNode, rConf, services["wb_influx_proxy"])
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	/**Check to make sure the rnode command is valid**/
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		_, err := client.DockerExec(node, fmt.Sprintf("bash -c '%s --help'", rConf.Command))
 		if err != nil {
-			fmt.Println(err)
+			//log.Println(err)
 			return fmt.Errorf("could not find command \"%s\"", rConf.Command)
 		}
 		return nil
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	buildState.IncrementBuildProgress()
@@ -87,15 +83,13 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			validatorKeyPairs[i-1] = keyPairs[i]
 		}
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 	}
 	for i := len(keyPairs) - 1; i < len(validatorKeyPairs); i++ {
 		validatorKeyPairs[i], err = km.GetKeyPair(masterClient)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 	}
 	//fmt.Printf("Keypairs = %#v\n", keyPairs)
@@ -115,23 +109,20 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		buildState.IncrementBuildProgress()
 		err = buildState.Write("bonds.txt", util.CombineConfig(bonds))
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		buildState.IncrementBuildProgress()
 
 		err = masterClient.Scp("bonds.txt", "/home/appo/bonds.txt")
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		buildState.IncrementBuildProgress()
 		buildState.Defer(func() { masterClient.Run("rm -f /home/appo/bonds.txt") })
 
 		err = masterClient.DockerCp(masterNode, "/home/appo/bonds.txt", "/bonds.txt")
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		buildState.IncrementBuildProgress()
 
@@ -145,8 +136,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 				rConf.Command, masterNode.IP))
 		buildState.IncrementBuildProgress()
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		//fmt.Println("Attempting to get the enode address")
 		buildState.SetBuildStage("Waiting for the boot node's address")
@@ -155,8 +145,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			time.Sleep(time.Duration(1 * time.Second))
 			output, err := masterClient.DockerExec(masterNode, fmt.Sprintf("cat %s", conf.DockerOutputFile))
 			if err != nil {
-				log.Println(err)
-				return nil, err
+				return nil, util.LogError(err)
 			}
 			re := regexp.MustCompile(`(?m)rnode:\/\/[a-z|0-9]*\@([0-9]{1,3}\.){3}[0-9]{1,3}\?protocol=[0-9]*\&discovery=[0-9]*`)
 
@@ -185,7 +174,9 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			}
 			return createConfigFile(tn, enode, rConf, services["wb_influx_proxy"], node.GetAbsoluteNumber())
 		})
-
+	if err != nil {
+		return nil,util.LogError(err)
+	}
 	buildState.SetBuildStage("Configuring the other rchain nodes")
 	/**Copy config files to the rest of the nodes**/
 	buildState.IncrementBuildProgress()
@@ -230,24 +221,20 @@ func createFirstConfigFile(tn *testnet.TestNet, client *ssh.Client, node ssh.Nod
 	filler := util.ConvertToStringMap(raw)
 	dat, err := helpers.GetBlockchainConfig("rchain", 0, "rchain.conf.mustache", tn.LDD)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	data, err := mustache.Render(string(dat), filler)
 	if err != nil {
-		log.Println(err)
-		return nil
+		return util.LogError(err)
 	}
 	err = tn.BuildState.Write("rnode.conf", data)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	err = client.Scp("rnode.conf", "/home/appo/rnode.conf")
 	tn.BuildState.Defer(func() { client.Run("rm -f ~/rnode.conf") })
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	return client.DockerCp(node, "/home/appo/rnode.conf", "/datadir/rnode.conf")
 }
@@ -260,56 +247,48 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 	rConf, err := newRChainConf(tn.CombinedDetails.Params)
 	tn.BuildState.SetBuildSteps(1 + 2*len(tn.NewlyBuiltNodes)) //TODO
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	iEnode, ok := tn.BuildState.Get("bootnode")
 	if !ok {
-		err = fmt.Errorf("rebuild: missing bootnode")
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(fmt.Errorf("rebuild: missing bootnode"))
 	}
 	enode := iEnode.(string)
 
 	services, err := util.GetServiceIps(GetServices())
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	keyPairs := []util.KeyPair{}
 	km, err := helpers.NewKeyMaster(&tn.CombinedDetails, "rchain")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	for range tn.Nodes {
 		kp, err := km.GetKeyPair(tn.GetFlatClients()[0])
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		keyPairs = append(keyPairs, kp)
 	}
 
-	err = helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		_, err := client.DockerExec(node, "mkdir /datadir")
-		return err
+		client.DockerExec(node, "mkdir /datadir")//Don't bother checking for errors, ok if dir exists
+		return nil
 	})
+
 
 	err = helpers.CreateConfigsNewNodes(tn, "/datadir/rnode.conf", func(node ssh.Node) ([]byte, error) {
 		return createConfigFile(tn, enode, rConf, services["wb_influx_proxy"], node.GetAbsoluteNumber())
 	})
 	if err != nil {
 		log.Println(err)
-		return nil, err
-	}
-
-	if !ok {
-		err = fmt.Errorf("rebuild: missing key pairs")
-		log.Println(err)
-		return nil, err
-	}
+		return nil, util.LogError(err)
+	}//VRFY check why this commented out section existed
+	/*if !ok { 
+		return nil, util.LogError(fmt.Errorf("rebuild: missing key pairs"))
+	}*/
 	tn.BuildState.SetBuildStage("Configuring the other rchain nodes")
 	/**Copy config files to the rest of the nodes**/
 	tn.BuildState.IncrementBuildProgress()
@@ -354,13 +333,11 @@ func createConfigFile(tn *testnet.TestNet, bootnodeAddr string, rConf *rChainCon
 	filler["bootstrap"] = fmt.Sprintf("bootstrap = \"%s\"", bootnodeAddr)
 	dat, err := helpers.GetBlockchainConfig("rchain", node, "rchain.conf.mustache", &tn.CombinedDetails)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	data, err := mustache.Render(string(dat), filler)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	return []byte(data), nil
 }
