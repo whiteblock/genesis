@@ -12,7 +12,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	//Put the relative path to your blockchain library below this line, otherwise it won't be compiled
+	"sync"
+	//Put the relative path to your blockchain/sidecar library below this line, otherwise it won't be compiled
+	//blockchains
 	_ "../blockchains/artemis"
 	_ "../blockchains/beam"
 	_ "../blockchains/cosmos"
@@ -23,7 +25,7 @@ import (
 	_ "../blockchains/rchain"
 	_ "../blockchains/syscoin"
 	_ "../blockchains/tendermint"
-
+	//side cars
 	_ "../sidecars/geth"
 )
 
@@ -86,7 +88,15 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 		buildState.ReportError(err)
 		return err
 	}
+
 	labels, err := buildFn(tn)
+	if err != nil {
+		buildState.ReportError(err)
+		log.Println(err)
+		return err
+	}
+
+	err = handleBuildSideCars(tn)
 	if err != nil {
 		buildState.ReportError(err)
 		log.Println(err)
@@ -105,6 +115,58 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 		buildState.ReportError(err)
 		return err
 	}
+	return nil
+}
+
+func handleBuildSideCars(tn *testnet.TestNet) error {
+	sidecars, err := registrar.GetBlockchainSideCars(tn.LDD.Blockchain)
+	if err != nil || sidecars == nil || len(sidecars) == 0 {
+		return nil //Not an error, just means that the blockchain doesn't have any sidecars
+	}
+	wg := sync.WaitGroup{}
+	wg.Add(len(sidecars))
+	for _, sidecar := range sidecars { //In future, should probably check all the sidecars before running any builds
+		buildFn, err := registrar.GetBuildSideCar(sidecar)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		go func() {
+			defer wg.Done()
+			err := buildFn(tn)
+			if err != nil {
+				log.Println(err)
+				tn.BuildState.ReportError(err)
+			}
+		}()
+	}
+	wg.Wait()
+	return nil
+}
+
+func handleAddSideCars(tn *testnet.TestNet) error {
+	sidecars, err := registrar.GetBlockchainSideCars(tn.LDD.Blockchain)
+	if err != nil || sidecars == nil || len(sidecars) == 0 {
+		return nil //Not an error, just means that the blockchain doesn't have any sidecars
+	}
+	wg := sync.WaitGroup{}
+	wg.Add(len(sidecars))
+	for _, sidecar := range sidecars { //In future, should probably check all the sidecars before running any builds
+		buildFn, err := registrar.GetBuildSideCar(sidecar)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		go func() {
+			defer wg.Done()
+			err := buildFn(tn)
+			if err != nil {
+				log.Println(err)
+				tn.BuildState.ReportError(err)
+			}
+		}()
+	}
+	wg.Wait()
 	return nil
 }
 

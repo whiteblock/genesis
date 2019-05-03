@@ -72,6 +72,13 @@ func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 		return err
 	}
 
+	err = handleBuildSideCars(tn)
+	if err != nil {
+		buildState.ReportError(err)
+		log.Println(err)
+		return err
+	}
+
 	err = tn.StoreNodes(labels)
 	if err != nil {
 		log.Println(err.Error())

@@ -21,23 +21,22 @@ var conf *util.Config
 
 func init() {
 	conf = util.GetConfig()
+	blockchain := "geth"
+	alias := "ethereum"
+	registrar.RegisterBuild(blockchain, Build)
+	registrar.RegisterBuild(alias, Build) //ethereum default to geth
 
-	registrar.RegisterBuild("geth", Build)
-	registrar.RegisterBuild("ethereum", Build) //ethereum default to geth
+	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterAddNodes(alias, Add)
 
-	registrar.RegisterAddNodes("geth", Add)
-	registrar.RegisterAddNodes("ethereum", Add)
+	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterServices(alias, GetServices)
 
-	registrar.RegisterServices("geth", GetServices)
-	registrar.RegisterServices("ethereum", GetServices)
+	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterDefaults(alias, GetDefaults)
 
-	registrar.RegisterDefaults("geth", GetDefaults)
-	registrar.RegisterDefaults("ethereum", GetDefaults)
-
-	registrar.RegisterParams("geth", GetParams)
-	registrar.RegisterParams("ethereum", GetParams)
-
-	registrar.RegisterBlockchainSideCars("geth", []string{"geth"})
+	registrar.RegisterParams(blockchain, GetParams)
+	registrar.RegisterParams(alias, GetParams)
 }
 
 const ethNetStatsPort = 3338
