@@ -63,7 +63,7 @@ func AddNodes(tn *testnet.TestNet) error {
 		index = (index + 1) % len(availableServers)
 	}
 	wg.Wait()
-
+	distributeNibbler(tn)
 	tn.BuildState.SetBuildStage("Setting up services")
 
 	wg.Add(1)

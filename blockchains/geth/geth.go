@@ -17,10 +17,10 @@ import (
 )
 
 var conf *util.Config
+const blockchain = "geth"
 
 func init() {
 	conf = util.GetConfig()
-	blockchain := "geth"
 	alias := "ethereum"
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterBuild(alias, build) //ethereum default to geth

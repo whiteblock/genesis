@@ -2,9 +2,9 @@ package geth
 
 import (
 	"../../util"
+	"../helpers"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 )
 
 type ethConf struct {
@@ -87,7 +87,7 @@ func newConf(data map[string]interface{}) (*ethConf, error) {
 
 // GetParams fetchs artemis related parameters
 func GetParams() string {
-	dat, err := ioutil.ReadFile("./resources/geth/params.json")
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -96,7 +96,7 @@ func GetParams() string {
 
 // GetDefaults fetchs artemis related parameter defaults
 func GetDefaults() string {
-	dat, err := ioutil.ReadFile("./resources/geth/defaults.json")
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
