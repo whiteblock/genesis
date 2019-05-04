@@ -30,7 +30,7 @@ func init() {
 }
 
 // Build builds out a fresh new ethereum test network using geth
-func Build(tn *testnet.TestNet) error {
+func Build(tn *testnet.Adjunct) error {
 	var networkID int64
 	var accounts []*ethereum.Account
 	var mine bool
@@ -165,7 +165,7 @@ func Build(tn *testnet.TestNet) error {
 
 // Add handles adding a node to the geth testnet
 // TODO
-func Add(tn *testnet.TestNet) error {
+func Add(tn *testnet.Adjunct) error {
 	return nil
 }
 

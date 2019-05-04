@@ -35,12 +35,12 @@ func CopyAllToServers(tn *testnet.TestNet, srcDst ...string) error {
 	return tn.BuildState.GetError()
 }
 
-func copyToAllNodes(tn *testnet.TestNet, useNew bool, sidecar bool, srcDst ...string) error {
+func copyToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, srcDst ...string) error {
 	if len(srcDst)%2 != 0 {
 		return fmt.Errorf("invalid number of variadic arguments, must be given an even number of them")
 	}
 	wg := sync.WaitGroup{}
-	preOrderedNodes := tn.PreOrderNodes(useNew, sidecar)
+	preOrderedNodes := tn.PreOrderNodes(useNew, sidecar != -1, sidecar)
 
 	for sid, nodes := range preOrderedNodes {
 		for j := 0; j < len(srcDst)/2; j++ {
@@ -80,26 +80,26 @@ func copyToAllNodes(tn *testnet.TestNet, useNew bool, sidecar bool, srcDst ...st
 // CopyToAllNodes copies files writen with BuildState's write function over to all of the nodes.
 // Can handle multiple files, in pairs of src and dst
 func CopyToAllNodes(tn *testnet.TestNet, srcDst ...string) error {
-	return copyToAllNodes(tn, false, false, srcDst...)
+	return copyToAllNodes(tn, false, -1, srcDst...)
 }
 
 // CopyToAllNewNodes copies files writen with BuildState's write function over to all of the newly built nodes.
 // Can handle multiple files, in pairs of src and dst
 func CopyToAllNewNodes(tn *testnet.TestNet, srcDst ...string) error {
-	return copyToAllNodes(tn, true, false, srcDst...)
+	return copyToAllNodes(tn, true, -1, srcDst...)
 }
 
 // CopyToAllNodesSC is CopyToAllNodes for side cars
-func CopyToAllNodesSC(tn *testnet.TestNet, srcDst ...string) error {
-	return copyToAllNodes(tn, false, true, srcDst...)
+func CopyToAllNodesSC(ad *testnet.Adjunct, srcDst ...string) error {
+	return copyToAllNodes(ad.Main, false, ad.Index, srcDst...)
 }
 
 // CopyToAllNewNodesSC is CopyToAllNewNodes for side cars
-func CopyToAllNewNodesSC(tn *testnet.TestNet, srcDst ...string) error {
-	return copyToAllNodes(tn, true, true, srcDst...)
+func CopyToAllNewNodesSC(ad *testnet.Adjunct, srcDst ...string) error {
+	return copyToAllNodes(ad.Main, true, ad.Index, srcDst...)
 }
 
-func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, sidecar bool, dataDst ...string) error {
+func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, dataDst ...string) error {
 	fmted := []string{}
 	for i := 0; i < len(dataDst)/2; i++ {
 		tmpFilename, err := util.GetUUIDString()
@@ -116,22 +116,22 @@ func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, sidecar bool, dataDst
 // CopyBytesToAllNodes functions similiarly to CopyToAllNodes, except it operates on data and dst pairs instead of
 // src and dest pairs, so you can just pass data directly to all of the nodes without having to call buildState.Write first.
 func CopyBytesToAllNodes(tn *testnet.TestNet, dataDst ...string) error {
-	return copyBytesToAllNodes(tn, false, false, dataDst...)
+	return copyBytesToAllNodes(tn, false, -1, dataDst...)
 }
 
 // CopyBytesToAllNewNodes is CopyBytesToAllNodes but only operates on newly built nodes
 func CopyBytesToAllNewNodes(tn *testnet.TestNet, dataDst ...string) error {
-	return copyBytesToAllNodes(tn, true, false, dataDst...)
+	return copyBytesToAllNodes(tn, true, -1, dataDst...)
 }
 
 // CopyBytesToAllNodesSC is CopyBytesToAllNodes but only operates on sidecar nodes
-func CopyBytesToAllNodesSC(tn *testnet.TestNet, dataDst ...string) error {
-	return copyBytesToAllNodes(tn, false, true, dataDst...)
+func CopyBytesToAllNodesSC(ad *testnet.Adjunct, dataDst ...string) error {
+	return copyBytesToAllNodes(ad.Main, false, ad.Index, dataDst...)
 }
 
 // CopyBytesToAllNewNodesSC is CopyBytesToAllNewNodes but only operates on sidecar nodes
-func CopyBytesToAllNewNodesSC(tn *testnet.TestNet, dataDst ...string) error {
-	return copyBytesToAllNodes(tn, true, true, dataDst...)
+func CopyBytesToAllNewNodesSC(ad *testnet.Adjunct, dataDst ...string) error {
+	return copyBytesToAllNodes(ad.Main, true, ad.Index, dataDst...)
 }
 
 // SingleCp copies over data to the given dest on node localNodeID.
@@ -190,8 +190,8 @@ func CopyBytesToNodeFiles(client *ssh.Client, buildState *state.BuildState, tran
 /*
 	fn func(serverid int, localNodeNum int, absoluteNodeNum int) ([]byte, error)
 */
-func createConfigs(tn *testnet.TestNet, dest string, useNew bool, sidecar bool, fn func(ssh.Node) ([]byte, error)) error {
-	nodes := tn.GetSSHNodes(useNew, sidecar)
+func createConfigs(tn *testnet.TestNet, dest string, useNew bool, sidecar int, fn func(ssh.Node) ([]byte, error)) error {
+	nodes := tn.GetSSHNodes(useNew, sidecar != -1, sidecar)
 	wg := sync.WaitGroup{}
 	for _, node := range nodes {
 		wg.Add(1)
@@ -222,20 +222,20 @@ func createConfigs(tn *testnet.TestNet, dest string, useNew bool, sidecar bool, 
 // For each node, fn will be called, with (Server ID, local node number, absolute node number), and it will expect
 // to have the configuration file returned or error.
 func CreateConfigs(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
-	return createConfigs(tn, dest, false, false, fn)
+	return createConfigs(tn, dest, false, -1, fn)
 }
 
 // CreateConfigsNewNodes is CreateConfigs but it only operates on new nodes
 func CreateConfigsNewNodes(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
-	return createConfigs(tn, dest, true, false, fn)
+	return createConfigs(tn, dest, true, -1, fn)
 }
 
 // CreateConfigsSC is CreateConfigs but it only operates on side cars
-func CreateConfigsSC(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
-	return createConfigs(tn, dest, false, true, fn)
+func CreateConfigsSC(ad *testnet.Adjunct, dest string, fn func(ssh.Node) ([]byte, error)) error {
+	return createConfigs(ad.Main, dest, false, ad.Index, fn)
 }
 
 // CreateConfigsNewNodesSC is CreateConfigsNewNodes but it only operates on side cars
-func CreateConfigsNewNodesSC(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
-	return createConfigs(tn, dest, true, true, fn)
+func CreateConfigsNewNodesSC(ad *testnet.Adjunct, dest string, fn func(ssh.Node) ([]byte, error)) error {
+	return createConfigs(ad.Main, dest, true, ad.Index, fn)
 }

@@ -14,8 +14,8 @@ type SideCar struct {
 var (
 	sideCars           = map[string]SideCar{}
 	blockchainSideCars = map[string][]string{}
-	sideCarBuildFuncs  = map[string]func(*testnet.TestNet) error{}
-	sideCarAddFuncs    = map[string]func(*testnet.TestNet) error{}
+	sideCarBuildFuncs  = map[string]func(*testnet.Adjunct) error{}
+	sideCarAddFuncs    = map[string]func(*testnet.Adjunct) error{}
 )
 
 // RegisterBlockchainSideCars associates a blockchain name with a
@@ -33,14 +33,14 @@ func RegisterSideCar(name string, sc SideCar) {
 }
 
 // RegisterAddSideCar associates a blockchain name with a add node process
-func RegisterAddSideCar(sideCarName string, fn func(*testnet.TestNet) error) {
+func RegisterAddSideCar(sideCarName string, fn func(*testnet.Adjunct) error) {
 	mux.Lock()
 	defer mux.Unlock()
 	sideCarAddFuncs[sideCarName] = fn
 }
 
 // RegisterBuildSideCar associates a blockchain name with a add node process
-func RegisterBuildSideCar(sideCarName string, fn func(*testnet.TestNet) error) {
+func RegisterBuildSideCar(sideCarName string, fn func(*testnet.Adjunct) error) {
 	mux.Lock()
 	defer mux.Unlock()
 	sideCarBuildFuncs[sideCarName] = fn
@@ -58,7 +58,7 @@ func GetBlockchainSideCars(blockchain string) ([]string, error) {
 }
 
 // GetAddSideCar gets the function to add a sidecar
-func GetAddSideCar(sideCarName string) (func(*testnet.TestNet) error, error) {
+func GetAddSideCar(sideCarName string) (func(*testnet.Adjunct) error, error) {
 	mux.RLock()
 	defer mux.RUnlock()
 	out, ok := sideCarAddFuncs[sideCarName]
@@ -69,7 +69,7 @@ func GetAddSideCar(sideCarName string) (func(*testnet.TestNet) error, error) {
 }
 
 // GetBuildSideCar gets the function to build a sidecar
-func GetBuildSideCar(sideCarName string) (func(*testnet.TestNet) error, error) {
+func GetBuildSideCar(sideCarName string) (func(*testnet.Adjunct) error, error) {
 	mux.RLock()
 	defer mux.RUnlock()
 	out, ok := sideCarBuildFuncs[sideCarName]

@@ -27,7 +27,7 @@ func init() {
 	registrar.RegisterAddSideCar(sidecar, add)
 }
 
-func build(tn *testnet.TestNet) error {
+func build(tn *testnet.Adjunct) error {
 	// mux := sync.Mutex{}
 
 	orionconf, err := newConf(tn)
@@ -53,7 +53,7 @@ func build(tn *testnet.TestNet) error {
 			return []byte(orionNodeConfig), err
 		})
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecConSC(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		_, err := client.DockerExec(node, "bash -c 'cd /orion/data && echo \"\" | orion -g nodeKey'")
 		return err
@@ -63,7 +63,7 @@ func build(tn *testnet.TestNet) error {
 		return err
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecConSC(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		return client.DockerExecdLog(node, "orion /orion/data/orion.conf")
 	})
@@ -75,6 +75,6 @@ func build(tn *testnet.TestNet) error {
 	return nil
 }
 
-func add(tn *testnet.TestNet) error {
+func add(tn *testnet.Adjunct) error {
 	return nil
 }

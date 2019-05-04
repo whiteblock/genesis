@@ -23,9 +23,9 @@ type TestNet struct {
 	// NewlyBuiltNodes contains only the nodes created in the last/in progress build event
 	NewlyBuiltNodes []db.Node
 
-	SideCars []db.SideCar
+	SideCars [][]db.SideCar
 
-	NewlyBuiltSideCars []db.SideCar
+	NewlyBuiltSideCars [][]db.SideCar
 
 	// Clients is a map of server ids to ssh clients
 	Clients map[int]*ssh.Client
@@ -119,12 +119,19 @@ func (tn *TestNet) AddNode(node db.Node) *db.Node {
 }
 
 // AddSideCar adds a side car to the testnet
-func (tn *TestNet) AddSideCar(node db.SideCar) {
-	fmt.Println("Side car added")
+func (tn *TestNet) AddSideCar(node db.SideCar, index int) {
 	tn.mux.Lock()
 	defer tn.mux.Unlock()
-	tn.NewlyBuiltSideCars = append(tn.NewlyBuiltSideCars, node)
-	tn.SideCars = append(tn.SideCars, node)
+	if len(tn.NewlyBuiltSideCars) <= index {
+		tn.NewlyBuiltSideCars = append(tn.NewlyBuiltSideCars, []db.SideCar{node})
+	} else {
+		tn.NewlyBuiltSideCars[index] = append(tn.NewlyBuiltSideCars[index], node)
+	}
+	if len(tn.SideCars) <= index {
+		tn.SideCars = append(tn.SideCars, []db.SideCar{node})
+	} else {
+		tn.SideCars[index] = append(tn.SideCars[index], node)
+	}
 }
 
 // AddDetails adds the details of a new deployment to the TestNet
@@ -220,7 +227,7 @@ func (tn *TestNet) GetLastestDeploymentDetails() *db.DeploymentDetails {
 }
 
 // PreOrderNodes sorts the nodes into buckets by server id
-func (tn *TestNet) PreOrderNodes(newNodes bool, sidecar bool) map[int][]ssh.Node {
+func (tn *TestNet) PreOrderNodes(newNodes bool, sidecar bool, index int) map[int][]ssh.Node {
 	tn.mux.RLock()
 	defer tn.mux.RUnlock()
 
@@ -229,7 +236,7 @@ func (tn *TestNet) PreOrderNodes(newNodes bool, sidecar bool) map[int][]ssh.Node
 		out[server.ID] = []ssh.Node{}
 	}
 	if !newNodes && sidecar {
-		for _, node := range tn.SideCars {
+		for _, node := range tn.SideCars[index] {
 			out[node.Server] = append(out[node.Server], node)
 		}
 	} else if !newNodes && !sidecar {
@@ -237,7 +244,7 @@ func (tn *TestNet) PreOrderNodes(newNodes bool, sidecar bool) map[int][]ssh.Node
 			out[node.Server] = append(out[node.Server], node)
 		}
 	} else if newNodes && sidecar {
-		for _, node := range tn.NewlyBuiltSideCars {
+		for _, node := range tn.NewlyBuiltSideCars[index] {
 			out[node.Server] = append(out[node.Server], node)
 		}
 	} else {
@@ -289,10 +296,10 @@ func (tn *TestNet) StoreNodes(labels []string) error {
 
 // GetSSHNodes gets all nodes or sidecars wrapper in the
 // ssh Node interface
-func (tn *TestNet) GetSSHNodes(newNodes bool, sidecar bool) []ssh.Node {
+func (tn *TestNet) GetSSHNodes(newNodes bool, sidecar bool, index int) []ssh.Node {
 	out := []ssh.Node{}
 	if !newNodes && sidecar {
-		for _, node := range tn.SideCars {
+		for _, node := range tn.SideCars[index] {
 			out = append(out, node)
 		}
 	} else if !newNodes && !sidecar {
@@ -300,7 +307,7 @@ func (tn *TestNet) GetSSHNodes(newNodes bool, sidecar bool) []ssh.Node {
 			out = append(out, node)
 		}
 	} else if newNodes && sidecar {
-		for _, node := range tn.NewlyBuiltSideCars {
+		for _, node := range tn.NewlyBuiltSideCars[index] {
 			out = append(out, node)
 		}
 	} else {
@@ -309,4 +316,18 @@ func (tn *TestNet) GetSSHNodes(newNodes bool, sidecar bool) []ssh.Node {
 		}
 	}
 	return out
+}
+
+//SpawnAdjunct generates info on an adjunct new by index
+func (tn *TestNet) SpawnAdjunct(newNodes bool, index int) (*Adjunct, error) {
+	if index >= len(tn.SideCars) {
+		return nil, fmt.Errorf("index out of range")
+	}
+	return &Adjunct{
+		Main:       tn,
+		Index:      index,
+		Nodes:      tn.GetSSHNodes(newNodes, true, index),
+		BuildState: tn.BuildState,
+		LDD:        tn.LDD,
+	}, nil
 }

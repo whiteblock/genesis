@@ -45,7 +45,7 @@ func buildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 			Image:           sideCarDetails.Image,
 			Type:            sidecar,
 		}
-		tn.AddSideCar(scNode)
+		tn.AddSideCar(scNode, i)
 		err = docker.Run(tn, server.ID, docker.NewSideCarContainer(&scNode, nil, util.Resources{}, server.SubnetID))
 		if err != nil {
 			tn.BuildState.ReportError(err)

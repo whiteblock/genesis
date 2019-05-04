@@ -122,8 +122,8 @@ func handleSideCars(tn *testnet.TestNet, append bool) error {
 	}
 	wg := sync.WaitGroup{}
 	wg.Add(len(sidecars))
-	for _, sidecar := range sidecars { //In future, should probably check all the sidecars before running any builds
-		var buildFn func(*testnet.TestNet) error
+	for i, sidecar := range sidecars { //In future, should probably check all the sidecars before running any builds
+		var buildFn func(*testnet.Adjunct) error
 		if append {
 			buildFn, err = registrar.GetAddSideCar(sidecar)
 		} else {
@@ -133,13 +133,17 @@ func handleSideCars(tn *testnet.TestNet, append bool) error {
 		if err != nil {
 			return util.LogError(err)
 		}
-		go func() {
+		ad, err := tn.SpawnAdjunct(append, i)
+		if err != nil {
+			return util.LogError(err)
+		}
+		go func(i int) {
 			defer wg.Done()
-			err := buildFn(tn)
+			err := buildFn(ad)
 			if err != nil {
 				tn.BuildState.ReportError(err)
 			}
-		}()
+		}(i)
 	}
 	wg.Wait()
 	return nil

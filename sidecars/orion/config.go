@@ -23,7 +23,7 @@ type orionConf struct {
 /**
  * Fills in the defaults for missing parts,
  */
-func newConf(tn *testnet.TestNet) (*orionConf, error) {
+func newConf(tn *testnet.Adjunct) (*orionConf, error) {
 
 	out := new(orionConf)
 	err := json.Unmarshal([]byte(getDefaults()), out)
