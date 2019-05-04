@@ -12,16 +12,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/mustache"
-	"log"
 	"sync"
 )
 
 var conf *util.Config
 
+const sidecar = "geth"
+
 func init() {
 	conf = util.GetConfig()
 
-	sidecar := "geth"
 	registrar.RegisterSideCar(sidecar, registrar.SideCar{
 		Image: "gcr.io/whiteblock/geth:dev",
 	})
@@ -50,21 +50,17 @@ func Build(tn *testnet.Adjunct) error {
 		return err
 	})
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	err = helpers.CreateConfigsSC(tn, "/geth/genesis.json", func(node ssh.Node) ([]byte, error) {
 		if wallets != nil {
-			gethConf, err := gethSpec(conf, wallets)
-			return []byte(gethConf), err
+			return gethSpec(conf, wallets)
 		}
-		gethConf, err := gethSpec(conf, ethereum.ExtractAddresses(accounts))
-		return []byte(gethConf), err
+		return gethSpec(conf, ethereum.ExtractAddresses(accounts))
 	})
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	/**Create the Password files**/
@@ -75,30 +71,26 @@ func Build(tn *testnet.Adjunct) error {
 		}
 		err = helpers.CopyBytesToAllNodesSC(tn, data, "/geth/passwd")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 	}
 
 	out, err := json.Marshal(peers)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	//Copy static-nodes to every server
 	err = helpers.CopyBytesToAllNodesSC(tn, string(out), "/geth/static-nodes.json")
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	err = helpers.AllNodeExecConSC(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		_, err = client.DockerExec(node,
 			fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/genesis.json", networkID))
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		wg := &sync.WaitGroup{}
 
@@ -110,13 +102,11 @@ func Build(tn *testnet.Adjunct) error {
 				_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
 				if err != nil {
 					tn.BuildState.ReportError(err)
-					log.Println(err)
 					return
 				}
 				_, err = client.DockerExec(node,
 					fmt.Sprintf("geth --datadir /geth/ --password /geth/passwd account import --password /geth/passwd /geth/pk%d", i))
 				if err != nil {
-					log.Println(err)
 					tn.BuildState.ReportError(err)
 					return
 				}
@@ -154,11 +144,15 @@ func Build(tn *testnet.Adjunct) error {
 		return err
 	})
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
+	ips := make([]string, len(tn.Nodes))
+	for i, node := range tn.Nodes {
+		ips[i] = node.GetIP()
+	}
+	tn.BuildState.SetExt("geth_side_cars", ips)
 
-	return err
+	return nil
 }
 
 /***************************************************************************************************************************/
@@ -169,7 +163,7 @@ func Add(tn *testnet.Adjunct) error {
 	return nil
 }
 
-func gethSpec(conf map[string]interface{}, wallets []string) (string, error) {
+func gethSpec(conf map[string]interface{}, wallets []string) ([]byte, error) {
 	accounts := make(map[string]interface{})
 	for _, wallet := range wallets {
 		accounts[wallet] = map[string]interface{}{
@@ -187,10 +181,10 @@ func gethSpec(conf map[string]interface{}, wallets []string) (string, error) {
 		"alloc":          accounts,
 	}
 	filler := util.ConvertToStringMap(tmp)
-	dat, err := helpers.GetStaticBlockchainConfig("geth", "genesis.json")
+	dat, err := helpers.GetStaticBlockchainConfig(sidecar, "genesis.json")
 	if err != nil {
-		return "", err
+		return nil, util.LogError(err)
 	}
 	data, err := mustache.Render(string(dat), filler)
-	return data, err
+	return []byte(data), err
 }
