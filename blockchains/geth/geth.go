@@ -40,9 +40,8 @@ func init() {
 
 const ethNetStatsPort = 3338
 
-// Build builds out a fresh new ethereum test network using geth
+// build builds out a fresh new ethereum test network using geth
 func build(tn *testnet.TestNet) error {
-	clients := tn.GetFlatClients()
 	mux := sync.Mutex{}
 	ethconf, err := newConf(tn.LDD.Params)
 	if err != nil {
@@ -55,13 +54,11 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildStage("Distributing secrets")
 	/**Copy over the password file**/
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error { //ignore err
 		_, err := client.DockerExec(node, "mkdir -p /geth")
 		return err
 	})
-	if err != nil {
-		return util.LogError(err)
-	}
+
 	/**Create the Password files**/
 	{
 		var data string
@@ -203,41 +200,18 @@ func build(tn *testnet.TestNet) error {
 	}
 	tn.BuildState.IncrementBuildProgress()
 
-	err = setupEthNetStats(clients[0])
+	err = setupEthNetStats(tn.GetFlatClients()[0])
 	if err != nil {
 		return util.LogError(err)
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
-		absName := fmt.Sprintf("%s%d", conf.NodePrefix, node.GetAbsoluteNumber())
-		sedCmd := fmt.Sprintf(`sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`, absName)
-		sedCmd2 := fmt.Sprintf(`sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:%d"/g' /eth-net-intelligence-api/app.json`,
-			util.GetGateway(server.SubnetID, node.GetAbsoluteNumber()), ethNetStatsPort)
-		sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`, node.GetIP())
-
-		//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
-		_, err := client.DockerMultiExec(node, []string{
-			sedCmd,
-			sedCmd2,
-			sedCmd3})
-
-		if err != nil {
-			return util.LogError(err)
-		}
-		_, err = client.DockerExecd(node, "bash -c 'cd /eth-net-intelligence-api && pm2 start app.json'")
-		if err != nil {
-			return util.LogError(err)
-		}
-		tn.BuildState.IncrementBuildProgress()
-		return nil
-	})
 	for _, account := range accounts {
 		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
 			"privateKey": account.HexPrivateKey(),
 			"publicKey":  account.HexPublicKey(),
 		})
 	}
-	return err
+	return setupEthNetIntelligenceAPI(tn)
 }
 
 /***************************************************************************************************************************/
@@ -313,4 +287,30 @@ func setupEthNetStats(client *ssh.Client) error {
 		return util.LogError(err)
 	}
 	return nil
+}
+
+func setupEthNetIntelligenceAPI(tn *testnet.TestNet) error {
+	return helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+		absName := fmt.Sprintf("%s%d", conf.NodePrefix, node.GetAbsoluteNumber())
+		sedCmd := fmt.Sprintf(`sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`, absName)
+		sedCmd2 := fmt.Sprintf(`sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:%d"/g' /eth-net-intelligence-api/app.json`,
+			util.GetGateway(server.SubnetID, node.GetAbsoluteNumber()), ethNetStatsPort)
+		sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`, node.GetIP())
+
+		//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
+		_, err := client.DockerMultiExec(node, []string{
+			sedCmd,
+			sedCmd2,
+			sedCmd3})
+
+		if err != nil {
+			return util.LogError(err)
+		}
+		_, err = client.DockerExecd(node, "bash -c 'cd /eth-net-intelligence-api && pm2 start app.json'")
+		if err != nil {
+			return util.LogError(err)
+		}
+		tn.BuildState.IncrementBuildProgress()
+		return nil
+	})
 }
