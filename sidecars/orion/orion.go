@@ -17,9 +17,10 @@ import (
 
 var conf *util.Config
 
+const sidecar = "orion"
+
 func init() {
 	conf = util.GetConfig()
-	sidecar := "orion"
 	registrar.RegisterSideCar(sidecar, registrar.SideCar{
 		Image: "gcr.io/whiteblock/orion:dev",
 	})
