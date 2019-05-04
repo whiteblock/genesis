@@ -280,18 +280,16 @@ func (tn *TestNet) Destroy() error {
 }
 
 // StoreNodes stores the newly built nodes into the database with their labels.
-func (tn *TestNet) StoreNodes(labels []string) error {
-	for i, node := range tn.NewlyBuiltNodes {
-		if labels != nil {
-			node.Label = labels[i]
-		}
-
-		_, err := db.InsertNode(node)
-		if err != nil {
-			log.Println(err)
+func (tn *TestNet) StoreNodes() error {
+	var err error
+	for _, node := range tn.NewlyBuiltNodes {
+		_, er := db.InsertNode(node)
+		if er != nil {
+			log.Println(er)
+			err = er
 		}
 	}
-	return nil
+	return err
 }
 
 // GetSSHNodes gets all nodes or sidecars wrapper in the

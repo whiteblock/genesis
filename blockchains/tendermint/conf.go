@@ -2,12 +2,12 @@ package tendermint
 
 import (
 	"../../util"
-	"io/ioutil"
+	"../helpers"
 )
 
 // GetParams fetchs tendermint related parameters
 func GetParams() string {
-	dat, err := ioutil.ReadFile("./resources/tendermint/params.json")
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -16,7 +16,7 @@ func GetParams() string {
 
 // GetDefaults fetchs tendermint related parameter defaults
 func GetDefaults() string {
-	dat, err := ioutil.ReadFile("./resources/tendermint/defaults.json")
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}

@@ -15,27 +15,22 @@ import (
 
 var conf *util.Config
 
+const blockchain = "syscoin"
+
 func init() {
 	conf = util.GetConfig()
-	blockchain := "syscoin"
-	registrar.RegisterBuild(blockchain, RegTest)
-	registrar.RegisterAddNodes(blockchain, Add)
-	registrar.RegisterServices(blockchain, GetServices)
-	registrar.RegisterDefaults(blockchain, GetDefaults)
-	registrar.RegisterParams(blockchain, GetParams)
-	blockchain = "sys"
-	registrar.RegisterBuild(blockchain, RegTest)
-	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterBuild(blockchain, regTest)
+	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
 	registrar.RegisterParams(blockchain, GetParams)
 }
 
-// RegTest sets up Syscoin Testnet in Regtest mode
-func RegTest(tn *testnet.TestNet) []string {
+// regTest sets up Syscoin Testnet in Regtest mode
+func regTest(tn *testnet.TestNet) error {
 	if tn.LDD.Nodes < 3 {
 		log.Println("Tried to build syscoin with not enough nodes")
-		return nil, fmt.Errorf("not enough nodes")
+		return fmt.Errorf("not enough nodes")
 	}
 
 	sysconf, err := newConf(tn.LDD.Params)
@@ -46,7 +41,7 @@ func RegTest(tn *testnet.TestNet) []string {
 	tn.BuildState.SetBuildSteps(1 + (4 * tn.LDD.Nodes))
 
 	tn.BuildState.SetBuildStage("Creating the syscoin conf files")
-	out, err := handleConf(tn, sysconf)
+	err = handleConf(tn, sysconf)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -64,8 +59,8 @@ func RegTest(tn *testnet.TestNet) []string {
 
 // Add handles adding a node to the artemis testnet
 // TODO
-func Add(tn *testnet.TestNet) []string {
-	return nil, nil
+func add(tn *testnet.TestNet) error {
+	return nil
 }
 
 func handleConf(tn *testnet.TestNet, sysconf *sysConf) error {
@@ -113,7 +108,6 @@ func handleConf(tn *testnet.TestNet, sysconf *sysConf) error {
 	}
 	//Finally generate the configuration for each node
 	mux := sync.Mutex{}
-	labels := make([]string, len(ips))
 
 	masterNodes := []string{}
 	senders := []string{}

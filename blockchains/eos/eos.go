@@ -8,10 +8,7 @@ import (
 	"../../util"
 	"../helpers"
 	"../registrar"
-	"context"
 	"fmt"
-	"golang.org/x/sync/semaphore"
-	"log"
 	"math/rand"
 	"strings"
 	"sync"
@@ -50,8 +47,8 @@ func Build(tn *testnet.TestNet) error {
 	}
 
 	fmt.Println("-------------Setting Up EOS-------------")
-	sem := semaphore.NewWeighted(conf.ThreadLimit)
-	ctx := context.TODO()
+
+	wg := sync.WaitGroup{}
 	mux := sync.Mutex{}
 
 	masterIP := tn.Nodes[0].IP
@@ -206,9 +203,9 @@ func Build(tn *testnet.TestNet) error {
 			masterIP, password)) //Can fail
 
 		for _, account := range contractAccounts {
-			sem.Acquire(ctx, 1)
+			wg.Add(1)
 			go func(masterIP string, account string, masterKeyPair util.KeyPair, contractKeyPair util.KeyPair) {
-				defer sem.Release(1)
+				defer wg.Done()
 
 				_, err := masterClient.KeepTryDockerExec(masterNode, fmt.Sprintf("cleos wallet import --private-key %s",
 					contractKeyPair.PrivateKey))
@@ -227,11 +224,9 @@ func Build(tn *testnet.TestNet) error {
 			}(masterIP, account, masterKeyPair, contractKeyPairs[account])
 
 		}
-		sem.Acquire(ctx, conf.ThreadLimit)
-		sem.Release(conf.ThreadLimit)
-
+		wg.Wait()
 		if !tn.BuildState.ErrorFree() {
-			return nil, tn.BuildState.GetError()
+			return tn.BuildState.GetError()
 		}
 
 	}
@@ -390,9 +385,9 @@ func Build(tn *testnet.TestNet) error {
 	/**Create normal user accounts**/
 	tn.BuildState.SetBuildStage("Creating funded accounts")
 	for _, name := range accountNames {
-		sem.Acquire(ctx, 1)
+		wg.Add(1)
 		go func(name string, masterKeyPair util.KeyPair, accountKeyPair util.KeyPair) {
-			defer sem.Release(1)
+			defer wg.Done()
 			res, err := masterClient.KeepTryDockerExec(masterNode,
 				fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "%d SYS" --stake-cpu "%d SYS" --buy-ram-kbytes %d`,
 					masterIP,
@@ -422,10 +417,9 @@ func Build(tn *testnet.TestNet) error {
 
 		}(name, masterKeyPair, accountKeyPairs[name])
 	}
-	sem.Acquire(ctx, conf.ThreadLimit)
-	sem.Release(conf.ThreadLimit)
+	wg.Wait()
 	if !tn.BuildState.ErrorFree() {
-		return nil, tn.BuildState.GetError()
+		return tn.BuildState.GetError()
 	}
 
 	tn.BuildState.IncrementBuildProgress()
@@ -448,9 +442,9 @@ func Build(tn *testnet.TestNet) error {
 			}
 
 			prod = (prod % (node - 1)) + 1
-			sem.Acquire(ctx, 1)
+			wg.Add(1)
 			go func(masterServerIP string, masterIP string, name string, prod int) {
-				defer sem.Release(1)
+				defer wg.Done()
 
 				res, err := masterClient.KeepTryDockerExec(tn.Nodes[1], //BUG
 					fmt.Sprintf("cleos -u http://%s:8889 system voteproducer prods %s %s",
@@ -467,8 +461,7 @@ func Build(tn *testnet.TestNet) error {
 			}(masterServerIP, masterIP, name, prod)
 			n++
 		}
-		sem.Acquire(ctx, conf.ThreadLimit)
-		sem.Release(conf.ThreadLimit)
+		wg.Wait()
 		if !tn.BuildState.ErrorFree() {
 			return util.LogError(tn.BuildState.GetError())
 		}

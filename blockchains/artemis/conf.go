@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/mustache"
-	"log"
 )
 
 type artemisConf map[string]interface{}
@@ -19,8 +18,7 @@ func newConf(data map[string]interface{}) (artemisConf, error) {
 
 	err := json.Unmarshal([]byte(rawDefaults), &defaults)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	var val int64
 	err = util.GetJSONInt64(data, "validators", &val) //Check provided validators

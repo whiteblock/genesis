@@ -104,11 +104,11 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	return nil, nil
+	return nil
 }
 
 // Add handles adding a node to the artemis testnet
 // TODO
-func Add(tn *testnet.TestNet) ([]string, error) {
-	return nil, nil
+func add(tn *testnet.TestNet) error {
+	return nil
 }

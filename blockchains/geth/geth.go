@@ -22,11 +22,11 @@ func init() {
 	conf = util.GetConfig()
 	blockchain := "geth"
 	alias := "ethereum"
-	registrar.RegisterBuild(blockchain, Build)
-	registrar.RegisterBuild(alias, Build) //ethereum default to geth
+	registrar.RegisterBuild(blockchain, build)
+	registrar.RegisterBuild(alias, build) //ethereum default to geth
 
-	registrar.RegisterAddNodes(blockchain, Add)
-	registrar.RegisterAddNodes(alias, Add)
+	registrar.RegisterAddNodes(blockchain, add)
+	registrar.RegisterAddNodes(alias, add)
 
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterServices(alias, GetServices)
@@ -41,7 +41,7 @@ func init() {
 const ethNetStatsPort = 3338
 
 // Build builds out a fresh new ethereum test network using geth
-func Build(tn *testnet.TestNet) error {
+func build(tn *testnet.TestNet) error {
 	clients := tn.GetFlatClients()
 	mux := sync.Mutex{}
 	ethconf, err := newConf(tn.LDD.Params)
@@ -244,8 +244,8 @@ func Build(tn *testnet.TestNet) error {
 
 // Add handles adding a node to the geth testnet
 // TODO
-func Add(tn *testnet.TestNet) []string {
-	return nil, nil
+func add(tn *testnet.TestNet) error {
+	return nil
 }
 
 // MakeFakeAccounts creates ethereum addresses which can be marked as funded to produce a

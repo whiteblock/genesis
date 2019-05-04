@@ -18,26 +18,27 @@ import (
 
 var conf *util.Config
 
+const blockchain = "rchain"
+
 func init() {
 	conf = util.GetConfig()
 
-	blockchain := "rchain"
-	registrar.RegisterBuild(blockchain, Build)
-	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterBuild(blockchain, build)
+	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
 	registrar.RegisterParams(blockchain, GetParams)
 }
 
-// Build builds out a fresh new rchain test network
-func Build(tn *testnet.TestNet) ([]string, error) {
+// build builds out a fresh new rchain test network
+func build(tn *testnet.TestNet) error {
 	buildState := tn.BuildState
 	masterNode := tn.Nodes[0]
 	masterClient := tn.Clients[masterNode.Server]
 
 	rConf, err := newRChainConf(tn.LDD.Params)
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	buildState.SetBuildSteps(9 + (len(tn.Servers) * 2) + (tn.LDD.Nodes * 2))
 	buildState.SetBuildStage("Setting up data collection")
@@ -45,7 +46,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	services, err := util.GetServiceIps(GetServices())
 	buildState.IncrementBuildProgress()
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	/**Make the data directories**/
@@ -58,7 +59,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	/**Setup the first node**/
 	err = createFirstConfigFile(tn, masterClient, masterNode, rConf, services["wb_influx_proxy"])
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	/**Check to make sure the rnode command is valid**/
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
@@ -70,11 +71,11 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	buildState.IncrementBuildProgress()
-	km, err := helpers.NewKeyMaster(tn.LDD, "rchain")
+	km, err := helpers.NewKeyMaster(tn.LDD, blockchain)
 	keyPairs := make([]util.KeyPair, tn.LDD.Nodes)
 	validatorKeyPairs := make([]util.KeyPair, rConf.Validators)
 	for i := range keyPairs {
@@ -83,13 +84,13 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			validatorKeyPairs[i-1] = keyPairs[i]
 		}
 		if err != nil {
-			return nil, util.LogError(err)
+			return util.LogError(err)
 		}
 	}
 	for i := len(keyPairs) - 1; i < len(validatorKeyPairs); i++ {
 		validatorKeyPairs[i], err = km.GetKeyPair(masterClient)
 		if err != nil {
-			return nil, util.LogError(err)
+			return util.LogError(err)
 		}
 	}
 	//fmt.Printf("Keypairs = %#v\n", keyPairs)
@@ -109,20 +110,20 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		buildState.IncrementBuildProgress()
 		err = buildState.Write("bonds.txt", util.CombineConfig(bonds))
 		if err != nil {
-			return nil, util.LogError(err)
+			return util.LogError(err)
 		}
 		buildState.IncrementBuildProgress()
 
 		err = masterClient.Scp("bonds.txt", "/home/appo/bonds.txt")
 		if err != nil {
-			return nil, util.LogError(err)
+			return util.LogError(err)
 		}
 		buildState.IncrementBuildProgress()
 		buildState.Defer(func() { masterClient.Run("rm -f /home/appo/bonds.txt") })
 
 		err = masterClient.DockerCp(masterNode, "/home/appo/bonds.txt", "/bonds.txt")
 		if err != nil {
-			return nil, util.LogError(err)
+			return util.LogError(err)
 		}
 		buildState.IncrementBuildProgress()
 
@@ -136,7 +137,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 				rConf.Command, masterNode.IP))
 		buildState.IncrementBuildProgress()
 		if err != nil {
-			return nil, util.LogError(err)
+			return util.LogError(err)
 		}
 		//fmt.Println("Attempting to get the enode address")
 		buildState.SetBuildStage("Waiting for the boot node's address")
@@ -145,7 +146,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			time.Sleep(time.Duration(1 * time.Second))
 			output, err := masterClient.DockerExec(masterNode, fmt.Sprintf("cat %s", conf.DockerOutputFile))
 			if err != nil {
-				return nil, util.LogError(err)
+				return util.LogError(err)
 			}
 			re := regexp.MustCompile(`(?m)rnode:\/\/[a-z|0-9]*\@([0-9]{1,3}\.){3}[0-9]{1,3}\?protocol=[0-9]*\&discovery=[0-9]*`)
 
@@ -167,15 +168,14 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	buildState.Set("bootnode", enode)
 	buildState.Set("rConf", *rConf)
 
-	err = helpers.CreateConfigs(tn, "/datadir/rnode.conf",
-		func(node ssh.Node) ([]byte, error) {
-			if node.GetAbsoluteNumber() == 0 {
-				return nil, nil
-			}
-			return createConfigFile(tn, enode, rConf, services["wb_influx_proxy"], node.GetAbsoluteNumber())
-		})
+	err = helpers.CreateConfigs(tn, "/datadir/rnode.conf", func(node ssh.Node) ([]byte, error) {
+		if node.GetAbsoluteNumber() == 0 {
+			return nil, nil
+		}
+		return createConfigFile(tn, enode, rConf, services["wb_influx_proxy"], node.GetAbsoluteNumber())
+	})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	buildState.SetBuildStage("Configuring the other rchain nodes")
 	/**Copy config files to the rest of the nodes**/
@@ -187,7 +187,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	var validators int64
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	return helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer buildState.IncrementBuildProgress()
 		if node.GetAbsoluteNumber() == 0 {
 			return nil
@@ -197,16 +197,14 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		validators++
 		mux.Unlock()
 		if isValidator {
-			err := client.DockerExecdLog(node,
+			return client.DockerExecdLog(node,
 				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
 					rConf.Command, enode, keyPairs[node.GetAbsoluteNumber()].PrivateKey, node.GetIP()))
-			return err
 		}
 		return client.DockerExecdLog(node,
 			fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s",
 				rConf.Command, enode, node.GetIP()))
 	})
-	return nil, err
 }
 
 func createFirstConfigFile(tn *testnet.TestNet, client *ssh.Client, node ssh.Node, rConf *rChainConf, influxIP string) error {
@@ -241,33 +239,33 @@ func createFirstConfigFile(tn *testnet.TestNet, client *ssh.Client, node ssh.Nod
 
 /**********************************************************************ADD********************************************************************/
 
-// Add handles the addition of nodes to the rchain testnet
-func Add(tn *testnet.TestNet) ([]string, error) {
+// add handles the addition of nodes to the rchain testnet
+func add(tn *testnet.TestNet) error {
 
 	rConf, err := newRChainConf(tn.CombinedDetails.Params)
 	tn.BuildState.SetBuildSteps(1 + 2*len(tn.NewlyBuiltNodes)) //TODO
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	iEnode, ok := tn.BuildState.Get("bootnode")
 	if !ok {
-		return nil, util.LogError(fmt.Errorf("rebuild: missing bootnode"))
+		return util.LogError(fmt.Errorf("rebuild: missing bootnode"))
 	}
 	enode := iEnode.(string)
 
 	services, err := util.GetServiceIps(GetServices())
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	keyPairs := []util.KeyPair{}
 	km, err := helpers.NewKeyMaster(&tn.CombinedDetails, "rchain")
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	for range tn.Nodes {
 		kp, err := km.GetKeyPair(tn.GetFlatClients()[0])
 		if err != nil {
-			return nil, util.LogError(err)
+			return util.LogError(err)
 		}
 		keyPairs = append(keyPairs, kp)
 	}
@@ -282,8 +280,7 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 		return createConfigFile(tn, enode, rConf, services["wb_influx_proxy"], node.GetAbsoluteNumber())
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	} //VRFY check why this commented out section existed
 	/*if !ok {
 		return nil, util.LogError(fmt.Errorf("rebuild: missing key pairs"))
@@ -296,7 +293,7 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 	/**Start up the rest of the nodes**/
 	var validators int64
 	mux := sync.Mutex{}
-	err = helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	return helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 
 		mux.Lock()
@@ -314,7 +311,6 @@ func Add(tn *testnet.TestNet) ([]string, error) {
 			fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s",
 				rConf.Command, enode, node.GetIP()))
 	})
-	return nil, err
 }
 
 func createConfigFile(tn *testnet.TestNet, bootnodeAddr string, rConf *rChainConf,

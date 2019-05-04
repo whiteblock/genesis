@@ -23,20 +23,20 @@ var conf *util.Config
 func init() {
 	conf = util.GetConfig()
 	blockchain := "parity"
-	registrar.RegisterBuild(blockchain, Build)
-	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterBuild(blockchain, build)
+	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
 	registrar.RegisterParams(blockchain, GetParams)
 	registrar.RegisterBlockchainSideCars(blockchain, []string{"geth"})
 }
 
-// Build builds out a fresh new ethereum test network using parity
-func Build(tn *testnet.TestNet) ([]string, error) {
+// build builds out a fresh new ethereum test network using parity
+func build(tn *testnet.TestNet) error {
 	mux := sync.Mutex{}
 	pconf, err := newConf(tn.LDD.Params)
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	tn.BuildState.SetBuildSteps(9 + (7 * tn.LDD.Nodes))
@@ -46,7 +46,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return err
 	})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
 
@@ -59,7 +59,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		tn.BuildState.IncrementBuildProgress()
 		err = helpers.CopyBytesToAllNodes(tn, data, "/parity/passwd")
 		if err != nil {
-			return nil, util.LogError(err)
+			return util.LogError(err)
 		}
 		tn.BuildState.IncrementBuildProgress()
 	}
@@ -93,7 +93,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	/***********************************************************SPLIT************************************************************/
 	switch pconf.Consensus {
@@ -103,7 +103,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		err = setupPOA(tn, pconf, wallets)
 	}
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	/***********************************************************SPLIT************************************************************/
@@ -125,7 +125,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	//util.Write("tmp/config.toml",configToml)
@@ -135,7 +135,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`, wallets[node.GetAbsoluteNumber()]))
 	})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	//Start peering via curl
 	time.Sleep(time.Duration(5 * time.Second))
@@ -173,25 +173,25 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	storeGethParameters(tn, pconf, wallets, enodes)
 
 	err = peerAllNodes(tn, enodes)
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	tn.BuildState.IncrementBuildProgress()
-	return nil, nil
+	return nil
 }
 
 /***************************************************************************************************************************/
 
 // Add handles adding a node to the geth testnet
 // TODO
-func Add(tn *testnet.TestNet) ([]string, error) {
-	return nil, nil
+func add(tn *testnet.TestNet) error {
+	return nil
 }
 
 func peerAllNodes(tn *testnet.TestNet, enodes []string) error {

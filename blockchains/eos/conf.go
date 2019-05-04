@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Whiteblock/mustache"
-	"log"
 	"time"
 )
 
@@ -315,8 +314,7 @@ func (econf *eosConf) GenerateGenesis(masterPublicKey string, details *db.Deploy
 
 	dat, err := helpers.GetBlockchainConfig("eos", 0, "genesis.json.mustache", details)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", util.LogError(err)
 	}
 	return mustache.Render(string(dat), filler)
 }

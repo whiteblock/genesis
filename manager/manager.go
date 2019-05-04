@@ -90,7 +90,7 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 		return err
 	}
 
-	labels, err := buildFn(tn)
+	err = buildFn(tn)
 	if err != nil {
 		buildState.ReportError(err)
 		return err
@@ -107,7 +107,7 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 		buildState.ReportError(err)
 		return err
 	}
-	err = tn.StoreNodes(labels)
+	err = tn.StoreNodes()
 	if err != nil {
 		buildState.ReportError(err)
 		return err

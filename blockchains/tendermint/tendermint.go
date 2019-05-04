@@ -10,7 +10,6 @@ import (
 	"../registrar"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 	"time"
@@ -30,9 +29,10 @@ type validator struct {
 
 var conf *util.Config
 
+const blockchain = "tendermint"
+
 func init() {
 	conf = util.GetConfig()
-	blockchain := "tendermint"
 	registrar.RegisterBuild(blockchain, Build)
 	registrar.RegisterAddNodes(blockchain, Add)
 	registrar.RegisterServices(blockchain, GetServices)

@@ -2,8 +2,8 @@ package syscoin
 
 import (
 	"../../util"
+	"../helpers"
 	"encoding/json"
-	"io/ioutil"
 	"log"
 )
 
@@ -153,7 +153,7 @@ func (sconf *sysConf) GenerateMN() string {
 
 // GetParams fetchs syscoin related parameters
 func GetParams() string {
-	dat, err := ioutil.ReadFile("./resources/syscoin/params.json")
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -162,7 +162,7 @@ func GetParams() string {
 
 // GetDefaults fetchs syscoin related parameter defaults
 func GetDefaults() string {
-	dat, err := ioutil.ReadFile("./resources/syscoin/defaults.json")
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}

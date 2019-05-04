@@ -6,8 +6,8 @@ import (
 	"../deploy"
 	"../state"
 	"../testnet"
+	"../util"
 	"fmt"
-	"log"
 )
 
 // AddNodes allows for nodes to be added to the network.
@@ -17,13 +17,11 @@ import (
 func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 	buildState, err := state.GetBuildStateByID(testnetID)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	tn, err := testnet.RestoreTestNet(testnetID)
 	if err != nil {
-		log.Println(err)
 		buildState.ReportError(err)
 		return err
 	}
@@ -31,7 +29,6 @@ func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 
 	err = tn.AddDetails(*details)
 	if err != nil {
-		log.Println(err)
 		buildState.ReportError(err)
 		return err
 	}
@@ -40,7 +37,6 @@ func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 	for i, res := range details.Resources {
 		err = res.ValidateAndSetDefaults()
 		if err != nil {
-			log.Println(err)
 			err = fmt.Errorf("%s. For node %d", err.Error(), i)
 			buildState.ReportError(err)
 			return err
@@ -54,34 +50,29 @@ func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 
 	err = deploy.AddNodes(tn)
 	if err != nil {
-		log.Println(err)
 		buildState.ReportError(err)
 		return err
 	}
 
 	addNodesFn, err := registrar.GetAddNodeFunc(details.Blockchain)
 	if err != nil {
-		log.Println(err)
 		buildState.ReportError(err)
 		return err
 	}
-	labels, err := addNodesFn(tn)
+	err = addNodesFn(tn)
 	if err != nil {
 		buildState.ReportError(err)
-		log.Println(err)
 		return err
 	}
 
 	err = handleSideCars(tn, true)
 	if err != nil {
 		buildState.ReportError(err)
-		log.Println(err)
 		return err
 	}
 
-	err = tn.StoreNodes(labels)
+	err = tn.StoreNodes()
 	if err != nil {
-		log.Println(err.Error())
 		buildState.ReportError(err)
 		return err
 	}

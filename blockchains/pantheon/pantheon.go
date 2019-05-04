@@ -21,8 +21,8 @@ var conf *util.Config
 func init() {
 	conf = util.GetConfig()
 	blockchain := "pantheon"
-	registrar.RegisterBuild(blockchain, Build)
-	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterBuild(blockchain, build)
+	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
 	registrar.RegisterParams(blockchain, GetParams)
@@ -30,14 +30,13 @@ func init() {
 
 }
 
-// Build builds out a fresh new ethereum test network using pantheon
-func Build(tn *testnet.TestNet) ([]string, error) {
+// build builds out a fresh new ethereum test network using pantheon
+func build(tn *testnet.TestNet) error {
 	mux := sync.Mutex{}
 
 	panconf, err := newConf(tn.LDD.Params)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
 	tn.BuildState.SetBuildSteps(6*tn.LDD.Nodes + 2)
@@ -115,7 +114,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	//<- extraAccChan
 	extraAccs := <-extraAccChan
@@ -140,7 +139,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	tn.BuildState.SetBuildStage("Generating Genesis File")
 	err = createGenesisfile(panconf, tn, accounts, rlpEncodedData[0])
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	p2pPort := 30303
@@ -166,20 +165,20 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	err = helpers.CopyBytesToAllNodes(tn, enodes, "/pantheon/data/static-nodes.json")
 	if err != nil {
 		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
 	err = helpers.CreateConfigs(tn, "/pantheon/config.toml", func(node ssh.Node) ([]byte, error) {
 		return helpers.GetBlockchainConfig("pantheon", node.GetAbsoluteNumber(), "config.toml", tn.LDD)
 	})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	/* Copy static-nodes & genesis files to each node */
 	tn.BuildState.SetBuildStage("Distributing Files")
 	err = helpers.CopyToAllNodes(tn, "genesis.json", "/pantheon/genesis/genesis.json")
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	/* Start the nodes */
@@ -198,7 +197,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			"publicKey":  account.HexPublicKey(),
 		})
 	}
-	return nil, err
+	return err
 }
 
 func createGenesisfile(panconf *panConf, tn *testnet.TestNet, accounts []*ethereum.Account, ibftExtraData string) error {
@@ -272,8 +271,7 @@ func prepareGeth(client *ssh.Client, panconf *panConf, tn *testnet.TestNet) ([]*
 	}
 	err := tn.BuildState.Write("passwd2", passwd)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	//Set up a geth node as a service to sign transactions
 	client.Run(`docker exec wb_service0 mkdir /geth/`)
@@ -354,6 +352,6 @@ func startGeth(client *ssh.Client, panconf *panConf, accounts []*ethereum.Accoun
 
 // Add handles adding a node to the pantheon testnet
 // TODO
-func Add(tn *testnet.TestNet) ([]string, error) {
-	return nil, nil
+func add(tn *testnet.TestNet) error {
+	return nil
 }
