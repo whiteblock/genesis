@@ -18,9 +18,10 @@ import (
 
 var conf *util.Config
 
+const blockchain = "pantheon"
+
 func init() {
 	conf = util.GetConfig()
-	blockchain := "pantheon"
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
@@ -191,13 +192,32 @@ func build(tn *testnet.TestNet) error {
 				` --p2p-port=%d --rpc-http-port=8545 --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"`,
 			p2pPort))
 	})
+
+	if err != nil {
+		return util.LogError(err)
+	}
+
 	for _, account := range accounts {
 		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
 			"privateKey": account.HexPrivateKey(),
 			"publicKey":  account.HexPublicKey(),
 		})
 	}
-	return err
+	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
+	tn.BuildState.Set("networkID", panconf.NetworkID)
+	tn.BuildState.Set("accounts", accounts)
+	tn.BuildState.Set("mine", false)
+	tn.BuildState.Set("peers", []string{})
+
+	tn.BuildState.Set("gethConf", map[string]interface{}{
+		"networkID":   panconf.NetworkID,
+		"initBalance": panconf.InitBalance,
+		"difficulty":  fmt.Sprintf("0x%x", panconf.Difficulty),
+		"gasLimit":    fmt.Sprintf("0x%x", panconf.GasLimit),
+	})
+
+	tn.BuildState.Set("wallets", ethereum.ExtractAddresses(accounts))
+	return nil
 }
 
 func createGenesisfile(panconf *panConf, tn *testnet.TestNet, accounts []*ethereum.Account, ibftExtraData string) error {

@@ -17,6 +17,7 @@ import (
 )
 
 var conf *util.Config
+
 const blockchain = "geth"
 
 func init() {
