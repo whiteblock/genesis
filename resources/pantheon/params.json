@@ -8,5 +8,6 @@
     ["blockPeriodSeconds","int"],
     ["epoch","int"],
     ["requesttimeoutseconds","int"],
-    ["accounts","int"]
+    ["accounts","int"],
+    ["orion","bool"]
 ]

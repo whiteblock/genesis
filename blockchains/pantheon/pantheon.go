@@ -46,17 +46,11 @@ func build(tn *testnet.TestNet) error {
 	rlpEncodedData := make([]string, tn.LDD.Nodes)
 	accounts := make([]*ethereum.Account, tn.LDD.Nodes)
 
-	extraAccChan := make(chan []*ethereum.Account)
-
-	go func() {
-		accs, err := prepareGeth(tn.GetFlatClients()[0], panconf, tn)
-		if err != nil {
-			tn.BuildState.ReportError(err)
-			extraAccChan <- nil
-			return
-		}
-		extraAccChan <- accs
-	}()
+	extraAccounts, err := ethereum.GenerateAccounts(int(panconf.Accounts))
+	if err != nil {
+		return util.LogError(err)
+	}
+	accounts = append(accounts, extraAccounts...)
 
 	tn.BuildState.SetBuildStage("Setting Up Accounts")
 
@@ -117,24 +111,6 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	//<- extraAccChan
-	extraAccs := <-extraAccChan
-	accounts = append(accounts, extraAccs...)
-
-	tn.BuildState.Async(func() {
-
-		/*
-		   Set up a geth node, which is not part of the blockchain network,
-		   to sign the transactions in place of the pantheon client. The pantheon
-		   client does not support wallet management, so this acts as an easy work around.
-		*/
-		clients := tn.GetFlatClients()
-		err := startGeth(clients[0], panconf, accounts, tn.BuildState)
-		if err != nil {
-			tn.BuildState.ReportError(err)
-			return
-		}
-	})
 
 	/* Create Genesis File */
 	tn.BuildState.SetBuildStage("Generating Genesis File")
@@ -186,11 +162,15 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Starting Pantheon")
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
+		flags, err := getExtraConfigurationFlags(tn, node, panconf)
+		if err != nil {
+			return util.LogError(err)
+		}
 		return client.DockerExecdLog(node, fmt.Sprintf(
 			`pantheon --config-file=/pantheon/config.toml --data-path=/pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
 				`--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,TXPOOL,WEB3" `+
-				` --p2p-port=%d --rpc-http-port=8545 --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"`,
-			p2pPort))
+				` --p2p-port=%d --rpc-http-port=8545 --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"%s`,
+			p2pPort, flags))
 	})
 
 	if err != nil {
@@ -284,90 +264,17 @@ func createStaticNodesFile(list string, buildState *state.BuildState) error {
 	return buildState.Write("static-nodes.json", list)
 }
 
-func prepareGeth(client *ssh.Client, panconf *panConf, tn *testnet.TestNet) ([]*ethereum.Account, error) {
-	passwd := ""
-	for i := 0; int64(i) < panconf.Accounts+int64(tn.LDD.Nodes); i++ {
-		passwd += "second\n"
-	}
-	err := tn.BuildState.Write("passwd2", passwd)
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	//Set up a geth node as a service to sign transactions
-	client.Run(`docker exec wb_service0 mkdir /geth/`)
-
-	err = client.Scp("passwd2", "/home/appo/passwd2")
-	tn.BuildState.Defer(func() { client.Run("rm /home/appo/passwd2") })
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	_, err = client.Run("docker cp /home/appo/passwd2 wb_service0:/geth/passwd")
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-
-	toCreate := panconf.Accounts
-
-	accounts, err := ethereum.GenerateAccounts(int(toCreate))
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-
-	return accounts, nil
-}
-
-func startGeth(client *ssh.Client, panconf *panConf, accounts []*ethereum.Account, buildState *state.BuildState) error {
-	serviceIps, err := util.GetServiceIps(GetServices())
-	if err != nil {
-		return util.LogError(err)
-	}
-	err = buildState.SetExt("signer_ip", serviceIps["geth"])
-	if err != nil {
-		return util.LogError(err)
-	}
-	err = buildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	wg := &sync.WaitGroup{}
-
-	for i, account := range accounts {
-		wg.Add(1)
-		go func(account *ethereum.Account, i int) {
-			defer wg.Done()
-
-			_, err := client.Run(fmt.Sprintf("docker exec wb_service0 bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			_, err = client.Run(
-				fmt.Sprintf("docker exec wb_service0 geth "+
-					"--datadir /geth/ --password /geth/passwd account import --password /geth/passwd /geth/pk%d", i))
-			if err != nil {
-				log.Println(err)
-				return
-			}
-
-		}(account, i)
-	}
-	wg.Wait()
-
-	unlock := ""
-	for i, account := range accounts {
-		if i != 0 {
-			unlock += ","
+func getExtraConfigurationFlags(tn *testnet.TestNet, node ssh.Node, pconf *panConf) (string, error) {
+	out := ""
+	if pconf.Orion {
+		orionNode, err := tn.GetNodesSideCar(node, "orion")
+		if err != nil {
+			return out, util.LogError(err)
 		}
-		unlock += account.HexAddress()
+		out += fmt.Sprintf(` --privacy-url="http://%s:8888"`, orionNode.GetIP())
 	}
-	_, err = client.Run(fmt.Sprintf(`docker exec -itd wb_service0 bash -ic 'geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
-		` --rpcapi "admin,web3,db,eth,net,personal" --rpccorsdomain "0.0.0.0" --nodiscover --unlock="%s"`+
-		` --password /geth/passwd --networkid %d console 2>&1 >> /output.log'`, unlock, panconf.NetworkID))
-	if err != nil {
-		return util.LogError(err)
-	}
-	return nil
+
+	return out, nil
 }
 
 // Add handles adding a node to the pantheon testnet

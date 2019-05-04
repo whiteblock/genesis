@@ -20,9 +20,10 @@ import (
 
 var conf *util.Config
 
+const blockchain = "parity"
+
 func init() {
 	conf = util.GetConfig()
-	blockchain := "parity"
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)

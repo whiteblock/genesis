@@ -9,7 +9,6 @@ import (
 	"../../util"
 	"fmt"
 	"github.com/Whiteblock/mustache"
-	"log"
 )
 
 var conf *util.Config
@@ -46,6 +45,11 @@ func build(tn *testnet.Adjunct) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+	ips := make([]string, len(tn.Nodes))
+	for i, node := range tn.Nodes {
+		ips[i] = node.GetIP()
+	}
+	tn.BuildState.SetExt("orion", ips)
 
 	return helpers.AllNodeExecConSC(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		return client.DockerExecdLog(node, "orion /orion/data/orion.conf")

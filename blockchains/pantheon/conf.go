@@ -2,9 +2,8 @@ package pantheon
 
 import (
 	"../../util"
+	"../helpers"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 )
 
 type panConf struct {
@@ -19,6 +18,7 @@ type panConf struct {
 	Epoch                 int64  `json:"epoch"`
 	RequestTimeoutSeconds int64  `json:"requesttimeoutseconds"`
 	Accounts              int64  `json:"accounts"`
+	Orion                 bool   `json:"orion"`
 }
 
 /**
@@ -28,74 +28,21 @@ func newConf(data map[string]interface{}) (*panConf, error) {
 
 	out := new(panConf)
 	err := json.Unmarshal([]byte(GetDefaults()), out)
-
 	if data == nil {
-		return out, nil
+		return out, util.LogError(err)
 	}
-
-	err = util.GetJSONInt64(data, "networkId", &out.NetworkID)
+	tmp, err := json.Marshal(data)
 	if err != nil {
-		return nil, err
+		return nil, util.LogError(err)
 	}
+	err = json.Unmarshal(tmp, out)
 
-	err = util.GetJSONInt64(data, "difficulty", &out.Difficulty)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxPeers", &out.MaxPeers)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "gasLimit", &out.GasLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "consensus", &out.Consensus)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "fixedDifficulty", &out.FixedDifficulty)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "blockPeriodSeconds", &out.BlockPeriodSeconds)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "epoch", &out.Epoch)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "requesttimeoutseconds", &out.RequestTimeoutSeconds)
-	if err != nil {
-		return nil, err
-	}
-
-	initBalance, exists := data["initBalance"]
-	if exists && initBalance != nil {
-		switch initBalance.(type) {
-		case json.Number:
-			out.InitBalance = initBalance.(json.Number).String()
-		case string:
-			out.InitBalance = initBalance.(string)
-		default:
-			return nil, fmt.Errorf("incorrect type for initBalance given")
-		}
-	}
-
-	return out, nil
+	return out, err
 }
 
 // GetParams fetchs pantheon related parameters
 func GetParams() string {
-	dat, err := ioutil.ReadFile("./resources/pantheon/params.json")
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -104,7 +51,7 @@ func GetParams() string {
 
 // GetDefaults fetchs pantheon related parameter defaults
 func GetDefaults() string {
-	dat, err := ioutil.ReadFile("./resources/pantheon/defaults.json")
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}

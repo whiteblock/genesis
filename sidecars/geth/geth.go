@@ -150,7 +150,7 @@ func Build(tn *testnet.Adjunct) error {
 	for i, node := range tn.Nodes {
 		ips[i] = node.GetIP()
 	}
-	tn.BuildState.SetExt("geth_side_cars", ips)
+	tn.BuildState.SetExt("geth", ips)
 
 	return nil
 }

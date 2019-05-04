@@ -316,7 +316,7 @@ func (tn *TestNet) GetSSHNodes(newNodes bool, sidecar bool, index int) []ssh.Nod
 	return out
 }
 
-//SpawnAdjunct generates info on an adjunct new by index
+// SpawnAdjunct generates info on an adjunct new by index
 func (tn *TestNet) SpawnAdjunct(newNodes bool, index int) (*Adjunct, error) {
 	if index >= len(tn.SideCars) {
 		return nil, fmt.Errorf("index out of range")
@@ -328,4 +328,23 @@ func (tn *TestNet) SpawnAdjunct(newNodes bool, index int) (*Adjunct, error) {
 		BuildState: tn.BuildState,
 		LDD:        tn.LDD,
 	}, nil
+}
+
+// GetNodesSideCar Get's a nodes sidecar by name
+func (tn *TestNet) GetNodesSideCar(node ssh.Node, name string) (*db.SideCar, error) {
+	index := -1
+	for i := range tn.SideCars {
+		if tn.SideCars[i][0].Type == name {
+			index = i
+			break
+		}
+	}
+	if index == -1 {
+		return nil, fmt.Errorf("could not find any side cars of type \"%s\"", name)
+	}
+	if node.GetAbsoluteNumber() >= len(tn.SideCars[index]) {
+		return nil, fmt.Errorf("given node index out of range")
+	}
+
+	return &tn.SideCars[index][node.GetAbsoluteNumber()], nil
 }
