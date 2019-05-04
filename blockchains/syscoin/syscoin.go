@@ -32,7 +32,7 @@ func init() {
 }
 
 // RegTest sets up Syscoin Testnet in Regtest mode
-func RegTest(tn *testnet.TestNet) ([]string, error) {
+func RegTest(tn *testnet.TestNet) []string {
 	if tn.LDD.Nodes < 3 {
 		log.Println("Tried to build syscoin with not enough nodes")
 		return nil, fmt.Errorf("not enough nodes")
@@ -40,8 +40,7 @@ func RegTest(tn *testnet.TestNet) ([]string, error) {
 
 	sysconf, err := newConf(tn.LDD.Params)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
 	tn.BuildState.SetBuildSteps(1 + (4 * tn.LDD.Nodes))
@@ -49,29 +48,27 @@ func RegTest(tn *testnet.TestNet) ([]string, error) {
 	tn.BuildState.SetBuildStage("Creating the syscoin conf files")
 	out, err := handleConf(tn, sysconf)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
 	fmt.Printf("done\n")
 
 	tn.BuildState.SetBuildStage("Launching the nodes")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+
+	return helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		return client.DockerExecdLog(node,
 			"syscoind -conf=\"/syscoin/datadir/regtest.conf\" -datadir=\"/syscoin/datadir/\"")
 	})
-
-	return out, err
 }
 
 // Add handles adding a node to the artemis testnet
 // TODO
-func Add(tn *testnet.TestNet) ([]string, error) {
+func Add(tn *testnet.TestNet) []string {
 	return nil, nil
 }
 
-func handleConf(tn *testnet.TestNet, sysconf *sysConf) ([]string, error) {
+func handleConf(tn *testnet.TestNet, sysconf *sysConf) error {
 	ips := []string{}
 	for _, node := range tn.Nodes {
 		ips = append(ips, node.IP)
@@ -103,8 +100,7 @@ func handleConf(tn *testnet.TestNet, sysconf *sysConf) ([]string, error) {
 
 	connsDist, err := util.Distribute(ips, connDistModel)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
@@ -113,45 +109,53 @@ func handleConf(tn *testnet.TestNet, sysconf *sysConf) ([]string, error) {
 		return err
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 	//Finally generate the configuration for each node
 	mux := sync.Mutex{}
 	labels := make([]string, len(ips))
-	err = helpers.CreateConfigs(tn, "/syscoin/datadir/regtest.conf",
-		func(node ssh.Node) ([]byte, error) {
-			defer tn.BuildState.IncrementBuildProgress()
-			confData := ""
-			maxConns := 1
-			label := ""
-			if node.GetAbsoluteNumber() < noMasterNodes { //Master Node
-				confData += sysconf.GenerateMN()
-				label = "Master Node"
-			} else if node.GetAbsoluteNumber()%2 == 0 { //Sender
-				confData += sysconf.GenerateSender()
-				label = "Sender"
-			} else { //Receiver
-				confData += sysconf.GenerateReceiver()
-				label = "Receiver"
-			}
 
+	masterNodes := []string{}
+	senders := []string{}
+	receivers := []string{}
+
+	err = helpers.CreateConfigs(tn, "/syscoin/datadir/regtest.conf", func(node ssh.Node) ([]byte, error) {
+		defer tn.BuildState.IncrementBuildProgress()
+		confData := ""
+		maxConns := 1
+		if node.GetAbsoluteNumber() < noMasterNodes { //Master Node
+			confData += sysconf.GenerateMN()
 			mux.Lock()
-			labels[node.GetAbsoluteNumber()] = label
+			masterNodes = append(masterNodes, node.GetIP())
 			mux.Unlock()
-			confData += "rpcport=8369\nport=8370\n"
-			for _, conn := range connsDist[node.GetAbsoluteNumber()] {
-				confData += fmt.Sprintf("connect=%s:8370\n", conn)
-				maxConns += 4
-			}
-			confData += "rpcallowip=0.0.0.0/0\n"
-			//confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
-			return []byte(confData), nil
-		})
+		} else if node.GetAbsoluteNumber()%2 == 0 { //Sender
+			confData += sysconf.GenerateSender()
+			mux.Lock()
+			senders = append(senders, node.GetIP())
+			mux.Unlock()
+		} else { //Receiver
+			confData += sysconf.GenerateReceiver()
+			mux.Lock()
+			receivers = append(receivers, node.GetIP())
+			mux.Unlock()
+		}
+
+		confData += "rpcport=8369\nport=8370\n"
+		for _, conn := range connsDist[node.GetAbsoluteNumber()] {
+			confData += fmt.Sprintf("connect=%s:8370\n", conn)
+			maxConns += 4
+		}
+		confData += "rpcallowip=0.0.0.0/0\n"
+		//confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
+		return []byte(confData), nil
+	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
-	return labels, nil
+	tn.BuildState.SetExt("masterNodes", masterNodes)
+	tn.BuildState.SetExt("senders", senders)
+	tn.BuildState.SetExt("receivers", receivers)
+
+	return nil
 }

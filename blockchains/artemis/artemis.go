@@ -17,8 +17,8 @@ var conf *util.Config
 func init() {
 	conf = util.GetConfig()
 	blockchain := "artemis"
-	registrar.RegisterBuild(blockchain, Build)
-	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterBuild(blockchain, build)
+	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
 	registrar.RegisterParams(blockchain, GetParams)
@@ -26,11 +26,11 @@ func init() {
 		"json": "/artemis/data/log.json"})
 }
 
-// Build builds out a fresh new artemis test network
-func Build(tn *testnet.TestNet) ([]string, error) {
+// build builds out a fresh new artemis test network
+func build(tn *testnet.TestNet) error {
 	aconf, err := newConf(tn.LDD.Params)
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	fetchedConfChan := make(chan string)
 
@@ -73,16 +73,18 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	constantsIndex := strings.Index(fetchedConf, "[constants]")
 	if constantsIndex == -1 {
-		return nil, fmt.Errorf("couldn't find \"[constants]\" in file fetched from given source")
+		return fmt.Errorf("couldn't find \"[constants]\" in file fetched from given source")
 	}
 	rawConstants := fetchedConf[constantsIndex:]
-	err = helpers.CreateConfigs(tn, "/artemis/config/config.toml",
-		func(node ssh.Node) ([]byte, error) {
-			defer tn.BuildState.IncrementBuildProgress()
-			identity := fmt.Sprintf("0x%.8x", node.GetAbsoluteNumber())
-			artemisNodeConfig, err := makeNodeConfig(aconf, identity, peers, node.GetAbsoluteNumber(), tn.LDD, rawConstants)
-			return []byte(artemisNodeConfig), err
-		})
+	err = helpers.CreateConfigs(tn, "/artemis/config/config.toml", func(node ssh.Node) ([]byte, error) {
+		defer tn.BuildState.IncrementBuildProgress()
+		identity := fmt.Sprintf("0x%.8x", node.GetAbsoluteNumber())
+		artemisNodeConfig, err := makeNodeConfig(aconf, identity, peers, node.GetAbsoluteNumber(), tn.LDD, rawConstants)
+		return []byte(artemisNodeConfig), err
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
 
 	tn.BuildState.SetBuildStage("Starting Artemis")
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
@@ -99,7 +101,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return err
 	})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	return nil, nil

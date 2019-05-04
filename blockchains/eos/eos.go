@@ -29,27 +29,24 @@ func init() {
 	registrar.RegisterParams(blockchain, GetParams)
 }
 
-// Build builds out a fresh new ethereum test network using geth
-func Build(tn *testnet.TestNet) ([]string, error) {
+// Build builds out a fresh new eos test network using geth
+func Build(tn *testnet.TestNet) error {
 	clients := tn.GetFlatClients()
-	buildState := tn.BuildState
 	if tn.LDD.Nodes < 2 {
-		return nil, fmt.Errorf("cannot build network with less than 2 nodes")
+		return fmt.Errorf("cannot build network with less than 2 nodes")
 	}
 
 	eosconf, err := newConf(tn.LDD.Params)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 	if eosconf.BlockProducers < 2 {
-		return nil, fmt.Errorf("cannot build eos network with only one block producer")
+		return fmt.Errorf("cannot build eos network with only one block producer")
 	}
 	eosconf.BlockProducers++
-	err = buildState.SetExt("accounts", fmt.Sprintf("%d", eosconf.UserAccounts))
+	err = tn.BuildState.SetExt("accounts", fmt.Sprintf("%d", eosconf.UserAccounts))
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
 	fmt.Println("-------------Setting Up EOS-------------")
@@ -65,7 +62,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	clientPasswords := make(map[string]string)
 
-	buildState.SetBuildSteps(17 + (tn.LDD.Nodes * (3)) + (int(eosconf.UserAccounts) * (2)) + ((int(eosconf.UserAccounts) / 50) * tn.LDD.Nodes))
+	tn.BuildState.SetBuildSteps(17 + (tn.LDD.Nodes * (3)) + (int(eosconf.UserAccounts) * (2)) + ((int(eosconf.UserAccounts) / 50) * tn.LDD.Nodes))
 
 	contractAccounts := []string{
 		"eosio.bpay",
@@ -80,7 +77,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 	km, err := helpers.NewKeyMaster(tn.LDD, "eos")
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	km.AddGenerator(func(client *ssh.Client) (util.KeyPair, error) {
 		data, err := client.DockerExec(masterNode, "cleos create key --to-console | awk '{print $3}'")
@@ -96,14 +93,14 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	keyPairs, err := km.GetServerKeyPairs(tn.Servers, clients)
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	contractKeyPairs, err := km.GetMappedKeyPairs(contractAccounts, masterClient)
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 
 	masterKeyPair := keyPairs[masterIP]
 
@@ -113,22 +110,21 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	}
 	accountKeyPairs, err := km.GetMappedKeyPairs(accountNames, masterClient)
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
-	//buildState.SetBuildStage("Starting up keos")
+	//tn.BuildState.SetBuildStage("Starting up keos")
 
 	/**Start keos and add all the key pairs for all the nodes**/
-	buildState.SetBuildStage("Generating key pairs")
+	tn.BuildState.SetBuildStage("Generating key pairs")
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		/**Start keosd**/
-		ip := tn.Nodes[node.GetAbsoluteNumber()].IP
 		_, err = client.DockerExecd(node, "keosd --http-server-address 0.0.0.0:8900")
 		if err != nil {
 			return util.LogError(err)
 		}
 		mux.Lock()
-		clientPasswords[ip], err = eosCreatewallet(client, node)
+		clientPasswords[node.GetIP()], err = eosCreatewallet(client, node)
 		mux.Unlock()
 		if err != nil {
 			return util.LogError(err)
@@ -141,7 +137,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 				if err != nil {
 					return util.LogError(err)
 				}
-				buildState.IncrementBuildProgress()
+				tn.BuildState.IncrementBuildProgress()
 				cmds = []string{}
 			}
 
@@ -154,60 +150,56 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 				return util.LogError(err)
 			}
 		}
-		buildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 
 	password := clientPasswords[masterIP]
 	passwordNormal := clientPasswords[tn.Nodes[1].IP]
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 
-	buildState.SetBuildStage("Building genesis block")
+	tn.BuildState.SetBuildStage("Building genesis block")
 	genesis, err := eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey, tn.LDD)
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
-		defer buildState.IncrementBuildProgress()
+		defer tn.BuildState.IncrementBuildProgress()
 		_, err = client.DockerExec(node, "mkdir /datadir/")
 		return err
 	})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	err = helpers.CopyBytesToAllNodes(tn,
 		genesis, "/datadir/genesis.json",
 		eosconf.GenerateConfig(), "/datadir/config.ini")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 	/**Step 2d**/
-	buildState.SetBuildStage("Starting EOS BIOS boot sequence")
-	{
+	tn.BuildState.SetBuildStage("Starting EOS BIOS boot sequence")
 
-		_, err = masterClient.KeepTryDockerExec(masterNode, fmt.Sprintf("cleos wallet import --private-key %s",
-			keyPairs[masterIP].PrivateKey))
-		if err != nil {
-			return nil, util.LogError(err)
-		}
-
-		err = masterClient.DockerExecdLog(masterNode,
-			fmt.Sprintf(`nodeos -e -p eosio --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s`,
-				eosGetkeypairflag(keyPairs[masterIP]),
-				eosGetptpflags(tn.Nodes, 0)))
-		if err != nil {
-			return nil, util.LogError(err)
-		}
-
+	_, err = masterClient.KeepTryDockerExec(masterNode, fmt.Sprintf("cleos wallet import --private-key %s",
+		keyPairs[masterIP].PrivateKey))
+	if err != nil {
+		return util.LogError(err)
 	}
 
-	buildState.IncrementBuildProgress()
+	err = masterClient.DockerExecdLog(masterNode,
+		fmt.Sprintf(`nodeos -e -p eosio --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s`,
+			eosGetkeypairflag(keyPairs[masterIP]),
+			eosGetptpflags(tn.Nodes, 0)))
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	tn.BuildState.IncrementBuildProgress()
 	/**Step 3**/
 	{
 		masterClient.DockerExec(masterNode, fmt.Sprintf("cleos -u http://%s:8889 wallet unlock --password %s",
@@ -218,18 +210,16 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			go func(masterIP string, account string, masterKeyPair util.KeyPair, contractKeyPair util.KeyPair) {
 				defer sem.Release(1)
 
-				_, err = masterClient.KeepTryDockerExec(masterNode, fmt.Sprintf("cleos wallet import --private-key %s",
+				_, err := masterClient.KeepTryDockerExec(masterNode, fmt.Sprintf("cleos wallet import --private-key %s",
 					contractKeyPair.PrivateKey))
 				if err != nil {
-					buildState.ReportError(err)
-					log.Println(err)
+					tn.BuildState.ReportError(err)
 					return
 				}
 				_, err = masterClient.KeepTryDockerExec(masterNode, fmt.Sprintf("cleos -u http://%s:8889 create account eosio %s %s %s",
 					masterIP, account, masterKeyPair.PublicKey, contractKeyPair.PublicKey))
 				if err != nil {
-					buildState.ReportError(err)
-					log.Println(err)
+					tn.BuildState.ReportError(err)
 					return
 				}
 
@@ -240,12 +230,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		sem.Acquire(ctx, conf.ThreadLimit)
 		sem.Release(conf.ThreadLimit)
 
-		if !buildState.ErrorFree() {
-			return nil, buildState.GetError()
+		if !tn.BuildState.ErrorFree() {
+			return nil, tn.BuildState.GetError()
 		}
 
 	}
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 	/**Steps 4 and 5**/
 	{
 		contracts := []string{"eosio.token", "eosio.msig"}
@@ -256,13 +246,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			_, err = masterClient.KeepTryDockerExec(masterNode, fmt.Sprintf("cleos -u http://%s:8889 set contract %s /opt/eosio/contracts/%s",
 				masterIP, contract, contract))
 			if err != nil {
-				log.Println(err)
-				return nil, err
+				return util.LogError(err)
 			}
 		}
 	}
-	buildState.SetBuildStage("Creating the tokens")
-	buildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Creating the tokens")
+	tn.BuildState.IncrementBuildProgress()
 	/**Step 6**/
 	_, err = masterClient.KeepTryDockerExecAll(masterNode,
 		fmt.Sprintf("cleos -u http://%s:8889 push action eosio.token create '[ \"eosio\", \"10000000000.0000 SYS\" ]' -p eosio.token@active",
@@ -270,14 +259,13 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		fmt.Sprintf("cleos -u http://%s:8889 push action eosio.token issue '[ \"eosio\", \"1000000000.0000 SYS\", \"memo\" ]' -p eosio@active",
 			masterIP))
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
-	buildState.SetBuildStage("Setting up the system contract")
+	tn.BuildState.SetBuildStage("Setting up the system contract")
 	masterClient.DockerExec(masterNode, fmt.Sprintf("cleos -u http://%s:8889 wallet unlock --password %s", masterIP, password)) //Ignore fail
 
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 	/**Step 7**/
 
 	res, err := masterClient.KeepTryDockerExec(masterNode,
@@ -285,27 +273,25 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	fmt.Println(res)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 	/**Step 8**/
 	_, err = masterClient.KeepTryDockerExecAll(masterNode,
 		fmt.Sprintf(`cleos -u http://%s:8889 push action eosio setpriv '["eosio.msig", 1]' -p eosio@active`,
 			masterIP),
 		fmt.Sprintf(`cleos -u http://%s:8889 push action eosio init '["0", "4,SYS"]' -p eosio@active`, masterIP))
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
-	buildState.SetBuildStage("Creating the block producers")
-	buildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Creating the block producers")
+	tn.BuildState.IncrementBuildProgress()
 
 	/**Step 10a**/
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
-		defer buildState.IncrementBuildProgress()
+		defer tn.BuildState.IncrementBuildProgress()
 		if node.GetAbsoluteNumber() == 0 || node.GetAbsoluteNumber() > int(eosconf.BlockProducers) {
 			return nil
 		}
@@ -313,8 +299,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 		_, err = masterClient.DockerExec(masterNode, fmt.Sprintf("cleos wallet import --private-key %s", keyPair.PrivateKey)) //ignore return
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		_, err = masterClient.KeepTryDockerExecAll(masterNode,
 			fmt.Sprintf(`cleos -u http://%s:8889 system newaccount eosio --transfer %s %s %s --stake-net "%d SYS" --stake-cpu "%d SYS" --buy-ram-kbytes %d`,
@@ -332,12 +317,11 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return err
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
-	buildState.IncrementBuildProgress()
-	buildState.SetBuildStage("Starting up the candidate block producers")
+	tn.BuildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Starting up the candidate block producers")
 	/**Step 11c**/
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
@@ -362,18 +346,15 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 				p2pFlags))
 		//fmt.Println(res)
 		if err != nil {
-			log.Println(err)
-			buildState.ReportError(err)
-			return err
+			return util.LogError(err)
 		}
 		return nil
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 	/**Step 11a**/
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
@@ -396,20 +377,18 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return err
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
-	buildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
 	/**Step 11b**/
 	res, err = masterClient.DockerExec(masterNode, fmt.Sprintf("cleos -u http://%s:8889 system listproducers", masterIP))
 	fmt.Println(res)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 	/**Create normal user accounts**/
-	buildState.SetBuildStage("Creating funded accounts")
+	tn.BuildState.SetBuildStage("Creating funded accounts")
 	for _, name := range accountNames {
 		sem.Acquire(ctx, 1)
 		go func(name string, masterKeyPair util.KeyPair, accountKeyPair util.KeyPair) {
@@ -425,8 +404,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 					eosconf.AccountRAM))
 			fmt.Println(res)
 			if err != nil {
-				log.Println(err)
-				buildState.ReportError(err)
+				tn.BuildState.ReportError(err)
 				return
 			}
 
@@ -437,22 +415,21 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 					eosconf.AccountFunds))
 			fmt.Println(res)
 			if err != nil {
-				log.Println(err)
-				buildState.ReportError(err)
+				tn.BuildState.ReportError(err)
 				return
 			}
-			buildState.IncrementBuildProgress()
+			tn.BuildState.IncrementBuildProgress()
 
 		}(name, masterKeyPair, accountKeyPairs[name])
 	}
 	sem.Acquire(ctx, conf.ThreadLimit)
 	sem.Release(conf.ThreadLimit)
-	if !buildState.ErrorFree() {
-		return nil, buildState.GetError()
+	if !tn.BuildState.ErrorFree() {
+		return nil, tn.BuildState.GetError()
 	}
 
-	buildState.IncrementBuildProgress()
-	buildState.SetBuildStage("Voting in block producers")
+	tn.BuildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Voting in block producers")
 	/**Vote in block producers**/
 	{
 		node := len(tn.Nodes)
@@ -482,23 +459,22 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 						eosGetproducername(prod)))
 				fmt.Println(res)
 				if err != nil {
-					log.Println(err)
-					buildState.ReportError(err)
+					tn.BuildState.ReportError(err)
 					return
 				}
 
-				buildState.IncrementBuildProgress()
+				tn.BuildState.IncrementBuildProgress()
 			}(masterServerIP, masterIP, name, prod)
 			n++
 		}
 		sem.Acquire(ctx, conf.ThreadLimit)
 		sem.Release(conf.ThreadLimit)
-		if !buildState.ErrorFree() {
-			return nil, buildState.GetError()
+		if !tn.BuildState.ErrorFree() {
+			return util.LogError(tn.BuildState.GetError())
 		}
 	}
-	buildState.IncrementBuildProgress()
-	buildState.SetBuildStage("Initializing EOSIO")
+	tn.BuildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Initializing EOSIO")
 	/**Step 12**/
 	masterClient.DockerExec(masterNode, fmt.Sprintf("cleos -u http://%s:8889 wallet unlock --password %s",
 		masterIP, password))
@@ -538,24 +514,24 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			masterIP),
 	)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
-	out := []string{}
-
+	passwords := []string{}
 	for _, node := range tn.Nodes {
-		out = append(out, clientPasswords[node.IP])
+		passwords = append(passwords, clientPasswords[node.IP])
 	}
+	tn.BuildState.SetExt("passwords", passwords)
+	tn.BuildState.SetExt("accounts", accountNames)
 
-	buildState.IncrementBuildProgress()
-	return out, nil
+	tn.BuildState.IncrementBuildProgress()
+	return nil
 }
 
 // Add handles adding a node to the eos testnet
 // TODO
-func Add(tn *testnet.TestNet) ([]string, error) {
-	return nil, nil
+func Add(tn *testnet.TestNet) error {
+	return nil
 }
 
 func eosCreatewallet(client *ssh.Client, node ssh.Node) (string, error) {

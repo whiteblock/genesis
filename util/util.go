@@ -24,15 +24,13 @@ func HTTPRequest(method string, url string, bodyData string) ([]byte, error) {
 	body := strings.NewReader(bodyData)
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, LogError(err)
 	}
 
 	req.Close = true
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, LogError(err)
 	}
 
 	defer resp.Body.Close()
@@ -40,8 +38,7 @@ func HTTPRequest(method string, url string, bodyData string) ([]byte, error) {
 
 	_, err = buf.ReadFrom(resp.Body)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, LogError(err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf(buf.String())
@@ -55,16 +52,14 @@ func JwtHTTPRequest(method string, url string, jwt string, bodyData string) (str
 	body := strings.NewReader(bodyData)
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", LogError(err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", jwt))
 	req.Close = true
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", LogError(err)
 	}
 
 	defer resp.Body.Close()
@@ -72,8 +67,7 @@ func JwtHTTPRequest(method string, url string, jwt string, bodyData string) (str
 
 	_, err = buf.ReadFrom(resp.Body)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", LogError(err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return "", fmt.Errorf(buf.String())
@@ -103,14 +97,12 @@ func GetKidFromJwt(jwt string) (string, error) {
 	headerb64 := strings.Split(jwt, ".")[0]
 	headerJSON, err := base64.StdEncoding.DecodeString(headerb64)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", LogError(err)
 	}
 	var header map[string]interface{}
 	err = json.Unmarshal(headerJSON, &header)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", LogError(err)
 	}
 	kidAsI, ok := header["kid"]
 	if !ok {
@@ -142,8 +134,7 @@ func Rm(directories ...string) error {
 			fmt.Printf("done\n")
 		}
 		if err != nil {
-			log.Println(err)
-			return err
+			return LogError(err)
 		}
 	}
 	return nil
@@ -158,13 +149,13 @@ func Lsr(_dir string) ([]string, error) {
 	out := []string{}
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return nil, err
+		return nil, LogError(err)
 	}
 	for _, f := range files {
 		if f.IsDir() {
 			contents, err := Lsr(fmt.Sprintf("%s%s/", dir, f.Name()))
 			if err != nil {
-				return nil, err
+				return nil, LogError(err)
 			}
 			out = append(out, contents...)
 		} else {
@@ -356,8 +347,7 @@ func CopyMap(m map[string]interface{}) (map[string]interface{}, error) {
 	var out map[string]interface{}
 	tmp, err := json.Marshal(m)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, LogError(err)
 	}
 
 	err = json.Unmarshal(tmp, &out)
@@ -370,6 +360,5 @@ func LogError(err error) error {
 	if err != nil { // don't log if the error is nil
 		log.Output(2, err.Error()) //returns an error but is ignored in Golang's implementation
 	}
-
 	return err
 }

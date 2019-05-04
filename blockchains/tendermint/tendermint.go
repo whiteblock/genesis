@@ -43,7 +43,7 @@ func init() {
 //ExecStart=/usr/bin/tendermint node --proxy_app=kvstore --p2p.persistent_peers=167b80242c300bf0ccfb3ced3dec60dc2a81776e@165.227.41.206:26656,3c7a5920811550c04bf7a0b2f1e02ab52317b5e6@165.227.43.146:26656,303a1a4312c30525c99ba66522dd81cca56a361a@159.89.115.32:26656,b686c2a7f4b1b46dca96af3a0f31a6a7beae0be4@159.89.119.125:26656
 
 //Build builds out a fresh new tendermint test network
-func Build(tn *testnet.TestNet) ([]string, error) {
+func Build(tn *testnet.TestNet) error {
 	//Ensure that genesis file has same chain_id
 	peers := []string{}
 	validators := []validator{}
@@ -55,15 +55,13 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		//init everything
 		_, err := client.DockerExec(node, "tendermint init")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 
 		//Get the node id
 		res, err := client.DockerExec(node, "tendermint show_node_id")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		nodeID := res[:len(res)-1]
 
@@ -74,8 +72,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		//Get the validators
 		res, err = client.DockerExec(node, "cat /root/.tendermint/config/genesis.json")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		tn.BuildState.IncrementBuildProgress()
 		var genesis map[string]interface{}
@@ -89,30 +86,26 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 			err = util.GetJSONString(validatorData, "address", &vdtr.Address)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 
 			validatorPubKeyData := validatorData["pub_key"].(map[string]interface{})
 
 			err = util.GetJSONString(validatorPubKeyData, "type", &vdtr.PubKey.Type)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 
 			err = util.GetJSONString(validatorPubKeyData, "value", &vdtr.PubKey.Value)
 
 			err = util.GetJSONString(validatorData, "power", &vdtr.Power)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 
 			err = util.GetJSONString(validatorData, "name", &vdtr.Name)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 			mux.Lock()
 			validators = append(validators, vdtr)
@@ -122,16 +115,14 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 	tn.BuildState.SetBuildStage("Propogating the genesis file")
 
 	//distribute the created genensis file among the nodes
 	err = helpers.CopyBytesToAllNodes(tn, getGenesisFile(validators), "/root/.tendermint/config/genesis.json")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
 	tn.BuildState.SetBuildStage("Starting tendermint")
@@ -142,13 +133,13 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return client.DockerExecdLog(node, fmt.Sprintf("tendermint node --proxy_app=kvstore --p2p.persistent_peers=%s",
 			strings.Join(append(peersCpy[:node.GetAbsoluteNumber()], peersCpy[node.GetAbsoluteNumber()+1:]...), ",")))
 	})
-	return nil, err
+	return util.LogError(err)
 }
 
 // Add handles adding a node to the tendermint testnet
 // TODO
-func Add(tn *testnet.TestNet) ([]string, error) {
-	return nil, nil
+func Add(tn *testnet.TestNet) error {
+	return nil
 }
 
 func getGenesisFile(vdtrs []validator) string {

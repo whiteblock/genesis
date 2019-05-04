@@ -19,8 +19,8 @@ var conf *util.Config
 func init() {
 	conf = util.GetConfig()
 	blockchain := "beam"
-	registrar.RegisterBuild(blockchain, Build)
-	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterBuild(blockchain, build)
+	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
 	registrar.RegisterParams(blockchain, GetParams)
@@ -28,11 +28,11 @@ func init() {
 
 const port int = 10000
 
-// Build builds out a fresh new beam test network
-func Build(tn *testnet.TestNet) ([]string, error) {
+// build builds out a fresh new beam test network
+func build(tn *testnet.TestNet) error {
 	bConf, err := newConf(tn.LDD.Params)
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
 
@@ -69,7 +69,9 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
-
+	if err != nil {
+		return util.LogError(err)
+	}
 	ips := []string{}
 
 	for _, node := range tn.Nodes {
@@ -94,7 +96,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			return []byte(beamNodeConfig), nil
 		})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	err = helpers.CreateConfigs(tn, "/beam/beam-wallet.cfg",
 		func(_ ssh.Node) ([]byte, error) {
@@ -117,7 +119,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			return []byte(util.CombineConfig(beamWalletConfig)), nil
 		})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	tn.BuildState.SetBuildStage("Starting beam")
@@ -134,10 +136,10 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return client.DockerExecdLog(node, fmt.Sprintf("beam-wallet --command listen -n 0.0.0.0:%d --pass password", port))
 	})
 
-	return nil, err
+	return err
 }
 
 // Add handles adding nodes to the testnet
-func Add(tn *testnet.TestNet) ([]string, error) {
-	return nil, nil
+func add(tn *testnet.TestNet) error {
+	return nil
 }

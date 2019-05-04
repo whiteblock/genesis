@@ -13,8 +13,8 @@ var (
 	//means that there should not be a race condition. However, golang does not provide any
 	//method of enforcement for this to my knowledge.
 	mux        = &sync.RWMutex{}
-	buildFuncs = map[string]func(*testnet.TestNet) ([]string, error){}
-	addFuncs   = map[string]func(*testnet.TestNet) ([]string, error){}
+	buildFuncs = map[string]func(*testnet.TestNet) error{}
+	addFuncs   = map[string]func(*testnet.TestNet) error{}
 
 	serviceFuncs  = map[string]func() []util.Service{}
 	paramsFuncs   = map[string]func() string{}
@@ -23,14 +23,14 @@ var (
 )
 
 // RegisterBuild associates a blockchain name with a build process
-func RegisterBuild(blockchain string, fn func(*testnet.TestNet) ([]string, error)) {
+func RegisterBuild(blockchain string, fn func(*testnet.TestNet) error) {
 	mux.Lock()
 	defer mux.Unlock()
 	buildFuncs[blockchain] = fn
 }
 
 // RegisterAddNodes associates a blockchain name with a add node process
-func RegisterAddNodes(blockchain string, fn func(*testnet.TestNet) ([]string, error)) {
+func RegisterAddNodes(blockchain string, fn func(*testnet.TestNet) error) {
 	mux.Lock()
 	defer mux.Unlock()
 	addFuncs[blockchain] = fn
@@ -66,7 +66,7 @@ func RegisterAdditionalLogs(blockchain string, logs map[string]string) {
 
 // GetBuildFunc gets the build function associated with the given blockchain name or error != nil if
 // it is not found
-func GetBuildFunc(blockchain string) (func(*testnet.TestNet) ([]string, error), error) {
+func GetBuildFunc(blockchain string) (func(*testnet.TestNet) error, error) {
 	mux.RLock()
 	defer mux.RUnlock()
 	out, ok := buildFuncs[blockchain]
@@ -78,7 +78,7 @@ func GetBuildFunc(blockchain string) (func(*testnet.TestNet) ([]string, error), 
 
 // GetAddNodeFunc gets the add node function associated with the given blockchain name or error != nil if
 // it is not found
-func GetAddNodeFunc(blockchain string) (func(*testnet.TestNet) ([]string, error), error) {
+func GetAddNodeFunc(blockchain string) (func(*testnet.TestNet) error, error) {
 	mux.RLock()
 	defer mux.RUnlock()
 	out, ok := addFuncs[blockchain]

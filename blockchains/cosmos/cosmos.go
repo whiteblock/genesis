@@ -18,15 +18,15 @@ var conf *util.Config
 func init() {
 	conf = util.GetConfig()
 	blockchain := "cosmos"
-	registrar.RegisterBuild(blockchain, Build)
-	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterBuild(blockchain, build)
+	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
 	registrar.RegisterParams(blockchain, GetParams)
 }
 
-// Build builds out a fresh new cosmos test network
-func Build(tn *testnet.TestNet) ([]string, error) {
+// build builds out a fresh new cosmos test network
+func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildSteps(4 + (tn.LDD.Nodes * 2))
 
 	tn.BuildState.SetBuildStage("Setting up the first node")
@@ -38,37 +38,37 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	 */
 	_, err := masterClient.DockerExec(tn.Nodes[0], "gaiad init --chain-id=whiteblock whiteblock")
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
 	_, err = masterClient.DockerExec(tn.Nodes[0], "bash -c 'echo \"password\\n\" | gaiacli keys add validator -ojson'")
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	res, err := masterClient.DockerExec(tn.Nodes[0], "gaiacli keys show validator -a")
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
 	_, err = masterClient.DockerExec(tn.Nodes[0], fmt.Sprintf("gaiad add-genesis-account %s 100000000stake,100000000validatortoken",
 		res[:len(res)-1]))
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	_, err = masterClient.DockerExec(tn.Nodes[0], "bash -c 'echo \"password\\n\" | gaiad gentx --name validator'")
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
 	_, err = masterClient.DockerExec(tn.Nodes[0], "gaiad collect-gentxs")
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	genesisFile, err := masterClient.DockerExec(tn.Nodes[0], "cat /root/.gaiad/config/genesis.json")
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Initializing the rest of the nodes")
@@ -102,7 +102,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	err = helpers.CopyBytesToAllNodes(tn, genesisFile, "/root/.gaiad/config/genesis.json")
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	tn.BuildState.SetBuildStage("Starting cosmos")
@@ -115,11 +115,11 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			strings.Join(append(peersCpy[:node.GetAbsoluteNumber()], peersCpy[node.GetAbsoluteNumber()+1:]...), ",")))
 		return err
 	})
-	return nil, err
+	return err
 }
 
 // Add handles adding a node to the cosmos testnet
 // TODO
-func Add(tn *testnet.TestNet) ([]string, error) {
-	return nil, nil
+func add(tn *testnet.TestNet) error {
+	return nil
 }

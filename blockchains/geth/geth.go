@@ -41,12 +41,12 @@ func init() {
 const ethNetStatsPort = 3338
 
 // Build builds out a fresh new ethereum test network using geth
-func Build(tn *testnet.TestNet) ([]string, error) {
+func Build(tn *testnet.TestNet) error {
 	clients := tn.GetFlatClients()
 	mux := sync.Mutex{}
 	ethconf, err := newConf(tn.LDD.Params)
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes))
@@ -60,7 +60,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return err
 	})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	/**Create the Password files**/
 	{
@@ -70,7 +70,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		}
 		err = helpers.CopyBytesToAllNodes(tn, data, "/geth/passwd")
 		if err != nil {
-			return nil, util.LogError(err)
+			return util.LogError(err)
 		}
 	}
 
@@ -81,7 +81,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, account := range accounts {
@@ -98,7 +98,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	tn.BuildState.IncrementBuildProgress()
@@ -115,7 +115,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	tn.BuildState.SetBuildStage("Creating the genesis block")
 	err = createGenesisfile(ethconf, tn, accounts)
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	tn.BuildState.IncrementBuildProgress()
@@ -123,7 +123,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	err = helpers.CopyToAllNodes(tn, "CustomGenesis.json", "/geth/")
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	staticNodes := make([]string, tn.LDD.Nodes)
@@ -160,12 +160,12 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	out, err := json.Marshal(staticNodes)
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	tn.BuildState.IncrementBuildProgress()
@@ -173,7 +173,7 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 	//Copy static-nodes to every server
 	err = helpers.CopyBytesToAllNodes(tn, string(out), "/geth/static-nodes.json")
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
@@ -199,13 +199,13 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
 
 	err = setupEthNetStats(clients[0])
 	if err != nil {
-		return nil, util.LogError(err)
+		return util.LogError(err)
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
@@ -237,14 +237,14 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 			"publicKey":  account.HexPublicKey(),
 		})
 	}
-	return nil, err
+	return err
 }
 
 /***************************************************************************************************************************/
 
 // Add handles adding a node to the geth testnet
 // TODO
-func Add(tn *testnet.TestNet) ([]string, error) {
+func Add(tn *testnet.TestNet) []string {
 	return nil, nil
 }
 
