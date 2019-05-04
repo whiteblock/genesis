@@ -6,7 +6,7 @@ import (
 	"../state"
 )
 
-// AdjunctTestNet represents a part of the network which contains
+// Adjunct represents a part of the network which contains
 // a class of sidecars.
 type Adjunct struct {
 	// Testnet is a pointer to the master testnet
