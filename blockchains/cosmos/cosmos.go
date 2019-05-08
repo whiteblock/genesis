@@ -1,13 +1,32 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+//Package cosmos handles cosmos specific functionality
 package cosmos
 
 import (
-	db "../../db"
-	ssh "../../ssh"
-	testnet "../../testnet"
-	util "../../util"
-	helpers "../helpers"
+	"../../db"
+	"../../ssh"
+	"../../testnet"
+	"../../util"
+	"../helpers"
+	"../registrar"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 )
@@ -16,81 +35,82 @@ var conf *util.Config
 
 func init() {
 	conf = util.GetConfig()
+	blockchain := "cosmos"
+	registrar.RegisterBuild(blockchain, build)
+	registrar.RegisterAddNodes(blockchain, add)
+	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterParams(blockchain, GetParams)
 }
 
-func Build(tn *testnet.TestNet) ([]string, error) {
+// build builds out a fresh new cosmos test network
+func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildSteps(4 + (tn.LDD.Nodes * 2))
 
 	tn.BuildState.SetBuildStage("Setting up the first node")
-	clients := tn.GetFlatClients()
+
+	masterNode := tn.Nodes[0]
+	masterClient := tn.Clients[masterNode.Server]
 	/**
 	 * Set up first node
 	 */
-	_, err := clients[0].DockerExec(0, "gaiad init --chain-id=whiteblock whiteblock")
+	_, err := masterClient.DockerExec(tn.Nodes[0], "gaiad init --chain-id=whiteblock whiteblock")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
-	_, err = clients[0].DockerExec(0, "bash -c 'echo \"password\\n\" | gaiacli keys add validator -ojson'")
+	_, err = masterClient.DockerExec(tn.Nodes[0], "bash -c 'echo \"password\\n\" | gaiacli keys add validator -ojson'")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
-	res, err := clients[0].DockerExec(0, "gaiacli keys show validator -a")
+	res, err := masterClient.DockerExec(tn.Nodes[0], "gaiacli keys show validator -a")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
-	_, err = clients[0].DockerExec(0, fmt.Sprintf("gaiad add-genesis-account %s 100000000stake,100000000validatortoken", res[:len(res)-1]))
+	_, err = masterClient.DockerExec(tn.Nodes[0], fmt.Sprintf("gaiad add-genesis-account %s 100000000stake,100000000validatortoken",
+		res[:len(res)-1]))
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
-	_, err = clients[0].DockerExec(0, "bash -c 'echo \"password\\n\" | gaiad gentx --name validator'")
+	_, err = masterClient.DockerExec(tn.Nodes[0], "bash -c 'echo \"password\\n\" | gaiad gentx --name validator'")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
-	_, err = clients[0].DockerExec(0, "gaiad collect-gentxs")
+	_, err = masterClient.DockerExec(tn.Nodes[0], "gaiad collect-gentxs")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
-	genesisFile, err := clients[0].DockerExec(0, "cat /root/.gaiad/config/genesis.json")
+	genesisFile, err := masterClient.DockerExec(tn.Nodes[0], "cat /root/.gaiad/config/genesis.json")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Initializing the rest of the nodes")
 	peers := make([]string, tn.LDD.Nodes)
 	mux := sync.Mutex{}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		ip := tn.Nodes[absoluteNodeNum].Ip
-		if absoluteNodeNum != 0 {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+		ip := tn.Nodes[node.GetAbsoluteNumber()].IP
+		if node.GetAbsoluteNumber() != 0 {
 			//init everything
-			_, err := client.DockerExec(localNodeNum, "gaiad init --chain-id=whiteblock whiteblock")
+			_, err := client.DockerExec(node, "gaiad init --chain-id=whiteblock whiteblock")
 			if err != nil {
-				log.Println(res)
-				return err
+				return util.LogError(err)
 			}
 		}
 
 		//Get the node id
-		res, err := client.DockerExec(localNodeNum, "gaiad tendermint show-node-id")
+		res, err := client.DockerExec(node, "gaiad tendermint show-node-id")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
-		nodeId := res[:len(res)-1]
+		nodeID := res[:len(res)-1]
 		mux.Lock()
-		peers[absoluteNodeNum] = fmt.Sprintf("%s@%s:26656", nodeId, ip)
+		peers[node.GetAbsoluteNumber()] = fmt.Sprintf("%s@%s:26656", nodeID, ip)
 		mux.Unlock()
 		tn.BuildState.IncrementBuildProgress()
 		return nil
@@ -100,23 +120,24 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 	err = helpers.CopyBytesToAllNodes(tn, genesisFile, "/root/.gaiad/config/genesis.json")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
 	tn.BuildState.SetBuildStage("Starting cosmos")
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		peersCpy := make([]string, len(peers))
 		copy(peersCpy, peers)
-		_, err := client.DockerExecd(localNodeNum, fmt.Sprintf("gaiad start --p2p.persistent_peers=%s",
-			strings.Join(append(peersCpy[:absoluteNodeNum], peersCpy[absoluteNodeNum+1:]...), ",")))
+		_, err := client.DockerExecd(node, fmt.Sprintf("gaiad start --p2p.persistent_peers=%s",
+			strings.Join(append(peersCpy[:node.GetAbsoluteNumber()], peersCpy[node.GetAbsoluteNumber()+1:]...), ",")))
 		return err
 	})
-	return nil, err
+	return err
 }
 
-func Add(tn *testnet.TestNet) ([]string, error) {
-	return nil, nil
+// Add handles adding a node to the cosmos testnet
+// TODO
+func add(tn *testnet.TestNet) error {
+	return nil
 }

@@ -1,11 +1,30 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package deploy
 
 import (
-	helpers "../blockchains/helpers"
-	db "../db"
-	ssh "../ssh"
-	testnet "../testnet"
-	util "../util"
+	"../blockchains/helpers"
+	"../db"
+	"../docker"
+	"../ssh"
+	"../testnet"
+	"../util"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -14,7 +33,8 @@ import (
 
 func distributeNibbler(tn *testnet.TestNet) {
 	tn.BuildState.Async(func() {
-		nibbler, err := util.HttpRequest("GET", "https://storage.googleapis.com/genesis-public/nibbler/master/bin/linux/amd64/nibbler", "")
+		nibbler, err := util.HTTPRequest("GET", "https://storage.googleapis.com/genesis-public/nibbler/dev/bin/linux/amd64/nibbler", "")
+		//nibbler, err := util.HTTPRequest("GET", "http://127.0.0.1/nibbler", "")
 		if err != nil {
 			log.Println(err)
 		}
@@ -22,12 +42,12 @@ func distributeNibbler(tn *testnet.TestNet) {
 		if err != nil {
 			log.Println(err)
 		}
-		err = helpers.CopyToAllNodes(tn, "nibbler", "/usr/local/bin/nibbler")
+		err = helpers.CopyToAllNewNodes(tn, "nibbler", "/usr/local/bin/nibbler")
 		if err != nil {
 			log.Println(err)
 		}
-		err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
-			_, err := client.DockerExec(localNodeNum, "chmod +x /usr/local/bin/nibbler")
+		err = helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+			_, err := client.DockerExec(node, "chmod +x /usr/local/bin/nibbler")
 			return err
 		})
 		if err != nil {
@@ -40,7 +60,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 
 	_, hasDockerfile := prebuild["dockerfile"] //Must be base64
 	if !hasDockerfile {
-		return fmt.Errorf("Cannot build without being given a dockerfile")
+		return fmt.Errorf("cannot build without being given a dockerfile")
 	}
 
 	dockerfile, err := base64.StdEncoding.DecodeString(prebuild["dockerfile"].(string))
@@ -91,12 +111,12 @@ func handleDockerAuth(tn *testnet.TestNet, auth map[string]interface{}) error {
 	for _, client := range tn.Clients {
 		wg.Add(1)
 		go func(client *ssh.Client) { //TODO add validation
-			err := DockerLogin(client, auth["username"].(string), auth["password"].(string))
+			err := docker.Login(client, auth["username"].(string), auth["password"].(string))
 			if err != nil {
 				log.Println(err)
 				tn.BuildState.ReportError(err)
 			}
-			tn.BuildState.Defer(func() { DockerLogout(client) })
+			tn.BuildState.Defer(func() { docker.Logout(client) })
 		}(client)
 	}
 
@@ -137,12 +157,14 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 	//Force docker pull
 	dockerPull, ok := prebuild["pull"]
 	if ok && dockerPull.(bool) { //Slightly frail
+		tn.BuildState.SetBuildStage("Pulling your images")
 		wg := sync.WaitGroup{}
-		for _, image := range tn.LDD.Images { //OPTMZ
+		images := util.GetUniqueStrings(tn.LDD.Images)
+		for _, image := range images {
 			wg.Add(1)
 			go func(image string) {
 				defer wg.Done()
-				err := DockerPull(tn.GetFlatClients(), image) //OPTMZ
+				err := docker.Pull(tn.GetFlatClients(), image) //OPTMZ
 				if err != nil {
 					log.Println(err)
 					tn.BuildState.ReportError(err)

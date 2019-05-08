@@ -1,8 +1,26 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package manager
 
 import (
-	db "../db"
-	util "../util"
+	"../db"
+	"../util"
 	"fmt"
 	"log"
 )
@@ -20,12 +38,12 @@ func validateResources(details *db.DeploymentDetails) error {
 
 func validateNumOfNodes(details *db.DeploymentDetails) error {
 	if details.Nodes > conf.MaxNodes {
-		err := fmt.Errorf("Too many nodes, max of %d nodes.", conf.MaxNodes)
+		err := fmt.Errorf("too many nodes: max of %d nodes", conf.MaxNodes)
 		return err
 	}
 
 	if details.Nodes < 1 {
-		err := fmt.Errorf("You must have atleast 1 node")
+		err := fmt.Errorf("must have at least 1 node")
 		return err
 	}
 	return nil
@@ -53,7 +71,7 @@ func validateBlockchain(details *db.DeploymentDetails) error {
 
 func checkForNilOrMissing(details *db.DeploymentDetails) error {
 	if details.Servers == nil {
-		err := fmt.Errorf("servers cannot be null.")
+		err := fmt.Errorf("servers cannot be null")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -61,7 +79,7 @@ func checkForNilOrMissing(details *db.DeploymentDetails) error {
 	}
 
 	if len(details.Servers) == 0 {
-		err := fmt.Errorf("servers cannot be empty.")
+		err := fmt.Errorf("servers cannot be empty")
 		if err != nil {
 			log.Println(err)
 			return err
@@ -77,7 +95,7 @@ func checkForNilOrMissing(details *db.DeploymentDetails) error {
 	}
 
 	if details.Images == nil {
-		err := fmt.Errorf("images cannot be null.")
+		err := fmt.Errorf("images cannot be null")
 		if err != nil {
 			log.Println(err)
 			return err

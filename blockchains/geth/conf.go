@@ -1,15 +1,33 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package geth
 
 import (
-	util "../../util"
+	"../../util"
+	"../helpers"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 )
 
-type EthConf struct {
+type ethConf struct {
 	ExtraAccounts  int64  `json:"extraAccounts"`
-	NetworkId      int64  `json:"networkId"`
+	NetworkID      int64  `json:"networkId"`
 	Difficulty     int64  `json:"difficulty"`
 	InitBalance    string `json:"initBalance"`
 	MaxPeers       int64  `json:"maxPeers"`
@@ -22,8 +40,8 @@ type EthConf struct {
 /**
  * Fills in the defaults for missing parts,
  */
-func NewConf(data map[string]interface{}) (*EthConf, error) {
-	out := new(EthConf)
+func newConf(data map[string]interface{}) (*ethConf, error) {
+	out := new(ethConf)
 	err := json.Unmarshal([]byte(GetDefaults()), out)
 
 	if data == nil {
@@ -35,7 +53,7 @@ func NewConf(data map[string]interface{}) (*EthConf, error) {
 		return nil, err
 	}
 
-	err = util.GetJSONInt64(data, "networkId", &out.NetworkId)
+	err = util.GetJSONInt64(data, "networkId", &out.NetworkID)
 	if err != nil {
 		return nil, err
 	}
@@ -78,32 +96,35 @@ func NewConf(data map[string]interface{}) (*EthConf, error) {
 		case string:
 			out.InitBalance = initBalance.(string)
 		default:
-			return nil, fmt.Errorf("Incorrect type for initBalance given")
+			return nil, fmt.Errorf("incorrect type for initBalance given")
 		}
 	}
 
 	return out, nil
 }
 
+// GetParams fetchs artemis related parameters
 func GetParams() string {
-	dat, err := ioutil.ReadFile("./resources/geth/params.json")
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
 	return string(dat)
 }
 
+// GetDefaults fetchs artemis related parameter defaults
 func GetDefaults() string {
-	dat, err := ioutil.ReadFile("./resources/geth/defaults.json")
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
 	return string(dat)
 }
 
+// GetServices returns the services which are used by artemis
 func GetServices() []util.Service {
 	return []util.Service{
-		util.Service{
+		{
 			Name:    "ethNetStats",
 			Image:   "gcr.io/whiteblock/ethnetstats:dev",
 			Env:     nil,

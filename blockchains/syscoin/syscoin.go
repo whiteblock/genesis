@@ -1,12 +1,31 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+//Package syscoin handles syscoin specific functionality
 package syscoin
 
 import (
-	db "../../db"
-	ssh "../../ssh"
-	testnet "../../testnet"
-	util "../../util"
-	helpers "../helpers"
-	"errors"
+	"../../db"
+	"../../ssh"
+	"../../testnet"
+	"../../util"
+	"../helpers"
+	"../registrar"
 	"fmt"
 	"log"
 	"sync"
@@ -14,58 +33,58 @@ import (
 
 var conf *util.Config
 
+const blockchain = "syscoin"
+
 func init() {
 	conf = util.GetConfig()
+	registrar.RegisterBuild(blockchain, regTest)
+	registrar.RegisterAddNodes(blockchain, add)
+	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterParams(blockchain, GetParams)
 }
 
-/**
- * Sets up Syscoin Testnet in Regtest mode
- * @param {[type]} data    map[string]interface{}   The configuration optiosn given by the client
- * @param {[type]} nodes   int                      The number of nodes to build
- * @param {[type]} servers []db.Server)             The servers to be built on
- * @return ([]string,error [description]
- */
-func RegTest(tn *testnet.TestNet) ([]string, error) {
+// regTest sets up Syscoin Testnet in Regtest mode
+func regTest(tn *testnet.TestNet) error {
 	if tn.LDD.Nodes < 3 {
 		log.Println("Tried to build syscoin with not enough nodes")
-		return nil, errors.New("Tried to build syscoin with not enough nodes")
+		return fmt.Errorf("not enough nodes")
 	}
 
-	sysconf, err := NewConf(tn.LDD.Params)
+	sysconf, err := newConf(tn.LDD.Params)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
 	tn.BuildState.SetBuildSteps(1 + (4 * tn.LDD.Nodes))
 
 	tn.BuildState.SetBuildStage("Creating the syscoin conf files")
-	out, err := handleConf(tn, sysconf)
+	err = handleConf(tn, sysconf)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
 	fmt.Printf("done\n")
 
 	tn.BuildState.SetBuildStage("Launching the nodes")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, localNodeNum int, _ int) error {
+
+	return helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		return client.DockerExecdLog(localNodeNum,
+		return client.DockerExecdLog(node,
 			"syscoind -conf=\"/syscoin/datadir/regtest.conf\" -datadir=\"/syscoin/datadir/\"")
 	})
-
-	return out, err
 }
 
-func Add(tn *testnet.TestNet) ([]string, error) {
-	return nil, nil
+// Add handles adding a node to the artemis testnet
+// TODO
+func add(tn *testnet.TestNet) error {
+	return nil
 }
 
-func handleConf(tn *testnet.TestNet, sysconf *SysConf) ([]string, error) {
+func handleConf(tn *testnet.TestNet, sysconf *sysConf) error {
 	ips := []string{}
 	for _, node := range tn.Nodes {
-		ips = append(ips, node.Ip)
+		ips = append(ips, node.IP)
 	}
 
 	noMasterNodes := int(float64(len(ips)) * (float64(sysconf.PercOfMNodes) / float64(100)))
@@ -94,55 +113,61 @@ func handleConf(tn *testnet.TestNet, sysconf *SysConf) ([]string, error) {
 
 	connsDist, err := util.Distribute(ips, connDistModel)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		_, err := client.DockerExec(localNodeNum, "mkdir -p /syscoin/datadir")
+		_, err := client.DockerExec(node, "mkdir -p /syscoin/datadir")
 		return err
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 	//Finally generate the configuration for each node
 	mux := sync.Mutex{}
-	labels := make([]string, len(ips))
-	err = helpers.CreateConfigs(tn, "/syscoin/datadir/regtest.conf",
-		func(serverID int, localNodeNum int, absoluteNodeNum int) ([]byte, error) {
-			defer tn.BuildState.IncrementBuildProgress()
-			confData := ""
-			maxConns := 1
-			label := ""
-			if absoluteNodeNum < noMasterNodes { //Master Node
-				confData += sysconf.GenerateMN()
-				label = "Master Node"
-			} else if absoluteNodeNum%2 == 0 { //Sender
-				confData += sysconf.GenerateSender()
-				label = "Sender"
-			} else { //Receiver
-				confData += sysconf.GenerateReceiver()
-				label = "Receiver"
-			}
 
+	masterNodes := []string{}
+	senders := []string{}
+	receivers := []string{}
+
+	err = helpers.CreateConfigs(tn, "/syscoin/datadir/regtest.conf", func(node ssh.Node) ([]byte, error) {
+		defer tn.BuildState.IncrementBuildProgress()
+		confData := ""
+		maxConns := 1
+		if node.GetAbsoluteNumber() < noMasterNodes { //Master Node
+			confData += sysconf.GenerateMN()
 			mux.Lock()
-			labels[absoluteNodeNum] = label
+			masterNodes = append(masterNodes, node.GetIP())
 			mux.Unlock()
-			confData += "rpcport=8369\nport=8370\n"
-			for _, conn := range connsDist[absoluteNodeNum] {
-				confData += fmt.Sprintf("connect=%s:8370\n", conn)
-				maxConns += 4
-			}
-			confData += "rpcallowip=0.0.0.0/0\n"
-			//confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
-			return []byte(confData), nil
-		})
+		} else if node.GetAbsoluteNumber()%2 == 0 { //Sender
+			confData += sysconf.GenerateSender()
+			mux.Lock()
+			senders = append(senders, node.GetIP())
+			mux.Unlock()
+		} else { //Receiver
+			confData += sysconf.GenerateReceiver()
+			mux.Lock()
+			receivers = append(receivers, node.GetIP())
+			mux.Unlock()
+		}
+
+		confData += "rpcport=8369\nport=8370\n"
+		for _, conn := range connsDist[node.GetAbsoluteNumber()] {
+			confData += fmt.Sprintf("connect=%s:8370\n", conn)
+			maxConns += 4
+		}
+		confData += "rpcallowip=0.0.0.0/0\n"
+		//confData += fmt.Sprintf("maxconnections=%d\n",maxConns)
+		return []byte(confData), nil
+	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
-	return labels, nil
+	tn.BuildState.SetExt("masterNodes", masterNodes)
+	tn.BuildState.SetExt("senders", senders)
+	tn.BuildState.SetExt("receivers", receivers)
+
+	return nil
 }

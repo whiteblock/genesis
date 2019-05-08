@@ -1,11 +1,30 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package rest
 
 import (
-	db "../db"
-	manager "../manager"
-	state "../state"
-	status "../status"
-	util "../util"
+	"../blockchains/registrar"
+	"../db"
+	"../manager"
+	"../state"
+	"../status"
+	"../util"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -89,13 +108,14 @@ func getBlockChainParams(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 404)
 		return
 	}
+	//log.Println(string(blockchainParams))
 	w.Write(blockchainParams)
 }
 
 func getBlockChainState(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	buildId := params["buildId"]
-	buildState, err := state.GetBuildStateById(buildId)
+	buildID := params["buildID"]
+	buildState, err := state.GetBuildStateByID(buildID)
 	if err != nil {
 		http.Error(w, err.Error(), 404)
 		return
@@ -137,14 +157,14 @@ func getBlockChainLog(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	nodes, err := db.GetAllNodesByTestNet(params["testnetId"])
+	nodes, err := db.GetAllNodesByTestNet(params["testnetID"])
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
 		return
 	}
 
-	node, err := db.GetNodeByLocalId(nodes, nodeNum)
+	node, err := db.GetNodeByLocalID(nodes, nodeNum)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
@@ -157,11 +177,15 @@ func getBlockChainLog(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 404)
 		return
 	}
-	res, err := client.DockerRead(node.LocalID, conf.DockerOutputFile, lines)
+	res, err := client.DockerRead(node, conf.DockerOutputFile, lines)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, fmt.Sprintf("%s %s", res, err.Error()), 500)
 		return
 	}
 	w.Write([]byte(res))
+}
+
+func getAllSupportedBlockchains(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(registrar.GetSupportedBlockchains())
 }

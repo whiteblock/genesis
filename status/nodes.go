@@ -1,9 +1,27 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package status
 
 import (
-	db "../db"
-	ssh "../ssh"
-	util "../util"
+	"../db"
+	"../ssh"
+	"../util"
 	"fmt"
 	"log"
 	"strconv"
@@ -17,38 +35,34 @@ func init() {
 	conf = util.GetConfig()
 }
 
+// Comp represents the compuational resources currently in use
+// by a node
 type Comp struct {
-	Cpu float64 `json:"cpu"`
-	Vsz float64 `json:"virtualMemorySize"`
-	Rss float64 `json:"residentSetSize"`
+	CPU float64 `json:"cpu"`
+	VSZ float64 `json:"virtualMemorySize"`
+	RSS float64 `json:"residentSetSize"`
 }
 
-/*
-   Represents the status of the node
-*/
+// NodeStatus represents the status of the node
 type NodeStatus struct {
 	Name      string `json:"name"`
 	Server    int    `json:"server"`
-	Ip        string `json:"ip"`
+	IP        string `json:"ip"`
 	Up        bool   `json:"up"`
 	Resources Comp   `json:"resourceUse"`
 }
 
-/*
-   Finds the index of a node by name and server id
-*/
-func FindNodeIndex(status []NodeStatus, name string, serverId int) int {
+// FindNodeIndex finds the index of a node by name and server id
+func FindNodeIndex(status []NodeStatus, name string, serverID int) int {
 	for i, stat := range status {
-		if stat.Name == name && serverId == stat.Server {
+		if stat.Name == name && serverID == stat.Server {
 			return i
 		}
 	}
 	return -1
 }
 
-/*
-   Gets the cpu usage of a node
-*/
+// SumResUsage gets the cpu usage of a node
 func SumResUsage(c *ssh.Client, name string) (Comp, error) {
 	res, err := c.Run(fmt.Sprintf("docker exec %s ps aux --no-headers | grep -v nibbler | awk '{print $3,$5,$6}'", name))
 	if err != nil {
@@ -69,55 +83,44 @@ func SumResUsage(c *ssh.Client, name string) (Comp, error) {
 			log.Println(err)
 			return Comp{-1, -1, -1}, err
 		}
-		out.Cpu += cpu
+		out.CPU += cpu
 
 		vsz, err := strconv.ParseFloat(values[1], 64)
 		if err != nil {
 			log.Println(err)
 			return Comp{-1, -1, -1}, err
 		}
-		out.Vsz += vsz
+		out.VSZ += vsz
 
 		rss, err := strconv.ParseFloat(values[2], 64)
 		if err != nil {
 			log.Println(err)
 			return Comp{-1, -1, -1}, err
 		}
-		out.Rss += rss
+		out.RSS += rss
 
 	}
 	return out, nil
 }
 
-/*
-   Checks the status of the nodes in the current testnet
-*/
+// CheckNodeStatus checks the status of the nodes in the current testnet
 func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 
-	serverIds := []int{}
+	serverIDs := db.GetUniqueServerIDs(nodes)
 	out := make([]NodeStatus, len(nodes))
 
 	for _, node := range nodes {
-		push := true
-		for _, id := range serverIds {
-			if id == node.Server {
-				push = false
-			}
-		}
-		if push {
-			serverIds = append(serverIds, node.Server)
-		}
 		//fmt.Printf("ABS = %d; REL=%d;NAME=%s%d\n", node.AbsoluteNum, node.LocalID, conf.NodePrefix, node.LocalID)
 		out[node.AbsoluteNum] = NodeStatus{
 			Name:      fmt.Sprintf("%s%d", conf.NodePrefix, node.LocalID),
-			Ip:        node.Ip,
+			IP:        node.IP,
 			Server:    node.Server,
 			Up:        false,
 			Resources: Comp{-1, -1, -1},
-		} //local id to testnet
+		}
 
 	}
-	servers, err := db.GetServers(serverIds)
+	servers, err := db.GetServers(serverIDs)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -126,7 +129,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 	wg := sync.WaitGroup{}
 
 	for _, server := range servers {
-		client, err := GetClient(server.Id)
+		client, err := GetClient(server.ID)
 		if err != nil {
 			log.Println(err)
 			return nil, err
@@ -143,9 +146,9 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 				continue
 			}
 
-			index := FindNodeIndex(out, name, server.Id)
+			index := FindNodeIndex(out, name, server.ID)
 			if index == -1 {
-				log.Printf("name=\"%s\",server=%d\n", name, server.Id)
+				log.Printf("name=\"%s\",server=%d\n", name, server.ID)
 				continue
 			}
 			wg.Add(1)

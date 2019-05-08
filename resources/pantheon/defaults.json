@@ -1,14 +1,15 @@
 {
-    "networkId":15468,
-    "difficulty":100000,
-    "initBalance":"1000000000000000000000000",
-    "maxPeers":1000,
-    "gasLimit":4000000,
-    "extraData":"",
-    "consensus":"clique",
-    "blockPeriodSeconds":2,
-    "epoch":30000,
-    "requesttimeoutseconds":10,
-    "fixeddifficulty": 1000,
-    "accounts":50
+  "networkId": 15468,
+  "difficulty": 100000,
+  "initBalance": "1000000000000000000000000",
+  "maxPeers": 1000,
+  "gasLimit": 4000000,
+  "extraData": "",
+  "consensus": "clique",
+  "blockPeriodSeconds": 2,
+  "epoch": 30000,
+  "requesttimeoutseconds": 10,
+  "fixedDifficulty": 1000,
+  "accounts": 50,
+  "orion": true
 }

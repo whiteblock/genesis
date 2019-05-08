@@ -1,23 +1,36 @@
 /*
-Package db manages persistent state and keeps track of previous and current builds.
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+
+// Package db manages persistent state and keeps track of previous and current builds.
 package db
 
 import (
-	util "../util"
+	"../util"
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //needed for db
 	"os"
 )
 
-var dataLoc string = os.Getenv("HOME") + "/.config/whiteblock/.gdata"
+var dataLoc = os.Getenv("HOME") + "/.config/whiteblock/.gdata"
 
 //ServerTable contains name of the server table
 const ServerTable string = "servers"
-
-//TestTable contains name of the testnet table
-const TestTable string = "testnets"
 
 //NodesTable contains name of the nodes table
 const NodesTable string = "nodes"
@@ -32,7 +45,7 @@ var db *sql.DB
 func init() {
 	db = getDB()
 	db.SetMaxOpenConns(50)
-	CheckAndUpdate()
+	checkAndUpdate()
 }
 func getDB() *sql.DB {
 	if _, err := os.Stat(dataLoc); os.IsNotExist(err) {
@@ -62,14 +75,6 @@ func dbInit() {
 		"max INTEGER",
 		"name TEXT")
 
-	testSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s,%s,%s);",
-		TestTable,
-		"id TEXT",
-		"blockchain TEXT NOT NULL",
-		"nodes INTERGER",
-		"image TEXT NOT NULL",
-		"ts INTEGER")
-
 	nodesSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s);",
 		NodesTable,
 		"id TEXT",
@@ -80,7 +85,7 @@ func dbInit() {
 		"ip TEXT NOT NULL",
 		"label TEXT")
 
-	buildSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s,%s);",
+	buildSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s,%s, %s);",
 		BuildsTable,
 		"id INTEGER PRIMARY KEY AUTOINCREMENT",
 		"testnet TEXT",
@@ -91,7 +96,7 @@ func dbInit() {
 		"params TEXT",
 		"resources TEXT",
 		"environment TEXT",
-
+		"files TEXT",
 		"logs TEXT",
 		"extras TEXT",
 		"kid TEXT")
@@ -105,10 +110,7 @@ func dbInit() {
 	if err != nil {
 		panic(err)
 	}
-	_, err = db.Exec(testSchema)
-	if err != nil {
-		panic(err)
-	}
+
 	_, err = db.Exec(nodesSchema)
 	if err != nil {
 		panic(err)
@@ -121,21 +123,19 @@ func dbInit() {
 	if err != nil {
 		panic(err)
 	}
-	InsertLocalServers(db)
-	SetVersion(Version)
+	insertLocalServers(db)
+	setVersion(Version)
 }
 
-/*
-   InsertLocalServers adds the default server(s) to the servers database, allowing immediate use of the application
-   without having to register a server
-*/
-func InsertLocalServers(db *sql.DB) {
+//insertLocalServers adds the default server(s) to the servers database, allowing immediate use of the application
+//without having to register a server
+func insertLocalServers(db *sql.DB) {
 	InsertServer("cloud",
 		Server{
 			Addr:     "127.0.0.1",
 			Nodes:    0,
 			Max:      conf.MaxNodes,
 			SubnetID: 1,
-			Id:       -1,
+			ID:       -1,
 			Ips:      []string{}})
 }

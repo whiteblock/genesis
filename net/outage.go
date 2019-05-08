@@ -1,10 +1,28 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package netconf
 
 import (
-	db "../db"
-	ssh "../ssh"
-	status "../status"
-	util "../util"
+	"../db"
+	"../ssh"
+	"../status"
+	"../util"
 	"fmt"
 	"log"
 	"strconv"
@@ -12,6 +30,7 @@ import (
 	"sync"
 )
 
+//RemoveAllOutages removes all blocked connections on a server via the given client
 func RemoveAllOutages(client *ssh.Client) error {
 	res, err := client.Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD || true")
 	if err != nil {
@@ -43,67 +62,55 @@ func RemoveAllOutages(client *ssh.Client) error {
 	return nil
 }
 
-func MakeOutageCommands(node1 db.Node, node2 db.Node) []string {
+func makeOutageCommands(node1 db.Node, node2 db.Node) []string {
 	return []string{
-		fmt.Sprintf("FORWARD -i %s%d -d %s -j DROP", conf.BridgePrefix, node1.AbsoluteNum, node2.Ip),
-		fmt.Sprintf("FORWARD -i %s%d -d %s -j DROP", conf.BridgePrefix, node2.AbsoluteNum, node1.Ip),
+		fmt.Sprintf("FORWARD -i %s%d -d %s -j DROP", conf.BridgePrefix, node1.AbsoluteNum, node2.IP),
+		fmt.Sprintf("FORWARD -i %s%d -d %s -j DROP", conf.BridgePrefix, node2.AbsoluteNum, node1.IP),
 	}
 }
 
+func mkrmOutage(node1 db.Node, node2 db.Node, create bool) error {
+	flag := "-I"
+	if !create {
+		flag = "-D"
+	}
+	cmds := makeOutageCommands(node1, node2)
+
+	client, err := status.GetClient(node1.Server)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	_, err = client.Run(fmt.Sprintf("sudo iptables %s %s", flag, cmds[0]))
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	client, err = status.GetClient(node2.Server)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	_, err = client.Run(fmt.Sprintf("sudo iptables %s %s", flag, cmds[1]))
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
+}
+
+//MakeOutage removes the ability for the given nodes to connect
 func MakeOutage(node1 db.Node, node2 db.Node) error {
-	cmds := MakeOutageCommands(node1, node2)
-
-	client, err := status.GetClient(node1.Server)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	_, err = client.Run(fmt.Sprintf("sudo iptables -I %s", cmds[0]))
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	client, err = status.GetClient(node2.Server)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	_, err = client.Run(fmt.Sprintf("sudo iptables -I %s", cmds[1]))
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	return nil
+	return mkrmOutage(node1, node2, true)
 }
 
+//RemoveOutage returns the ability for the given nodes to connect
 func RemoveOutage(node1 db.Node, node2 db.Node) error {
-
-	cmds := MakeOutageCommands(node1, node2)
-
-	client, err := status.GetClient(node1.Server)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	_, err = client.Run(fmt.Sprintf("sudo iptables -D %s", cmds[0]))
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	client, err = status.GetClient(node2.Server)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	_, err = client.Run(fmt.Sprintf("sudo iptables -D %s", cmds[1]))
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	return nil
+	return mkrmOutage(node1, node2, false)
 }
 
+//CreatePartitionOutage causes the two sides to be unable to communicate with one and the other
 func CreatePartitionOutage(side1 []db.Node, side2 []db.Node) { //Doesn't report errors yet
 	wg := sync.WaitGroup{}
 	for _, node1 := range side1 {
@@ -121,6 +128,7 @@ func CreatePartitionOutage(side1 []db.Node, side2 []db.Node) { //Doesn't report 
 	wg.Wait()
 }
 
+//GetCutConnections fetches the cut connections on a server
 //TODO: Naive Implementation, does not yet take multiple servers into account
 func GetCutConnections(client *ssh.Client) ([]Connection, error) {
 	res, err := client.Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD | awk '{print $4,$6}' | sed -e 's/\\/32//g' || true")
@@ -143,7 +151,7 @@ func GetCutConnections(client *ssh.Client) ([]Connection, error) {
 		if len(cutPair) != 2 {
 			return nil, fmt.Errorf("unexpected result \"%s\" for cut pair", cut)
 		}
-		_, toNode := util.GetInfoFromIP(cutPair[0])
+		_, toNode, _ := util.GetInfoFromIP(cutPair[0])
 
 		if len(cutPair[1]) <= len(conf.BridgePrefix) {
 			return nil, fmt.Errorf("unexpected source interface, found \"%s\"", cutPair[1])
@@ -159,6 +167,7 @@ func GetCutConnections(client *ssh.Client) ([]Connection, error) {
 	return out, nil
 }
 
+//CalculatePartitions calculates the current partitions in the network
 func CalculatePartitions(nodes []db.Node) ([][]int, error) {
 	clients, err := status.GetClientsFromNodes(nodes)
 	if err != nil {

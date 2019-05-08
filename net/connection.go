@@ -1,19 +1,36 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package netconf
 
-import (
-//"fmt"
-
-)
-
+//Connection represents a uni-directional connection
 type Connection struct {
 	To   int `json:"to"`
 	From int `json:"from"`
 }
 
+//Connections represents a graph of the network connections
 type Connections struct {
 	cons [][]bool //[from][to]
 }
 
+//NewConnections creates a Connections object with all connections marked
+//as open
 func NewConnections(nodes int) *Connections {
 	out := new(Connections)
 	out.cons = make([][]bool, nodes)
@@ -26,9 +43,11 @@ func NewConnections(nodes int) *Connections {
 	return out
 }
 
-func (this *Connections) RemoveAll(conns []Connection) {
+//RemoveAll will mark all of the given connections as not
+//connected
+func (mesh *Connections) RemoveAll(conns []Connection) {
 	for _, conn := range conns {
-		this.cons[conn.From][conn.To] = false
+		mesh.cons[conn.From][conn.To] = false
 	}
 }
 
@@ -85,14 +104,15 @@ func containsPeer(peers []int, peer int) bool {
 	return false
 }
 
-func (this *Connections) Networks() [][]int {
+//Networks calculates the distinct, completely separate partitions in the network
+func (mesh *Connections) Networks() [][]int {
 	nodes := []int{}
 	nodesFinalized := []int{}
 	nodesToTry := []int{}
 
 	out := [][]int{}
 
-	for len(nodesFinalized) < len(this.cons) {
+	for len(nodesFinalized) < len(mesh.cons) {
 		//fmt.Printf("\n\nNodes : %#v\n Nodes Finalized: %#v\nNodes To Try%#v\n\n",nodes,nodesFinalized,nodesToTry)
 		if len(nodesToTry) == 0 {
 			if len(nodes) > 0 {
@@ -100,9 +120,9 @@ func (this *Connections) Networks() [][]int {
 				out = append(out, nodes)
 				nodes = []int{}
 			}
-			for i := 0; i < len(this.cons); i++ {
+			for i := 0; i < len(mesh.cons); i++ {
 				if !containsPeer(nodesFinalized, i) {
-					nodesToTry = findPossiblePeers(this.cons, i)
+					nodesToTry = findPossiblePeers(mesh.cons, i)
 					nodes = []int{i}
 					nodes = mergeUniquePeers(nodes, nodesToTry)
 					break
@@ -110,7 +130,7 @@ func (this *Connections) Networks() [][]int {
 			}
 
 		} else {
-			newPeers := findPossiblePeers(this.cons, nodesToTry[0])
+			newPeers := findPossiblePeers(mesh.cons, nodesToTry[0])
 			nodes = mergeUniquePeers(nodes, []int{nodesToTry[0]})
 			newPeers = filterPeers(newPeers, nodes)
 			if len(nodesToTry) > 1 {

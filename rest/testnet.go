@@ -1,12 +1,30 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package rest
 
 import (
-	db "../db"
-	manager "../manager"
-	state "../state"
-	status "../status"
-	testnet "../testnet"
-	util "../util"
+	"../db"
+	"../manager"
+	"../state"
+	"../status"
+	"../testnet"
+	"../util"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -15,16 +33,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-func getAllTestNets(w http.ResponseWriter, r *http.Request) {
-	testNets, err := db.GetAllTestNets()
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "There are no test nets", 204)
-		return
-	}
-	json.NewEncoder(w).Encode(testNets)
-}
 
 func createTestNet(w http.ResponseWriter, r *http.Request) {
 	tn := &db.DeploymentDetails{}
@@ -37,13 +45,13 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jwt, err := util.ExtractJwt(r)
-	if err != nil {
+	/*if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 403)
 		return
-	}
+	}*/
 	tn.SetJwt(jwt)
-	id, err := status.GetNextTestNetId()
+	id, err := util.GetUUIDString()
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Error Generating a new UUID", 500)
@@ -60,22 +68,6 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
 	go manager.AddTestNet(tn, id)
 	w.Write([]byte(id))
 
-}
-
-func getTestNetInfo(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-
-	//log.Println(fmt.Sprintf("Attempting to find tn with id %d",id))
-	testNet, err := db.GetTestNet(params["id"])
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "Test net does not exist", 404)
-		return
-	}
-	err = json.NewEncoder(w).Encode(testNet)
-	if err != nil {
-		log.Println(err)
-	}
 }
 
 func deleteTestNet(w http.ResponseWriter, r *http.Request) {
@@ -104,9 +96,9 @@ func getTestNetNodes(w http.ResponseWriter, r *http.Request) {
 func addNodes(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	testnetId := params["testnetid"]
+	testnetID := params["testnetID"]
 
-	tn, err := db.GetBuildByTestnet(testnetId)
+	tn, err := db.GetBuildByTestnet(testnetID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Could not find the given testnet id", 400)
@@ -120,7 +112,7 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		//Ignore error and continue
 	}
-	bs, err := state.GetBuildStateById(testnetId)
+	bs, err := state.GetBuildStateByID(testnetID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Testnet is down, build a new one", 409)
@@ -128,7 +120,7 @@ func addNodes(w http.ResponseWriter, r *http.Request) {
 	}
 	bs.Reset()
 	w.Write([]byte("Adding the nodes"))
-	go manager.AddNodes(&tn, testnetId)
+	go manager.AddNodes(&tn, testnetID)
 }
 
 func delNodes(w http.ResponseWriter, r *http.Request) {
@@ -140,59 +132,65 @@ func delNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	testnetId := params["id"]
+	testnetID := params["id"]
 
-	tn, err := db.GetBuildByTestnet(testnetId)
+	tn, err := db.GetBuildByTestnet(testnetID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Could not find the given testnet id", 400)
 		return
 	}
 
-	err = state.AcquireBuilding(tn.Servers, testnetId) //TODO: THIS IS WRONG
+	err = state.AcquireBuilding(tn.Servers, testnetID) //TODO: THIS IS WRONG
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "There is a build in progress", 409)
 		return
 	}
 	w.Write([]byte("Deleting the nodes"))
-	go manager.DelNodes(num, testnetId)
+	go manager.DelNodes(num, testnetID)
 }
 
 func restartNode(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	testnetId := params["id"]
-	node := params["num"]
-	log.Printf("%s %s\n", testnetId, node)
-	tn, err := testnet.RestoreTestNet(testnetId)
+	testnetID := params["id"]
+	nodeNum := params["num"]
+	log.Printf("%s %s\n", testnetID, nodeNum)
+	tn, err := testnet.RestoreTestNet(testnetID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
 		return
 	}
-	cmdRaw, ok := tn.BuildState.Get(node)
+	cmdRaw, ok := tn.BuildState.Get(nodeNum)
 	fmt.Printf("%#v\n", tn.BuildState.GetExtras())
 	if !ok {
-		log.Printf("Node %s not found", node)
-		http.Error(w, fmt.Sprintf("Node %s not found", node), 404)
+		log.Printf("Node %s not found", nodeNum)
+		http.Error(w, fmt.Sprintf("Node %s not found", nodeNum), 404)
 		return
 	}
 	cmd := cmdRaw.(util.Command)
 
-	client, err := status.GetClient(cmd.ServerId)
+	client, err := status.GetClient(cmd.ServerID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 500)
 		return
 	}
 	cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep|  awk '{print $2}'| tail -n 1", strings.Split(cmd.Cmdline, " ")[0])
-	pid, err := client.DockerExec(cmd.Node, cmdgexCmd)
+	node, err := db.GetNodeByLocalID(tn.Nodes, cmd.Node)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	res, err := client.DockerExec(cmd.Node, fmt.Sprintf("kill -INT %s", pid))
+	pid, err := client.DockerExec(node, cmdgexCmd)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	res, err := client.DockerExec(node, fmt.Sprintf("kill -INT %s", pid))
 	if err != nil {
 		log.Println(err)
 		log.Println(res)
@@ -201,13 +199,13 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for {
-		_, err = client.DockerExec(cmd.Node, fmt.Sprintf("ps aux | grep '%s' | grep -v grep", strings.Split(cmd.Cmdline, " ")[0]))
+		_, err = client.DockerExec(node, fmt.Sprintf("ps aux | grep '%s' | grep -v grep", strings.Split(cmd.Cmdline, " ")[0]))
 		if err != nil {
 			break
 		}
 	}
 
-	err = client.DockerExecdLogAppend(cmd.Node, cmd.Cmdline)
+	err = client.DockerExecdLogAppend(node, cmd.Cmdline)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 500)
@@ -218,7 +216,7 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 
 func signalNode(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	testnetID := params["testnetid"]
+	testnetID := params["testnetID"]
 	node := params["node"]
 	nodeNum, err := strconv.Atoi(node)
 	if err != nil {
@@ -230,7 +228,7 @@ func signalNode(w http.ResponseWriter, r *http.Request) {
 	err = util.ValidateCommandLine(signal)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, fmt.Sprintf("Invalid signal \"%s\", see `man 7 signal` for help"), 400)
+		http.Error(w, fmt.Sprintf("Invalid signal \"%s\", see `man 7 signal` for help", signal), 400)
 	}
 
 	tn, err := testnet.RestoreTestNet(testnetID)
@@ -253,14 +251,14 @@ func signalNode(w http.ResponseWriter, r *http.Request) {
 	cmd := cmdRaw.(util.Command)
 
 	cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep|  awk '{print $2}'| tail -n 1", strings.Split(cmd.Cmdline, " ")[0])
-	pid, err := tn.Clients[n.Server].DockerExec(cmd.Node, cmdgexCmd)
+	pid, err := tn.Clients[n.Server].DockerExec(n, cmdgexCmd)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
-	_, err = tn.Clients[n.Server].DockerExec(n.LocalID, fmt.Sprintf("kill -%s %s", signal, pid))
+	_, err = tn.Clients[n.Server].DockerExec(n, fmt.Sprintf("kill -%s %s", signal, pid))
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 500)
@@ -271,37 +269,44 @@ func signalNode(w http.ResponseWriter, r *http.Request) {
 
 func killNode(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	testnetId := params["testnetid"]
-	node := params["node"]
-	log.Printf("%s %s\n", testnetId, node)
-	tn, err := testnet.RestoreTestNet(testnetId)
+	testnetID := params["testnetID"]
+
+	log.Printf("%s %s\n", testnetID, params["node"])
+	tn, err := testnet.RestoreTestNet(testnetID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
 		return
 	}
-	cmdRaw, ok := tn.BuildState.Get(node)
+	cmdRaw, ok := tn.BuildState.Get(params["node"])
 	if !ok {
-		log.Printf("Node %s not found", node)
-		http.Error(w, fmt.Sprintf("Node %s not found", node), 404)
+		log.Printf("Node %s not found", params["node"])
+		http.Error(w, fmt.Sprintf("Node %s not found", params["node"]), 404)
 		return
 	}
 	cmd := cmdRaw.(util.Command)
 
-	client, err := status.GetClient(cmd.ServerId)
+	client, err := status.GetClient(cmd.ServerID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 500)
 		return
 	}
 	cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep|  awk '{print $2}'| tail -n 1", strings.Split(cmd.Cmdline, " ")[0])
-	pid, err := client.DockerExec(cmd.Node, cmdgexCmd)
+	node, err := db.GetNodeByLocalID(tn.Nodes, cmd.Node)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	res, err := client.DockerExec(cmd.Node, fmt.Sprintf("kill -INT %s", pid))
+
+	pid, err := client.DockerExec(node, cmdgexCmd)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	res, err := client.DockerExec(node, fmt.Sprintf("kill -INT %s", pid))
 	if err != nil {
 		log.Println(err)
 		log.Println(res)
@@ -310,10 +315,10 @@ func killNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for {
-		_, err = client.DockerExec(cmd.Node, fmt.Sprintf("ps aux | grep '%s' | grep -v grep", strings.Split(cmd.Cmdline, " ")[0]))
+		_, err = client.DockerExec(node, fmt.Sprintf("ps aux | grep '%s' | grep -v grep", strings.Split(cmd.Cmdline, " ")[0]))
 		if err != nil {
 			break
 		}
 	}
-	w.Write([]byte(fmt.Sprintf("Killed node %d", node)))
+	w.Write([]byte(fmt.Sprintf("Killed node %d", params["node"])))
 }

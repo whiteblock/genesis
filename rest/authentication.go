@@ -1,3 +1,21 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package rest
 
 import (
@@ -5,18 +23,19 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
+	//"strings"
 
-	util "../util"
-	"crypto/x509"
-	"encoding/pem"
-	"github.com/Whiteblock/jwt-go"
+	"../util"
+	//"crypto/x509"
+	//"encoding/pem"
+	//"github.com/Whiteblock/jwt-go"
 )
 
 const allowNoKeyAcess = true
 
+//GetKey gets the key information from the whiteblock API endpoint by key id
 func GetKey(kid string) (map[string]string, error) {
-	res, err := util.HttpRequest("GET", "https://api.whiteblock.io/public/jwt-keys", "")
+	res, err := util.HTTPRequest("GET", "https://api.whiteblock.io/public/jwt-keys", "")
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -33,16 +52,16 @@ func GetKey(kid string) (map[string]string, error) {
 			return keys[i], nil
 		}
 	}
-	return nil, fmt.Errorf("Could not find a matching entry for the kid")
+	return nil, fmt.Errorf("could not find a matching entry for the kid")
 }
 
-func AuthN(next http.Handler) http.Handler {
+func authN(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		next.ServeHTTP(w, r) //bypass
 		return
 
-		tokenString := r.Header.Get("Authorization")
+		/*tokenString := r.Header.Get("Authorization")
 
 		if len(tokenString) == 0 {
 			log.Println("Info: Request came in without the Authorization header set")
@@ -105,6 +124,6 @@ func AuthN(next http.Handler) http.Handler {
 		fmt.Printf("Token: %v\n", token)
 		// Authenticated, move on to next step
 		next.ServeHTTP(w, r)
-
+		*/
 	})
 }

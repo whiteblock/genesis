@@ -1,16 +1,32 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package db
 
 import (
+	"../util"
 	"database/sql"
 	"errors"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
-	"log"
+	_ "github.com/mattn/go-sqlite3" //Include sqlite as the db
 )
 
-/*
-   Node represents a node within the network
-*/
+//Node represents a node within the network
 type Node struct {
 	ID string `json:"id"`
 
@@ -18,7 +34,7 @@ type Node struct {
 	/*
 	   TestNetId is the id of the testnet to which the node belongs to
 	*/
-	TestNetID string `json:"testNetId"`
+	TestNetID string `json:"testnetId"`
 	/*
 	   Server is the id of the server on which the node resides
 	*/
@@ -28,23 +44,55 @@ type Node struct {
 	*/
 	LocalID int `json:"localId"`
 	/*
-	   Ip is the ip address of the node
+	   IP is the ip address of the node
 	*/
-	Ip string `json:"ip"`
+	IP string `json:"ip"`
 	/*
 	   Label is the string given to the node by the build process
 	*/
 	Label string `json:"label"`
+
+	Image string `json:"image"`
+
+	Blockchain string `json:"blockchain"`
 }
 
-/*
-   GetAllNodesByServer gets all nodes that have ever existed on a server
-*/
-func GetAllNodesByServer(serverId int) ([]Node, error) {
+// GetAbsoluteNumber gets the absolute number of the node in the testnet
+func (n Node) GetAbsoluteNumber() int {
+	return n.AbsoluteNum
+}
 
-	rows, err := db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s WHERE server = %d", NodesTable, serverId))
+// GetIP gets the ip address of this node
+func (n Node) GetIP() string {
+	return n.IP
+}
+
+// GetRelativeNumber gets the local id of the node
+func (n Node) GetRelativeNumber() int {
+	return n.LocalID
+}
+
+// GetServerID gets the id of the server on which this node resides
+func (n Node) GetServerID() int {
+	return n.Server
+}
+
+// GetTestNetID gets the id of the testnet this node is a part of
+func (n Node) GetTestNetID() string {
+	return n.TestNetID
+}
+
+// GetNodeName gets the whiteblock name of this node
+func (n Node) GetNodeName() string {
+	return fmt.Sprintf("%s%d", conf.NodePrefix, n.AbsoluteNum)
+}
+
+//GetAllNodesByServer gets all nodes that have ever existed on a server
+func GetAllNodesByServer(serverID int) ([]Node, error) {
+
+	rows, err := db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s WHERE server = %d", NodesTable, serverID))
 	if err != nil {
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	defer rows.Close()
 
@@ -53,112 +101,87 @@ func GetAllNodesByServer(serverId int) ([]Node, error) {
 		var node Node
 		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.ID, &node.Label, &node.AbsoluteNum)
 		if err != nil {
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		nodes = append(nodes, node)
 	}
 	return nodes, nil
 }
 
-/*
-   GetAllNodesByTestNet gets all the nodes which are in the given testnet
-*/
-func GetAllNodesByTestNet(testId string) ([]Node, error) {
+//GetAllNodesByTestNet gets all the nodes which are in the given testnet
+func GetAllNodesByTestNet(testID string) ([]Node, error) {
 	nodes := []Node{}
 
-	rows, err := db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s WHERE test_net = \"%s\"", NodesTable, testId))
+	rows, err := db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s WHERE test_net = \"%s\"", NodesTable, testID))
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var node Node
-		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.Ip, &node.Label, &node.AbsoluteNum)
+		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.IP, &node.Label, &node.AbsoluteNum)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		nodes = append(nodes, node)
 	}
 	return nodes, nil
 }
 
-/*
-   GetAllNodes gets every node that has ever existed.
-*/
+//GetAllNodes gets every node that has ever existed.
 func GetAllNodes() ([]Node, error) {
 
 	rows, err := db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s", NodesTable))
 	if err != nil {
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	defer rows.Close()
 	nodes := []Node{}
 
 	for rows.Next() {
 		var node Node
-		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.Ip, &node.Label, &node.AbsoluteNum)
+		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.IP, &node.Label, &node.AbsoluteNum)
 		if err != nil {
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		nodes = append(nodes, node)
 	}
 	return nodes, nil
 }
 
-/*
-   GetNode fetches a node by id
-*/
+//GetNode fetches a node by id
 func GetNode(id string) (Node, error) {
 
 	row := db.QueryRow(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s WHERE id = %s", NodesTable, id))
 
 	var node Node
 
-	if row.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.Ip, &node.Label, &node.AbsoluteNum) == sql.ErrNoRows {
-		return node, errors.New("Not Found")
+	if row.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.IP, &node.Label, &node.AbsoluteNum) == sql.ErrNoRows {
+		return node, errors.New("not found")
+
 	}
 
 	return node, nil
 }
 
-/*
-   GetNode fetches a node by id
-*/
-func GetNodeByTestNetAndId(testnet string, id string) (Node, error) {
-
-	row := db.QueryRow(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s WHERE id = %s AND test_net = %s", NodesTable, id, testnet))
-
-	var node Node
-
-	if row.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.Ip, &node.Label, &node.AbsoluteNum) == sql.ErrNoRows {
-		return node, errors.New("Not Found")
-	}
-
-	return node, nil
-}
-
-/*
-   InsertNode inserts a node into the database
-*/
+//InsertNode inserts a node into the database
 func InsertNode(node Node) (int, error) {
 
 	tx, err := db.Begin()
 	if err != nil {
-		return -1, err
+		return -1, util.LogError(err)
 	}
 
 	stmt, err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (id,test_net,server,local_id,ip,label,abs_num) VALUES (?,?,?,?,?,?,?)", NodesTable))
 
 	if err != nil {
-		return -1, err
+		return -1, util.LogError(err)
 	}
 
 	defer stmt.Close()
 
-	res, err := stmt.Exec(node.ID, node.TestNetID, node.Server, node.LocalID, node.Ip, node.Label, node.AbsoluteNum)
+	res, err := stmt.Exec(node.ID, node.TestNetID, node.Server, node.LocalID, node.IP, node.Label, node.AbsoluteNum)
 	if err != nil {
 		return -1, nil
 	}
@@ -168,59 +191,54 @@ func InsertNode(node Node) (int, error) {
 	return int(id), err
 }
 
-/*
-   DeleteNode removes a node from the database
-   (Deprecated)
-*/
+// DeleteNode removes a node from the database
+// (Deprecated)
 func DeleteNode(id string) error {
 
 	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %s", NodesTable, id))
 	return err
 }
 
-/*
-   DeleteNodesByTestNet removes all nodes in a testnet from the database.
-   (Deprecated)
-*/
+// DeleteNodesByTestNet removes all nodes in a testnet from the database.
+// (Deprecated)
 func DeleteNodesByTestNet(id string) error {
 
 	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE test_net = %s", NodesTable, id))
 	return err
 }
 
-/*
-   DeleteNodesByServer delete all nodes which have ever been on a given server.
-*/
+//DeleteNodesByServer delete all nodes which have ever been on a given server.
 func DeleteNodesByServer(id string) error {
 
 	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE server = %s", NodesTable, id))
 	return err
 }
 
-/**
- * Helper functions which do not query the database
- */
+/**Helper functions which do not query the database**/
 
-func GetNodeByLocalId(nodes []Node, localID int) (Node, error) {
+// GetNodeByLocalID looks up a node by its localID
+func GetNodeByLocalID(nodes []Node, localID int) (Node, error) {
 	for _, node := range nodes {
 		if node.LocalID == localID {
 			return node, nil
 		}
 	}
 
-	return Node{}, errors.New("Couldn't find the given node")
+	return Node{}, errors.New("node not found")
 }
 
+//GetNodeByAbsNum finds a node based on its absolute node number
 func GetNodeByAbsNum(nodes []Node, absNum int) (Node, error) {
 	for _, node := range nodes {
 		if node.AbsoluteNum == absNum {
 			return node, nil
 		}
 	}
-
-	return Node{}, errors.New("Couldn't find the given node")
+	return Node{}, errors.New("node not found")
 }
 
+//DivideNodesByAbsMatch spits the given nodes into nodes which have their absnum in the
+//given nodeNums and those who don't
 func DivideNodesByAbsMatch(nodes []Node, nodeNums []int) ([]Node, []Node, error) {
 	matches := []Node{}
 	notMatches := make([]Node, len(nodes))
@@ -236,7 +254,7 @@ func DivideNodesByAbsMatch(nodes []Node, nodeNums []int) ([]Node, []Node, error)
 			}
 		}
 		if index == -1 {
-			return nil, nil, fmt.Errorf("Couldn't find node %d", num)
+			return nil, nil, fmt.Errorf("node %d not found", num)
 		}
 		matches = append(matches, notMatches[index])
 		if len(notMatches) == index-1 {
@@ -254,12 +272,13 @@ func DivideNodesByAbsMatch(nodes []Node, nodeNums []int) ([]Node, []Node, error)
 	return matches, notMatches, nil
 }
 
-func GetUniqueServerIds(nodes []Node) []int {
+//GetUniqueServerIDs extracts the unique server ids from a slice of Node
+func GetUniqueServerIDs(nodes []Node) []int {
 	out := []int{}
 	for _, node := range nodes {
 		shouldAdd := true
-		for _, serverId := range out {
-			if node.Server == serverId {
+		for _, serverID := range out { //Check to make sure the serverID is not already in out
+			if node.Server == serverID {
 				shouldAdd = false
 			}
 		}

@@ -1,3 +1,21 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package util
 
 import (
@@ -7,17 +25,18 @@ import (
 	"time"
 )
 
+//Point represents a basic 2D coordinate point
 type Point struct {
+	//X represents the position on the x axis
 	X int `json:"x"`
+	//Y represents the position on the y axis
 	Y int `json:"y"`
 }
 
-/*
-   Create a distance matrix, of all the distances between the given points
-*/
+// Distances creates a distance matrix, of all the distances between the given points
 func Distances(pnts []Point) [][]float64 {
 	out := make([][]float64, len(pnts))
-	for i, _ := range pnts {
+	for i := range pnts {
 		out[i] = make([]float64, len(pnts))
 	}
 
@@ -34,24 +53,22 @@ func Distances(pnts []Point) [][]float64 {
 	return out
 }
 
-/*
-   Distribute generates a roughly uniform random distribution for connections
-   among nodes.
-*/
+// Distribute generates a roughly uniform random distribution for connections
+// among nodes.
 func Distribute(nodes []string, dist []int) ([][]string, error) {
 	if len(nodes) < 2 {
-		return nil, errors.New("Cannot distribute a series smaller than 1")
+		return nil, errors.New("cannot distribute a series smaller than 1")
 	}
 	for _, d := range dist {
 		if d >= len(nodes) {
-			return nil, errors.New("Cannot distribute among more nodes than those that are given")
+			return nil, errors.New("cannot distribute among more nodes than those that are provided")
 		}
 	}
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 
 	out := [][]string{}
-	for i, _ := range nodes {
+	for i := range nodes {
 		conns := []string{}
 		for j := 0; j < dist[i]; j++ {
 			newConnIndex := r1.Intn(len(nodes))
@@ -79,9 +96,7 @@ func Distribute(nodes []string, dist []int) ([][]string, error) {
 	return out, nil
 }
 
-/*
-   Generates a random path through all nodes
-*/
+// GenerateworstCaseNetwork generates a random path through all nodes
 func GenerateworstCaseNetwork(nodes int) [][]int {
 	out := make([][]int, nodes)
 
@@ -104,15 +119,14 @@ func GenerateworstCaseNetwork(nodes int) [][]int {
 	return out
 }
 
-/*
-   Generate a random mesh network that ensures that there is always a path between all the nodes
-*/
+// GenerateUniformRandMeshNetwork generates a random mesh network that ensures
+// that there is always a path between all the nodes
 func GenerateUniformRandMeshNetwork(nodes int, conns int) ([][]int, error) {
 	if conns < 1 {
-		return nil, errors.New("Each node must have atleast one connection")
+		return nil, errors.New("each node must have at least one connection")
 	}
 	if conns >= nodes {
-		return nil, errors.New("Too many connection to distribute without duplicates")
+		return nil, errors.New("too many connection to distribute without duplicates")
 	}
 	s1 := rand.NewSource(time.Now().UnixNano())
 	rng := rand.New(s1)
@@ -132,7 +146,6 @@ func GenerateUniformRandMeshNetwork(nodes int, conns int) ([][]int, error) {
 			if add {
 				out[i] = append(out[i], node)
 			}
-
 		}
 	}
 	return out, nil

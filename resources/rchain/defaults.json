@@ -1,12 +1,13 @@
 {
-    "noUpnp":true,
-    "defaultTimeout":2000,
-    "mapSize":1073741824,
-    "casperBlockStoreSize":1073741824,
-    "inMemoryStore":false,
-    "maxNumOfConnections":500,
-    "validatorCount":5,
-    "validators":0,
-    "sigAlgorithm":"ed25519",
-    "command":"/rchain/node/target/rnode*/usr/share/rnode/bin/rnode"
+  "noUpnp": true,
+  "defaultTimeout": 2000,
+  "mapSize": 1073741824,
+  "casperBlockStoreSize": 1073741824,
+  "inMemoryStore": false,
+  "maxNumOfConnections": 500,
+  "validatorCount": 5,
+  "validators": 0,
+  "sigAlgorithm": "ed25519",
+  "command": "/rchain/node/target/rnode*/usr/share/rnode/bin/rnode",
+  "bondsValue": 1000000
 }

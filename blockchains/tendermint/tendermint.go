@@ -1,72 +1,96 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+//Package tendermint handles tendermint specific functionality
 package tendermint
 
 import (
-	db "../../db"
-	ssh "../../ssh"
-	testnet "../../testnet"
-	util "../../util"
-	helpers "../helpers"
+	"../../db"
+	"../../ssh"
+	"../../testnet"
+	"../../util"
+	"../helpers"
+	"../registrar"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 	"time"
 )
 
-type ValidatorPubKey struct {
+type validatorPubKey struct {
 	Type  string `json:"type"`
 	Value string `json:"value"`
 }
 
-type Validator struct {
+type validator struct {
 	Address string          `json:"address"`
-	PubKey  ValidatorPubKey `json:"pub_key"`
+	PubKey  validatorPubKey `json:"pub_key"`
 	Power   string          `json:"power"`
 	Name    string          `json:"name"`
 }
 
 var conf *util.Config
 
+const blockchain = "tendermint"
+
 func init() {
 	conf = util.GetConfig()
+	registrar.RegisterBuild(blockchain, Build)
+	registrar.RegisterAddNodes(blockchain, Add)
+	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterParams(blockchain, GetParams)
 }
 
 //ExecStart=/usr/bin/tendermint node --proxy_app=kvstore --p2p.persistent_peers=167b80242c300bf0ccfb3ced3dec60dc2a81776e@165.227.41.206:26656,3c7a5920811550c04bf7a0b2f1e02ab52317b5e6@165.227.43.146:26656,303a1a4312c30525c99ba66522dd81cca56a361a@159.89.115.32:26656,b686c2a7f4b1b46dca96af3a0f31a6a7beae0be4@159.89.119.125:26656
-func Build(tn *testnet.TestNet) ([]string, error) {
+
+//Build builds out a fresh new tendermint test network
+func Build(tn *testnet.TestNet) error {
 	//Ensure that genesis file has same chain_id
 	peers := []string{}
-	validators := []Validator{}
+	validators := []validator{}
 	tn.BuildState.SetBuildSteps(1 + (tn.LDD.Nodes * 4))
 	tn.BuildState.SetBuildStage("Initializing the nodes")
 
 	mux := sync.Mutex{}
-	err := helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
-		ip := tn.Nodes[absoluteNodeNum].Ip
+	err := helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		//init everything
-		_, err := client.DockerExec(localNodeNum, "tendermint init")
+		_, err := client.DockerExec(node, "tendermint init")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 
 		//Get the node id
-		res, err := client.DockerExec(localNodeNum, "tendermint show_node_id")
+		res, err := client.DockerExec(node, "tendermint show_node_id")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
-		nodeId := res[:len(res)-1]
+		nodeID := res[:len(res)-1]
 
 		mux.Lock()
-		peers = append(peers, fmt.Sprintf("%s@%s:26656", nodeId, ip))
+		peers = append(peers, fmt.Sprintf("%s@%s:26656", nodeID, node.GetIP()))
 		mux.Unlock()
 
 		//Get the validators
-		res, err = client.DockerExec(localNodeNum, "cat /root/.tendermint/config/genesis.json")
+		res, err = client.DockerExec(node, "cat /root/.tendermint/config/genesis.json")
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		tn.BuildState.IncrementBuildProgress()
 		var genesis map[string]interface{}
@@ -74,70 +98,70 @@ func Build(tn *testnet.TestNet) ([]string, error) {
 
 		validatorsRaw := genesis["validators"].([]interface{})
 		for _, validatorRaw := range validatorsRaw {
-			validator := Validator{}
+			vdtr := validator{}
 
 			validatorData := validatorRaw.(map[string]interface{})
 
-			err = util.GetJSONString(validatorData, "address", &validator.Address)
+			err = util.GetJSONString(validatorData, "address", &vdtr.Address)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 
 			validatorPubKeyData := validatorData["pub_key"].(map[string]interface{})
 
-			err = util.GetJSONString(validatorPubKeyData, "type", &validator.PubKey.Type)
+			err = util.GetJSONString(validatorPubKeyData, "type", &vdtr.PubKey.Type)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 
-			err = util.GetJSONString(validatorPubKeyData, "value", &validator.PubKey.Value)
+			err = util.GetJSONString(validatorPubKeyData, "value", &vdtr.PubKey.Value)
 
-			err = util.GetJSONString(validatorData, "power", &validator.Power)
+			err = util.GetJSONString(validatorData, "power", &vdtr.Power)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 
-			err = util.GetJSONString(validatorData, "name", &validator.Name)
+			err = util.GetJSONString(validatorData, "name", &vdtr.Name)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 			mux.Lock()
-			validators = append(validators, validator)
+			validators = append(validators, vdtr)
 			mux.Unlock()
 		}
 		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 	tn.BuildState.SetBuildStage("Propogating the genesis file")
 
 	//distribute the created genensis file among the nodes
-	err = helpers.CopyBytesToAllNodes(tn, GetGenesisFile(validators), "/root/.tendermint/config/genesis.json")
+	err = helpers.CopyBytesToAllNodes(tn, getGenesisFile(validators), "/root/.tendermint/config/genesis.json")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return util.LogError(err)
 	}
 
 	tn.BuildState.SetBuildStage("Starting tendermint")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, localNodeNum int, absoluteNodeNum int) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		peersCpy := make([]string, len(peers))
 		copy(peersCpy, peers)
-		return client.DockerExecdLog(localNodeNum, fmt.Sprintf("tendermint node --proxy_app=kvstore --p2p.persistent_peers=%s",
-			strings.Join(append(peersCpy[:absoluteNodeNum], peersCpy[absoluteNodeNum+1:]...), ",")))
+		return client.DockerExecdLog(node, fmt.Sprintf("tendermint node --proxy_app=kvstore --p2p.persistent_peers=%s",
+			strings.Join(append(peersCpy[:node.GetAbsoluteNumber()], peersCpy[node.GetAbsoluteNumber()+1:]...), ",")))
 	})
-	return nil, err
+	return util.LogError(err)
 }
 
-func GetGenesisFile(validators []Validator) string {
-	validatorsStr, _ := json.Marshal(validators)
+// Add handles adding a node to the tendermint testnet
+// TODO
+func Add(tn *testnet.TestNet) error {
+	return nil
+}
+
+func getGenesisFile(vdtrs []validator) string {
+	validatorsStr, _ := json.Marshal(vdtrs)
 	return fmt.Sprintf(`{
       "genesis_time": "%s",
       "chain_id": "whiteblock",

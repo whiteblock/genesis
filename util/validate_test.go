@@ -1,10 +1,28 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package util
 
 import (
 	"testing"
 )
 
-func TestValidateAscii(t *testing.T) {
+func TestValidateASCII(t *testing.T) {
 	tests := map[string]bool{
 		"\u0432\u8977":            true,
 		"helloworld":              false,
@@ -12,7 +30,7 @@ func TestValidateAscii(t *testing.T) {
 		"how are you doing\u8333": true,
 	}
 	for test, expected := range tests {
-		err := ValidateAscii(test)
+		err := ValidateASCII(test)
 		if (err != nil) != expected {
 			if expected {
 				t.Errorf("ValidateAscii(\"%s\") passed when should have failed", test)
@@ -24,7 +42,7 @@ func TestValidateAscii(t *testing.T) {
 
 }
 
-func TestValidateNormalAscii(t *testing.T) {
+func TestValidateNormalASCII(t *testing.T) {
 	tests := map[string]bool{
 		"\u0432\u8977":            true,
 		"helloworld":              false,
@@ -32,7 +50,7 @@ func TestValidateNormalAscii(t *testing.T) {
 		"how are you doing\u8333": true,
 	}
 	for test, expected := range tests {
-		err := ValidateNormalAscii(test)
+		err := ValidateNormalASCII(test)
 		if (err != nil) != expected {
 			if expected {
 				t.Errorf("ValidateNormalAscii(\"%s\") passed when should have failed", test)

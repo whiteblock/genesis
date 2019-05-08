@@ -1,3 +1,21 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package state
 
 import (
@@ -14,15 +32,14 @@ var mux = sync.RWMutex{}
 
 /*
    Remove all of the finished build states
-
 */
 func cleanBuildStates(servers []int) {
 	for i := 0; i < len(buildStates); i++ {
 		if buildStates[i].Done() {
 			needsToDie := false
-			for _, serverId1 := range buildStates[i].Servers { //Check if the build actually needs to be removed.
-				for _, serverId2 := range servers {
-					if serverId1 == serverId2 {
+			for _, serverID1 := range buildStates[i].Servers { //Check if the build actually needs to be removed.
+				for _, serverID2 := range servers {
+					if serverID1 == serverID2 {
 						needsToDie = true
 					}
 				}
@@ -31,9 +48,9 @@ func cleanBuildStates(servers []int) {
 				continue
 			}
 			//Remove the build state
-			for _, serverId1 := range buildStates[i].Servers {
+			for _, serverID1 := range buildStates[i].Servers {
 				for j := 0; j < len(serversInUse); j++ {
-					if serverId1 == serversInUse[j] {
+					if serverID1 == serversInUse[j] {
 						serversInUse = append(serversInUse[:i], serversInUse[i+1:]...)
 						j--
 					}
@@ -46,16 +63,15 @@ func cleanBuildStates(servers []int) {
 	}
 }
 
-/*
-   Get the current build state for a server.
-*/
-func GetBuildStateByServerId(serverId int) *BuildState {
+// GetBuildStateByServerID gets the current build state on a server. DEPRECATED, use
+// GetBuildStateById instead.
+func GetBuildStateByServerID(serverID int) *BuildState {
 	mux.RLock()
 	defer mux.RUnlock()
 
 	for _, bs := range buildStates {
 		for _, sid := range bs.Servers {
-			if serverId == sid {
+			if serverID == sid {
 				return bs
 			}
 		}
@@ -63,15 +79,13 @@ func GetBuildStateByServerId(serverId int) *BuildState {
 	return nil
 }
 
-/*
-   Get the current build state based off the build id.
-   Will given an error if the build is not found
-*/
-func GetBuildStateById(buildId string) (*BuildState, error) {
+// GetBuildStateByID gets the current build state based off the build id.
+// Will given an error if the build is not found
+func GetBuildStateByID(buildID string) (*BuildState, error) {
 	mux.RLock()
 
 	for _, bs := range buildStates {
-		if bs.BuildId == buildId {
+		if bs.BuildID == buildID {
 			mux.RUnlock()
 			return bs, nil
 		}
@@ -79,22 +93,20 @@ func GetBuildStateById(buildId string) (*BuildState, error) {
 	mux.RUnlock()
 	mux.Lock()
 	defer mux.Unlock()
-	bs, err := RestoreBuildState(buildId)
+	bs, err := RestoreBuildState(buildID)
 	if err != nil || bs == nil {
 		log.Println(err)
-		return nil, fmt.Errorf("Couldn't find the request build")
+		return nil, fmt.Errorf("couldn't find the request build")
 	}
 	buildStates = append(buildStates, bs)
 	serversInUse = append(serversInUse, bs.Servers...)
 	return bs, nil
 }
 
-/*
-   AcquireBuilding acquires a build lock. Any function which modifies
-   the nodes in a testnet should only do so after calling this function
-   and ensuring that the returned value is nil
-*/
-func AcquireBuilding(servers []int, buildId string) error {
+// AcquireBuilding acquires a build lock. Any function which modifies
+// the nodes in a testnet should only do so after calling this function
+// and ensuring that the returned value is nil
+func AcquireBuilding(servers []int, buildID string) error {
 	mux.Lock()
 	defer mux.Unlock()
 
@@ -102,22 +114,21 @@ func AcquireBuilding(servers []int, buildId string) error {
 	for _, id := range serversInUse {
 		for _, id2 := range servers {
 			if id == id2 {
-				return fmt.Errorf("Error: Build in progress on server %d", id)
+				return fmt.Errorf("error: Build in progress on server %d", id)
 			}
 		}
 	}
-	buildStates = append(buildStates, NewBuildState(servers, buildId))
+	buildStates = append(buildStates, NewBuildState(servers, buildID))
 	serversInUse = append(serversInUse, servers...)
 	return nil
 }
 
-/*
-   Stop checks if the stop signal has been sent. If this returns true,
-   a building process should return. The ssh client checks this for you.
-*/
-func Stop(serverId int) bool {
+// Stop checks if the stop signal has been sent. If this returns true,
+// a building process should return. The ssh client checks this for you.
+// This is fairly naive and will need to be changed for multi-tenancy
+func Stop(serverID int) bool {
 
-	bs := GetBuildStateByServerId(serverId)
+	bs := GetBuildStateByServerID(serverID)
 	if bs == nil {
 		log.Println("No build found for check")
 		return false
@@ -125,20 +136,18 @@ func Stop(serverId int) bool {
 	return bs.Stop()
 }
 
-/*
-   SignalStop flags that the current build should be stopped, if there is
-   a current build. Returns an error if there is no build in progress. Signal
-   the build to stop by the build id.
-*/
-func SignalStop(buildId string) error {
-	bs, err := GetBuildStateById(buildId)
+// SignalStop flags that the current build should be stopped, if there is
+// a current build. Returns an error if there is no build in progress. Signal
+// the build to stop by the build id.
+func SignalStop(buildID string) error {
+	bs, err := GetBuildStateByID(buildID)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 	if bs == nil {
-		return fmt.Errorf("Build \"%s\" does not exist", buildId)
+		return fmt.Errorf("build \"%s\" does not exist", buildID)
 	}
-	log.Printf("Sending stop signal to build:%s\n", buildId)
+	log.Printf("Sending stop signal to build:%s\n", buildID)
 	return bs.SignalStop()
 }

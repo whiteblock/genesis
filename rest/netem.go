@@ -1,9 +1,27 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package rest
 
 import (
-	db "../db"
+	"../db"
 	netem "../net"
-	status "../status"
+	"../status"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -25,7 +43,7 @@ func handleNet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nodes, err := db.GetAllNodesByTestNet(params["testnetId"])
+	nodes, err := db.GetAllNodesByTestNet(params["testnetID"])
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), 500)
@@ -56,7 +74,7 @@ func handleNetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nodes, err := db.GetAllNodesByTestNet(params["testnetId"])
+	nodes, err := db.GetAllNodesByTestNet(params["testnetID"])
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), 500)
@@ -75,7 +93,7 @@ func handleNetAll(w http.ResponseWriter, r *http.Request) {
 func stopNet(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	nodes, err := db.GetAllNodesByTestNet(params["testnetId"])
+	nodes, err := db.GetAllNodesByTestNet(params["testnetID"])
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), 500)
@@ -90,7 +108,7 @@ func stopNet(w http.ResponseWriter, r *http.Request) {
 func getNet(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	servers, err := status.GetLatestServers(params["testnetId"])
+	servers, err := status.GetLatestServers(params["testnetID"])
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
@@ -98,7 +116,7 @@ func getNet(w http.ResponseWriter, r *http.Request) {
 	}
 	out := []netem.Netconf{}
 	for _, server := range servers {
-		client, err := status.GetClient(server.Id)
+		client, err := status.GetClient(server.ID)
 		if err != nil {
 			log.Println(err)
 			http.Error(w, err.Error(), 404)
@@ -117,7 +135,7 @@ func getNet(w http.ResponseWriter, r *http.Request) {
 
 func removeOrAddOutage(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	testnetId := params["testnetId"]
+	testnetID := params["testnetID"]
 	nodeNum1, err := strconv.Atoi(params["node1"])
 	if err != nil {
 		log.Println(err)
@@ -132,7 +150,7 @@ func removeOrAddOutage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nodes, err := db.GetAllNodesByTestNet(testnetId)
+	nodes, err := db.GetAllNodesByTestNet(testnetID)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
@@ -158,7 +176,7 @@ func removeOrAddOutage(w http.ResponseWriter, r *http.Request) {
 	case "DELETE":
 		err = netem.RemoveOutage(node1, node2)
 	default:
-		err = fmt.Errorf("Unexpected http method")
+		err = fmt.Errorf("unexpected http method")
 	}
 	if err != nil {
 		log.Println(err)
@@ -180,7 +198,7 @@ func partitionOutage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 400)
 		return
 	}
-	nodes, err := db.GetAllNodesByTestNet(params["testnetId"])
+	nodes, err := db.GetAllNodesByTestNet(params["testnetID"])
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
@@ -199,7 +217,7 @@ func partitionOutage(w http.ResponseWriter, r *http.Request) {
 func removeAllOutages(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	servers, err := status.GetLatestServers(params["testnetId"])
+	servers, err := status.GetLatestServers(params["testnetID"])
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
@@ -207,7 +225,7 @@ func removeAllOutages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, server := range servers {
-		client, err := status.GetClient(server.Id)
+		client, err := status.GetClient(server.ID)
 		if err != nil {
 			log.Println(err)
 			http.Error(w, err.Error(), 404)
@@ -226,7 +244,7 @@ func removeAllOutages(w http.ResponseWriter, r *http.Request) {
 func getAllOutages(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	servers, err := status.GetLatestServers(params["testnetId"])
+	servers, err := status.GetLatestServers(params["testnetID"])
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)
@@ -234,7 +252,7 @@ func getAllOutages(w http.ResponseWriter, r *http.Request) {
 	}
 	out := []netem.Connection{}
 	for _, server := range servers {
-		client, err := status.GetClient(server.Id)
+		client, err := status.GetClient(server.ID)
 		if err != nil {
 			log.Println(err)
 			http.Error(w, err.Error(), 404)
@@ -270,7 +288,7 @@ func getAllOutages(w http.ResponseWriter, r *http.Request) {
 
 func getAllPartitions(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	nodes, err := db.GetAllNodesByTestNet(params["testnetId"])
+	nodes, err := db.GetAllNodesByTestNet(params["testnetID"])
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 404)

@@ -1,117 +1,85 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package pantheon
 
 import (
-	util "../../util"
+	"../../util"
+	"../helpers"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 )
 
-type PanConf struct {
-	NetworkId             int64  `json:"networkId"`
+type panConf struct {
+	NetworkID             int64  `json:"networkId"`
 	Difficulty            int64  `json:"difficulty"`
 	InitBalance           string `json:"initBalance"`
 	MaxPeers              int64  `json:"maxPeers"`
 	GasLimit              int64  `json:"gasLimit"`
 	Consensus             string `json:"consensus"`
-	EthashDifficulty      int64  `json:"fixeddifficulty`
+	FixedDifficulty       int64  `json:"fixedDifficulty"`
 	BlockPeriodSeconds    int64  `json:"blockPeriodSeconds"`
 	Epoch                 int64  `json:"epoch"`
 	RequestTimeoutSeconds int64  `json:"requesttimeoutseconds"`
 	Accounts              int64  `json:"accounts"`
+	Orion                 bool   `json:"orion"`
 }
 
 /**
  * Fills in the defaults for missing parts,
  */
-func NewConf(data map[string]interface{}) (*PanConf, error) {
+func newConf(data map[string]interface{}) (*panConf, error) {
 
-	out := new(PanConf)
+	out := new(panConf)
 	err := json.Unmarshal([]byte(GetDefaults()), out)
-
 	if data == nil {
-		return out, nil
+		return out, util.LogError(err)
 	}
-
-	err = util.GetJSONInt64(data, "networkId", &out.NetworkId)
+	tmp, err := json.Marshal(data)
 	if err != nil {
-		return nil, err
+		return nil, util.LogError(err)
 	}
+	err = json.Unmarshal(tmp, out)
 
-	err = util.GetJSONInt64(data, "difficulty", &out.Difficulty)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxPeers", &out.MaxPeers)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "gasLimit", &out.GasLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "consensus", &out.Consensus)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "fixeddifficulty", &out.EthashDifficulty)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "blockPeriodSeconds", &out.BlockPeriodSeconds)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "epoch", &out.Epoch)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "requesttimeoutseconds", &out.RequestTimeoutSeconds)
-	if err != nil {
-		return nil, err
-	}
-
-	initBalance, exists := data["initBalance"]
-	if exists && initBalance != nil {
-		switch initBalance.(type) {
-		case json.Number:
-			out.InitBalance = initBalance.(json.Number).String()
-		case string:
-			out.InitBalance = initBalance.(string)
-		default:
-			return nil, fmt.Errorf("Incorrect type for initBalance given")
-		}
-	}
-
-	return out, nil
+	return out, err
 }
 
+// GetParams fetchs pantheon related parameters
 func GetParams() string {
-	dat, err := ioutil.ReadFile("./resources/pantheon/params.json")
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
 	return string(dat)
 }
 
+// GetDefaults fetchs pantheon related parameter defaults
 func GetDefaults() string {
-	dat, err := ioutil.ReadFile("./resources/pantheon/defaults.json")
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
 	return string(dat)
 }
 
+// GetServices returns the services which are used by artemis
 func GetServices() []util.Service {
 	return []util.Service{
-		util.Service{ //Include a geth node for transaction signing
+		{ //Include a geth node for transaction signing
 			Name:  "geth",
 			Image: "gcr.io/whiteblock/geth:master",
 			Env:   nil,

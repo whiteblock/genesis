@@ -1,21 +1,39 @@
+/*
+	Copyright 2019 Whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package beam
 
 import (
-	db "../../db"
-	util "../../util"
-	helpers "../helpers"
+	"../../db"
+	"../../util"
+	"../helpers"
 	"github.com/Whiteblock/mustache"
 	"io/ioutil"
 )
 
-type BeamConf struct {
+type beamConf struct {
 	Validators int64 `json:"validators"`
 	TxNodes    int64 `json:"txNodes"`
 	NilNodes   int64 `json:"nilNodes"`
 }
 
-func NewConf(data map[string]interface{}) (*BeamConf, error) {
-	out := new(BeamConf)
+func newConf(data map[string]interface{}) (*beamConf, error) {
+	out := new(beamConf)
 
 	err := util.GetJSONInt64(data, "validators", &out.Validators)
 	if err != nil {
@@ -34,6 +52,7 @@ func NewConf(data map[string]interface{}) (*BeamConf, error) {
 	return out, nil
 }
 
+// GetParams fetchs beam related parameters
 func GetParams() string {
 	dat, err := ioutil.ReadFile("./resources/beam/params.json")
 	if err != nil {
@@ -42,6 +61,7 @@ func GetParams() string {
 	return string(dat)
 }
 
+// GetDefaults fetchs beam related parameter defaults
 func GetDefaults() string {
 	dat, err := ioutil.ReadFile("./resources/beam/defaults.json")
 	if err != nil {
@@ -50,11 +70,12 @@ func GetDefaults() string {
 	return string(dat)
 }
 
+// GetServices returns the services which are used by artemis
 func GetServices() []util.Service {
 	return nil
 }
 
-func makeNodeConfig(bconf *BeamConf, keyOwner string, keyMine string, details *db.DeploymentDetails, node int) (string, error) {
+func makeNodeConfig(bconf *beamConf, keyOwner string, keyMine string, details *db.DeploymentDetails, node int) (string, error) {
 
 	filler := util.ConvertToStringMap(map[string]interface{}{
 		"keyOwner": keyOwner,
