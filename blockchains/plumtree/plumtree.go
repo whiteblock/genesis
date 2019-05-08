@@ -37,9 +37,9 @@ func init() {
 	blockchain := "plumtree"
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
-	registrar.RegisterServices(blockchain, GetServices)
-	registrar.RegisterDefaults(blockchain, GetDefaults)
-	registrar.RegisterParams(blockchain, GetParams)
+	//registrar.RegisterServices(blockchain, GetServices)
+	//registrar.RegisterDefaults(blockchain, GetDefaults)
+	//registrar.RegisterParams(blockchain, GetParams)
 	registrar.RegisterAdditionalLogs(blockchain, map[string]string{
 		"json": "/plumtree/data/log.json"})
 }

@@ -1,11 +1,11 @@
 {
-    "extraAccounts":0,
-    "networkId":15468,
-    "difficulty":100000,
-    "initBalance":"100000000000000000000",
-    "maxPeers":1000,
-    "gasLimit":4000000,
-    "homesteadBlock":0,
-    "eip155Block":10,
-    "eip158Block":10
+  "extraAccounts": 0,
+  "networkId": 15468,
+  "difficulty": 100000,
+  "initBalance": "100000000000000000000",
+  "maxPeers": 1000,
+  "gasLimit": 4000000,
+  "homesteadBlock": 0,
+  "eip155Block": 10,
+  "eip158Block": 10
 }
