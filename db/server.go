@@ -36,7 +36,7 @@ type Server struct {
 	// ID is the ID of the server
 	ID int `json:"id"`
 	// SubnetID is the number used in the IP scheme for nodes on this server
-	SubnetID int      `json:"subnetID"`
+	SubnetID int `json:"subnetID"`
 	Ips      []string //To be removed
 }
 

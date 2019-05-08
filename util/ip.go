@@ -76,7 +76,7 @@ func GetInfoFromIP(ipStr string) (int, int, int) {
 	var clusterLast uint32 = (1 << conf.ClusterBits) - 1
 	server := (rawIP >> (conf.NodeBits + conf.ClusterBits)) & ((1 << conf.ServerBits) - 1)
 	cluster := (rawIP >> conf.NodeBits) & ((1 << conf.ClusterBits) - 1)
-	var index uint32 = (rawIP & ((1 << conf.NodeBits) - 1))
+	var index = rawIP & ((1 << conf.NodeBits) - 1)
 
 	if cluster != clusterLast {
 		index -= 2

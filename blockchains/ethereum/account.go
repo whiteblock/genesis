@@ -76,7 +76,7 @@ func (acc *Account) UnmarshalJSON(data []byte) error {
 	}
 	pk, ok := tmp["privateKey"]
 	if !ok {
-		return fmt.Errorf("Missing field \"privateKey\"")
+		return fmt.Errorf("missing field \"privateKey\"")
 	}
 	newAcc, err := CreateAccountFromHex(pk)
 	if err != nil {
