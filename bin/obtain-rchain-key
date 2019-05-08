@@ -1,5 +1,7 @@
 #!/bin/bash -eu
 
+
+# Sorry scriptkiddies, these private keys are for testing purposes only. Go be 1337 somewhere else.
 PRIVATE_KEYS=$(curl -sL https://raw.githubusercontent.com/rchain/rchain/dev/integration-tests/test/pregenerated_keypairs.py \
     | grep -Eo "private_key='([^']+)" \
     | grep -Eo "[a-z0-9]+" \
