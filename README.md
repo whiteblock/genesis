@@ -3,10 +3,10 @@ Genesis
 
 [![Maintainability](https://api.codeclimate.com/v1/badges/4aae8bc608f619f0990e/maintainability)](https://codeclimate.com/repos/5cb0ac61f5eb734088003e71/maintainability)
 
-#Overview
+# Overview
 The Whiteblock platform allows users to provision multiple fully-functioning nodes over which they have complete control within a private test network. 
 
-#REST API
+# REST API
 Documentation for the REST API can be found [here](rest.md). 
 
 # Installation
@@ -18,7 +18,7 @@ Documentation for the REST API can be found [here](rest.md).
 # Configuration
 Configuration options are located in `config.json` in the same directory as the binary
 
-| __Command__ |         __Description__   |
+| __Option__ |         __Description__   |
 | :---------------:|---------------------------- |  
 | __ssh-user__ | The default username for ssh |
 | __ssh-key__ | The location of the ssh private key |
