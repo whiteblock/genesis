@@ -25,7 +25,7 @@ import (
 	"net/http"
 	//"strings"
 
-	"../util"
+	"github.com/Whiteblock/genesis/util"
 	//"crypto/x509"
 	//"encoding/pem"
 	//"github.com/Whiteblock/jwt-go"

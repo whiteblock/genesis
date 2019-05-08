@@ -21,8 +21,8 @@
 package ssh
 
 import (
-	"../state"
-	"../util"
+	"github.com/Whiteblock/genesis/state"
+	"github.com/Whiteblock/genesis/util"
 	"context"
 	"fmt"
 	"github.com/Whiteblock/scp"

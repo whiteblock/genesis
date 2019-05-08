@@ -19,7 +19,7 @@
 package db
 
 import (
-	"../util"
+	"github.com/Whiteblock/genesis/util"
 	"encoding/json"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //Bring db in

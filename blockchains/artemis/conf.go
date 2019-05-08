@@ -19,9 +19,9 @@
 package artemis
 
 import (
-	"../../db"
-	"../../util"
-	"../helpers"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/util"
+	"github.com/Whiteblock/genesis/blockchains/helpers"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"

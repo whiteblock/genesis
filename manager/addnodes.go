@@ -19,12 +19,12 @@
 package manager
 
 import (
-	"../blockchains/registrar"
-	"../db"
-	"../deploy"
-	"../state"
-	"../testnet"
-	"../util"
+	"github.com/Whiteblock/genesis/blockchains/registrar"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/deploy"
+	"github.com/Whiteblock/genesis/state"
+	"github.com/Whiteblock/genesis/testnet"
+	"github.com/Whiteblock/genesis/util"
 	"fmt"
 )
 

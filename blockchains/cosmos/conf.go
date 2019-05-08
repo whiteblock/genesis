@@ -19,8 +19,8 @@
 package cosmos
 
 import (
-	"../../util"
-	"../helpers"
+	"github.com/Whiteblock/genesis/util"
+	"github.com/Whiteblock/genesis/blockchains/helpers"
 )
 
 // GetParams fetchs cosmos related parameters

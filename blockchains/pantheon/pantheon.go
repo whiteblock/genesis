@@ -20,14 +20,14 @@
 package pantheon
 
 import (
-	"../../db"
-	"../../ssh"
-	"../../state"
-	"../../testnet"
-	"../../util"
-	"../ethereum"
-	"../helpers"
-	"../registrar"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/ssh"
+	"github.com/Whiteblock/genesis/state"
+	"github.com/Whiteblock/genesis/testnet"
+	"github.com/Whiteblock/genesis/util"
+	"github.com/Whiteblock/genesis/blockchains/ethereum"
+	"github.com/Whiteblock/genesis/blockchains/helpers"
+	"github.com/Whiteblock/genesis/blockchains/registrar"
 	"fmt"
 	"github.com/Whiteblock/mustache"
 	"log"

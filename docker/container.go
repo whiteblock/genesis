@@ -19,8 +19,8 @@
 package docker
 
 import (
-	"../db"
-	"../util"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/util"
 	"fmt"
 )
 

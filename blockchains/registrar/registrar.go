@@ -20,8 +20,8 @@
 package registrar
 
 import (
-	"../../testnet"
-	"../../util"
+	"github.com/Whiteblock/genesis/testnet"
+	"github.com/Whiteblock/genesis/util"
 	"fmt"
 	"sync"
 )

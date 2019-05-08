@@ -20,10 +20,10 @@
 package testnet
 
 import (
-	"../db"
-	"../ssh"
-	"../state"
-	"../status"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/ssh"
+	"github.com/Whiteblock/genesis/state"
+	"github.com/Whiteblock/genesis/status"
 	"encoding/json"
 	"fmt"
 	"log"

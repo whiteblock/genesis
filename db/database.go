@@ -20,7 +20,7 @@
 package db
 
 import (
-	"../util"
+	"github.com/Whiteblock/genesis/util"
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //needed for db

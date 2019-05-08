@@ -19,12 +19,12 @@
 package rest
 
 import (
-	"../blockchains/registrar"
-	"../db"
-	"../manager"
-	"../state"
-	"../status"
-	"../util"
+	"github.com/Whiteblock/genesis/blockchains/registrar"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/manager"
+	"github.com/Whiteblock/genesis/state"
+	"github.com/Whiteblock/genesis/status"
+	"github.com/Whiteblock/genesis/util"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -81,7 +81,7 @@ func getConfFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 400)
 		return
 	}
-	if strings.Contains(params["blockchain"], "..") || strings.Contains(params["file"], "..") {
+	if strings.Contains(params["blockchain"], "github.com/Whiteblock/genesis") || strings.Contains(params["file"], "github.com/Whiteblock/genesis") {
 		http.Error(w, "relative path operators not allowed", 401)
 		return
 	}

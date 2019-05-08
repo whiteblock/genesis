@@ -19,9 +19,9 @@
 package helpers
 
 import (
-	"../../db"
-	"../../ssh"
-	"../../state"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/ssh"
+	"github.com/Whiteblock/genesis/state"
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"

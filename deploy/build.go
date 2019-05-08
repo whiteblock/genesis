@@ -20,11 +20,11 @@
 package deploy
 
 import (
-	"../blockchains/registrar"
-	"../db"
-	"../docker"
-	"../testnet"
-	"../util"
+	"github.com/Whiteblock/genesis/blockchains/registrar"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/docker"
+	"github.com/Whiteblock/genesis/testnet"
+	"github.com/Whiteblock/genesis/util"
 	"fmt"
 	"log"
 	"sync"
