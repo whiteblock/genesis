@@ -150,7 +150,9 @@ func handleSideCars(tn *testnet.TestNet, append bool) error {
 }
 
 func declareTestnet(testnetID string, details *db.DeploymentDetails) error {
-
+	if len(details.GetJwt()) == 0 {
+		return nil
+	}
 	data := map[string]interface{}{
 		"id":        testnetID,
 		"kind":      details.Blockchain,

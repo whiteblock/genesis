@@ -117,7 +117,9 @@ func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 }
 
 func declareNode(node *db.Node, tn *testnet.TestNet) error {
-
+	if len(tn.LDD.GetJwt()) == 0 { //If there isn't a JWT, return immediately
+		return nil
+	}
 	image := tn.LDD.Images[0]
 
 	if len(tn.LDD.Images) > node.AbsoluteNum {
@@ -135,6 +137,7 @@ func declareNode(node *db.Node, tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+
 	_, err = util.JwtHTTPRequest("POST", "https://api.whiteblock.io/testnets/"+node.TestNetID+"/nodes", tn.LDD.GetJwt(), string(rawData))
 	return err
 }
