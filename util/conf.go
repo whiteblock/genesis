@@ -256,8 +256,8 @@ func (c *Config) AutoFillMissing() {
 	}
 
 	if c.MaxNodes <= 0 {
-		log.Println("Warning: No setting given for max nodes, defaulting to 10")
-		c.MaxNodes = 10
+		log.Println("Warning: No setting given for max nodes, defaulting to 200")
+		c.MaxNodes = 200
 	}
 
 	if len(c.BridgePrefix) == 0 {
