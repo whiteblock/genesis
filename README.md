@@ -318,7 +318,7 @@ curl -X POST http://localhost:8000/testnets/ -d '{
     "servers":[1],
     "blockchain":"ethereum",
     "nodes":3,
-    "image":["ethereum:latest"],
+    "images":["ethereum:latest"],
     "resources":[{
         "cpus":"2.5",
         "memory":"12gb"
