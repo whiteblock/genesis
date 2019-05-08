@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package artemis handles artemis specific functionality
+// Package artemis handles artemis specific functionality
 package artemis
 
 import (
@@ -44,7 +44,7 @@ func init() {
 		"json": "/artemis/data/log.json"})
 }
 
-// build builds out a fresh new artemis test network
+// build builds out a new artemis test network from scratch
 func build(tn *testnet.TestNet) error {
 	aconf, err := newConf(tn.LDD.Params)
 	if err != nil {
@@ -125,8 +125,7 @@ func build(tn *testnet.TestNet) error {
 	return nil
 }
 
-// Add handles adding a node to the artemis testnet
-// TODO
+// add handles adding a node to the artemis testnet
 func add(tn *testnet.TestNet) error {
 	return nil
 }

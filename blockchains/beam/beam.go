@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package beam handles beam specific functionality
+// Package beam handles beam specific functionality
 package beam
 
 import (

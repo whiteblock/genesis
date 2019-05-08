@@ -30,6 +30,7 @@ import (
 
 type artemisConf map[string]interface{}
 
+// TODO
 func newConf(data map[string]interface{}) (artemisConf, error) {
 	rawDefaults := GetDefaults()
 	defaults := map[string]interface{}{}
@@ -39,7 +40,8 @@ func newConf(data map[string]interface{}) (artemisConf, error) {
 		return nil, util.LogError(err)
 	}
 	var val int64
-	err = util.GetJSONInt64(data, "validators", &val) //Check provided validators
+	// Check provided validators
+	err = util.GetJSONInt64(data, "validators", &val)
 	if err == nil {
 		if val < 4 || val%2 != 0 {
 			return nil, fmt.Errorf("invalid number of validators (%d): must be an even number and greater than 3", val)
@@ -51,25 +53,27 @@ func newConf(data map[string]interface{}) (artemisConf, error) {
 	return *out, nil
 }
 
-// GetParams fetchs artemis related parameters
+// GetParams fetches artemis-related parameters
 func GetParams() string {
 	dat, err := helpers.GetStaticBlockchainConfig("artemis", "params.json")
 	if err != nil {
-		panic(err) //Missing required files is a fatal error
+		// Missing required files is a fatal error
+		panic(err)
 	}
 	return string(dat)
 }
 
-// GetDefaults fetchs artemis related parameter defaults
+// GetDefaults fetches artemis-related parameter defaults
 func GetDefaults() string {
 	dat, err := helpers.GetStaticBlockchainConfig("artemis", "defaults.json")
 	if err != nil {
-		panic(err) //Missing required files is a fatal error
+		// Missing required files is a fatal error
+		panic(err)
 	}
 	return string(dat)
 }
 
-// GetServices returns the services which are used by artemis
+// GetServices returns the services that are used by artemis
 func GetServices() []util.Service {
 	return []util.Service{
 		{
@@ -84,6 +88,7 @@ func GetServices() []util.Service {
 	}
 }
 
+// TODO
 func makeNodeConfig(aconf artemisConf, identity string, peers string, node int, details *db.DeploymentDetails, constantsRaw string) (string, error) {
 
 	artConf, err := util.CopyMap(aconf)
