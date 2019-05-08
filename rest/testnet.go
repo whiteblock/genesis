@@ -45,11 +45,11 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jwt, err := util.ExtractJwt(r)
-	if err != nil {
+	/*if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 403)
 		return
-	}
+	}*/
 	tn.SetJwt(jwt)
 	id, err := util.GetUUIDString()
 	if err != nil {
