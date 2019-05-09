@@ -73,7 +73,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		log.Println(err)
 	}
 
-	err = helpers.CopyAllToServers(tn, "Dockerfile", "/home/appo/Dockerfile")
+	err = helpers.CopyAllToServers(tn, "Dockerfile", "~/Dockerfile")
 	if err != nil {
 		log.Println(err)
 		return err
@@ -92,7 +92,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		go func(client *ssh.Client) {
 			defer wg.Done()
 
-			_, err := client.Run(fmt.Sprintf("docker build /home/appo/ -t %s", imageName))
+			_, err := client.Run(fmt.Sprintf("docker build ~ -t %s", imageName))
 			tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
 			if err != nil {
 				log.Println(err)
