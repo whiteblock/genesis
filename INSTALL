@@ -2,8 +2,8 @@ Right now genesis will only work on Linux systems. In the future we plan on supp
 
 Step 1. Install `golang`
 Step 2. Install `docker`
-Step 3. Ensure that you have your the path to your ssh key in the config.json file
-Step 4. Designate a user that genesis will operate on, appo is the default.
+Step 3. Ensure that you have your the path to your ssh key in the config.json file, under the `"ssh-key"` value
+Step 4. Designate a user that genesis will operate on, appo is the default, you can set this in the config file as `"ssh-user"`
 Step 5. Add this user to the `docker` group, so that the user has docker access
 Step 6. (Optional) For full functionality, give this user sudo access without a password. For example, if you are using the user appo, then
     add the line `appo ALL=(ALL) NOPASSWD: ALL` to your `/etc/sudoers` file. 
