@@ -117,7 +117,7 @@ func GetDefaults() string {
 	return string(dat)
 }
 
-// GetServices returns the services which are used by artemis
+// GetServices returns the services which are used by parity
 func GetServices() []util.Service {
 	return []util.Service{
 		{
