@@ -4,12 +4,24 @@ Genesis
 [![Maintainability](https://api.codeclimate.com/v1/badges/4aae8bc608f619f0990e/maintainability)](https://codeclimate.com/repos/5cb0ac61f5eb734088003e71/maintainability)
 
 # Overview
-The Whiteblock platform allows users to provision multiple fully-functioning nodes over which they have complete control within a private test network. 
+The Whiteblock platform allows users to provision multiple fully-functioning nodes over which they have complete control within a private test network 
 
 # REST API
 Documentation for the REST API can be found [here](rest.md). 
 
 # Installation
+* clone the repository
+* `cd genesis`
+* `go get`
+* `go build`
+
+# Recommended for Installation on Mac
+It is recommended to run genesis on a separate user account from the main user account 
+* create a separate new user (this may have to be done manually in system preferences)
+* set up a [`$GOPATH`](https://medium.com/@AkyunaAkish/setting-up-a-golang-development-environment-mac-os-x-d58e5a7ea24f) on the the new user account
+* `go` ( makes sure go is already installed )
+* `cd go`
+* `cd src`
 * clone the repository
 * `cd genesis`
 * `go get`
