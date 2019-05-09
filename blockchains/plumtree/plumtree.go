@@ -44,6 +44,26 @@ func init() {
 		"json": "/plumtree/data/log.json"})
 }
 
+func GetParams() string {
+	dat, err := helpers.GetStaticBlockchainConfig("plumtree", "params.json")
+	if err != nil {
+		panic(err) //Missing required files is a fatal error
+	}
+	return string(dat)
+}
+
+func GetServices() []util.Service {
+	return nil
+}
+
+func GetDefaults() string {
+	dat, err := helpers.GetStaticBlockchainConfig("plumtree", "defaults.json")
+	if err != nil {
+		panic(err) //Missing required files is a fatal error
+	}
+	return string(dat)
+}
+
 // build builds out a fresh new plumtree test network
 func build(tn *testnet.TestNet) error {
 
