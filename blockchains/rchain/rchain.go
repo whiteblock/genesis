@@ -132,14 +132,14 @@ func build(tn *testnet.TestNet) error {
 		}
 		buildState.IncrementBuildProgress()
 
-		err = masterClient.Scp("bonds.txt", "/home/appo/bonds.txt")
+		err = masterClient.Scp("bonds.txt", "~/bonds.txt")
 		if err != nil {
 			return util.LogError(err)
 		}
 		buildState.IncrementBuildProgress()
-		buildState.Defer(func() { masterClient.Run("rm -f /home/appo/bonds.txt") })
+		buildState.Defer(func() { masterClient.Run("rm -f ~/bonds.txt") })
 
-		err = masterClient.DockerCp(masterNode, "/home/appo/bonds.txt", "/bonds.txt")
+		err = masterClient.DockerCp(masterNode, "~/bonds.txt", "/bonds.txt")
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -247,12 +247,12 @@ func createFirstConfigFile(tn *testnet.TestNet, client *ssh.Client, node ssh.Nod
 	if err != nil {
 		return util.LogError(err)
 	}
-	err = client.Scp("rnode.conf", "/home/appo/rnode.conf")
+	err = client.Scp("rnode.conf", "~/rnode.conf")
 	tn.BuildState.Defer(func() { client.Run("rm -f ~/rnode.conf") })
 	if err != nil {
 		return util.LogError(err)
 	}
-	return client.DockerCp(node, "/home/appo/rnode.conf", "/datadir/rnode.conf")
+	return client.DockerCp(node, "~/rnode.conf", "/datadir/rnode.conf")
 }
 
 /**********************************************************************ADD********************************************************************/
