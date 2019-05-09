@@ -51,7 +51,7 @@ func newConf(data map[string]interface{}) (artemisConf, error) {
 	return *out, nil
 }
 
-// GetParams fetchs artemis related parameters
+// GetParams fetches artemis related parameters
 func GetParams() string {
 	dat, err := helpers.GetStaticBlockchainConfig("artemis", "params.json")
 	if err != nil {
@@ -60,7 +60,7 @@ func GetParams() string {
 	return string(dat)
 }
 
-// GetDefaults fetchs artemis related parameter defaults
+// GetDefaults fetches artemis related parameter defaults
 func GetDefaults() string {
 	dat, err := helpers.GetStaticBlockchainConfig("artemis", "defaults.json")
 	if err != nil {
