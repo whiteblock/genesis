@@ -19,7 +19,7 @@
 package db
 
 import (
-	"../util"
+	"github.com/Whiteblock/genesis/util"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //use sqlite
 	"log"
@@ -45,7 +45,7 @@ func check() error {
 
 func checkAndUpdate() {
 	if check() != nil {
-		log.Println("Updating the database...")
+		log.Println("Updating the databasegithub.com/Whiteblock/genesis.")
 		util.Rm(dataLoc)
 		db = getDB()
 		log.Println("Database update finished")

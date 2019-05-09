@@ -21,32 +21,32 @@
 package manager
 
 import (
-	"../blockchains/helpers"
-	"../blockchains/registrar"
-	"../db"
-	"../deploy"
-	"../testnet"
-	"../util"
+	"github.com/Whiteblock/genesis/blockchains/helpers"
+	"github.com/Whiteblock/genesis/blockchains/registrar"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/deploy"
+	"github.com/Whiteblock/genesis/testnet"
+	"github.com/Whiteblock/genesis/util"
 	"encoding/json"
 	"fmt"
 	"log"
 	"sync"
 	//Put the relative path to your blockchain/sidecar library below this line, otherwise it won't be compiled
 	//blockchains
-	_ "../blockchains/artemis"
-	_ "../blockchains/beam"
-	_ "../blockchains/cosmos"
-	_ "../blockchains/eos"
-	_ "../blockchains/geth"
-	_ "../blockchains/pantheon"
-	_ "../blockchains/parity"
-	_ "../blockchains/rchain"
-	_ "../blockchains/syscoin"
-	_ "../blockchains/tendermint"
+	_ "github.com/Whiteblock/genesis/blockchains/artemis"
+	_ "github.com/Whiteblock/genesis/blockchains/beam"
+	_ "github.com/Whiteblock/genesis/blockchains/cosmos"
+	_ "github.com/Whiteblock/genesis/blockchains/eos"
+	_ "github.com/Whiteblock/genesis/blockchains/geth"
+	_ "github.com/Whiteblock/genesis/blockchains/pantheon"
+	_ "github.com/Whiteblock/genesis/blockchains/parity"
+	_ "github.com/Whiteblock/genesis/blockchains/rchain"
+	_ "github.com/Whiteblock/genesis/blockchains/syscoin"
+	_ "github.com/Whiteblock/genesis/blockchains/tendermint"
 
 	//side cars
-	_ "../sidecars/geth"
-	_ "../sidecars/orion"
+	_ "github.com/Whiteblock/genesis/sidecars/geth"
+	_ "github.com/Whiteblock/genesis/sidecars/orion"
 )
 
 var conf *util.Config

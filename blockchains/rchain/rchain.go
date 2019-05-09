@@ -20,12 +20,12 @@
 package rchain
 
 import (
-	"../../db"
-	"../../ssh"
-	"../../testnet"
-	"../../util"
-	"../helpers"
-	"../registrar"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/ssh"
+	"github.com/Whiteblock/genesis/testnet"
+	"github.com/Whiteblock/genesis/util"
+	"github.com/Whiteblock/genesis/blockchains/helpers"
+	"github.com/Whiteblock/genesis/blockchains/registrar"
 	"fmt"
 	"github.com/Whiteblock/mustache"
 	"log"

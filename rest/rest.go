@@ -20,10 +20,10 @@
 package rest
 
 import (
-	"../db"
-	"../state"
-	"../status"
-	"../util"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/state"
+	"github.com/Whiteblock/genesis/status"
+	"github.com/Whiteblock/genesis/util"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"log"

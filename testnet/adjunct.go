@@ -19,9 +19,9 @@
 package testnet
 
 import (
-	"../db"
-	"../ssh"
-	"../state"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/ssh"
+	"github.com/Whiteblock/genesis/state"
 )
 
 // Adjunct represents a part of the network which contains

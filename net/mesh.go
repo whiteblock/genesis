@@ -19,7 +19,7 @@
 package netconf
 
 import (
-	"../util"
+	"github.com/Whiteblock/genesis/util"
 	"math"
 )
 

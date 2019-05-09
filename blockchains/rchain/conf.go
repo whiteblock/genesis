@@ -19,8 +19,8 @@
 package rchain
 
 import (
-	"../../util"
-	"../helpers"
+	"github.com/Whiteblock/genesis/util"
+	"github.com/Whiteblock/genesis/blockchains/helpers"
 	"encoding/base64"
 	"encoding/json"
 	"log"
