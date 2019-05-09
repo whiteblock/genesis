@@ -120,7 +120,7 @@ __I__ = (__A__ * 2^(__B__+__C__+__D__) ) + ( __Y__ * 2^(__B__+__C__) ) + (__Z__ 
 
 if __Z__ == (2^__C__ - 1) then __I__ = __I__ - 2
 
-#### Explaination
+#### Explanation
 First get the cluster the node is in
 
 Then construct the IP one segment at a time through addition
