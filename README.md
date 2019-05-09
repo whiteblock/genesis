@@ -22,6 +22,7 @@ It is recommended to run genesis on a separate user account from the main user a
 * `go` ( makes sure go is already installed )
 * `cd go/src/`
 * `mkdir -p github.com/whiteblock`
+* `cd github.com/whiteblock`
 * clone the repository
 * `cd genesis`
 * `go get`
