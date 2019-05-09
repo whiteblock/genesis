@@ -45,9 +45,12 @@ func check() error {
 
 func checkAndUpdate() {
 	if check() != nil {
-		log.Println("Updating the databasegithub.com/Whiteblock/genesis.")
+		log.Println("Updating the database")
 		util.Rm(dataLoc)
-		db = getDB()
+		_, err := getDB()
+		if err != nil {
+			log.Fatal("Database update failed")
+		}
 		log.Println("Database update finished")
 	}
 }
