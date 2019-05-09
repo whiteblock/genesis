@@ -36,8 +36,8 @@ const NodesTable string = "nodes"
 //BuildsTable contains name of the builds table
 const BuildsTable string = "builds"
 
-var dataFolder = os.Getenv("HOME") + "/.config/whiteblock"
-var dataLoc = dataFolder + "/.gdata"
+var dataFolder = os.Getenv("HOME") + "/.config/whiteblock/"
+var dataLoc = dataFolder + ".gdata"
 
 var conf = util.GetConfig()
 
@@ -45,7 +45,8 @@ var db *sql.DB
 
 
 func init() {
-	db, err := getDB()
+	var err error 
+	db, err = getDB()
 	if err != nil {
 		panic(err)
 	}
