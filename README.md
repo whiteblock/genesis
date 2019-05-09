@@ -20,8 +20,8 @@ It is recommended to run genesis on a separate user account from the main user a
 * create a separate new user (this may have to be done manually in system preferences)
 * set up a [`$GOPATH`](https://medium.com/@AkyunaAkish/setting-up-a-golang-development-environment-mac-os-x-d58e5a7ea24f) on the the new user account
 * `go` ( makes sure go is already installed )
-* `cd go`
-* `cd src`
+* `cd go/src/`
+* `mkdir -p github.com/whiteblock`
 * clone the repository
 * `cd genesis`
 * `go get`
