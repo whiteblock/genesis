@@ -21,16 +21,14 @@ package prysm
 import (
 	"github.com/Whiteblock/genesis/util"
 	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"encoding/base64"
 	"encoding/json"
-	"log"
 )
 
 type prysm struct {
 }
 
-func newConf(data map[string]interface{}) (*prysmConf, error) {
-	out := new(prismaticConf)
+func newConf(data map[string]interface{}) (*prysm, error) {
+	out := new(prysm)
 	err := json.Unmarshal([]byte(GetDefaults()), out)
 	if data == nil {
 		return out, util.LogError(err)
