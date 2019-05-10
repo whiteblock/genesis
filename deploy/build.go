@@ -26,7 +26,6 @@ import (
 	"github.com/Whiteblock/genesis/testnet"
 	"github.com/Whiteblock/genesis/util"
 	"fmt"
-	"log"
 	"sync"
 )
 
