@@ -20,7 +20,7 @@ func Test_NewConnections(t *testing.T) {
 func Test_RemoveAll(t *testing.T) {
 	mesh := Connections{[][]bool{{true, true, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, true, true}}}
 	con1 := Connection{To: 2, From: 3}
-	con2:= Connection{To: 1, From: 0}
+	con2 := Connection{To: 1, From: 0}
 
 	conns := []Connection{con1, con2}
 
@@ -47,35 +47,48 @@ func Test_findPossiblePeers(t *testing.T) {
 }
 
 func Test_filterPeers(t *testing.T) {
-	peers := []int{1, 2, 3, 4, 5}
-	alreadyDone := []int{3}
-
-	out := filterPeers(peers, alreadyDone)
-
-	expected := []int{1, 2, 4, 5}
-
-	if !reflect.DeepEqual(out, expected) {
-		t.Errorf("return value of filterPeers did not match expected value")
+	var test = []struct {
+		peers    []int
+		already  []int
+		expected []int
+	}{
+		{[]int{1, 2, 3, 4, 5}, []int{2, 4}, []int{1, 3, 5}},
+		{[]int{5, 6, 7, 8, 9}, []int{}, []int{5, 6, 7, 8, 9}},
+		{[]int{1, 2, 6, 7, 8, 9}, []int{7, 8, 9}, []int{1, 2, 6}},
+	}
+	for i, val := range test {
+		t.Run(string(i), func(t *testing.T) {
+			if !reflect.DeepEqual(filterPeers(val.peers, val.already), val.expected) {
+				t.Errorf("return value of filterPeers did not match expected value")
+			}
+		})
 	}
 }
 
 func Test_mergeUniquePeers(t *testing.T) {
-	peers1 := []int{1, 5, 7, 8, 9, 15}
-	peers2 := []int{4, 8, 3, 1, 10, 2}
+	var test = []struct {
+		peers1   []int
+		peers2   []int
+		expected []int
+	}{
+		{[]int{1, 5, 7, 8, 9, 15}, []int{4, 8, 3, 1, 10, 2}, []int{1, 5, 7, 8, 9, 15, 4, 3, 10, 2}},
+		{[]int{2, 5, 8, 10}, []int{1, 2, 9, 5, 18, 6}, []int{2, 5, 8, 10, 1, 9, 18, 6}},
+		{[]int{3, 6, 7, 2, 1}, []int{1, 2, 7, 5}, []int{3, 6, 7, 2, 1, 5}},
+	}
 
-	out := mergeUniquePeers(peers1, peers2)
-
-	expected := []int{1, 5, 7, 8, 9, 15, 4, 3, 10, 2}
-
-	if !reflect.DeepEqual(out, expected) {
-		t.Errorf("return value of mergeUniquePeers did not match expected value")
+	for i, val := range test {
+		t.Run(string(i), func(t *testing.T) {
+			if !reflect.DeepEqual(mergeUniquePeers(val.peers1, val.peers2), val.expected) {
+				t.Errorf("return value of mergeUniquePeers did not match expected value")
+			}
+		})
 	}
 }
 
 func Test_containsPeer(t *testing.T) {
 	var test = []struct {
-		peers []int
-		validPeer int
+		peers       []int
+		validPeer   int
 		invalidPeer int
 	}{
 		{[]int{1, 2, 3, 4, 5, 6}, 1, 9},
