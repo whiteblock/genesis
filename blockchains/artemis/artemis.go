@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package artemis handles artemis specific functionality
+// Package artemis handles artemis specific functionality
 package artemis
 
 import (

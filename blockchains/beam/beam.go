@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package beam handles beam specific functionality
+// Package beam handles beam specific functionality
 package beam
 
 import (
@@ -97,8 +97,8 @@ func build(tn *testnet.TestNet) error {
 		ips = append(ips, node.IP)
 	}
 	tn.BuildState.SetBuildStage("Creating node configuration files")
-	/**Create node config files**/
 
+	/**Create node config files**/
 	err = helpers.CreateConfigs(tn, "/beam/beam-node.cfg",
 		func(node ssh.Node) ([]byte, error) {
 			ipsCpy := make([]string, len(ips))
@@ -157,7 +157,7 @@ func build(tn *testnet.TestNet) error {
 	return err
 }
 
-// Add handles adding nodes to the testnet
+// add handles adding nodes to the testnet
 func add(tn *testnet.TestNet) error {
 	return nil
 }
