@@ -108,7 +108,7 @@ func containsPeer(peers []int, peer int) bool {
 }
 
 //Networks calculates the distinct, completely separate partitions in the network
-func (mesh *Connections) Networks() [][]int {
+func (mesh Connections) Networks() [][]int {
 	nodes := []int{}
 	nodesFinalized := []int{}
 	nodesToTry := []int{}
