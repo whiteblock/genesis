@@ -20,7 +20,6 @@ func Test_NewConnections(t *testing.T) {
 	}
 }
 
-
 func Test_RemoveAll(t *testing.T) {
 	mesh := Connections{[][]bool{{true, true, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, true, true}}}
 	con1 := Connection{To: 2, From: 3}
@@ -35,13 +34,9 @@ func Test_RemoveAll(t *testing.T) {
 	if !reflect.DeepEqual(mesh.cons, expected.cons) {
 		t.Errorf("not all expected values were removed")
 	}
-
 }
 
-
-
 func Test_findPossiblePeers(t *testing.T) {
-
 	cons := [][]bool{{false, true, true}, {true, true, true}, {false, false, false}, {true, false, true}}
 	node := 1
 
@@ -90,7 +85,6 @@ func Test_containsPeer(t *testing.T) {
 	if containsPeer(peers, 18) {
 		t.Errorf("return value of containsPeer did not match expected value")
 	}
-
 }
 
 func Test_Networks(t *testing.T) {
@@ -98,10 +92,9 @@ func Test_Networks(t *testing.T) {
 
 	out := mesh.Networks()
 
-	expected := [][]int{{0,1,2,3}}
+	expected := [][]int{{0, 1, 2, 3}}
 
 	if !reflect.DeepEqual(out, expected) {
 		t.Errorf("return value of Networks does not match expected value")
 	}
-
 }
