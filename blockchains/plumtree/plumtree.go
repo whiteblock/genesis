@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package plumtree handles artplumtreeemis specific functionality
+//Package plumtree handles plumtree specific functionality
 package plumtree
 
 import (
@@ -110,7 +110,7 @@ func build(tn *testnet.TestNet) error {
 	return nil
 }
 
-// Add handles adding a node to the artemis testnet
+// Add handles adding a node to the plumtree testnet
 // TODO
 func add(tn *testnet.TestNet) error {
 	return nil
