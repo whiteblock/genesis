@@ -1,9 +1,29 @@
 package netconf
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
+
+func Test_NewConnections(t *testing.T) {
+	nodes := 2
+
+	out := NewConnections(nodes)
+
+	fmt.Println(out.cons)
+
+	expected := [][]bool{{true, true}, {true, true}}
+
+	if !reflect.DeepEqual(out.cons, expected) {
+		t.Errorf("return value of NewConnections does not match expected value")
+	}
+}
+
+
+func Test_RemoveAll(t *testing.T) {
+
+}
 
 func Test_findPossiblePeers(t *testing.T) {
 
@@ -43,4 +63,21 @@ func Test_mergeUniquePeers(t *testing.T) {
 	if !reflect.DeepEqual(out, expected) {
 		t.Errorf("return value of mergeUniquePeers did not match expected value")
 	}
+}
+
+func Test_filterPeers(t *testing.T) {
+	peers := []int{1, 2, 3, 4, 5}
+	alreadyDone := []int{3}
+
+	out := filterPeers(peers, alreadyDone)
+
+	expected := []int{1, 2, 4, 5}
+
+	if !reflect.DeepEqual(out, expected) {
+		t.Errorf("return value of filterPeers did not match expected value")
+	}
+}
+
+func Test_Networks(t *testing.T) {
+
 }

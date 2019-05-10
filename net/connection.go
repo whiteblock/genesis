@@ -34,12 +34,14 @@ type Connections struct {
 func NewConnections(nodes int) *Connections {
 	out := new(Connections)
 	out.cons = make([][]bool, nodes)
+
 	for i := range out.cons {
 		out.cons[i] = make([]bool, nodes)
 		for j := range out.cons[i] {
 			out.cons[i][j] = true
 		}
 	}
+
 	return out
 }
 
@@ -52,7 +54,8 @@ func (mesh *Connections) RemoveAll(conns []Connection) {
 }
 
 func findPossiblePeers(cons [][]bool, node int) []int {
-	out := []int{}
+	out := make([]int, 0)
+
 	for i, con := range cons[node] {
 		if node == i {
 			continue
@@ -61,6 +64,7 @@ func findPossiblePeers(cons [][]bool, node int) []int {
 			out = append(out, i)
 		}
 	}
+
 	return out
 }
 
@@ -68,18 +72,15 @@ func filterPeers(peers []int, alreadyDone []int) []int {
 	if len(alreadyDone) == 0 {
 		return peers
 	}
-	out := []int{}
+
+	out := make([]int, 0)
+
 	for _, peer := range peers {
-		shouldAdd := true
-		for _, done := range alreadyDone {
-			if done == peer {
-				shouldAdd = false
-			}
-		}
-		if shouldAdd {
+		if !containsPeer(alreadyDone, peer) {
 			out = append(out, peer)
 		}
 	}
+
 	return out
 }
 
@@ -92,6 +93,7 @@ func mergeUniquePeers(peers1 []int, peers2 []int) []int {
 			out = append(out, peer)
 		}
 	}
+
 	return out
 }
 
@@ -101,6 +103,7 @@ func containsPeer(peers []int, peer int) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
