@@ -24,9 +24,9 @@ set environment variables to allow SSH commands:
 1. `ssh localhost docker`
     * if error `bash: docker: command not found`, move to next step
 2. `echo "PATH=$PATH" >> ~/.ssh/environment`
-3. as root: `echo "PermitUserEnvironment yes" > /etc/ssh/sshd_config`
+3. as root: `echo "PermitUserEnvironment yes" >> /etc/ssh/sshd_config`
 4. `sudo launchctl unload /System/Library/LaunchDaemons/ssh.plist`
-5. sudo launchctl load /System/Library/LaunchDaemons/ssh.plist
+5. `sudo launchctl load /System/Library/LaunchDaemons/ssh.plist`
 6. run step 1. again and there should be a docker help output
 
 ### Build Genesis
