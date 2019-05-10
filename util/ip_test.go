@@ -57,18 +57,18 @@ func TestGetNodeIP(t *testing.T) {
 	conf.IPPrefix = 10
 	tests := []getNodeIPTest{
 		//Normal Nodes
-		getNodeIPTest{params: []int{1, 0, 0}, expected: strXErr{str: "10.1.0.2", err: false}},
-		getNodeIPTest{params: []int{27, 1, 0}, expected: strXErr{str: "10.27.0.18", err: false}},
-		getNodeIPTest{params: []int{0, 2, 0}, expected: strXErr{str: "10.0.0.34", err: false}},
+		{params: []int{1, 0, 0}, expected: strXErr{str: "10.1.0.2", err: false}},
+		{params: []int{27, 1, 0}, expected: strXErr{str: "10.27.0.18", err: false}},
+		{params: []int{0, 2, 0}, expected: strXErr{str: "10.0.0.34", err: false}},
 		//Side Cars (Valid)
-		getNodeIPTest{params: []int{1, 0, 2}, expected: strXErr{str: "10.1.0.4", err: false}},
-		getNodeIPTest{params: []int{27, 1, 1}, expected: strXErr{str: "10.27.0.19", err: false}},
-		getNodeIPTest{params: []int{0, 2, 3}, expected: strXErr{str: "10.0.0.37", err: false}},
+		{params: []int{1, 0, 2}, expected: strXErr{str: "10.1.0.4", err: false}},
+		{params: []int{27, 1, 1}, expected: strXErr{str: "10.27.0.19", err: false}},
+		{params: []int{0, 2, 3}, expected: strXErr{str: "10.0.0.37", err: false}},
 
 		//Side Cars (Invalid)
-		getNodeIPTest{params: []int{1, 0, 16}, expected: strXErr{str: "", err: true}},
-		getNodeIPTest{params: []int{27, 1, 25}, expected: strXErr{str: "", err: true}},
-		getNodeIPTest{params: []int{0, 2, 22}, expected: strXErr{str: "", err: true}},
+		{params: []int{1, 0, 16}, expected: strXErr{str: "", err: true}},
+		{params: []int{27, 1, 25}, expected: strXErr{str: "", err: true}},
+		{params: []int{0, 2, 22}, expected: strXErr{str: "", err: true}},
 	}
 
 	for _, test := range tests {
@@ -96,9 +96,9 @@ func TestGetGateway(t *testing.T) {
 	conf.IPPrefix = 10
 	tests := []getNodeIPTest{
 		//Normal Nodes
-		getNodeIPTest{params: []int{1, 0}, expected: strXErr{str: "10.1.0.1", err: false}},
-		getNodeIPTest{params: []int{27, 1}, expected: strXErr{str: "10.27.0.17", err: false}},
-		getNodeIPTest{params: []int{0, 2}, expected: strXErr{str: "10.0.0.33", err: false}},
+		{params: []int{1, 0}, expected: strXErr{str: "10.1.0.1", err: false}},
+		{params: []int{27, 1}, expected: strXErr{str: "10.27.0.17", err: false}},
+		{params: []int{0, 2}, expected: strXErr{str: "10.0.0.33", err: false}},
 	}
 
 	for _, test := range tests {
@@ -118,10 +118,10 @@ func TestGetNetworkAddress(t *testing.T) {
 	conf.IPPrefix = 10
 	tests := []getNodeIPTest{
 		//Normal Nodes
-		getNodeIPTest{params: []int{1, 0}, expected: strXErr{str: "10.1.0.0/28", err: false}},
-		getNodeIPTest{params: []int{1, 1}, expected: strXErr{str: "10.1.0.16/28", err: false}},
-		getNodeIPTest{params: []int{27, 1}, expected: strXErr{str: "10.27.0.16/28", err: false}},
-		getNodeIPTest{params: []int{0, 2}, expected: strXErr{str: "10.0.0.32/28", err: false}},
+		{params: []int{1, 0}, expected: strXErr{str: "10.1.0.0/28", err: false}},
+		{params: []int{1, 1}, expected: strXErr{str: "10.1.0.16/28", err: false}},
+		{params: []int{27, 1}, expected: strXErr{str: "10.27.0.16/28", err: false}},
+		{params: []int{0, 2}, expected: strXErr{str: "10.0.0.32/28", err: false}},
 	}
 
 	for _, test := range tests {
