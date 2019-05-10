@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package prismatic
+package prysm
 
 import (
 	"github.com/Whiteblock/genesis/util"
@@ -26,10 +26,10 @@ import (
 	"log"
 )
 
-type prismaticConf struct {
+type prysm struct {
 }
 
-func newConf(data map[string]interface{}) (*prismaticConf, error) {
+func newConf(data map[string]interface{}) (*prysmConf, error) {
 	out := new(prismaticConf)
 	err := json.Unmarshal([]byte(GetDefaults()), out)
 	if data == nil {

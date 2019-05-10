@@ -16,8 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package prismatic handles prismatic specific functionality
-package prismatic
+//Package prysm handles prysm specific functionality
+package prysm
 
 import (
 	"github.com/Whiteblock/genesis/db"
@@ -34,7 +34,7 @@ import (
 
 var conf *util.Config
 
-const blockchain = "primatic"
+const blockchain = "prysm"
 func init() {
 	conf = util.GetConfig()
 	
@@ -51,12 +51,11 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	
 
 	return nil
 }
 
-// Add handles adding nodes to the testnet
+// add handles adding nodes to the testnet
 func add(tn *testnet.TestNet) error {
 	return nil
 }
