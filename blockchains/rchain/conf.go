@@ -59,7 +59,7 @@ func GetServices() []util.Service {
 	return []util.Service{
 		{
 			Name:  "wb_influx_proxy",
-			Image: "gcr.io/wb-genesis/bitbucket.org/whiteblockio/influx-proxy:master",
+			Image: "gcr.io/whiteblock/influx-proxy:master",
 			Env: map[string]string{
 				"BASIC_AUTH_BASE64": base64.StdEncoding.EncodeToString([]byte(conf.InfluxUser + ":" + conf.InfluxPassword)),
 				"INFLUXDB_URL":      conf.Influx,
