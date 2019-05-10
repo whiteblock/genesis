@@ -56,9 +56,10 @@ func Test_filterPeers(t *testing.T) {
 		{[]int{5, 6, 7, 8, 9}, []int{}, []int{5, 6, 7, 8, 9}},
 		{[]int{1, 2, 6, 7, 8, 9}, []int{7, 8, 9}, []int{1, 2, 6}},
 	}
-	for i, val := range test {
+
+	for i, tt := range test {
 		t.Run(string(i), func(t *testing.T) {
-			if !reflect.DeepEqual(filterPeers(val.peers, val.already), val.expected) {
+			if !reflect.DeepEqual(filterPeers(tt.peers, tt.already), tt.expected) {
 				t.Errorf("return value of filterPeers did not match expected value")
 			}
 		})
@@ -76,9 +77,9 @@ func Test_mergeUniquePeers(t *testing.T) {
 		{[]int{3, 6, 7, 2, 1}, []int{1, 2, 7, 5}, []int{3, 6, 7, 2, 1, 5}},
 	}
 
-	for i, val := range test {
+	for i, tt := range test {
 		t.Run(string(i), func(t *testing.T) {
-			if !reflect.DeepEqual(mergeUniquePeers(val.peers1, val.peers2), val.expected) {
+			if !reflect.DeepEqual(mergeUniquePeers(tt.peers1, tt.peers2), tt.expected) {
 				t.Errorf("return value of mergeUniquePeers did not match expected value")
 			}
 		})
@@ -96,12 +97,13 @@ func Test_containsPeer(t *testing.T) {
 		{[]int{7, 8, 9, 2, 3, 4, 5, 6, 40, 34, 80}, 40, 0},
 	}
 
-	for i, val := range test {
+	for i, tt := range test {
 		t.Run(string(i), func(t *testing.T) {
-			if !containsPeer(val.peers, val.validPeer) {
+			if !containsPeer(tt.peers, tt.validPeer) {
 				t.Errorf("return value of containsPeer did not match expected value")
 			}
-			if containsPeer(val.peers, val.invalidPeer) {
+
+			if containsPeer(tt.peers, tt.invalidPeer) {
 				t.Errorf("return value of containsPeer did not match expected value")
 			}
 		})
