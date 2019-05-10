@@ -73,14 +73,25 @@ func Test_mergeUniquePeers(t *testing.T) {
 }
 
 func Test_containsPeer(t *testing.T) {
-	peers := []int{1, 2, 3, 4, 5, 6, 7, 8}
-
-	if !containsPeer(peers, 4) {
-		t.Errorf("return value of containsPeer did not match expected value")
+	var test = []struct {
+		peers []int
+		validPeer int
+		invalidPeer int
+	}{
+		{[]int{1, 2, 3, 4, 5, 6}, 1, 9},
+		{[]int{15, 16, 4, 5, 6}, 16, 300},
+		{[]int{7, 8, 9, 2, 3, 4, 5, 6, 40, 34, 80}, 40, 0},
 	}
 
-	if containsPeer(peers, 18) {
-		t.Errorf("return value of containsPeer did not match expected value")
+	for i, val := range test {
+		t.Run(string(i), func(t *testing.T) {
+			if !containsPeer(val.peers, val.validPeer) {
+				t.Errorf("return value of containsPeer did not match expected value")
+			}
+			if containsPeer(val.peers, val.invalidPeer) {
+				t.Errorf("return value of containsPeer did not match expected value")
+			}
+		})
 	}
 }
 
