@@ -16,18 +16,18 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package plumtree handles artplumtreeemis specific functionality
+//Package plumtree handles plumtree specific functionality
 package plumtree
 
 import (
 	"fmt"
 
-	"../../db"
-	"../../ssh"
-	"../../testnet"
-	"../../util"
-	"../helpers"
-	"../registrar"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/ssh"
+	"github.com/Whiteblock/genesis/testnet"
+	"github.com/Whiteblock/genesis/util"
+	"github.com/Whiteblock/genesis/blockchains/helpers"
+	"github.com/Whiteblock/genesis/blockchains/registrar"
 )
 
 var conf *util.Config
@@ -42,6 +42,26 @@ func init() {
 	//registrar.RegisterParams(blockchain, GetParams)
 	registrar.RegisterAdditionalLogs(blockchain, map[string]string{
 		"json": "/plumtree/data/log.json"})
+}
+
+func GetParams() string {
+	dat, err := helpers.GetStaticBlockchainConfig("plumtree", "params.json")
+	if err != nil {
+		panic(err) //Missing required files is a fatal error
+	}
+	return string(dat)
+}
+
+func GetServices() []util.Service {
+	return nil
+}
+
+func GetDefaults() string {
+	dat, err := helpers.GetStaticBlockchainConfig("plumtree", "defaults.json")
+	if err != nil {
+		panic(err) //Missing required files is a fatal error
+	}
+	return string(dat)
 }
 
 // build builds out a fresh new plumtree test network
@@ -90,7 +110,7 @@ func build(tn *testnet.TestNet) error {
 	return nil
 }
 
-// Add handles adding a node to the artemis testnet
+// Add handles adding a node to the plumtree testnet
 // TODO
 func add(tn *testnet.TestNet) error {
 	return nil

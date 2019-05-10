@@ -16,37 +16,23 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package rchain
+package prysm
 
 import (
 	"github.com/Whiteblock/genesis/util"
 	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"encoding/base64"
 	"encoding/json"
-	"log"
 )
 
-type rChainConf struct {
-	NoUpnp               bool   `json:"noUpnp"`
-	DefaultTimeout       int64  `json:"defaultTimeout"`
-	MapSize              int64  `json:"mapSize"`
-	CasperBlockStoreSize int64  `json:"casperBlockStoreSize"`
-	InMemoryStore        bool   `json:"inMemoryStore"`
-	MaxNumOfConnections  int64  `json:"maxNumOfConnections"`
-	Validators           int64  `json:"validators"`
-	ValidatorCount       int64  `json:"validatorCount"`
-	SigAlgorithm         string `json:"sigAlgorithm"`
-	Command              string `json:"command"`
-	BondsValue           int64  `json:"bondsValue"`
+type prysm struct {
 }
 
-func newRChainConf(data map[string]interface{}) (*rChainConf, error) {
-	out := new(rChainConf)
+func newConf(data map[string]interface{}) (*prysm, error) {
+	out := new(prysm)
 	err := json.Unmarshal([]byte(GetDefaults()), out)
 	if data == nil {
 		return out, util.LogError(err)
 	}
-	log.Printf("Default %+v\n", *out)
 	tmp, err := json.Marshal(data)
 	if err != nil {
 		return nil, util.LogError(err)
@@ -56,17 +42,7 @@ func newRChainConf(data map[string]interface{}) (*rChainConf, error) {
 
 // GetServices returns the services which are used by rchain
 func GetServices() []util.Service {
-	return []util.Service{
-		{
-			Name:  "wb_influx_proxy",
-			Image: "gcr.io/whiteblock/influx-proxy:master",
-			Env: map[string]string{
-				"BASIC_AUTH_BASE64": base64.StdEncoding.EncodeToString([]byte(conf.InfluxUser + ":" + conf.InfluxPassword)),
-				"INFLUXDB_URL":      conf.Influx,
-				"BIND_PORT":         "8086",
-			},
-		},
-	}
+	return []util.Service{}
 }
 
 // GetParams fetchs rchain related parameters

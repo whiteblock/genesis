@@ -20,14 +20,14 @@
 package pantheon
 
 import (
-	"../../db"
-	"../../ssh"
-	"../../state"
-	"../../testnet"
-	"../../util"
-	"../ethereum"
-	"../helpers"
-	"../registrar"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/ssh"
+	"github.com/Whiteblock/genesis/state"
+	"github.com/Whiteblock/genesis/testnet"
+	"github.com/Whiteblock/genesis/util"
+	"github.com/Whiteblock/genesis/blockchains/ethereum"
+	"github.com/Whiteblock/genesis/blockchains/helpers"
+	"github.com/Whiteblock/genesis/blockchains/registrar"
 	"fmt"
 	"github.com/Whiteblock/mustache"
 	"log"
@@ -185,7 +185,7 @@ func build(tn *testnet.TestNet) error {
 			return util.LogError(err)
 		}
 		return client.DockerExecdLog(node, fmt.Sprintf(
-			`pantheon --config-file=/pantheon/config.toml --data-path=/pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
+			`pantheon --config-file=/pantheon/config.toml --logging=ALL --data-path=/pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
 				`--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,TXPOOL,WEB3" `+
 				` --p2p-port=%d --rpc-http-port=8545 --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"%s`,
 			p2pPort, flags))

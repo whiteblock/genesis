@@ -19,10 +19,10 @@
 package manager
 
 import (
-	"../db"
-	"../docker"
-	"../status"
-	"../util"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/docker"
+	"github.com/Whiteblock/genesis/status"
+	"github.com/Whiteblock/genesis/util"
 	"fmt"
 )
 

@@ -19,8 +19,8 @@
 package status
 
 import (
-	"../db"
-	"../ssh"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/ssh"
 	"log"
 	"sync"
 )

@@ -20,12 +20,12 @@
 package rchain
 
 import (
-	"../../db"
-	"../../ssh"
-	"../../testnet"
-	"../../util"
-	"../helpers"
-	"../registrar"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/ssh"
+	"github.com/Whiteblock/genesis/testnet"
+	"github.com/Whiteblock/genesis/util"
+	"github.com/Whiteblock/genesis/blockchains/helpers"
+	"github.com/Whiteblock/genesis/blockchains/registrar"
 	"fmt"
 	"github.com/Whiteblock/mustache"
 	"log"
@@ -132,14 +132,14 @@ func build(tn *testnet.TestNet) error {
 		}
 		buildState.IncrementBuildProgress()
 
-		err = masterClient.Scp("bonds.txt", "/home/appo/bonds.txt")
+		err = masterClient.Scp("bonds.txt", "/tmp/bonds.txt")
 		if err != nil {
 			return util.LogError(err)
 		}
 		buildState.IncrementBuildProgress()
-		buildState.Defer(func() { masterClient.Run("rm -f /home/appo/bonds.txt") })
+		buildState.Defer(func() { masterClient.Run("rm -f /tmp/bonds.txt") })
 
-		err = masterClient.DockerCp(masterNode, "/home/appo/bonds.txt", "/bonds.txt")
+		err = masterClient.DockerCp(masterNode, "/tmp/bonds.txt", "/bonds.txt")
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -247,12 +247,12 @@ func createFirstConfigFile(tn *testnet.TestNet, client *ssh.Client, node ssh.Nod
 	if err != nil {
 		return util.LogError(err)
 	}
-	err = client.Scp("rnode.conf", "/home/appo/rnode.conf")
-	tn.BuildState.Defer(func() { client.Run("rm -f ~/rnode.conf") })
+	err = client.Scp("rnode.conf", "/tmp/rnode.conf")
+	tn.BuildState.Defer(func() { client.Run("rm -f /tmp/rnode.conf") })
 	if err != nil {
 		return util.LogError(err)
 	}
-	return client.DockerCp(node, "/home/appo/rnode.conf", "/datadir/rnode.conf")
+	return client.DockerCp(node, "/tmp/rnode.conf", "/datadir/rnode.conf")
 }
 
 /**********************************************************************ADD********************************************************************/

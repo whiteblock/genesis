@@ -19,9 +19,9 @@
 package artemis
 
 import (
-	"../../db"
-	"../../util"
-	"../helpers"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/util"
+	"github.com/Whiteblock/genesis/blockchains/helpers"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -51,7 +51,7 @@ func newConf(data map[string]interface{}) (artemisConf, error) {
 	return *out, nil
 }
 
-// GetParams fetchs artemis related parameters
+// GetParams fetches artemis related parameters
 func GetParams() string {
 	dat, err := helpers.GetStaticBlockchainConfig("artemis", "params.json")
 	if err != nil {
@@ -60,7 +60,7 @@ func GetParams() string {
 	return string(dat)
 }
 
-// GetDefaults fetchs artemis related parameter defaults
+// GetDefaults fetches artemis related parameter defaults
 func GetDefaults() string {
 	dat, err := helpers.GetStaticBlockchainConfig("artemis", "defaults.json")
 	if err != nil {
@@ -74,7 +74,7 @@ func GetServices() []util.Service {
 	return []util.Service{
 		{
 			Name:  "wb_influx_proxy",
-			Image: "gcr.io/wb-genesis/bitbucket.org/whiteblockio/influx-proxy:master",
+			Image: "gcr.io/whiteblock/influx-proxy:master",
 			Env: map[string]string{
 				"BASIC_AUTH_BASE64": base64.StdEncoding.EncodeToString([]byte(conf.InfluxUser + ":" + conf.InfluxPassword)),
 				"INFLUXDB_URL":      conf.Influx,

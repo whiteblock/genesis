@@ -19,10 +19,10 @@
 package helpers
 
 import (
-	"../../ssh"
-	"../../state"
-	"../../testnet"
-	"../../util"
+	"github.com/Whiteblock/genesis/ssh"
+	"github.com/Whiteblock/genesis/state"
+	"github.com/Whiteblock/genesis/testnet"
+	"github.com/Whiteblock/genesis/util"
 	"fmt"
 	"log"
 	"sync"
@@ -64,7 +64,7 @@ func copyToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, srcDst ...str
 		for j := 0; j < len(srcDst)/2; j++ {
 			rdy := make(chan bool, 1)
 			wg.Add(1)
-			intermediateDst := "/home/appo/" + srcDst[2*j]
+			intermediateDst := "/tmp/" + srcDst[2*j]
 
 			go func(sid int, j int, rdy chan bool) {
 				defer wg.Done()
@@ -165,7 +165,7 @@ func SingleCp(client *ssh.Client, buildState *state.BuildState, node ssh.Node, d
 		log.Println(err)
 		return err
 	}
-	intermediateDst := "/home/appo/" + tmpFilename
+	intermediateDst := "/tmp/" + tmpFilename
 	buildState.Defer(func() { client.Run("rm " + intermediateDst) })
 	err = client.Scp(tmpFilename, intermediateDst)
 	if err != nil {

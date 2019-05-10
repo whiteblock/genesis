@@ -19,9 +19,9 @@
 package status
 
 import (
-	"../db"
-	"../ssh"
-	"../util"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/ssh"
+	"github.com/Whiteblock/genesis/util"
 	"fmt"
 	"log"
 	"strconv"

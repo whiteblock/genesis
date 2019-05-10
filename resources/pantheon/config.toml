@@ -15,5 +15,8 @@ rpc-http-port="8545"
 
 logging="INFO"
 
+min-gas-price="0"
+rpc-http-cors-origins=["all"]
+
 # Chain
 genesis-file="/pantheon/genesis/genesis.json"

@@ -20,13 +20,12 @@
 package deploy
 
 import (
-	"../blockchains/registrar"
-	"../db"
-	"../docker"
-	"../testnet"
-	"../util"
+	"github.com/Whiteblock/genesis/blockchains/registrar"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/docker"
+	"github.com/Whiteblock/genesis/testnet"
+	"github.com/Whiteblock/genesis/util"
 	"fmt"
-	"log"
 	"sync"
 )
 
@@ -35,7 +34,7 @@ var conf = util.GetConfig()
 func buildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 	sidecars, err := registrar.GetBlockchainSideCars(tn.LDD.Blockchain)
 	if err != nil {
-		log.Println(err) //do not report
+		 //do not report
 		return
 	}
 

@@ -20,14 +20,12 @@
 package db
 
 import (
-	"../util"
+	"github.com/Whiteblock/genesis/util"
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //needed for db
 	"os"
 )
-
-var dataLoc = os.Getenv("HOME") + "/.config/whiteblock/.gdata"
 
 //ServerTable contains name of the server table
 const ServerTable string = "servers"
@@ -38,32 +36,51 @@ const NodesTable string = "nodes"
 //BuildsTable contains name of the builds table
 const BuildsTable string = "builds"
 
+var dataFolder = os.Getenv("HOME") + "/.config/whiteblock/"
+var dataLoc = dataFolder + ".gdata"
+
 var conf = util.GetConfig()
 
 var db *sql.DB
 
+
 func init() {
-	db = getDB()
+	var err error 
+	db, err = getDB()
+	if err != nil {
+		panic(err)
+	}
 	db.SetMaxOpenConns(50)
 	checkAndUpdate()
 }
-func getDB() *sql.DB {
+func getDB() (*sql.DB, error) {
+
+	err := os.MkdirAll(dataFolder, 0777)
+	if err != nil {
+		return nil, err
+	}
 	if _, err := os.Stat(dataLoc); os.IsNotExist(err) {
-		dbInit()
+		err = dbInit(dataLoc)
+		if err != nil {
+			return nil, err
+		}
 	}
 	d, err := sql.Open("sqlite3", dataLoc)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return d
+	return d, nil
 }
 
-func dbInit() {
+func dbInit(dataLoc string) error {
 	_, err := os.Create(dataLoc)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	db = getDB()
+	db, err = getDB()
+	if err != nil {
+		return err
+	}
 
 	serverSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s);",
 		ServerTable,
@@ -108,29 +125,33 @@ func dbInit() {
 
 	_, err = db.Exec(serverSchema)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	_, err = db.Exec(nodesSchema)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	_, err = db.Exec(buildSchema)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	_, err = db.Exec(versionSchema)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	insertLocalServers(db)
-	setVersion(Version)
+	err = insertLocalServers()
+	if err != nil {
+		return err
+	}
+	err = setVersion(Version)
+	return err
 }
 
 //insertLocalServers adds the default server(s) to the servers database, allowing immediate use of the application
 //without having to register a server
-func insertLocalServers(db *sql.DB) {
-	InsertServer("cloud",
+func insertLocalServers() error {
+	_, err := InsertServer("cloud",
 		Server{
 			Addr:     "127.0.0.1",
 			Nodes:    0,
@@ -138,4 +159,5 @@ func insertLocalServers(db *sql.DB) {
 			SubnetID: 1,
 			ID:       -1,
 			Ips:      []string{}})
+	return err
 }

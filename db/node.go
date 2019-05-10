@@ -19,7 +19,7 @@
 package db
 
 import (
-	"../util"
+	"github.com/Whiteblock/genesis/util"
 	"database/sql"
 	"errors"
 	"fmt"

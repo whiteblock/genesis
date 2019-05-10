@@ -19,12 +19,12 @@
 package deploy
 
 import (
-	"../blockchains/helpers"
-	"../db"
-	"../docker"
-	netem "../net"
-	"../ssh"
-	"../testnet"
+	"github.com/Whiteblock/genesis/blockchains/helpers"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/docker"
+	netem "github.com/Whiteblock/genesis/net"
+	"github.com/Whiteblock/genesis/ssh"
+	"github.com/Whiteblock/genesis/testnet"
 )
 
 // PurgeTestNetwork goes into each given ssh client and removes all the nodes and the networks.

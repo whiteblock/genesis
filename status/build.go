@@ -20,7 +20,7 @@
 package status
 
 import (
-	"../state"
+	"github.com/Whiteblock/genesis/state"
 	"log"
 )
 

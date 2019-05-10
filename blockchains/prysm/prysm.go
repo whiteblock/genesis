@@ -16,32 +16,39 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package cosmos
+//Package prysm handles prysm specific functionality
+package prysm
 
 import (
+	"github.com/Whiteblock/genesis/blockchains/registrar"
+	"github.com/Whiteblock/genesis/testnet"
 	"github.com/Whiteblock/genesis/util"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
 )
 
-// GetParams fetchs cosmos related parameters
-func GetParams() string {
-	dat, err := helpers.GetStaticBlockchainConfig("cosmos", "params.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
+var conf *util.Config
+
+const blockchain = "prysm"
+func init() {
+	conf = util.GetConfig()
+	
+	registrar.RegisterBuild(blockchain, build)
+	registrar.RegisterAddNodes(blockchain, add)
+	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterParams(blockchain, GetParams)
 }
 
-// GetDefaults fetchs cosmos related parameter defaults
-func GetDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig("cosmos", "defaults.json")
+// build builds out a fresh new prysm test network
+func build(tn *testnet.TestNet) error {
+	_, err := newConf(tn.LDD.Params)
 	if err != nil {
-		panic(err) //Missing required files is a fatal error
+		return util.LogError(err)
 	}
-	return string(dat)
+
+	return nil
 }
 
-// GetServices returns the services which are used by cosmos
-func GetServices() []util.Service {
+// add handles adding nodes to the testnet
+func add(tn *testnet.TestNet) error {
 	return nil
 }

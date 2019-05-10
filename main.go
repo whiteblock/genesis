@@ -19,8 +19,8 @@
 package main
 
 import (
-	"./rest"
-	"./util"
+	"github.com/Whiteblock/genesis/rest"
+	"github.com/Whiteblock/genesis/util"
 	"log"
 )
 

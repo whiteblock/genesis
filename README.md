@@ -1,42 +1,74 @@
 Genesis
 ======
-
+[![API Reference](
+https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/68747470733a2f2f676f646f632e6f72672f6769746875622e636f6d2f676f6c616e672f6764646f3f7374617475732e737667
+)](https://godoc.org/github.com/Whiteblock/genesis)
 [![Maintainability](https://api.codeclimate.com/v1/badges/4aae8bc608f619f0990e/maintainability)](https://codeclimate.com/repos/5cb0ac61f5eb734088003e71/maintainability)
 
+# Overview
+The Whiteblock platform allows users to provision multiple fully-functioning nodes over which they have complete control within a private test network 
+
+# REST API
+Documentation for the REST API can be found [here](rest.md). 
+
 # Installation
-* clone repository
+* clone the repository
 * `cd genesis`
 * `go get`
 * `go build`
 
+## Installation on Mac
+
+### Setup docker
+set environment variables to allow SSH commands:
+1. `ssh localhost docker`
+    * if error `bash: docker: command not found`, move to next step
+2. `echo "PATH=$PATH" >> ~/.ssh/environment`
+3. as root: `echo "PermitUserEnvironment yes" >> /etc/ssh/sshd_config`
+4. `sudo launchctl unload /System/Library/LaunchDaemons/ssh.plist`
+5. `sudo launchctl load /System/Library/LaunchDaemons/ssh.plist`
+6. run step 1. again and there should be a docker help output
+
+### Build Genesis
+It is recommended to run genesis on a separate user account from the main user account 
+* create a separate new user (this may have to be done manually in system preferences)
+* set up a [`$GOPATH`](https://medium.com/@AkyunaAkish/setting-up-a-golang-development-environment-mac-os-x-d58e5a7ea24f) on the the new user account
+* `go` ( makes sure go is already installed )
+* `go get github.com/Whiteblock/genesis`
+* `cd $GOPATH/src/github.com/Whiteblock/genesis`
+* `go build`
+
+
+
 # Configuration
 Configuration options are located in `config.json` in the same directory as the binary
 
-* __ssh-user__: The default username for ssh
-* __ssh-key__: The location of the ssh private key
-* __listen__: The socket to listen on 
-* __verbose__: Enable or disable verbose mode
-* __server-bits__: The bits given to each server's number
-* __cluster-bits__: The bits given to each clusters's number
-* __node-bits__: The bits given to each nodes's number
-* __thread-limit__: The maximum number of threads that can be used for building
-* __ip-prefix__: Used for the IP Scheme
-* __docker-output-file__: The location instead the docker containers where the clients stdout and stderr will be captured
-* __influx__: The influxdb endpoint
-* __influx-user__: The influx auth username
-* __influx-password__: The influx auth password
-* __service-network__: CIDR of the network for the services
-* __service-network-name__: The name for the service network
-* __node-prefix__: The prefix for each node name
-* __node-network-prefix__: The prefix for each cluster network
-* __service-prefix__: The prefix for each service
-
-* __nodes-public-key__: Location of the public key for the nodes
-* __nodes-private-key__: Location of the private key for the nodes
-* __handle-node-ssh-keys__: Should genesis handle the nodes ssh keys?
-* __max-nodes__: Set a maximum number of nodes that a client can build
-* __max-node-memory__: Set the max memory per node that a client can use
-* __max-node-cpu__: Set the max cpus per node that a client can use
+| __Option__ |         __Description__   |
+| :---------------:|---------------------------- |  
+| __ssh-user__ | The default username for ssh |
+| __ssh-key__ | The location of the ssh private key |
+| __listen__ |The socket to listen on |
+| __verbose__ |Enable or disable verbose mode |
+|  __server-bits__ |The bits given to each server's number |
+| __cluster-bits__ | The bits given to each clusters's number |
+| __node-bits__| The bits given to each nodes's number|
+| __thread-limit__| The maximum number of threads that can be used for building |
+| __ip-prefix__| Used for the IP Scheme|
+| __docker-output-file__| The location instead the docker containers where the clients stdout and stderr will be captured |
+| __influx__| The influxdb endpoint |
+| __influx-user__|The influx auth username |
+| __influx-password__| The influx auth password |
+| __service-network__| CIDR of the network for the services |
+| __service-network-name__| The name for the service network |
+| __node-prefix__| The prefix for each node name|
+| __node-network-prefix__| The prefix for each cluster network |
+| __service-prefix__| The prefix for each service |
+| __nodes-public-key__| Location of the public key for the nodes |
+| __nodes-private-key__| Location of the private key for the nodes |
+| __handle-node-ssh-keys__| Should genesis handle the nodes ssh keys? |
+| __max-nodes__| Set a maximum number of nodes that a client can build |
+| __max-node-memory__| Set the max memory per node that a client can use |
+| __max-node-cpu__| Set the max cpus per node that a client can use |
       
 
 ## Config Environment Overrides
@@ -80,7 +112,7 @@ The following assumptions will be made
 
 * Each server will have a relatively unique `serverId`
 * This uniqueness need only apply to servers which will contain nodes which communicate with each other
-* There are going to be 3 ip addresses reserved from each subnet
+* There are going to be 3 IP addresses reserved from each subnet
 * Nodes in the same docker network are able to route between each other by default
 
 For simplicity, the following variables will be used
@@ -103,9 +135,9 @@ Note the following rules
 
 ### What is a cluster?
 
-Each cluster corresponds to a subnet,docker network,and vlan. 
+Each cluster corresponds to a subnet, docker network, and vlan. 
 
-Containers in the same cluster will have minimal latency applied to them. In the majority of cases
+Containers in the same cluster will have minimal latency applied to them. In the majority of cases,
 it is best to just have one node per cluster, allowing for latency control between all of the nodes.
 
 ### How is it all calculated?
@@ -120,7 +152,7 @@ __I__ = (__A__ * 2^(__B__+__C__+__D__) ) + ( __Y__ * 2^(__B__+__C__) ) + (__Z__ 
 
 if __Z__ == (2^__C__ - 1) then __I__ = __I__ - 2
 
-#### Explaination
+#### Explanation
 First get the cluster the node is in
 
 Then construct the IP one segment at a time through addition
@@ -181,501 +213,6 @@ IP = 10.3.0.10
 Gateway IP = 10.3.0.9
 Subnet = 10.3.0.8/30
 ```
-
-# REST API
-
-## GET /servers/
-Get the current registered servers
-
-### RESPONSE
-```
-{
-    "server_name":{
-        "addr":(string),
-        "iaddr":{
-            "ip":(string),
-            "gateway":(string),
-            "subnet":(int)
-        },
-        "nodes":(int),
-        "max":(int),
-        "id":(int),
-        "serverID":(int),
-        "iface":(string),
-        "switches":[
-            {
-                "addr":(string),
-                "iface":(string),
-                "brand":(int),
-                "id":(int)
-            }
-        ]
-    },
-    "server2_name":{...}...
-}
-```
-
-### EXAMPLE
-```bash
-curl -XGET http://localhost:8000/servers/
-```
-
-
-## PUT /servers/{name}
-Register and add a new server to be 
-controlled by the instance
-
-### BODY
-```
-{
-    "addr":(string),
-    "nodes":(int),
-    "max":(int),
-    "id":-1,
-    "subnetID":(int)
-}
-```
-
-### RESPONSE
-```
-<server id>
-```
-
-### EXAMPLE
-```bash
-curl -X PUT http://localhost:8000/servers/foxtrot -d \
-'{"addr":"172.16.6.5","nodes":0,"max":10,"subnetID":6,"id":-1}'
-```
-
-
-## GET /servers/{id}
-Get a server by id
-
-### RESPONSE
-```
-{
-    "addr":(string),
-    "nodes":(int),
-    "max":(int),
-    "id":(int),
-    "subnetID":(int)
-}
-```
-
-## DELETE /servers/{id}
-Remove a server
-
-### RESPONSE
-```
-Success
-```
-
-### EXAMPLE
-```bash
-curl -X DELETE http://localhost:8000/servers/5
-```
-
-## UPDATE /servers/{id}
-Update server information
-
-### BODY
-```
-{
-    "addr":(string),
-    "nodes":(int),
-    "max":(int),
-    "id":(int),
-    "subnetID":(int)
-}
-```
-### RESPONSE
-```
-Success
-```
-
-### EXAMPLE
-```bash
-curl -X UPDATE http://localhost:8000/servers/5 -d \
- '{"addr":"172.16.4.5","nodes":0,"max":30,"id":5,"subnetID":4}'
-```
-
-## POST /testnets/
-Add and deploy a new testnet
-
-### BODY
-```
-<json object representing the build, see example and details after it>
-```
-
-### RESPONSE
-```
-Success
-```
-
-### EXAMPLE
-```bash
-curl -X POST http://localhost:8000/testnets/ -d '{
-    "servers":[1],
-    "blockchain":"ethereum",
-    "nodes":3,
-    "images":["ethereum:latest"],
-    "resources":[{
-        "cpus":"2.5",
-        "memory":"12gb"
-    }],
-    "params":{
-        "networkId":15468,
-        "difficulty":100000,
-        "initBalance":"100000000000000000000",
-        "maxPeers":1000,
-        "gasLimit":4000000,
-        "homesteadBlock":0,
-        "eip155Block":10,
-        "eip158Block":10
-    },
-    "environments":[
-        {
-            "NODE":"0"
-        },
-        {
-            "NODE":"1"
-        }
-    ],
-    "files":[
-        {
-            "config.toml":"TG9yZW0gabnNlY3RldHVyIGFkaXBpc2NpbmcgZdyxX=="
-        },
-        {
-            "config.toml":"UHJvaW4gZmluaWJ1cyBsYW9yZWV0IHRpbmNpZHVudA=="
-        }
-    ],
-    "logs":[],
-    "extras":{
-        "defaults":{
-            "files":{
-                "config.toml":"IEludGVnZXIgYXVjdG9yIHVybmEgbGFvcmVldCBjb252YWxsaXMgdmVzdGlidWx1bS4="
-            }
-        },
-        "postbuild":{
-            "ssh":{
-                "pubKeys":[]
-            }
-        },
-        "prebuild":{
-            "auth":{
-                "username":"bill",
-                "password":"big_strong_bill"
-            },
-            "build":false,
-            "dockerfile":null,
-            "freezeAfterInfrastructure":false,
-            "pull":false
-        }
-    }
-}'
-```
-
-### DETAILS
-* servers : The servers on which to build
-* blockchain: The blockchain to build out
-* nodes: The total number of nodes to build
-* images: The docker images to use in building the nodes, the first image in the list will be used as the default.
-* resources: The first resource object is the default.
-  * cpus: The max number of cpus which can be used by the node.
-  * memory: The maximum amount of RAM that a node can use.
-* params: Blockchain specific parameters to supplement the build
-* environments: The environmental variables for the nodes.
-* files: The file templates to replace the internal files, key is the file name, value is the file data base64 encoded.
-* logs: The log files for each node. 
-* extras: Extra build information which doesn't fit into any category. Most trivial expansions are done here
-* defaults: Contains the default values for certain fields. Used for cases where you might want to differentiate between
- all nodes and just the first node.
-* postbuild: Contains details for after infrastructure deployment functionality
-  * ssh: Information on addition ssh credentials to allow access to the nodes. 
-* prebuild:
-  * auth: Docker login authorization credentials (if needed)
-  * build: Whether or not it should build from a dockerfile
-  * dockerfile: The dockerfile encoded in base64, which will be built if build is true
-  * freezeAfterInfrastructure: Freeze after the context switch from building infrastructure to blockchain genesis ceremony
-  * pull: Force an update of all of the used images. 
-
-
-## DELETE /testnets/{id}
-Tears down a testnet
-
-### RESPONSE
-```
-Success
-```
-
-## GET /testnets/{id}/nodes/
-Get the nodes in a testnet
-
-### RESPONSE
-```
-[
-    {
-        "id":(string),
-        "testNetId":(int),
-        "server":(int),
-        "localId":(int),
-        "ip":(string)
-    },...
-]
-```
-
-
-## GET /status/nodes/{testnetid}
-Get the nodes that are running in the given testnet
-
-### RESPONSE
-```json
-[
-    {
-    "ip": "10.1.0.2",
-    "name": "whiteblock-node0",
-    "resourceUse": {
-      "cpu": 1.5,
-      "residentSetSize": 629700,
-      "virtualMemorySize": 40105576
-    },
-    "server": 1,
-    "up": true
-  }
-]
-```
-
-### EXAMPLE
-```bash
-curl -XGET http://localhost:8000/status/nodes/
-```
-
-## GET /params/{blockchain}/
-Get the build params for a blockchain
-
-### RESPONSE
-```json
-[
-    ["chainId","int"]
-    ["homesteadBlock","int"],
-    ["eip155Block","int"],
-    ["eip158Block","int"]
-]
-```
-
-### EXAMPLE
-```bash
-curl -X GET http://localhost:8000/params/ethereum
-```
-
-## GET /defaults/{blockchain}
-Get the default parameters for a blockchain
-
-### RESPONSE
-```json
-{
-    "chainId":15468,
-    "networkId":15468,
-    "difficulty":100000,
-    "initBalance":100000000000000000000,
-    "maxPeers":1000,
-    "gasLimit":4000000,
-    "homesteadBlock":0,
-    "eip155Block":0,
-    "eip158Block":0
-}
-```
-
-### EXAMPLE
-```bash
-curl -X GET http://localhost:8000/defaults/ethereum
-```
-
-## GET /log/{server}/{node}
-Get both stdout and stderr from the blockchain process
-
-### RESPONSE
-```
-<The contents>
-```
-
-### EXAMPLE
-```bash
-curl -X POST http://localhost:8000/log/4/0
-```
-
-## GET /nodes/{testnetid}
-Get the nodes for the latest testnet
-
-### RESPONSE
-```json
-[
-    {
-        "id": 1647,
-        "testnetId": 134,
-        "server": 3,
-        "localId": 0,
-        "ip": "10.6.0.2",
-        "label": "",
-        "absNum":4,
-        "image":"geth:latest",
-        "blockchain":"geth"
-    }
-]
-```
-
-### EXAMPLE
-```bash
-curl -X GET http://localhost:8000/nodes
-```
-
-## DELETE /build/{buildid}
-Stop the given build
-
-### RESPONSE
-`Stop signal has been sent...`
-
-### EXAMPLE
-```bash
-curl -X DELETE http://localhost:8000/build
-```
-
-## POST /nodes/{testnetID}
-Appends nodes to the given testnet otherwise, acts like `POST /testnet/`, main difference is the response is not
-the testnet id
-
-### RESPONSE
-```
-Success
-```
-
-
-## DELETE /nodes/{testnetId}/{num}
-Delete {num} nodes from the testnet
-
-### RESPONSE
-```
-Success
-```
-
-### EXAMPLE
-```bash
-curl -X DELETE http://localhost:8000/nodes/9e09efe8_d7a3_4429_832c_447d876194c8/5 
-```
-
-
-## DELETE /emulate/{testnetId}
-Turn off emulate for a whole testnet
-
-### EXAMPLE
-```bash
-curl -X DELETE http://localhost:8000/emulate/9e09efe8_d7a3_4429_832c_447d876194c8
-```
-
-## POST /emulate/{testnetId}
-Set emulation for a node or nodes
-
-### BODY
-```json
-[{"node":1,"limit":1000,"loss":0,"delay":5000,"rate":"","duplicate":0,"corrupt":0,"reorder":0},
- {"node":2,"limit":1000,"loss":0,"delay":5000,"rate":"","duplicate":0,"corrupt":0,"reorder":0},
- {"node":0,"limit":1000,"loss":0,"delay":5000,"rate":"","duplicate":0,"corrupt":0,"reorder":0}]
-```
-
-### EXAMPLE
-```bash
-curl -X POST http://localhost:8000/emulate/9e09efe8_d7a3_4429_832c_447d876194c8
-```
-
-## POST /emulate/all/{testnetId}
-Set emulation for a whole testnet
-
-### BODY
-```json
-{"limit":1000,"loss":0,"delay":5000,"rate":"","duplicate":0,"corrupt":0,"reorder":0}
-```
-
-### EXAMPLE
-```bash
-curl -X POST http://localhost:8000/emulate/all/9e09efe8_d7a3_4429_832c_447d876194c8 
-```
-
-## GET /resources/{blockchain}
-Get the static file resources used by genesis for the given blockchain
-
-### RESPONSE
-```json
-[
-  "defaults.json",
-  "genesis.json",
-  "params.json"
-]
-```
-
-### EXAMPLE
-```bash
-curl -X POST http://localhost:8000/resources/geth
-```
-
-## GET /resources/{blockchain}/{file}
-Gets the contents of that file resource for the given blockchain
-
-### EXAMPLE
-```bash
-curl -X GET http://localhost:8000/resources/geth/genesis.json
-```
-
-
-## GET /build
-
-## GET /build/{id}
-
-## POST /build/freeze/{id}
-Pause the given build
-
-## POST /build/thaw/{id}
-Unpause the given build
-
-## DELETE /build/freeze/{id}
-Unpause the given build
-
-## GET /emulate/{testnetID}
-Get the current network conditions for the testnet
-
-## POST /nodes/restart/{testnetID}/{num}
-Restart a node on a testnet
-
-## POST /nodes/raise/{testnetID}/{node}/{signal}
-Send a signal to the main process of the given node 
-
-## POST /nodes/kill/{testnetID}/{node}
-Attempt to kill the given node
-
-## POST /outage/{testnetID}/{node1}/{node2}
-Prevent the given node1 and node2 from establishing a connection with each other
-
-## DELETE /outage/{testnetID}/{node1}/{node2}
-Allow the given node1 and node2 to establish a connection with each other
-
-## DELETE /outage/{testnetID}
-Remove all blocked connections from a testnet
-
-## GET /outage/{testnetID}
-Get the currently blocked connections
-
-## GET /outage/{testnetID}/{node}
-Get the blocked connections for the given node
-
-## POST /partition/{testnetID}
-Create a network partition on a testnet
-
-## GET /partition/{testnetID}
-Get the partitions on the testnet
-
-## GET /blockchains
-Get the currently supported blockchains by genesis
-
-
 
 # Blockchain Specific Parameters
 

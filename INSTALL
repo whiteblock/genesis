@@ -1,0 +1,56 @@
+Right now genesis will only work on Linux systems. In the future we plan on supporting Mac OS as well. 
+
+Step 1. Install `golang`
+
+Step 2. Install `docker`
+
+Step 3. Clone the repository
+
+Step 4. Ensure that you have your the path to your ssh key in the config.json file, under the `"ssh-key"` value
+
+Step 5. Designate a user that genesis will operate on, appo is the default, you can set this in the config file as `"ssh-user"`
+
+Step 6. Add this user to the `docker` group, so that the user has docker access. If the ssh-user does not have the ability to use docker, then Genesis will be unable to spin up the nodes.
+
+Step 7. (Optional) For full functionality, give this user sudo access without a password. For example, if you are using the user appo, then
+    add the line `appo ALL=(ALL) NOPASSWD: ALL` to your `/etc/sudoers` file. You can do this by running the `visudo` command as root.
+
+Step 8. Add the public key corresponding to the key from step 3 to the .ssh/authorized_keys file for the user chosen in step 4. 
+
+Step 9. Set `handle-node-ssh-keys` to false in your config file, since you most likely should not need to propogate ssh key pairs to your nodes. The values for `nodes-private-key` and `nodes-public-key` are for cases where you would like to have keys placed within the nodes, and allow ssh access directly to the nodes using the keys. However, when running on a single machine, this feature will not extend functionality.
+
+Step 10. Run `go get` to install the dependencies of genesis
+
+Step 11. Run `go build` to compile it.
+
+Step 12. Run genesis, preferably in the background, as it is a daemon process.
+
+Step 13. Interact with Genesis via its REST interface. You may get a warning about having to use a default value, this is fairly normal, and is just a safe guard in case you wanted to set that variable. 
+
+Step 14.
+
+
+Example Build 
+```bash
+curl -X POST http://localhost:8000/testnets/ -d '{ \
+    "servers":[1],\
+    "blockchain":"geth", \
+    "nodes":3,\
+    "images":["gcr.io/whiteblock/geth:master"],\
+    "resources":[{ \
+        "cpus":"", \ 
+        "memory":"" \
+    }], \
+    "params":{ \
+        "networkId":15468, \
+        "difficulty":100000, \ 
+        "initBalance":"100000000000000000000", \
+        "maxPeers":1000, \
+        "gasLimit":4000000, \ 
+        "homesteadBlock":0, \
+        "eip155Block":10, \
+        "eip158Block":10 \
+    } \
+}'
+```
+

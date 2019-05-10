@@ -19,7 +19,7 @@
 package registrar
 
 import (
-	"../../testnet"
+	"github.com/Whiteblock/genesis/testnet"
 	"fmt"
 )
 

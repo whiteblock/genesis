@@ -19,9 +19,9 @@
 package rest
 
 import (
-	"../db"
-	netem "../net"
-	"../status"
+	"github.com/Whiteblock/genesis/db"
+	netem "github.com/Whiteblock/genesis/net"
+	"github.com/Whiteblock/genesis/status"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"

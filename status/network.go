@@ -19,7 +19,7 @@
 package status
 
 import (
-	"../db"
+	"github.com/Whiteblock/genesis/db"
 	"log"
 )
 
