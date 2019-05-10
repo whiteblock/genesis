@@ -1,7 +1,6 @@
 package netconf
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -10,8 +9,6 @@ func Test_NewConnections(t *testing.T) {
 	nodes := 2
 
 	out := NewConnections(nodes)
-
-	fmt.Println(out.cons)
 
 	expected := [][]bool{{true, true}, {true, true}}
 
