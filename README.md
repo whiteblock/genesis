@@ -17,16 +17,9 @@ Documentation for the REST API can be found [here](rest.md).
 * `go get`
 * `go build`
 
-# Recommended for Installation on Mac
-It is recommended to run genesis on a separate user account from the main user account 
-* create a separate new user (this may have to be done manually in system preferences)
-* set up a [`$GOPATH`](https://medium.com/@AkyunaAkish/setting-up-a-golang-development-environment-mac-os-x-d58e5a7ea24f) on the the new user account
-* `go` ( makes sure go is already installed )
-* `go get github.com/Whiteblock/genesis`
-* `cd $GOPATH/src/github.com/Whiteblock/genesis`
-* `go build`
+## Installation on Mac
 
-## Docker on Mac
+### Setup docker
 set environment variables to allow SSH commands:
 1. `ssh localhost docker`
     * if error `bash: docker: command not found`, move to next step
@@ -35,6 +28,17 @@ set environment variables to allow SSH commands:
 4. `sudo launchctl unload /System/Library/LaunchDaemons/ssh.plist`
 5. `sudo launchctl load /System/Library/LaunchDaemons/ssh.plist`
 6. run step 1. again and there should be a docker help output
+
+### Build Genesis
+It is recommended to run genesis on a separate user account from the main user account 
+* create a separate new user (this may have to be done manually in system preferences)
+* set up a [`$GOPATH`](https://medium.com/@AkyunaAkish/setting-up-a-golang-development-environment-mac-os-x-d58e5a7ea24f) on the the new user account
+* `go` ( makes sure go is already installed )
+* `go get github.com/Whiteblock/genesis`
+* `cd $GOPATH/src/github.com/Whiteblock/genesis`
+* `go build`
+
+
 
 # Configuration
 Configuration options are located in `config.json` in the same directory as the binary
