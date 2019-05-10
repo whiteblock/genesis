@@ -19,9 +19,9 @@
 package docker
 
 import (
+	"fmt"
 	"github.com/Whiteblock/genesis/db"
 	"github.com/Whiteblock/genesis/util"
-	"fmt"
 )
 
 //ContainerType represents the type of node the container is

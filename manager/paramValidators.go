@@ -19,9 +19,9 @@
 package manager
 
 import (
+	"fmt"
 	"github.com/Whiteblock/genesis/db"
 	"github.com/Whiteblock/genesis/util"
-	"fmt"
 	"log"
 )
 

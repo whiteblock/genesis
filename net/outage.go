@@ -19,11 +19,11 @@
 package netconf
 
 import (
+	"fmt"
 	"github.com/Whiteblock/genesis/db"
 	"github.com/Whiteblock/genesis/ssh"
 	"github.com/Whiteblock/genesis/status"
 	"github.com/Whiteblock/genesis/util"
-	"fmt"
 	"log"
 	"strconv"
 	"strings"

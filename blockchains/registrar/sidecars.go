@@ -19,8 +19,8 @@
 package registrar
 
 import (
-	"github.com/Whiteblock/genesis/testnet"
 	"fmt"
+	"github.com/Whiteblock/genesis/testnet"
 )
 
 // SideCar represents the side car registration details needed for building or other purposes

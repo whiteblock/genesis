@@ -20,9 +20,9 @@
 package state
 
 import (
-	"github.com/Whiteblock/genesis/db"
 	"encoding/json"
 	"fmt"
+	"github.com/Whiteblock/genesis/db"
 	"io/ioutil"
 	"log"
 	"os"

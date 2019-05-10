@@ -19,8 +19,8 @@
 package db
 
 import (
-	"github.com/Whiteblock/genesis/util"
 	"fmt"
+	"github.com/Whiteblock/genesis/util"
 	_ "github.com/mattn/go-sqlite3" //sqlite
 	"regexp"
 )

@@ -22,12 +22,12 @@ package plumtree
 import (
 	"fmt"
 
+	"github.com/Whiteblock/genesis/blockchains/helpers"
+	"github.com/Whiteblock/genesis/blockchains/registrar"
 	"github.com/Whiteblock/genesis/db"
 	"github.com/Whiteblock/genesis/ssh"
 	"github.com/Whiteblock/genesis/testnet"
 	"github.com/Whiteblock/genesis/util"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/blockchains/registrar"
 )
 
 var conf *util.Config

@@ -19,11 +19,11 @@
 package manager
 
 import (
+	"fmt"
 	"github.com/Whiteblock/genesis/db"
 	"github.com/Whiteblock/genesis/docker"
 	"github.com/Whiteblock/genesis/status"
 	"github.com/Whiteblock/genesis/util"
-	"fmt"
 )
 
 // DelNodes simply attempts to remove the given number of nodes from the

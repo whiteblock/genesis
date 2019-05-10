@@ -19,9 +19,9 @@
 package rest
 
 import (
-	"github.com/Whiteblock/genesis/db"
 	"encoding/json"
 	"fmt"
+	"github.com/Whiteblock/genesis/db"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"

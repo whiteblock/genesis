@@ -21,10 +21,10 @@
 package ssh
 
 import (
-	"github.com/Whiteblock/genesis/state"
-	"github.com/Whiteblock/genesis/util"
 	"context"
 	"fmt"
+	"github.com/Whiteblock/genesis/state"
+	"github.com/Whiteblock/genesis/util"
 	"github.com/Whiteblock/scp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/semaphore"
@@ -37,7 +37,7 @@ import (
 
 var conf = util.GetConfig()
 
-const maxRunAttempts int = 20
+const maxRunAttempts int = 30
 
 const maxConnections int = 50
 

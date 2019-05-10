@@ -19,9 +19,9 @@
 package prysm
 
 import (
-	"github.com/Whiteblock/genesis/util"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
 	"encoding/json"
+	"github.com/Whiteblock/genesis/blockchains/helpers"
+	"github.com/Whiteblock/genesis/util"
 )
 
 type prysm struct {

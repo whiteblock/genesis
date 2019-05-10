@@ -19,14 +19,14 @@
 package deploy
 
 import (
+	"encoding/base64"
+	"fmt"
 	"github.com/Whiteblock/genesis/blockchains/helpers"
 	"github.com/Whiteblock/genesis/db"
 	"github.com/Whiteblock/genesis/docker"
 	"github.com/Whiteblock/genesis/ssh"
 	"github.com/Whiteblock/genesis/testnet"
 	"github.com/Whiteblock/genesis/util"
-	"encoding/base64"
-	"fmt"
 	"log"
 	"sync"
 )

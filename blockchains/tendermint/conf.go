@@ -19,8 +19,8 @@
 package tendermint
 
 import (
-	"github.com/Whiteblock/genesis/util"
 	"github.com/Whiteblock/genesis/blockchains/helpers"
+	"github.com/Whiteblock/genesis/util"
 )
 
 // GetParams fetchs tendermint related parameters

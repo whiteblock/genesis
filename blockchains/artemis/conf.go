@@ -19,12 +19,12 @@
 package artemis
 
 import (
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/util"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/Whiteblock/genesis/blockchains/helpers"
+	"github.com/Whiteblock/genesis/db"
+	"github.com/Whiteblock/genesis/util"
 	"github.com/Whiteblock/mustache"
 )
 

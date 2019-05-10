@@ -19,11 +19,11 @@
 package helpers
 
 import (
+	"encoding/base64"
+	"fmt"
 	"github.com/Whiteblock/genesis/db"
 	"github.com/Whiteblock/genesis/ssh"
 	"github.com/Whiteblock/genesis/state"
-	"encoding/base64"
-	"fmt"
 	"io/ioutil"
 )
 

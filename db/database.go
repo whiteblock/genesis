@@ -20,9 +20,9 @@
 package db
 
 import (
-	"github.com/Whiteblock/genesis/util"
 	"database/sql"
 	"fmt"
+	"github.com/Whiteblock/genesis/util"
 	_ "github.com/mattn/go-sqlite3" //needed for db
 	"os"
 )
@@ -43,9 +43,8 @@ var conf = util.GetConfig()
 
 var db *sql.DB
 
-
 func init() {
-	var err error 
+	var err error
 	db, err = getDB()
 	if err != nil {
 		panic(err)

@@ -20,11 +20,11 @@
 package rest
 
 import (
+	"encoding/json"
 	"github.com/Whiteblock/genesis/db"
 	"github.com/Whiteblock/genesis/state"
 	"github.com/Whiteblock/genesis/status"
 	"github.com/Whiteblock/genesis/util"
-	"encoding/json"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -49,7 +49,7 @@ func StartServer() {
 	router.HandleFunc("/servers/{id}", deleteServer).Methods("DELETE")
 	router.HandleFunc("/servers/{id}", updateServerInfo).Methods("UPDATE")
 
-	router.HandleFunc("/testnets", createTestNet).Methods("POST")  //Create new test net
+	router.HandleFunc("/testnets", createTestNet).Methods("POST") //Create new test net
 
 	router.HandleFunc("/testnets/{id}", deleteTestNet).Methods("DELETE")
 

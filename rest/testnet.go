@@ -19,14 +19,14 @@
 package rest
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/Whiteblock/genesis/db"
 	"github.com/Whiteblock/genesis/manager"
 	"github.com/Whiteblock/genesis/state"
 	"github.com/Whiteblock/genesis/status"
 	"github.com/Whiteblock/genesis/testnet"
 	"github.com/Whiteblock/genesis/util"
-	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"

@@ -19,6 +19,8 @@
 package deploy
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/Whiteblock/genesis/blockchains/helpers"
 	"github.com/Whiteblock/genesis/blockchains/registrar"
 	"github.com/Whiteblock/genesis/db"
@@ -27,8 +29,6 @@ import (
 	"github.com/Whiteblock/genesis/status"
 	"github.com/Whiteblock/genesis/testnet"
 	"github.com/Whiteblock/genesis/util"
-	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"strings"

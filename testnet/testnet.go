@@ -20,12 +20,12 @@
 package testnet
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/Whiteblock/genesis/db"
 	"github.com/Whiteblock/genesis/ssh"
 	"github.com/Whiteblock/genesis/state"
 	"github.com/Whiteblock/genesis/status"
-	"encoding/json"
-	"fmt"
 	"log"
 	"sync"
 )

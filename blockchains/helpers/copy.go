@@ -19,11 +19,11 @@
 package helpers
 
 import (
+	"fmt"
 	"github.com/Whiteblock/genesis/ssh"
 	"github.com/Whiteblock/genesis/state"
 	"github.com/Whiteblock/genesis/testnet"
 	"github.com/Whiteblock/genesis/util"
-	"fmt"
 	"log"
 	"sync"
 )

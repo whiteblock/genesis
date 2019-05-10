@@ -19,13 +19,13 @@
 package manager
 
 import (
+	"fmt"
 	"github.com/Whiteblock/genesis/blockchains/registrar"
 	"github.com/Whiteblock/genesis/db"
 	"github.com/Whiteblock/genesis/deploy"
 	"github.com/Whiteblock/genesis/state"
 	"github.com/Whiteblock/genesis/testnet"
 	"github.com/Whiteblock/genesis/util"
-	"fmt"
 )
 
 // AddNodes allows for nodes to be added to the network.

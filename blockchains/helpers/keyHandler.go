@@ -19,11 +19,11 @@
 package helpers
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/Whiteblock/genesis/db"
 	"github.com/Whiteblock/genesis/ssh"
 	"github.com/Whiteblock/genesis/util"
-	"encoding/json"
-	"fmt"
 )
 
 // KeyMaster is a static resource key manager

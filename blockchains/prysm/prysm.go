@@ -28,9 +28,10 @@ import (
 var conf *util.Config
 
 const blockchain = "prysm"
+
 func init() {
 	conf = util.GetConfig()
-	
+
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
