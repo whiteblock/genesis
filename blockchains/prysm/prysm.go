@@ -20,16 +20,9 @@
 package prysm
 
 import (
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/ssh"
+	"github.com/Whiteblock/genesis/blockchains/registrar"
 	"github.com/Whiteblock/genesis/testnet"
 	"github.com/Whiteblock/genesis/util"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/blockchains/registrar"
-	"fmt"
-	"regexp"
-	"strings"
-	"sync"
 )
 
 var conf *util.Config
@@ -45,9 +38,9 @@ func init() {
 	registrar.RegisterParams(blockchain, GetParams)
 }
 
-// build builds out a fresh new beam test network
+// build builds out a fresh new prysm test network
 func build(tn *testnet.TestNet) error {
-	pConf, err := newConf(tn.LDD.Params)
+	_, err := newConf(tn.LDD.Params)
 	if err != nil {
 		return util.LogError(err)
 	}
