@@ -32,32 +32,33 @@ import (
 
 var conf *util.Config
 
+const blockchain = "plumtree"
+
 func init() {
 	conf = util.GetConfig()
-	blockchain := "plumtree"
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
-	registrar.RegisterServices(blockchain, GetServices)
-	registrar.RegisterDefaults(blockchain, GetDefaults)
-	registrar.RegisterParams(blockchain, GetParams)
+	registrar.RegisterServices(blockchain, getServices)
+	registrar.RegisterDefaults(blockchain, getDefaults)
+	registrar.RegisterParams(blockchain, getParams)
 	registrar.RegisterAdditionalLogs(blockchain, map[string]string{
 		"json": "/plumtree/data/log.json"})
 }
 
-func GetParams() string {
-	dat, err := helpers.GetStaticBlockchainConfig("plumtree", "params.json")
+func getParams() string {
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
 	return string(dat)
 }
 
-func GetServices() []util.Service {
+func getServices() []util.Service {
 	return nil
 }
 
-func GetDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig("plumtree", "defaults.json")
+func getDefaults() string {
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}

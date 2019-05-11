@@ -34,18 +34,19 @@ import (
 
 var conf *util.Config
 
+const blockchain = "eos"
+
 func init() {
 	conf = util.GetConfig()
-	blockchain := "eos"
-	registrar.RegisterBuild(blockchain, Build)
+	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, Add)
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
 	registrar.RegisterParams(blockchain, GetParams)
 }
 
-// Build builds out a fresh new eos test network using geth
-func Build(tn *testnet.TestNet) error {
+// build builds out a fresh new eos test network using geth
+func build(tn *testnet.TestNet) error {
 	clients := tn.GetFlatClients()
 	if tn.LDD.Nodes < 2 {
 		return fmt.Errorf("cannot build network with less than 2 nodes")
@@ -101,7 +102,7 @@ func Build(tn *testnet.TestNet) error {
 		}
 		keyPair := strings.Split(data, "\n")
 		if len(data) < 10 {
-			return util.KeyPair{}, fmt.Errorf("unexpected create key output %s\n", keyPair)
+			return util.KeyPair{}, fmt.Errorf("unexpected create key output %s", keyPair)
 		}
 		return util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]}, nil
 	})

@@ -20,6 +20,8 @@
 package geth
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/Whiteblock/genesis/blockchains/ethereum"
 	"github.com/Whiteblock/genesis/blockchains/helpers"
 	"github.com/Whiteblock/genesis/blockchains/registrar"
@@ -27,8 +29,6 @@ import (
 	"github.com/Whiteblock/genesis/ssh"
 	"github.com/Whiteblock/genesis/testnet"
 	"github.com/Whiteblock/genesis/util"
-	"encoding/json"
-	"fmt"
 	"github.com/Whiteblock/mustache"
 	"sync"
 )

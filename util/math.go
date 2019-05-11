@@ -19,7 +19,7 @@
 package util
 
 import (
-	"errors"
+	"fmt"
 	"math"
 	"math/rand"
 	"time"
@@ -57,11 +57,11 @@ func Distances(pnts []Point) [][]float64 {
 // among nodes.
 func Distribute(nodes []string, dist []int) ([][]string, error) {
 	if len(nodes) < 2 {
-		return nil, errors.New("cannot distribute a series smaller than 1")
+		return nil, fmt.Errorf("cannot distribute a series smaller than 1")
 	}
 	for _, d := range dist {
 		if d >= len(nodes) {
-			return nil, errors.New("cannot distribute among more nodes than those that are provided")
+			return nil, fmt.Errorf("cannot distribute among more nodes than those that are provided")
 		}
 	}
 	s1 := rand.NewSource(time.Now().UnixNano())
@@ -123,10 +123,10 @@ func GenerateworstCaseNetwork(nodes int) [][]int {
 // that there is always a path between all the nodes
 func GenerateUniformRandMeshNetwork(nodes int, conns int) ([][]int, error) {
 	if conns < 1 {
-		return nil, errors.New("each node must have at least one connection")
+		return nil, fmt.Errorf("each node must have at least one connection")
 	}
 	if conns >= nodes {
-		return nil, errors.New("too many connection to distribute without duplicates")
+		return nil, fmt.Errorf("too many connection to distribute without duplicates")
 	}
 	s1 := rand.NewSource(time.Now().UnixNano())
 	rng := rand.New(s1)
@@ -142,6 +142,79 @@ func GenerateUniformRandMeshNetwork(nodes int, conns int) ([][]int, error) {
 					add = false
 					break
 				}
+			}
+			if node == i {
+				j--
+				continue
+			}
+			if add {
+				out[i] = append(out[i], node)
+			}
+		}
+	}
+	return out, nil
+}
+
+// GenerateNoDuplicateMeshNetwork generates a random mesh network that ensures
+// that peering there is always a path between all the nodes, without any duplication.
+// That is, if 1 contains 3, 3 won't contain 1 by elimination
+func GenerateNoDuplicateMeshNetwork(nodes int, conns int) ([][]int, error) {
+	out, err := GenerateUniformRandMeshNetwork(nodes, conns)
+	if err != nil {
+		return nil, err
+	}
+	for i := range out {
+		for j := 0; j < len(out[i]); j++ {
+			remove := false
+			for _, k := range out[out[i][j]] {
+				if k == i {
+					remove = true
+					break
+				}
+			}
+			if remove {
+				out[i] = append(out[i][:j], out[i][j+1:]...)
+			}
+		}
+	}
+	return out, nil
+}
+
+// GenerateDependentMeshNetwork generates a random mesh network that ensures
+// the if built in order, each node will be given a list of peers which is already up and running.
+// Note: This means that the first node will have an empty list
+func GenerateDependentMeshNetwork(nodes int, conns int) ([][]int, error) {
+	if conns < 1 {
+		return nil, fmt.Errorf("each node must have at least one connection")
+	}
+	if conns >= nodes {
+		return nil, fmt.Errorf("too many connection to distribute without duplicates")
+	}
+	s1 := rand.NewSource(time.Now().UnixNano())
+	rng := rand.New(s1)
+	out := make([][]int, nodes)
+	nodeToEnsure := 0
+	for i := 0; i < nodes; i++ {
+		for j := 1; j <= conns && j <= i; j++ {
+			var node int
+			if nodeToEnsure < nodes {
+				node = nodeToEnsure
+				nodeToEnsure++
+			} else {
+				node = rng.Intn(i)
+			}
+
+			add := true
+			for _, node2 := range out[i] {
+				if node == node2 {
+					j--
+					add = false
+					break
+				}
+			}
+			if node == i {
+				j--
+				continue
 			}
 			if add {
 				out[i] = append(out[i], node)

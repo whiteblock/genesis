@@ -16,8 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package libp2pTest handles libp2pTest specific functionality
-package libp2pTest
+//Package libp2ptest handles libp2ptest specific functionality
+package libp2ptest
 
 import (
 	"encoding/json"
@@ -73,21 +73,21 @@ func build(tn *testnet.TestNet) error {
 		}
 		matches := re.FindAllString(res, 1)
 		if len(matches) == 0 {
-			return fmt.Errorf("Unexpected Result\n %s\n", res)
+			return fmt.Errorf("unexpected Result: %s", res)
 		}
 		var peer serialPeerInfo
 		err = json.Unmarshal([]byte(matches[0]), &peer)
 		if err != nil {
 			return util.LogError(err)
 		}
-		fmt.Printf("PEER=%#v\n", peer)
+		//fmt.Printf("PEER=%#v\n", peer)
 		mux.Lock()
 		peers[node.GetAbsoluteNumber()] = peer
 		mux.Unlock()
 		return nil
 	})
 
-	mesh, err := util.GenerateUniformRandMeshNetwork(tn.LDD.Nodes, testConf.Connections)
+	mesh, err := util.GenerateDependentMeshNetwork(tn.LDD.Nodes, testConf.Connections)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -105,7 +105,7 @@ func build(tn *testnet.TestNet) error {
 			"--file /p2p-tests/static-peers.json --pubsubRouter %s",
 			node.GetAbsoluteNumber()+1, node.GetIP(), testConf.Router)
 		if node.GetAbsoluteNumber() == 0 { //make node 0 the sending node
-			cmd += fmt.Sprintf("--send-interval %d", testConf.Interval)
+			cmd += fmt.Sprintf(" --send-interval %d", testConf.Interval)
 		}
 		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s 2>&1 | tee %s'", cmd, conf.DockerOutputFile))
 		return err
