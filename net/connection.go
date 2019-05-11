@@ -54,7 +54,7 @@ func (mesh *Connections) RemoveAll(conns []Connection) {
 }
 
 func findPossiblePeers(cons [][]bool, node int) []int {
-	out := make([]int, 0)
+	var out []int
 
 	for i, con := range cons[node] {
 		if node == i {
@@ -73,7 +73,7 @@ func filterPeers(peers []int, alreadyDone []int) []int {
 		return peers
 	}
 
-	out := make([]int, 0)
+	var out []int
 
 	for _, peer := range peers {
 		if !containsPeer(alreadyDone, peer) {
