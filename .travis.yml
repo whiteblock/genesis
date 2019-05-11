@@ -8,5 +8,5 @@ matrix:
       sudo: required
       go: 1.12.x
       script:
-        - go test
+        - go test ./...
         - golint ./...
