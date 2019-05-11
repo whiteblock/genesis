@@ -38,6 +38,7 @@ import (
 	_ "github.com/Whiteblock/genesis/blockchains/cosmos"
 	_ "github.com/Whiteblock/genesis/blockchains/eos"
 	_ "github.com/Whiteblock/genesis/blockchains/geth"
+	_ "github.com/Whiteblock/genesis/blockchains/libp2p-test"
 	_ "github.com/Whiteblock/genesis/blockchains/pantheon"
 	_ "github.com/Whiteblock/genesis/blockchains/parity"
 	_ "github.com/Whiteblock/genesis/blockchains/plumtree"
