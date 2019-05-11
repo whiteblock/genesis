@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -25,10 +25,10 @@ import (
 	"net/http"
 	//"strings"
 
-	"github.com/Whiteblock/genesis/util"
+	"github.com/whiteblock/genesis/util"
 	//"crypto/x509"
 	//"encoding/pem"
-	//"github.com/Whiteblock/jwt-go"
+	//"github.com/whiteblock/jwt-go"
 )
 
 const allowNoKeyAcess = true

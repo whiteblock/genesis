@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,12 +19,12 @@
 package deploy
 
 import (
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/docker"
-	netem "github.com/Whiteblock/genesis/net"
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/docker"
+	netem "github.com/whiteblock/genesis/net"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/testnet"
 )
 
 // PurgeTestNetwork goes into each given ssh client and removes all the nodes and the networks.

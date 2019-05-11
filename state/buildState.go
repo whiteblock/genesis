@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -22,7 +22,7 @@ package state
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/db"
 	"io/ioutil"
 	"log"
 	"os"

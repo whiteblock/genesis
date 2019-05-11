@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -20,8 +20,8 @@ package pantheon
 
 import (
 	"encoding/json"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/util"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/util"
 )
 
 type panConf struct {
