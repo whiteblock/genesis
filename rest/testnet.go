@@ -320,5 +320,5 @@ func killNode(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	w.Write([]byte(fmt.Sprintf("Killed node %d", params["node"])))
+	w.Write([]byte(fmt.Sprintf("Killed node %s", params["node"])))
 }
