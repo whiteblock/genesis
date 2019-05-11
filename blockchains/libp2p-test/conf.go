@@ -16,42 +16,21 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package beam
+package libp2pTest
 
 import (
+	"encoding/json"
 	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/db"
 	"github.com/Whiteblock/genesis/util"
-	"github.com/Whiteblock/mustache"
 )
 
-type beamConf struct {
-	Validators int64 `json:"validators"`
-	TxNodes    int64 `json:"txNodes"`
-	NilNodes   int64 `json:"nilNodes"`
+type libp2pTestConf struct {
+	Router      string `json:"router"`
+	Connections int    `json:"connections"`
+	Interval    int    `json:"interval"`
 }
 
-func newConf(data map[string]interface{}) (*beamConf, error) {
-	out := new(beamConf)
-
-	err := util.GetJSONInt64(data, "validators", &out.Validators)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "txNodes", &out.TxNodes)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "nilNodes", &out.NilNodes)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// GetParams fetchs beam related parameters
+// GetParams fetchs libp2p test related parameters
 func GetParams() string {
 
 	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
@@ -61,7 +40,7 @@ func GetParams() string {
 	return string(dat)
 }
 
-// GetDefaults fetchs beam related parameter defaults
+// GetDefaults fetchs libp2p test related parameter defaults
 func GetDefaults() string {
 	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
 	if err != nil {
@@ -70,21 +49,17 @@ func GetDefaults() string {
 	return string(dat)
 }
 
-// GetServices returns the services which are used by artemis
-func GetServices() []util.Service {
-	return nil
-}
-
-func makeNodeConfig(bconf *beamConf, keyOwner string, keyMine string, details *db.DeploymentDetails, node int) (string, error) {
-
-	filler := util.ConvertToStringMap(map[string]interface{}{
-		"keyOwner": keyOwner,
-		"keyMine":  keyMine,
-	})
-	dat, err := helpers.GetBlockchainConfig("beam", node, "beam-node.cfg.mustache", details)
-	if err != nil {
-		return "", err
+func newConf(data map[string]interface{}) (*libp2pTestConf, error) {
+	out := new(libp2pTestConf)
+	err := json.Unmarshal([]byte(GetDefaults()), out)
+	if data == nil {
+		return out, util.LogError(err)
 	}
-	data, err := mustache.Render(string(dat), filler)
-	return data, err
+	tmp, err := json.Marshal(data)
+	if err != nil {
+		return nil, util.LogError(err)
+	}
+	err = json.Unmarshal(tmp, out)
+
+	return out, err
 }

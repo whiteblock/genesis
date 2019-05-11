@@ -1,0 +1,12 @@
+language: go
+go_import_path: github.com/whiteblock/genesis
+sudo: false
+matrix:
+  include:
+    - os: linux
+      dist: xenial
+      sudo: required
+      go: 1.12.x
+      script:
+        - go test
+        - golint ./... ./blockchains/... ./sidecars/...

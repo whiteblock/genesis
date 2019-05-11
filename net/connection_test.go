@@ -20,7 +20,7 @@ func Test_NewConnections(t *testing.T) {
 func Test_RemoveAll(t *testing.T) {
 	mesh := Connections{[][]bool{{true, true, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, true, true}}}
 	con1 := Connection{To: 2, From: 3}
-	con2:= Connection{To: 1, From: 0}
+	con2 := Connection{To: 1, From: 0}
 
 	conns := []Connection{con1, con2}
 

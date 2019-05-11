@@ -34,9 +34,11 @@ import (
 
 var conf *util.Config
 
+const blockchain = "beam"
+
 func init() {
 	conf = util.GetConfig()
-	blockchain := "beam"
+
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
@@ -99,20 +101,19 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Creating node configuration files")
 
 	/**Create node config files**/
-	err = helpers.CreateConfigs(tn, "/beam/beam-node.cfg",
-		func(node ssh.Node) ([]byte, error) {
-			ipsCpy := make([]string, len(ips))
-			copy(ipsCpy, ips)
-			beamNodeConfig, err := makeNodeConfig(bConf, ownerKeys[node.GetAbsoluteNumber()],
-				secretMinerKeys[node.GetAbsoluteNumber()], tn.LDD, node.GetAbsoluteNumber())
-			if err != nil {
-				return nil, util.LogError(err)
-			}
-			for _, ip := range append(ipsCpy[:node.GetAbsoluteNumber()], ipsCpy[node.GetAbsoluteNumber()+1:]...) {
-				beamNodeConfig += fmt.Sprintf("peer=%s:%d\n", ip, port)
-			}
-			return []byte(beamNodeConfig), nil
-		})
+	err = helpers.CreateConfigs(tn, "/beam/beam-node.cfg", func(node ssh.Node) ([]byte, error) {
+		ipsCpy := make([]string, len(ips))
+		copy(ipsCpy, ips)
+		beamNodeConfig, err := makeNodeConfig(bConf, ownerKeys[node.GetAbsoluteNumber()],
+			secretMinerKeys[node.GetAbsoluteNumber()], tn.LDD, node.GetAbsoluteNumber())
+		if err != nil {
+			return nil, util.LogError(err)
+		}
+		for _, ip := range append(ipsCpy[:node.GetAbsoluteNumber()], ipsCpy[node.GetAbsoluteNumber()+1:]...) {
+			beamNodeConfig += fmt.Sprintf("peer=%s:%d\n", ip, port)
+		}
+		return []byte(beamNodeConfig), nil
+	})
 	if err != nil {
 		return util.LogError(err)
 	}
