@@ -8,7 +8,7 @@ matrix:
       sudo: required
       go: 1.12.x
       install:
-        - sudo apt-get install golint
+        - sudo apt-get install golint -y
       script:
         - go test ./...
         - golint ./...
