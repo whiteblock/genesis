@@ -2,6 +2,7 @@ package netconf
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -34,15 +35,22 @@ func Test_RemoveAll(t *testing.T) {
 }
 
 func Test_findPossiblePeers(t *testing.T) {
-	cons := [][]bool{{false, true, true}, {true, true, true}, {false, false, false}, {true, false, true}}
-	node := 1
+	var test = []struct {
+		cons     [][]bool
+		node     int
+		expected []int
+	}{
+		{[][]bool{{false, true, true}, {true, true, true}, {false, false, false}, {true, false, true}}, 1, []int{0, 2}},
+		{[][]bool{{false, true, true}, {false, true, true}, {true, true, true}, {true, false, true}}, 2, []int{0, 1}},
+		{[][]bool{{true, true, true}, {true, false, true}, {false, false, false}, {true, false, true}}, 0, []int{1, 2}},
+	}
 
-	out := findPossiblePeers(cons, node)
-
-	expected := []int{0, 2}
-
-	if !reflect.DeepEqual(out, expected) {
-		t.Errorf("return value of findPossiblePeers did not match expected value")
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(findPossiblePeers(tt.cons, tt.node), tt.expected) {
+				t.Errorf("return value of findPossiblePeers did not match expected value")
+			}
+		})
 	}
 }
 
@@ -58,7 +66,7 @@ func Test_filterPeers(t *testing.T) {
 	}
 
 	for i, tt := range test {
-		t.Run(string(i), func(t *testing.T) {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			if !reflect.DeepEqual(filterPeers(tt.peers, tt.already), tt.expected) {
 				t.Errorf("return value of filterPeers did not match expected value")
 			}
@@ -78,7 +86,7 @@ func Test_mergeUniquePeers(t *testing.T) {
 	}
 
 	for i, tt := range test {
-		t.Run(string(i), func(t *testing.T) {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			if !reflect.DeepEqual(mergeUniquePeers(tt.peers1, tt.peers2), tt.expected) {
 				t.Errorf("return value of mergeUniquePeers did not match expected value")
 			}
@@ -98,7 +106,7 @@ func Test_containsPeer(t *testing.T) {
 	}
 
 	for i, tt := range test {
-		t.Run(string(i), func(t *testing.T) {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			if !containsPeer(tt.peers, tt.validPeer) {
 				t.Errorf("return value of containsPeer did not match expected value")
 			}
