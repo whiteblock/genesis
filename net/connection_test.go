@@ -7,30 +7,54 @@ import (
 )
 
 func Test_NewConnections(t *testing.T) {
-	nodes := 2
+	var test = []struct {
+		nodes    int
+		expected [][]bool
+	}{
+		{2, [][]bool{{true, true}, {true, true}}},
+		{1, [][]bool{{true}}},
+		{3, [][]bool{{true, true, true}, {true, true, true}, {true, true, true}}},
+	}
 
-	out := NewConnections(nodes)
-
-	expected := [][]bool{{true, true}, {true, true}}
-
-	if !reflect.DeepEqual(out.cons, expected) {
-		t.Errorf("return value of NewConnections does not match expected value")
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual((NewConnections(tt.nodes)).cons, tt.expected) {
+				t.Errorf("return value of NewConnections does not match expected value")
+			}
+		})
 	}
 }
 
 func Test_RemoveAll(t *testing.T) {
-	mesh := Connections{[][]bool{{true, true, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, true, true}}}
-	con1 := Connection{To: 2, From: 3}
-	con2 := Connection{To: 1, From: 0}
+	var test = []struct {
+		mesh     Connections
+		conns    []Connection
+		expected Connections
+	}{
+		{
+			Connections{[][]bool{{true, true, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, true, true}}},
+			[]Connection{{2, 3}, {1, 0}},
+			Connections{[][]bool{{true, false, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, false, true}}},
+		},
+		{
+			Connections{[][]bool{{true, true, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, true, true}}},
+			[]Connection{{3, 2}, {0, 1}},
+			Connections{[][]bool{{true, true, true, true}, {false, true, true, true}, {true, true, true, false}, {true, true, true, true}}},
+		},
+		{
+			Connections{[][]bool{{true, true, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, true, true}}},
+			[]Connection{{2, 3}, {1, 0}, {3, 1}, {2, 0}},
+			Connections{[][]bool{{true, false, false, true}, {true, true, true, false}, {true, true, true, true}, {true, true, false, true}}},
+		},
+	}
 
-	conns := []Connection{con1, con2}
-
-	mesh.RemoveAll(conns)
-
-	expected := Connections{[][]bool{{true, false, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, false, true}}}
-
-	if !reflect.DeepEqual(mesh.cons, expected.cons) {
-		t.Errorf("not all expected values were removed")
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			tt.mesh.RemoveAll(tt.conns)
+			if !reflect.DeepEqual(tt.mesh.cons, tt.expected) {
+				t.Errorf("not all expected values were removed")
+			}
+		})
 	}
 }
 
@@ -119,13 +143,20 @@ func Test_containsPeer(t *testing.T) {
 }
 
 func Test_Networks(t *testing.T) {
-	mesh := Connections{[][]bool{{true, true, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, true, true}}}
+	var test = []struct {
+		mesh     Connections
+		expected [][]int
+	}{
+		{Connections{[][]bool{{true, true, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, true, true}}}, [][]int{{0, 1, 2, 3}}},
+		{Connections{[][]bool{{true, true}, {true, true}}}, [][]int{{0, 1}}},
+		{Connections{[][]bool{{true, true, true}, {true, true, true}, {true, true, true}}}, [][]int{{0, 1, 2}}},
+	}
 
-	out := mesh.Networks()
-
-	expected := [][]int{{0, 1, 2, 3}}
-
-	if !reflect.DeepEqual(out, expected) {
-		t.Errorf("return value of Networks does not match expected value")
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(tt.mesh.Networks(), tt.expected) {
+				t.Errorf("return value of Networks does not match expected value")
+			}
+		})
 	}
 }
