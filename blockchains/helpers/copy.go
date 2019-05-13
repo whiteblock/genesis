@@ -120,9 +120,12 @@ func CopyToAllNewNodesSC(ad *testnet.Adjunct, srcDst ...string) error {
 func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, dataDst ...string) error {
 	fmted := []string{}
 	for i := 0; i < len(dataDst)/2; i++ {
-		tmpFilename := util.GetUUIDString()
+		tmpFilename, err := util.GetUUIDString()
+		if err != nil {
+			return util.LogError(err)
+		}
 
-		tn.BuildState.Write(tmpFilename, dataDst[i*2])
+		err = tn.BuildState.Write(tmpFilename, dataDst[i*2])
 		fmted = append(fmted, tmpFilename)
 		fmted = append(fmted, dataDst[i*2+1])
 	}
@@ -152,9 +155,14 @@ func CopyBytesToAllNewNodesSC(ad *testnet.Adjunct, dataDst ...string) error {
 
 // SingleCp copies over data to the given dest on node localNodeID.
 func SingleCp(client *ssh.Client, buildState *state.BuildState, node ssh.Node, data []byte, dest string) error {
-	tmpFilename := util.GetUUIDString()
+	tmpFilename, err := util.GetUUIDString()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 
-	err := buildState.Write(tmpFilename, string(data))
+	err = buildState.Write(tmpFilename, string(data))
+
 	if err != nil {
 		log.Println(err)
 		return err

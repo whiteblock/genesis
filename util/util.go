@@ -134,8 +134,9 @@ func GetKidFromJwt(jwt string) (string, error) {
 }
 
 //GetUUIDString generates a new UUID
-func GetUUIDString() string {
-	return uuid.NewV4().String()
+func GetUUIDString() (string, error) {
+	uid, err := uuid.NewV4()
+	return uid.String(), err
 }
 
 /****Basic Linux Functions****/
