@@ -16,73 +16,54 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package plumtree handles plumtree specific functionality
-package plumtree
+//Package lighthouse handles lighthouse specific functionality
+package lighthouse
 
 import (
 	"fmt"
-
 	"github.com/whiteblock/genesis/blockchains/helpers"
-	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 )
 
 var conf *util.Config
 
-const blockchain = "plumtree"
+const blockchain = "lighthouse"
 
 func init() {
 	conf = util.GetConfig()
+
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
-	registrar.RegisterServices(blockchain, getServices)
-	registrar.RegisterDefaults(blockchain, getDefaults)
-	registrar.RegisterParams(blockchain, getParams)
-	registrar.RegisterAdditionalLogs(blockchain, map[string]string{
-		"json": "/plumtree/data/log.json"})
+	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterParams(blockchain, GetParams)
 }
 
-func getParams() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
-}
-
-func getServices() []util.Service {
-	return nil
-}
-
-func getDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
-}
-
-// build builds out a fresh new plumtree test network
+// build builds out a fresh new lighthouse test network
 func build(tn *testnet.TestNet) error {
-
-	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 1))
+	_, err := newConf(tn.LDD.Params)
+	if err != nil {
+		return util.LogError(err)
+	}
+	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
 
 	port := 9000
 	peers := ""
 	var peer string
 	for i, node := range tn.Nodes {
-		peer = fmt.Sprintf("tcp://whiteblock-node%d@%s:%d",
+		peer = fmt.Sprintf("/dns4/whiteblock-node%d@%s/tcp/%d",
 			node.LocalID,
 			node.IP,
 			port,
 		)
 		if i != len(tn.Nodes)-1 {
-			peers = peers + " " + peer + " "
+			peers = peers + " --peer=" + peer + " "
 		} else {
-			peers = peers + " " + peer
+			peers = peers + " --peer=" + peer
 		}
 		tn.BuildState.IncrementBuildProgress()
 	}
@@ -90,11 +71,11 @@ func build(tn *testnet.TestNet) error {
 	peers = peers
 	fmt.Println(peers)
 
-	tn.BuildState.SetBuildStage("Starting plumtree")
-	err := helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	tn.BuildState.SetBuildStage("Starting lighthouse")
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 
-		artemisCmd := "gossip -n 0.0.0.0 -l 9000 -r 9001 -m /plumtree/data/log.json --peer=" + peers + " 2>&1 | tee /output.log"
+		artemisCmd := "lighthouse --listen-address 0.0.0.0 --port 9000 " + peers + " 2>&1 | tee /output.log"
 
 		_, err := client.DockerExecd(node, "tmux new -s whiteblock -d")
 		if err != nil {
@@ -111,8 +92,7 @@ func build(tn *testnet.TestNet) error {
 	return nil
 }
 
-// Add handles adding a node to the plumtree testnet
-// TODO
+// add handles adding nodes to the testnet
 func add(tn *testnet.TestNet) error {
 	return nil
 }
