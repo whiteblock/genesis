@@ -61,6 +61,7 @@ func AddNodes(tn *testnet.TestNet) error {
 		if err != nil {
 			return util.LogError(err)
 		}
+
 		nodeIP, err := util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes), 0)
 		if err != nil {
 			return util.LogError(err)

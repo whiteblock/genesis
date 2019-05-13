@@ -84,6 +84,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		log.Println(err)
 		return err
 	}
+
 	tn.BuildState.SetBuildStage("Building your custom image")
 	imageName := fmt.Sprintf("%s:%s", tn.LDD.Blockchain, tag)
 	wg := sync.WaitGroup{}
