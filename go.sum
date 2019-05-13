@@ -30,6 +30,8 @@ github.com/whiteblock/genesis v1.7.2 h1:gcWBMhAQrwNz2ynRmVKAC58yDf4eTgA5ZN46Zer1
 github.com/whiteblock/genesis v1.7.2/go.mod h1:fvzT0CU7YZ2O1Mw03jCu09cla4quKq2Yp0tZMpN5Xdc=
 github.com/whiteblock/go.uuid v1.2.0 h1:nKUX9k+2kGnSapBJMIJ4RpmVhTS9H9mckOy7Bevhzvc=
 github.com/whiteblock/go.uuid v1.2.0/go.mod h1:J0Y9qymnDEwrdEFeIzpsul8Ye1jzfPoW3JDJVx8hdGM=
+github.com/whiteblock/go.uuid v1.2.1 h1:prUjjtzVGGZ0A1Jt3yGxFIdTD69u9FGwaU3e73xqFeI=
+github.com/whiteblock/go.uuid v1.2.1/go.mod h1:J0Y9qymnDEwrdEFeIzpsul8Ye1jzfPoW3JDJVx8hdGM=
 github.com/whiteblock/mustache v1.0.1 h1:bQO8cVeLjeRKh2QMSbR8XKgJ0nhoAnSWAlr1zwhKBJg=
 github.com/whiteblock/mustache v1.0.1/go.mod h1:bjVUIB8ltmU2nsrbcs1RUv4VplHODtINZiyiBqlMWxA=
 github.com/whiteblock/scp v0.0.0-20190401151346-3a0c9dc7020d h1:AgpMrbp5L9VagzSdD/ESzDErWyZ8DeRv85x3oeMeq+w=
