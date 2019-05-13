@@ -104,7 +104,7 @@ func build(tn *testnet.TestNet) error {
 		cmd := fmt.Sprintf("/p2p-tests/p2p-tests --seed %d --hostAddrs /ip4/%s/tcp/39977 "+
 			"--file /p2p-tests/static-peers.json --pubsubRouter %s",
 			node.GetAbsoluteNumber()+1, node.GetIP(), testConf.Router)
-		if node.GetAbsoluteNumber() == 0 { //make node 0 the sending node
+		if node.GetAbsoluteNumber() < testConf.Senders { //make node 0 the sending node
 			cmd += fmt.Sprintf(" --send-interval %d", testConf.Interval)
 		}
 		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s 2>&1 | tee %s'", cmd, conf.DockerOutputFile))

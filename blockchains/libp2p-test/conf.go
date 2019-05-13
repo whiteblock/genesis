@@ -28,6 +28,7 @@ type libp2pTestConf struct {
 	Router      string `json:"router"`
 	Connections int    `json:"connections"`
 	Interval    int    `json:"interval"`
+	Senders     int    `json:"senders"`
 }
 
 // GetParams fetchs libp2p test related parameters

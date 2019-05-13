@@ -1,5 +1,6 @@
 [
     ["router","string"],
     ["connections","int"],
-    ["interval","int"]
+    ["interval","int"],
+    ["senders","int"]
 ]
