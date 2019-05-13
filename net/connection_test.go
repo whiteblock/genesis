@@ -46,7 +46,7 @@ func Test_RemoveAll(t *testing.T) {
 			[]Connection{{2, 3}, {1, 0}, {3, 1}, {2, 0}},
 			[][]bool{{true, false, false, true}, {true, true, true, false}, {true, true, true, true}, {true, true, false, true}},
 		},
-	}i
+	}
 
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
