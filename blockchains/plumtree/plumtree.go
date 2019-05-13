@@ -68,7 +68,7 @@ func getDefaults() string {
 // build builds out a fresh new plumtree test network
 func build(tn *testnet.TestNet) error {
 
-	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
+	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 1))
 
 	port := 9000
 	peers := ""
