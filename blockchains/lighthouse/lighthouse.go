@@ -22,9 +22,9 @@ package lighthouse
 import (
 	"fmt"
 	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
-	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 )

@@ -24,6 +24,7 @@ import (
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
+	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"sync"
@@ -199,10 +200,10 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 
 	for _, client := range tn.Clients {
 		wg.Add(1)
-		go func() {
+		go func(client *ssh.Client) {
 			defer wg.Done()
 			client.Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
-		}()
+		}(client)
 
 	}
 	distributeNibbler(tn)
