@@ -26,7 +26,7 @@ import (
 	"github.com/whiteblock/genesis/util"
 )
 
-//Node represents a node within the network
+// Node represents a node within the network
 type Node struct {
 	ID string `json:"id"`
 
@@ -43,9 +43,8 @@ type Node struct {
 	   LocalId is the number of the node in the testnet
 	*/
 	LocalID int `json:"localId"`
-	/*
-	   IP is the ip address of the node
-	*/
+
+	// IP is the ip address of the node
 	IP string `json:"ip"`
 	/*
 	   Label is the string given to the node by the build process
@@ -87,7 +86,7 @@ func (n Node) GetNodeName() string {
 	return fmt.Sprintf("%s%d", conf.NodePrefix, n.AbsoluteNum)
 }
 
-//GetAllNodesByServer gets all nodes that have ever existed on a server
+// GetAllNodesByServer gets all nodes that have ever existed on a server
 func GetAllNodesByServer(serverID int) ([]Node, error) {
 
 	rows, err := db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s WHERE server = %d", NodesTable, serverID))
@@ -108,7 +107,7 @@ func GetAllNodesByServer(serverID int) ([]Node, error) {
 	return nodes, nil
 }
 
-//GetAllNodesByTestNet gets all the nodes which are in the given testnet
+// GetAllNodesByTestNet gets all the nodes which are in the given testnet
 func GetAllNodesByTestNet(testID string) ([]Node, error) {
 	nodes := []Node{}
 
@@ -129,7 +128,7 @@ func GetAllNodesByTestNet(testID string) ([]Node, error) {
 	return nodes, nil
 }
 
-//GetAllNodes gets every node that has ever existed.
+// GetAllNodes gets every node that has ever existed.
 func GetAllNodes() ([]Node, error) {
 
 	rows, err := db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s", NodesTable))
@@ -150,7 +149,7 @@ func GetAllNodes() ([]Node, error) {
 	return nodes, nil
 }
 
-//GetNode fetches a node by id
+// GetNode fetches a node by id
 func GetNode(id string) (Node, error) {
 
 	row := db.QueryRow(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s WHERE id = %s", NodesTable, id))
@@ -165,7 +164,7 @@ func GetNode(id string) (Node, error) {
 	return node, nil
 }
 
-//InsertNode inserts a node into the database
+// InsertNode inserts a node into the database
 func InsertNode(node Node) (int, error) {
 
 	tx, err := db.Begin()
@@ -207,7 +206,7 @@ func DeleteNodesByTestNet(id string) error {
 	return err
 }
 
-//DeleteNodesByServer delete all nodes which have ever been on a given server.
+// DeleteNodesByServer delete all nodes which have ever been on a given server.
 func DeleteNodesByServer(id string) error {
 
 	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE server = %s", NodesTable, id))
@@ -227,7 +226,7 @@ func GetNodeByLocalID(nodes []Node, localID int) (Node, error) {
 	return Node{}, errors.New("node not found")
 }
 
-//GetNodeByAbsNum finds a node based on its absolute node number
+// GetNodeByAbsNum finds a node based on its absolute node number
 func GetNodeByAbsNum(nodes []Node, absNum int) (Node, error) {
 	for _, node := range nodes {
 		if node.AbsoluteNum == absNum {
@@ -237,8 +236,8 @@ func GetNodeByAbsNum(nodes []Node, absNum int) (Node, error) {
 	return Node{}, errors.New("node not found")
 }
 
-//DivideNodesByAbsMatch spits the given nodes into nodes which have their absnum in the
-//given nodeNums and those who don't
+// DivideNodesByAbsMatch spits the given nodes into nodes which have their absnum in the
+// given nodeNums and those who don't
 func DivideNodesByAbsMatch(nodes []Node, nodeNums []int) ([]Node, []Node, error) {
 	matches := []Node{}
 	notMatches := make([]Node, len(nodes))
@@ -272,7 +271,7 @@ func DivideNodesByAbsMatch(nodes []Node, nodeNums []int) ([]Node, []Node, error)
 	return matches, notMatches, nil
 }
 
-//GetUniqueServerIDs extracts the unique server ids from a slice of Node
+// GetUniqueServerIDs extracts the unique server ids from a slice of Node
 func GetUniqueServerIDs(nodes []Node) []int {
 	out := []int{}
 	for _, node := range nodes {
