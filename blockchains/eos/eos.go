@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -21,12 +21,12 @@ package eos
 
 import (
 	"fmt"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/blockchains/registrar"
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 	"math/rand"
 	"strings"
 	"sync"
@@ -34,18 +34,19 @@ import (
 
 var conf *util.Config
 
+const blockchain = "eos"
+
 func init() {
 	conf = util.GetConfig()
-	blockchain := "eos"
-	registrar.RegisterBuild(blockchain, Build)
+	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, Add)
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
 	registrar.RegisterParams(blockchain, GetParams)
 }
 
-// Build builds out a fresh new eos test network using geth
-func Build(tn *testnet.TestNet) error {
+// build builds out a fresh new eos test network using geth
+func build(tn *testnet.TestNet) error {
 	clients := tn.GetFlatClients()
 	if tn.LDD.Nodes < 2 {
 		return fmt.Errorf("cannot build network with less than 2 nodes")
@@ -101,7 +102,7 @@ func Build(tn *testnet.TestNet) error {
 		}
 		keyPair := strings.Split(data, "\n")
 		if len(data) < 10 {
-			return util.KeyPair{}, fmt.Errorf("unexpected create key output %s\n", keyPair)
+			return util.KeyPair{}, fmt.Errorf("unexpected create key output %s", keyPair)
 		}
 		return util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]}, nil
 	})

@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -21,12 +21,12 @@ package beam
 
 import (
 	"fmt"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/blockchains/registrar"
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 	"regexp"
 	"strings"
 	"sync"
@@ -34,9 +34,11 @@ import (
 
 var conf *util.Config
 
+const blockchain = "beam"
+
 func init() {
 	conf = util.GetConfig()
-	blockchain := "beam"
+
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
@@ -99,20 +101,19 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Creating node configuration files")
 
 	/**Create node config files**/
-	err = helpers.CreateConfigs(tn, "/beam/beam-node.cfg",
-		func(node ssh.Node) ([]byte, error) {
-			ipsCpy := make([]string, len(ips))
-			copy(ipsCpy, ips)
-			beamNodeConfig, err := makeNodeConfig(bConf, ownerKeys[node.GetAbsoluteNumber()],
-				secretMinerKeys[node.GetAbsoluteNumber()], tn.LDD, node.GetAbsoluteNumber())
-			if err != nil {
-				return nil, util.LogError(err)
-			}
-			for _, ip := range append(ipsCpy[:node.GetAbsoluteNumber()], ipsCpy[node.GetAbsoluteNumber()+1:]...) {
-				beamNodeConfig += fmt.Sprintf("peer=%s:%d\n", ip, port)
-			}
-			return []byte(beamNodeConfig), nil
-		})
+	err = helpers.CreateConfigs(tn, "/beam/beam-node.cfg", func(node ssh.Node) ([]byte, error) {
+		ipsCpy := make([]string, len(ips))
+		copy(ipsCpy, ips)
+		beamNodeConfig, err := makeNodeConfig(bConf, ownerKeys[node.GetAbsoluteNumber()],
+			secretMinerKeys[node.GetAbsoluteNumber()], tn.LDD, node.GetAbsoluteNumber())
+		if err != nil {
+			return nil, util.LogError(err)
+		}
+		for _, ip := range append(ipsCpy[:node.GetAbsoluteNumber()], ipsCpy[node.GetAbsoluteNumber()+1:]...) {
+			beamNodeConfig += fmt.Sprintf("peer=%s:%d\n", ip, port)
+		}
+		return []byte(beamNodeConfig), nil
+	})
 	if err != nil {
 		return util.LogError(err)
 	}

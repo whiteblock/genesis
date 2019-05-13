@@ -16,32 +16,50 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package cosmos
+package libp2ptest
 
 import (
+	"encoding/json"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/util"
 )
 
-// GetParams fetchs cosmos related parameters
+type libp2pTestConf struct {
+	Router      string `json:"router"`
+	Connections int    `json:"connections"`
+	Interval    int    `json:"interval"`
+}
+
+// GetParams fetchs libp2p test related parameters
 func GetParams() string {
-	dat, err := helpers.GetStaticBlockchainConfig("cosmos", "params.json")
+
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
 	return string(dat)
 }
 
-// GetDefaults fetchs cosmos related parameter defaults
+// GetDefaults fetchs libp2p test related parameter defaults
 func GetDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig("cosmos", "defaults.json")
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
 	return string(dat)
 }
 
-// GetServices returns the services which are used by cosmos
-func GetServices() []util.Service {
-	return nil
+func newConf(data map[string]interface{}) (*libp2pTestConf, error) {
+	out := new(libp2pTestConf)
+	err := json.Unmarshal([]byte(GetDefaults()), out)
+	if data == nil {
+		return out, util.LogError(err)
+	}
+	tmp, err := json.Marshal(data)
+	if err != nil {
+		return nil, util.LogError(err)
+	}
+	err = json.Unmarshal(tmp, out)
+
+	return out, err
 }

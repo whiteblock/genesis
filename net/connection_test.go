@@ -29,24 +29,24 @@ func Test_RemoveAll(t *testing.T) {
 	var test = []struct {
 		mesh     Connections
 		conns    []Connection
-		expected Connections
+		expected [][]bool
 	}{
 		{
 			Connections{[][]bool{{true, true, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, true, true}}},
 			[]Connection{{2, 3}, {1, 0}},
-			Connections{[][]bool{{true, false, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, false, true}}},
+			[][]bool{{true, false, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, false, true}},
 		},
 		{
 			Connections{[][]bool{{true, true, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, true, true}}},
 			[]Connection{{3, 2}, {0, 1}},
-			Connections{[][]bool{{true, true, true, true}, {false, true, true, true}, {true, true, true, false}, {true, true, true, true}}},
+			[][]bool{{true, true, true, true}, {false, true, true, true}, {true, true, true, false}, {true, true, true, true}},
 		},
 		{
 			Connections{[][]bool{{true, true, true, true}, {true, true, true, true}, {true, true, true, true}, {true, true, true, true}}},
 			[]Connection{{2, 3}, {1, 0}, {3, 1}, {2, 0}},
-			Connections{[][]bool{{true, false, false, true}, {true, true, true, false}, {true, true, true, true}, {true, true, false, true}}},
+			[][]bool{{true, false, false, true}, {true, true, true, false}, {true, true, true, true}, {true, true, false, true}},
 		},
-	}
+	}i
 
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {

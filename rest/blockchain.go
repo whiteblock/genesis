@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -21,13 +21,13 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Whiteblock/genesis/blockchains/registrar"
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/manager"
-	"github.com/Whiteblock/genesis/state"
-	"github.com/Whiteblock/genesis/status"
-	"github.com/Whiteblock/genesis/util"
 	"github.com/gorilla/mux"
+	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/manager"
+	"github.com/whiteblock/genesis/state"
+	"github.com/whiteblock/genesis/status"
+	"github.com/whiteblock/genesis/util"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -81,7 +81,7 @@ func getConfFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 400)
 		return
 	}
-	if strings.Contains(params["blockchain"], "github.com/Whiteblock/genesis") || strings.Contains(params["file"], "github.com/Whiteblock/genesis") {
+	if strings.Contains(params["blockchain"], "github.com/whiteblock/genesis") || strings.Contains(params["file"], "github.com/whiteblock/genesis") {
 		http.Error(w, "relative path operators not allowed", 401)
 		return
 	}

@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -20,10 +20,10 @@ package helpers
 
 import (
 	"fmt"
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/state"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/state"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 	"log"
 	"sync"
 )
@@ -120,11 +120,9 @@ func CopyToAllNewNodesSC(ad *testnet.Adjunct, srcDst ...string) error {
 func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, dataDst ...string) error {
 	fmted := []string{}
 	for i := 0; i < len(dataDst)/2; i++ {
-		tmpFilename, err := util.GetUUIDString()
-		if err != nil {
-			return util.LogError(err)
-		}
-		err = tn.BuildState.Write(tmpFilename, dataDst[i*2])
+		tmpFilename := util.GetUUIDString()
+
+		tn.BuildState.Write(tmpFilename, dataDst[i*2])
 		fmted = append(fmted, tmpFilename)
 		fmted = append(fmted, dataDst[i*2+1])
 	}
@@ -154,13 +152,9 @@ func CopyBytesToAllNewNodesSC(ad *testnet.Adjunct, dataDst ...string) error {
 
 // SingleCp copies over data to the given dest on node localNodeID.
 func SingleCp(client *ssh.Client, buildState *state.BuildState, node ssh.Node, data []byte, dest string) error {
-	tmpFilename, err := util.GetUUIDString()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
+	tmpFilename := util.GetUUIDString()
 
-	err = buildState.Write(tmpFilename, string(data))
+	err := buildState.Write(tmpFilename, string(data))
 	if err != nil {
 		log.Println(err)
 		return err

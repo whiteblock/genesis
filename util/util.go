@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -26,7 +26,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/Whiteblock/go.uuid"
+	"github.com/whiteblock/go.uuid"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -134,9 +134,8 @@ func GetKidFromJwt(jwt string) (string, error) {
 }
 
 //GetUUIDString generates a new UUID
-func GetUUIDString() (string, error) {
-	uid := uuid.NewV4()
-	return uid.String(), nil
+func GetUUIDString() string {
+	return uuid.NewV4().String()
 }
 
 /****Basic Linux Functions****/

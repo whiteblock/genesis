@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -23,32 +23,33 @@ package manager
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/blockchains/registrar"
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/deploy"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/deploy"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 	"log"
 	"sync"
 	//Put the relative path to your blockchain/sidecar library below this line, otherwise it won't be compiled
 	//blockchains
-	_ "github.com/Whiteblock/genesis/blockchains/artemis"
-	_ "github.com/Whiteblock/genesis/blockchains/beam"
-	_ "github.com/Whiteblock/genesis/blockchains/cosmos"
-	_ "github.com/Whiteblock/genesis/blockchains/eos"
-	_ "github.com/Whiteblock/genesis/blockchains/geth"
-	_ "github.com/Whiteblock/genesis/blockchains/pantheon"
-	_ "github.com/Whiteblock/genesis/blockchains/parity"
-	_ "github.com/Whiteblock/genesis/blockchains/plumtree"
-	_ "github.com/Whiteblock/genesis/blockchains/prysm"
-	_ "github.com/Whiteblock/genesis/blockchains/rchain"
-	_ "github.com/Whiteblock/genesis/blockchains/syscoin"
-	_ "github.com/Whiteblock/genesis/blockchains/tendermint"
+	_ "github.com/whiteblock/genesis/blockchains/artemis"
+	_ "github.com/whiteblock/genesis/blockchains/beam"
+	_ "github.com/whiteblock/genesis/blockchains/cosmos"
+	_ "github.com/whiteblock/genesis/blockchains/eos"
+	_ "github.com/whiteblock/genesis/blockchains/geth"
+	_ "github.com/whiteblock/genesis/blockchains/libp2p-test"
+	_ "github.com/whiteblock/genesis/blockchains/pantheon"
+	_ "github.com/whiteblock/genesis/blockchains/parity"
+	_ "github.com/whiteblock/genesis/blockchains/plumtree"
+	_ "github.com/whiteblock/genesis/blockchains/prysm"
+	_ "github.com/whiteblock/genesis/blockchains/rchain"
+	_ "github.com/whiteblock/genesis/blockchains/syscoin"
+	_ "github.com/whiteblock/genesis/blockchains/tendermint"
 
 	//side cars
-	_ "github.com/Whiteblock/genesis/sidecars/geth"
-	_ "github.com/Whiteblock/genesis/sidecars/orion"
+	_ "github.com/whiteblock/genesis/sidecars/geth"
+	_ "github.com/whiteblock/genesis/sidecars/orion"
 )
 
 var conf *util.Config

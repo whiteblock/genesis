@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,11 +19,10 @@
 package beam
 
 import (
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/util"
-	"github.com/Whiteblock/mustache"
-	"io/ioutil"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/util"
+	"github.com/whiteblock/mustache"
 )
 
 type beamConf struct {
@@ -54,7 +53,8 @@ func newConf(data map[string]interface{}) (*beamConf, error) {
 
 // GetParams fetchs beam related parameters
 func GetParams() string {
-	dat, err := ioutil.ReadFile("./resources/beam/params.json")
+
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -63,7 +63,7 @@ func GetParams() string {
 
 // GetDefaults fetchs beam related parameter defaults
 func GetDefaults() string {
-	dat, err := ioutil.ReadFile("./resources/beam/defaults.json")
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
