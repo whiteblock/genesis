@@ -124,6 +124,7 @@ func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, dataDst 
 		if err != nil {
 			return util.LogError(err)
 		}
+
 		err = tn.BuildState.Write(tmpFilename, dataDst[i*2])
 		fmted = append(fmted, tmpFilename)
 		fmted = append(fmted, dataDst[i*2+1])
@@ -161,6 +162,7 @@ func SingleCp(client *ssh.Client, buildState *state.BuildState, node ssh.Node, d
 	}
 
 	err = buildState.Write(tmpFilename, string(data))
+
 	if err != nil {
 		log.Println(err)
 		return err
