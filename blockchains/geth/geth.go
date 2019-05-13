@@ -224,6 +224,8 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
+	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
+
 	for _, account := range accounts {
 		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
 			"privateKey": account.HexPrivateKey(),
