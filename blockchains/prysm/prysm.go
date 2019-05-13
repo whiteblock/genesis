@@ -68,7 +68,6 @@ func build(tn *testnet.TestNet) error {
 		tn.BuildState.IncrementBuildProgress()
 	}
 
-	peers = peers
 	fmt.Println(peers)
 
 	tn.BuildState.SetBuildStage("Starting prysm")
