@@ -21,13 +21,14 @@ package docker
 
 import (
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"log"
-	"strings"
 )
 
 var conf *util.Config
@@ -119,6 +120,12 @@ func dockerRunCmd(c Container) (string, error) {
 
 	if !c.GetResources().NoCPULimits() {
 		command += fmt.Sprintf(" --cpus %s", c.GetResources().Cpus)
+	}
+
+	if c.GetResources().Volumes != nil {
+		for _, volume := range c.GetResources().Volumes {
+			command += fmt.Sprintf(" -v %s", volume)
+		}
 	}
 
 	if !c.GetResources().NoMemoryLimits() {
