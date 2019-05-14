@@ -35,7 +35,7 @@ const allowNoKeyAcess = true
 
 //GetKey gets the key information from the whiteblock API endpoint by key id
 func GetKey(kid string) (map[string]string, error) {
-	res, err := util.HTTPRequest("GET", "https://api.whiteblock.io/public/jwt-keys", "")
+	res, err := util.HTTPRequest("GET", conf.APIEndpoint+"/public/jwt-keys", "")
 	if err != nil {
 		log.Println(err)
 		return nil, err

@@ -185,7 +185,7 @@ func declareTestnet(testnetID string, details *db.DeploymentDetails) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	_, err = util.JwtHTTPRequest("POST", "https://api.whiteblock.io/testnets", details.GetJwt(), string(rawData))
+	_, err = util.JwtHTTPRequest("POST", conf.APIEndpoint+"/testnets", details.GetJwt(), string(rawData))
 	return err
 }
 

@@ -84,7 +84,6 @@ func alwaysRunFinalize(tn *testnet.TestNet) {
 			}
 		}
 	})
-
 }
 
 /*
@@ -156,7 +155,7 @@ func declareNode(node *db.Node, tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	_, err = util.JwtHTTPRequest("POST", "https://api.whiteblock.io/testnets/"+node.TestNetID+"/nodes", tn.LDD.GetJwt(), string(rawData))
+	_, err = util.JwtHTTPRequest("POST", conf.APIEndpoint+"/testnets/"+node.TestNetID+"/nodes", tn.LDD.GetJwt(), string(rawData))
 	return err
 }
 

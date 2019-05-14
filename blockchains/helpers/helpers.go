@@ -20,6 +20,7 @@
 package helpers
 
 import (
+	"fmt"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
@@ -99,6 +100,23 @@ func AllServerExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server) erro
 	}
 	wg.Wait()
 	return tn.BuildState.GetError()
+}
+
+func mkdirAllNodes(tn *testnet.TestNet, dir string, useNew bool, sideCar int) error {
+	return allNodeExecCon(tn, useNew, sideCar, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+		_, err := client.DockerExec(node, fmt.Sprintf("mkdir -p %s", dir))
+		return err
+	})
+}
+
+// MkdirAllNodes makes a dir on all nodes
+func MkdirAllNodes(tn *testnet.TestNet, dir string) error {
+	return mkdirAllNodes(tn, dir, false, -1)
+}
+
+// MkdirAllNewNodes makes a dir on all new nodes
+func MkdirAllNewNodes(tn *testnet.TestNet, dir string) error {
+	return mkdirAllNodes(tn, dir, true, -1)
 }
 
 // AllServerExecConSC is like AllServerExecCon but for side cars
