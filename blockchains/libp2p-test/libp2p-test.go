@@ -107,6 +107,9 @@ func build(tn *testnet.TestNet) error {
 		if node.GetAbsoluteNumber() < testConf.Senders { //make node 0 the sending node
 			cmd += fmt.Sprintf(" --send-interval %d", testConf.Interval)
 		}
+		if testConf.PayloadSize > 0 {
+			cmd += fmt.Sprintf(" --payload-size %d", testConf.PayloadSize)
+		}
 		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s 2>&1 | tee %s'", cmd, conf.DockerOutputFile))
 		return err
 	})

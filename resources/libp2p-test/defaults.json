@@ -2,5 +2,6 @@
     "router":"gossipsub",
     "connections":-1,
     "interval":1000000,
-    "senders":1
+    "senders":1,
+    "payloadSize":-1,
 }

@@ -29,10 +29,11 @@ type libp2pTestConf struct {
 	Connections int    `json:"connections"`
 	Interval    int    `json:"interval"`
 	Senders     int    `json:"senders"`
+	PayloadSize int64  `json:"payloadSize"`
 }
 
-// GetParams fetchs libp2p test related parameters
-func GetParams() string {
+// getParams fetchs libp2p test related parameters
+func getParams() string {
 
 	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
 	if err != nil {
@@ -41,8 +42,8 @@ func GetParams() string {
 	return string(dat)
 }
 
-// GetDefaults fetchs libp2p test related parameter defaults
-func GetDefaults() string {
+// getDefaults fetchs libp2p test related parameter defaults
+func getDefaults() string {
 	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
@@ -52,7 +53,7 @@ func GetDefaults() string {
 
 func newConf(data map[string]interface{}) (*libp2pTestConf, error) {
 	out := new(libp2pTestConf)
-	err := json.Unmarshal([]byte(GetDefaults()), out)
+	err := json.Unmarshal([]byte(getDefaults()), out)
 	if data == nil {
 		return out, util.LogError(err)
 	}
@@ -60,7 +61,5 @@ func newConf(data map[string]interface{}) (*libp2pTestConf, error) {
 	if err != nil {
 		return nil, util.LogError(err)
 	}
-	err = json.Unmarshal(tmp, out)
-
-	return out, err
+	return out, json.Unmarshal(tmp, out)
 }
