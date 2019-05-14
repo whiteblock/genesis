@@ -88,7 +88,7 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 
 	var resource util.Resources
 	if len(tn.LDD.Resources) == 0 {
-		resource = util.Resources{"", ""}
+		resource = util.Resources{Cpus: "", Memory: ""}
 	} else {
 		resource = tn.LDD.Resources[0]
 	}
