@@ -72,6 +72,8 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildStage("Setting Up Accounts")
 
+	helpers.MkdirAllNodes(tn, "/pantheon/genesis")
+
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 
 		tn.BuildState.IncrementBuildProgress()
@@ -100,12 +102,6 @@ func build(tn *testnet.TestNet) error {
 		if err != nil {
 			return util.LogError(err)
 		}
-
-		_, err = client.DockerExec(node, "mkdir /pantheon/genesis")
-		if err != nil {
-			return util.LogError(err)
-		}
-
 		// used for IBFT2 extraData
 		_, err = client.DockerExec(node,
 			"pantheon rlp encode --from=/pantheon/data/toEncode.json --to=/pantheon/rlpEncodedExtraData")

@@ -116,11 +116,7 @@ func handleConf(tn *testnet.TestNet, sysconf *sysConf) error {
 		return util.LogError(err)
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
-		defer tn.BuildState.IncrementBuildProgress()
-		_, err := client.DockerExec(node, "mkdir -p /syscoin/datadir")
-		return err
-	})
+	err = helpers.MkdirAllNodes(tn, "/syscoin/datadir")
 	if err != nil {
 		return util.LogError(err)
 	}

@@ -60,10 +60,7 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildSteps(9 + (7 * tn.LDD.Nodes))
 	//Make the data directories
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
-		_, err := client.DockerExec(node, "mkdir -p /parity")
-		return err
-	})
+	err = helpers.MkdirAllNodes(tn, "/parity")
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -195,14 +192,8 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	storeGethParameters(tn, pconf, wallets, enodes)
-
-	err = peerAllNodes(tn, enodes)
-	if err != nil {
-		return util.LogError(err)
-	}
-
 	tn.BuildState.IncrementBuildProgress()
-	return nil
+	return peerAllNodes(tn, enodes)
 }
 
 /***************************************************************************************************************************/
@@ -292,16 +283,14 @@ func setupPOW(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 		return util.LogError(err)
 	}
 	//create config file
-	err = helpers.CreateConfigs(tn, "/parity/config.toml",
-		func(node ssh.Node) ([]byte, error) {
-			configToml, err := buildConfig(pconf, tn.LDD, wallets, "/parity/passwd", node.GetAbsoluteNumber())
-			if err != nil {
-				return nil, util.LogError(err)
-			}
-			return []byte(configToml), nil
-		})
+	err = helpers.CreateConfigs(tn, "/parity/config.toml", func(node ssh.Node) ([]byte, error) {
+		configToml, err := buildConfig(pconf, tn.LDD, wallets, "/parity/passwd", node.GetAbsoluteNumber())
+		if err != nil {
+			return nil, util.LogError(err)
+		}
+		return []byte(configToml), nil
+	})
 
 	//Copy over the config file, spec file, and the accounts
-	return helpers.CopyBytesToAllNodes(tn,
-		spec, "/parity/spec.json")
+	return helpers.CopyBytesToAllNodes(tn, spec, "/parity/spec.json")
 }

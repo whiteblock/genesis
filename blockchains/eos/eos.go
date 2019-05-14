@@ -181,11 +181,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	tn.BuildState.IncrementBuildProgress()
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
-		defer tn.BuildState.IncrementBuildProgress()
-		_, err = client.DockerExec(node, "mkdir /datadir/")
-		return err
-	})
+	err = helpers.MkdirAllNodes(tn, "/datadir/")
 	if err != nil {
 		return util.LogError(err)
 	}

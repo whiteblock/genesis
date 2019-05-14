@@ -68,12 +68,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	/**Make the data directories**/
-
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
-		buildState.IncrementBuildProgress()
-		_, err := client.DockerExec(node, "mkdir /datadir")
-		return err
-	})
+	helpers.MkdirAllNodes(tn, "/datadir")
 	/**Setup the first node**/
 	err = createFirstConfigFile(tn, masterClient, masterNode, rConf, services["wb_influx_proxy"])
 	if err != nil {

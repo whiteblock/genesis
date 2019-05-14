@@ -32,9 +32,10 @@ import (
 
 var conf *util.Config
 
+const blockchain = "artemis"
+
 func init() {
 	conf = util.GetConfig()
-	blockchain := "artemis"
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
