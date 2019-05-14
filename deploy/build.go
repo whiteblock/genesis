@@ -86,7 +86,12 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 	}
 	tn.BuildState.IncrementDeployProgress()
 
-	resource := tn.LDD.Resources[0]
+	var resource util.Resources
+	if (len(tn.LDD.Resources) == 0) {
+		resource = util.Resources{"",""}
+	} else {
+		resource = tn.LDD.Resources[0]
+	}
 	node.Image = tn.LDD.Images[0]
 	var env map[string]string
 
