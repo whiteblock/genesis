@@ -68,8 +68,6 @@ func build(tn *testnet.TestNet) error {
 		tn.BuildState.IncrementBuildProgress()
 	}
 
-	fmt.Println(peers)
-
 	tn.BuildState.SetBuildStage("Starting prysm")
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
