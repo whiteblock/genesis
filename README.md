@@ -5,7 +5,7 @@ Genesis
 [![API Reference](
 https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/68747470733a2f2f676f646f632e6f72672f6769746875622e636f6d2f676f6c616e672f6764646f3f7374617475732e737667
 )](https://godoc.org/github.com/whiteblock/genesis)
-[![Maintainability](https://api.codeclimate.com/v1/badges/4aae8bc608f619f0990e/maintainability)](https://codeclimate.com/repos/5cb0ac61f5eb734088003e71/maintainability)
+[![Maintainability](https://api.codeclimate.com/v1/badges/a30e833d3367ef530eaf/maintainability)](https://codeclimate.com/github/Whiteblock/genesis/maintainability)
 [![Gitter](https://badges.gitter.im/whiteblock-io/community.svg)](https://gitter.im/whiteblock-io/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 # Overview
