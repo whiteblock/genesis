@@ -35,6 +35,8 @@ type Resources struct {
 	// Memory supports values up to Terrabytes (tb). If the unit is ommited, then it
 	// is assumed to be bytes. This is not case sensitive.
 	Memory string `json:"memory"`
+	// Volumes to be used by each node.
+	Volumes []string `json:"volumes"`
 }
 
 func memconv(mem string) (int64, error) {
