@@ -57,7 +57,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	if testConf.Connections < 0 {
+	if testConf.Connections <= 0 {
 		testConf.Connections = tn.LDD.Nodes - 1
 	}
 	peers := make([]serialPeerInfo, tn.LDD.Nodes)
