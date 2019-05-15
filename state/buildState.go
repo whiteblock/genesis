@@ -308,18 +308,10 @@ func (bs *BuildState) GetError() error {
 
 // SetExt inserts a key value pair into the external state store, currently only supports string
 // and []string on the other side
-func (bs *BuildState) SetExt(key string, value interface{}) error {
-	switch value.(type) {
-	case string:
-	case []string:
-	case map[string]string:
-	default:
-		return fmt.Errorf("unsupported type for value")
-	}
+func (bs *BuildState) SetExt(key string, value interface{}) {
 	bs.extraMux.Lock()
 	defer bs.extraMux.Unlock()
 	bs.ExternExtras[key] = value
-	return nil
 }
 
 // GetExt gets a value based on the given key from the external state store

@@ -60,10 +60,9 @@ func build(tn *testnet.TestNet) error {
 			node.IP,
 			port,
 		)
+		peers = peers + " --peer=" + peer
 		if i != len(tn.Nodes)-1 {
-			peers = peers + " --peer=" + peer + " "
-		} else {
-			peers = peers + " --peer=" + peer
+			peers += " "
 		}
 		tn.BuildState.IncrementBuildProgress()
 	}
