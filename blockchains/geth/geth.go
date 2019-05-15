@@ -53,8 +53,8 @@ func init() {
 	registrar.RegisterDefaults(blockchain, GetDefaults)
 	registrar.RegisterDefaults(alias, GetDefaults)
 
-	registrar.RegisterParams(blockchain, GetParams)
-	registrar.RegisterParams(alias, GetParams)
+	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
+	registrar.RegisterParams(alias, helpers.DefaultGetParamsFn(blockchain))
 }
 
 const ethNetStatsPort = 3338

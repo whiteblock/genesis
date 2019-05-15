@@ -381,15 +381,6 @@ func GetDefaults() string {
 	return string(dat)
 }
 
-// GetParams fetchs eos related parameters
-func GetParams() string {
-	dat, err := helpers.GetStaticBlockchainConfig("eos", "params.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
-}
-
 // GetServices returns the services which are used by eos
 func GetServices() []util.Service {
 	return nil

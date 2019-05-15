@@ -40,17 +40,9 @@ func init() {
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, getServices)
 	registrar.RegisterDefaults(blockchain, getDefaults)
-	registrar.RegisterParams(blockchain, getParams)
+	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 	registrar.RegisterAdditionalLogs(blockchain, map[string]string{
 		"json": "/plumtree/data/log.json"})
-}
-
-func getParams() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
 }
 
 func getServices() []util.Service {

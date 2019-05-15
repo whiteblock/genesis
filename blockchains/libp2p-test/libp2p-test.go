@@ -42,8 +42,8 @@ func init() {
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, func() []util.Service { return []util.Service{} })
-	registrar.RegisterDefaults(blockchain, func() string { return "{}" })
-	registrar.RegisterParams(blockchain, func() string { return "[]" })
+	registrar.RegisterDefaults(blockchain, getDefaults)
+	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }
 
 type serialPeerInfo struct {

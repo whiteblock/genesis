@@ -123,3 +123,14 @@ func MkdirAllNewNodes(tn *testnet.TestNet, dir string) error {
 func AllServerExecConSC(ad *testnet.Adjunct, fn func(*ssh.Client, *db.Server) error) error {
 	return AllServerExecCon(ad.Main, fn)
 }
+
+// DefaultGetParamsFn creates the default function for getting a blockchains parameters
+func DefaultGetParamsFn(blockchain string) func() string {
+	return func() string {
+		dat, err := GetStaticBlockchainConfig(blockchain, "params.json")
+		if err != nil {
+			panic(err) //Missing required files is a fatal error
+		}
+		return string(dat)
+	}
+}

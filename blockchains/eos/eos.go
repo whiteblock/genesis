@@ -42,7 +42,7 @@ func init() {
 	registrar.RegisterAddNodes(blockchain, Add)
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
-	registrar.RegisterParams(blockchain, GetParams)
+	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }
 
 // build builds out a fresh new eos test network using geth

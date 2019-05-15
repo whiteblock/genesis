@@ -33,14 +33,15 @@ import (
 
 var conf *util.Config
 
+const blockchain = "cosmos"
+
 func init() {
 	conf = util.GetConfig()
-	blockchain := "cosmos"
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
-	registrar.RegisterParams(blockchain, GetParams)
+	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }
 
 // build builds out a fresh new cosmos test network
