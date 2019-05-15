@@ -96,11 +96,34 @@ func Distribute(nodes []string, dist []int) ([][]string, error) {
 	return out, nil
 }
 
-// GenerateworstCaseNetwork generates a random path through all nodes
-func GenerateworstCaseNetwork(nodes int) [][]int {
+// GenerateWorstCaseNetwork generates a random path through all nodes
+func GenerateWorstCaseNetwork(nodes int) [][]int {
 	out := make([][]int, nodes)
 
 	s1 := rand.NewSource(time.Now().UnixNano())
+	rng := rand.New(s1)
+
+	nodePool := make([]int, nodes)
+	for i := 0; i < nodes; i++ {
+		nodePool[i] = i
+	}
+	node := 0
+	for i := 0; i < nodes; i++ {
+		newNodeIndex := rng.Intn(len(nodePool))
+		newNode := nodePool[newNodeIndex]
+		out[node] = []int{newNode}
+		node = newNode
+		nodePool = append(nodePool[:newNodeIndex], nodePool[newNodeIndex+1:]...)
+	}
+	out[node] = []int{0}
+	return out
+}
+
+// private test function of exported function GenerateWorstCaseNetwork()
+func generateWorstCaseNetwork(nodes int, seed int64) [][]int {
+	out := make([][]int, nodes)
+
+	s1 := rand.NewSource(seed)
 	rng := rand.New(s1)
 
 	nodePool := make([]int, nodes)
@@ -130,7 +153,7 @@ func GenerateUniformRandMeshNetwork(nodes int, conns int) ([][]int, error) {
 	}
 	s1 := rand.NewSource(time.Now().UnixNano())
 	rng := rand.New(s1)
-	out := GenerateworstCaseNetwork(nodes)
+	out := GenerateWorstCaseNetwork(nodes)
 
 	for i := 0; i < nodes; i++ {
 		for j := 1; j < conns; j++ {

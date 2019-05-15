@@ -47,7 +47,35 @@ func TestDistances(t *testing.T) {
 	}
 }
 
+//TODO finish this test by figuring out what an appropriate value is for dist
+func TestDistribute(t *testing.T) {
+	nodes := []string{"1,", "2", "3", "4", "5"}
+	dist := []int{}
 
+	fmt.Println(Distribute(nodes, dist))
+}
+
+func Test_generateWorstCaseNetwork(t *testing.T) {
+	var test = []struct {
+		nodes int
+		seed int64
+		expected [][]int
+	}{
+		{8, 25, [][]int{{5}, {6}, {1}, {4}, {7}, {2}, {0}, {0}}},
+		{10, 123, [][]int{{4}, {0}, {6}, {9}, {3}, {0}, {1}, {2}, {7}, {8}}},
+		{5, 123, [][]int{{2}, {0}, {3}, {4}, {1}}},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual((generateWorstCaseNetwork(tt.nodes, tt.seed)), tt.expected) {
+				fmt.Errorf("return value from generateWorstCaseNetwork does not match expected value")
+			}
+		})
+	}
+}
+
+func
 
 
 
