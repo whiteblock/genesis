@@ -24,7 +24,6 @@ import (
 	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"log"
 	"sync"
 )
 
@@ -129,8 +128,7 @@ func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, dataDst 
 		if err != nil {
 			return util.LogError(err)
 		}
-		fmted = append(fmted, tmpFilename)
-		fmted = append(fmted, dataDst[i*2+1])
+		fmted = append(fmted, tmpFilename, dataDst[i*2+1])
 	}
 	return copyToAllNodes(tn, useNew, sidecar, fmted...)
 }
@@ -160,16 +158,14 @@ func CopyBytesToAllNewNodesSC(ad *testnet.Adjunct, dataDst ...string) error {
 func SingleCp(client *ssh.Client, buildState *state.BuildState, node ssh.Node, data []byte, dest string) error {
 	tmpFilename, err := util.GetUUIDString()
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	err = buildState.Write(tmpFilename, string(data))
-
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
+
 	intermediateDst := "/tmp/" + tmpFilename
 	buildState.Defer(func() { client.Run("rm " + intermediateDst) })
 	err = client.Scp(tmpFilename, intermediateDst)
