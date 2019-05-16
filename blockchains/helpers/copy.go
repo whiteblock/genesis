@@ -126,6 +126,9 @@ func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, dataDst 
 		}
 
 		err = tn.BuildState.Write(tmpFilename, dataDst[i*2])
+		if err != nil {
+			return util.LogError(err)
+		}
 		fmted = append(fmted, tmpFilename)
 		fmted = append(fmted, dataDst[i*2+1])
 	}

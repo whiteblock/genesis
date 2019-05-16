@@ -117,6 +117,10 @@ func build(tn *testnet.TestNet) error {
 		return nil
 	})
 
+	if err != nil {
+		return util.LogError(err)
+	}
+
 	tn.BuildState.SetBuildStage("Copying the genesis file to each node")
 
 	err = helpers.CopyBytesToAllNodes(tn, genesisFile, "/root/.gaiad/config/genesis.json")

@@ -87,6 +87,10 @@ func build(tn *testnet.TestNet) error {
 		return nil
 	})
 
+	if err != nil {
+		return util.LogError(err)
+	}
+
 	mesh, err := util.GenerateDependentMeshNetwork(tn.LDD.Nodes, testConf.Connections)
 	if err != nil {
 		return util.LogError(err)
@@ -99,6 +103,10 @@ func build(tn *testnet.TestNet) error {
 		}
 		return json.Marshal(nodePeers)
 	})
+
+	if err != nil {
+		return util.LogError(err)
+	}
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		cmd := fmt.Sprintf("/p2p-tests/p2p-tests --seed %d --hostAddrs /ip4/%s/tcp/39977 "+
@@ -114,7 +122,7 @@ func build(tn *testnet.TestNet) error {
 		return err
 	})
 
-	return nil
+	return util.LogError(err)
 }
 
 // add handles adding nodes to the testnet
