@@ -43,14 +43,13 @@ func getConfFiles(w http.ResponseWriter, r *http.Request) {
 
 	err := util.ValidateFilePath(params["blockchain"])
 	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 400)
+		http.Error(w, util.LogError(err).Error(), 400)
 		return
 	}
 
 	files, err := util.Lsr(fmt.Sprintf("./resources/" + params["blockchain"]))
 	if err != nil {
-		log.Println(err)
+		util.LogError(err)
 		http.Error(w, fmt.Sprintf("Nothing availible for \"%s\"", params["blockchain"]), 500)
 		return
 	}
@@ -71,14 +70,12 @@ func getConfFile(w http.ResponseWriter, r *http.Request) {
 
 	err := util.ValidateFilePath(params["blockchain"])
 	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 400)
+		http.Error(w, util.LogError(err).Error(), 400)
 		return
 	}
 	err = util.ValidateFilePath(params["file"])
 	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 400)
+		http.Error(w, util.LogError(err).Error(), 400)
 		return
 	}
 	if strings.Contains(params["blockchain"], "github.com/whiteblock/genesis") || strings.Contains(params["file"], "github.com/whiteblock/genesis") {
@@ -105,7 +102,7 @@ func getBlockChainParams(w http.ResponseWriter, r *http.Request) {
 	log.Println("GET PARAMS : " + params["blockchain"])
 	blockchainParams, err := manager.GetParams(params["blockchain"])
 	if err != nil {
-		http.Error(w, err.Error(), 404)
+		http.Error(w, util.LogError(err).Error(), 404)
 		return
 	}
 	//log.Println(string(blockchainParams))
@@ -132,7 +129,7 @@ func getBlockChainState(w http.ResponseWriter, r *http.Request) {
 func getBlockChainDefaults(w http.ResponseWriter, r *http.Request) {
 	defaults, err := manager.GetDefaults(mux.Vars(r)["blockchain"])
 	if err != nil {
-		http.Error(w, err.Error(), 404)
+		http.Error(w, util.LogError(err).Error(), 404)
 		return
 	}
 	w.Write(defaults)
@@ -143,8 +140,7 @@ func getBlockChainLog(w http.ResponseWriter, r *http.Request) {
 
 	nodeNum, err := strconv.Atoi(params["node"])
 	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 400)
+		http.Error(w, util.LogError(err).Error(), 400)
 		return
 	}
 	lines := -1
@@ -152,40 +148,35 @@ func getBlockChainLog(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		lines, err = strconv.Atoi(params["lines"])
 		if err != nil {
-			log.Println(err)
-			http.Error(w, err.Error(), 400)
+			http.Error(w, util.LogError(err).Error(), 400)
 			return
 		}
 	}
 	nodes, err := db.GetAllNodesByTestNet(params["testnetID"])
 	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 404)
+		http.Error(w, util.LogError(err).Error(), 404)
 		return
 	}
 
 	node, err := db.GetNodeByLocalID(nodes, nodeNum)
 	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 404)
+		http.Error(w, util.LogError(err).Error(), 404)
 		return
 	}
 
 	client, err := status.GetClient(node.Server)
 	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 404)
+		http.Error(w, util.LogError(err).Error(), 404)
 		return
 	}
 	res, err := client.DockerRead(node, conf.DockerOutputFile, lines)
 	if err != nil {
-		log.Println(err)
-		http.Error(w, fmt.Sprintf("%s %s", res, err.Error()), 500)
+		http.Error(w, fmt.Sprintf("%s %s", res, util.LogError(err).Error()), 500)
 		return
 	}
 	w.Write([]byte(res))
 }
 
 func getAllSupportedBlockchains(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(registrar.GetSupportedBlockchains())
+	util.LogError(json.NewEncoder(w).Encode(registrar.GetSupportedBlockchains()))
 }

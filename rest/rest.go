@@ -226,7 +226,6 @@ func getPreviousBuild(w http.ResponseWriter, r *http.Request) {
 	}
 	kid, err := util.GetKidFromJwt(jwt)
 	if err != nil {
-		log.Println(err)
 		http.Error(w, util.LogError(err).Error(), 403)
 	}
 	build, err := db.GetLastBuildByKid(kid)
