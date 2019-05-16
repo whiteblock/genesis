@@ -154,7 +154,7 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	testnetID := params["id"]
 	nodeNum := params["num"]
-	log.Printf("%s %s\n", testnetID, nodeNum)
+	log.WithFields(log.Fields{"testnet": testnetID, "node": nodeNum}).Info("restarting a node")
 	tn, err := testnet.RestoreTestNet(testnetID)
 	if err != nil {
 		http.Error(w, util.LogError(err).Error(), 404)
@@ -216,6 +216,7 @@ func signalNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	signal := params["signal"]
+	log.WithFields(log.Fields{"testnet": testnetID, "node": nodeNum, "signal": signal}).Info("sending signal to node")
 	err = util.ValidateCommandLine(signal)
 	if err != nil {
 		util.LogError(err)
@@ -258,8 +259,7 @@ func signalNode(w http.ResponseWriter, r *http.Request) {
 func killNode(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	testnetID := params["testnetID"]
-
-	log.Printf("%s %s\n", testnetID, params["node"])
+	log.WithFields(log.Fields{"testnet": testnetID, "node": params["node"]}).Info("killing a node's main processs")
 	tn, err := testnet.RestoreTestNet(testnetID)
 	if err != nil {
 		http.Error(w, util.LogError(err).Error(), 404)
