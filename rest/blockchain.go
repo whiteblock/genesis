@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/manager"
@@ -29,7 +30,6 @@ import (
 	"github.com/whiteblock/genesis/status"
 	"github.com/whiteblock/genesis/util"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -49,7 +49,7 @@ func getConfFiles(w http.ResponseWriter, r *http.Request) {
 
 	files, err := util.Lsr(fmt.Sprintf("./resources/" + params["blockchain"]))
 	if err != nil {
-		util.LogError(err)
+		log.WithFields(log.Fields{"error": err, "blockchain": params["blockchain"]}).Info("not found")
 		http.Error(w, fmt.Sprintf("Nothing availible for \"%s\"", params["blockchain"]), 500)
 		return
 	}
@@ -87,6 +87,9 @@ func getConfFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	path := "./resources/" + params["blockchain"] + "/" + params["file"]
+
+	log.WithFields(log.Fields{"path": path, "blockchain": params["blockchain"], "file": params["file"]}).Debug("got the file path")
+
 	fmt.Println(path)
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -99,13 +102,12 @@ func getConfFile(w http.ResponseWriter, r *http.Request) {
 func getBlockChainParams(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
-	log.Println("GET PARAMS : " + params["blockchain"])
+	log.WithFields(log.Fields{"blockchain": params["blockchain"]}).Debug("getting params")
 	blockchainParams, err := manager.GetParams(params["blockchain"])
 	if err != nil {
 		http.Error(w, util.LogError(err).Error(), 404)
 		return
 	}
-	//log.Println(string(blockchainParams))
 	w.Write(blockchainParams)
 }
 
