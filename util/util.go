@@ -247,26 +247,6 @@ func GetJSONInt64(data map[string]interface{}, field string, out *int64) error {
 	return nil
 }
 
-// GetJSONStringArr checks and extracts a []string from data[field].
-// Will return an error if data[field] does not exist or is of the wrong type.
-func GetJSONStringArr(data map[string]interface{}, field string, out *[]string) error {
-	rawValue, exists := data[field]
-	if exists && rawValue != nil {
-		switch rawValue.(type) {
-		case []string:
-			value, valid := rawValue.([]string)
-			if !valid {
-				return fmt.Errorf("invalid string array")
-			}
-			*out = value
-			return nil
-		default:
-			return fmt.Errorf("incorrect type for %s", field)
-		}
-	}
-	return nil
-}
-
 // GetJSONString checks and extracts a string from data[field].
 // Will return an error if data[field] does not exist or is of the wrong type.
 func GetJSONString(data map[string]interface{}, field string, out *string) error {
@@ -277,26 +257,6 @@ func GetJSONString(data map[string]interface{}, field string, out *string) error
 			value, valid := rawValue.(string)
 			if !valid {
 				return fmt.Errorf("invalid string")
-			}
-			*out = value
-			return nil
-		default:
-			return fmt.Errorf("incorrect type for %s", field)
-		}
-	}
-	return nil
-}
-
-// GetJSONBool checks and extracts a bool from data[field].
-// Will return an error if data[field] does not exist or is of the wrong type.
-func GetJSONBool(data map[string]interface{}, field string, out *bool) error {
-	rawValue, exists := data[field]
-	if exists && rawValue != nil {
-		switch rawValue.(type) {
-		case bool:
-			value, valid := rawValue.(bool)
-			if !valid {
-				return fmt.Errorf("invalid bool")
 			}
 			*out = value
 			return nil
