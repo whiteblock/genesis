@@ -61,7 +61,7 @@ func allNodeExecCon(tn *testnet.TestNet, useNew bool, sideCar int, fn func(*ssh.
 // have been completely.
 // Each call to fn is provided with, in order, the relevant ssh client, the server where the node exists, the local
 // number of that node on the server and the absolute number of the node in the testnet. If any of the calls to fn
-// return a non-nil error value, one of those errors will be returned. Currently there is no guarentee as to which one,
+// return a non-nil error value, one of those errors will be returned. Currently there is no guarantee as to which one,
 // however this should be implemented in the future.
 func AllNodeExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
 	return allNodeExecCon(tn, false, -1, fn)

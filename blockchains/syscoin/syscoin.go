@@ -91,7 +91,7 @@ func handleConf(tn *testnet.TestNet, sysconf *sysConf) error {
 	//log.Println(fmt.Sprintf("PERC = %d; NUM = %d;",sysconf.PercOfMNodes,noMasterNodes))
 
 	if (len(ips) - noMasterNodes) == 0 {
-		log.Println("Warning: No sender/receiver nodes availible. Removing 2 master nodes and setting them as sender/receiver")
+		log.Println("Warning: No sender/receiver nodes available. Removing 2 master nodes and setting them as sender/receiver")
 		noMasterNodes -= 2
 	} else if (len(ips)-noMasterNodes)%2 != 0 {
 		log.Println("Warning: Removing a master node to keep senders and receivers equal")

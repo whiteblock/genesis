@@ -40,7 +40,7 @@ func ScpAndDeferRemoval(client *ssh.Client, buildState *state.BuildState, src st
 	}
 }
 
-// GetDefaults get any availible default value for a given term.
+// GetDefaults get any available default value for a given term.
 // will be nil,false if it is not found
 func GetDefaults(details *db.DeploymentDetails, term string) (interface{}, bool) {
 	if details.Extras == nil {

@@ -17,8 +17,8 @@
 */
 
 // Package util provides a multitude of support functions to
-// help make development easier. Use of these functions should be prefered,
-// as it allows for easier maintainence.
+// help make development easier. Use of these functions should be preferred,
+// as it allows for easier maintenance.
 package util
 
 import (
@@ -308,7 +308,7 @@ func GetJSONBool(data map[string]interface{}, field string, out *bool) error {
 }
 
 // MergeStringMaps merges two maps of string to interface together and returns it
-// If there are conflicting keys, the value in m2 will be choosen.
+// If there are conflicting keys, the value in m2 will be chosen.
 func MergeStringMaps(m1 map[string]interface{}, m2 map[string]interface{}) map[string]interface{} {
 	out := make(map[string]interface{})
 	for k1, v1 := range m1 {

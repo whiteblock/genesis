@@ -95,13 +95,13 @@ func copyToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, srcDst ...str
 	return tn.BuildState.GetError()
 }
 
-// CopyToAllNodes copies files writen with BuildState's write function over to all of the nodes.
+// CopyToAllNodes copies files written with BuildState's write function over to all of the nodes.
 // Can handle multiple files, in pairs of src and dst
 func CopyToAllNodes(tn *testnet.TestNet, srcDst ...string) error {
 	return copyToAllNodes(tn, false, -1, srcDst...)
 }
 
-// CopyToAllNewNodes copies files writen with BuildState's write function over to all of the newly built nodes.
+// CopyToAllNewNodes copies files written with BuildState's write function over to all of the newly built nodes.
 // Can handle multiple files, in pairs of src and dst
 func CopyToAllNewNodes(tn *testnet.TestNet, srcDst ...string) error {
 	return copyToAllNodes(tn, true, -1, srcDst...)
@@ -132,7 +132,7 @@ func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, dataDst 
 	return copyToAllNodes(tn, useNew, sidecar, fmted...)
 }
 
-// CopyBytesToAllNodes functions similiarly to CopyToAllNodes, except it operates on data and dst pairs instead of
+// CopyBytesToAllNodes functions similarly to CopyToAllNodes, except it operates on data and dst pairs instead of
 // src and dest pairs, so you can just pass data directly to all of the nodes without having to call buildState.Write first.
 func CopyBytesToAllNodes(tn *testnet.TestNet, dataDst ...string) error {
 	return copyBytesToAllNodes(tn, false, -1, dataDst...)
@@ -177,36 +177,6 @@ func SingleCp(client *ssh.Client, buildState *state.BuildState, node ssh.Node, d
 	return client.DockerCp(node, intermediateDst, dest)
 }
 
-/*// FileDest represents a transfer of data
-type FileDest struct {
-	// Data is the data to be transfered
-	Data []byte
-	// Dest is the destination for the data
-	Dest string
-	// LocalNodeID is the local node number of the node to which the data will be transfered
-	LocalNodeID int
-}
-
-//CopyBytesToNodeFiles executes the file transfers represented by the given file dests.
-func CopyBytesToNodeFiles(client *ssh.Client, buildState *state.BuildState, transfers ...FileDest) error {
-	wg := sync.WaitGroup{}
-
-	for _, transfer := range transfers {
-		wg.Add(1)
-		go func(transfer FileDest) {
-			defer wg.Done()
-			err := SingleCp(client, buildState, transfer.LocalNodeID, transfer.Data, transfer.Dest)
-			if err != nil {
-				log.Println(err)
-				buildState.ReportError(err)
-				return
-			}
-		}(transfer)
-	}
-	wg.Wait()
-	return buildState.GetError()
-}*/
-
 /*
 	fn func(serverid int, localNodeNum int, absoluteNodeNum int) ([]byte, error)
 */
@@ -238,7 +208,7 @@ func createConfigs(tn *testnet.TestNet, dest string, useNew bool, sidecar int, f
 	return tn.BuildState.GetError()
 }
 
-// CreateConfigs allows for individual generation of configuration files with error propogation.
+// CreateConfigs allows for individual generation of configuration files with error propagation.
 // For each node, fn will be called, with (Server ID, local node number, absolute node number), and it will expect
 // to have the configuration file returned or error.
 func CreateConfigs(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {

@@ -50,7 +50,7 @@ func getConfFiles(w http.ResponseWriter, r *http.Request) {
 	files, err := util.Lsr(fmt.Sprintf("./resources/" + params["blockchain"]))
 	if err != nil {
 		log.WithFields(log.Fields{"error": err, "blockchain": params["blockchain"]}).Error("not found")
-		http.Error(w, fmt.Sprintf("Nothing availible for \"%s\"", params["blockchain"]), 500)
+		http.Error(w, fmt.Sprintf("Nothing available for \"%s\"", params["blockchain"]), 500)
 		return
 	}
 

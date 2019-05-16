@@ -305,7 +305,7 @@ func (sshClient *Client) Scp(src string, dest string) error {
 
 // InternalScp is a wrapper for the scp command. Can be used to copy
 // a file over to a remote machine. This is for internal use, and may cause
-// unpredictible behavior. Use Scp instead
+// unpredictable behavior. Use Scp instead
 func (sshClient *Client) InternalScp(src string, dest string) error {
 	log.WithFields(log.Fields{"src": src, "dst": dest}).Info("remote copying file using internal protocol")
 

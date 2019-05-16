@@ -144,7 +144,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 
 		if tn.Servers[serverIndex].Max <= tn.Servers[serverIndex].Nodes {
 			if len(availableServers) == 1 {
-				return fmt.Errorf("cannot build that many nodes with the availible resources")
+				return fmt.Errorf("cannot build that many nodes with the available resources")
 			}
 			availableServers = append(availableServers[:serverIndex], availableServers[serverIndex+1:]...)
 			i--
