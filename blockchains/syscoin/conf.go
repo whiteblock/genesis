@@ -55,7 +55,7 @@ func (sconf *sysConf) Generate() string {
 	out += "rpcuser=user\n"
 	out += "rpcpassword=password\n"
 	for _, extra := range sconf.Extras {
-		extra += extra + "\n"
+		out += extra + "\n"
 	}
 
 	return out
@@ -69,7 +69,7 @@ func (sconf *sysConf) GenerateReceiver() string {
 	}
 
 	for _, extra := range sconf.ReceiverExtras {
-		extra += extra + "\n"
+		out += extra + "\n"
 	}
 	return out
 }
@@ -82,7 +82,7 @@ func (sconf *sysConf) GenerateSender() string {
 	}
 
 	for _, extra := range sconf.SenderExtras {
-		extra += extra + "\n"
+		out += extra + "\n"
 	}
 	return out
 }
@@ -95,7 +95,7 @@ func (sconf *sysConf) GenerateMN() string {
 	}
 
 	for _, extra := range sconf.MNExtras {
-		extra += extra + "\n"
+		out += extra + "\n"
 	}
 	return out
 }
@@ -112,14 +112,4 @@ func GetDefaults() string {
 // GetServices returns the services which are used by syscoin
 func GetServices() []util.Service {
 	return nil
-	/*return []util.Service{
-	    util.Service{
-	        Name:"Alpine",
-	        Image:"alpine:latest",
-	        Env:map[string]string{
-	            "HELLO":"HI",
-	            "INFLUXDB_URL":conf.Influx,
-	        },
-	    },
-	}*/
 }
