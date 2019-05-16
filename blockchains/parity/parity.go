@@ -293,7 +293,9 @@ func setupPOW(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 		}
 		return []byte(configToml), nil
 	})
-
+	if err != nil {
+		return util.LogError(err)
+	}
 	//Copy over the config file, spec file, and the accounts
 	return helpers.CopyBytesToAllNodes(tn, spec, "/parity/spec.json")
 }

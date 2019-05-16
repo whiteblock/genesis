@@ -43,7 +43,7 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, util.LogError(err).Error(), 400)
 		return
 	}
-	jwt, err := util.ExtractJwt(r)
+	jwt, _ := util.ExtractJwt(r)
 	/*if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), 403)
@@ -259,7 +259,7 @@ func signalNode(w http.ResponseWriter, r *http.Request) {
 func killNode(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	testnetID := params["testnetID"]
-	log.WithFields(log.Fields{"testnet": testnetID, "node": params["node"]}).Info("killing a node's main processs")
+	log.WithFields(log.Fields{"testnet": testnetID, "node": params["node"]}).Info("killing a node's main process")
 	tn, err := testnet.RestoreTestNet(testnetID)
 	if err != nil {
 		http.Error(w, util.LogError(err).Error(), 404)

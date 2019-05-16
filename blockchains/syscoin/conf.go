@@ -19,10 +19,8 @@
 package syscoin
 
 import (
-	"encoding/json"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/util"
-	"log"
 )
 
 type sysConf struct {
@@ -45,74 +43,7 @@ type sysConf struct {
 
 func newConf(data map[string]interface{}) (*sysConf, error) {
 	out := new(sysConf)
-	err := json.Unmarshal([]byte(GetDefaults()), out)
-
-	if data == nil {
-		log.Println("No params given")
-		return out, nil
-	}
-
-	err = util.GetJSONStringArr(data, "options", &out.Options)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONStringArr(data, "extras", &out.Extras)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONStringArr(data, "senderOptions", &out.SenderOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONStringArr(data, "senderExtras", &out.SenderExtras)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONStringArr(data, "senderExtras", &out.SenderExtras)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONStringArr(data, "receiverOptions", &out.ReceiverOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONStringArr(data, "receiverExtras", &out.ReceiverExtras)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONStringArr(data, "mnOptions", &out.MNOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONStringArr(data, "mnExtras", &out.MNExtras)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "masterNodeConns", &out.MasterNodeConns)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "nodeConns", &out.NodeConns)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "percentMasternodes", &out.PercOfMNodes)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("%+v\n", *out)
-	return out, nil
+	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
 func (sconf *sysConf) Generate() string {

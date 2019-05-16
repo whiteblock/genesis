@@ -89,6 +89,9 @@ func build(tn *testnet.TestNet) error {
 
 	buildState.IncrementBuildProgress()
 	km, err := helpers.NewKeyMaster(tn.LDD, blockchain)
+	if err != nil {
+		return util.LogError(err)
+	}
 	keyPairs := make([]util.KeyPair, tn.LDD.Nodes)
 	validatorKeyPairs := make([]util.KeyPair, rConf.Validators)
 	for i := range keyPairs {
