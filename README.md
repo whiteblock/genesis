@@ -7,6 +7,7 @@ https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/6874
 )](https://godoc.org/github.com/whiteblock/genesis)
 [![Maintainability](https://api.codeclimate.com/v1/badges/a30e833d3367ef530eaf/maintainability)](https://codeclimate.com/github/Whiteblock/genesis/maintainability)
 [![Gitter](https://badges.gitter.im/whiteblock-io/community.svg)](https://gitter.im/whiteblock-io/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Go report card](https://goreportcard.com/badge/github.com/whiteblock/genesis)](https://goreportcard.com/report/github.com/whiteblock/genesis)
 
 # Overview
 The Whiteblock platform allows users to provision multiple fully-functioning nodes over which they have complete control within a private test network 
