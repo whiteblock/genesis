@@ -8,6 +8,7 @@ require (
 	github.com/gorilla/mux v1.7.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0
+	github.com/sirupsen/logrus v1.4.1
 	github.com/whiteblock/go.uuid v1.2.1
 	github.com/whiteblock/mustache v1.0.1
 	github.com/whiteblock/scp v0.0.0-20190401151346-3a0c9dc7020d

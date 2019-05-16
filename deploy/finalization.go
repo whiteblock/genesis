@@ -182,7 +182,7 @@ func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state
 	}
 
 	_, err = client.DockerExecd(node,
-		fmt.Sprintf("nibbler --jwt %s --testnet %s --node %s %s",
+		fmt.Sprintf("bash -c 'nibbler --jwt %s --testnet %s --node %s %s 2>&1 >> /nibbler.log'",
 			details.GetJwt(), node.TestNetID, node.ID, files))
 	return util.LogError(err)
 }

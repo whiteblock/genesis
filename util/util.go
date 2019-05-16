@@ -26,12 +26,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/whiteblock/go.uuid"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	//"os/exec"
 	"strings"
 )
 
@@ -144,13 +144,9 @@ func GetUUIDString() (string, error) {
 // Rm removes all of the given directories or files. Convenience function for os.RemoveAll
 func Rm(directories ...string) error {
 	for _, directory := range directories {
-		if conf.Verbose {
-			fmt.Printf("Removing  %s...", directory)
-		}
+		logrus.WithFields(logrus.Fields{"dir": directory}).Info("removing directory")
+
 		err := os.RemoveAll(directory)
-		if conf.Verbose {
-			fmt.Printf("done\n")
-		}
 		if err != nil {
 			return LogError(err)
 		}

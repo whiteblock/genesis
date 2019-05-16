@@ -22,11 +22,11 @@ package rest
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/status"
 	"github.com/whiteblock/genesis/util"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -120,7 +120,7 @@ func StartServer() {
 	router.HandleFunc("/partition/{testnetID}", getAllPartitions).Methods("GET")
 
 	router.HandleFunc("/blockchains", getAllSupportedBlockchains).Methods("GET")
-
+	log.WithFields(log.Fields{"socket": conf.Listen}).Info("listening for requests")
 	http.ListenAndServe(conf.Listen, removeTrailingSlash(router))
 }
 
@@ -141,15 +141,13 @@ func nodesStatus(w http.ResponseWriter, r *http.Request) {
 
 	nodes, err := db.GetAllNodesByTestNet(testnetID)
 	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 400)
+		http.Error(w, util.LogError(err).Error(), 400)
 		return
 	}
 
 	out, err := status.CheckNodeStatus(nodes)
 	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 500)
+		http.Error(w, util.LogError(err).Error(), 500)
 		return
 	}
 	json.NewEncoder(w).Encode(out)
@@ -164,8 +162,7 @@ func buildStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	res, err := status.CheckBuildStatus(buildID)
 	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 404)
+		http.Error(w, util.LogError(err).Error(), 404)
 		return
 	}
 	w.Write([]byte(res))
@@ -180,7 +177,7 @@ func stopBuild(w http.ResponseWriter, r *http.Request) {
 	}
 	err := state.SignalStop(buildID)
 	if err != nil {
-		http.Error(w, err.Error(), 412)
+		http.Error(w, util.LogError(err).Error(), 412)
 		return
 	}
 	w.Write([]byte("Stop signal has been sent"))
@@ -191,13 +188,13 @@ func freezeBuild(w http.ResponseWriter, r *http.Request) {
 
 	bState, err := state.GetBuildStateByID(params["id"])
 	if err != nil {
-		http.Error(w, err.Error(), 404)
+		http.Error(w, util.LogError(err).Error(), 404)
 		return
 	}
 
 	err = bState.Freeze()
 	if err != nil {
-		http.Error(w, err.Error(), 409)
+		http.Error(w, util.LogError(err).Error(), 409)
 		return
 	}
 	w.Write([]byte("Build has been frozen"))
@@ -208,13 +205,13 @@ func thawBuild(w http.ResponseWriter, r *http.Request) {
 
 	bState, err := state.GetBuildStateByID(params["id"])
 	if err != nil {
-		http.Error(w, err.Error(), 404)
+		http.Error(w, util.LogError(err).Error(), 404)
 		return
 	}
 
 	err = bState.Unfreeze()
 	if err != nil {
-		http.Error(w, err.Error(), 409)
+		http.Error(w, util.LogError(err).Error(), 409)
 		return
 	}
 	w.Write([]byte("Build has been resumed"))
@@ -224,19 +221,17 @@ func getPreviousBuild(w http.ResponseWriter, r *http.Request) {
 
 	jwt, err := util.ExtractJwt(r)
 	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 403)
+		http.Error(w, util.LogError(err).Error(), 403)
 		return
 	}
 	kid, err := util.GetKidFromJwt(jwt)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, err.Error(), 403)
+		http.Error(w, util.LogError(err).Error(), 403)
 	}
 	build, err := db.GetLastBuildByKid(kid)
 	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 404)
+		http.Error(w, util.LogError(err).Error(), 404)
 		return
 	}
 	json.NewEncoder(w).Encode(build)
@@ -249,11 +244,11 @@ func getBuild(w http.ResponseWriter, r *http.Request) {
 
 	build, err := db.GetBuildByTestnet(id)
 	if err != nil {
-		http.Error(w, err.Error(), 404)
+		http.Error(w, util.LogError(err).Error(), 404)
 		return
 	}
 	err = json.NewEncoder(w).Encode(build)
 	if err != nil {
-		log.Println(err)
+		util.LogError(err)
 	}
 }
