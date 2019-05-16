@@ -21,6 +21,7 @@ package rchain
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
@@ -28,7 +29,6 @@ import (
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
-	"log"
 	"regexp"
 	"sync"
 	"time"
@@ -110,7 +110,7 @@ func build(tn *testnet.TestNet) error {
 		}
 	}
 	//fmt.Printf("Keypairs = %#v\n", keyPairs)
-	//fmt.Printf("BalidatorKeyPairs = %#v\n", validatorKeyPairs)
+	//fmt.Printf(ValidatorKeyPairs = %#v\n", validatorKeyPairs)
 	buildState.Set("keyPairs", keyPairs)
 	buildState.Set("validatorKeyPairs", validatorKeyPairs)
 
@@ -158,7 +158,7 @@ func build(tn *testnet.TestNet) error {
 		//fmt.Println("Attempting to get the enode address")
 		buildState.SetBuildStage("Waiting for the boot node's address")
 		for i := 0; i < 1000; i++ {
-			fmt.Println("Checking if the boot node is ready...")
+			log.WithFields(log.Fields{"iteration": i}).Info("waiting for rchain node to be ready")
 			time.Sleep(time.Duration(1 * time.Second))
 			output, err := masterClient.DockerExec(masterNode, fmt.Sprintf("cat %s", conf.DockerOutputFile))
 			if err != nil {
@@ -167,11 +167,11 @@ func build(tn *testnet.TestNet) error {
 			re := regexp.MustCompile(`(?m)rnode:\/\/[a-z|0-9]*\@([0-9]{1,3}\.){3}[0-9]{1,3}\?protocol=[0-9]*\&discovery=[0-9]*`)
 
 			if !re.MatchString(output) {
-				fmt.Println("Not ready")
+				log.WithFields(log.Fields{"iteration": i}).Info("Not ready")
 				continue
 			}
 			enode = re.FindAllString(output, 1)[0]
-			fmt.Println("Ready")
+			log.WithFields(log.Fields{"iteration": i}).Info("Ready")
 			break
 		}
 		buildState.IncrementBuildProgress()
@@ -179,7 +179,7 @@ func build(tn *testnet.TestNet) error {
 		   influxIp
 		   validators
 		*/
-		log.Println("Got the address for the bootnode: " + enode)
+		log.WithFields(log.Fields{"address": enode}).Info("got the address for the bootnode")
 	}
 	buildState.Set("bootnode", enode)
 	buildState.Set("rConf", *rConf)
