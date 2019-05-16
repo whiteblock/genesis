@@ -30,15 +30,6 @@ type libp2pTestConf struct {
 	PayloadSize int64  `json:"payloadSize"`
 }
 
-// getDefaults fetchs libp2p test related parameter defaults
-func getDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
-}
-
 func newConf(data map[string]interface{}) (*libp2pTestConf, error) {
 	out := new(libp2pTestConf)
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)

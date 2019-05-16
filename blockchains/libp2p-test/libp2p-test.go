@@ -42,7 +42,7 @@ func init() {
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, func() []util.Service { return []util.Service{} })
-	registrar.RegisterDefaults(blockchain, getDefaults)
+	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }
 
@@ -73,7 +73,7 @@ func build(tn *testnet.TestNet) error {
 		}
 		matches := re.FindAllString(res, 1)
 		if len(matches) == 0 {
-			return fmt.Errorf("unexpected Result: %s", res)
+			return fmt.Errorf("unexpected result: %s", res)
 		}
 		var peer serialPeerInfo
 		err = json.Unmarshal([]byte(matches[0]), &peer)
@@ -129,51 +129,3 @@ func build(tn *testnet.TestNet) error {
 func add(tn *testnet.TestNet) error {
 	return nil
 }
-
-/*
-	re := regexp.MustCompile(`(?m)(.*)Created a client(.*)`)
-	peers := []serialPeerInfo{}
-	mux := &sync.Mutex{}
-	counter := 0
-	interval := 1000000
-
-	err := helpers.CreateConfigs(tn, "/p2p-tests/static-peers.json", func(node ssh.Node) ([]byte, error) {
-		mux.Lock()
-		defer mux.Unlock()
-		out, err := json.Marshal(peers)
-		if err != nil {
-			return nil, util.LogError(err)
-		}
-		cmd := "/p2p-tests/p2p-tests --file /p2p-tests/static-peers.json"
-		if counter == tn.LDD.Nodes-1 {
-			cmd += fmt.Sprintf(" --send-interval %d", interval)
-		}
-		counter++
-		_, err = tn.Clients[node.GetServerID()].DockerExecdit(node, fmt.Sprintf("bash -ic '%s 2>&1 | tee %s'", cmd, conf.DockerOutputFile))
-		if err != nil {
-			return nil, util.LogError(err)
-		}
-
-		for i := 0; i < 1000; i++ {
-			res, err := tn.Clients[node.GetServerID()].DockerRead(node, conf.DockerOutputFile, -1)
-			if err != nil {
-				util.LogError(err)
-				continue
-			}
-			matches := re.FindAllString(res, 1)
-			if len(matches) > 0 {
-				var peer serialPeerInfo
-				err = json.Unmarshal([]byte(matches[0]), &peer)
-				if err != nil {
-					return nil, util.LogError(err)
-				}
-				peers = append(peers, peer)
-				break
-			}
-		}
-		fmt.Println("OUTPUT \n\n\n\n\n", string(out))
-		return out, nil
-	})
-	if err != nil {
-		return util.LogError(err)
-	}*/

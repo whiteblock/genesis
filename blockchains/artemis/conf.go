@@ -31,7 +31,7 @@ import (
 type artemisConf map[string]interface{}
 
 func newConf(data map[string]interface{}) (artemisConf, error) {
-	rawDefaults := GetDefaults()
+	rawDefaults := helpers.DefaultGetDefaultsFn(blockchain)()
 	defaults := map[string]interface{}{}
 
 	err := json.Unmarshal([]byte(rawDefaults), &defaults)
@@ -49,15 +49,6 @@ func newConf(data map[string]interface{}) (artemisConf, error) {
 	*out = artemisConf(util.MergeStringMaps(defaults, data))
 
 	return *out, nil
-}
-
-// GetDefaults fetches artemis related parameter defaults
-func GetDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
 }
 
 // GetServices returns the services which are used by artemis

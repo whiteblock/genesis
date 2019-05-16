@@ -134,3 +134,14 @@ func DefaultGetParamsFn(blockchain string) func() string {
 		return string(dat)
 	}
 }
+
+// DefaultGetDefaultsFn creates the default function for getting a blockchains default parameters
+func DefaultGetDefaultsFn(blockchain string) func() string {
+	return func() string {
+		dat, err := GetStaticBlockchainConfig(blockchain, "defaults.json")
+		if err != nil {
+			panic(err) //Missing required files is a fatal error
+		}
+		return string(dat)
+	}
+}
