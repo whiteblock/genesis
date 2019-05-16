@@ -33,22 +33,7 @@ type beamConf struct {
 
 func newConf(data map[string]interface{}) (*beamConf, error) {
 	out := new(beamConf)
-
-	err := util.GetJSONInt64(data, "validators", &out.Validators)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "txNodes", &out.TxNodes)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "nilNodes", &out.NilNodes)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
 // GetDefaults fetchs beam related parameter defaults

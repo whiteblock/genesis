@@ -57,6 +57,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+	fmt.Printf("%#v\n", *pconf)
 
 	tn.BuildState.SetBuildSteps(9 + (7 * tn.LDD.Nodes))
 	//Make the data directories
@@ -117,6 +118,8 @@ func build(tn *testnet.TestNet) error {
 		err = setupPOW(tn, pconf, wallets)
 	case "poa":
 		err = setupPOA(tn, pconf, wallets)
+	default:
+		return util.LogError(fmt.Errorf("Unknown consensus %s", pconf.Consensus))
 	}
 	if err != nil {
 		return util.LogError(err)

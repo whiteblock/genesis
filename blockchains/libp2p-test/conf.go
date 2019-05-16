@@ -19,9 +19,7 @@
 package libp2ptest
 
 import (
-	"encoding/json"
 	"github.com/whiteblock/genesis/blockchains/helpers"
-	"github.com/whiteblock/genesis/util"
 )
 
 type libp2pTestConf struct {
@@ -43,13 +41,5 @@ func getDefaults() string {
 
 func newConf(data map[string]interface{}) (*libp2pTestConf, error) {
 	out := new(libp2pTestConf)
-	err := json.Unmarshal([]byte(getDefaults()), out)
-	if data == nil {
-		return out, util.LogError(err)
-	}
-	tmp, err := json.Marshal(data)
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	return out, json.Unmarshal(tmp, out)
+	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }

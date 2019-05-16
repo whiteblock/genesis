@@ -84,19 +84,7 @@ type parityConf struct {
  */
 func newConf(data map[string]interface{}) (*parityConf, error) {
 	out := new(parityConf)
-	err := json.Unmarshal([]byte(GetDefaults()), out)
-	if data == nil {
-		log.Println(err)
-		return out, err
-	}
-	tmp, err := json.Marshal(data)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	err = json.Unmarshal(tmp, out)
-
-	return out, err
+	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
 // GetDefaults fetchs parity related parameter defaults
