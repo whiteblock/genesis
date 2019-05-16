@@ -37,6 +37,8 @@ type Resources struct {
 	Memory string `json:"memory"`
 	// Volumes to be used by each node.
 	Volumes []string `json:"volumes"`
+	// Ports to be opened for each node, each item associated with one node.
+	Ports []string `json:"ports"`
 }
 
 func memconv(mem string) (int64, error) {
