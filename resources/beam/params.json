@@ -1,14 +1,5 @@
 [
-  [
-    "validators",
-    "int"
-  ],
-  [
-    "txNodes",
-    "int"
-  ],
-  [
-    "nilNodes",
-    "int"
-  ]
+    ["validators","int"],
+    ["txNodes","int"],
+    ["nilNodes","int"]
 ]

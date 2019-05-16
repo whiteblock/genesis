@@ -1,14 +1,5 @@
 [
-  [
-    "validators",
-    "int"
-  ],
-  [
-    "networkMode",
-    "string"
-  ],
-  [
-    "constantsSource",
-    "string"
-  ]
+    ["validators","int"],
+    ["networkMode","string"],
+    ["constantsSource","string"]
 ]
