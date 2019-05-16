@@ -287,7 +287,8 @@ func init() {
 	//log.SetReportCaller(true)
 	lvl, err := log.ParseLevel(conf.Verbosity)
 	if err != nil {
-		panic(err)
+		log.SetLevel(log.InfoLevel)
+		log.Warn(err)
 	}
 	log.SetLevel(lvl)
 	NodesPerCluster = (1 << conf.NodeBits) - ReservedIps
