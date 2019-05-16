@@ -227,24 +227,6 @@ func GetPath(path string) string {
 
 /******* JSON helper functions *******/
 
-// GetJSONNumber checks and extracts a json.Number from data[field].
-// Will return an error if data[field] does not exist or is of the wrong type.
-func GetJSONNumber(data map[string]interface{}, field string) (json.Number, error) {
-	rawValue, exists := data[field]
-	if exists && rawValue != nil {
-		switch rawValue.(type) {
-		case json.Number:
-			value, valid := rawValue.(json.Number)
-			if !valid {
-				return "", fmt.Errorf("invalid JSON number")
-			}
-			return value, nil
-
-		}
-	}
-	return "", fmt.Errorf("incorrect type for %s", field)
-}
-
 // GetJSONInt64 checks and extracts a int64 from data[field].
 // Will return an error if data[field] does not exist or is of the wrong type.
 func GetJSONInt64(data map[string]interface{}, field string, out *int64) error {
