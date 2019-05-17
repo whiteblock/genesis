@@ -20,14 +20,13 @@
 package parity
 
 import (
-	"github.com/whiteblock/genesis/db"
-	"github.com/whiteblock/genesis/ssh"
-	//"../../state"
 	"encoding/json"
 	"fmt"
 	"github.com/whiteblock/genesis/blockchains/ethereum"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"log"
