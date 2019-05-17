@@ -36,15 +36,6 @@ func newConf(data map[string]interface{}) (*beamConf, error) {
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
-// GetDefaults fetchs beam related parameter defaults
-func GetDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
-}
-
 // GetServices returns the services which are used by artemis
 func GetServices() []util.Service {
 	return nil

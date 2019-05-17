@@ -100,15 +100,6 @@ func (sconf *sysConf) GenerateMN() string {
 	return out
 }
 
-// GetDefaults fetchs syscoin related parameter defaults
-func GetDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
-}
-
 // GetServices returns the services which are used by syscoin
 func GetServices() []util.Service {
 	return nil
