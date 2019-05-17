@@ -56,6 +56,7 @@ type Config struct {
 	MaxNodeCPU         float64 `json:"max-node-cpu"`
 	BridgePrefix       string  `json:"bridge-prefix"`
 	APIEndpoint        string  `json:"api-endpoint"`
+	NibblerEndPoint    string  `json:"nibbler-end-point"`
 }
 
 // LoadFromEnv loads the configuration from the Environment
@@ -206,6 +207,11 @@ func (c *Config) LoadFromEnv() {
 	if exists {
 		c.APIEndpoint = val
 	}
+	val, exists = os.LookupEnv("NIBBLER_END_POINT")
+	if exists {
+		c.APIEndpoint = val
+	}
+
 }
 
 // AutoFillMissing fills in the missing essential values with the defaults.
@@ -272,6 +278,10 @@ func (c *Config) AutoFillMissing() {
 
 	if len(c.APIEndpoint) == 0 {
 		c.APIEndpoint = "https://api.whiteblock.io"
+	}
+
+	if len(c.NibblerEndPoint) == 0 {
+		c.NibblerEndPoint = "https://storage.googleapis.com/genesis-public/nibbler/dev/bin/linux/amd64/nibbler"
 	}
 }
 

@@ -20,5 +20,6 @@
 	"nodes-private-key":"/home/master-secrets/id.master",
 	"handle-node-ssh-keys":true,
 	"max-node-memory":"16gb",
-	"max-node-cpu":16
+	"max-node-cpu":16,
+	"nibbler-end-point":"https://storage.googleapis.com/genesis-public/nibbler/dev/bin/linux/amd64/nibbler"
 }

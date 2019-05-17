@@ -33,8 +33,8 @@ import (
 
 func distributeNibbler(tn *testnet.TestNet) {
 	tn.BuildState.Async(func() {
-		//nibbler, err := util.HTTPRequest("GET", "https://storage.googleapis.com/genesis-public/nibbler/dev/bin/linux/amd64/nibbler", "")
-		nibbler, err := util.HTTPRequest("GET", "http://127.0.0.1/nibbler", "")
+		nibbler, err := util.HTTPRequest("GET", conf.NibblerEndPoint, "")
+		//nibbler, err := util.HTTPRequest("GET", "http://127.0.0.1/nibbler", "")
 		if err != nil {
 			log.Println(err)
 		}
