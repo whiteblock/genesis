@@ -75,7 +75,7 @@ func GetServices() []util.Service {
 	}
 }
 
-func makeNodeConfig(aconf artemisConf, identity string, peers string, node int, details *db.DeploymentDetails, constantsRaw string) (string, error) {
+func makeNodeConfig(aconf artemisConf, identity string, peers string, node int, details *db.DeploymentDetails, outputFile string, constantsRaw string) (string, error) {
 
 	artConf, err := util.CopyMap(aconf)
 	if err != nil {
@@ -85,6 +85,7 @@ func makeNodeConfig(aconf artemisConf, identity string, peers string, node int, 
 	filler := util.ConvertToStringMap(artConf)
 	filler["peers"] = peers
 	filler["numNodes"] = fmt.Sprintf("%d", details.Nodes)
+	filler["outputFile"] = outputFile
 	filler["constants"] = constantsRaw
 	var validators int64
 	err = util.GetJSONInt64(details.Params, "validators", &validators)
