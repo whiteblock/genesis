@@ -149,17 +149,24 @@ func Build(tn *testnet.Adjunct) error {
 		_, err := client.DockerExecdit(node, fmt.Sprintf(` bash -ic 'geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
 			` --rpcapi "admin,web3,miner,db,eth,net,personal,debug,txpool" --rpccorsdomain "0.0.0.0"%s --nodiscover --unlock="%s"`+
 			` --password /geth/passwd --networkid %d --verbosity 5 console 2>&1 >> /output.log'`, flags, unlock, networkID))
-
-		if mine {
-			_, err = client.KeepTryRun(
-				fmt.Sprintf(`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json" `+
-					` -d '{ "method": "miner_start", "params": [1], "id": 3, "jsonrpc": "2.0" }'`, node.GetIP()))
-		} else {
-			_, err = client.KeepTryRun(
-				fmt.Sprintf(`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json" `+
-					` -d '{ "method": "miner_stop", "params": [], "id": 3, "jsonrpc": "2.0" }'`, node.GetIP()))
+		if err != nil {
+			return util.LogError(err)
 		}
-		return err
+		for i := 0; i < 10; i++ {
+			if mine {
+				_, err = client.KeepTryRun(
+					fmt.Sprintf(`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json" `+
+						` -d '{ "method": "miner_start", "params": [1], "id": 3, "jsonrpc": "2.0" }'`, node.GetIP()))
+			} else {
+				_, err = client.KeepTryRun(
+					fmt.Sprintf(`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json" `+
+						` -d '{ "method": "miner_stop", "params": [], "id": 3, "jsonrpc": "2.0" }'`, node.GetIP()))
+			}
+			if err == nil {
+				break
+			}
+		}
+		return util.LogError(err)
 	})
 	if err != nil {
 		return util.LogError(err)

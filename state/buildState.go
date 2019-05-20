@@ -280,7 +280,7 @@ func (bs *BuildState) Stop() bool {
 // a current build. Returns an error if there is no build in progress
 func (bs *BuildState) SignalStop() error {
 
-	bs.Unfreeze() //Unfeeze in order to actually stop the build via error propogation
+	bs.Unfreeze() //Unfeeze in order to actually stop the build via error propagation
 
 	if atomic.LoadInt32(&bs.building) != 0 {
 		bs.ReportError(fmt.Errorf("build stopped by user"))
@@ -308,18 +308,10 @@ func (bs *BuildState) GetError() error {
 
 // SetExt inserts a key value pair into the external state store, currently only supports string
 // and []string on the other side
-func (bs *BuildState) SetExt(key string, value interface{}) error {
-	switch value.(type) {
-	case string:
-	case []string:
-	case map[string]string:
-	default:
-		return fmt.Errorf("unsupported type for value")
-	}
+func (bs *BuildState) SetExt(key string, value interface{}) {
 	bs.extraMux.Lock()
 	defer bs.extraMux.Unlock()
 	bs.ExternExtras[key] = value
-	return nil
 }
 
 // GetExt gets a value based on the given key from the external state store
@@ -379,7 +371,7 @@ func (bs *BuildState) GetExtras() map[string]interface{} {
 
 // Write writes data to a file, creating it if it doesn't exist,
 // deleting and recreating it if it does, should be used instead of golangs internal
-// io library as bs one provides automatic file cleanup and seperation of files among
+// io library as bs one provides automatic file cleanup and separation of files among
 // different builds.
 func (bs *BuildState) Write(file string, data string) error {
 	bs.mutex.Lock()

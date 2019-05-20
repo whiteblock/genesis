@@ -88,7 +88,7 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 
 	var resource util.Resources
 	if len(tn.LDD.Resources) == 0 {
-		resource = util.Resources{"", ""}
+		resource = util.Resources{Cpus: "", Memory: ""}
 	} else {
 		resource = tn.LDD.Resources[0]
 	}
@@ -144,7 +144,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 
 		if tn.Servers[serverIndex].Max <= tn.Servers[serverIndex].Nodes {
 			if len(availableServers) == 1 {
-				return fmt.Errorf("cannot build that many nodes with the availible resources")
+				return fmt.Errorf("cannot build that many nodes with the available resources")
 			}
 			availableServers = append(availableServers[:serverIndex], availableServers[serverIndex+1:]...)
 			i--

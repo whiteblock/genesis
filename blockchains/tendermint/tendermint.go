@@ -54,8 +54,8 @@ func init() {
 	registrar.RegisterBuild(blockchain, Build)
 	registrar.RegisterAddNodes(blockchain, Add)
 	registrar.RegisterServices(blockchain, GetServices)
-	registrar.RegisterDefaults(blockchain, GetDefaults)
-	registrar.RegisterParams(blockchain, GetParams)
+	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
+	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }
 
 //ExecStart=/usr/bin/tendermint node --proxy_app=kvstore --p2p.persistent_peers=167b80242c300bf0ccfb3ced3dec60dc2a81776e@165.227.41.206:26656,3c7a5920811550c04bf7a0b2f1e02ab52317b5e6@165.227.43.146:26656,303a1a4312c30525c99ba66522dd81cca56a361a@159.89.115.32:26656,b686c2a7f4b1b46dca96af3a0f31a6a7beae0be4@159.89.119.125:26656
@@ -95,7 +95,9 @@ func Build(tn *testnet.TestNet) error {
 		tn.BuildState.IncrementBuildProgress()
 		var genesis map[string]interface{}
 		err = json.Unmarshal([]byte(res), &genesis)
-
+		if err != nil {
+			return util.LogError(err)
+		}
 		validatorsRaw := genesis["validators"].([]interface{})
 		for _, validatorRaw := range validatorsRaw {
 			vdtr := validator{}
@@ -115,6 +117,9 @@ func Build(tn *testnet.TestNet) error {
 			}
 
 			err = util.GetJSONString(validatorPubKeyData, "value", &vdtr.PubKey.Value)
+			if err != nil {
+				return util.LogError(err)
+			}
 
 			err = util.GetJSONString(validatorData, "power", &vdtr.Power)
 			if err != nil {

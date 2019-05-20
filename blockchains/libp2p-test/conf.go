@@ -19,9 +19,7 @@
 package libp2ptest
 
 import (
-	"encoding/json"
 	"github.com/whiteblock/genesis/blockchains/helpers"
-	"github.com/whiteblock/genesis/util"
 )
 
 type libp2pTestConf struct {
@@ -32,34 +30,7 @@ type libp2pTestConf struct {
 	PayloadSize int64  `json:"payloadSize"`
 }
 
-// getParams fetchs libp2p test related parameters
-func getParams() string {
-
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
-}
-
-// getDefaults fetchs libp2p test related parameter defaults
-func getDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
-}
-
 func newConf(data map[string]interface{}) (*libp2pTestConf, error) {
 	out := new(libp2pTestConf)
-	err := json.Unmarshal([]byte(getDefaults()), out)
-	if data == nil {
-		return out, util.LogError(err)
-	}
-	tmp, err := json.Marshal(data)
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	return out, json.Unmarshal(tmp, out)
+	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }

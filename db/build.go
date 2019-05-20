@@ -182,7 +182,7 @@ func GetAllBuilds() ([]DeploymentDetails, error) {
 }
 
 /*
-GetBuildByTestnet gets the build paramters based off testnet id
+GetBuildByTestnet gets the build parameters based off testnet id
 */
 func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 
@@ -197,7 +197,7 @@ func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 	return details[0], nil
 }
 
-//GetLastBuildByKid gets the build paramters based off kid
+//GetLastBuildByKid gets the build parameters based off kid
 func GetLastBuildByKid(kid string) (DeploymentDetails, error) {
 
 	details, err := QueryBuilds(fmt.Sprintf(

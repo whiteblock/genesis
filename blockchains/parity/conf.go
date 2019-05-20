@@ -84,37 +84,7 @@ type parityConf struct {
  */
 func newConf(data map[string]interface{}) (*parityConf, error) {
 	out := new(parityConf)
-	err := json.Unmarshal([]byte(GetDefaults()), out)
-	if data == nil {
-		log.Println(err)
-		return out, err
-	}
-	tmp, err := json.Marshal(data)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	err = json.Unmarshal(tmp, out)
-
-	return out, err
-}
-
-// GetParams fetchs parity related parameters
-func GetParams() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
-}
-
-// GetDefaults fetchs parity related parameter defaults
-func GetDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
+	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
 // GetServices returns the services which are used by parity

@@ -40,8 +40,8 @@ func init() {
 	registrar.RegisterBuild(blockchain, regTest)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
-	registrar.RegisterDefaults(blockchain, GetDefaults)
-	registrar.RegisterParams(blockchain, GetParams)
+	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
+	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }
 
 // regTest sets up Syscoin Testnet in Regtest mode
@@ -91,7 +91,7 @@ func handleConf(tn *testnet.TestNet, sysconf *sysConf) error {
 	//log.Println(fmt.Sprintf("PERC = %d; NUM = %d;",sysconf.PercOfMNodes,noMasterNodes))
 
 	if (len(ips) - noMasterNodes) == 0 {
-		log.Println("Warning: No sender/receiver nodes availible. Removing 2 master nodes and setting them as sender/receiver")
+		log.Println("Warning: No sender/receiver nodes available. Removing 2 master nodes and setting them as sender/receiver")
 		noMasterNodes -= 2
 	} else if (len(ips)-noMasterNodes)%2 != 0 {
 		log.Println("Warning: Removing a master node to keep senders and receivers equal")
@@ -116,11 +116,7 @@ func handleConf(tn *testnet.TestNet, sysconf *sysConf) error {
 		return util.LogError(err)
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
-		defer tn.BuildState.IncrementBuildProgress()
-		_, err := client.DockerExec(node, "mkdir -p /syscoin/datadir")
-		return err
-	})
+	err = helpers.MkdirAllNodes(tn, "/syscoin/datadir")
 	if err != nil {
 		return util.LogError(err)
 	}

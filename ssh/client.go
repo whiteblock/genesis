@@ -23,13 +23,13 @@ package ssh
 import (
 	"context"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/scp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/semaphore"
 	"io/ioutil"
-	"log"
 	"strings"
 	"sync"
 	"time"
@@ -58,8 +58,7 @@ func NewClient(host string, serverID int) (*Client, error) {
 	for i := maxConnections; i > 0; i -= 5 {
 		client, err := sshConnect(host)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		out.clients = append(out.clients, client)
 	}
@@ -96,14 +95,12 @@ func (sshClient *Client) getSession() (*Session, error) {
 	}
 	if err != nil {
 		sshClient.sem.Release(1)
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	session, err := client.NewSession()
 	if err != nil {
 		sshClient.sem.Release(1)
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	sshClient.mux.Lock()
 	sshClient.clients = append(sshClient.clients, client)
@@ -119,7 +116,7 @@ func (sshClient *Client) MultiRun(commands ...string) ([]string, error) {
 
 		res, err := sshClient.Run(command)
 		if err != nil {
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		out = append(out, string(res))
 	}
@@ -131,7 +128,6 @@ func (sshClient *Client) FastMultiRun(commands ...string) (string, error) {
 
 	cmd := ""
 	for i, command := range commands {
-
 		if i != 0 {
 			cmd += "&&"
 		}
@@ -143,24 +139,19 @@ func (sshClient *Client) FastMultiRun(commands ...string) (string, error) {
 // Run executes a given command on the connected remote machine.
 func (sshClient *Client) Run(command string) (string, error) {
 	session, err := sshClient.getSession()
-	if conf.Verbose {
-		fmt.Printf("Running command: %s\n", command)
+	if err != nil {
+		return "", util.LogError(err)
 	}
+	log.WithFields(log.Fields{"host": sshClient.host, "command": command}).Debug("executing command")
+
 	bs := state.GetBuildStateByServerID(sshClient.serverID)
 	defer session.Close()
 	if bs.Stop() {
 		return "", bs.GetError()
 	}
 
-	if err != nil {
-		log.Println(err)
-		return "", err
-	}
-
 	out, err := session.Get().CombinedOutput(command)
-	if conf.Verbose {
-		fmt.Println(string(out))
-	}
+	log.Infof("$ %s\n%s\n", command, out)
 	if err != nil {
 		return string(out), util.FormatError(string(out), err)
 	}
@@ -296,9 +287,8 @@ func (sshClient *Client) KTDockerMultiExec(node Node, commands []string) (string
 // Scp is a wrapper for the scp command. Can be used to copy
 // a file over to a remote machine.
 func (sshClient *Client) Scp(src string, dest string) error {
-	if conf.Verbose {
-		fmt.Printf("Remote copying %s to %s...", src, dest)
-	}
+	log.WithFields(log.Fields{"src": src, "dst": dest}).Info("remote copying file")
+
 	if !strings.HasPrefix(src, "./") && src[0] != '/' {
 		bs := state.GetBuildStateByServerID(sshClient.serverID)
 		src = "/tmp/" + bs.BuildID + "/" + src
@@ -306,46 +296,26 @@ func (sshClient *Client) Scp(src string, dest string) error {
 
 	session, err := sshClient.getSession()
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
 	defer session.Close()
 
-	err = scp.CopyPath(src, dest, session.Get())
-	if err != nil {
-		return err
-	}
-
-	if conf.Verbose {
-		fmt.Printf("done\n")
-	}
-
-	return nil
+	return scp.CopyPath(src, dest, session.Get())
 }
 
 // InternalScp is a wrapper for the scp command. Can be used to copy
 // a file over to a remote machine. This is for internal use, and may cause
-// unpredictible behavior. Use Scp instead
+// unpredictable behavior. Use Scp instead
 func (sshClient *Client) InternalScp(src string, dest string) error {
-	if conf.Verbose {
-		fmt.Printf("Remote copying %s to %s...", src, dest)
-	}
+	log.WithFields(log.Fields{"src": src, "dst": dest}).Info("remote copying file using internal protocol")
 
 	session, err := sshClient.getSession()
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
 	defer session.Close()
 
-	err = scp.CopyPath(src, dest, session.Get())
-	if err != nil {
-		return err
-	}
-
-	if conf.Verbose {
-		fmt.Printf("done\n")
-	}
-
-	return nil
+	return scp.CopyPath(src, dest, session.Get())
 }
 
 /*
@@ -391,13 +361,11 @@ func sshConnect(host string) (*ssh.Client, error) {
 
 	key, err := ioutil.ReadFile(conf.SSHKey)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	signer, err := ssh.ParsePrivateKey(key)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	sshConfig := &ssh.ClientConfig{
 		User: conf.SSHUser,
@@ -414,8 +382,7 @@ func sshConnect(host string) (*ssh.Client, error) {
 		i++
 	}
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 
 	return client, nil

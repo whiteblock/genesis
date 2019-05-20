@@ -20,14 +20,13 @@
 package parity
 
 import (
-	"github.com/whiteblock/genesis/db"
-	"github.com/whiteblock/genesis/ssh"
-	//"../../state"
 	"encoding/json"
 	"fmt"
 	"github.com/whiteblock/genesis/blockchains/ethereum"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"log"
@@ -45,8 +44,8 @@ func init() {
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
-	registrar.RegisterDefaults(blockchain, GetDefaults)
-	registrar.RegisterParams(blockchain, GetParams)
+	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
+	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 	registrar.RegisterBlockchainSideCars(blockchain, []string{"geth"})
 }
 
@@ -57,13 +56,11 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+	fmt.Printf("%#v\n", *pconf)
 
 	tn.BuildState.SetBuildSteps(9 + (7 * tn.LDD.Nodes))
 	//Make the data directories
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
-		_, err := client.DockerExec(node, "mkdir -p /parity")
-		return err
-	})
+	err = helpers.MkdirAllNodes(tn, "/parity")
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -120,6 +117,8 @@ func build(tn *testnet.TestNet) error {
 		err = setupPOW(tn, pconf, wallets)
 	case "poa":
 		err = setupPOA(tn, pconf, wallets)
+	default:
+		return util.LogError(fmt.Errorf("Unknown consensus %s", pconf.Consensus))
 	}
 	if err != nil {
 		return util.LogError(err)
@@ -195,14 +194,8 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	storeGethParameters(tn, pconf, wallets, enodes)
-
-	err = peerAllNodes(tn, enodes)
-	if err != nil {
-		return util.LogError(err)
-	}
-
 	tn.BuildState.IncrementBuildProgress()
-	return nil
+	return peerAllNodes(tn, enodes)
 }
 
 /***************************************************************************************************************************/
@@ -292,16 +285,16 @@ func setupPOW(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 		return util.LogError(err)
 	}
 	//create config file
-	err = helpers.CreateConfigs(tn, "/parity/config.toml",
-		func(node ssh.Node) ([]byte, error) {
-			configToml, err := buildConfig(pconf, tn.LDD, wallets, "/parity/passwd", node.GetAbsoluteNumber())
-			if err != nil {
-				return nil, util.LogError(err)
-			}
-			return []byte(configToml), nil
-		})
-
+	err = helpers.CreateConfigs(tn, "/parity/config.toml", func(node ssh.Node) ([]byte, error) {
+		configToml, err := buildConfig(pconf, tn.LDD, wallets, "/parity/passwd", node.GetAbsoluteNumber())
+		if err != nil {
+			return nil, util.LogError(err)
+		}
+		return []byte(configToml), nil
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
 	//Copy over the config file, spec file, and the accounts
-	return helpers.CopyBytesToAllNodes(tn,
-		spec, "/parity/spec.json")
+	return helpers.CopyBytesToAllNodes(tn, spec, "/parity/spec.json")
 }

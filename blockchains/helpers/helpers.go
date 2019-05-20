@@ -20,6 +20,7 @@
 package helpers
 
 import (
+	"fmt"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
@@ -60,7 +61,7 @@ func allNodeExecCon(tn *testnet.TestNet, useNew bool, sideCar int, fn func(*ssh.
 // have been completely.
 // Each call to fn is provided with, in order, the relevant ssh client, the server where the node exists, the local
 // number of that node on the server and the absolute number of the node in the testnet. If any of the calls to fn
-// return a non-nil error value, one of those errors will be returned. Currently there is no guarentee as to which one,
+// return a non-nil error value, one of those errors will be returned. Currently there is no guarantee as to which one,
 // however this should be implemented in the future.
 func AllNodeExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
 	return allNodeExecCon(tn, false, -1, fn)
@@ -101,7 +102,46 @@ func AllServerExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server) erro
 	return tn.BuildState.GetError()
 }
 
+func mkdirAllNodes(tn *testnet.TestNet, dir string, useNew bool, sideCar int) error {
+	return allNodeExecCon(tn, useNew, sideCar, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+		_, err := client.DockerExec(node, fmt.Sprintf("mkdir -p %s", dir))
+		return err
+	})
+}
+
+// MkdirAllNodes makes a dir on all nodes
+func MkdirAllNodes(tn *testnet.TestNet, dir string) error {
+	return mkdirAllNodes(tn, dir, false, -1)
+}
+
+// MkdirAllNewNodes makes a dir on all new nodes
+func MkdirAllNewNodes(tn *testnet.TestNet, dir string) error {
+	return mkdirAllNodes(tn, dir, true, -1)
+}
+
 // AllServerExecConSC is like AllServerExecCon but for side cars
 func AllServerExecConSC(ad *testnet.Adjunct, fn func(*ssh.Client, *db.Server) error) error {
 	return AllServerExecCon(ad.Main, fn)
+}
+
+// DefaultGetParamsFn creates the default function for getting a blockchains parameters
+func DefaultGetParamsFn(blockchain string) func() string {
+	return func() string {
+		dat, err := GetStaticBlockchainConfig(blockchain, "params.json")
+		if err != nil {
+			panic(err) //Missing required files is a fatal error
+		}
+		return string(dat)
+	}
+}
+
+// DefaultGetDefaultsFn creates the default function for getting a blockchains default parameters
+func DefaultGetDefaultsFn(blockchain string) func() string {
+	return func() string {
+		dat, err := GetStaticBlockchainConfig(blockchain, "defaults.json")
+		if err != nil {
+			panic(err) //Missing required files is a fatal error
+		}
+		return string(dat)
+	}
 }

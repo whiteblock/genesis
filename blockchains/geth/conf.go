@@ -42,50 +42,9 @@ type ethConf struct {
  */
 func newConf(data map[string]interface{}) (*ethConf, error) {
 	out := new(ethConf)
-	err := json.Unmarshal([]byte(GetDefaults()), out)
-
-	if data == nil {
-		return out, nil
-	}
-
-	err = util.GetJSONInt64(data, "extraAccounts", &out.ExtraAccounts)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "networkId", &out.NetworkID)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "difficulty", &out.Difficulty)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxPeers", &out.MaxPeers)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "gasLimit", &out.GasLimit)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "eip155Block", &out.Eip155Block)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "homesteadBlock", &out.HomesteadBlock)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "eip158Block", &out.Eip158Block)
-	if err != nil {
-		return nil, err
+	err := helpers.HandleBlockchainConfig(blockchain, data, out)
+	if err != nil || data == nil {
+		return out, err
 	}
 
 	initBalance, exists := data["initBalance"]
@@ -101,24 +60,6 @@ func newConf(data map[string]interface{}) (*ethConf, error) {
 	}
 
 	return out, nil
-}
-
-// GetParams fetchs artemis related parameters
-func GetParams() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
-}
-
-// GetDefaults fetchs artemis related parameter defaults
-func GetDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
 }
 
 // GetServices returns the services which are used by artemis

@@ -39,8 +39,8 @@ func init() {
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
-	registrar.RegisterDefaults(blockchain, GetDefaults)
-	registrar.RegisterParams(blockchain, GetParams)
+	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
+	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }
 
 // build builds out a fresh new lighthouse test network
@@ -49,37 +49,27 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
+	tn.BuildState.SetBuildSteps(1 + (tn.LDD.Nodes * 3))
 
 	port := 9000
 	peers := ""
-	var peer string
-	for i, node := range tn.Nodes {
-		peer = fmt.Sprintf("/dns4/whiteblock-node%d@%s/tcp/%d",
-			node.LocalID,
-			node.IP,
-			port,
-		)
-		if i != len(tn.Nodes)-1 {
-			peers = peers + " --peer=" + peer + " "
-		} else {
-			peers = peers + " --peer=" + peer
-		}
-		tn.BuildState.IncrementBuildProgress()
+	for _, node := range tn.Nodes {
+		peers += fmt.Sprintf(" --peer=/dns4/whiteblock-node%d@%s/tcp/%d ", node.LocalID, node.IP, port)
 	}
+	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetBuildStage("Starting lighthouse")
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 
-		artemisCmd := "lighthouse --listen-address 0.0.0.0 --port 9000 " + peers + " 2>&1 | tee /output.log"
+		lighthouseCmd := "lighthouse --listen-address 0.0.0.0 --port 9000 " + peers + " 2>&1 | tee /output.log"
 
 		_, err := client.DockerExecd(node, "tmux new -s whiteblock -d")
 		if err != nil {
 			return util.LogError(err)
 		}
 
-		_, err = client.DockerExecd(node, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", artemisCmd))
+		_, err = client.DockerExecd(node, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", lighthouseCmd))
 		return err
 	})
 	if err != nil {

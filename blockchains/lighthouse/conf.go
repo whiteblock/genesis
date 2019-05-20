@@ -19,7 +19,6 @@
 package lighthouse
 
 import (
-	"encoding/json"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/util"
 )
@@ -29,36 +28,10 @@ type lighthouse struct {
 
 func newConf(data map[string]interface{}) (*lighthouse, error) {
 	out := new(lighthouse)
-	err := json.Unmarshal([]byte(GetDefaults()), out)
-	if data == nil {
-		return out, util.LogError(err)
-	}
-	tmp, err := json.Marshal(data)
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	return out, json.Unmarshal(tmp, out)
+	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
 // GetServices returns the services which are used by rchain
 func GetServices() []util.Service {
 	return []util.Service{}
-}
-
-// GetParams fetchs rchain related parameters
-func GetParams() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
-}
-
-// GetDefaults fetchs rchain related parameter defaults
-func GetDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
 }

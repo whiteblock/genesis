@@ -21,8 +21,8 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
-	"log"
 	"os"
 	"strconv"
 )
@@ -37,7 +37,7 @@ type Config struct {
 	NodeBits           uint32  `json:"node-bits"`
 	IPPrefix           uint32  `json:"ip-prefix"`
 	Listen             string  `json:"listen"`
-	Verbose            bool    `json:"verbose"`
+	Verbosity          string  `json:"verbosity"`
 	ThreadLimit        int64   `json:"thread-limit"`
 	DockerOutputFile   string  `json:"docker-output-file"`
 	Influx             string  `json:"influx"`
@@ -55,6 +55,8 @@ type Config struct {
 	MaxNodeMemory      string  `json:"max-node-memory"`
 	MaxNodeCPU         float64 `json:"max-node-cpu"`
 	BridgePrefix       string  `json:"bridge-prefix"`
+	APIEndpoint        string  `json:"api-endpoint"`
+	NibblerEndPoint    string  `json:"nibbler-end-point"`
 }
 
 // LoadFromEnv loads the configuration from the Environment
@@ -73,9 +75,9 @@ func (c *Config) LoadFromEnv() {
 		c.SSHKey = val
 	}
 
-	_, exists = os.LookupEnv("VERBOSE")
+	val, exists = os.LookupEnv("VERBOSITY")
 	if exists {
-		c.Verbose = true
+		c.Verbosity = val
 	}
 	val, exists = os.LookupEnv("SERVER_BITS")
 	if exists {
@@ -200,6 +202,16 @@ func (c *Config) LoadFromEnv() {
 	if exists {
 		c.BridgePrefix = val
 	}
+
+	val, exists = os.LookupEnv("API_ENDPOINT")
+	if exists {
+		c.APIEndpoint = val
+	}
+	val, exists = os.LookupEnv("NIBBLER_END_POINT")
+	if exists {
+		c.APIEndpoint = val
+	}
+
 }
 
 // AutoFillMissing fills in the missing essential values with the defaults.
@@ -216,19 +228,19 @@ func (c *Config) AutoFillMissing() {
 		c.SSHKey = home + "/.ssh/id_rsa"
 	}
 	if c.ServerBits <= 0 {
-		fmt.Println("Warning: Using default server bits")
+		log.Warn("Using default server bits")
 		c.ServerBits = 8
 	}
 	if c.ClusterBits <= 0 {
-		fmt.Println("Warning: Using default cluster bits")
-		c.ClusterBits = 14
+		log.Warn("Using default cluster bits")
+		c.ClusterBits = 12
 	}
 	if c.NodeBits <= 0 {
-		fmt.Println("Warning: Using default node bits")
-		c.NodeBits = 2
+		log.Warn("Using default node bits")
+		c.NodeBits = 4
 	}
 	if c.ThreadLimit <= 0 {
-		fmt.Println("Warning: Using default thread limit")
+		log.Warn("Using default thread limit")
 		c.ThreadLimit = 10
 	}
 
@@ -256,12 +268,20 @@ func (c *Config) AutoFillMissing() {
 	}
 
 	if c.MaxNodes <= 0 {
-		log.Println("Warning: No setting given for max nodes, defaulting to 200")
+		log.Warn("No setting given for max nodes, defaulting to 200")
 		c.MaxNodes = 200
 	}
 
 	if len(c.BridgePrefix) == 0 {
 		c.BridgePrefix = "wb_bridge"
+	}
+
+	if len(c.APIEndpoint) == 0 {
+		c.APIEndpoint = "https://api.whiteblock.io"
+	}
+
+	if len(c.NibblerEndPoint) == 0 {
+		c.NibblerEndPoint = "https://storage.googleapis.com/genesis-public/nibbler/dev/bin/linux/amd64/nibbler"
 	}
 }
 
@@ -274,6 +294,13 @@ func init() {
 	LoadConfig()
 	conf.LoadFromEnv()
 	conf.AutoFillMissing()
+	//log.SetReportCaller(true)
+	lvl, err := log.ParseLevel(conf.Verbosity)
+	if err != nil {
+		log.SetLevel(log.InfoLevel)
+		log.Warn(err)
+	}
+	log.SetLevel(lvl)
 	NodesPerCluster = (1 << conf.NodeBits) - ReservedIps
 }
 
@@ -284,7 +311,7 @@ func LoadConfig() *Config {
 	/**Load configuration**/
 	dat, err := ioutil.ReadFile("./config.json")
 	if err != nil {
-		log.Println("Warning: config.json not found, using defaults")
+		log.Warn("config.json not found, using defaults")
 	} else {
 		json.Unmarshal(dat, conf)
 	}

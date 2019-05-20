@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package netconf provides the basic functionality for the simulation of network conditions accross nodes.
+//Package netconf provides the basic functionality for the simulation of network conditions across nodes.
 package netconf
 
 import (

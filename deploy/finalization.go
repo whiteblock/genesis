@@ -84,7 +84,6 @@ func alwaysRunFinalize(tn *testnet.TestNet) {
 			}
 		}
 	})
-
 }
 
 /*
@@ -156,7 +155,7 @@ func declareNode(node *db.Node, tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	_, err = util.JwtHTTPRequest("POST", "https://api.whiteblock.io/testnets/"+node.TestNetID+"/nodes", tn.LDD.GetJwt(), string(rawData))
+	_, err = util.JwtHTTPRequest("POST", conf.APIEndpoint+"/testnets/"+node.TestNetID+"/nodes", tn.LDD.GetJwt(), string(rawData))
 	return err
 }
 
@@ -183,7 +182,7 @@ func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state
 	}
 
 	_, err = client.DockerExecd(node,
-		fmt.Sprintf("nibbler --jwt %s --testnet %s --node %s %s",
-			details.GetJwt(), node.TestNetID, node.ID, files))
+		fmt.Sprintf("bash -c 'nibbler --node-type %s --api %s --jwt %s --testnet %s --node %s %s 2>&1 >> /nibbler.log'",
+			details.Blockchain, conf.APIEndpoint, details.GetJwt(), node.TestNetID, node.ID, files))
 	return util.LogError(err)
 }

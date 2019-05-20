@@ -50,11 +50,11 @@ func init() {
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterServices(alias, GetServices)
 
-	registrar.RegisterDefaults(blockchain, GetDefaults)
-	registrar.RegisterDefaults(alias, GetDefaults)
+	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
+	registrar.RegisterDefaults(alias, helpers.DefaultGetDefaultsFn(blockchain))
 
-	registrar.RegisterParams(blockchain, GetParams)
-	registrar.RegisterParams(alias, GetParams)
+	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
+	registrar.RegisterParams(alias, helpers.DefaultGetParamsFn(blockchain))
 }
 
 const ethNetStatsPort = 3338
@@ -72,18 +72,16 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetBuildStage("Distributing secrets")
-	/**Copy over the password file**/
-	helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error { //ignore err
-		_, err := client.DockerExec(node, "mkdir -p /geth")
-		return err
-	})
 
-	/**Create the Password files**/
+	helpers.MkdirAllNodes(tn, "/geth")
+
 	{
+		/**Create the Password files**/
 		var data string
 		for i := 1; i <= tn.LDD.Nodes; i++ {
 			data += "password\n"
 		}
+		/**Copy over the password file**/
 		err = helpers.CopyBytesToAllNodes(tn, data, "/geth/passwd")
 		if err != nil {
 			return util.LogError(err)
