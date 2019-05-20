@@ -69,13 +69,35 @@ func Test_generateWorstCaseNetwork(t *testing.T) {
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			if !reflect.DeepEqual((generateWorstCaseNetwork(tt.nodes, tt.seed)), tt.expected) {
-				fmt.Errorf("return value from generateWorstCaseNetwork does not match expected value")
+				fmt.Errorf("return value from GenerateWorstCaseNetwork does not match expected value")
 			}
 		})
 	}
 }
 
-func
+func Test_generateUniformRandMeshNetwork(t *testing.T) {
+	var test = []struct {
+		nodes int
+		conns int
+		seed int64
+		expected [][]int
+	}{
+		{8, 5, 123, [][]int{}},
+		{10, 9, 8, [][]int{}},
+		{16, 8, 15, [][]int{}},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			out, _ := generateUniformRandMeshNetwork(tt.nodes, tt.conns, tt.seed)
+			if (!reflect.DeepEqual(out, tt.expected)) {
+				fmt.Errorf("return value from GenerateUniformRandMeshNetwork does not match expected value")
+			}
+		})
+	}
+}
+
+
 
 
 

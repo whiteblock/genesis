@@ -55,6 +55,7 @@ func Distances(pnts []Point) [][]float64 {
 
 // Distribute generates a roughly uniform random distribution for connections
 // among nodes.
+// TODO make this call a private func w/ seed optional
 func Distribute(nodes []string, dist []int) ([][]string, error) {
 	if len(nodes) < 2 {
 		return nil, fmt.Errorf("cannot distribute a series smaller than 1")
@@ -98,25 +99,7 @@ func Distribute(nodes []string, dist []int) ([][]string, error) {
 
 // GenerateWorstCaseNetwork generates a random path through all nodes
 func GenerateWorstCaseNetwork(nodes int) [][]int {
-	out := make([][]int, nodes)
-
-	s1 := rand.NewSource(time.Now().UnixNano())
-	rng := rand.New(s1)
-
-	nodePool := make([]int, nodes)
-	for i := 0; i < nodes; i++ {
-		nodePool[i] = i
-	}
-	node := 0
-	for i := 0; i < nodes; i++ {
-		newNodeIndex := rng.Intn(len(nodePool))
-		newNode := nodePool[newNodeIndex]
-		out[node] = []int{newNode}
-		node = newNode
-		nodePool = append(nodePool[:newNodeIndex], nodePool[newNodeIndex+1:]...)
-	}
-	out[node] = []int{0}
-	return out
+	return generateWorstCaseNetwork(nodes, time.Now().UnixNano())
 }
 
 // private test function of exported function GenerateWorstCaseNetwork()
@@ -145,13 +128,18 @@ func generateWorstCaseNetwork(nodes int, seed int64) [][]int {
 // GenerateUniformRandMeshNetwork generates a random mesh network that ensures
 // that there is always a path between all the nodes
 func GenerateUniformRandMeshNetwork(nodes int, conns int) ([][]int, error) {
+	return generateUniformRandMeshNetwork(nodes, conns, time.Now().UnixNano())
+}
+
+// private func for GenerateUniformRandMeshNetwork for testing purposes
+func generateUniformRandMeshNetwork(nodes int, conns int, seed int64) ([][]int, error) {
 	if conns < 1 {
 		return nil, fmt.Errorf("each node must have at least one connection")
 	}
 	if conns >= nodes {
 		return nil, fmt.Errorf("too many connection to distribute without duplicates")
 	}
-	s1 := rand.NewSource(time.Now().UnixNano())
+	s1 := rand.NewSource(seed)
 	rng := rand.New(s1)
 	out := GenerateWorstCaseNetwork(nodes)
 
