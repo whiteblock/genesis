@@ -128,6 +128,11 @@ func dockerRunCmd(c Container) (string, error) {
 		}
 	}
 
+	port := c.GetPorts()
+	if port != "" {
+		command += fmt.Sprintf(" -p %s", port)
+	}
+
 	if !c.GetResources().NoMemoryLimits() {
 		mem, err := c.GetResources().GetMemory()
 		if err != nil {
