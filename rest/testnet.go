@@ -44,11 +44,6 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jwt, _ := util.ExtractJwt(r)
-	/*if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), 403)
-		return
-	}*/
 	tn.SetJwt(jwt)
 
 	id, err := util.GetUUIDString()
@@ -57,7 +52,10 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error Generating a new UUID", 500)
 		return
 	}
-
+	_, ok := tn.Extras["forceUnlock"]
+	if ok && tn.Extras["forceUnlock"].(bool) {
+		state.ForceUnlockServers(tn.Servers)
+	}
 	err = state.AcquireBuilding(tn.Servers, id)
 	if err != nil {
 		util.LogError(err)
