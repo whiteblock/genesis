@@ -181,7 +181,7 @@ func build(tn *testnet.TestNet) error {
 			return util.LogError(err)
 		}
 		return client.DockerExecdLog(node, fmt.Sprintf(
-			`pantheon --config-file=/pantheon/config.toml --logging=ALL --data-path=/pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
+			`pantheon --config-file=/pantheon/config.toml --data-path=/pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
 				`--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,TXPOOL,WEB3" `+
 				` --p2p-port=%d --rpc-http-port=8545 --rpc-http-host="0.0.0.0" --host-whitelist=all --rpc-http-cors-origins="*"%s`,
 			p2pPort, flags))
