@@ -56,7 +56,7 @@ type Container interface {
 	GetNetworkName() string
 
 	// GetPorts gets the ports to open for the node, if instructed.
-	GetPorts() string
+	GetPorts() []string
 
 	// GetResources gets the maximum resource allocation of the node
 	GetResources() util.Resources
@@ -132,18 +132,8 @@ func (cd *ContainerDetails) GetName() string {
 }
 
 // GetPorts gets the ports to open for the node, if instructed.
-func (cd *ContainerDetails) GetPorts() string {
-	switch cd.Type {
-	case Node:
-		if cd.Resources.Ports != nil && len(cd.Resources.Ports) > cd.Node {
-			return cd.Resources.Ports[cd.Node]
-		} else {
-			return ""
-		}
-	case SideCar:
-		return ""
-	}
-	panic("Unsupported type")
+func (cd *ContainerDetails) GetPorts() []string {
+	return cd.Resources.Ports
 }
 
 // GetNetworkName gets the name of the containers network

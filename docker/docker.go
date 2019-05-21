@@ -128,8 +128,8 @@ func dockerRunCmd(c Container) (string, error) {
 		}
 	}
 
-	port := c.GetPorts()
-	if port != "" {
+	ports := c.GetPorts()
+	for _, port := range ports {
 		command += fmt.Sprintf(" -p %s", port)
 	}
 
