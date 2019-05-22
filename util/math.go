@@ -170,7 +170,12 @@ func generateUniformRandMeshNetwork(nodes int, conns int, seed int64) ([][]int, 
 // that peering there is always a path between all the nodes, without any duplication.
 // That is, if 1 contains 3, 3 won't contain 1 by elimination
 func GenerateNoDuplicateMeshNetwork(nodes int, conns int) ([][]int, error) {
-	out, err := GenerateUniformRandMeshNetwork(nodes, conns)
+	return generateNoDuplicateMeshNetwork(nodes, conns, time.Now().UnixNano())
+}
+
+// private func of GenerateNoDuplicateMeshNetwork for testing purposes
+func generateNoDuplicateMeshNetwork(nodes int, conns int, seed int64) ([][]int, error) {
+	out, err := generateUniformRandMeshNetwork(nodes, conns, seed)
 	if err != nil {
 		return nil, err
 	}

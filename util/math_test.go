@@ -41,7 +41,7 @@ func TestDistances(t *testing.T) {
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			if !reflect.DeepEqual(Distances(tt.pnts), tt.expected) {
-				fmt.Errorf("return value from Distances does not equal expected return value")
+				t.Errorf("return value from Distances does not equal expected return value")
 			}
 		})
 	}
@@ -69,37 +69,106 @@ func Test_generateWorstCaseNetwork(t *testing.T) {
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			if !reflect.DeepEqual((generateWorstCaseNetwork(tt.nodes, tt.seed)), tt.expected) {
-				fmt.Errorf("return value from GenerateWorstCaseNetwork does not match expected value")
+				t.Errorf("return value from GenerateWorstCaseNetwork does not match expected value")
 			}
 		})
 	}
 }
 
+// TODO why are tests passing even though test.expected is empty???
 func Test_generateUniformRandMeshNetwork(t *testing.T) {
 	var test = []struct {
-		nodes int
-		conns int
-		seed int64
+		nodes    int
+		conns    int
+		seed     int64
 		expected [][]int
 	}{
-		{8, 5, 123, [][]int{}},
-		{10, 9, 8, [][]int{}},
-		{16, 8, 15, [][]int{}},
+		{
+			8,
+			5,
+			123,
+			[][]int{
+				{3, 1, 7, 6, 5},
+				{6, 7, 5, 4, 2},
+				{5, 6, 0, 1, 3},
+				{2, 0, 4, 6, 1},
+				{7, 5, 2, 6, 1},
+				{0, 3, 1, 2, 4},
+				{0, 1, 7, 5, 4},
+				{1, 0, 2, 3, 5},
+			},
+		},
+		{
+			10,
+			9,
+			8,
+			[][]int{
+				{6, 8, 9, 1, 7, 4, 3, 2, 5},
+				{5, 6, 8, 4, 0, 7, 9, 2, 3},
+				{4, 7, 0, 9, 8, 6, 5, 1, 3},
+				{7, 1, 2, 8, 6, 4, 9, 0, 5},
+				{9, 3, 1, 0, 6, 7, 5, 8, 2},
+				{8, 2, 9, 0, 4, 6, 7, 1, 3},
+				{2, 8, 3, 7, 9, 4, 1, 0, 5},
+				{0, 5, 4, 3, 8, 9, 1, 2, 6},
+				{0, 2, 5, 3, 1, 6, 9, 7, 4},
+				{3, 7, 8, 5, 1, 4, 0, 6, 2},
+			},
+		},
+		{
+			16,
+			8,
+			15,
+			[][]int{
+				{7, 11, 4, 8, 10, 13, 9, 1},
+				{2, 3, 0, 7, 11, 4, 14, 8},
+				{13, 5, 12, 1, 15, 10, 7, 0},
+				{11, 9, 1, 12, 15, 5, 10, 2},
+				{1, 14, 10, 9, 12, 3, 11, 6},
+				{3, 4, 9, 12, 11, 0, 2, 8},
+				{4, 14, 1, 13, 11, 3, 10, 15},
+				{10, 15, 6, 9, 1, 2, 8, 5},
+				{0, 2, 5, 6, 14, 7, 3, 15},
+				{8, 5, 12, 6, 2, 4, 7, 13},
+				{14, 4, 9, 12, 5, 7, 15, 0},
+				{0, 13, 1, 5, 12, 15, 4, 2},
+				{6, 15, 10, 4, 14, 5, 3, 9},
+				{9, 1, 8, 6, 7, 14, 2, 4},
+				{12, 4, 5, 11, 3, 10, 15, 0},
+				{5, 1, 13, 14, 3, 10, 8, 0},
+			},
+		},
 	}
 
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			out, _ := generateUniformRandMeshNetwork(tt.nodes, tt.conns, tt.seed)
-			if (!reflect.DeepEqual(out, tt.expected)) {
-				fmt.Errorf("return value from GenerateUniformRandMeshNetwork does not match expected value")
+			if !reflect.DeepEqual(out, tt.expected) {
+				t.Errorf("return value from GenerateUniformRandMeshNetwork does not match expected value")
 			}
 		})
 	}
 }
 
+func Test_generateNoDuplicateMeshNetwork(t *testing.T) {
+	var test = []struct {
+		nodes    int
+		conns    int
+		seed     int64
+		expected [][]int
+	}{
+		{8, 7, 123, [][]int{}},
+		{5, 4, 3, [][]int{}},
+		{3, 2, 15, [][]int{}},
+	}
 
-
-
-
-
-
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			out, _ := generateNoDuplicateMeshNetwork(tt.nodes, tt.conns, tt.seed)
+			//fmt.Println(reflect.DeepEqual(out, tt.expected))
+			if !reflect.DeepEqual(out, tt.expected) {
+				t.Errorf("return value from GenerateNoDuplicateMeshNetwork does not match expected return value")
+			}
+		})
+	}
+}
