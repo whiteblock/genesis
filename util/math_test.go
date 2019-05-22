@@ -138,15 +138,46 @@ func Test_generateNoDuplicateMeshNetwork(t *testing.T) {
 		seed     int64
 		expected [][]int
 	}{
-		{8, 7, 123, [][]int{}},
-		{5, 4, 3, [][]int{}},
-		{3, 2, 15, [][]int{}},
+		{
+			6,
+			5,
+			123,
+			[][]int{
+				{5, 1},
+				{5, 3},
+				{1, 0, 4},
+				{2, 0, 5},
+				{3, 1, 0},
+				{4, 0, 2},
+			},
+		},
+		{
+			5,
+			4,
+			3,
+			[][]int{
+				{3, 4},
+				{0, 4},
+				{3, 1, 0},
+				{1, 2},
+				{2, 3},
+			},
+		},
+		{
+			3,
+			2,
+			15,
+			[][]int{
+				{2},
+				{0},
+				{1},
+			},
+		},
 	}
 
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			out, _ := generateNoDuplicateMeshNetwork(tt.nodes, tt.conns, tt.seed)
-			//fmt.Println(reflect.DeepEqual(out, tt.expected))
 			if !reflect.DeepEqual(out, tt.expected) {
 				t.Errorf("return value from GenerateNoDuplicateMeshNetwork does not match expected return value")
 			}
