@@ -216,7 +216,7 @@ func GenerateDependentMeshNetwork(nodes int, conns int) ([][]int, error) {
 	for i := 0; i < nodes; i++ {
 		for j := 1; j <= conns && j <= i; j++ {
 			var node int
-			if nodeToEnsure < nodes {
+			if nodeToEnsure < i {
 				node = nodeToEnsure
 				nodeToEnsure++
 			} else {
