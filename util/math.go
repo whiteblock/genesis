@@ -55,8 +55,11 @@ func Distances(pnts []Point) [][]float64 {
 
 // Distribute generates a roughly uniform random distribution for connections
 // among nodes.
-// TODO make this call a private func w/ seed optional
 func Distribute(nodes []string, dist []int) ([][]string, error) {
+	return distribute(nodes, dist, time.Now().UnixNano())
+}
+
+func distribute(nodes []string, dist []int, seed int64) ([][]string, error) {
 	if len(nodes) < 2 {
 		return nil, fmt.Errorf("cannot distribute a series smaller than 1")
 	}
@@ -65,7 +68,7 @@ func Distribute(nodes []string, dist []int) ([][]string, error) {
 			return nil, fmt.Errorf("cannot distribute among more nodes than those that are provided")
 		}
 	}
-	s1 := rand.NewSource(time.Now().UnixNano())
+	s1 := rand.NewSource(seed)
 	r1 := rand.New(s1)
 
 	out := [][]string{}
