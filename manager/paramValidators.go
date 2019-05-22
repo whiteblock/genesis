@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,10 +19,11 @@
 package manager
 
 import (
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/util"
 	"fmt"
 	"log"
+
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/util"
 )
 
 func validateResources(details *db.DeploymentDetails) error {
@@ -38,14 +39,13 @@ func validateResources(details *db.DeploymentDetails) error {
 
 func validateNumOfNodes(details *db.DeploymentDetails) error {
 	if details.Nodes > conf.MaxNodes {
-		err := fmt.Errorf("too many nodes: max of %d nodes", conf.MaxNodes)
-		return err
+		return fmt.Errorf("too many nodes: max of %d nodes", conf.MaxNodes)
 	}
 
 	if details.Nodes < 1 {
-		err := fmt.Errorf("must have at least 1 node")
-		return err
+		return fmt.Errorf("must have at least 1 node")
 	}
+
 	return nil
 }
 
@@ -53,7 +53,6 @@ func validateImages(details *db.DeploymentDetails) error {
 	for _, image := range details.Images {
 		err := util.ValidateCommandLine(image)
 		if err != nil {
-			log.Println(err)
 			return err
 		}
 	}
@@ -63,7 +62,6 @@ func validateImages(details *db.DeploymentDetails) error {
 func validateBlockchain(details *db.DeploymentDetails) error {
 	err := util.ValidateCommandLine(details.Blockchain)
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 	return nil
@@ -71,43 +69,23 @@ func validateBlockchain(details *db.DeploymentDetails) error {
 
 func checkForNilOrMissing(details *db.DeploymentDetails) error {
 	if details.Servers == nil {
-		err := fmt.Errorf("servers cannot be null")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
+		return fmt.Errorf("servers cannot be null")
 	}
 
 	if len(details.Servers) == 0 {
-		err := fmt.Errorf("servers cannot be empty")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
+		return fmt.Errorf("servers cannot be empty")
 	}
 
 	if len(details.Blockchain) == 0 {
-		err := fmt.Errorf("blockchain cannot be empty")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
+		return fmt.Errorf("blockchain cannot be empty")
 	}
 
 	if details.Images == nil {
-		err := fmt.Errorf("images cannot be null")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
+		return fmt.Errorf("images cannot be null")
 	}
 
 	if len(details.Images) == 0 {
-		err := fmt.Errorf("images cannot be empty")
-		if err != nil {
-			log.Println(err)
-			return err
-		}
+		return fmt.Errorf("images cannot be empty")
 	}
 
 	return nil

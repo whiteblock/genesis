@@ -1,0 +1,17 @@
+language: go
+go_import_path: github.com/whiteblock/genesis
+sudo: false
+matrix:
+  include:
+    - os: linux
+      dist: xenial
+      sudo: required
+      go: 1.12.x
+      install:
+        - sudo apt-get install golint -y
+      before_script:
+        - go get github.com/whiteblock/genesis
+      script:
+        - go test github.com/whiteblock/genesis/...
+        - golint github.com/whiteblock/genesis/...
+        - go vet github.com/whiteblock/genesis/...

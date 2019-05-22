@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -16,30 +16,31 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package artemis handles artemis specific functionality
+// Package artemis handles artemis specific functionality
 package artemis
 
 import (
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/blockchains/registrar"
 	"fmt"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 	"strings"
 )
 
 var conf *util.Config
 
+const blockchain = "artemis"
+
 func init() {
 	conf = util.GetConfig()
-	blockchain := "artemis"
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
-	registrar.RegisterParams(blockchain, GetParams)
+	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 	registrar.RegisterAdditionalLogs(blockchain, map[string]string{
 		"json": "/artemis/data/log.json"})
 }

@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -20,14 +20,15 @@
 package docker
 
 import (
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 )
 
 var conf *util.Config
@@ -119,6 +120,12 @@ func dockerRunCmd(c Container) (string, error) {
 
 	if !c.GetResources().NoCPULimits() {
 		command += fmt.Sprintf(" --cpus %s", c.GetResources().Cpus)
+	}
+
+	if c.GetResources().Volumes != nil {
+		for _, volume := range c.GetResources().Volumes {
+			command += fmt.Sprintf(" -v %s", volume)
+		}
 	}
 
 	if !c.GetResources().NoMemoryLimits() {

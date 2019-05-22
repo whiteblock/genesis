@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,15 +19,15 @@
 package rest
 
 import (
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/manager"
-	"github.com/Whiteblock/genesis/state"
-	"github.com/Whiteblock/genesis/status"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/manager"
+	"github.com/whiteblock/genesis/state"
+	"github.com/whiteblock/genesis/status"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 	"log"
 	"net/http"
 	"strconv"
@@ -51,6 +51,7 @@ func createTestNet(w http.ResponseWriter, r *http.Request) {
 		return
 	}*/
 	tn.SetJwt(jwt)
+
 	id, err := util.GetUUIDString()
 	if err != nil {
 		log.Println(err)
@@ -320,5 +321,5 @@ func killNode(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	w.Write([]byte(fmt.Sprintf("Killed node %d", params["node"])))
+	w.Write([]byte(fmt.Sprintf("Killed node %s", params["node"])))
 }

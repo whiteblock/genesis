@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,11 +19,11 @@
 package helpers
 
 import (
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/state"
 	"encoding/base64"
 	"fmt"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/state"
 	"io/ioutil"
 )
 

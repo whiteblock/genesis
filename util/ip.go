@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -76,7 +76,8 @@ func GetInfoFromIP(ipStr string) (int, int, int) {
 	var clusterLast uint32 = (1 << conf.ClusterBits) - 1
 	server := (rawIP >> (conf.NodeBits + conf.ClusterBits)) & ((1 << conf.ServerBits) - 1)
 	cluster := (rawIP >> conf.NodeBits) & ((1 << conf.ClusterBits) - 1)
-	var index = rawIP & ((1 << conf.NodeBits) - 1)
+
+	index := (rawIP & ((1 << conf.NodeBits) - 1))
 
 	if cluster != clusterLast {
 		index -= 2

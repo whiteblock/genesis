@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -20,16 +20,16 @@
 package pantheon
 
 import (
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/state"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
-	"github.com/Whiteblock/genesis/blockchains/ethereum"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/blockchains/registrar"
 	"fmt"
-	"github.com/Whiteblock/mustache"
+	"github.com/whiteblock/genesis/blockchains/ethereum"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/state"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
+	"github.com/whiteblock/mustache"
 	"log"
 	"sync"
 )
@@ -44,7 +44,7 @@ func init() {
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
-	registrar.RegisterParams(blockchain, GetParams)
+	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 	registrar.RegisterBlockchainSideCars(blockchain, []string{"geth", "orion"})
 
 }
@@ -71,6 +71,8 @@ func build(tn *testnet.TestNet) error {
 	accounts = append(accounts, extraAccounts...)
 
 	tn.BuildState.SetBuildStage("Setting Up Accounts")
+
+	helpers.MkdirAllNodes(tn, "/pantheon/genesis")
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 
@@ -100,12 +102,6 @@ func build(tn *testnet.TestNet) error {
 		if err != nil {
 			return util.LogError(err)
 		}
-
-		_, err = client.DockerExec(node, "mkdir /pantheon/genesis")
-		if err != nil {
-			return util.LogError(err)
-		}
-
 		// used for IBFT2 extraData
 		_, err = client.DockerExec(node,
 			"pantheon rlp encode --from=/pantheon/data/toEncode.json --to=/pantheon/rlpEncodedExtraData")

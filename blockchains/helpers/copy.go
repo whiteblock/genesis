@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,11 +19,11 @@
 package helpers
 
 import (
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/state"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
 	"fmt"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/state"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 	"log"
 	"sync"
 )
@@ -124,6 +124,7 @@ func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, dataDst 
 		if err != nil {
 			return util.LogError(err)
 		}
+
 		err = tn.BuildState.Write(tmpFilename, dataDst[i*2])
 		fmted = append(fmted, tmpFilename)
 		fmted = append(fmted, dataDst[i*2+1])
@@ -161,6 +162,7 @@ func SingleCp(client *ssh.Client, buildState *state.BuildState, node ssh.Node, d
 	}
 
 	err = buildState.Write(tmpFilename, string(data))
+
 	if err != nil {
 		log.Println(err)
 		return err

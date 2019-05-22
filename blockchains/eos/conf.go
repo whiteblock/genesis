@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,12 +19,12 @@
 package eos
 
 import (
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/util"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
 	"encoding/json"
 	"fmt"
-	"github.com/Whiteblock/mustache"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/util"
+	"github.com/whiteblock/mustache"
 	"time"
 )
 
@@ -77,232 +77,17 @@ type eosConf struct {
 
 func newConf(data map[string]interface{}) (*eosConf, error) {
 	out := new(eosConf)
-	json.Unmarshal([]byte(GetDefaults()), out)
+	err := json.Unmarshal([]byte(GetDefaults()), out)
 	if data == nil {
-		return out, nil
+		return out, util.LogError(err)
 	}
-
-	err := util.GetJSONInt64(data, "userAccounts", &out.UserAccounts)
+	tmp, err := json.Marshal(data)
 	if err != nil {
-		return nil, err
+		return nil, util.LogError(err)
 	}
+	err = json.Unmarshal(tmp, out)
 
-	err = util.GetJSONInt64(data, "validators", &out.BlockProducers)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxBlockNetUsage", &out.MaxBlockNetUsage)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "targetBlockNetUsagePct", &out.TargetBlockNetUsagePct)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxTransactionNetUsage", &out.MaxTransactionNetUsage)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "basePerTransactionNetUsage", &out.BasePerTransactionNetUsage)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "netUsageLeeway", &out.NetUsageLeeway)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "contextFreeDiscountNetUsageNum", &out.ContextFreeDiscountNetUsageNum)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "contextFreeDiscountNetUsageDen", &out.ContextFreeDiscountNetUsageDen)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxBlockCpuUsage", &out.MaxBlockCPUUsage)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "targetBlockCpuUsagePct", &out.TargetBlockCPUUsagePct)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxTransactionCpuUsage", &out.MaxTransactionCPUUsage)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "minTransactionCpuUsage", &out.MinTransactionCPUUsage)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxTransactionLifetime", &out.MaxTransactionLifetime)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "deferredTrxExpirationWindow", &out.DeferredTrxExpirationWindow)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxTransactionDelay", &out.MaxTransactionDelay)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxInlineActionSize", &out.MaxInlineActionSize)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxInlineActionDepth", &out.MaxInlineActionDepth)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxAuthorityDepth", &out.MaxAuthorityDepth)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "initialChainId", &out.InitialChainID)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "chainStateDbSizeMb", &out.ChainStateDbSizeMb)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "reversibleBlocksDbSizeMb", &out.ReversibleBlocksDbSizeMb)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONBool(data, "contractsConsole", &out.ContractsConsole)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "p2pMaxNodesPerHost", &out.P2pMaxNodesPerHost)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONString(data, "allowedConnection", &out.AllowedConnection)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxClients", &out.MaxClients)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "connectionCleanupPeriod", &out.ConnectionCleanupPeriod)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "networkVersionMatch", &out.NetworkVersionMatch)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "syncFetchSpan", &out.SyncFetchSpan)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONBool(data, "pauseOnStartup", &out.PauseOnStartup)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxTransactionTime", &out.MaxTransactionTime)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "maxIrreversibleBlockAge", &out.MaxIrreversibleBlockAge)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "keosdProviderTimeout", &out.KeosdProviderTimeout)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "txnReferenceBlockLag", &out.TxnReferenceBlockLag)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONStringArr(data, "plugins", &out.Plugins)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONStringArr(data, "configExtras", &out.ConfigExtras)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "accountCpuStake", &out.AccountCPUStake)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "accountRam", &out.AccountRAM)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "accountNetStake", &out.AccountNetStake)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "accountFunds", &out.AccountFunds)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "bpCpuStake", &out.BpCPUStake)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "bpRam", &out.BpRAM)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "bpNetStake", &out.BpNetStake)
-	if err != nil {
-		return nil, err
-	}
-
-	err = util.GetJSONInt64(data, "bpFunds", &out.BpFunds)
-	if err != nil {
-		return nil, err
-	}
-
-	return out, nil
+	return out, err
 }
 
 func (econf *eosConf) GenerateGenesis(masterPublicKey string, details *db.DeploymentDetails) (string, error) {
@@ -375,15 +160,6 @@ func (econf *eosConf) GenerateConfig() string {
 // GetDefaults fetchs eos related parameter defaults
 func GetDefaults() string {
 	dat, err := helpers.GetStaticBlockchainConfig("eos", "defaults.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
-}
-
-// GetParams fetchs eos related parameters
-func GetParams() string {
-	dat, err := helpers.GetStaticBlockchainConfig("eos", "params.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}

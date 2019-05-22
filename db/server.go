@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,9 +19,9 @@
 package db
 
 import (
-	"github.com/Whiteblock/genesis/util"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //sqlite
+	"github.com/whiteblock/genesis/util"
 	"regexp"
 )
 
@@ -36,7 +36,7 @@ type Server struct {
 	// ID is the ID of the server
 	ID int `json:"id"`
 	// SubnetID is the number used in the IP scheme for nodes on this server
-	SubnetID int `json:"subnetID"`
+	SubnetID int      `json:"subnetID"`
 	Ips      []string //To be removed
 }
 

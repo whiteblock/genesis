@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,9 +19,9 @@
 package syscoin
 
 import (
-	"github.com/Whiteblock/genesis/util"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
 	"encoding/json"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/util"
 	"log"
 )
 
@@ -167,15 +167,6 @@ func (sconf *sysConf) GenerateMN() string {
 		extra += extra + "\n"
 	}
 	return out
-}
-
-// GetParams fetchs syscoin related parameters
-func GetParams() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "params.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
 }
 
 // GetDefaults fetchs syscoin related parameter defaults

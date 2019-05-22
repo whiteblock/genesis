@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,12 +19,12 @@
 package rest
 
 import (
-	"github.com/Whiteblock/genesis/db"
-	netem "github.com/Whiteblock/genesis/net"
-	"github.com/Whiteblock/genesis/status"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/whiteblock/genesis/db"
+	netem "github.com/whiteblock/genesis/net"
+	"github.com/whiteblock/genesis/status"
 	"log"
 	"net/http"
 	"strconv"

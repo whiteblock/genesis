@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -20,10 +20,11 @@
 package helpers
 
 import (
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
+	"fmt"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 	"sync"
 )
 
@@ -101,7 +102,35 @@ func AllServerExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server) erro
 	return tn.BuildState.GetError()
 }
 
+func mkdirAllNodes(tn *testnet.TestNet, dir string, useNew bool, sideCar int) error {
+	return allNodeExecCon(tn, useNew, sideCar, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+		_, err := client.DockerExec(node, fmt.Sprintf("mkdir -p %s", dir))
+		return err
+	})
+}
+
+// MkdirAllNodes makes a dir on all nodes
+func MkdirAllNodes(tn *testnet.TestNet, dir string) error {
+	return mkdirAllNodes(tn, dir, false, -1)
+}
+
+// MkdirAllNewNodes makes a dir on all new nodes
+func MkdirAllNewNodes(tn *testnet.TestNet, dir string) error {
+	return mkdirAllNodes(tn, dir, true, -1)
+}
+
 // AllServerExecConSC is like AllServerExecCon but for side cars
 func AllServerExecConSC(ad *testnet.Adjunct, fn func(*ssh.Client, *db.Server) error) error {
 	return AllServerExecCon(ad.Main, fn)
+}
+
+// DefaultGetParamsFn creates the default function for getting a blockchains parameters
+func DefaultGetParamsFn(blockchain string) func() string {
+	return func() string {
+		dat, err := GetStaticBlockchainConfig(blockchain, "params.json")
+		if err != nil {
+			panic(err) //Missing required files is a fatal error
+		}
+		return string(dat)
+	}
 }

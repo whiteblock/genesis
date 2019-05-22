@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,13 +19,13 @@
 package artemis
 
 import (
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/util"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/Whiteblock/mustache"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/util"
+	"github.com/whiteblock/mustache"
 )
 
 type artemisConf map[string]interface{}
@@ -51,18 +51,9 @@ func newConf(data map[string]interface{}) (artemisConf, error) {
 	return *out, nil
 }
 
-// GetParams fetches artemis related parameters
-func GetParams() string {
-	dat, err := helpers.GetStaticBlockchainConfig("artemis", "params.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
-}
-
 // GetDefaults fetches artemis related parameter defaults
 func GetDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig("artemis", "defaults.json")
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}

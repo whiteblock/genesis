@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -127,7 +127,7 @@ func TestGetNetworkAddress(t *testing.T) {
 	for _, test := range tests {
 		ip := GetNetworkAddress(test.params[0], test.params[1])
 
-		if ip == test.expected.str {
+		if ip != test.expected.str {
 			t.Errorf("GetNetworkAddress(%d,%d) returned %s. Expected %s\n", test.params[0],
 				test.params[1], ip, test.expected.str)
 		}

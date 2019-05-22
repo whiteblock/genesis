@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -22,42 +22,35 @@ package plumtree
 import (
 	"fmt"
 
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 )
 
 var conf *util.Config
 
+const blockchain = "plumtree"
+
 func init() {
 	conf = util.GetConfig()
-	blockchain := "plumtree"
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
-	//registrar.RegisterServices(blockchain, GetServices)
-	//registrar.RegisterDefaults(blockchain, GetDefaults)
-	//registrar.RegisterParams(blockchain, GetParams)
+	registrar.RegisterServices(blockchain, getServices)
+	registrar.RegisterDefaults(blockchain, getDefaults)
+	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 	registrar.RegisterAdditionalLogs(blockchain, map[string]string{
 		"json": "/plumtree/data/log.json"})
 }
 
-func GetParams() string {
-	dat, err := helpers.GetStaticBlockchainConfig("plumtree", "params.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
-}
-
-func GetServices() []util.Service {
+func getServices() []util.Service {
 	return nil
 }
 
-func GetDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig("plumtree", "defaults.json")
+func getDefaults() string {
+	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
 	if err != nil {
 		panic(err) //Missing required files is a fatal error
 	}
@@ -67,7 +60,7 @@ func GetDefaults() string {
 // build builds out a fresh new plumtree test network
 func build(tn *testnet.TestNet) error {
 
-	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
+	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 1))
 
 	port := 9000
 	peers := ""
@@ -86,7 +79,6 @@ func build(tn *testnet.TestNet) error {
 		tn.BuildState.IncrementBuildProgress()
 	}
 
-	peers = peers
 	fmt.Println(peers)
 
 	tn.BuildState.SetBuildStage("Starting plumtree")

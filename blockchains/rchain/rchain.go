@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -20,14 +20,14 @@
 package rchain
 
 import (
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/blockchains/registrar"
 	"fmt"
-	"github.com/Whiteblock/mustache"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
+	"github.com/whiteblock/mustache"
 	"log"
 	"regexp"
 	"sync"
@@ -45,7 +45,7 @@ func init() {
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, GetDefaults)
-	registrar.RegisterParams(blockchain, GetParams)
+	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }
 
 // build builds out a fresh new rchain test network
@@ -68,12 +68,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	/**Make the data directories**/
-
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
-		buildState.IncrementBuildProgress()
-		_, err := client.DockerExec(node, "mkdir /datadir")
-		return err
-	})
+	helpers.MkdirAllNodes(tn, "/datadir")
 	/**Setup the first node**/
 	err = createFirstConfigFile(tn, masterClient, masterNode, rConf, services["wb_influx_proxy"])
 	if err != nil {

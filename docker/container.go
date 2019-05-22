@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,9 +19,9 @@
 package docker
 
 import (
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/util"
 	"fmt"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/util"
 )
 
 //ContainerType represents the type of node the container is

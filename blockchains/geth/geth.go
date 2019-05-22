@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -20,16 +20,16 @@
 package geth
 
 import (
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
-	"github.com/Whiteblock/genesis/blockchains/ethereum"
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/blockchains/registrar"
 	"encoding/json"
 	"fmt"
-	"github.com/Whiteblock/mustache"
+	"github.com/whiteblock/genesis/blockchains/ethereum"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
+	"github.com/whiteblock/mustache"
 	"regexp"
 	"sync"
 )
@@ -53,8 +53,8 @@ func init() {
 	registrar.RegisterDefaults(blockchain, GetDefaults)
 	registrar.RegisterDefaults(alias, GetDefaults)
 
-	registrar.RegisterParams(blockchain, GetParams)
-	registrar.RegisterParams(alias, GetParams)
+	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
+	registrar.RegisterParams(alias, helpers.DefaultGetParamsFn(blockchain))
 }
 
 const ethNetStatsPort = 3338
@@ -72,18 +72,16 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetBuildStage("Distributing secrets")
-	/**Copy over the password file**/
-	helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error { //ignore err
-		_, err := client.DockerExec(node, "mkdir -p /geth")
-		return err
-	})
 
-	/**Create the Password files**/
+	helpers.MkdirAllNodes(tn, "/geth")
+
 	{
+		/**Create the Password files**/
 		var data string
 		for i := 1; i <= tn.LDD.Nodes; i++ {
 			data += "password\n"
 		}
+		/**Copy over the password file**/
 		err = helpers.CopyBytesToAllNodes(tn, data, "/geth/passwd")
 		if err != nil {
 			return util.LogError(err)
@@ -223,6 +221,8 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+
+	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
 
 	for _, account := range accounts {
 		tn.BuildState.SetExt(account.HexAddress(), map[string]string{

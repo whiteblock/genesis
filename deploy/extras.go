@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,14 +19,14 @@
 package deploy
 
 import (
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/docker"
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
 	"encoding/base64"
 	"fmt"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/docker"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 	"log"
 	"sync"
 )
@@ -73,7 +73,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		log.Println(err)
 	}
 
-	err = helpers.CopyAllToServers(tn, "Dockerfile", "~/Dockerfile")
+	err = helpers.CopyAllToServers(tn, "Dockerfile", "/tmp/Dockerfile")
 	if err != nil {
 		log.Println(err)
 		return err
@@ -84,6 +84,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		log.Println(err)
 		return err
 	}
+
 	tn.BuildState.SetBuildStage("Building your custom image")
 	imageName := fmt.Sprintf("%s:%s", tn.LDD.Blockchain, tag)
 	wg := sync.WaitGroup{}
@@ -92,7 +93,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		go func(client *ssh.Client) {
 			defer wg.Done()
 
-			_, err := client.Run(fmt.Sprintf("docker build ~ -t %s", imageName))
+			_, err := client.Run(fmt.Sprintf("docker build /tmp/ -t %s", imageName))
 			tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
 			if err != nil {
 				log.Println(err)

@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -55,6 +55,7 @@ type Config struct {
 	MaxNodeMemory      string  `json:"max-node-memory"`
 	MaxNodeCPU         float64 `json:"max-node-cpu"`
 	BridgePrefix       string  `json:"bridge-prefix"`
+	APIEndpoint        string  `json:"api-endpoint"`
 }
 
 // LoadFromEnv loads the configuration from the Environment
@@ -200,6 +201,11 @@ func (c *Config) LoadFromEnv() {
 	if exists {
 		c.BridgePrefix = val
 	}
+
+	val, exists = os.LookupEnv("API_ENDPOINT")
+	if exists {
+		c.APIEndpoint = val
+	}
 }
 
 // AutoFillMissing fills in the missing essential values with the defaults.
@@ -262,6 +268,10 @@ func (c *Config) AutoFillMissing() {
 
 	if len(c.BridgePrefix) == 0 {
 		c.BridgePrefix = "wb_bridge"
+	}
+
+	if len(c.APIEndpoint) == 0 {
+		c.APIEndpoint = "https://api.whiteblock.io"
 	}
 }
 

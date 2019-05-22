@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -21,11 +21,11 @@
 package ssh
 
 import (
-	"github.com/Whiteblock/genesis/state"
-	"github.com/Whiteblock/genesis/util"
 	"context"
 	"fmt"
-	"github.com/Whiteblock/scp"
+	"github.com/whiteblock/genesis/state"
+	"github.com/whiteblock/genesis/util"
+	"github.com/whiteblock/scp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/semaphore"
 	"io/ioutil"
@@ -37,7 +37,7 @@ import (
 
 var conf = util.GetConfig()
 
-const maxRunAttempts int = 20
+const maxRunAttempts int = 30
 
 const maxConnections int = 50
 

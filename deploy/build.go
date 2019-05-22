@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -20,12 +20,13 @@
 package deploy
 
 import (
-	"github.com/Whiteblock/genesis/blockchains/registrar"
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/docker"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
 	"fmt"
+	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/docker"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 	"sync"
 )
 
@@ -34,7 +35,7 @@ var conf = util.GetConfig()
 func buildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 	sidecars, err := registrar.GetBlockchainSideCars(tn.LDD.Blockchain)
 	if err != nil {
-		 //do not report
+		//do not report
 		return
 	}
 
@@ -85,7 +86,12 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 	}
 	tn.BuildState.IncrementDeployProgress()
 
-	resource := tn.LDD.Resources[0]
+	var resource util.Resources
+	if len(tn.LDD.Resources) == 0 {
+		resource = util.Resources{Cpus: "", Memory: ""}
+	} else {
+		resource = tn.LDD.Resources[0]
+	}
 	node.Image = tn.LDD.Images[0]
 	var env map[string]string
 
@@ -150,6 +156,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 		if err != nil {
 			return util.LogError(err)
 		}
+
 		nodeIP, err := util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes), 0)
 		if err != nil {
 			return util.LogError(err)
@@ -198,10 +205,10 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 
 	for _, client := range tn.Clients {
 		wg.Add(1)
-		go func() {
+		go func(client *ssh.Client) {
 			defer wg.Done()
 			client.Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
-		}()
+		}(client)
 
 	}
 	distributeNibbler(tn)

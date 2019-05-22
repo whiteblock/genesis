@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,10 +19,10 @@
 package status
 
 import (
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/util"
 	"fmt"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/util"
 	"log"
 	"strconv"
 	"strings"
@@ -50,6 +50,7 @@ type NodeStatus struct {
 	IP        string `json:"ip"`
 	Up        bool   `json:"up"`
 	Resources Comp   `json:"resourceUse"`
+	ID        string `json:"id"`
 }
 
 // FindNodeIndex finds the index of a node by name and server id
@@ -116,6 +117,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 			IP:        node.IP,
 			Server:    node.Server,
 			Up:        false,
+			ID:        node.ID,
 			Resources: Comp{-1, -1, -1},
 		}
 

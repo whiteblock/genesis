@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,16 +19,16 @@
 package deploy
 
 import (
-	"github.com/Whiteblock/genesis/blockchains/helpers"
-	"github.com/Whiteblock/genesis/blockchains/registrar"
-	"github.com/Whiteblock/genesis/db"
-	"github.com/Whiteblock/genesis/ssh"
-	"github.com/Whiteblock/genesis/state"
-	"github.com/Whiteblock/genesis/status"
-	"github.com/Whiteblock/genesis/testnet"
-	"github.com/Whiteblock/genesis/util"
 	"encoding/json"
 	"fmt"
+	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/state"
+	"github.com/whiteblock/genesis/status"
+	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 	"io/ioutil"
 	"log"
 	"strings"
@@ -84,7 +84,6 @@ func alwaysRunFinalize(tn *testnet.TestNet) {
 			}
 		}
 	})
-
 }
 
 /*
@@ -156,7 +155,7 @@ func declareNode(node *db.Node, tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	_, err = util.JwtHTTPRequest("POST", "https://api.whiteblock.io/testnets/"+node.TestNetID+"/nodes", tn.LDD.GetJwt(), string(rawData))
+	_, err = util.JwtHTTPRequest("POST", conf.APIEndpoint+"/testnets/"+node.TestNetID+"/nodes", tn.LDD.GetJwt(), string(rawData))
 	return err
 }
 

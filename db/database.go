@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 Whiteblock Inc.
+	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -20,10 +20,10 @@
 package db
 
 import (
-	"github.com/Whiteblock/genesis/util"
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //needed for db
+	"github.com/whiteblock/genesis/util"
 	"os"
 )
 
@@ -43,9 +43,8 @@ var conf = util.GetConfig()
 
 var db *sql.DB
 
-
 func init() {
-	var err error 
+	var err error
 	db, err = getDB()
 	if err != nil {
 		panic(err)
