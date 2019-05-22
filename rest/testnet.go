@@ -265,7 +265,7 @@ func killNode(w http.ResponseWriter, r *http.Request) {
 	}
 	cmdRaw, ok := tn.BuildState.Get(params["node"])
 	if !ok {
-		log.Printf("Node %s not found", params["node"])
+		log.WithFields(log.Fields{"node": params["node"]}).Warn("node not found")
 		http.Error(w, fmt.Sprintf("Node %s not found", params["node"]), 404)
 		return
 	}
@@ -279,7 +279,7 @@ func killNode(w http.ResponseWriter, r *http.Request) {
 	cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep|  awk '{print $2}'| tail -n 1", strings.Split(cmd.Cmdline, " ")[0])
 	node, err := db.GetNodeByLocalID(tn.Nodes, cmd.Node)
 	if err != nil {
-		log.Println(err)
+		log.WithFields(log.Fields{"node": cmd.Node, "error": err}).Error("error getting node from db")
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -289,9 +289,8 @@ func killNode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, util.LogError(err).Error(), 500)
 		return
 	}
-	res, err := client.DockerExec(node, fmt.Sprintf("kill -INT %s", pid))
+	_, err = client.DockerExec(node, fmt.Sprintf("kill -INT %s", pid))
 	if err != nil {
-		log.Println(res)
 		http.Error(w, util.LogError(err).Error(), 500)
 		return
 	}
