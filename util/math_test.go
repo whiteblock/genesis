@@ -9,12 +9,12 @@ import (
 
 func TestDistances(t *testing.T) {
 	var test = []struct {
-		pnts []Point
+		pnts     []Point
 		expected [][]float64
 	}{
 		{
 			[]Point{{2, 3}, {4, 6}, {0, 1}, {3, 3}, {10, 7}},
-			[][]float64{{0, 3.605551275463989, 2.8284271247461903, 1,  8.94427190999916},
+			[][]float64{{0, 3.605551275463989, 2.8284271247461903, 1, 8.94427190999916},
 				{3.605551275463989, 0, 6.4031242374328485, 3.1622776601683795, 6.082762530298219},
 				{2.8284271247461903, 6.4031242374328485, 0, 3.605551275463989, 11.661903789690601},
 				{1, 3.1622776601683795, 3.605551275463989, 0, 8.06225774829855},
@@ -47,8 +47,8 @@ func TestDistances(t *testing.T) {
 	}
 }
 
-//TODO finish this test by figuring out what an appropriate value is for dist
-func TestDistribute(t *testing.T) {
+//TODO: this test takes too long to run
+/**func TestDistribute(t *testing.T) {
 	var test = []struct {
 		nodes []string
 		dist []int
@@ -66,17 +66,17 @@ func TestDistribute(t *testing.T) {
 			out, _ := distribute(tt.nodes, tt.dist, tt.seed)
 			fmt.Println(out)
 			fmt.Println(tt.expected)
-/**			if !reflect.DeepEqual(out, tt.expected) {
+		if !reflect.DeepEqual(out, tt.expected) {
 				t.Errorf("return value from Distribute does not match expected value")
-			}**/
+			}
 		})
 	}
-}
+}**/
 
 func Test_generateWorstCaseNetwork(t *testing.T) {
 	var test = []struct {
-		nodes int
-		seed int64
+		nodes    int
+		seed     int64
 		expected [][]int
 	}{
 		{8, 25, [][]int{{5}, {6}, {1}, {4}, {7}, {2}, {0}, {0}}},
