@@ -21,10 +21,11 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Config groups all of the global configuration parameters into

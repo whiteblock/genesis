@@ -26,13 +26,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"github.com/whiteblock/go.uuid"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/sirupsen/logrus"
+	"github.com/whiteblock/go.uuid"
 )
 
 // HTTPRequest Sends a HTTP request and returns the body. Gives an error if the http request failed
