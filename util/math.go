@@ -141,7 +141,7 @@ func generateUniformRandMeshNetwork(nodes int, conns int, seed int64) ([][]int, 
 	}
 	s1 := rand.NewSource(seed)
 	rng := rand.New(s1)
-	out := GenerateWorstCaseNetwork(nodes)
+	out := generateWorstCaseNetwork(nodes, seed)
 
 	for i := 0; i < nodes; i++ {
 		for j := 1; j < conns; j++ {
