@@ -233,7 +233,7 @@ func signalNode(w http.ResponseWriter, r *http.Request) {
 	n := &tn.Nodes[nodeNum]
 	cmdRaw, ok := tn.BuildState.Get(node)
 	if !ok {
-		log.Printf("Node %s not found", node)
+		log.WithFields(log.Fields{"node": node}).Error("node not found")
 		http.Error(w, fmt.Sprintf("Node %s not found", node), 404)
 		return
 	}
