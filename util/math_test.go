@@ -233,8 +233,8 @@ func TestGenerateDependentMeshNetwork(t *testing.T) {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			out, _ := GenerateDependentMeshNetwork(tt.nodes, tt.conns)
 			fmt.Println(out)
-			for n, _ := range out {
-				for j, _ := range out[n] {
+			for n := range out {
+				for j := range out[n] {
 					if out[n][j] >= n {
 						t.Fatal("items in sub array of returned integer double array are not smaller than the index of the sub array", out[n][j], n)
 					}
