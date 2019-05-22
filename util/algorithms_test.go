@@ -19,7 +19,6 @@
 package util
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"testing"
@@ -38,7 +37,6 @@ func TestGetUniqueStrings(t *testing.T) {
 
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			fmt.Println(GetUniqueStrings(tt.in))
 			if !reflect.DeepEqual(GetUniqueStrings(tt.in), tt.expected) {
 				t.Errorf("return value from GetUniqueStrings does not match expected value")
 			}
