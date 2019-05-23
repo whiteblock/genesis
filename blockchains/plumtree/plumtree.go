@@ -54,37 +54,34 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 1))
 
-	port := 9000
-	peers := ""
-	var peer string
-	for i, node := range tn.Nodes {
-		peer = fmt.Sprintf("tcp://whiteblock-node%d@%s:%d",
-			node.LocalID,
-			node.IP,
-			port,
-		)
-		if i != len(tn.Nodes)-1 {
-			peers = peers + " " + peer + " "
-		} else {
-			peers = peers + " " + peer
-		}
-		tn.BuildState.IncrementBuildProgress()
-	}
-
-	fmt.Println(peers)
-
 	tn.BuildState.SetBuildStage("Starting plumtree")
 	err := helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 
-		artemisCmd := "gossip -n 0.0.0.0 -l 9000 -r 9001 -m /plumtree/data/log.json --peer=" + peers + " 2>&1 | tee /output.log"
+		port := 9000
+		peers := ""
+		var peer string
+		for _, peerNode := range tn.Nodes {
+			if node.GetIP() != peerNode.GetIP() {
+				peer = fmt.Sprintf("tcp://whiteblock-node%d@%s:%d",
+					peerNode.LocalID,
+					peerNode.IP,
+					port,
+				)
+
+				peers = peers + " --peer=" + peer
+				tn.BuildState.IncrementBuildProgress()
+			}
+		}
+
+		cmd := "gossip -n 0.0.0.0 -l 9000 -r 9001 -m /plumtree/data/log.json " + peers + " 2>&1 | tee /output.log"
 
 		_, err := client.DockerExecd(node, "tmux new -s whiteblock -d")
 		if err != nil {
 			return util.LogError(err)
 		}
 
-		_, err = client.DockerExecd(node, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", artemisCmd))
+		_, err = client.DockerExecd(node, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", cmd))
 		return err
 	})
 	if err != nil {
