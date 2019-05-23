@@ -59,6 +59,7 @@ type Config struct {
 	BridgePrefix       string  `json:"bridge-prefix"`
 	APIEndpoint        string  `json:"api-endpoint"`
 	NibblerEndPoint    string  `json:"nibbler-end-point"`
+	LogJSON            bool    `json:"logs-json"`
 }
 
 // LoadFromEnv loads the configuration from the Environment
@@ -213,7 +214,10 @@ func (c *Config) LoadFromEnv() {
 	if exists {
 		c.APIEndpoint = val
 	}
-
+	_, exists = os.LookupEnv("LOG_JSON")
+	if exists {
+		c.LogJSON = true
+	}
 }
 
 // AutoFillMissing fills in the missing essential values with the defaults.
@@ -314,6 +318,16 @@ func init() {
 	}
 	log.SetLevel(lvl)
 	NodesPerCluster = (1 << conf.NodeBits) - ReservedIps
+
+	if conf.LogJSON {
+		log.SetFormatter(&log.JSONFormatter{
+			FieldMap: log.FieldMap{
+				log.FieldKeyTime:  "eventTime",
+				log.FieldKeyLevel: "severity",
+				log.FieldKeyMsg:   "message",
+			},
+		})
+	}
 }
 
 // LoadConfig loads the config from the configuration file

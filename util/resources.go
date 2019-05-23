@@ -42,6 +42,7 @@ type Resources struct {
 }
 
 func memconv(mem string) (int64, error) {
+
 	m := strings.ToLower(mem)
 
 	if len(m) <= 2 {
@@ -50,24 +51,20 @@ func memconv(mem string) (int64, error) {
 
 	var multiplier int64 = -1
 
-	switch m[len(m)-2:] {
-	case "kb":
+	if strings.HasSuffix(m, "kb") || strings.HasSuffix(m, "k") {
 		multiplier = 1000
-
-	case "mb":
+	} else if strings.HasSuffix(m, "mb") || strings.HasSuffix(m, "m") {
 		multiplier = 1000000
-
-	case "gb":
+	} else if strings.HasSuffix(m, "gb") || strings.HasSuffix(m, "g") {
 		multiplier = 1000000000
-
-	case "tb":
+	} else if strings.HasSuffix(m, "tb") || strings.HasSuffix(m, "t") {
 		multiplier = 1000000000000
 
 	default:
 		return strconv.ParseInt(m, 10, 64)
 	}
 
-	i, err := strconv.ParseInt(m[:len(m)-2], 10, 64)
+	i, err := strconv.ParseInt(strings.Trim(m, "bgkmt"), 10, 64)
 	if err != nil {
 		return -1, err
 	}
@@ -119,7 +116,7 @@ func (res Resources) Validate() error {
 			return err
 		}
 
-		if c1 != 0 && c2 > c1 {
+		if c1 <= 0 && c2 > c1 {
 			return fmt.Errorf("assigning too much CPU: max is %f", conf.MaxNodeCPU)
 		}
 	}
