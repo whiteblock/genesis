@@ -98,7 +98,7 @@ func build(tn *testnet.TestNet) error {
 	err = helpers.CreateConfigs(tn, "/artemis/config/config.toml", func(node ssh.Node) ([]byte, error) {
 		defer tn.BuildState.IncrementBuildProgress()
 		identity := fmt.Sprintf("0x%.8x", node.GetAbsoluteNumber())
-		artemisNodeConfig, err := makeNodeConfig(aconf, identity, peers, node.GetAbsoluteNumber(), tn.LDD, "/artemis/data/log.json", rawConstants)
+		artemisNodeConfig, err := makeNodeConfig(aconf, identity, peers, node.GetAbsoluteNumber(), tn.LDD, rawConstants)
 		return []byte(artemisNodeConfig), err
 	})
 	if err != nil {

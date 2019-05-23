@@ -59,7 +59,7 @@ type Config struct {
 	BridgePrefix       string  `json:"bridge-prefix"`
 	APIEndpoint        string  `json:"api-endpoint"`
 	NibblerEndPoint    string  `json:"nibbler-end-point"`
-	LogJSON            bool    `json:"logs-json"`
+	LogJSON            bool    `json:"log-json"`
 }
 
 // LoadFromEnv loads the configuration from the Environment
