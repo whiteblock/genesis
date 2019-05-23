@@ -19,6 +19,7 @@
 package util
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 )
@@ -57,16 +58,37 @@ func TestValidate(t *testing.T) {
 	var test = []struct {
 		res Resources
 	}{
-		{Resources{"4TB", "10", []string{"1", "2", "3"}, []string{"1", "2", "3"}}},
-		{Resources{"10MB", "15", []string{"4", "5", "6"}, []string{"3", "4", "5"}}},
-		{Resources{"5GB", "20", []string{"5", "6", "7"}, []string{"4", "5", "6"}}},
+		{Resources{"4", "5GB", []string{"1", "2", "3"}, []string{"1", "2", "3"}}},
+		{Resources{"10", "6KB", []string{"4", "5", "6"}, []string{"3", "4", "5"}}},
+		{Resources{"5", "15MB", []string{"5", "6", "7"}, []string{"4", "5", "6"}}},
 	}
 
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-
+			if tt.res.Validate() != nil {
+				fmt.Println(tt.res.Validate())
+				t.Errorf("Validate returns error when nil is expected")
+			}
 		})
 	}
 }
 
-func
+func TestValidateAndSetDefaults(t *testing.T) {
+	var test = []struct {
+		res Resources
+	}{
+		{Resources{"4", "", []string{"1", "2", "3"}, []string{"1", "2", "3"}}},
+		{Resources{"", "6KB", []string{"4", "5", "6"}, []string{"3", "4", "5"}}},
+		{Resources{"5", "15MB", []string{"5", "6", "7"}, []string{"4", "5", "6"}}},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if tt.res.ValidateAndSetDefaults() != nil {
+				fmt.Println(tt.res.ValidateAndSetDefaults())
+				t.Errorf("ValidateAndSetDefaults returns error when nil is expected")
+			}
+		})
+	}
+}
+
