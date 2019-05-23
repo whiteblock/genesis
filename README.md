@@ -3,6 +3,7 @@ Genesis
 [![Build](https://travis-ci.org/whiteblock/genesis.svg?branch=dev)](https://www.travis-ci.org/Whiteblock/genesis/)
 [![Maintainability](https://api.codeclimate.com/v1/badges/a30e833d3367ef530eaf/maintainability)](https://codeclimate.com/github/Whiteblock/genesis/maintainability)
 [![Go report card](https://goreportcard.com/badge/github.com/whiteblock/genesis)](https://goreportcard.com/report/github.com/whiteblock/genesis)
+[![codecov](https://codecov.io/gh/Whiteblock/genesis/branch/dev/graph/badge.svg)](https://codecov.io/gh/Whiteblock/genesis)
 
 ![Version](https://img.shields.io/github/tag/whiteblock/genesis.svg)
 [![API Reference](
