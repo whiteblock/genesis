@@ -59,9 +59,6 @@ func memconv(mem string) (int64, error) {
 		multiplier = 1000000000
 	} else if strings.HasSuffix(m, "tb") || strings.HasSuffix(m, "t") {
 		multiplier = 1000000000000
-
-	default:
-		return strconv.ParseInt(m, 10, 64)
 	}
 
 	i, err := strconv.ParseInt(strings.Trim(m, "bgkmt"), 10, 64)

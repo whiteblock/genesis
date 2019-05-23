@@ -30,14 +30,14 @@ func Test_memconv(t *testing.T) {
 		expected int64
 		hasError bool
 	}{
-		{"12MB", 12000000, false},
-		{"300KB", 300000, false},
-		{"4GB", 4000000000, false},
-		{"5TB", 5000000000000, false},
-		{"2", 2, false},
-		{"", 0, true},
-		{"3000", 3000, false},
-		{"^MB", -1, true},
+		{mem: "12MB", expected: 12000000, hasError: false},
+		{mem: "300KB", expected: 300000, hasError: false},
+		{mem: "4GB", expected: 4000000000, hasError: false},
+		{mem: "5TB", expected: 5000000000000, hasError: false},
+		{mem: "2", expected: 2, hasError: false},
+		{mem: "", expected: 0, hasError: true},
+		{mem: "3000", expected: -3000, hasError: false},
+		{mem: "^MB", expected: -1, hasError: true},
 	}
 
 	for i, tt := range test {
@@ -58,9 +58,9 @@ func TestValidate(t *testing.T) {
 	var test = []struct {
 		res Resources
 	}{
-		{Resources{"4", "5GB", []string{"1", "2", "3"}, []string{"1", "2", "3"}}},
-		{Resources{"10", "6KB", []string{"4", "5", "6"}, []string{"3", "4", "5"}}},
-		{Resources{"5", "15MB", []string{"5", "6", "7"}, []string{"4", "5", "6"}}},
+		{res: Resources{Cpus: "4", Memory: "5gb", Volumes: []string{"1", "2", "3"}, Ports: []string{"1", "2", "3"}}},
+		{res: Resources{Cpus: "10", Memory: "6kb", Volumes: []string{"4", "5", "6"}, Ports: []string{"3", "4", "5"}}},
+		{res: Resources{Cpus: "5", Memory: "15mb", Volumes: []string{"5", "6", "7"}, Ports: []string{"4", "5", "6"}}},
 	}
 
 	for i, tt := range test {
@@ -77,9 +77,9 @@ func TestValidateAndSetDefaults(t *testing.T) {
 	var test = []struct {
 		res Resources
 	}{
-		{Resources{"4", "", []string{"1", "2", "3"}, []string{"1", "2", "3"}}},
-		{Resources{"", "6KB", []string{"4", "5", "6"}, []string{"3", "4", "5"}}},
-		{Resources{"5", "15MB", []string{"5", "6", "7"}, []string{"4", "5", "6"}}},
+		{res: Resources{Cpus: "4", Memory: "", Volumes: []string{"1", "2", "3"}, Ports: []string{"1", "2", "3"}}},
+		{res: Resources{Cpus: "", Memory: "6kb", Volumes: []string{"4", "5", "6"}, Ports: []string{"3", "4", "5"}}},
+		{res: Resources{Cpus: "5", Memory: "15mb", Volumes: []string{"5", "6", "7"}, Ports: []string{"4", "5", "6"}}},
 	}
 
 	for i, tt := range test {
