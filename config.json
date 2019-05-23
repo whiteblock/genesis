@@ -3,7 +3,7 @@
 	"listen":"127.0.0.1:8000",
 	"ssh-key":"/home/appo/.ssh/id_rsa",
 	"verbosity":"INFO",
-	"logs-json":false,
+	"log-json":false,
 	"server-bits":8,
 	"cluster-bits":12,
 	"node-bits":4,
