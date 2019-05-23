@@ -69,7 +69,7 @@ func build(tn *testnet.TestNet) error {
 					port,
 				)
 
-				peers = peers + " --peer=" + peer
+				peers = peers + " --peer=" + peer + " "
 				tn.BuildState.IncrementBuildProgress()
 			}
 		}
