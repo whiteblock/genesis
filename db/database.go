@@ -152,7 +152,7 @@ func dbInit(dataLoc string) error {
 func insertLocalServers() error {
 	_, err := InsertServer("cloud",
 		Server{
-			Addr:     "127.0.0.1",
+			Addr:     conf.SSHHost,
 			Nodes:    0,
 			Max:      conf.MaxNodes,
 			SubnetID: 1,

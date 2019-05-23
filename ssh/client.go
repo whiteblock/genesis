@@ -382,6 +382,7 @@ func sshConnect(host string) (*ssh.Client, error) {
 		i++
 	}
 	if err != nil {
+		log.Info(fmt.Sprintf("Error connecting to %s with %s", host, sshConfig.User))
 		return nil, util.LogError(err)
 	}
 
