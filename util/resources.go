@@ -43,6 +43,11 @@ type Resources struct {
 
 func memconv(mem string) (int64, error) {
 	m := strings.ToLower(mem)
+
+	if len(m) <= 2 {
+		return strconv.ParseInt(m, 10, 64)
+	}
+
 	var multiplier int64 = -1
 
 	switch m[len(m)-2:] {
@@ -57,9 +62,8 @@ func memconv(mem string) (int64, error) {
 
 	case "tb":
 		multiplier = 1000000000000
-	}
 
-	if multiplier == -1 {
+	default:
 		return strconv.ParseInt(m, 10, 64)
 	}
 
@@ -67,6 +71,7 @@ func memconv(mem string) (int64, error) {
 	if err != nil {
 		return -1, err
 	}
+
 	return i * multiplier, nil
 }
 
