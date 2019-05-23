@@ -33,6 +33,7 @@ import (
 type Config struct {
 	SSHUser            string  `json:"ssh-user"`
 	SSHKey             string  `json:"ssh-key"`
+	SSHHost            string  `json:"ssh-host"`
 	ServerBits         uint32  `json:"server-bits"`
 	ClusterBits        uint32  `json:"cluster-bits"`
 	NodeBits           uint32  `json:"node-bits"`
@@ -266,6 +267,16 @@ func (c *Config) AutoFillMissing() {
 
 	if len(c.ServicePrefix) == 0 {
 		c.ServicePrefix = "wb_service"
+	}
+
+	if c.SSHHost == "" {
+		log.Warn("No host given for default server, defaulting to 127.0.0.1")
+		c.SSHHost = "127.0.0.1"
+	}
+
+	if c.Verbosity == "" {
+		log.Warn("No log level set, setting default verbosity to INFO")
+		c.Verbosity = "INFO"
 	}
 
 	if c.MaxNodes <= 0 {
