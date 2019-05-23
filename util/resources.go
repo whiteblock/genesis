@@ -113,7 +113,8 @@ func (res Resources) Validate() error {
 		if err != nil {
 			return err
 		}
-		if c2 > c1 {
+
+		if c1 != 0 && c2 > c1 {
 			return fmt.Errorf("assigning too much CPU: max is %f", conf.MaxNodeCPU)
 		}
 	}
