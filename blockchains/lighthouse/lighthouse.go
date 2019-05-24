@@ -27,6 +27,7 @@ import (
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
+	"strings"
 )
 
 var conf *util.Config
@@ -54,15 +55,23 @@ func build(tn *testnet.TestNet) error {
 	}
 	tn.BuildState.SetBuildSteps(1 + (tn.LDD.Nodes * 3))
 
-	peers := ""
+	var bootNodes []string
 	for _, node := range tn.Nodes {
-		peers += fmt.Sprintf(" --peer=/dns4/whiteblock-node%d@%s/tcp/%d ", node.LocalID, node.IP, p2pPort)
+		bootNodes = append(bootNodes, fmt.Sprintf("/dns4/whiteblock-node%d@%s/tcp/%d", node.LocalID, node.IP, p2pPort))
 	}
+	peers := fmt.Sprintf("--boot-nodes=%s", strings.Join(bootNodes, ","))
 	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetBuildStage("Starting lighthouse")
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
+
+		lighthouseCmd := "beacon_node --listen-address 0.0.0.0 --port 9000 " + peers + " 2>&1 | tee /output.log"
+
+		_, err := client.DockerExecd(node, "tmux new -s whiteblock -d")
+		if err != nil {
+			return util.LogError(err)
+		}
 
 		return client.DockerExecdLog(node, "lighthouse --listen-address 0.0.0.0 --port 9000 "+peers)
 	})
