@@ -40,6 +40,7 @@ import (
 	_ "github.com/whiteblock/genesis/blockchains/geth"
 	_ "github.com/whiteblock/genesis/blockchains/libp2p-test"
 	_ "github.com/whiteblock/genesis/blockchains/lighthouse"
+	_ "github.com/whiteblock/genesis/blockchains/lodestar"
 	_ "github.com/whiteblock/genesis/blockchains/pantheon"
 	_ "github.com/whiteblock/genesis/blockchains/parity"
 	_ "github.com/whiteblock/genesis/blockchains/plumtree"
