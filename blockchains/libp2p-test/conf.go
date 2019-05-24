@@ -28,6 +28,7 @@ type libp2pTestConf struct {
 	Interval    int    `json:"interval"`
 	Senders     int    `json:"senders"`
 	PayloadSize int64  `json:"payloadSize"`
+	UseValgrind bool   `json:"useValgrind"`
 }
 
 func newConf(data map[string]interface{}) (*libp2pTestConf, error) {

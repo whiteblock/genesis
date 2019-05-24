@@ -66,8 +66,11 @@ func build(tn *testnet.TestNet) error {
 
 	//Get the peer information
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
-		res, err := client.DockerExec(node,
-			fmt.Sprintf("./p2p-tests --generate-only --seed %d --hostAddrs /ip4/%s/tcp/39977", node.GetAbsoluteNumber()+1, node.GetIP()))
+
+		cmd := fmt.Sprintf("/p2p-tests/client --generate-only --seed %d --hostAddrs /ip4/%s/tcp/39977",
+			node.GetAbsoluteNumber()+1, node.GetIP())
+
+		res, err := client.DockerExec(node, cmd)
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -109,9 +112,13 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
-		cmd := fmt.Sprintf("/p2p-tests/p2p-tests --seed %d --hostAddrs /ip4/%s/tcp/39977 "+
+		cmd := fmt.Sprintf("/p2p-tests/client --seed %d --hostAddrs /ip4/%s/tcp/39977 "+
 			"--file /p2p-tests/static-peers.json --pubsubRouter %s",
 			node.GetAbsoluteNumber()+1, node.GetIP(), testConf.Router)
+
+		if testConf.UseValgrind {
+			cmd = "valgrind --tool=callgrind " + cmd
+		}
 		if node.GetAbsoluteNumber() < testConf.Senders { //make node 0 the sending node
 			cmd += fmt.Sprintf(" --send-interval %d", testConf.Interval)
 		}
