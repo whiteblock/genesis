@@ -207,7 +207,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 		wg.Add(1)
 		go func(client *ssh.Client) {
 			defer wg.Done()
-			client.Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
+			client.Run("sudo -n iptables --flush DOCKER-ISOLATION-STAGE-1")
 		}(client)
 
 	}

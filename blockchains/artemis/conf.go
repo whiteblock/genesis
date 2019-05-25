@@ -84,7 +84,7 @@ func makeNodeConfig(aconf artemisConf, identity string, peers string, node int, 
 		outputFile = obj.(string)
 	}
 	if outputFile == "" {
-      outputFile = "/artemis/data/log.json"
+		outputFile = "/artemis/data/log.json"
 	}
 	filler["outputFile"] = outputFile
 	filler["constants"] = constantsRaw
