@@ -65,13 +65,13 @@ func init() {
 func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 	if details.Servers == nil || len(details.Servers) == 0 {
 		err := fmt.Errorf("missing servers")
-		log.Println(err)
+		log.WithFields(log.Fields{"build": testnetID}).Error("build request doesn't have any servers")
 		return err
 	}
 	//STEP 1: SETUP THE TESTNET
 	tn, err := testnet.NewTestNet(*details, testnetID)
 	if err != nil {
-		log.Println(err)
+		log.WithFields(log.Fields{"build": testnetID, "error": err}).Error("failed to create new testnet")
 		return err
 	}
 	buildState := tn.BuildState
@@ -80,7 +80,6 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 	//STEP 0: VALIDATE
 	err = validate(details)
 	if err != nil {
-		log.Println(err)
 		buildState.ReportError(err)
 		return err
 	}
@@ -92,7 +91,6 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 	//STEP 3: GET THE SERVICES
 	servicesFn, err := registrar.GetServiceFunc(details.Blockchain)
 	if err != nil {
-		log.Println(err)
 		buildState.ReportError(err)
 		return err
 	}
@@ -101,7 +99,6 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 
 	err = deploy.Build(tn, services)
 	if err != nil {
-		log.Println(err)
 		buildState.ReportError(err)
 		return err
 	}
