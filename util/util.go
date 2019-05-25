@@ -26,20 +26,19 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
+	"github.com/whiteblock/go.uuid"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
-
-	"github.com/sirupsen/logrus"
-	"github.com/whiteblock/go.uuid"
 )
 
 // HTTPRequest Sends a HTTP request and returns the body. Gives an error if the http request failed
 // or returned a non success code.
 func HTTPRequest(method string, url string, bodyData string) ([]byte, error) {
-	//log.Println("URL IS "+url)
+	log.WithFields(log.Fields{"method": method, "url": url, "body": bodyData}).Trace("sending an http request")
 	body := strings.NewReader(bodyData)
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
@@ -68,6 +67,7 @@ func HTTPRequest(method string, url string, bodyData string) ([]byte, error) {
 // JwtHTTPRequest is similar to HttpRequest, but it have the content-type set as application/json and it will
 // put the given jwt in the auth header
 func JwtHTTPRequest(method string, url string, jwt string, bodyData string) (string, error) {
+	log.WithFields(log.Fields{"method": method, "url": url, "body": bodyData}).Trace("sending an http request with a jwt")
 	body := strings.NewReader(bodyData)
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
@@ -145,7 +145,7 @@ func GetUUIDString() (string, error) {
 // Rm removes all of the given directories or files. Convenience function for os.RemoveAll
 func Rm(directories ...string) error {
 	for _, directory := range directories {
-		logrus.WithFields(logrus.Fields{"dir": directory}).Info("removing directory")
+		log.WithFields(log.Fields{"dir": directory}).Info("removing directory")
 
 		err := os.RemoveAll(directory)
 		if err != nil {
@@ -311,8 +311,15 @@ func CopyMap(m map[string]interface{}) (map[string]interface{}, error) {
 // Used to help reduce code clutter from all the log.Println(err) in the code.
 // Has no effect is err == nil
 func LogError(err error) error {
-	if err != nil { // don't log if the error is nil
-		log.Output(2, err.Error()) //returns an error but is ignored in Golang's implementation
+	if err == nil {
+		return err // do nothing if the given err is nil
 	}
+	_, file, line, ok := runtime.Caller(1)
+	if !ok {
+		log.Error(err.Error())
+	} else {
+		log.WithFields(log.Fields{"file": file, "line": line}).Error(err.Error())
+	}
+
 	return err
 }
