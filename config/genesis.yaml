@@ -1,6 +1,4 @@
 # SSH options
-sshUser: "appo"
-sshKey: "/home/appo/.ssh/id_rsa"
 handleNodeSshKeys: true
 nodesPublicKey: "/home/master-secrets/id.master.pub"
 nodesPrivateKey: "/home/master-secrets/id.master"

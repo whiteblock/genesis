@@ -97,7 +97,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("logJson", "LOG_JSON")
 }
 func setViperDefaults() {
-	viper.SetDefault("sshUser", "appo")
+	viper.SetDefault("sshUser", os.Getenv("USER"))
 	viper.SetDefault("listen", "127.0.0.1:8000")
 	viper.SetDefault("sshKey", os.Getenv("HOME")+"/.ssh/id_rsa")
 	viper.SetDefault("serverBits", 8)
@@ -132,7 +132,7 @@ func init() {
 	err := viper.ReadInConfig()
 
 	if err != nil {
-		log.WithFields(log.Fields{"error":err}).Warn("could not find the config file")
+		log.WithFields(log.Fields{"error": err}).Warn("could not find the config file")
 	}
 	err = viper.Unmarshal(&conf)
 	if err != nil {
