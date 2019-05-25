@@ -31,7 +31,7 @@ func TestExtractStringMapUnsuccessful(t *testing.T) {
 		"string": "string",
 	}
 
-	for i, _ := range in {
+	for i := range in {
 		t.Run(i, func(t *testing.T) {
 			out, ok := ExtractStringMap(in, i)
 			if reflect.DeepEqual(out, in[i]) {
@@ -50,7 +50,7 @@ func TestExtractStringMapSuccessful(t *testing.T) {
 		"peers":     map[string]interface{}{"node1": 1, "node2": 2},
 	}
 
-	for i, _ := range in {
+	for i := range in {
 		t.Run(i, func(t *testing.T) {
 			out, ok := ExtractStringMap(in, i)
 			if !reflect.DeepEqual(out, in[i]) {

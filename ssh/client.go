@@ -181,7 +181,7 @@ func (sshClient *client) MultiRun(commands ...string) ([]string, error) {
 		if err != nil {
 			return nil, util.LogError(err)
 		}
-		out = append(out, string(res))
+		out = append(out, res)
 	}
 	return out, nil
 }
