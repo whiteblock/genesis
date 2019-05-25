@@ -1,0 +1,37 @@
+# SSH options
+sshUser: "appo"
+sshKey: "/home/appo/.ssh/id_rsa"
+handleNodeSshKeys: true
+nodesPublic-key: "/home/master-secrets/id.master.pub"
+nodesPrivate-key: "/home/master-secrets/id.master"
+
+# Server
+listen: "127.0.0.1:8000"
+
+# Log
+verbosity: "INFO"
+logJson: false
+
+# Network
+serverBits: 8
+clusterBits: 12
+nodeBits: 4
+ipPrefix: 10
+service-network: "172.30.0.1/16"
+
+# Node=
+nodePrefix: "whiteblock-node"
+nodeNetworkPrefix: "wb_vlan_"
+maxNodeMemory: "16gb"
+maxNodeCpu: 16
+
+# Service
+serviceNetworkName: "wb_builtin_services"
+servicePrefix: "wb_service"
+influx: "127.0.0.1:8086"
+influxUser: ""
+influxPassword: ""
+
+# Misc
+threadLimit: 20
+nibblerEndPoint: "https://storage.googleapis.com/genesis-public/nibbler/dev/bin/linux/amd64/nibbler"
