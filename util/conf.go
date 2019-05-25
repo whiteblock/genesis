@@ -132,7 +132,7 @@ func init() {
 	err := viper.ReadInConfig()
 
 	if err != nil {
-		log.Panicf("fatal error config file: %s \n", err)
+		log.WithFields(log.Fields{"error":err}).Warn("could not find the config file")
 	}
 	err = viper.Unmarshal(&conf)
 	if err != nil {
