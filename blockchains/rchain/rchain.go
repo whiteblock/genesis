@@ -109,8 +109,9 @@ func build(tn *testnet.TestNet) error {
 			return util.LogError(err)
 		}
 	}
-	//fmt.Printf("Keypairs = %#v\n", keyPairs)
-	//fmt.Printf(ValidatorKeyPairs = %#v\n", validatorKeyPairs)
+	log.WithFields(log.Fields{"keypairs": keyPairs}).Trace("got the key pairs")
+	log.WithFields(log.Fields{"validatorKeyPairs": validatorKeyPairs}).Trace("got the validator key pairs")
+
 	buildState.Set("keyPairs", keyPairs)
 	buildState.Set("validatorKeyPairs", validatorKeyPairs)
 
@@ -155,7 +156,7 @@ func build(tn *testnet.TestNet) error {
 		if err != nil {
 			return util.LogError(err)
 		}
-		//fmt.Println("Attempting to get the enode address")
+		log.Trace("attempting to get the enode address")
 		buildState.SetBuildStage("Waiting for the boot node's address")
 		for i := 0; i < 1000; i++ {
 			log.WithFields(log.Fields{"iteration": i}).Info("waiting for rchain node to be ready")

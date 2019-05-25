@@ -23,13 +23,13 @@ package manager
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/deploy"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"log"
 	"sync"
 	//Put the relative path to your blockchain/sidecar library below this line, otherwise it won't be compiled
 	//blockchains
@@ -105,7 +105,7 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 		buildState.ReportError(err)
 		return err
 	}
-	fmt.Println("Built the docker containers")
+	log.WithFields(log.Fields{"build": testnetID}).Trace("Built the docker containers")
 
 	buildFn, err := registrar.GetBuildFunc(details.Blockchain)
 	if err != nil {

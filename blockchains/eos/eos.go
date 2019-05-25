@@ -21,6 +21,7 @@ package eos
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
@@ -162,6 +163,9 @@ func build(tn *testnet.TestNet) error {
 		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
+	if err != nil {
+		return util.LogError(err)
+	}
 
 	password := clientPasswords[masterIP]
 	passwordNormal := clientPasswords[tn.Nodes[1].IP]
@@ -429,7 +433,7 @@ func build(tn *testnet.TestNet) error {
 		n := 0
 		for _, name := range accountNames {
 			prod := 0
-			fmt.Printf("name=%sn=%d\n", name, n)
+			log.WithFields(log.Fields{"name": name, "n": n}).Trace("voting in producer")
 			if n > 0 {
 				prod = rand.Intn(100) % n
 			}
@@ -455,7 +459,7 @@ func build(tn *testnet.TestNet) error {
 		}
 		wg.Wait()
 		if !tn.BuildState.ErrorFree() {
-			return util.LogError(tn.BuildState.GetError())
+			return tn.BuildState.GetError()
 		}
 	}
 	tn.BuildState.IncrementBuildProgress()
@@ -522,16 +526,16 @@ func Add(tn *testnet.TestNet) error {
 func eosCreatewallet(client *ssh.Client, node ssh.Node) (string, error) {
 	data, err := client.DockerExec(node, "cleos wallet create --to-console | tail -n 1")
 	if err != nil {
-		return "", err
+		return "", util.LogError(err)
 	}
-	//fmt.Printf("CREATE WALLET DATA %s\n",data)
+
 	offset := 0
 	for data[len(data)-(offset+1)] != '"' {
 		offset++
 	}
 	offset++
 	data = data[1 : len(data)-offset]
-	fmt.Printf("CREATE WALLET DATA %s\n", data)
+	log.WithFields(log.Fields{"walletData": data, "node": node.GetAbsoluteNumber()}).Trace("created a wallet")
 	return data, nil
 }
 

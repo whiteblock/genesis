@@ -22,6 +22,7 @@ package libp2ptest
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
@@ -83,7 +84,7 @@ func build(tn *testnet.TestNet) error {
 		if err != nil {
 			return util.LogError(err)
 		}
-		//fmt.Printf("PEER=%#v\n", peer)
+		log.WithFields(log.Fields{"peer": peer}).Trace("got peer")
 		mux.Lock()
 		peers[node.GetAbsoluteNumber()] = peer
 		mux.Unlock()

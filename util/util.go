@@ -194,10 +194,6 @@ func CombineConfig(entries []string) string {
    BashExec executes _cmd in bash then return the result
 */
 /*func BashExec(_cmd string) (string, error) {
-	if conf.Verbose {
-		fmt.Printf("Executing : %s\n", _cmd)
-	}
-
 	cmd := exec.Command("bash", "-c", _cmd)
 
 	var resultsRaw bytes.Buffer

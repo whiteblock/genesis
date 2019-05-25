@@ -242,7 +242,6 @@ func DivideNodesByAbsMatch(nodes []Node, nodeNums []int) ([]Node, []Node, error)
 	matches := []Node{}
 	notMatches := make([]Node, len(nodes))
 	copy(notMatches, nodes)
-	fmt.Printf("%#v\n", notMatches)
 	for {
 		num := nodeNums[0]
 		index := -1

@@ -22,9 +22,9 @@ package state
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"io/ioutil"
-	"log"
 	"os"
 	"runtime"
 	"sync"
@@ -105,7 +105,7 @@ func NewBuildState(servers []int, buildID string) *BuildState {
 
 	err := os.MkdirAll("/tmp/"+buildID, 0755)
 	if err != nil {
-		panic(err) //Fatal error
+		log.WithFields(log.Fields{"build": out.BuildID, "error": err}).Panic("couldn't create the tmp folder")
 	}
 
 	return out
@@ -117,7 +117,7 @@ func RestoreBuildState(buildID string) (*BuildState, error) {
 	out := new(BuildState)
 	err := db.GetMetaP(buildID, out)
 	if err != nil {
-		log.Println(err)
+		log.WithFields(log.Fields{"error": err, "id": buildID}).Error("couldn't restore build state")
 		return nil, err
 	}
 	out.errMutex = &sync.RWMutex{}
@@ -142,7 +142,7 @@ func (bs *BuildState) Async(fn func()) {
 
 // Freeze freezes the build
 func (bs *BuildState) Freeze() error {
-	log.Println("Freezing the build")
+	log.WithFields(log.Fields{"build": bs.BuildID}).Info("freezing the build")
 
 	if atomic.LoadInt32(&bs.frozen) != 0 {
 		bs.mutex.Unlock()
@@ -162,7 +162,7 @@ func (bs *BuildState) Freeze() error {
 
 // Unfreeze unfreezes the build
 func (bs *BuildState) Unfreeze() error {
-	log.Println("Thawing the build")
+	log.WithFields(log.Fields{"build": bs.BuildID}).Info("unfreezing the build")
 
 	if atomic.LoadInt32(&bs.frozen) == 0 {
 		return fmt.Errorf("not currently frozen")
@@ -200,7 +200,7 @@ func (bs *BuildState) DoneBuilding() {
 	if bs.ErrorFree() {
 		err := bs.Store()
 		if err != nil {
-			log.Println(err)
+			log.WithFields(log.Fields{"build": bs.BuildID}).Error("couldn't store the build")
 		}
 	} else {
 		bs.extraMux.RLock()
@@ -226,6 +226,7 @@ func (bs *BuildState) DoneBuilding() {
 	atomic.StoreInt32(&bs.stopping, 0)
 	os.RemoveAll("/tmp/" + bs.BuildID)
 	for _, fn := range bs.defers {
+		log.WithFields(log.Fields{"build": bs.BuildID}).Debug("running the defered functions")
 		go fn() //No need to wait to confirm completion
 	}
 }
@@ -247,7 +248,7 @@ func (bs *BuildState) ReportError(err error) {
 		file = "???"
 		line = 0
 	}
-	fmt.Printf("%v:%v Reported an error: %s\n", file, line, err)
+	log.WithFields(log.Fields{"build": bs.BuildID, "file": file, "line": line, "error": err}).Error("an error was reported")
 }
 
 // Stop checks if the stop signal has been sent. If bs returns true,
@@ -352,13 +353,12 @@ func (bs *BuildState) GetP(key string, out interface{}) bool {
 	}
 	tmpBytes, err := json.Marshal(tmp)
 	if err != nil {
-		log.Println(err)
+		log.WithFields(log.Fields{"build": bs.BuildID, "error": err}).Warn("couldn't marshal the value")
 		return false
 	}
-	//fmt.Printf("Converting %s\n\n",string(tmpBytes))
 	err = json.Unmarshal(tmpBytes, out)
 	if err != nil {
-		log.Println(err)
+		log.WithFields(log.Fields{"build": bs.BuildID, "error": err}).Warn("couldn't unmarshal the value")
 		return false
 	}
 	return true
@@ -483,9 +483,9 @@ func (bs *BuildState) Reset() {
 
 	err := os.MkdirAll("/tmp/"+bs.BuildID, 0755)
 	if err != nil {
-		panic(err) //Fatal error
+		log.WithFields(log.Fields{"build": bs.BuildID, "error": err}).Panic("couldn't create the tmp folder")
 	}
-	fmt.Println("BUILD has been reset!")
+	log.WithFields(log.Fields{"build": bs.BuildID}).Info("build has been reset!")
 }
 
 //Marshal turns the BuildState into json representing the current progress of the build

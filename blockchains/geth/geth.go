@@ -22,6 +22,7 @@ package geth
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/ethereum"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
@@ -151,17 +152,17 @@ func build(tn *testnet.TestNet) error {
 		if err != nil {
 			return util.LogError(err)
 		}
-		fmt.Printf("---------------------  CREATING block directory for NODE-%d ---------------------\n", node.GetAbsoluteNumber())
+		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
 		gethResults, err := client.DockerExec(node,
 			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
 				"geth --rpc --datadir /geth/ --networkid %d console'", ethconf.NetworkID))
 		if err != nil {
 			return util.LogError(err)
 		}
-		//fmt.Printf("RAWWWWWWWWWWWW%s\n\n\n",gethResults)
+		log.WithFields(log.Fields{"raw": gethResults}).Trace("grabbed raw enode info")
 		enodePattern := regexp.MustCompile(`enode:\/\/[A-z|0-9]+@(\[\:\:\]|([0-9]|\.)+)\:[0-9]+`)
 		enode := enodePattern.FindAllString(gethResults, 1)[0]
-		//fmt.Printf("ENODE fetched is: %s\n",enode)
+		log.WithFields(log.Fields{"enode": enode}).Trace("parsed the enode")
 		enodeAddressPattern := regexp.MustCompile(`\[\:\:\]|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})`)
 
 		enode = enodeAddressPattern.ReplaceAllString(enode, node.GetIP())
@@ -310,6 +311,8 @@ func setupEthNetStats(client *ssh.Client) error {
 
 func setupEthNetIntelligenceAPI(tn *testnet.TestNet) error {
 	return helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+		defer tn.BuildState.IncrementBuildProgress()
+
 		absName := fmt.Sprintf("%s%d", conf.NodePrefix, node.GetAbsoluteNumber())
 		sedCmd := fmt.Sprintf(`sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`, absName)
 		sedCmd2 := fmt.Sprintf(`sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:%d"/g' /eth-net-intelligence-api/app.json`,
@@ -326,10 +329,6 @@ func setupEthNetIntelligenceAPI(tn *testnet.TestNet) error {
 			return util.LogError(err)
 		}
 		_, err = client.DockerExecd(node, "bash -c 'cd /eth-net-intelligence-api && pm2 start app.json'")
-		if err != nil {
-			return util.LogError(err)
-		}
-		tn.BuildState.IncrementBuildProgress()
-		return nil
+		return util.LogError(err)
 	})
 }

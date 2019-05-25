@@ -20,6 +20,7 @@ package util
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 )
@@ -95,7 +96,7 @@ func (res Resources) Validate() error {
 			panic(err)
 		}
 		m2, err := res.GetMemory()
-		fmt.Printf("m2 = %d\n", m2)
+		log.WithFields(log.Fields{"maxMemory": m1, "givenMemory": m2}).Trace("checking memory")
 		if err != nil {
 			return err
 		}

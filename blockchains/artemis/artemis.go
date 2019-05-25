@@ -21,6 +21,7 @@ package artemis
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
@@ -84,7 +85,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	peers = peers + "]"
-	fmt.Println(peers)
+	log.WithFields(log.Fields{"peers": peers}).Trace("generated the peers")
 
 	tn.BuildState.SetBuildStage("Creating node configuration files")
 	/**Create node config files**/
@@ -92,7 +93,7 @@ func build(tn *testnet.TestNet) error {
 
 	constantsIndex := strings.Index(fetchedConf, "[constants]")
 	if constantsIndex == -1 {
-		return fmt.Errorf("couldn't find \"[constants]\" in file fetched from given source")
+		return util.LogError(fmt.Errorf("couldn't find \"[constants]\" in file fetched from given source"))
 	}
 	rawConstants := fetchedConf[constantsIndex:]
 	err = helpers.CreateConfigs(tn, "/artemis/config/config.toml", func(node ssh.Node) ([]byte, error) {
@@ -117,13 +118,9 @@ func build(tn *testnet.TestNet) error {
 		}
 
 		_, err = client.DockerExecd(node, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", artemisCmd))
-		return err
-	})
-	if err != nil {
 		return util.LogError(err)
-	}
-
-	return nil
+	})
+	return util.LogError(err)
 }
 
 // Add handles adding a node to the artemis testnet

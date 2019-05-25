@@ -22,11 +22,11 @@ package testnet
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/status"
-	"log"
 	"sync"
 )
 
@@ -63,12 +63,12 @@ func RestoreTestNet(buildID string) (*TestNet, error) {
 	out := new(TestNet)
 	err := db.GetMetaP("testnet_"+buildID, out)
 	if err != nil {
-		log.Println(err)
+		log.WithFields(log.Fields{"build": buildID}).Error("failed to restore the testnet")
 		return nil, err
 	}
 	bs, err := state.GetBuildStateByID(buildID)
 	if err != nil {
-		log.Println(err)
+		log.WithFields(log.Fields{"build": buildID}).Error("failed to restore the build state")
 		return nil, err
 	}
 	out.BuildState = bs
@@ -79,6 +79,7 @@ func RestoreTestNet(buildID string) (*TestNet, error) {
 	for _, server := range out.Servers {
 		out.Clients[server.ID], err = status.GetClient(server.ID)
 		if err != nil {
+			log.WithFields(log.Fields{"build": buildID, "server": server.ID}).Error("failed to get ssh connection")
 			out.BuildState.ReportError(err)
 			return nil, err
 		}
@@ -101,17 +102,18 @@ func NewTestNet(details db.DeploymentDetails, buildID string) (*TestNet, error) 
 
 	out.BuildState, err = state.GetBuildStateByID(buildID)
 	if err != nil {
-		log.Println(err)
+		log.WithFields(log.Fields{"build": buildID}).Error("failed to create the build state")
 		return nil, err
 	}
 
 	// FETCH THE SERVERS
 	out.Servers, err = db.GetServers(details.Servers)
 	if err != nil {
+		log.WithFields(log.Fields{"build": buildID}).Error("failed to fetch the servers")
 		out.BuildState.ReportError(err)
 		return nil, err
 	}
-	fmt.Println("Got the Servers")
+	log.WithFields(log.Fields{"build": buildID}).Trace("fetched the servers")
 
 	//OPEN UP THE RELEVANT SSH CONNECTIONS
 	out.Clients = map[int]*ssh.Client{}
@@ -119,6 +121,7 @@ func NewTestNet(details db.DeploymentDetails, buildID string) (*TestNet, error) 
 	for _, server := range out.Servers {
 		out.Clients[server.ID], err = status.GetClient(server.ID)
 		if err != nil {
+			log.WithFields(log.Fields{"build": buildID, "server": server.ID}).Error("failed to get ssh connection")
 			out.BuildState.ReportError(err)
 			return nil, err
 		}
@@ -160,7 +163,8 @@ func (tn *TestNet) AddDetails(dd db.DeploymentDetails) error {
 	//MERGE
 	tmp, err := json.Marshal(dd)
 	if err != nil {
-		log.Println(err)
+		log.WithFields(log.Fields{"build": tn.TestNetID}).Error(
+			"failed to marshal the deploymentdetails into json")
 		return err
 	}
 	tn.LDD = &tn.Details[len(tn.Details)-1]
@@ -168,7 +172,8 @@ func (tn *TestNet) AddDetails(dd db.DeploymentDetails) error {
 	oldCD := tn.CombinedDetails
 	err = json.Unmarshal(tmp, &tn.CombinedDetails)
 	if err != nil {
-		log.Println(err)
+		log.WithFields(log.Fields{"build": tn.TestNetID}).Error(
+			"failed to combine the build details into all the other build details")
 	}
 
 	/**Handle Files**/
@@ -303,6 +308,8 @@ func (tn *TestNet) StoreNodes() error {
 	for _, node := range tn.NewlyBuiltNodes {
 		_, er := db.InsertNode(node)
 		if er != nil {
+			log.WithFields(log.Fields{"build": tn.TestNetID,
+				"node": node.ID}).Error("failed to store a node into db")
 			log.Println(er)
 			err = er
 		}
