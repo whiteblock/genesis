@@ -35,7 +35,7 @@ func PurgeTestNetwork(tn *testnet.TestNet) error {
 		tn.BuildState.SetBuildStage("Tearing down the previous testnet")
 	}
 	docker.StopServices(tn)
-	return helpers.AllServerExecCon(tn, func(client *ssh.Client, server *db.Server) error {
+	return helpers.AllServerExecCon(tn, func(client ssh.Client, server *db.Server) error {
 		docker.KillAll(client)
 		if tn.BuildState != nil {
 			tn.BuildState.IncrementDeployProgress()

@@ -107,7 +107,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	tn.BuildState.SetBuildStage("Starting Artemis")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 
 		artemisCmd := `artemis -c /artemis/config/config.toml 2>&1 | tee /output.log`

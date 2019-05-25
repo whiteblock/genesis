@@ -38,13 +38,13 @@ func init() {
 }
 
 // Kill kills a single node by index on a server
-func Kill(client *ssh.Client, node int) error {
+func Kill(client ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker rm -f %s%d", conf.NodePrefix, node))
 	return err
 }
 
 // KillAll kills all nodes on a server
-func KillAll(client *ssh.Client) error {
+func KillAll(client ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s\")", conf.NodePrefix))
 	return err
 }
@@ -75,20 +75,20 @@ func NetworkCreate(tn *testnet.TestNet, serverID int, subnetID int, node int) er
 }
 
 // NetworkDestroy tears down a single docker network
-func NetworkDestroy(client *ssh.Client, node int) error {
+func NetworkDestroy(client ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker network rm %s%d", conf.NodeNetworkPrefix, node))
 	return err
 }
 
 // NetworkDestroyAll removes all whiteblock networks on a node
-func NetworkDestroyAll(client *ssh.Client) error {
+func NetworkDestroyAll(client ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf(
 		"for net in $(docker network ls | grep %s | awk '{print $1}'); do docker network rm $net; done", conf.NodeNetworkPrefix))
 	return err
 }
 
 // Login is an abstraction of docker login
-func Login(client *ssh.Client, username string, password string) error {
+func Login(client ssh.Client, username string, password string) error {
 	user := strings.Replace(username, "\"", "\\\"", -1) //Escape the quotes
 	pass := strings.Replace(password, "\"", "\\\"", -1) //Escape the quotes
 	_, err := client.Run(fmt.Sprintf("docker login -u \"%s\" -p \"%s\"", user, pass))
@@ -96,13 +96,13 @@ func Login(client *ssh.Client, username string, password string) error {
 }
 
 // Logout is an abstraction of docker logout
-func Logout(client *ssh.Client) error {
+func Logout(client ssh.Client) error {
 	_, err := client.Run("docker logout")
 	return err
 }
 
 // Pull pulls an image on all the given servers
-func Pull(clients []*ssh.Client, image string) error {
+func Pull(clients []ssh.Client, image string) error {
 	for _, client := range clients {
 		_, err := client.Run("docker pull " + image)
 		if err != nil {
@@ -201,7 +201,7 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 
 // StopServices stops all services and remove the service network from a server
 func StopServices(tn *testnet.TestNet) error {
-	return helpers.AllServerExecCon(tn, func(client *ssh.Client, _ *db.Server) error {
+	return helpers.AllServerExecCon(tn, func(client ssh.Client, _ *db.Server) error {
 		_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)", conf.ServicePrefix))
 		client.Run("docker network rm " + conf.ServiceNetworkName)
 		if err != nil {

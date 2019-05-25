@@ -12,7 +12,7 @@ import (
 // Service represents a service
 type Service interface {
 	// Prepare prepares the service
-	Prepare(client *ssh.Client, tn *testnet.TestNet) error
+	Prepare(client ssh.Client, tn *testnet.TestNet) error
 
 	// GetName gets the name of service
 	GetName() string
@@ -45,7 +45,7 @@ type SimpleService struct {
 }
 
 // Prepare just returns nil. Simple service has no prepare step
-func (s SimpleService) Prepare(client *ssh.Client, tn *testnet.TestNet) error {
+func (s SimpleService) Prepare(client ssh.Client, tn *testnet.TestNet) error {
 	return nil
 }
 

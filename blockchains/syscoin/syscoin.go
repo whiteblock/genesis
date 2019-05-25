@@ -67,7 +67,7 @@ func regTest(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildStage("Launching the nodes")
 
-	return helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		return client.DockerExecdLog(node,
 			"syscoind -conf=\"/syscoin/datadir/regtest.conf\" -datadir=\"/syscoin/datadir/\"")

@@ -83,7 +83,7 @@ func build(tn *testnet.TestNet) error {
 	/**Create the wallets**/
 	wallets := make([]string, tn.LDD.Nodes)
 	rawWallets := make([]string, tn.LDD.Nodes)
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		res, err := client.DockerExec(node, "parity --base-path=/parity/ --password=/parity/passwd account new")
 		if err != nil {
 			return util.LogError(err)
@@ -126,7 +126,7 @@ func build(tn *testnet.TestNet) error {
 
 	/***********************************************************SPLIT************************************************************/
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, rawWallet := range rawWallets {
 			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\">/parity/account%d'", rawWallet, i))
 			if err != nil {
@@ -146,7 +146,7 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		return client.DockerExecdLog(node,
 			fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`, wallets[node.GetAbsoluteNumber()]))
@@ -158,7 +158,7 @@ func build(tn *testnet.TestNet) error {
 	time.Sleep(time.Duration(5 * time.Second))
 	//Get the enode addresses
 	enodes := make([]string, tn.LDD.Nodes)
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		enode := ""
 		for len(enode) == 0 {
 			res, err := client.KeepTryRun(
@@ -206,7 +206,7 @@ func add(tn *testnet.TestNet) error {
 }
 
 func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
-	return helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, enode := range enodes {
 			if i == node.GetAbsoluteNumber() {
 				continue

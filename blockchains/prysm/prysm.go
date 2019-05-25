@@ -61,7 +61,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	tn.BuildState.SetBuildStage("Starting prysm")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		return client.DockerExecdLog(node, "/beacon-chain --no-discovery "+peers)
 	})

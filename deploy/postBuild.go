@@ -45,7 +45,7 @@ func handleExtraPublicKeys(tn *testnet.TestNet) error {
 	pubKeys := iPubKeys.([]interface{})
 
 	tn.BuildState.Async(func() {
-		helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+		helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 			for i := range pubKeys {
 				_, err := client.DockerExec(node, fmt.Sprintf(`bash -c 'echo "%v" >> /root/.ssh/authorized_keys'`, pubKeys[i]))
 				if err != nil {

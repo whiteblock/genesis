@@ -69,7 +69,7 @@ func Build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Initializing the nodes")
 
 	mux := sync.Mutex{}
-	err := helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err := helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		//init everything
 		_, err := client.DockerExec(node, "tendermint init")
 		if err != nil {
@@ -149,7 +149,7 @@ func Build(tn *testnet.TestNet) error {
 	}
 
 	tn.BuildState.SetBuildStage("Starting tendermint")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		peersCpy := make([]string, len(peers))
 		copy(peersCpy, peers)

@@ -44,7 +44,7 @@ func init() {
 
 func build(tn *testnet.Adjunct) error {
 
-	helpers.AllNodeExecConSC(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error { //ignore err
+	helpers.AllNodeExecConSC(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error { //ignore err
 		_, err := client.DockerExec(node, "mkdir -p /orion/data")
 		return err
 	})
@@ -56,7 +56,7 @@ func build(tn *testnet.Adjunct) error {
 		return util.LogError(err)
 	}
 
-	err = helpers.AllNodeExecConSC(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecConSC(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		_, err := client.DockerExec(node, "bash -c 'cd /orion/data && echo \"\" | orion -g nodeKey'")
 		return err
 	})
@@ -69,7 +69,7 @@ func build(tn *testnet.Adjunct) error {
 	}
 	tn.BuildState.SetExt("orion", ips)
 
-	return helpers.AllNodeExecConSC(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	return helpers.AllNodeExecConSC(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		return client.DockerExecdLog(node, "orion /orion/data/orion.conf")
 	})
 }

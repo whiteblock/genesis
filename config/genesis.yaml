@@ -17,7 +17,7 @@ nodeBits: 4
 ipPrefix: 10
 serviceNetwork: "172.30.0.1/16"
 
-# Node=
+# Node
 nodePrefix: "whiteblock-node"
 nodeNetworkPrefix: "wb_vlan_"
 maxNodeMemory: "16gb"
@@ -31,5 +31,6 @@ influxUser: ""
 influxPassword: ""
 
 # Misc
-threadLimit: 20
+maxRunAttempts: 30
+maxConnections: 50
 nibblerEndPoint: "https://storage.googleapis.com/genesis-public/nibbler/dev/bin/linux/amd64/nibbler"

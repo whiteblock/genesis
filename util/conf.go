@@ -36,7 +36,6 @@ type Config struct {
 	IPPrefix                      uint32  `mapstructure:"ipPrefix"`
 	Listen                        string  `mapstructure:"listen"`
 	Verbosity                     string  `mapstructure:"verbosity"`
-	ThreadLimit                   int64   `mapstructure:"threadLimit"`
 	DockerOutputFile              string  `mapstructure:"dockerOutputFile"`
 	Influx                        string  `mapstructure:"influx"`
 	InfluxUser                    string  `mapstructure:"influxUser"`
@@ -59,6 +58,8 @@ type Config struct {
 	PrometheusConfig              string  `mapstructure:"prometheusConfig"`
 	PrometheusPort                int     `mapstructure:"prometheusPort"`
 	PrometheusInstrumentationPort int     `mapstructure:"prometheusInstrumentationPort"`
+	MaxRunAttempts                int     `mapstructure:"maxRunAttempts"`
+	MaxConnections                int     `mapstructure:"maxConnections"`
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
@@ -74,7 +75,6 @@ func setViperEnvBindings() {
 	viper.BindEnv("serverBits", "SERVER_BITS")
 	viper.BindEnv("clusterBits", "CLUSTER_BITS")
 	viper.BindEnv("nodeBits", "NODE_BITS")
-	viper.BindEnv("threadLimit", "THREAD_LIMIT")
 	viper.BindEnv("ipPrefix", "IP_PREFIX")
 	viper.BindEnv("dockerOutputFile", "DOCKER_OUTPUT_FILE")
 	viper.BindEnv("influx", "INFLUX")
@@ -95,6 +95,8 @@ func setViperEnvBindings() {
 	viper.BindEnv("apiEndpoint", "API_ENDPOINT")
 	viper.BindEnv("nibblerEndPoint", "NIBBLER_END_POINT")
 	viper.BindEnv("logJson", "LOG_JSON")
+	viper.BindEnv("maxRunAttempts", "MAX_RUN_ATTEMPTS")
+	viper.BindEnv("maxConnections", "MAX_CONNECTIONS")
 }
 func setViperDefaults() {
 	viper.SetDefault("sshUser", os.Getenv("USER"))
@@ -103,7 +105,6 @@ func setViperDefaults() {
 	viper.SetDefault("serverBits", 8)
 	viper.SetDefault("clusterBits", 12)
 	viper.SetDefault("nodeBits", 4)
-	viper.SetDefault("threadLimit", 10)
 	viper.SetDefault("dockerOutputFile", "/output.log")
 	viper.SetDefault("serviceNetwork", "172.30.0.1/16")
 	viper.SetDefault("serviceNetworkName", "wb_builtin_services")
@@ -119,6 +120,8 @@ func setViperDefaults() {
 	viper.SetDefault("prometheusConfig", "/tmp/prometheus.yml")
 	viper.SetDefault("prometheusPort", 8088)
 	viper.SetDefault("prometheusInstrumentationPort", 8008)
+	viper.SetDefault("maxRunAttempts", 30)
+	viper.SetDefault("maxConnections", 50)
 }
 
 func init() {

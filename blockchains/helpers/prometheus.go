@@ -17,7 +17,7 @@ type PrometheusService struct {
 }
 
 // Prepare prepares the prometheus service
-func (p PrometheusService) Prepare(client *ssh.Client, tn *testnet.TestNet) error {
+func (p PrometheusService) Prepare(client ssh.Client, tn *testnet.TestNet) error {
 	configTxt := "scrape_configs:\n"
 	for _, node := range tn.Nodes {
 		tmpl, err := template.New("prometheus-source").Parse(`

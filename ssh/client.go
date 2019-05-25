@@ -37,13 +37,76 @@ import (
 
 var conf = util.GetConfig()
 
-const maxRunAttempts int = 30
-
-const maxConnections int = 50
-
 // Client maintains a persistent connect with a server,
 // allowing commands to be run on that server. This object is thread safe.
-type Client struct {
+type Client interface {
+
+	// MultiRun provides an easy shorthand for multiple calls to sshExec
+	MultiRun(commands ...string) ([]string, error)
+
+	// FastMultiRun speeds up remote execution by chaining commands together
+	FastMultiRun(commands ...string) (string, error)
+
+	// Run executes a given command on the connected remote machine.
+	Run(command string) (string, error)
+
+	// KeepTryRun attempts to run a command successfully multiple times. It will
+	// keep trying until it reaches the max amount of tries or it is successful once.
+	KeepTryRun(command string) (string, error)
+
+	// DockerExec executes a command inside of a node
+	DockerExec(node Node, command string) (string, error)
+
+	// DockerCp copies a file on a remote machine from source to the dest in the node
+	DockerCp(node Node, source string, dest string) error
+
+	// KeepTryDockerExec is like KeepTryRun for nodes
+	KeepTryDockerExec(node Node, command string) (string, error)
+
+	// KeepTryDockerExecAll is like KeepTryRun for nodes, but can handle more than one command.
+	// Executes the given commands in order.
+	KeepTryDockerExecAll(node Node, commands ...string) ([]string, error)
+
+	// DockerExecd runs the given command, and then returns immediately.
+	// This function will not return the output of the command.
+	// This is useful if you are starting a persistent process inside a container
+	DockerExecd(node Node, command string) (string, error)
+
+	// DockerExecdit runs the given command, and then returns immediately.
+	// This function will not return the output of the command.
+	// This is useful if you are starting a persistent process inside a container.
+	// Also flags the session as interactive and sets up a virtual tty.
+	DockerExecdit(node Node, command string) (string, error)
+
+	// DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs.
+	// Should only be used for the blockchain process.
+	DockerExecdLog(node Node, command string) error
+
+	// DockerExecdLogAppend will cause the stdout and stderr of the command to be stored in the logs.
+	// Should only be used for the blockchain process. Will append to existing logs.
+	DockerExecdLogAppend(node Node, command string) error
+
+	// DockerRead will read a file on a node, if lines > -1 then
+	// it will return the last `lines` lines of the file
+	DockerRead(node Node, file string, lines int) (string, error)
+
+	// DockerMultiExec will run all of the given commands strung together with && on
+	// the given node.
+	DockerMultiExec(node Node, commands []string) (string, error)
+
+	// KTDockerMultiExec is like DockerMultiExec, except it keeps attempting the command after
+	// failure
+	KTDockerMultiExec(node Node, commands []string) (string, error)
+
+	// Scp is a wrapper for the scp command. Can be used to copy
+	// a file over to a remote machine.
+	Scp(src string, dest string) error
+
+	// Close cleans up the resources used by sshClient object
+	Close()
+}
+
+type client struct {
 	clients  []*ssh.Client
 	host     string
 	serverID int
@@ -53,23 +116,23 @@ type Client struct {
 
 // NewClient creates an instance of Client, with a connection to the
 // host server given.
-func NewClient(host string, serverID int) (*Client, error) {
-	out := new(Client)
-	for i := maxConnections; i > 0; i -= 5 {
-		client, err := sshConnect(host)
+func NewClient(host string, serverID int) (Client, error) {
+	out := new(client)
+	for i := conf.MaxConnections; i > 0; i -= 5 {
+		c, err := sshConnect(host)
 		if err != nil {
 			return nil, util.LogError(err)
 		}
-		out.clients = append(out.clients, client)
+		out.clients = append(out.clients, c)
 	}
 	out.host = host
 	out.serverID = serverID
 	out.mux = &sync.RWMutex{}
-	out.sem = semaphore.NewWeighted(int64(maxConnections))
+	out.sem = semaphore.NewWeighted(int64(conf.MaxConnections))
 	return out, nil
 }
 
-func (sshClient *Client) getSession() (*Session, error) {
+func (sshClient *client) getSession() (*Session, error) {
 	sshClient.mux.RLock()
 	ctx := context.TODO()
 	sshClient.sem.Acquire(ctx, 1)
@@ -109,7 +172,7 @@ func (sshClient *Client) getSession() (*Session, error) {
 }
 
 // MultiRun provides an easy shorthand for multiple calls to sshExec
-func (sshClient *Client) MultiRun(commands ...string) ([]string, error) {
+func (sshClient *client) MultiRun(commands ...string) ([]string, error) {
 
 	out := []string{}
 	for _, command := range commands {
@@ -124,7 +187,7 @@ func (sshClient *Client) MultiRun(commands ...string) ([]string, error) {
 }
 
 // FastMultiRun speeds up remote execution by chaining commands together
-func (sshClient *Client) FastMultiRun(commands ...string) (string, error) {
+func (sshClient *client) FastMultiRun(commands ...string) (string, error) {
 
 	cmd := ""
 	for i, command := range commands {
@@ -137,7 +200,7 @@ func (sshClient *Client) FastMultiRun(commands ...string) (string, error) {
 }
 
 // Run executes a given command on the connected remote machine.
-func (sshClient *Client) Run(command string) (string, error) {
+func (sshClient *client) Run(command string) (string, error) {
 	session, err := sshClient.getSession()
 	if err != nil {
 		return "", util.LogError(err)
@@ -160,14 +223,14 @@ func (sshClient *Client) Run(command string) (string, error) {
 
 // KeepTryRun attempts to run a command successfully multiple times. It will
 // keep trying until it reaches the max amount of tries or it is successful once.
-func (sshClient *Client) KeepTryRun(command string) (string, error) {
+func (sshClient *client) KeepTryRun(command string) (string, error) {
 	var res string
 	var err error
 	bs := state.GetBuildStateByServerID(sshClient.serverID)
 	if bs.Stop() {
 		return "", bs.GetError()
 	}
-	for i := 0; i < maxRunAttempts; i++ {
+	for i := 0; i < conf.MaxRunAttempts; i++ {
 		res, err = sshClient.Run(command)
 		if err == nil {
 			break
@@ -177,24 +240,24 @@ func (sshClient *Client) KeepTryRun(command string) (string, error) {
 }
 
 // DockerExec executes a command inside of a node
-func (sshClient *Client) DockerExec(node Node, command string) (string, error) {
+func (sshClient *client) DockerExec(node Node, command string) (string, error) {
 	return sshClient.Run(fmt.Sprintf("docker exec %s %s", node.GetNodeName(), command))
 }
 
 // DockerCp copies a file on a remote machine from source to the dest in the node
-func (sshClient *Client) DockerCp(node Node, source string, dest string) error {
+func (sshClient *client) DockerCp(node Node, source string, dest string) error {
 	_, err := sshClient.Run(fmt.Sprintf("docker cp %s %s:%s", source, node.GetNodeName(), dest))
 	return err
 }
 
 // KeepTryDockerExec is like KeepTryRun for nodes
-func (sshClient *Client) KeepTryDockerExec(node Node, command string) (string, error) {
+func (sshClient *client) KeepTryDockerExec(node Node, command string) (string, error) {
 	return sshClient.KeepTryRun(fmt.Sprintf("docker exec %s %s", node.GetNodeName(), command))
 }
 
 // KeepTryDockerExecAll is like KeepTryRun for nodes, but can handle more than one command.
 // Executes the given commands in order.
-func (sshClient *Client) KeepTryDockerExecAll(node Node, commands ...string) ([]string, error) {
+func (sshClient *client) KeepTryDockerExecAll(node Node, commands ...string) ([]string, error) {
 	out := []string{}
 	for _, command := range commands {
 		res, err := sshClient.KeepTryRun(fmt.Sprintf("docker exec %s %s", node.GetNodeName(), command))
@@ -209,7 +272,7 @@ func (sshClient *Client) KeepTryDockerExecAll(node Node, commands ...string) ([]
 // DockerExecd runs the given command, and then returns immediately.
 // This function will not return the output of the command.
 // This is useful if you are starting a persistent process inside a container
-func (sshClient *Client) DockerExecd(node Node, command string) (string, error) {
+func (sshClient *client) DockerExecd(node Node, command string) (string, error) {
 	return sshClient.Run(fmt.Sprintf("docker exec -d %s %s", node.GetNodeName(), command))
 }
 
@@ -217,11 +280,11 @@ func (sshClient *Client) DockerExecd(node Node, command string) (string, error) 
 // This function will not return the output of the command.
 // This is useful if you are starting a persistent process inside a container.
 // Also flags the session as interactive and sets up a virtual tty.
-func (sshClient *Client) DockerExecdit(node Node, command string) (string, error) {
+func (sshClient *client) DockerExecdit(node Node, command string) (string, error) {
 	return sshClient.Run(fmt.Sprintf("docker exec -itd %s %s", node.GetNodeName(), command))
 }
 
-func (sshClient *Client) logSanitizeAndStore(node Node, command string) {
+func (sshClient *client) logSanitizeAndStore(node Node, command string) {
 	if strings.Count(command, "'") != strings.Count(command, "\\'") {
 		panic("DockerExecdLog commands cannot contain unescaped ' characters")
 	}
@@ -231,7 +294,7 @@ func (sshClient *Client) logSanitizeAndStore(node Node, command string) {
 
 // DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs.
 // Should only be used for the blockchain process.
-func (sshClient *Client) DockerExecdLog(node Node, command string) error {
+func (sshClient *client) DockerExecdLog(node Node, command string) error {
 	sshClient.logSanitizeAndStore(node, command)
 
 	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s bash -c '%s 2>&1 > %s'", node.GetNodeName(),
@@ -241,7 +304,7 @@ func (sshClient *Client) DockerExecdLog(node Node, command string) error {
 
 // DockerExecdLogAppend will cause the stdout and stderr of the command to be stored in the logs.
 // Should only be used for the blockchain process. Will append to existing logs.
-func (sshClient *Client) DockerExecdLogAppend(node Node, command string) error {
+func (sshClient *client) DockerExecdLogAppend(node Node, command string) error {
 	sshClient.logSanitizeAndStore(node, command)
 	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s bash -c '%s 2>&1 >> %s'", node.GetNodeName(),
 		command, conf.DockerOutputFile))
@@ -250,14 +313,14 @@ func (sshClient *Client) DockerExecdLogAppend(node Node, command string) error {
 
 // DockerRead will read a file on a node, if lines > -1 then
 // it will return the last `lines` lines of the file
-func (sshClient *Client) DockerRead(node Node, file string, lines int) (string, error) {
+func (sshClient *client) DockerRead(node Node, file string, lines int) (string, error) {
 	if lines > -1 {
 		return sshClient.DockerExec(node, fmt.Sprintf("tail -n %d %s", lines, file))
 	}
 	return sshClient.DockerExec(node, fmt.Sprintf("cat %s", file))
 }
 
-func (sshClient *Client) dockerMultiExec(node Node, commands []string, kt bool) (string, error) {
+func (sshClient *client) dockerMultiExec(node Node, commands []string, kt bool) (string, error) {
 	mergedCommand := ""
 
 	for _, command := range commands {
@@ -274,40 +337,25 @@ func (sshClient *Client) dockerMultiExec(node Node, commands []string, kt bool) 
 
 // DockerMultiExec will run all of the given commands strung together with && on
 // the given node.
-func (sshClient *Client) DockerMultiExec(node Node, commands []string) (string, error) {
+func (sshClient *client) DockerMultiExec(node Node, commands []string) (string, error) {
 	return sshClient.dockerMultiExec(node, commands, false)
 }
 
 // KTDockerMultiExec is like DockerMultiExec, except it keeps attempting the command after
 // failure
-func (sshClient *Client) KTDockerMultiExec(node Node, commands []string) (string, error) {
+func (sshClient *client) KTDockerMultiExec(node Node, commands []string) (string, error) {
 	return sshClient.dockerMultiExec(node, commands, true)
 }
 
 // Scp is a wrapper for the scp command. Can be used to copy
 // a file over to a remote machine.
-func (sshClient *Client) Scp(src string, dest string) error {
+func (sshClient *client) Scp(src string, dest string) error {
 	log.WithFields(log.Fields{"src": src, "dst": dest}).Info("remote copying file")
 
 	if !strings.HasPrefix(src, "./") && src[0] != '/' {
 		bs := state.GetBuildStateByServerID(sshClient.serverID)
 		src = "/tmp/" + bs.BuildID + "/" + src
 	}
-
-	session, err := sshClient.getSession()
-	if err != nil {
-		return util.LogError(err)
-	}
-	defer session.Close()
-
-	return scp.CopyPath(src, dest, session.Get())
-}
-
-// InternalScp is a wrapper for the scp command. Can be used to copy
-// a file over to a remote machine. This is for internal use, and may cause
-// unpredictable behavior. Use Scp instead
-func (sshClient *Client) InternalScp(src string, dest string) error {
-	log.WithFields(log.Fields{"src": src, "dst": dest}).Info("remote copying file using internal protocol")
 
 	session, err := sshClient.getSession()
 	if err != nil {
@@ -346,7 +394,7 @@ func (sshClient Client) Scpr(dir string) error {
 }*/
 
 // Close cleans up the resources used by sshClient object
-func (sshClient *Client) Close() {
+func (sshClient *client) Close() {
 	sshClient.mux.Lock()
 	defer sshClient.mux.Unlock()
 	for _, client := range sshClient.clients {

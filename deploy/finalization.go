@@ -104,7 +104,7 @@ func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 		return util.LogError(err)
 	}
 
-	fn := func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	fn := func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementDeployProgress()
 
 		_, err := client.DockerExec(node, "mkdir -p /root/.ssh/")

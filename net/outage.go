@@ -31,7 +31,7 @@ import (
 )
 
 //RemoveAllOutages removes all blocked connections on a server via the given client
-func RemoveAllOutages(client *ssh.Client) error {
+func RemoveAllOutages(client ssh.Client) error {
 	res, err := client.Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD || true")
 	if err != nil {
 		log.Println(err)
@@ -130,7 +130,7 @@ func CreatePartitionOutage(side1 []db.Node, side2 []db.Node) { //Doesn't report 
 
 //GetCutConnections fetches the cut connections on a server
 //TODO: Naive Implementation, does not yet take multiple servers into account
-func GetCutConnections(client *ssh.Client) ([]Connection, error) {
+func GetCutConnections(client ssh.Client) ([]Connection, error) {
 	res, err := client.Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD | awk '{print $4,$6}' | sed -e 's/\\/32//g' || true")
 	if err != nil {
 		log.Println(err)
