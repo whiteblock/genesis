@@ -32,7 +32,10 @@ import (
 
 var conf *util.Config
 
-const blockchain = "plumtree"
+const (
+	blockchain = "plumtree"
+	p2pPort    = 9000
+)
 
 func init() {
 	conf = util.GetConfig()
@@ -53,42 +56,19 @@ func getServices() []util.Service {
 func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 1))
-
 	tn.BuildState.SetBuildStage("Starting plumtree")
-	err := helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
-		defer tn.BuildState.IncrementBuildProgress()
 
-		port := 9000
+	return util.LogError(helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+		defer tn.BuildState.IncrementBuildProgress()
 		peers := ""
-		var peer string
 		for _, peerNode := range tn.Nodes {
 			if node.GetIP() != peerNode.GetIP() {
-				peer = fmt.Sprintf("tcp://whiteblock-node%d@%s:%d",
-					peerNode.LocalID,
-					peerNode.IP,
-					port,
-				)
-
-				peers = peers + " --peer=" + peer + " "
+				peers += fmt.Sprintf(" --peer=tcp://whiteblock-node%d@%s:%d", peerNode.LocalID, peerNode.IP, p2pPort)
 				tn.BuildState.IncrementBuildProgress()
 			}
 		}
-
-		cmd := "gossip -n 0.0.0.0 -l 9000 -r 9001 -m /plumtree/data/log.json " + peers + " 2>&1 | tee /output.log"
-
-		_, err := client.DockerExecd(node, "tmux new -s whiteblock -d")
-		if err != nil {
-			return util.LogError(err)
-		}
-
-		_, err = client.DockerExecd(node, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", cmd))
-		return err
-	})
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	return nil
+		return client.DockerExecdLog(node, "gossip -n 0.0.0.0 -l 9000 -r 9001 -m /plumtree/data/log.json "+peers)
+	}))
 }
 
 // Add handles adding a node to the plumtree testnet
