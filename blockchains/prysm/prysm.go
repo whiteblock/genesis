@@ -31,7 +31,10 @@ import (
 
 var conf *util.Config
 
-const blockchain = "prysm"
+const (
+	blockchain = "prysm"
+	p2pPort    = 9000
+)
 
 func init() {
 	conf = util.GetConfig()
@@ -51,42 +54,18 @@ func build(tn *testnet.TestNet) error {
 	}
 	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
 
-	port := 9000
 	peers := ""
-	var peer string
-	for i, node := range tn.Nodes {
-		peer = fmt.Sprintf("/dns4/whiteblock-node%d@%s/tcp/%d",
-			node.LocalID,
-			node.IP,
-			port,
-		)
-		if i != len(tn.Nodes)-1 {
-			peers = peers + " --peer=" + peer + " "
-		} else {
-			peers = peers + " --peer=" + peer
-		}
+	for _, node := range tn.Nodes {
+		peers += fmt.Sprintf(" --peer=/dns4/whiteblock-node%d@%s/tcp/%d", node.LocalID, node.IP, p2pPort)
 		tn.BuildState.IncrementBuildProgress()
 	}
 
 	tn.BuildState.SetBuildStage("Starting prysm")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-
-		artemisCmd := "/beacon-chain --no-discovery " + peers + " 2>&1 | tee /output.log"
-
-		_, err := client.DockerExecd(node, "tmux new -s whiteblock -d")
-		if err != nil {
-			return util.LogError(err)
-		}
-
-		_, err = client.DockerExecd(node, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", artemisCmd))
-		return err
+		return client.DockerExecdLog(node, "/beacon-chain --no-discovery "+peers)
 	})
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	return nil
+	return util.LogError(err)
 }
 
 // add handles adding nodes to the testnet

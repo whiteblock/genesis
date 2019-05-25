@@ -21,11 +21,11 @@ package netconf
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/status"
 	"github.com/whiteblock/genesis/util"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -64,12 +64,12 @@ type Netconf struct {
 func CreateCommands(netconf Netconf, serverID int) []string {
 	const offset int = 6
 	out := []string{
-		fmt.Sprintf("sudo tc qdisc del dev %s%d root", conf.BridgePrefix, netconf.Node),
-		fmt.Sprintf("sudo tc qdisc add dev %s%d root handle 1: prio", conf.BridgePrefix, netconf.Node),
-		fmt.Sprintf("sudo tc qdisc add dev %s%d parent 1:1 handle 2: netem", conf.BridgePrefix, netconf.Node), //unf
-		fmt.Sprintf("sudo tc filter add dev %s%d parent 1:0 protocol ip pref 55 handle %d fw flowid 2:1",
+		fmt.Sprintf("sudo -n tc qdisc del dev %s%d root", conf.BridgePrefix, netconf.Node),
+		fmt.Sprintf("sudo -n tc qdisc add dev %s%d root handle 1: prio", conf.BridgePrefix, netconf.Node),
+		fmt.Sprintf("sudo -n tc qdisc add dev %s%d parent 1:1 handle 2: netem", conf.BridgePrefix, netconf.Node), //unf
+		fmt.Sprintf("sudo -n tc filter add dev %s%d parent 1:0 protocol ip pref 55 handle %d fw flowid 2:1",
 			conf.BridgePrefix, netconf.Node, offset),
-		fmt.Sprintf("sudo iptables -t mangle -A PREROUTING  ! -d %s -j MARK --set-mark %d",
+		fmt.Sprintf("sudo -n iptables -t mangle -A PREROUTING  ! -d %s -j MARK --set-mark %d",
 			util.GetGateway(serverID, netconf.Node), offset),
 	}
 
@@ -114,8 +114,7 @@ func Apply(client *ssh.Client, netconf Netconf, serverID int) error {
 			continue
 		}
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 	}
 	return nil
@@ -126,18 +125,15 @@ func ApplyAll(netconfs []Netconf, nodes []db.Node) error {
 	for _, netconf := range netconfs {
 		node, err := db.GetNodeByLocalID(nodes, netconf.Node)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		client, err := status.GetClient(node.Server)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		err = Apply(client, netconf, node.Server)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 	}
 	return nil
@@ -151,8 +147,8 @@ func ApplyToAll(netconf Netconf, nodes []db.Node) error {
 		for i, cmd := range cmds {
 			client, err := status.GetClient(node.Server)
 			if err != nil {
-				log.Println(err)
-				return err
+				log.WithFields(log.Fields{"i": i, "cmd": cmd, "error": err}).Error("error running netem command")
+				return util.LogError(err)
 			}
 			_, err = client.Run(cmd)
 			if i == 0 {
@@ -160,8 +156,7 @@ func ApplyToAll(netconf Netconf, nodes []db.Node) error {
 				continue
 			}
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 		}
 	}
@@ -173,11 +168,13 @@ func RemoveAll(nodes []db.Node) error {
 	for _, node := range nodes {
 		client, err := status.GetClient(node.Server)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
-		client.Run(
-			fmt.Sprintf("sudo tc qdisc del dev %s%d root", conf.BridgePrefix, node.LocalID))
+		_, err = client.Run(
+			fmt.Sprintf("sudo -n tc qdisc del dev %s%d root", conf.BridgePrefix, node.LocalID))
+		if err != nil {
+			log.Error(err)
+		}
 	}
 	return nil
 }
@@ -198,15 +195,13 @@ func parseItems(items []string, nconf *Netconf) error {
 		case "limit":
 			val, err := strconv.Atoi(items[2*i+1])
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 			nconf.Limit = val
 		case "loss":
 			val, err := strconv.ParseFloat(items[2*i+1][:len(items[2*i+1])-1], 64)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 			nconf.Loss = val
 		case "delay":
@@ -218,8 +213,7 @@ func parseItems(items []string, nconf *Netconf) error {
 
 			val, err := strconv.ParseFloat(matches[0], 64)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 			unit := items[2*i+1][len(matches[0]):]
 			switch unit {
@@ -235,22 +229,19 @@ func parseItems(items []string, nconf *Netconf) error {
 		case "duplicate":
 			val, err := strconv.ParseFloat(items[2*i+1][:len(items[2*i+1])-1], 64)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 			nconf.Duplication = val
 		case "corrupt":
 			val, err := strconv.ParseFloat(items[2*i+1][:len(items[2*i+1])-1], 64)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 			nconf.Corrupt = val
 		case "reorder":
 			val, err := strconv.ParseFloat(items[2*i+1][:len(items[2*i+1])-1], 64)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 			nconf.Reorder = val
 		}
@@ -260,10 +251,9 @@ func parseItems(items []string, nconf *Netconf) error {
 
 //GetConfigOnServer gets the network impairments present on a server
 func GetConfigOnServer(client *ssh.Client) ([]Netconf, error) {
-	res, err := client.Run("tc qdisc show | grep wb_bridge | grep netem || true")
+	res, err := client.Run("sudo -n tc qdisc show | grep wb_bridge | grep netem || true")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	if len(res) == 0 {
 		return []Netconf{}, nil
@@ -280,16 +270,14 @@ func GetConfigOnServer(client *ssh.Client) ([]Netconf, error) {
 
 		num, err := strconv.Atoi(bridgeName[len(conf.BridgePrefix):])
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		nconf := Netconf{Node: num}
 		if len(rawItems) >= 8 {
 			items := rawItems[7:]
 			err = parseItems(items, &nconf)
 			if err != nil {
-				log.Println(err)
-				return nil, err
+				return nil, util.LogError(err)
 			}
 		}
 		out = append(out, nconf)

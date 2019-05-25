@@ -88,9 +88,9 @@ func newConf(data map[string]interface{}) (*parityConf, error) {
 }
 
 // GetServices returns the services which are used by parity
-func GetServices() []util.Service {
-	return []util.Service{
-		{
+func GetServices() []helpers.Service {
+	return []helpers.Service{
+		helpers.SimpleService{
 			Name:  "Geth",
 			Image: "gcr.io/whiteblock/ethereum:latest",
 			Env:   nil,

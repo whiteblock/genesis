@@ -21,8 +21,8 @@ package registrar
 
 import (
 	"fmt"
+	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/testnet"
-	"github.com/whiteblock/genesis/util"
 	"sync"
 )
 
@@ -34,7 +34,7 @@ var (
 	buildFuncs = map[string]func(*testnet.TestNet) error{}
 	addFuncs   = map[string]func(*testnet.TestNet) error{}
 
-	serviceFuncs  = map[string]func() []util.Service{}
+	serviceFuncs  = map[string]func() []helpers.Service{}
 	paramsFuncs   = map[string]func() string{}
 	defaultsFuncs = map[string]func() string{}
 	logFiles      = map[string]map[string]string{}
@@ -55,7 +55,7 @@ func RegisterAddNodes(blockchain string, fn func(*testnet.TestNet) error) {
 }
 
 // RegisterServices associates a blockchain name with a function that gets its required services
-func RegisterServices(blockchain string, fn func() []util.Service) {
+func RegisterServices(blockchain string, fn func() []helpers.Service) {
 	mux.Lock()
 	defer mux.Unlock()
 	serviceFuncs[blockchain] = fn
@@ -108,7 +108,7 @@ func GetAddNodeFunc(blockchain string) (func(*testnet.TestNet) error, error) {
 
 // GetServiceFunc gets the service function associated with the given blockchain name or error != nil if
 // it is not found
-func GetServiceFunc(blockchain string) (func() []util.Service, error) {
+func GetServiceFunc(blockchain string) (func() []helpers.Service, error) {
 	mux.RLock()
 	defer mux.RUnlock()
 	out, ok := serviceFuncs[blockchain]

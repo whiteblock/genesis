@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/whiteblock/genesis/blockchains/helpers"
-	"github.com/whiteblock/genesis/util"
 )
 
 type ethConf struct {
@@ -63,9 +62,9 @@ func newConf(data map[string]interface{}) (*ethConf, error) {
 }
 
 // GetServices returns the services which are used by artemis
-func GetServices() []util.Service {
-	return []util.Service{
-		{
+func GetServices() []helpers.Service {
+	return []helpers.Service{
+		helpers.SimpleService{
 			Name:    "ethNetStats",
 			Image:   "gcr.io/whiteblock/ethnetstats:dev",
 			Env:     nil,

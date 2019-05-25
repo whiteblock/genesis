@@ -64,7 +64,6 @@ func regTest(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
-	fmt.Printf("done\n")
 
 	tn.BuildState.SetBuildStage("Launching the nodes")
 

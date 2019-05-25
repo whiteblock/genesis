@@ -21,22 +21,24 @@ package pantheon
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/ethereum"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
-	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
-	"log"
 	"sync"
 )
 
 var conf *util.Config
 
-const blockchain = "pantheon"
+const (
+	blockchain = "pantheon"
+	p2pPort    = 30303
+)
 
 func init() {
 	conf = util.GetConfig()
@@ -133,7 +135,6 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	p2pPort := 30303
 	enodes := "["
 	for i, node := range tn.Nodes {
 		enodeAddress := fmt.Sprintf("enode://%s@%s:%d",
@@ -269,13 +270,9 @@ func createGenesisfile(panconf *panConf, tn *testnet.TestNet, accounts []*ethere
 	if err != nil {
 		return util.LogError(err)
 	}
-	fmt.Println("Writing Genesis File Locally")
-	return tn.BuildState.Write("genesis.json", data)
+	log.Trace("writing the genesis file")
+	return util.LogError(tn.BuildState.Write("genesis.json", data))
 
-}
-
-func createStaticNodesFile(list string, buildState *state.BuildState) error {
-	return buildState.Write("static-nodes.json", list)
 }
 
 func getExtraConfigurationFlags(tn *testnet.TestNet, node ssh.Node, pconf *panConf) (string, error) {

@@ -21,6 +21,8 @@ package deploy
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
+	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
@@ -89,6 +91,7 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 	var resource util.Resources
 	if len(tn.LDD.Resources) == 0 {
 		resource = util.Resources{Cpus: "", Memory: ""}
+		log.WithFields(log.Fields{"resource": resource, "node": node.AbsoluteNum}).Trace("using default resources")
 	} else {
 		resource = tn.LDD.Resources[0]
 	}
@@ -97,13 +100,16 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 
 	if len(tn.LDD.Resources) > node.AbsoluteNum {
 		resource = tn.LDD.Resources[node.AbsoluteNum]
+		log.WithFields(log.Fields{"resource": resource, "node": node.AbsoluteNum}).Trace("using given resources")
 	}
 	if len(tn.LDD.Images) > node.AbsoluteNum {
 		node.Image = tn.LDD.Images[node.AbsoluteNum]
+		log.WithFields(log.Fields{"image": node.Image, "node": node.AbsoluteNum}).Trace("using given image")
 	}
 
 	if tn.LDD.Environments != nil && len(tn.LDD.Environments) > node.AbsoluteNum && tn.LDD.Environments[node.AbsoluteNum] != nil {
 		env = tn.LDD.Environments[node.AbsoluteNum]
+		log.WithFields(log.Fields{"env": env, "node": node.AbsoluteNum}).Trace("using custom env vars")
 	}
 
 	err = docker.Run(tn, server.ID, docker.NewNodeContainer(node, env, resource, server.SubnetID))
@@ -117,7 +123,7 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 
 // Build builds out the given docker network infrastructure according to the given parameters, and return
 // the given array of servers, with ips updated for the nodes added to that server
-func Build(tn *testnet.TestNet, services []util.Service) error {
+func Build(tn *testnet.TestNet, services []helpers.Service) error {
 	tn.BuildState.SetDeploySteps(3*tn.LDD.Nodes + 2 + len(services))
 	defer tn.BuildState.FinishDeploy()
 	wg := sync.WaitGroup{}
@@ -144,7 +150,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 
 		if tn.Servers[serverIndex].Max <= tn.Servers[serverIndex].Nodes {
 			if len(availableServers) == 1 {
-				return fmt.Errorf("cannot build that many nodes with the available resources")
+				return util.LogError(fmt.Errorf("cannot build that many nodes with the available resources"))
 			}
 			availableServers = append(availableServers[:serverIndex], availableServers[serverIndex+1:]...)
 			i--
@@ -179,6 +185,7 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 	}
 
 	if services != nil { //Maybe distribute the services over multiple servers
+		log.WithFields(log.Fields{"services": services}).Trace("starting up services")
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -207,7 +214,10 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 		wg.Add(1)
 		go func(client *ssh.Client) {
 			defer wg.Done()
-			client.Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
+			_, err = client.Run("sudo -n iptables --flush DOCKER-ISOLATION-STAGE-1")
+			if err != nil {
+				tn.BuildState.ReportError(err)
+			}
 		}(client)
 
 	}

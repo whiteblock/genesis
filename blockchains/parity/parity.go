@@ -22,6 +22,7 @@ package parity
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/ethereum"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
@@ -29,7 +30,6 @@ import (
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"log"
 	"strings"
 	"sync"
 	"time"
@@ -56,7 +56,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	fmt.Printf("%#v\n", *pconf)
+	log.WithFields(log.Fields{"config": *pconf}).Trace("parsed the parity config")
 
 	tn.BuildState.SetBuildSteps(9 + (7 * tn.LDD.Nodes))
 	//Make the data directories
@@ -146,7 +146,6 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	//util.Write("tmp/config.toml",configToml)
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		return client.DockerExecdLog(node,
@@ -177,7 +176,7 @@ func build(tn *testnet.TestNet) error {
 			if err != nil {
 				return util.LogError(err)
 			}
-			fmt.Println(result)
+			log.WithFields(log.Fields{"result": result}).Trace("fetched enode addr from parity_enode")
 
 			err = util.GetJSONString(result, "result", &enode)
 			if err != nil {
@@ -229,7 +228,7 @@ func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 func storeGethParameters(tn *testnet.TestNet, pconf *parityConf, wallets []string, enodes []string) {
 	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
 	if err != nil {
-		log.Println(err)
+		log.WithFields(log.Fields{"error": err}).Warn("couldn't create geth accounts")
 	}
 
 	tn.BuildState.Set("networkID", pconf.NetworkID)

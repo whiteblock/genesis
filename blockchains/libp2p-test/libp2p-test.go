@@ -22,6 +22,7 @@ package libp2ptest
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
@@ -41,7 +42,7 @@ func init() {
 
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
-	registrar.RegisterServices(blockchain, func() []util.Service { return []util.Service{} })
+	registrar.RegisterServices(blockchain, func() []helpers.Service { return []helpers.Service{} })
 	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }
@@ -66,8 +67,11 @@ func build(tn *testnet.TestNet) error {
 
 	//Get the peer information
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
-		res, err := client.DockerExec(node,
-			fmt.Sprintf("./p2p-tests --generate-only --seed %d --hostAddrs /ip4/%s/tcp/39977", node.GetAbsoluteNumber()+1, node.GetIP()))
+
+		cmd := fmt.Sprintf("/p2p-tests/client --generate-only --seed %d --hostAddrs /ip4/%s/tcp/39977",
+			node.GetAbsoluteNumber()+1, node.GetIP())
+
+		res, err := client.DockerExec(node, cmd)
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -80,7 +84,7 @@ func build(tn *testnet.TestNet) error {
 		if err != nil {
 			return util.LogError(err)
 		}
-		//fmt.Printf("PEER=%#v\n", peer)
+		log.WithFields(log.Fields{"peer": peer}).Trace("got peer")
 		mux.Lock()
 		peers[node.GetAbsoluteNumber()] = peer
 		mux.Unlock()
@@ -109,9 +113,13 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
-		cmd := fmt.Sprintf("/p2p-tests/p2p-tests --seed %d --hostAddrs /ip4/%s/tcp/39977 "+
+		cmd := fmt.Sprintf("/p2p-tests/client --seed %d --hostAddrs /ip4/%s/tcp/39977 "+
 			"--file /p2p-tests/static-peers.json --pubsubRouter %s",
 			node.GetAbsoluteNumber()+1, node.GetIP(), testConf.Router)
+
+		if testConf.UseValgrind {
+			cmd = "valgrind --tool=callgrind " + cmd
+		}
 		if node.GetAbsoluteNumber() < testConf.Senders { //make node 0 the sending node
 			cmd += fmt.Sprintf(" --send-interval %d", testConf.Interval)
 		}
