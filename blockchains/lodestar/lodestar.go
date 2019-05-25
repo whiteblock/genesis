@@ -35,7 +35,6 @@ const blockchain = "lodestar"
 
 func init() {
 	conf = util.GetConfig()
-
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
@@ -59,24 +58,10 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetBuildStage("Starting lodestar")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	return helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-
-		lodestarCmd := "lodestar --listen-address 0.0.0.0 --port 9000 " + peers + " 2>&1 | tee /output.log"
-
-		_, err := client.DockerExecd(node, "tmux new -s whiteblock -d")
-		if err != nil {
-			return util.LogError(err)
-		}
-
-		_, err = client.DockerExecd(node, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", lodestarCmd))
-		return err
+		return client.DockerExecdLog(node, "lodestar --listen-address 0.0.0.0 --port 9000 "+peers)
 	})
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	return nil
 }
 
 // add handles adding nodes to the testnet

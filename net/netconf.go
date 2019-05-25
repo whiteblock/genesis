@@ -147,6 +147,7 @@ func ApplyToAll(netconf Netconf, nodes []db.Node) error {
 		for i, cmd := range cmds {
 			client, err := status.GetClient(node.Server)
 			if err != nil {
+				log.WithFields(log.Fields{"i": i, "cmd": cmd, "error": err}).Error("error running netem command")
 				return util.LogError(err)
 			}
 			_, err = client.Run(cmd)
@@ -212,8 +213,7 @@ func parseItems(items []string, nconf *Netconf) error {
 
 			val, err := strconv.ParseFloat(matches[0], 64)
 			if err != nil {
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 			unit := items[2*i+1][len(matches[0]):]
 			switch unit {
