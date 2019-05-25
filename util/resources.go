@@ -45,11 +45,7 @@ func memconv(mem string) (int64, error) {
 
 	m := strings.ToLower(mem)
 
-	if len(m) <= 2 {
-		return strconv.ParseInt(m, 10, 64)
-	}
-
-	var multiplier int64 = -1
+	var multiplier int64 = 0
 
 	if strings.HasSuffix(m, "kb") || strings.HasSuffix(m, "k") {
 		multiplier = 1000
