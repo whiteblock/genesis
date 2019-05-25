@@ -25,9 +25,9 @@ import (
 
 func TestExtractStringMapUnsuccessful(t *testing.T) {
 	in := map[string]interface{}{
-		"test": []int{1, 2, 3},
-		"key": 3,
-		"node": 1,
+		"test":   []int{1, 2, 3},
+		"key":    3,
+		"node":   1,
 		"string": "string",
 	}
 
@@ -47,7 +47,7 @@ func TestExtractStringMapUnsuccessful(t *testing.T) {
 func TestExtractStringMapSuccessful(t *testing.T) {
 	in := map[string]interface{}{
 		"interface": map[string]interface{}{"sub": 3},
-		"peers": map[string]interface{}{"node1": 1, "node2": 2},
+		"peers":     map[string]interface{}{"node1": 1, "node2": 2},
 	}
 
 	for i, _ := range in {
