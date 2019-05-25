@@ -48,38 +48,38 @@ Configuration options are located in `config.json` in the same directory as the 
 
 | __Option__ |         __Description__   |
 | :---------------:|---------------------------- |  
-| __ssh-user__ | The default username for ssh |
-| __ssh-key__ | The location of the ssh private key |
+| __sshUser__ | The default username for ssh |
+| __sshKey__ | The location of the ssh private key |
 | __listen__ |The socket to listen on |
 | __verbose__ |Enable or disable verbose mode |
-|  __server-bits__ |The bits given to each server's number |
-| __cluster-bits__ | The bits given to each clusters's number |
-| __node-bits__| The bits given to each nodes's number|
-| __thread-limit__| The maximum number of threads that can be used for building |
-| __ip-prefix__| Used for the IP Scheme|
-| __docker-output-file__| The location instead the docker containers where the clients stdout and stderr will be captured |
+|  __serverBits__ |The bits given to each server's number |
+| __clusterBits__ | The bits given to each clusters's number |
+| __nodeBits__| The bits given to each nodes's number|
+| __threadLimit__| The maximum number of threads that can be used for building |
+| __ipPrefix__| Used for the IP Scheme|
+| __dockerOutputFile__| The location instead the docker containers where the clients stdout and stderr will be captured |
 | __influx__| The influxdb endpoint |
-| __influx-user__|The influx auth username |
-| __influx-password__| The influx auth password |
-| __service-network__| CIDR of the network for the services |
-| __service-network-name__| The name for the service network |
-| __node-prefix__| The prefix for each node name|
-| __node-network-prefix__| The prefix for each cluster network |
-| __service-prefix__| The prefix for each service |
-| __nodes-public-key__| Location of the public key for the nodes |
-| __nodes-private-key__| Location of the private key for the nodes |
-| __handle-node-ssh-keys__| Should genesis handle the nodes ssh keys? |
-| __max-nodes__| Set a maximum number of nodes that a client can build |
-| __max-node-memory__| Set the max memory per node that a client can use |
-| __max-node-cpu__| Set the max cpus per node that a client can use |
+| __influxUser__|The influx auth username |
+| __influxPassword__| The influx auth password |
+| __serviceNetwork__| CIDR of the network for the services |
+| __serviceNetworkName__| The name for the service network |
+| __nodePrefix__| The prefix for each node name|
+| __nodeNetworkPrefix__| The prefix for each cluster network |
+| __servicePrefix__| The prefix for each service |
+| __nodesPublicKey__| Location of the public key for the nodes |
+| __nodesPrivateKey__| Location of the private key for the nodes |
+| __handleNodeSshKeys__| Should genesis handle the nodes ssh keys? |
+| __maxNodes__| Set a maximum number of nodes that a client can build |
+| __maxNode-memory__| Set the max memory per node that a client can use |
+| __maxNodeCpu__| Set the max cpus per node that a client can use |
       
 
 ## Config Environment Overrides
 These will override what is set in the config.json file, and allow configuration via
 only ENV variables
 
-* `RSA_USER`
-* `RSA_KEY`
+* `SSH_USER`
+* `SSH_KEY`
 * `LISTEN`
 * `VERBOSE` (only need to set it)
 * `SERVER_BITS`
@@ -105,8 +105,6 @@ only ENV variables
 
 ## Additional Information
 * Config order of priority ENV -> config file -> defaults
-* `ssh-user`,`ssh-password` and `rsa-user`, `rsa-key` are both used, starting with pass auth then falling back to key auth
-
 
 # IP Scheme
 We are using ipv4 so each address will have 32 bits.
@@ -120,10 +118,10 @@ The following assumptions will be made
 
 For simplicity, the following variables will be used
 
-* __A__ = `ip-prefix`
-* __B__ = `server-bits`
-* __C__ = `cluster-bits`
-* __D__ = `node-bits`
+* __A__ = `ipPrefix`
+* __B__ = `serverBits`
+* __C__ = `clusterBits`
+* __D__ = `nodeBits`
 
 Note the following rules
 
