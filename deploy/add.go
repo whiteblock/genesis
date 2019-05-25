@@ -97,7 +97,7 @@ func AddNodes(tn *testnet.TestNet) error {
 
 	for _, client := range tn.Clients {
 		//noinspection SpellCheckingInspection
-		client.Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
+		client.Run("sudo -n iptables --flush DOCKER-ISOLATION-STAGE-1")
 	}
 	wg.Wait()
 

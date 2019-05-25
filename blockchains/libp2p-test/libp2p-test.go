@@ -42,7 +42,7 @@ func init() {
 
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
-	registrar.RegisterServices(blockchain, func() []util.Service { return []util.Service{} })
+	registrar.RegisterServices(blockchain, func() []helpers.Service { return []helpers.Service{} })
 	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }

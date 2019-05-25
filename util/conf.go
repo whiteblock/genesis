@@ -60,6 +60,9 @@ type Config struct {
 	APIEndpoint        string  `json:"api-endpoint"`
 	NibblerEndPoint    string  `json:"nibbler-end-point"`
 	LogJSON            bool    `json:"log-json"`
+	PrometheusConfig   string  `json:"prometheus-config"`
+	PrometheusPort     int  `json:"prometheus-port"`
+	PrometheusInstrumentationPort     int  `json:"prometheus-instrumentation-port"`
 }
 
 // LoadFromEnv loads the configuration from the Environment
@@ -298,6 +301,18 @@ func (c *Config) AutoFillMissing() {
 
 	if len(c.NibblerEndPoint) == 0 {
 		c.NibblerEndPoint = "https://storage.googleapis.com/genesis-public/nibbler/dev/bin/linux/amd64/nibbler"
+	}
+
+	if c.PrometheusConfig == "" {
+		c.PrometheusConfig = "/tmp/prometheus.yml"
+	}
+
+	if c.PrometheusPort == 0 {
+		c.PrometheusPort = 8088
+	}
+
+	if c.PrometheusInstrumentationPort == 0 {
+		c.PrometheusInstrumentationPort = 8008
 	}
 }
 

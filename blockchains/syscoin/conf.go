@@ -20,7 +20,6 @@ package syscoin
 
 import (
 	"github.com/whiteblock/genesis/blockchains/helpers"
-	"github.com/whiteblock/genesis/util"
 )
 
 type sysConf struct {
@@ -101,6 +100,6 @@ func (sconf *sysConf) GenerateMN() string {
 }
 
 // GetServices returns the services which are used by syscoin
-func GetServices() []util.Service {
+func GetServices() []helpers.Service {
 	return nil
 }

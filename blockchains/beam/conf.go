@@ -37,7 +37,7 @@ func newConf(data map[string]interface{}) (*beamConf, error) {
 }
 
 // GetServices returns the services which are used by artemis
-func GetServices() []util.Service {
+func GetServices() []helpers.Service {
 	return nil
 }
 

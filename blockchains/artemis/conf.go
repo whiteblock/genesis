@@ -54,9 +54,10 @@ func newConf(data map[string]interface{}) (artemisConf, error) {
 }
 
 // GetServices returns the services which are used by artemis
-func GetServices() []util.Service {
-	return []util.Service{
-		{
+func GetServices() []helpers.Service {
+	return []helpers.Service{
+		helpers.RegisterPrometheus(),
+		helpers.SimpleService{
 			Name:  "wb_influx_proxy",
 			Image: "gcr.io/whiteblock/influx-proxy:master",
 			Env: map[string]string{
@@ -87,6 +88,15 @@ func makeNodeConfig(aconf artemisConf, identity string, peers string, node int, 
 		outputFile = "/artemis/data/log.json"
 	}
 	filler["outputFile"] = outputFile
+	var providerType string
+	obj = details.Params["providerType"]
+	if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
+		providerType = obj.(string)
+	}
+	if providerType == "" {
+		providerType = "JSON"
+	}
+	filler["providerType"] = providerType
 	filler["constants"] = constantsRaw
 
 	filler["validators"] = fmt.Sprintf("%.0f", aconf["validators"])

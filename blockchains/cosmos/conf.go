@@ -19,10 +19,10 @@
 package cosmos
 
 import (
-	"github.com/whiteblock/genesis/util"
+	"github.com/whiteblock/genesis/blockchains/helpers"
 )
 
 // GetServices returns the services which are used by cosmos
-func GetServices() []util.Service {
+func GetServices() []helpers.Service {
 	return nil
 }
