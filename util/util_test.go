@@ -19,7 +19,7 @@
 package util
 
 import (
-	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"testing"
@@ -38,6 +38,7 @@ func TestHTTPRequest_Successful(t *testing.T) {
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			_, err := HTTPRequest(tt.method, tt.url, tt.bodyData)
+
 			if err != nil {
 				t.Errorf("HTTPRequest returned an error when it should return <nil>")
 			}
@@ -59,6 +60,7 @@ func TestHTTPRequest_Unsuccessful(t *testing.T) {
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			_, err := HTTPRequest(tt.method, tt.url, tt.bodyData)
+
 			if err == nil {
 				t.Errorf("HTTPRequest returned <nil> when it should return an error")
 			}
@@ -80,6 +82,7 @@ func TestJwtHTTPRequest_Successful(t *testing.T) {
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			_, err := JwtHTTPRequest(tt.method, tt.url, tt.jwt, tt.bodyData)
+
 			if err != nil {
 				t.Errorf("JwtHTTPRequest returned an error when expected error is <nil>")
 			}
@@ -102,6 +105,7 @@ func TestJwtHTTPRequest_Unsuccessful(t *testing.T) {
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			_, err := JwtHTTPRequest(tt.method, tt.url, tt.jwt, tt.bodyData)
+
 			if err == nil {
 				t.Errorf("JwtHTTPRequest returned <nil> when an error was expected")
 			}
@@ -109,8 +113,56 @@ func TestJwtHTTPRequest_Unsuccessful(t *testing.T) {
 	}
 }
 
-func TestExtractJwt(t *testing.T) {
-	req, _ := http.NewRequest("DELETE", "https://www.wikipedia.com/", nil)
-	_, err := ExtractJwt(req)
-	fmt.Println(err)
+func TestExtractJwt_Successful(t *testing.T) {
+	var test = []struct {
+		method string
+		url string
+		body io.Reader
+	}{
+		{method: "", url: "https://www.wikipedia.com/", body: nil},
+		{method: "POST", url: "https://www.wikipedia.com/", body: nil},
+		{method: "DELETE", url: "https://www.wikipedia.com/", body: nil},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			req, _ := http.NewRequest(tt.method, tt.url, tt.body)
+			req.Header = map[string][]string{"Authorization": []string{"Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="}}
+
+			_, err := ExtractJwt(req)
+
+			if err != nil {
+				t.Errorf("ExtractJwt returned an error when <nil> was expected")
+			}
+		})
+	}
+}
+
+func TestExtractJwt_Unsuccessful(t *testing.T) {
+	var test = []struct {
+		method string
+		url string
+		body io.Reader
+	}{
+		{method: "", url: "https://www.wikipedia.com/", body: nil},
+		{method: "POST", url: "https://www.wikipedia.com/", body: nil},
+		{method: "DELETE", url: "https://www.wikipedia.com/", body: nil},
+		{method: "", url: "https://wikipedia.com/", body: nil},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			req, _ := http.NewRequest(tt.method, tt.url, tt.body)
+
+			if i == 3 {
+				req.Header = map[string][]string{"Authorization": []string{""}}
+			}
+
+			_, err := ExtractJwt(req)
+
+			if err == nil {
+				t.Errorf("ExtractJwt returned <nil> when an error was expected")
+			}
+		})
+	}
 }
