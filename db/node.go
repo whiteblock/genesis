@@ -20,7 +20,6 @@ package db
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //Include sqlite as the db
 	"github.com/whiteblock/genesis/util"
@@ -28,31 +27,31 @@ import (
 
 // Node represents a node within the network
 type Node struct {
+	// ID is the UUID of the node
 	ID string `json:"id"`
 
+	//AbsoluteNum is the number of the node in the testnet
 	AbsoluteNum int `json:"absNum"`
-	/*
-	   TestNetId is the id of the testnet to which the node belongs to
-	*/
+
+	// TestNetId is the id of the testnet to which the node belongs to
 	TestNetID string `json:"testnetId"`
-	/*
-	   Server is the id of the server on which the node resides
-	*/
+
+	// Server is the id of the server on which the node resides
 	Server int `json:"server"`
-	/*
-	   LocalId is the number of the node in the testnet
-	*/
+
+	// LocalID is the number of the node on the server it resides
 	LocalID int `json:"localId"`
 
 	// IP is the ip address of the node
 	IP string `json:"ip"`
-	/*
-	   Label is the string given to the node by the build process
-	*/
+
+	// Label is the string given to the node by the build process
 	Label string `json:"label"`
 
+	// Image is the docker image used to build this node
 	Image string `json:"image"`
 
+	// Blockchain is the blockchain type of this node
 	Blockchain string `json:"blockchain"`
 }
 
@@ -157,7 +156,7 @@ func GetNode(id string) (Node, error) {
 	var node Node
 
 	if row.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.IP, &node.Label, &node.AbsoluteNum) == sql.ErrNoRows {
-		return node, errors.New("not found")
+		return node, fmt.Errorf("node %s not found", id)
 
 	}
 
@@ -190,29 +189,6 @@ func InsertNode(node Node) (int, error) {
 	return int(id), err
 }
 
-// DeleteNode removes a node from the database
-// (Deprecated)
-func DeleteNode(id string) error {
-
-	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = %s", NodesTable, id))
-	return err
-}
-
-// DeleteNodesByTestNet removes all nodes in a testnet from the database.
-// (Deprecated)
-func DeleteNodesByTestNet(id string) error {
-
-	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE test_net = %s", NodesTable, id))
-	return err
-}
-
-// DeleteNodesByServer delete all nodes which have ever been on a given server.
-func DeleteNodesByServer(id string) error {
-
-	_, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE server = %s", NodesTable, id))
-	return err
-}
-
 /**Helper functions which do not query the database**/
 
 // GetNodeByLocalID looks up a node by its localID
@@ -223,7 +199,7 @@ func GetNodeByLocalID(nodes []Node, localID int) (Node, error) {
 		}
 	}
 
-	return Node{}, errors.New("node not found")
+	return Node{}, fmt.Errorf("node %d not found", localID)
 }
 
 // GetNodeByAbsNum finds a node based on its absolute node number
@@ -233,7 +209,7 @@ func GetNodeByAbsNum(nodes []Node, absNum int) (Node, error) {
 			return node, nil
 		}
 	}
-	return Node{}, errors.New("node not found")
+	return Node{}, fmt.Errorf("node %d not found", absNum)
 }
 
 // DivideNodesByAbsMatch spits the given nodes into nodes which have their absnum in the
