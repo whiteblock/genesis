@@ -22,6 +22,7 @@ package deploy
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
@@ -122,7 +123,7 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 
 // Build builds out the given docker network infrastructure according to the given parameters, and return
 // the given array of servers, with ips updated for the nodes added to that server
-func Build(tn *testnet.TestNet, services []util.Service) error {
+func Build(tn *testnet.TestNet, services []helpers.Service) error {
 	tn.BuildState.SetDeploySteps(3*tn.LDD.Nodes + 2 + len(services))
 	defer tn.BuildState.FinishDeploy()
 	wg := sync.WaitGroup{}
@@ -213,7 +214,10 @@ func Build(tn *testnet.TestNet, services []util.Service) error {
 		wg.Add(1)
 		go func(client *ssh.Client) {
 			defer wg.Done()
-			client.Run("sudo -n iptables --flush DOCKER-ISOLATION-STAGE-1")
+			_, err = client.Run("sudo -n iptables --flush DOCKER-ISOLATION-STAGE-1")
+			if err != nil {
+				tn.BuildState.ReportError(err)
+			}
 		}(client)
 
 	}

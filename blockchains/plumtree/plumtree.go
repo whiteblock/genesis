@@ -45,7 +45,7 @@ func init() {
 		"json": "/plumtree/data/log.json"})
 }
 
-func getServices() []util.Service {
+func getServices() []helpers.Service {
 	return nil
 }
 

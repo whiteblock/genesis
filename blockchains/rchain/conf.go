@@ -21,7 +21,6 @@ package rchain
 import (
 	"encoding/base64"
 	"github.com/whiteblock/genesis/blockchains/helpers"
-	"github.com/whiteblock/genesis/util"
 )
 
 type rChainConf struct {
@@ -44,9 +43,9 @@ func newRChainConf(data map[string]interface{}) (*rChainConf, error) {
 }
 
 // GetServices returns the services which are used by rchain
-func GetServices() []util.Service {
-	return []util.Service{
-		{
+func GetServices() []helpers.Service {
+	return []helpers.Service{
+		helpers.SimpleService{
 			Name:  "wb_influx_proxy",
 			Image: "gcr.io/whiteblock/influx-proxy:master",
 			Env: map[string]string{

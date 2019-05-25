@@ -20,7 +20,6 @@ package lighthouse
 
 import (
 	"github.com/whiteblock/genesis/blockchains/helpers"
-	"github.com/whiteblock/genesis/util"
 )
 
 type lighthouse struct {
@@ -31,7 +30,9 @@ func newConf(data map[string]interface{}) (*lighthouse, error) {
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
-// GetServices returns the services which are used by rchain
-func GetServices() []util.Service {
-	return []util.Service{}
+// GetServices returns the services which are used by lighthouse
+func GetServices() []helpers.Service {
+	return []helpers.Service{
+		helpers.RegisterPrometheus(),
+	}
 }
