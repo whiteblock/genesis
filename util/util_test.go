@@ -19,6 +19,8 @@
 package util
 
 import (
+	"fmt"
+	"net/http"
 	"strconv"
 	"testing"
 )
@@ -62,4 +64,53 @@ func TestHTTPRequest_Unsuccessful(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestJwtHTTPRequest_Successful(t *testing.T) {
+	var test = []struct {
+		method string
+		url string
+		jwt string
+		bodyData string
+	}{
+		{method: "", url: "https://www.wikipedia.org/", jwt: "aaaaaaaaaa.bbbbbbbbbbb.cccccccccccc", bodyData: ""},
+		{method: "", url: "https://www.google.com/", jwt: "aaaaaaaaaa.bbbbbbbbbbb.cccccccccccc", bodyData: ""},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			_, err := JwtHTTPRequest(tt.method, tt.url, tt.jwt, tt.bodyData)
+			if err != nil {
+				t.Errorf("JwtHTTPRequest returned an error when expected error is <nil>")
+			}
+		})
+	}
+}
+
+func TestJwtHTTPRequest_Unsuccessful(t *testing.T) {
+	var test = []struct {
+		method string
+		url string
+		jwt string
+		bodyData string
+	}{
+		{method: "", url: "https://www.wikipedia/", jwt: "aaaaaaaaaa.bbbbbbbbbbb.cccccccccccc", bodyData: ""},
+		{method: "", url: "www.google.com/", jwt: "aaaaaaaaaa.bbbbbbbbbbb.cccccccccccc", bodyData: ""},
+		{method: "", url: "google.com/", jwt: "", bodyData: ""},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			_, err := JwtHTTPRequest(tt.method, tt.url, tt.jwt, tt.bodyData)
+			if err == nil {
+				t.Errorf("JwtHTTPRequest returned <nil> when an error was expected")
+			}
+		})
+	}
+}
+
+func TestExtractJwt(t *testing.T) {
+	req, _ := http.NewRequest("DELETE", "https://www.wikipedia.com/", nil)
+	_, err := ExtractJwt(req)
+	fmt.Println(err)
 }
