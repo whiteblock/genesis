@@ -20,7 +20,6 @@ package pantheon
 
 import (
 	"github.com/whiteblock/genesis/blockchains/helpers"
-	"github.com/whiteblock/genesis/util"
 )
 
 type panConf struct {
@@ -47,9 +46,9 @@ func newConf(data map[string]interface{}) (*panConf, error) {
 }
 
 // GetServices returns the services which are used by artemis
-func GetServices() []util.Service {
-	return []util.Service{
-		{ //Include a geth node for transaction signing
+func GetServices() []helpers.Service {
+	return []helpers.Service{
+		helpers.SimpleService{ //Include a geth node for transaction signing
 			Name:  "geth",
 			Image: "gcr.io/whiteblock/geth:master",
 			Env:   nil,

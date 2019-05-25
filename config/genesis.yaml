@@ -2,8 +2,8 @@
 sshUser: "appo"
 sshKey: "/home/appo/.ssh/id_rsa"
 handleNodeSshKeys: true
-nodesPublic-key: "/home/master-secrets/id.master.pub"
-nodesPrivate-key: "/home/master-secrets/id.master"
+nodesPublicKey: "/home/master-secrets/id.master.pub"
+nodesPrivateKey: "/home/master-secrets/id.master"
 
 # Server
 listen: "127.0.0.1:8000"
@@ -17,7 +17,7 @@ serverBits: 8
 clusterBits: 12
 nodeBits: 4
 ipPrefix: 10
-service-network: "172.30.0.1/16"
+serviceNetwork: "172.30.0.1/16"
 
 # Node=
 nodePrefix: "whiteblock-node"

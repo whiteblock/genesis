@@ -140,36 +140,14 @@ func GetNetworkAddress(server int, network int) string {
 	return fmt.Sprintf("%s/%d", InetNtoa(ip), GetSubnet())
 }
 
-// inc increments an ip address by 1
-func inc(ip net.IP) {
+// Inc increments an ip address by 1
+func Inc(ip net.IP) {
 	for i := len(ip) - 1; i >= 0; i-- {
 		ip[i]++
 		if ip[i] > 0 {
 			return
 		}
 	}
-}
-
-// GetServiceIps creates a map of the service names to their ip addresses. Useful
-// for determining the ip address of a service.
-func GetServiceIps(services []Service) (map[string]string, error) {
-	out := make(map[string]string)
-	ip, ipnet, err := net.ParseCIDR(conf.ServiceNetwork)
-	ip = ip.Mask(ipnet.Mask)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	inc(ip) //skip first ip
-
-	for _, service := range services {
-		inc(ip)
-		if !ipnet.Contains(ip) {
-			return nil, fmt.Errorf("CIDR range too small")
-		}
-		out[service.Name] = ip.String()
-	}
-	return out, nil
 }
 
 // GetServiceNetwork gets the network address in CIDR of the service network
@@ -179,6 +157,5 @@ func GetServiceNetwork() (string, string, error) {
 		log.Println(err)
 		return "", "", err
 	}
-
 	return ip.String(), ipnet.String(), nil
 }

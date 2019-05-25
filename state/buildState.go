@@ -377,7 +377,9 @@ func (bs *BuildState) Write(file string, data string) error {
 	bs.mutex.Lock()
 	bs.files = append(bs.files, file)
 	bs.mutex.Unlock()
-	return ioutil.WriteFile("/tmp/"+bs.BuildID+"/"+file, []byte(data), 0664)
+	filepath := "/tmp/" + bs.BuildID + "/" + file
+	err := ioutil.WriteFile(filepath, []byte(data), 0664)
+	return err
 }
 
 // Defer adds a function to be executed asynchronously after the build is completed.

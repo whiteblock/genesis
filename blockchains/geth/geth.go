@@ -293,7 +293,6 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		return util.LogError(err)
 	}
 	return tn.BuildState.Write("CustomGenesis.json", data)
-
 }
 
 /**

@@ -31,7 +31,10 @@ import (
 
 var conf *util.Config
 
-const blockchain = "lodestar"
+const (
+	blockchain = "lodestar"
+	p2pPort    = 9000
+)
 
 func init() {
 	conf = util.GetConfig()
@@ -50,10 +53,9 @@ func build(tn *testnet.TestNet) error {
 	}
 	tn.BuildState.SetBuildSteps(1 + (tn.LDD.Nodes * 3))
 
-	port := 9000
 	peers := ""
 	for _, node := range tn.Nodes {
-		peers += fmt.Sprintf(" --peer=/dns4/whiteblock-node%d@%s/tcp/%d ", node.LocalID, node.IP, port)
+		peers += fmt.Sprintf(" --peer=/dns4/whiteblock-node%d@%s/tcp/%d ", node.LocalID, node.IP, p2pPort)
 	}
 	tn.BuildState.IncrementBuildProgress()
 

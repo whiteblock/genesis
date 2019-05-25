@@ -20,7 +20,6 @@ package lodestar
 
 import (
 	"github.com/whiteblock/genesis/blockchains/helpers"
-	"github.com/whiteblock/genesis/util"
 )
 
 type lodestar struct {
@@ -32,6 +31,6 @@ func newConf(data map[string]interface{}) (*lodestar, error) {
 }
 
 // GetServices returns the services which are used by rchain
-func GetServices() []util.Service {
-	return []util.Service{}
+func GetServices() []helpers.Service {
+	return []helpers.Service{}
 }

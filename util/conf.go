@@ -27,35 +27,38 @@ import (
 // Config groups all of the global configuration parameters into
 // a single struct
 type Config struct {
-	SSHUser            string  `mapstructure:"sshUser"`
-	SSHKey             string  `mapstructure:"sshKey"`
-	SSHHost            string  `mapstructure:"sshHost"`
-	ServerBits         uint32  `mapstructure:"serverBits"`
-	ClusterBits        uint32  `mapstructure:"clusterBits"`
-	NodeBits           uint32  `mapstructure:"nodeBits"`
-	IPPrefix           uint32  `mapstructure:"ipPrefix"`
-	Listen             string  `mapstructure:"listen"`
-	Verbosity          string  `mapstructure:"verbosity"`
-	ThreadLimit        int64   `mapstructure:"threadLimit"`
-	DockerOutputFile   string  `mapstructure:"dockerOutputFile"`
-	Influx             string  `mapstructure:"influx"`
-	InfluxUser         string  `mapstructure:"influxUser"`
-	InfluxPassword     string  `mapstructure:"influxPassword"`
-	ServiceNetwork     string  `mapstructure:"serviceNetwork"`
-	ServiceNetworkName string  `mapstructure:"serviceNetworkName"`
-	NodePrefix         string  `mapstructure:"nodePrefix"`
-	NodeNetworkPrefix  string  `mapstructure:"nodeNetworkPrefix"`
-	ServicePrefix      string  `mapstructure:"servicePrefix"`
-	NodesPublicKey     string  `mapstructure:"nodesPublicKey"`
-	NodesPrivateKey    string  `mapstructure:"nodesPrivateKey"`
-	HandleNodeSSHKeys  bool    `mapstructure:"handleNodeSshKeys"`
-	MaxNodes           int     `mapstructure:"maxNodes"`
-	MaxNodeMemory      string  `mapstructure:"maxNodeMemory"`
-	MaxNodeCPU         float64 `mapstructure:"maxNodeCpu"`
-	BridgePrefix       string  `mapstructure:"bridgePrefix"`
-	APIEndpoint        string  `mapstructure:"apiEndpoint"`
-	NibblerEndPoint    string  `mapstructure:"nibblerEndPoint"`
-	LogJSON            bool    `mapstructure:"logJson"`
+	SSHUser                       string  `mapstructure:"sshUser"`
+	SSHKey                        string  `mapstructure:"sshKey"`
+	SSHHost                       string  `mapstructure:"sshHost"`
+	ServerBits                    uint32  `mapstructure:"serverBits"`
+	ClusterBits                   uint32  `mapstructure:"clusterBits"`
+	NodeBits                      uint32  `mapstructure:"nodeBits"`
+	IPPrefix                      uint32  `mapstructure:"ipPrefix"`
+	Listen                        string  `mapstructure:"listen"`
+	Verbosity                     string  `mapstructure:"verbosity"`
+	ThreadLimit                   int64   `mapstructure:"threadLimit"`
+	DockerOutputFile              string  `mapstructure:"dockerOutputFile"`
+	Influx                        string  `mapstructure:"influx"`
+	InfluxUser                    string  `mapstructure:"influxUser"`
+	InfluxPassword                string  `mapstructure:"influxPassword"`
+	ServiceNetwork                string  `mapstructure:"serviceNetwork"`
+	ServiceNetworkName            string  `mapstructure:"serviceNetworkName"`
+	NodePrefix                    string  `mapstructure:"nodePrefix"`
+	NodeNetworkPrefix             string  `mapstructure:"nodeNetworkPrefix"`
+	ServicePrefix                 string  `mapstructure:"servicePrefix"`
+	NodesPublicKey                string  `mapstructure:"nodesPublicKey"`
+	NodesPrivateKey               string  `mapstructure:"nodesPrivateKey"`
+	HandleNodeSSHKeys             bool    `mapstructure:"handleNodeSshKeys"`
+	MaxNodes                      int     `mapstructure:"maxNodes"`
+	MaxNodeMemory                 string  `mapstructure:"maxNodeMemory"`
+	MaxNodeCPU                    float64 `mapstructure:"maxNodeCpu"`
+	BridgePrefix                  string  `mapstructure:"bridgePrefix"`
+	APIEndpoint                   string  `mapstructure:"apiEndpoint"`
+	NibblerEndPoint               string  `mapstructure:"nibblerEndPoint"`
+	LogJSON                       bool    `mapstructure:"logJson"`
+	PrometheusConfig              string  `mapstructure:"prometheusConfig"`
+	PrometheusPort                int     `mapstructure:"prometheusPort"`
+	PrometheusInstrumentationPort int     `mapstructure:"prometheusInstrumentationPort"`
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
@@ -102,7 +105,7 @@ func setViperDefaults() {
 	viper.SetDefault("nodeBits", 4)
 	viper.SetDefault("threadLimit", 10)
 	viper.SetDefault("dockerOutputFile", "/output.log")
-	viper.SetDefault("serviceNetwork", "172.30.0.0/16")
+	viper.SetDefault("serviceNetwork", "172.30.0.1/16")
 	viper.SetDefault("serviceNetworkName", "wb_builtin_services")
 	viper.SetDefault("nodePrefix", "whiteblock-node")
 	viper.SetDefault("nodeNetworkPrefix", "wb_vlan")
@@ -113,6 +116,9 @@ func setViperDefaults() {
 	viper.SetDefault("bridgePrefix", "wb_bridge")
 	viper.SetDefault("apiEndpoint", "https://api.whiteblock.io")
 	viper.SetDefault("nibblerEndPoint", "https://storage.googleapis.com/genesis-public/nibbler/master/bin/linux/amd64/nibbler")
+	viper.SetDefault("prometheusConfig", "/tmp/prometheus.yml")
+	viper.SetDefault("prometheusPort", 8088)
+	viper.SetDefault("prometheusInstrumentationPort", 8008)
 }
 
 func init() {
@@ -122,7 +128,7 @@ func init() {
 	viper.AddConfigPath("$HOME/.config/whiteblock/") // call multiple times to add many search paths
 	viper.AddConfigPath("./config/")
 	viper.SetConfigName("genesis")
-
+	viper.SetConfigType("yaml")
 	err := viper.ReadInConfig()
 
 	if err != nil {
@@ -132,8 +138,7 @@ func init() {
 	if err != nil {
 		log.Fatalf("unable to decode into struct, %v", err)
 	}
-	//log.WithFields(log.Fields{"conf": *conf}).Info("loaded config")
-	//log.SetReportCaller(true)
+
 	lvl, err := log.ParseLevel(conf.Verbosity)
 	if err != nil {
 		log.SetLevel(log.InfoLevel)

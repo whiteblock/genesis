@@ -170,7 +170,7 @@ func Run(tn *testnet.TestNet, serverID int, container Container) error {
 	return nil
 }
 
-func serviceDockerRunCmd(network string, ip string, name string, env map[string]string, image string) string {
+func serviceDockerRunCmd(network string, ip string, name string, env map[string]string, volumes []string, ports []string, image string) string {
 	envFlags := ""
 	for k, v := range env {
 		envFlags += fmt.Sprintf("-e \"%s=%s\" ", k, v)
@@ -180,12 +180,22 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 	if len(ip) > 0 {
 		ipFlag = fmt.Sprintf("--ip %s", ip)
 	}
-	return fmt.Sprintf("docker run -itd --network %s %s --hostname %s --name %s %s %s",
+	volumestr := ""
+	for _, vol := range volumes {
+		volumestr += fmt.Sprintf("-v %s ", vol)
+	}
+	portstr := ""
+	for _, port := range ports {
+		portstr += fmt.Sprintf("-p %s ", port)
+	}
+	return fmt.Sprintf("docker run -itd --network %s %s --hostname %s --name %s %s %s %s %s",
 		network,
 		ipFlag,
 		name,
 		name,
 		envFlags,
+		volumestr,
+		portstr,
 		image)
 }
 
@@ -202,7 +212,7 @@ func StopServices(tn *testnet.TestNet) error {
 }
 
 // StartServices creates the service network and starts all the services on a server
-func StartServices(tn *testnet.TestNet, services []util.Service) error {
+func StartServices(tn *testnet.TestNet, services []helpers.Service) error {
 	gateway, subnet, err := util.GetServiceNetwork()
 	if err != nil {
 		log.Println(err)
@@ -214,7 +224,7 @@ func StartServices(tn *testnet.TestNet, services []util.Service) error {
 		log.Println(err)
 		return err
 	}
-	ips, err := util.GetServiceIps(services)
+	ips, err := helpers.GetServiceIps(services)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -222,15 +232,18 @@ func StartServices(tn *testnet.TestNet, services []util.Service) error {
 
 	for i, service := range services {
 		net := conf.ServiceNetworkName
-		ip := ips[service.Name]
-		if len(service.Network) != 0 {
-			net = service.Network
+		ip := ips[service.GetName()]
+		if len(service.GetNetwork()) != 0 {
+			net = service.GetNetwork()
 			ip = ""
 		}
+		err = service.Prepare(client, tn)
 		_, err = client.KeepTryRun(serviceDockerRunCmd(net, ip,
 			fmt.Sprintf("%s%d", conf.ServicePrefix, i),
-			service.Env,
-			service.Image))
+			service.GetEnv(),
+			service.GetVolumes(),
+			service.GetPorts(),
+			service.GetImage()))
 		if err != nil {
 			log.Println(err)
 			return err

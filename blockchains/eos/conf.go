@@ -147,6 +147,6 @@ func (econf *eosConf) GenerateConfig() string {
 }
 
 // GetServices returns the services which are used by eos
-func GetServices() []util.Service {
+func GetServices() []helpers.Service {
 	return nil
 }
