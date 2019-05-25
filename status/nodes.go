@@ -64,7 +64,7 @@ func FindNodeIndex(status []NodeStatus, name string, serverID int) int {
 }
 
 // SumResUsage gets the cpu usage of a node
-func SumResUsage(c *ssh.Client, name string) (Comp, error) {
+func SumResUsage(c ssh.Client, name string) (Comp, error) {
 	res, err := c.Run(fmt.Sprintf("docker exec %s ps aux --no-headers | grep -v nibbler | awk '{print $3,$5,$6}'", name))
 	if err != nil {
 		log.Println(err)
@@ -154,7 +154,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 				continue
 			}
 			wg.Add(1)
-			go func(client *ssh.Client, name string, index int) {
+			go func(client ssh.Client, name string, index int) {
 				defer wg.Done()
 				resUsage, err := SumResUsage(client, name)
 				if err != nil {

@@ -45,7 +45,8 @@ type Resources struct {
 func memconv(mem string) (int64, error) {
 
 	m := strings.ToLower(mem)
-	var multiplier int64 = -1
+
+	var multiplier int64 = 1
 
 	if strings.HasSuffix(m, "kb") || strings.HasSuffix(m, "k") {
 		multiplier = 1000
@@ -57,14 +58,11 @@ func memconv(mem string) (int64, error) {
 		multiplier = 1000000000000
 	}
 
-	if multiplier == -1 {
-		return strconv.ParseInt(m, 10, 64)
-	}
-
 	i, err := strconv.ParseInt(strings.Trim(m, "bgkmt"), 10, 64)
 	if err != nil {
 		return -1, err
 	}
+
 	return i * multiplier, nil
 }
 

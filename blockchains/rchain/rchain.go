@@ -75,7 +75,7 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	/**Check to make sure the rnode command is valid**/
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		_, err := client.DockerExec(node, fmt.Sprintf("bash -c '%s --help'", rConf.Command))
 		if err != nil {
 			//log.Println(err)
@@ -204,7 +204,7 @@ func build(tn *testnet.TestNet) error {
 
 	var validators int64
 
-	return helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	return helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		defer buildState.IncrementBuildProgress()
 		if node.GetAbsoluteNumber() == 0 {
 			return nil
@@ -224,7 +224,7 @@ func build(tn *testnet.TestNet) error {
 	})
 }
 
-func createFirstConfigFile(tn *testnet.TestNet, client *ssh.Client, node ssh.Node, rConf *rChainConf, influxIP string) error {
+func createFirstConfigFile(tn *testnet.TestNet, client ssh.Client, node ssh.Node, rConf *rChainConf, influxIP string) error {
 
 	raw := map[string]interface{}{
 		"influxIp":       influxIP,
@@ -287,7 +287,7 @@ func add(tn *testnet.TestNet) error {
 		keyPairs = append(keyPairs, kp)
 	}
 
-	helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		client.DockerExec(node, "mkdir /datadir") //Don't bother checking for errors, ok if dir exists
 		return nil
@@ -310,7 +310,7 @@ func add(tn *testnet.TestNet) error {
 	/**Start up the rest of the nodes**/
 	var validators int64
 	mux := sync.Mutex{}
-	return helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	return helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 
 		mux.Lock()

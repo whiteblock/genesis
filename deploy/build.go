@@ -212,7 +212,7 @@ func Build(tn *testnet.TestNet, services []helpers.Service) error {
 
 	for _, client := range tn.Clients {
 		wg.Add(1)
-		go func(client *ssh.Client) {
+		go func(client ssh.Client) {
 			defer wg.Done()
 			_, err = client.Run("sudo -n iptables --flush DOCKER-ISOLATION-STAGE-1")
 			if err != nil {

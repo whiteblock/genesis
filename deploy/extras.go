@@ -46,7 +46,7 @@ func distributeNibbler(tn *testnet.TestNet) {
 		if err != nil {
 			log.Println(err)
 		}
-		err = helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+		err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 			_, err := client.DockerExec(node, "chmod +x /usr/local/bin/nibbler")
 			return err
 		})
@@ -90,7 +90,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 	wg := sync.WaitGroup{}
 	for _, client := range tn.Clients {
 		wg.Add(1)
-		go func(client *ssh.Client) {
+		go func(client ssh.Client) {
 			defer wg.Done()
 
 			_, err := client.Run(fmt.Sprintf("docker build /tmp/ -t %s", imageName))
@@ -111,7 +111,7 @@ func handleDockerAuth(tn *testnet.TestNet, auth map[string]interface{}) error {
 	wg := sync.WaitGroup{}
 	for _, client := range tn.Clients {
 		wg.Add(1)
-		go func(client *ssh.Client) { //TODO add validation
+		go func(client ssh.Client) { //TODO add validation
 			err := docker.Login(client, auth["username"].(string), auth["password"].(string))
 			if err != nil {
 				log.Println(err)

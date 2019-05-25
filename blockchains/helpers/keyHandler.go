@@ -39,7 +39,7 @@ type KeyMaster struct {
 	//index is the current index in the pool.
 	index int
 	//generator is the function which can dynamically generate keys in case the static pool runs out
-	generator func(client *ssh.Client) (util.KeyPair, error)
+	generator func(client ssh.Client) (util.KeyPair, error)
 }
 
 // NewKeyMaster creates a new KeyMaster using the provided deployment details and blockchain.
@@ -68,12 +68,12 @@ func NewKeyMaster(details *db.DeploymentDetails, blockchain string) (*KeyMaster,
 }
 
 // AddGenerator sets the backup key generator function for km KeyMaster
-func (km *KeyMaster) AddGenerator(gen func(client *ssh.Client) (util.KeyPair, error)) {
+func (km *KeyMaster) AddGenerator(gen func(client ssh.Client) (util.KeyPair, error)) {
 	km.generator = gen
 }
 
 // GenerateKeyPair generates a new key pair if a generator function has been provided
-func (km *KeyMaster) GenerateKeyPair(client *ssh.Client) (util.KeyPair, error) {
+func (km *KeyMaster) GenerateKeyPair(client ssh.Client) (util.KeyPair, error) {
 	if km.generator != nil {
 		return km.generator(client)
 	}
@@ -82,7 +82,7 @@ func (km *KeyMaster) GenerateKeyPair(client *ssh.Client) (util.KeyPair, error) {
 
 // GetKeyPair fetches a key pair, will use up keys in the static pool until it runs out,
 // if it runs out, it will use the given generator to create new keys
-func (km *KeyMaster) GetKeyPair(client *ssh.Client) (util.KeyPair, error) {
+func (km *KeyMaster) GetKeyPair(client ssh.Client) (util.KeyPair, error) {
 	if km.index >= len(km.PrivateKeys) || km.index >= len(km.PublicKeys) {
 		return km.GenerateKeyPair(client)
 	}
@@ -94,7 +94,7 @@ func (km *KeyMaster) GetKeyPair(client *ssh.Client) (util.KeyPair, error) {
 
 // GetMappedKeyPairs returns key pairs mapped to arbitrary string values.
 // Useful for named key pairs
-func (km *KeyMaster) GetMappedKeyPairs(args []string, client *ssh.Client) (map[string]util.KeyPair, error) {
+func (km *KeyMaster) GetMappedKeyPairs(args []string, client ssh.Client) (map[string]util.KeyPair, error) {
 	keyPairs := make(map[string]util.KeyPair)
 
 	for _, arg := range args {
@@ -108,7 +108,7 @@ func (km *KeyMaster) GetMappedKeyPairs(args []string, client *ssh.Client) (map[s
 }
 
 //GetServerKeyPairs is DEPRECATED, but maps the ip addresses of nodes to their own key pair
-func (km *KeyMaster) GetServerKeyPairs(servers []db.Server, clients []*ssh.Client) (map[string]util.KeyPair, error) {
+func (km *KeyMaster) GetServerKeyPairs(servers []db.Server, clients []ssh.Client) (map[string]util.KeyPair, error) {
 	ips := []string{}
 	for _, server := range servers {
 		for _, ip := range server.Ips {

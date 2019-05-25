@@ -62,7 +62,7 @@ func build(tn *testnet.TestNet) error {
 	secretMinerKeys := make([]string, tn.LDD.Nodes)
 	mux := sync.Mutex{}
 	// walletIDs := []string{}
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 
 		client.DockerExec(node, "beam-wallet --command init --pass password") //ign err
 
@@ -142,7 +142,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	tn.BuildState.SetBuildStage("Starting beam")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		miningFlag := ""
 		if node.GetAbsoluteNumber() >= int(bConf.Validators) {

@@ -35,15 +35,15 @@ func init() {
 }
 
 /*
-	fn func(client *ssh.Client, server &db.Server,localNodeNum int,absoluteNodeNum int)(error)
+	fn func(client ssh.Client, server &db.Server,localNodeNum int,absoluteNodeNum int)(error)
 */
-func allNodeExecCon(tn *testnet.TestNet, useNew bool, sideCar int, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
+func allNodeExecCon(tn *testnet.TestNet, useNew bool, sideCar int, fn func(ssh.Client, *db.Server, ssh.Node) error) error {
 	nodes := tn.GetSSHNodes(useNew, sideCar != -1, sideCar)
 	wg := sync.WaitGroup{}
 	for _, node := range nodes {
 
 		wg.Add(1)
-		go func(client *ssh.Client, server *db.Server, node ssh.Node) {
+		go func(client ssh.Client, server *db.Server, node ssh.Node) {
 			defer wg.Done()
 			err := fn(client, server, node)
 			if err != nil {
@@ -63,28 +63,28 @@ func allNodeExecCon(tn *testnet.TestNet, useNew bool, sideCar int, fn func(*ssh.
 // number of that node on the server and the absolute number of the node in the testnet. If any of the calls to fn
 // return a non-nil error value, one of those errors will be returned. Currently there is no guarantee as to which one,
 // however this should be implemented in the future.
-func AllNodeExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
+func AllNodeExecCon(tn *testnet.TestNet, fn func(ssh.Client, *db.Server, ssh.Node) error) error {
 	return allNodeExecCon(tn, false, -1, fn)
 }
 
 // AllNewNodeExecCon is AllNodeExecCon but executes only for new nodes
-func AllNewNodeExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
+func AllNewNodeExecCon(tn *testnet.TestNet, fn func(ssh.Client, *db.Server, ssh.Node) error) error {
 	return allNodeExecCon(tn, true, -1, fn)
 }
 
 // AllNodeExecConSC is AllNodeExecCon but executes only for sidecar nodes
-func AllNodeExecConSC(ad *testnet.Adjunct, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
+func AllNodeExecConSC(ad *testnet.Adjunct, fn func(ssh.Client, *db.Server, ssh.Node) error) error {
 	return allNodeExecCon(ad.Main, false, ad.Index, fn)
 }
 
 // AllNewNodeExecConSC is AllNewNodeExecCon but executes only for sidecar nodes
-func AllNewNodeExecConSC(ad *testnet.Adjunct, fn func(*ssh.Client, *db.Server, ssh.Node) error) error {
+func AllNewNodeExecConSC(ad *testnet.Adjunct, fn func(ssh.Client, *db.Server, ssh.Node) error) error {
 	return allNodeExecCon(ad.Main, true, ad.Index, fn)
 }
 
 // AllServerExecCon executes fn for every server in the testnet. Is sementatically similar to
 // AllNodeExecCon. Every call to fn is provided with the relevant ssh client and server object.
-func AllServerExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server) error) error {
+func AllServerExecCon(tn *testnet.TestNet, fn func(ssh.Client, *db.Server) error) error {
 
 	wg := sync.WaitGroup{}
 	for _, server := range tn.Servers {
@@ -103,7 +103,7 @@ func AllServerExecCon(tn *testnet.TestNet, fn func(*ssh.Client, *db.Server) erro
 }
 
 func mkdirAllNodes(tn *testnet.TestNet, dir string, useNew bool, sideCar int) error {
-	return allNodeExecCon(tn, useNew, sideCar, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	return allNodeExecCon(tn, useNew, sideCar, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		_, err := client.DockerExec(node, fmt.Sprintf("mkdir -p %s", dir))
 		return err
 	})
@@ -120,7 +120,7 @@ func MkdirAllNewNodes(tn *testnet.TestNet, dir string) error {
 }
 
 // AllServerExecConSC is like AllServerExecCon but for side cars
-func AllServerExecConSC(ad *testnet.Adjunct, fn func(*ssh.Client, *db.Server) error) error {
+func AllServerExecConSC(ad *testnet.Adjunct, fn func(ssh.Client, *db.Server) error) error {
 	return AllServerExecCon(ad.Main, fn)
 }
 

@@ -58,7 +58,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 1))
 	tn.BuildState.SetBuildStage("Starting plumtree")
 
-	return util.LogError(helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	return util.LogError(helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		peers := ""
 		for _, peerNode := range tn.Nodes {

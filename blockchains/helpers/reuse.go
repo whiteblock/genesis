@@ -31,7 +31,7 @@ import (
 ) //log "github.com/sirupsen/logrus"
 
 // ScpAndDeferRemoval Copy a file over to a server, and then defer it for removal after the build is completed
-func ScpAndDeferRemoval(client *ssh.Client, buildState *state.BuildState, src string, dst string) {
+func ScpAndDeferRemoval(client ssh.Client, buildState *state.BuildState, src string, dst string) {
 	buildState.Defer(func() { client.Run(fmt.Sprintf("rm -rf %s", dst)) })
 	err := client.Scp(src, dst)
 	if err != nil {

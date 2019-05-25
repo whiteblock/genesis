@@ -89,7 +89,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	km.AddGenerator(func(client *ssh.Client) (util.KeyPair, error) {
+	km.AddGenerator(func(client ssh.Client) (util.KeyPair, error) {
 		data, err := client.DockerExec(masterNode, "cleos create key --to-console | awk '{print $3}'")
 		if err != nil {
 			return util.KeyPair{}, err
@@ -127,7 +127,7 @@ func build(tn *testnet.TestNet) error {
 	/**Start keos and add all the key pairs for all the nodes**/
 	tn.BuildState.SetBuildStage("Generating key pairs")
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		/**Start keosd**/
 		_, err = client.DockerExecd(node, "keosd --http-server-address 0.0.0.0:8900")
 		if err != nil {
@@ -296,7 +296,7 @@ func build(tn *testnet.TestNet) error {
 
 	/**Step 10a**/
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		if node.GetAbsoluteNumber() == 0 || node.GetAbsoluteNumber() > int(eosconf.BlockProducers) {
 			return nil
@@ -330,7 +330,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Starting up the candidate block producers")
 	/**Step 11c**/
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		if node.GetAbsoluteNumber() == 0 {
 			return nil
 		}
@@ -353,7 +353,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 	/**Step 11a**/
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		if node.GetAbsoluteNumber() == 0 || node.GetAbsoluteNumber() > int(eosconf.BlockProducers) {
 			return nil
 		}
@@ -523,7 +523,7 @@ func Add(tn *testnet.TestNet) error {
 	return nil
 }
 
-func eosCreatewallet(client *ssh.Client, node ssh.Node) (string, error) {
+func eosCreatewallet(client ssh.Client, node ssh.Node) (string, error) {
 	data, err := client.DockerExec(node, "cleos wallet create --to-console | tail -n 1")
 	if err != nil {
 		return "", util.LogError(err)

@@ -21,6 +21,7 @@ package deploy
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
@@ -30,7 +31,6 @@ import (
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"io/ioutil"
-	"log"
 	"strings"
 )
 
@@ -92,18 +92,19 @@ func alwaysRunFinalize(tn *testnet.TestNet) {
 */
 func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 	tmp, err := ioutil.ReadFile(conf.NodesPublicKey)
-	pubKey := string(tmp)
-	pubKey = strings.Trim(pubKey, "\t\n\v\r")
 	if err != nil {
+		log.WithFields(log.Fields{"loc": conf.NodesPublicKey, "error": err}).Error("failed to read the public key file")
 		return util.LogError(err)
 	}
+	pubKey := string(tmp)
+	pubKey = strings.Trim(pubKey, "\t\n\v\r")
 
 	privKey, err := ioutil.ReadFile(conf.NodesPrivateKey)
 	if err != nil {
 		return util.LogError(err)
 	}
 
-	fn := func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	fn := func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementDeployProgress()
 
 		_, err := client.DockerExec(node, "mkdir -p /root/.ssh/")

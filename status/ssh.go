@@ -25,14 +25,14 @@ import (
 	"sync"
 )
 
-var _clients = map[int]*ssh.Client{}
+var _clients = map[int]ssh.Client{}
 
 var _mux = sync.Mutex{}
 
 // GetClient retrieves the ssh client for running a command
 // on a remote server based on server id. It will create one if it
 // does not exist.
-func GetClient(id int) (*ssh.Client, error) {
+func GetClient(id int) (ssh.Client, error) {
 	cli, ok := _clients[id]
 	if !ok || cli == nil {
 		_mux.Lock()
@@ -54,9 +54,9 @@ func GetClient(id int) (*ssh.Client, error) {
 
 // GetClients functions similar to GetClient, except that it takes in
 // an array of server ids and outputs an array of clients
-func GetClients(servers []int) ([]*ssh.Client, error) {
+func GetClients(servers []int) ([]ssh.Client, error) {
 
-	out := make([]*ssh.Client, len(servers))
+	out := make([]ssh.Client, len(servers))
 	var err error
 	for i := 0; i < len(servers); i++ {
 		out[i], err = GetClient(servers[i])
@@ -70,7 +70,7 @@ func GetClients(servers []int) ([]*ssh.Client, error) {
 
 // GetClientsFromNodes gets all of the ssh clients you need for
 // communication with the given nodes
-func GetClientsFromNodes(nodes []db.Node) ([]*ssh.Client, error) {
+func GetClientsFromNodes(nodes []db.Node) ([]ssh.Client, error) {
 	serverIds := db.GetUniqueServerIDs(nodes)
 	return GetClients(serverIds)
 }

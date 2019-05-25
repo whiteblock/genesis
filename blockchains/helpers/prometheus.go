@@ -11,11 +11,13 @@ import (
 	"strconv"
 )
 
+// PrometheusService represents the Prometheus service
 type PrometheusService struct {
 	SimpleService
 }
 
-func (p PrometheusService) Prepare(client *ssh.Client, tn *testnet.TestNet) error {
+// Prepare prepares the prometheus service
+func (p PrometheusService) Prepare(client ssh.Client, tn *testnet.TestNet) error {
 	configTxt := "scrape_configs:\n"
 	for _, node := range tn.Nodes {
 		tmpl, err := template.New("prometheus-source").Parse(`
@@ -30,21 +32,21 @@ func (p PrometheusService) Prepare(client *ssh.Client, tn *testnet.TestNet) erro
 `)
 
 		if err != nil {
+			return util.LogError(err)
+		}
+
+		var tpl bytes.Buffer
+		if err = tmpl.Execute(&tpl, struct {
+			Tn   *testnet.TestNet
+			Node db.Node
+			Conf *util.Config
+		}{tn, node, conf}); err != nil {
 			log.Error(err)
 		} else {
-			var tpl bytes.Buffer
-			if err = tmpl.Execute(&tpl, struct {
-				Tn *testnet.TestNet
-				Node db.Node
-				Conf *util.Config
-			}{tn,node, conf}); err != nil {
-				log.Error(err)
-			} else {
-				configTxt += tpl.String()
-			}
+			configTxt += tpl.String()
 		}
-	}
 
+	}
 	log.Debug(configTxt)
 	log.Debug(conf.PrometheusConfig)
 
@@ -61,19 +63,18 @@ func (p PrometheusService) Prepare(client *ssh.Client, tn *testnet.TestNet) erro
 	if err != nil {
 		return util.LogError(err)
 	}
-	return CopyAllToServers(tn, "/tmp/"+tn.BuildState.BuildID+"/"+tmpFilename, conf.PrometheusConfig)
+	return CopyAllToServers(tn, tmpFilename, conf.PrometheusConfig)
 }
 
-// Expose a Prometheus service on the testnet.
+// RegisterPrometheus exposes a Prometheus service on the testnet.
 func RegisterPrometheus() Service {
 	return PrometheusService{
 		SimpleService{
-			Name:  "prometheus",
-			Image: "prom/prometheus",
-			Env: map[string]string{
-			},
+			Name:    "prometheus",
+			Image:   "prom/prometheus",
+			Env:     map[string]string{},
 			Ports:   []string{strconv.Itoa(conf.PrometheusPort) + ":9090"},
 			Volumes: []string{conf.PrometheusConfig + ":/etc/prometheus/prometheus.yml"},
 		},
-    }
+	}
 }

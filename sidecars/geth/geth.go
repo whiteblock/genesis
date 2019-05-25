@@ -63,7 +63,7 @@ func Build(tn *testnet.Adjunct) error {
 	tn.BuildState.GetP("gethConf", &conf)
 	tn.BuildState.GetP("wallets", &wallets)
 
-	err := helpers.AllNodeExecConSC(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err := helpers.AllNodeExecConSC(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		_, err := client.DockerExec(node, "mkdir -p /geth")
 		return err
 	})
@@ -104,7 +104,7 @@ func Build(tn *testnet.Adjunct) error {
 		return util.LogError(err)
 	}
 
-	err = helpers.AllNodeExecConSC(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecConSC(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		_, err = client.DockerExec(node,
 			fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/genesis.json", networkID))
 		if err != nil {

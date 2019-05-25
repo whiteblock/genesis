@@ -105,7 +105,7 @@ func CreateCommands(netconf Netconf, serverID int) []string {
 }
 
 //Apply applies the given network config.
-func Apply(client *ssh.Client, netconf Netconf, serverID int) error {
+func Apply(client ssh.Client, netconf Netconf, serverID int) error {
 	cmds := CreateCommands(netconf, serverID)
 	for i, cmd := range cmds {
 		_, err := client.Run(cmd)
@@ -180,7 +180,7 @@ func RemoveAll(nodes []db.Node) error {
 }
 
 //RemoveAllOnServer removes network conditions from the given number of nodes on the given client
-func RemoveAllOnServer(client *ssh.Client, nodes int) {
+func RemoveAllOnServer(client ssh.Client, nodes int) {
 	for i := 0; i < nodes; i++ {
 		client.Run(
 			fmt.Sprintf("sudo tc qdisc del dev %s%d root", conf.BridgePrefix, i))
@@ -250,7 +250,7 @@ func parseItems(items []string, nconf *Netconf) error {
 }
 
 //GetConfigOnServer gets the network impairments present on a server
-func GetConfigOnServer(client *ssh.Client) ([]Netconf, error) {
+func GetConfigOnServer(client ssh.Client) ([]Netconf, error) {
 	res, err := client.Run("sudo -n tc qdisc show | grep wb_bridge | grep netem || true")
 	if err != nil {
 		return nil, util.LogError(err)

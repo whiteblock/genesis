@@ -140,7 +140,7 @@ func GetNetworkAddress(server int, network int) string {
 	return fmt.Sprintf("%s/%d", InetNtoa(ip), GetSubnet())
 }
 
-// inc increments an ip address by 1
+// Inc increments an ip address by 1
 func Inc(ip net.IP) {
 	for i := len(ip) - 1; i >= 0; i-- {
 		ip[i]++
@@ -157,6 +157,5 @@ func GetServiceNetwork() (string, string, error) {
 		log.Println(err)
 		return "", "", err
 	}
-
 	return ip.String(), ipnet.String(), nil
 }

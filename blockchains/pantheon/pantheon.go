@@ -76,7 +76,7 @@ func build(tn *testnet.TestNet) error {
 
 	helpers.MkdirAllNodes(tn, "/pantheon/genesis")
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 
 		tn.BuildState.IncrementBuildProgress()
 		_, err = client.DockerExec(node,
@@ -175,7 +175,7 @@ func build(tn *testnet.TestNet) error {
 
 	/* Start the nodes */
 	tn.BuildState.SetBuildStage("Starting Pantheon")
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		flags, err := getExtraConfigurationFlags(tn, node, panconf)
 		if err != nil {

@@ -98,7 +98,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, account := range accounts {
 			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
 			if err != nil {
@@ -145,7 +145,7 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildStage("Initializing geth")
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		//Load the CustomGenesis file
 		_, err := client.DockerExec(node,
 			fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/CustomGenesis.json", ethconf.NetworkID))
@@ -191,7 +191,7 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		tn.BuildState.IncrementBuildProgress()
 
 		gethCmd := fmt.Sprintf(
@@ -299,7 +299,7 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
  * Setup Eth Net Stats on a server
  * @param  string    ip     The servers config
  */
-func setupEthNetStats(client *ssh.Client) error {
+func setupEthNetStats(client ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf(
 		"docker exec -d wb_service0 bash -c 'cd /eth-netstats && WS_SECRET=second PORT=%d npm start'", ethNetStatsPort))
 	if err != nil {
@@ -309,7 +309,7 @@ func setupEthNetStats(client *ssh.Client) error {
 }
 
 func setupEthNetIntelligenceAPI(tn *testnet.TestNet) error {
-	return helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	return helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 
 		absName := fmt.Sprintf("%s%d", conf.NodePrefix, node.GetAbsoluteNumber())

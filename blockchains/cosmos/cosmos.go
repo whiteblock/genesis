@@ -94,7 +94,7 @@ func build(tn *testnet.TestNet) error {
 	peers := make([]string, tn.LDD.Nodes)
 	mux := sync.Mutex{}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		ip := tn.Nodes[node.GetAbsoluteNumber()].IP
 		if node.GetAbsoluteNumber() != 0 {
 			//init everything
@@ -130,7 +130,7 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildStage("Starting cosmos")
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		peersCpy := make([]string, len(peers))
 		copy(peersCpy, peers)

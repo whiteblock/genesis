@@ -46,7 +46,7 @@ type TestNet struct {
 	NewlyBuiltSideCars [][]db.SideCar
 
 	// Clients is a map of server ids to ssh clients
-	Clients map[int]*ssh.Client
+	Clients map[int]ssh.Client
 	// BuildState is the build state for the test net
 	BuildState *state.BuildState
 	// Details contains all of the past deployments to tn test net
@@ -75,7 +75,7 @@ func RestoreTestNet(buildID string) (*TestNet, error) {
 	out.mux = &sync.RWMutex{}
 	out.LDD = out.GetLastestDeploymentDetails()
 
-	out.Clients = map[int]*ssh.Client{}
+	out.Clients = map[int]ssh.Client{}
 	for _, server := range out.Servers {
 		out.Clients[server.ID], err = status.GetClient(server.ID)
 		if err != nil {
@@ -116,7 +116,7 @@ func NewTestNet(details db.DeploymentDetails, buildID string) (*TestNet, error) 
 	log.WithFields(log.Fields{"build": buildID}).Trace("fetched the servers")
 
 	//OPEN UP THE RELEVANT SSH CONNECTIONS
-	out.Clients = map[int]*ssh.Client{}
+	out.Clients = map[int]ssh.Client{}
 
 	for _, server := range out.Servers {
 		out.Clients[server.ID], err = status.GetClient(server.ID)
@@ -222,8 +222,8 @@ func (tn *TestNet) FinishedBuilding() {
 
 // GetFlatClients takes the clients map and turns it into an array
 // for easy iterator
-func (tn *TestNet) GetFlatClients() []*ssh.Client {
-	out := []*ssh.Client{}
+func (tn *TestNet) GetFlatClients() []ssh.Client {
+	out := []ssh.Client{}
 	tn.mux.RLock()
 	defer tn.mux.RUnlock()
 	for _, client := range tn.Clients {

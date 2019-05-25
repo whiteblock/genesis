@@ -9,69 +9,74 @@ import (
 	"net"
 )
 
-
+// Service represents a service
 type Service interface {
-// Prepare the service
-Prepare(client *ssh.Client, tn *testnet.TestNet) error
+	// Prepare prepares the service
+	Prepare(client ssh.Client, tn *testnet.TestNet) error
 
-// name of service
-GetName() string
+	// GetName gets the name of service
+	GetName() string
 
-// image of service
-GetImage() string
+	// GetImage gets the image of service
+	GetImage() string
 
-// environment variables of service
-GetEnv() map[string]string
+	// GetEnv gets the environment variables of service
+	GetEnv() map[string]string
 
-// the network of the service
-GetNetwork() string
+	// GetNetwork gets the network of the service
+	GetNetwork() string
 
-// the ports published by the service
-GetPorts() []string
+	// GetPorts gets the ports published by the service
+	GetPorts() []string
 
-// the volumes mounted on the service container
-GetVolumes() []string
-
+	// GetVolumes gets the volumes mounted on the service container
+	GetVolumes() []string
 }
 
-// Service represents a service for a blockchain.
+// SimpleService represents a service for a blockchain.
 // All env variables will be passed to the container.
 type SimpleService struct {
-Name    string            `json:"name"`
-Image   string            `json:"image"`
-Env     map[string]string `json:"env"`
-Network string            `json:"network"`
-Ports   []string          `json:"ports"`
-Volumes []string          `json:"volumes"`
+	Name    string            `json:"name"`
+	Image   string            `json:"image"`
+	Env     map[string]string `json:"env"`
+	Network string            `json:"network"`
+	Ports   []string          `json:"ports"`
+	Volumes []string          `json:"volumes"`
 }
 
-// Simple service has no prepare step
-func (s SimpleService) Prepare(client *ssh.Client, tn *testnet.TestNet) error {
-  return nil
+// Prepare just returns nil. Simple service has no prepare step
+func (s SimpleService) Prepare(client ssh.Client, tn *testnet.TestNet) error {
+	return nil
 }
 
+// GetName gets the name of service
 func (s SimpleService) GetName() string {
-return s.Name
+	return s.Name
 }
 
+// GetImage gets the image of service
 func (s SimpleService) GetImage() string {
-return s.Image
+	return s.Image
 }
 
+// GetEnv gets the environment variables of service
 func (s SimpleService) GetEnv() map[string]string {
-return s.Env
+	return s.Env
 }
 
+// GetNetwork gets the network of the service
 func (s SimpleService) GetNetwork() string {
-return s.Network
+	return s.Network
 }
 
+// GetPorts gets the ports published by the service
 func (s SimpleService) GetPorts() []string {
-return s.Ports
+	return s.Ports
 }
 
+// GetVolumes gets the volumes mounted on the service container
 func (s SimpleService) GetVolumes() []string {
-return s.Volumes
+	return s.Volumes
 }
 
 // GetServiceIps creates a map of the service names to their ip addresses. Useful

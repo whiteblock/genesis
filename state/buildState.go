@@ -373,11 +373,11 @@ func (bs *BuildState) GetExtras() map[string]interface{} {
 // deleting and recreating it if it does, should be used instead of golangs internal
 // io library as bs one provides automatic file cleanup and separation of files among
 // different builds.
-func (bs *BuildState) Write(file string, data string) (error) {
+func (bs *BuildState) Write(file string, data string) error {
 	bs.mutex.Lock()
 	bs.files = append(bs.files, file)
 	bs.mutex.Unlock()
-	filepath := "/tmp/"+bs.BuildID+"/"+file
+	filepath := "/tmp/" + bs.BuildID + "/" + file
 	err := ioutil.WriteFile(filepath, []byte(data), 0664)
 	return err
 }

@@ -37,7 +37,7 @@ func CopyAllToServers(tn *testnet.TestNet, srcDst ...string) error {
 	for _, client := range tn.Clients {
 		for j := 0; j < len(srcDst)/2; j++ {
 			wg.Add(1)
-			go func(client *ssh.Client, j int) {
+			go func(client ssh.Client, j int) {
 				defer wg.Done()
 				tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("rm -rf %s", srcDst[2*j+1])) })
 				err := client.Scp(srcDst[2*j], srcDst[2*j+1])
@@ -155,7 +155,7 @@ func CopyBytesToAllNewNodesSC(ad *testnet.Adjunct, dataDst ...string) error {
 }
 
 // SingleCp copies over data to the given dest on node localNodeID.
-func SingleCp(client *ssh.Client, buildState *state.BuildState, node ssh.Node, data []byte, dest string) error {
+func SingleCp(client ssh.Client, buildState *state.BuildState, node ssh.Node, data []byte, dest string) error {
 	tmpFilename, err := util.GetUUIDString()
 	if err != nil {
 		return util.LogError(err)
@@ -184,7 +184,7 @@ func createConfigs(tn *testnet.TestNet, dest string, useNew bool, sidecar int, f
 	wg := sync.WaitGroup{}
 	for _, node := range nodes {
 		wg.Add(1)
-		go func(client *ssh.Client, node ssh.Node) {
+		go func(client ssh.Client, node ssh.Node) {
 			defer wg.Done()
 			data, err := fn(node)
 			if err != nil {

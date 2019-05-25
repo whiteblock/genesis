@@ -66,7 +66,7 @@ func build(tn *testnet.TestNet) error {
 	re := regexp.MustCompile(`(?m)(.*)Created a client(.*)`)
 
 	//Get the peer information
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 
 		cmd := fmt.Sprintf("/p2p-tests/client --generate-only --seed %d --hostAddrs /ip4/%s/tcp/39977",
 			node.GetAbsoluteNumber()+1, node.GetIP())
@@ -112,7 +112,7 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		cmd := fmt.Sprintf("/p2p-tests/client --seed %d --hostAddrs /ip4/%s/tcp/39977 "+
 			"--file /p2p-tests/static-peers.json --pubsubRouter %s",
 			node.GetAbsoluteNumber()+1, node.GetIP(), testConf.Router)
