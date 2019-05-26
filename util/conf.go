@@ -60,6 +60,7 @@ type Config struct {
 	PrometheusInstrumentationPort int     `mapstructure:"prometheusInstrumentationPort"`
 	MaxRunAttempts                int     `mapstructure:"maxRunAttempts"`
 	MaxConnections                int     `mapstructure:"maxConnections"`
+	DataDirectory                 string  `mapstructure:"datadir"`
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
@@ -97,6 +98,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("logJson", "LOG_JSON")
 	viper.BindEnv("maxRunAttempts", "MAX_RUN_ATTEMPTS")
 	viper.BindEnv("maxConnections", "MAX_CONNECTIONS")
+	viper.BindEnv("datadir", "DATADIR")
 }
 func setViperDefaults() {
 	viper.SetDefault("sshUser", os.Getenv("USER"))
@@ -122,6 +124,7 @@ func setViperDefaults() {
 	viper.SetDefault("prometheusInstrumentationPort", 8008)
 	viper.SetDefault("maxRunAttempts", 30)
 	viper.SetDefault("maxConnections", 50)
+	viper.SetDefault("datadir", os.Getenv("HOME")+"/.config/whiteblock/")
 }
 
 // GCPFormatter enables the ability to use genesis logging with Stackdriver
@@ -178,10 +181,15 @@ func init() {
 			},
 		})
 	}
+
+	err = os.MkdirAll(conf.DataDirectory, 0776)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err, "dir": conf.DataDirectory}).Fatal("could not create data directory")
+	}
 }
 
 // GetConfig gets a pointer to the global config object.
-// Do not modify c object
+// Do not modify conf object
 func GetConfig() *Config {
 	return conf
 }

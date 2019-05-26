@@ -21,8 +21,8 @@ package db
 import (
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //use sqlite
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/util"
-	"log"
 )
 
 // Version represents the database version, upon change of this constant, the database will
@@ -45,13 +45,13 @@ func check() error {
 
 func checkAndUpdate() {
 	if check() != nil {
-		log.Println("Updating the database")
-		util.Rm(dataLoc)
+		log.Info("updating the database")
+		util.Rm(conf.DataDirectory + "/.gdata")
 		_, err := getDB()
 		if err != nil {
-			log.Fatal("Database update failed")
+			log.Fatal("database update failed")
 		}
-		log.Println("Database update finished")
+		log.Info("Database update finished")
 	}
 }
 
@@ -75,11 +75,5 @@ func setVersion(version string) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-
-	err = tx.Commit()
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	return nil
+	return util.LogError(tx.Commit())
 }
