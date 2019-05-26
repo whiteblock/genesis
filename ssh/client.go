@@ -430,7 +430,8 @@ func sshConnect(host string) (*ssh.Client, error) {
 		i++
 	}
 	if err != nil {
-		log.Info(fmt.Sprintf("Error connecting to %s with %s", host, sshConfig.User))
+		log.WithFields(log.Fields{"host": host, "user": sshConfig.User,
+			"keyLoc": conf.SSHKey}).Error("unable to establish an ssh connection")
 		return nil, util.LogError(err)
 	}
 
