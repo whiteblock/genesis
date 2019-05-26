@@ -1,6 +1,8 @@
 # https://cloud.google.com/cloud-build/docs/speeding-up-builds
 # https://cloud.google.com/cloud-build/docs/configuring-builds/substitute-variable-values
 substitutions:
+  _BINARY: genesis
+  _PROJECT: genesis
   _IMAGE: 'gcr.io/wb-genesis/bitbucket.org/whiteblockio/genesis'
 timeout: '300s'
 steps:
@@ -22,3 +24,13 @@ steps:
     args: [ 'push', '$_IMAGE:$COMMIT_SHA' ]
   - name: 'gcr.io/cloud-builders/docker'
     args: [ 'push', '$_IMAGE:$BRANCH_NAME' ]
+  # create container based off image (but don't run)
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'create', '--name', 'output', '$_IMAGE:$COMMIT_SHA' ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'cp', 'output:/$_PROJECT/$_BINARY', '$_BINARY' ]
+  # copy binary to public bucket
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: [ 'cp', '$_BINARY', 'gs://genesis-public/$_PROJECT/$COMMIT_SHA/bin/linux/amd64/$_BINARY' ]
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: [ 'cp', '$_BINARY', 'gs://genesis-public/$_PROJECT/$BRANCH_NAME/bin/linux/amd64/$_BINARY' ]
