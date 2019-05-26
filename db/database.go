@@ -53,6 +53,7 @@ func init() {
 func getDB() (*sql.DB, error) {
 	dataLoc := conf.DataDirectory + "/.gdata"
 	if _, err := os.Stat(dataLoc); os.IsNotExist(err) {
+		log.WithFields(log.Fields{"loc": dataLoc}).Info("creating data store")
 		err = dbInit(dataLoc)
 		if err != nil {
 			return nil, util.LogError(err)
@@ -74,7 +75,7 @@ func dbInit(dataLoc string) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-
+	log.Debug("initializing tables")
 	serverSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s);",
 		ServerTable,
 		"id INTEGER PRIMARY KEY AUTOINCREMENT",

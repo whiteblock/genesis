@@ -61,6 +61,8 @@ type Config struct {
 	MaxRunAttempts                int     `mapstructure:"maxRunAttempts"`
 	MaxConnections                int     `mapstructure:"maxConnections"`
 	DataDirectory                 string  `mapstructure:"datadir"`
+	DisableNibbler                bool    `mapstructure:"disableNibbler"`
+	DisableTestnetReporting       bool    `mapstructure:"disableTestnetReporting"`
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
@@ -99,6 +101,8 @@ func setViperEnvBindings() {
 	viper.BindEnv("maxRunAttempts", "MAX_RUN_ATTEMPTS")
 	viper.BindEnv("maxConnections", "MAX_CONNECTIONS")
 	viper.BindEnv("datadir", "DATADIR")
+	viper.BindEnv("disableNibbler", "DISABLE_NIBBLER")
+	viper.BindEnv("disableTestnetReporting", "DISABLE_TESTNET_REPORTING")
 }
 func setViperDefaults() {
 	viper.SetDefault("sshUser", os.Getenv("USER"))
@@ -125,6 +129,8 @@ func setViperDefaults() {
 	viper.SetDefault("maxRunAttempts", 30)
 	viper.SetDefault("maxConnections", 50)
 	viper.SetDefault("datadir", os.Getenv("HOME")+"/.config/whiteblock/")
+	viper.SetDefault("disableNibbler", false)
+	viper.SetDefault("disableTestnetReporting", false)
 }
 
 // GCPFormatter enables the ability to use genesis logging with Stackdriver
