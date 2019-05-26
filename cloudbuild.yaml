@@ -34,3 +34,5 @@ steps:
     args: [ 'cp', '$_BINARY', 'gs://genesis-public/$_PROJECT/$COMMIT_SHA/bin/linux/amd64/$_BINARY' ]
   - name: 'gcr.io/cloud-builders/gsutil'
     args: [ 'cp', '$_BINARY', 'gs://genesis-public/$_PROJECT/$BRANCH_NAME/bin/linux/amd64/$_BINARY' ]
+
+images: [ '$_IMAGE:$COMMIT_SHA', '$_IMAGE:$BRANCH_NAME' ]
