@@ -124,6 +124,20 @@ func setViperDefaults() {
 	viper.SetDefault("maxConnections", 50)
 }
 
+// GCPFormatter enables the ability to use genesis logging with Stackdriver
+type GCPFormatter struct {
+	JSON           *log.JSONFormatter
+	ConstantFields log.Fields
+}
+
+// Format takes in the entry and processes it into the appropiate log entry
+func (gf GCPFormatter) Format(entry *log.Entry) ([]byte, error) {
+	for k, v := range gf.ConstantFields {
+		entry.Data[k] = v
+	}
+	return gf.JSON.Format(entry)
+}
+
 func init() {
 	setViperDefaults()
 	setViperEnvBindings()
@@ -151,11 +165,16 @@ func init() {
 	NodesPerCluster = (1 << conf.NodeBits) - ReservedIps
 
 	if conf.LogJSON {
-		log.SetFormatter(&log.JSONFormatter{
-			FieldMap: log.FieldMap{
-				log.FieldKeyTime:  "eventTime",
-				log.FieldKeyLevel: "severity",
-				log.FieldKeyMsg:   "message",
+		log.SetFormatter(&GCPFormatter{
+			JSON: &log.JSONFormatter{
+				FieldMap: log.FieldMap{
+					log.FieldKeyTime:  "eventTime",
+					log.FieldKeyLevel: "severity",
+					log.FieldKeyMsg:   "message",
+				},
+			},
+			ConstantFields: log.Fields{
+				"serviceContext": map[string]string{"service": "genesis", "version": "1.8.2"},
 			},
 		})
 	}
