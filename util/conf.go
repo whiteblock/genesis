@@ -60,6 +60,9 @@ type Config struct {
 	PrometheusInstrumentationPort int     `mapstructure:"prometheusInstrumentationPort"`
 	MaxRunAttempts                int     `mapstructure:"maxRunAttempts"`
 	MaxConnections                int     `mapstructure:"maxConnections"`
+	DataDirectory                 string  `mapstructure:"datadir"`
+	DisableNibbler                bool    `mapstructure:"disableNibbler"`
+	DisableTestnetReporting       bool    `mapstructure:"disableTestnetReporting"`
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
@@ -97,6 +100,9 @@ func setViperEnvBindings() {
 	viper.BindEnv("logJson", "LOG_JSON")
 	viper.BindEnv("maxRunAttempts", "MAX_RUN_ATTEMPTS")
 	viper.BindEnv("maxConnections", "MAX_CONNECTIONS")
+	viper.BindEnv("datadir", "DATADIR")
+	viper.BindEnv("disableNibbler", "DISABLE_NIBBLER")
+	viper.BindEnv("disableTestnetReporting", "DISABLE_TESTNET_REPORTING")
 }
 func setViperDefaults() {
 	viper.SetDefault("sshUser", os.Getenv("USER"))
@@ -122,6 +128,23 @@ func setViperDefaults() {
 	viper.SetDefault("prometheusInstrumentationPort", 8008)
 	viper.SetDefault("maxRunAttempts", 30)
 	viper.SetDefault("maxConnections", 50)
+	viper.SetDefault("datadir", os.Getenv("HOME")+"/.config/whiteblock/")
+	viper.SetDefault("disableNibbler", false)
+	viper.SetDefault("disableTestnetReporting", false)
+}
+
+// GCPFormatter enables the ability to use genesis logging with Stackdriver
+type GCPFormatter struct {
+	JSON           *log.JSONFormatter
+	ConstantFields log.Fields
+}
+
+// Format takes in the entry and processes it into the appropiate log entry
+func (gf GCPFormatter) Format(entry *log.Entry) ([]byte, error) {
+	for k, v := range gf.ConstantFields {
+		entry.Data[k] = v
+	}
+	return gf.JSON.Format(entry)
 }
 
 func init() {
@@ -151,18 +174,28 @@ func init() {
 	NodesPerCluster = (1 << conf.NodeBits) - ReservedIps
 
 	if conf.LogJSON {
-		log.SetFormatter(&log.JSONFormatter{
-			FieldMap: log.FieldMap{
-				log.FieldKeyTime:  "eventTime",
-				log.FieldKeyLevel: "severity",
-				log.FieldKeyMsg:   "message",
+		log.SetFormatter(&GCPFormatter{
+			JSON: &log.JSONFormatter{
+				FieldMap: log.FieldMap{
+					log.FieldKeyTime:  "eventTime",
+					log.FieldKeyLevel: "severity",
+					log.FieldKeyMsg:   "message",
+				},
+			},
+			ConstantFields: log.Fields{
+				"serviceContext": map[string]string{"service": "genesis", "version": "1.8.2"},
 			},
 		})
+	}
+
+	err = os.MkdirAll(conf.DataDirectory, 0776)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err, "dir": conf.DataDirectory}).Fatal("could not create data directory")
 	}
 }
 
 // GetConfig gets a pointer to the global config object.
-// Do not modify c object
+// Do not modify conf object
 func GetConfig() *Config {
 	return conf
 }

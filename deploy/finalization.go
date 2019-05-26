@@ -70,7 +70,7 @@ func alwaysRunFinalize(tn *testnet.TestNet) {
 		for _, node := range tn.NewlyBuiltNodes {
 			err := declareNode(&node, tn)
 			if err != nil {
-				log.Println(err)
+				log.WithFields(log.Fields{"node": node.AbsoluteNum}).Error(err)
 			}
 		}
 	})
@@ -135,6 +135,10 @@ func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 }
 
 func declareNode(node *db.Node, tn *testnet.TestNet) error {
+	if conf.DisableTestnetReporting {
+		log.Info("skipping node declaration since testnet reporting is disabled")
+		return nil
+	}
 	if len(tn.LDD.GetJwt()) == 0 { //If there isn't a JWT, return immediately
 		return nil
 	}
@@ -161,6 +165,10 @@ func declareNode(node *db.Node, tn *testnet.TestNet) error {
 }
 
 func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state.BuildState, absNum int) error {
+	if conf.DisableNibbler {
+		log.Info("skipping nibbler setup as it is disabled")
+		return nil
+	}
 	client, err := status.GetClient(node.Server)
 	if err != nil {
 		return util.LogError(err)

@@ -40,7 +40,6 @@ func init() {
 // StartServer starts the rest server, blocking the calling thread from returning
 func StartServer() {
 	router := mux.NewRouter()
-	router.Use(authN)
 	router.HandleFunc("/servers", getAllServerInfo).Methods("GET")
 
 	router.HandleFunc("/servers/{name}", addNewServer).Methods("PUT")

@@ -170,7 +170,7 @@ func handleSideCars(tn *testnet.TestNet, append bool) error {
 }
 
 func declareTestnet(testnetID string, details *db.DeploymentDetails) error {
-	if len(details.GetJwt()) == 0 {
+	if len(details.GetJwt()) == 0 || conf.DisableTestnetReporting {
 		return nil
 	}
 	data := map[string]interface{}{

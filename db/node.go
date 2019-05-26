@@ -186,7 +186,7 @@ func InsertNode(node Node) (int, error) {
 
 	tx.Commit()
 	id, err := res.LastInsertId()
-	return int(id), err
+	return int(id), util.LogError(err)
 }
 
 /**Helper functions which do not query the database**/
