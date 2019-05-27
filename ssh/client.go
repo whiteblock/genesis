@@ -214,7 +214,12 @@ func (sshClient *client) Run(command string) (string, error) {
 	}
 
 	out, err := session.Get().CombinedOutput(command)
-	log.Infof("$ %s\n%s\n", command, out)
+	if conf.MaxCommandOutputLogSize == -1 || len(out) <= conf.MaxCommandOutputLogSize {
+		log.Infof("$ %s\n%s\n", command, out)
+	} else {
+		log.Infof("$ %s\n%s...\n", command, out[:conf.MaxCommandOutputLogSize])
+	}
+
 	if err != nil {
 		return string(out), util.FormatError(string(out), err)
 	}

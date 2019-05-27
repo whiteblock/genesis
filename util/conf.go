@@ -63,6 +63,7 @@ type Config struct {
 	DataDirectory                 string  `mapstructure:"datadir"`
 	DisableNibbler                bool    `mapstructure:"disableNibbler"`
 	DisableTestnetReporting       bool    `mapstructure:"disableTestnetReporting"`
+	MaxCommandOutputLogSize       int     `mapstructure:"maxCommandOutputLogSize"`
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
@@ -103,6 +104,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("datadir", "DATADIR")
 	viper.BindEnv("disableNibbler", "DISABLE_NIBBLER")
 	viper.BindEnv("disableTestnetReporting", "DISABLE_TESTNET_REPORTING")
+	viper.BindEnv("maxCommandOutputLogSize", "MAX_COMMAND_OUTPUT_LOG_SIZE")
 }
 func setViperDefaults() {
 	viper.SetDefault("sshUser", os.Getenv("USER"))
@@ -131,6 +133,7 @@ func setViperDefaults() {
 	viper.SetDefault("datadir", os.Getenv("HOME")+"/.config/whiteblock/")
 	viper.SetDefault("disableNibbler", false)
 	viper.SetDefault("disableTestnetReporting", false)
+	viper.SetDefault("maxCommandOutputLogSize", -1)
 }
 
 // GCPFormatter enables the ability to use genesis logging with Stackdriver
