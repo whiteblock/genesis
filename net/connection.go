@@ -18,6 +18,8 @@
 
 package netconf
 
+import log "github.com/sirupsen/logrus"
+
 //Connection represents a uni-directional connection
 type Connection struct {
 	To   int `json:"to"`
@@ -116,6 +118,8 @@ func (mesh Connections) Networks() [][]int {
 	out := [][]int{}
 
 	for len(nodesFinalized) < len(mesh.cons) {
+		log.WithFields(log.Fields{"nodes": nodes, "nodesFinalized": nodesFinalized,
+			"nodesToTry": nodesToTry}).Trace("calculating networks...")
 		//fmt.Printf("\n\nNodes : %#v\n Nodes Finalized: %#v\nNodes To Try%#v\n\n",nodes,nodesFinalized,nodesToTry)
 		if len(nodesToTry) == 0 {
 			if len(nodes) > 0 {
