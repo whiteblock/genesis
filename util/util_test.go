@@ -117,7 +117,6 @@ func TestJwtHTTPRequest_Unsuccessful(t *testing.T) {
 }
 
 // TODO make sure these tests work
-
 func TestExtractJwt_Successful(t *testing.T) {
 	var test = []struct {
 		method string
@@ -197,7 +196,38 @@ func TestRm(t *testing.T) {
 
 	for _, file := range files {
 		if _, err := os.Stat(file); !os.IsNotExist(err) {
-			t.Errorf("function Rm does not successfully remove given directories or files")
+			t.Errorf("Rm does not successfully remove given directories or files")
+		}
+	}
+}
+
+func TestLsr(t *testing.T) {
+	newFile, err := ioutil.TempDir("", "TESTTESTTEST")
+	if err != nil {
+		t.Errorf("ioutil.TempDir returned an error")
+	}
+
+	newFilePath, _ := filepath.Abs(newFile)
+
+	files := []string{}
+
+	for i := 0; i <= 3; i++ {
+		file, err := ioutil.TempFile(newFilePath, strconv.Itoa(i))
+		if err != nil {
+			t.Errorf("ioutil.TempFile returned an error")
+		}
+
+		files = append(files, file.Name())
+	}
+
+	check, err := Lsr(newFilePath)
+	if err != nil {
+		t.Errorf("Lsr returned an error when <nil> was expected")
+	}
+
+	for i, file := range files {
+		if check[i] != file {
+			t.Errorf("return value of Lsr did not match expected value")
 		}
 	}
 }
