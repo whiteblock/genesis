@@ -19,9 +19,10 @@
 package util
 
 import (
+	"os"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"os"
 )
 
 // Config groups all of the global configuration parameters into

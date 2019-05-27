@@ -20,7 +20,10 @@ package util
 
 import (
 	"io"
+	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 )
@@ -113,6 +116,8 @@ func TestJwtHTTPRequest_Unsuccessful(t *testing.T) {
 	}
 }
 
+// TODO make sure these tests work
+
 func TestExtractJwt_Successful(t *testing.T) {
 	var test = []struct {
 		method string
@@ -164,5 +169,35 @@ func TestExtractJwt_Unsuccessful(t *testing.T) {
 				t.Errorf("ExtractJwt returned <nil> when an error was expected")
 			}
 		})
+	}
+}
+
+func TestRm(t *testing.T) {
+	files := []string{}
+
+	for i := 0; i <= 3; i++ {
+		file, err := ioutil.TempDir("", "prefix")
+		if err != nil {
+			t.Errorf("error with ioutil.TemDir directory generation")
+		}
+
+		if _, err := os.Stat(file); os.IsNotExist(err) {
+			t.Errorf("error with ioutil.TemDir directory generation")
+		}
+
+		filepath, _ := filepath.Abs(file)
+
+		files = append(files, filepath)
+	}
+
+	err := Rm(files...)
+	if err != nil {
+		t.Errorf("Rm returned an error when it should have returned <nil>")
+	}
+
+	for _, file := range files {
+		if _, err := os.Stat(file); !os.IsNotExist(err) {
+			t.Errorf("function Rm does not successfully remove given directories or files")
+		}
 	}
 }
