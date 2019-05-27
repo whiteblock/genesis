@@ -21,13 +21,14 @@ package status
 import (
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
-	"log"
+	"github.com/whiteblock/genesis/util"
 	"sync"
 )
 
-var _clients = map[int]ssh.Client{}
-
-var _mux = sync.Mutex{}
+var (
+	_clients = map[int]ssh.Client{}
+	_mux     = sync.Mutex{}
+)
 
 // GetClient retrieves the ssh client for running a command
 // on a remote server based on server id. It will create one if it
@@ -39,13 +40,11 @@ func GetClient(id int) (ssh.Client, error) {
 		defer _mux.Unlock()
 		server, _, err := db.GetServer(id)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		cli, err = ssh.NewClient(server.Addr, id)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		_clients[id] = cli
 	}
@@ -61,8 +60,7 @@ func GetClients(servers []int) ([]ssh.Client, error) {
 	for i := 0; i < len(servers); i++ {
 		out[i], err = GetClient(servers[i])
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 	}
 	return out, nil

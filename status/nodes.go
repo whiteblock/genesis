@@ -20,10 +20,10 @@ package status
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/util"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -67,11 +67,10 @@ func FindNodeIndex(status []NodeStatus, name string, serverID int) int {
 func SumResUsage(c ssh.Client, name string) (Comp, error) {
 	res, err := c.Run(fmt.Sprintf("docker exec %s ps aux --no-headers | grep -v nibbler | awk '{print $3,$5,$6}'", name))
 	if err != nil {
-		log.Println(err)
-		return Comp{-1, -1, -1}, err
+		return Comp{-1, -1, -1}, util.LogError(err)
 	}
 	procs := strings.Split(res, "\n")
-	//fmt.Printf("%#v\n", procs)
+	log.WithFields(log.Fields{"name": name, "nprocs": len(res)}).Trace("found processes")
 	var out Comp
 	for _, proc := range procs {
 		if len(proc) == 0 {
@@ -81,22 +80,19 @@ func SumResUsage(c ssh.Client, name string) (Comp, error) {
 
 		cpu, err := strconv.ParseFloat(values[0], 64)
 		if err != nil {
-			log.Println(err)
-			return Comp{-1, -1, -1}, err
+			return Comp{-1, -1, -1}, util.LogError(err)
 		}
 		out.CPU += cpu
 
 		vsz, err := strconv.ParseFloat(values[1], 64)
 		if err != nil {
-			log.Println(err)
-			return Comp{-1, -1, -1}, err
+			return Comp{-1, -1, -1}, util.LogError(err)
 		}
 		out.VSZ += vsz
 
 		rss, err := strconv.ParseFloat(values[2], 64)
 		if err != nil {
-			log.Println(err)
-			return Comp{-1, -1, -1}, err
+			return Comp{-1, -1, -1}, util.LogError(err)
 		}
 		out.RSS += rss
 
@@ -111,7 +107,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 	out := make([]NodeStatus, len(nodes))
 
 	for _, node := range nodes {
-		//fmt.Printf("ABS = %d; REL=%d;NAME=%s%d\n", node.AbsoluteNum, node.LocalID, conf.NodePrefix, node.LocalID)
+		log.WithFields(log.Fields{"node": node.AbsoluteNum, "id": node.ID, "server": node.Server}).Trace("adding node to be check")
 		out[node.AbsoluteNum] = NodeStatus{
 			Name:      fmt.Sprintf("%s%d", conf.NodePrefix, node.LocalID),
 			IP:        node.IP,
@@ -124,8 +120,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 	}
 	servers, err := db.GetServers(serverIDs)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	mux := sync.Mutex{}
 	wg := sync.WaitGroup{}
@@ -133,14 +128,12 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 	for _, server := range servers {
 		client, err := GetClient(server.ID)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		res, err := client.Run(
 			fmt.Sprintf("docker ps | egrep -o '%s[0-9]*' | sort", conf.NodePrefix))
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		names := strings.Split(res, "\n")
 		for _, name := range names {
@@ -150,7 +143,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 
 			index := FindNodeIndex(out, name, server.ID)
 			if index == -1 {
-				log.Printf("name=\"%s\",server=%d\n", name, server.ID)
+				log.WithFields(log.Fields{"name": name, "server": server.ID}).Warn("unable to find a node")
 				continue
 			}
 			wg.Add(1)
@@ -158,7 +151,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 				defer wg.Done()
 				resUsage, err := SumResUsage(client, name)
 				if err != nil {
-					log.Println(err)
+					log.Error(err)
 				}
 				mux.Lock()
 				out[index].Up = true
