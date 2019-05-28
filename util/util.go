@@ -281,7 +281,6 @@ func MergeStringMaps(m1 map[string]interface{}, m2 map[string]interface{}) map[s
 
 // ConvertToStringMap converts a map of string to interface to a map of string to json
 func ConvertToStringMap(data map[string]interface{}) map[string]string {
-
 	out := make(map[string]string)
 
 	for key, value := range data {

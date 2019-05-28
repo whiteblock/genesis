@@ -381,3 +381,23 @@ func TestMergeStringMaps(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertToStringMap(t *testing.T) {
+	var test = []struct {
+		data map[string]interface{}
+		out map[string]string
+	}{
+		{data: map[string]interface{}{"1": 1, "2": 2, "3": 3}, out: map[string]string{"1": "1", "2": "2", "3": "3"}},
+		{data: map[string]interface{}{"bool": false}, out: map[string]string{"bool": "false"}},
+		{data: map[string]interface{}{"float": 10.74}, out: map[string]string{"float": "10.74"}},
+		{data: map[string]interface{}{}, out: map[string]string{}},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(ConvertToStringMap(tt.data), tt.out) {
+				t.Errorf("return value of ConvertToStringMap does not match expected value")
+			}
+		})
+	}
+}
