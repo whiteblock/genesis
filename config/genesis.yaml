@@ -1,3 +1,4 @@
+# You can put me in /etc/whiteblock/ or ~/.config/whiteblock/
 # SSH options
 handleNodeSshKeys: true
 nodesPublicKey: "/home/master-secrets/id.master.pub"
