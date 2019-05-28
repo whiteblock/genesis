@@ -21,7 +21,6 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-	"go/types"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -283,7 +282,6 @@ func TestGetJSONInt64_Unsuccessful(t *testing.T) {
 		field string
 		out int64
 		expectedErr string
-		expectedNil types.Nil
 	}{
 		{data: map[string]interface{}{"field": 450}, field: "field", out: 30, expectedErr: "incorrect type for field"},
 		{data: map[string]interface{}{}, field: "field", out: 40, expectedErr: "nil"},
@@ -325,3 +323,28 @@ func TestGetJSONString_Successful(t *testing.T) {
 	}
 }
 
+func TestGetJSONString_Unsuccessful(t *testing.T) {
+	var test = []struct {
+		data map[string]interface{}
+		field string
+		out string
+		expectedErr string
+	}{
+		{data: map[string]interface{}{"field": "this is a test string"}, field: "string", out: "doesn't matter", expectedErr: "nil"},
+		{data: map[string]interface{}{}, field: "string", out: "doesn't matter", expectedErr: "nil"},
+		{data: map[string]interface{}{"test": 40}, field: "test", out: "doesn't matter", expectedErr: "incorrect type for test"},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			err := GetJSONString(tt.data, tt.field, &tt.out)
+			if err != nil && err.Error() != "incorrect type for test" {
+				t.Errorf("GetJSONString did not return the correct error")
+			}
+
+			if err != nil && tt.expectedErr == "nil" {
+				t.Errorf("GETJSONString did not return the correct error")
+			}
+		})
+	}
+}
