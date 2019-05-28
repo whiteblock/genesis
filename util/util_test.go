@@ -20,6 +20,7 @@ package util
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -397,6 +398,26 @@ func TestConvertToStringMap(t *testing.T) {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			if !reflect.DeepEqual(ConvertToStringMap(tt.data), tt.out) {
 				t.Errorf("return value of ConvertToStringMap does not match expected value")
+			}
+		})
+	}
+}
+
+func TestFormatError(t *testing.T) {
+	var test = []struct {
+		res string
+		err error
+		expected string
+	}{
+		{res: "testing", err: errors.New("nil"), expected: "testing\nnil"},
+		{res: "this is a test string", err: errors.New("test error"), expected: "this is a test string\ntest error"},
+		{res: "test", err: errors.New(""), expected: "test\n"},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(FormatError(tt.res, tt.err).Error(), tt.expected) {
+				t.Errorf("return value of Format Error does not match expected value")
 			}
 		})
 	}
