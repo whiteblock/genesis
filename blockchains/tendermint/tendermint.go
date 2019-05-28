@@ -54,7 +54,7 @@ func init() {
 	registrar.RegisterBuild(blockchain, Build)
 	registrar.RegisterAddNodes(blockchain, Add)
 	registrar.RegisterServices(blockchain, GetServices)
-	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }
 
@@ -95,7 +95,9 @@ func Build(tn *testnet.TestNet) error {
 		tn.BuildState.IncrementBuildProgress()
 		var genesis map[string]interface{}
 		err = json.Unmarshal([]byte(res), &genesis)
-
+		if err != nil {
+			return util.LogError(err)
+		}
 		validatorsRaw := genesis["validators"].([]interface{})
 		for _, validatorRaw := range validatorsRaw {
 			vdtr := validator{}
@@ -115,6 +117,9 @@ func Build(tn *testnet.TestNet) error {
 			}
 
 			err = util.GetJSONString(validatorPubKeyData, "value", &vdtr.PubKey.Value)
+			if err != nil {
+				return util.LogError(err)
+			}
 
 			err = util.GetJSONString(validatorData, "power", &vdtr.Power)
 			if err != nil {

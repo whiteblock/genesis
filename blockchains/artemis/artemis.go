@@ -39,7 +39,7 @@ func init() {
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
-	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 	registrar.RegisterAdditionalLogs(blockchain, map[string]string{
 		"json": "/artemis/data/log.json"})
@@ -98,7 +98,7 @@ func build(tn *testnet.TestNet) error {
 	err = helpers.CreateConfigs(tn, "/artemis/config/config.toml", func(node ssh.Node) ([]byte, error) {
 		defer tn.BuildState.IncrementBuildProgress()
 		identity := fmt.Sprintf("0x%.8x", node.GetAbsoluteNumber())
-		artemisNodeConfig, err := makeNodeConfig(aconf, identity, peers, node.GetAbsoluteNumber(), tn.LDD, rawConstants)
+		artemisNodeConfig, err := makeNodeConfig(aconf, identity, peers, node.GetAbsoluteNumber(), tn.LDD, "/artemis/data/log.json", rawConstants)
 		return []byte(artemisNodeConfig), err
 	})
 	if err != nil {
@@ -109,7 +109,7 @@ func build(tn *testnet.TestNet) error {
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 
-		artemisCmd := `artemis -c /artemis/config/config.toml -o /artemis/data/log.json 2>&1 | tee /output.log`
+		artemisCmd := `artemis -c /artemis/config/config.toml 2>&1 | tee /output.log`
 
 		_, err := client.DockerExecd(node, "tmux new -s whiteblock -d")
 		if err != nil {

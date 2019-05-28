@@ -17,8 +17,8 @@
 */
 
 // Package util provides a multitude of support functions to
-// help make development easier. Use of these functions should be prefered,
-// as it allows for easier maintainence.
+// help make development easier. Use of these functions should be preferred,
+// as it allows for easier maintenance.
 package util
 
 import (
@@ -26,12 +26,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/whiteblock/go.uuid"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	//"os/exec"
 	"strings"
 )
 
@@ -144,13 +144,9 @@ func GetUUIDString() (string, error) {
 // Rm removes all of the given directories or files. Convenience function for os.RemoveAll
 func Rm(directories ...string) error {
 	for _, directory := range directories {
-		if conf.Verbose {
-			fmt.Printf("Removing  %s...", directory)
-		}
+		logrus.WithFields(logrus.Fields{"dir": directory}).Info("removing directory")
+
 		err := os.RemoveAll(directory)
-		if conf.Verbose {
-			fmt.Printf("done\n")
-		}
 		if err != nil {
 			return LogError(err)
 		}
@@ -231,24 +227,6 @@ func GetPath(path string) string {
 
 /******* JSON helper functions *******/
 
-// GetJSONNumber checks and extracts a json.Number from data[field].
-// Will return an error if data[field] does not exist or is of the wrong type.
-func GetJSONNumber(data map[string]interface{}, field string) (json.Number, error) {
-	rawValue, exists := data[field]
-	if exists && rawValue != nil {
-		switch rawValue.(type) {
-		case json.Number:
-			value, valid := rawValue.(json.Number)
-			if !valid {
-				return "", fmt.Errorf("invalid JSON number")
-			}
-			return value, nil
-
-		}
-	}
-	return "", fmt.Errorf("incorrect type for %s", field)
-}
-
 // GetJSONInt64 checks and extracts a int64 from data[field].
 // Will return an error if data[field] does not exist or is of the wrong type.
 func GetJSONInt64(data map[string]interface{}, field string, out *int64) error {
@@ -259,26 +237,6 @@ func GetJSONInt64(data map[string]interface{}, field string, out *int64) error {
 			value, err := rawValue.(json.Number).Int64()
 			if err != nil {
 				return err
-			}
-			*out = value
-			return nil
-		default:
-			return fmt.Errorf("incorrect type for %s", field)
-		}
-	}
-	return nil
-}
-
-// GetJSONStringArr checks and extracts a []string from data[field].
-// Will return an error if data[field] does not exist or is of the wrong type.
-func GetJSONStringArr(data map[string]interface{}, field string, out *[]string) error {
-	rawValue, exists := data[field]
-	if exists && rawValue != nil {
-		switch rawValue.(type) {
-		case []string:
-			value, valid := rawValue.([]string)
-			if !valid {
-				return fmt.Errorf("invalid string array")
 			}
 			*out = value
 			return nil
@@ -309,28 +267,8 @@ func GetJSONString(data map[string]interface{}, field string, out *string) error
 	return nil
 }
 
-// GetJSONBool checks and extracts a bool from data[field].
-// Will return an error if data[field] does not exist or is of the wrong type.
-func GetJSONBool(data map[string]interface{}, field string, out *bool) error {
-	rawValue, exists := data[field]
-	if exists && rawValue != nil {
-		switch rawValue.(type) {
-		case bool:
-			value, valid := rawValue.(bool)
-			if !valid {
-				return fmt.Errorf("invalid bool")
-			}
-			*out = value
-			return nil
-		default:
-			return fmt.Errorf("incorrect type for %s", field)
-		}
-	}
-	return nil
-}
-
 // MergeStringMaps merges two maps of string to interface together and returns it
-// If there are conflicting keys, the value in m2 will be choosen.
+// If there are conflicting keys, the value in m2 will be chosen.
 func MergeStringMaps(m1 map[string]interface{}, m2 map[string]interface{}) map[string]interface{} {
 	out := make(map[string]interface{})
 	for k1, v1 := range m1 {
@@ -373,7 +311,8 @@ func CopyMap(m map[string]interface{}) (map[string]interface{}, error) {
 }
 
 // LogError acts like log.Println() but takes in an error and returns that error.
-// Used to help reduce code clutter from all the log.Println(err) in the code
+// Used to help reduce code clutter from all the log.Println(err) in the code.
+// Has no effect is err == nil
 func LogError(err error) error {
 	if err != nil { // don't log if the error is nil
 		log.Output(2, err.Error()) //returns an error but is ignored in Golang's implementation

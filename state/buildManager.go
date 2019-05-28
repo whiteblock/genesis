@@ -63,8 +63,20 @@ func cleanBuildStates(servers []int) {
 	}
 }
 
+// ForceUnlockServers forcefully stops builds on the given servers to unlock the given servers
+func ForceUnlockServers(serverIDs []int) {
+	for _, serverID := range serverIDs {
+		bs := GetBuildStateByServerID(serverID)
+		if bs == nil {
+			continue
+		}
+		bs.SignalStop()
+	}
+	cleanBuildStates(serverIDs)
+}
+
 // GetBuildStateByServerID gets the current build state on a server. DEPRECATED, use
-// GetBuildStateById instead.
+// GetBuildStateByID instead.
 func GetBuildStateByServerID(serverID int) *BuildState {
 	mux.RLock()
 	defer mux.RUnlock()

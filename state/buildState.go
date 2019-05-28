@@ -280,7 +280,7 @@ func (bs *BuildState) Stop() bool {
 // a current build. Returns an error if there is no build in progress
 func (bs *BuildState) SignalStop() error {
 
-	bs.Unfreeze() //Unfeeze in order to actually stop the build via error propogation
+	bs.Unfreeze() //Unfeeze in order to actually stop the build via error propagation
 
 	if atomic.LoadInt32(&bs.building) != 0 {
 		bs.ReportError(fmt.Errorf("build stopped by user"))
@@ -371,7 +371,7 @@ func (bs *BuildState) GetExtras() map[string]interface{} {
 
 // Write writes data to a file, creating it if it doesn't exist,
 // deleting and recreating it if it does, should be used instead of golangs internal
-// io library as bs one provides automatic file cleanup and seperation of files among
+// io library as bs one provides automatic file cleanup and separation of files among
 // different builds.
 func (bs *BuildState) Write(file string, data string) error {
 	bs.mutex.Lock()

@@ -199,7 +199,7 @@ func DeleteTestNet(testnetID string) error {
 	return deploy.Destroy(tn)
 }
 
-// GetParams fetches the name and type of each availible
+// GetParams fetches the name and type of each available
 // blockchain specific parameter for the given blockchain.
 // Ensure that the blockchain you have implemented is included
 // in the switch statement.

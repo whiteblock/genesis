@@ -20,10 +20,8 @@ package rchain
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/util"
-	"log"
 )
 
 type rChainConf struct {
@@ -42,16 +40,7 @@ type rChainConf struct {
 
 func newRChainConf(data map[string]interface{}) (*rChainConf, error) {
 	out := new(rChainConf)
-	err := json.Unmarshal([]byte(GetDefaults()), out)
-	if data == nil {
-		return out, util.LogError(err)
-	}
-	log.Printf("Default %+v\n", *out)
-	tmp, err := json.Marshal(data)
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	return out, json.Unmarshal(tmp, out)
+	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
 // GetServices returns the services which are used by rchain
@@ -67,13 +56,4 @@ func GetServices() []util.Service {
 			},
 		},
 	}
-}
-
-// GetDefaults fetchs rchain related parameter defaults
-func GetDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig(blockchain, "defaults.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
 }

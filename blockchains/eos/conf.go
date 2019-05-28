@@ -19,7 +19,6 @@
 package eos
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/db"
@@ -77,17 +76,7 @@ type eosConf struct {
 
 func newConf(data map[string]interface{}) (*eosConf, error) {
 	out := new(eosConf)
-	err := json.Unmarshal([]byte(GetDefaults()), out)
-	if data == nil {
-		return out, util.LogError(err)
-	}
-	tmp, err := json.Marshal(data)
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	err = json.Unmarshal(tmp, out)
-
-	return out, err
+	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
 func (econf *eosConf) GenerateGenesis(masterPublicKey string, details *db.DeploymentDetails) (string, error) {
@@ -155,15 +144,6 @@ func (econf *eosConf) GenerateConfig() string {
 		out = append(out, extra)
 	}
 	return util.CombineConfig(out)
-}
-
-// GetDefaults fetchs eos related parameter defaults
-func GetDefaults() string {
-	dat, err := helpers.GetStaticBlockchainConfig("eos", "defaults.json")
-	if err != nil {
-		panic(err) //Missing required files is a fatal error
-	}
-	return string(dat)
 }
 
 // GetServices returns the services which are used by eos

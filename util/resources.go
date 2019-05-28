@@ -32,11 +32,13 @@ type Resources struct {
 	// by a node. Can be more than 1.0, meaning the node can use multiple cores at
 	// a time.
 	Cpus string `json:"cpus"`
-	// Memory supports values up to Terrabytes (tb). If the unit is ommited, then it
+	// Memory supports values up to Terrabytes (tb). If the unit is omitted, then it
 	// is assumed to be bytes. This is not case sensitive.
 	Memory string `json:"memory"`
 	// Volumes to be used by each node.
 	Volumes []string `json:"volumes"`
+	// Ports to be opened for each node, each item associated with one node.
+	Ports []string `json:"ports"`
 }
 
 func memconv(mem string) (int64, error) {

@@ -20,14 +20,13 @@
 package parity
 
 import (
-	"github.com/whiteblock/genesis/db"
-	"github.com/whiteblock/genesis/ssh"
-	//"../../state"
 	"encoding/json"
 	"fmt"
 	"github.com/whiteblock/genesis/blockchains/ethereum"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"log"
@@ -45,7 +44,7 @@ func init() {
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
-	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 	registrar.RegisterBlockchainSideCars(blockchain, []string{"geth"})
 }
@@ -57,6 +56,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+	fmt.Printf("%#v\n", *pconf)
 
 	tn.BuildState.SetBuildSteps(9 + (7 * tn.LDD.Nodes))
 	//Make the data directories
@@ -117,6 +117,8 @@ func build(tn *testnet.TestNet) error {
 		err = setupPOW(tn, pconf, wallets)
 	case "poa":
 		err = setupPOA(tn, pconf, wallets)
+	default:
+		return util.LogError(fmt.Errorf("Unknown consensus %s", pconf.Consensus))
 	}
 	if err != nil {
 		return util.LogError(err)
@@ -290,7 +292,9 @@ func setupPOW(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 		}
 		return []byte(configToml), nil
 	})
-
+	if err != nil {
+		return util.LogError(err)
+	}
 	//Copy over the config file, spec file, and the accounts
 	return helpers.CopyBytesToAllNodes(tn, spec, "/parity/spec.json")
 }

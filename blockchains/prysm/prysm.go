@@ -39,7 +39,7 @@ func init() {
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
-	registrar.RegisterDefaults(blockchain, GetDefaults)
+	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }
 
@@ -72,7 +72,7 @@ func build(tn *testnet.TestNet) error {
 	err = helpers.AllNodeExecCon(tn, func(client *ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 
-		artemisCmd := "prysm --no-discovery " + peers + " 2>&1 | tee /output.log"
+		artemisCmd := "/beacon-chain --no-discovery " + peers + " 2>&1 | tee /output.log"
 
 		_, err := client.DockerExecd(node, "tmux new -s whiteblock -d")
 		if err != nil {

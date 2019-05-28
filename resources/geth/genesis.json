@@ -1,51 +1,19 @@
 {
-  "config": {
-    "chainId": {{{
-  chainId
-}}},
-"homesteadBlock": {
-{
-{
-homesteadBlock
-}
-}},
-"eip150Block": 0,
-"eip155Block": {
-{{
-eip155Block
-}
-}
-},
-"eip158Block": {
-{{
-eip158Block
-}
-}
-},
-"eip160Block": 10
-},
-"nonce": "0x0000000000000042",
-"difficulty": {
-{
-{difficulty
-}
-}
-},
-"mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-"coinbase": "0x0000000000000000000000000000000000000000",
-"timestamp": "0x00",
-"extraData": "0x3535353535353535353535353535353535353535353535353535353535353535",
-"parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-"gasLimit": {
-{
-{gasLimit
-}
-}
-},
-"alloc": {
-{
-{alloc
-}
-}
-}
+    "config": {
+        "chainId": {{{chainId}}},
+        "homesteadBlock":{{{homesteadBlock}}},
+        "eip150Block":0,
+        "eip155Block":{{{eip155Block}}},
+        "eip158Block":{{{eip158Block}}},
+        "eip160Block":10
+    },
+    "nonce": "0x0000000000000042",
+    "difficulty": {{{difficulty}}},
+    "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "coinbase": "0x0000000000000000000000000000000000000000",
+    "timestamp": "0x00",
+    "extraData": "0x3535353535353535353535353535353535353535353535353535353535353535",
+    "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "gasLimit": {{{gasLimit}}},
+    "alloc":{{{alloc}}}
 }

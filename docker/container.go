@@ -55,6 +55,9 @@ type Container interface {
 	// GetNetworkName gets the name of the containers network
 	GetNetworkName() string
 
+	// GetPorts gets the ports to open for the node, if instructed.
+	GetPorts() []string
+
 	// GetResources gets the maximum resource allocation of the node
 	GetResources() util.Resources
 }
@@ -126,6 +129,11 @@ func (cd *ContainerDetails) GetName() string {
 		return fmt.Sprintf("%s%d-%d", conf.NodePrefix, cd.Node, cd.NetworkIndex)
 	}
 	panic("Unsupported type")
+}
+
+// GetPorts gets the ports to open for the node, if instructed.
+func (cd *ContainerDetails) GetPorts() []string {
+	return cd.Resources.Ports
 }
 
 // GetNetworkName gets the name of the containers network

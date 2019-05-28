@@ -50,8 +50,8 @@ func init() {
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterServices(alias, GetServices)
 
-	registrar.RegisterDefaults(blockchain, GetDefaults)
-	registrar.RegisterDefaults(alias, GetDefaults)
+	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
+	registrar.RegisterDefaults(alias, helpers.DefaultGetDefaultsFn(blockchain))
 
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 	registrar.RegisterParams(alias, helpers.DefaultGetParamsFn(blockchain))
