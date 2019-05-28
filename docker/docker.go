@@ -21,6 +21,7 @@ package docker
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
@@ -197,8 +198,10 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 func StopServices(tn *testnet.TestNet) error {
 	return helpers.AllServerExecCon(tn, func(client ssh.Client, _ *db.Server) error {
 		_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)", conf.ServicePrefix))
-		client.Run("docker network rm " + conf.ServiceNetworkName)
-		return util.LogError(err)
+		log.WithFields(log.Fields{"error": err}).Info("no service containers to remove")
+		_, err = client.Run("docker network rm " + conf.ServiceNetworkName)
+		log.WithFields(log.Fields{"error": err}).Info("no service network to remove")
+		return nil
 	})
 }
 
