@@ -8,6 +8,7 @@ import (
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"html/template"
+	"reflect"
 	"strconv"
 )
 
@@ -26,7 +27,7 @@ func (p PrometheusService) Prepare(client ssh.Client, tn *testnet.TestNet) error
   scrape_interval: 5s
   metrics_path: /metrics
   static_configs:
-    - targets: ['{{.Node.IP}}:{{.Tn.CombinedDetails.Params["PrometheusInstrumentationPort"]}}']
+    - targets: ['{{.Node.IP}}:{{.InstrumentationPort}}']
       labels:
         group: '{{.Tn.LDD.Blockchain}}'
 
@@ -36,12 +37,22 @@ func (p PrometheusService) Prepare(client ssh.Client, tn *testnet.TestNet) error
 			return util.LogError(err)
 		}
 
+		var prometheusInstrumentationPort string
+		obj := tn.CombinedDetails.Params["prometheusInstrumentationPort"]
+		if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
+			prometheusInstrumentationPort = obj.(string)
+		}
+		if prometheusInstrumentationPort == "" {
+			prometheusInstrumentationPort = "8088"
+		}
+
 		var tpl bytes.Buffer
 		if err = tmpl.Execute(&tpl, struct {
 			Tn   *testnet.TestNet
 			Node db.Node
 			Conf *util.Config
-		}{tn, node, conf}); err != nil {
+			InstrumentationPort string
+		}{tn, node, conf, prometheusInstrumentationPort}); err != nil {
 			log.Error(err)
 		} else {
 			configTxt += tpl.String()
