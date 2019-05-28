@@ -34,8 +34,8 @@ import (
 
 func TestHTTPRequest_Successful(t *testing.T) {
 	var test = []struct {
-		method string
-		url string
+		method   string
+		url      string
 		bodyData string
 	}{
 		{method: "", url: "https://www.wikipedia.org/", bodyData: ""},
@@ -55,8 +55,8 @@ func TestHTTPRequest_Successful(t *testing.T) {
 
 func TestHTTPRequest_Unsuccessful(t *testing.T) {
 	var test = []struct {
-		method string
-		url string
+		method   string
+		url      string
 		bodyData string
 	}{
 		{method: "", url: "https://www.wikipedia./", bodyData: ""},
@@ -77,9 +77,9 @@ func TestHTTPRequest_Unsuccessful(t *testing.T) {
 
 func TestJwtHTTPRequest_Successful(t *testing.T) {
 	var test = []struct {
-		method string
-		url string
-		jwt string
+		method   string
+		url      string
+		jwt      string
 		bodyData string
 	}{
 		{method: "", url: "https://www.wikipedia.org/", jwt: "aaaaaaaaaa.bbbbbbbbbbb.cccccccccccc", bodyData: ""},
@@ -99,9 +99,9 @@ func TestJwtHTTPRequest_Successful(t *testing.T) {
 
 func TestJwtHTTPRequest_Unsuccessful(t *testing.T) {
 	var test = []struct {
-		method string
-		url string
-		jwt string
+		method   string
+		url      string
+		jwt      string
 		bodyData string
 	}{
 		{method: "", url: "https://www.wikipedia/", jwt: "aaaaaaaaaa.bbbbbbbbbbb.cccccccccccc", bodyData: ""},
@@ -124,8 +124,8 @@ func TestJwtHTTPRequest_Unsuccessful(t *testing.T) {
 func TestExtractJwt_Successful(t *testing.T) {
 	var test = []struct {
 		method string
-		url string
-		body io.Reader
+		url    string
+		body   io.Reader
 	}{
 		{method: "", url: "https://www.wikipedia.com/", body: nil},
 		{method: "POST", url: "https://www.wikipedia.com/", body: nil},
@@ -149,8 +149,8 @@ func TestExtractJwt_Successful(t *testing.T) {
 func TestExtractJwt_Unsuccessful(t *testing.T) {
 	var test = []struct {
 		method string
-		url string
-		body io.Reader
+		url    string
+		body   io.Reader
 	}{
 		{method: "", url: "https://www.wikipedia.com/", body: nil},
 		{method: "POST", url: "https://www.wikipedia.com/", body: nil},
@@ -256,10 +256,10 @@ func TestGetPath(t *testing.T) {
 
 func TestGetJSONInt64_Successful(t *testing.T) {
 	var test = []struct {
-		data map[string]interface{}
-		field string
-		out int64
-		expected int64
+		data        map[string]interface{}
+		field       string
+		out         int64
+		expected    int64
 		expectedErr string
 	}{
 		{data: map[string]interface{}{"field": json.Number("450")}, field: "field", out: 50, expected: 450},
@@ -277,12 +277,11 @@ func TestGetJSONInt64_Successful(t *testing.T) {
 	}
 }
 
-// TODO: Finish this one
 func TestGetJSONInt64_Unsuccessful(t *testing.T) {
 	var test = []struct {
-		data map[string]interface{}
-		field string
-		out int64
+		data        map[string]interface{}
+		field       string
+		out         int64
 		expectedErr string
 	}{
 		{data: map[string]interface{}{"field": 450}, field: "field", out: 30, expectedErr: "incorrect type for field"},
@@ -304,9 +303,9 @@ func TestGetJSONInt64_Unsuccessful(t *testing.T) {
 
 func TestGetJSONString_Successful(t *testing.T) {
 	var test = []struct {
-		data map[string]interface{}
-		field string
-		out string
+		data     map[string]interface{}
+		field    string
+		out      string
 		expected string
 	}{
 		{data: map[string]interface{}{"field": "this is a test string"}, field: "field", out: "doesn't matter", expected: "this is a test string"},
@@ -327,9 +326,9 @@ func TestGetJSONString_Successful(t *testing.T) {
 
 func TestGetJSONString_Unsuccessful(t *testing.T) {
 	var test = []struct {
-		data map[string]interface{}
-		field string
-		out string
+		data        map[string]interface{}
+		field       string
+		out         string
 		expectedErr string
 	}{
 		{data: map[string]interface{}{"field": "this is a test string"}, field: "string", out: "doesn't matter", expectedErr: "nil"},
@@ -352,10 +351,10 @@ func TestGetJSONString_Unsuccessful(t *testing.T) {
 }
 
 func TestMergeStringMaps(t *testing.T) {
-	var test = []struct{
-		m1		map[string]interface{}
-		m2		map[string]interface{}
-		out		map[string]interface{}
+	var test = []struct {
+		m1  map[string]interface{}
+		m2  map[string]interface{}
+		out map[string]interface{}
 	}{
 		{
 			m1:  map[string]interface{}{"one": 1, "two": 2, "three": 3},
@@ -368,8 +367,8 @@ func TestMergeStringMaps(t *testing.T) {
 			out: map[string]interface{}{"1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six"},
 		},
 		{
-			m1: map[string]interface{}{"test": 123},
-			m2: map[string]interface{}{"test": 456},
+			m1:  map[string]interface{}{"test": 123},
+			m2:  map[string]interface{}{"test": 456},
 			out: map[string]interface{}{"test": 456},
 		},
 	}
@@ -386,7 +385,7 @@ func TestMergeStringMaps(t *testing.T) {
 func TestConvertToStringMap(t *testing.T) {
 	var test = []struct {
 		data map[string]interface{}
-		out map[string]string
+		out  map[string]string
 	}{
 		{data: map[string]interface{}{"1": 1, "2": 2, "3": 3}, out: map[string]string{"1": "1", "2": "2", "3": "3"}},
 		{data: map[string]interface{}{"bool": false}, out: map[string]string{"bool": "false"}},
@@ -405,8 +404,8 @@ func TestConvertToStringMap(t *testing.T) {
 
 func TestFormatError(t *testing.T) {
 	var test = []struct {
-		res string
-		err error
+		res      string
+		err      error
 		expected string
 	}{
 		{res: "testing", err: errors.New("nil"), expected: "testing\nnil"},
@@ -425,7 +424,7 @@ func TestFormatError(t *testing.T) {
 
 func TestCopyMap(t *testing.T) {
 	var test = []struct {
-		m			map[string]interface{}
+		m map[string]interface{}
 	}{
 		{m: map[string]interface{}{"1": 1.0, "2": 2.0}},
 		{m: map[string]interface{}{"bool": false}},
