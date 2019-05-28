@@ -112,6 +112,7 @@ func setViperDefaults() {
 	viper.SetDefault("serverBits", 8)
 	viper.SetDefault("clusterBits", 12)
 	viper.SetDefault("nodeBits", 4)
+	viper.SetDefault("ipPrefix", 10)
 	viper.SetDefault("dockerOutputFile", "/output.log")
 	viper.SetDefault("serviceNetwork", "172.30.0.1/16")
 	viper.SetDefault("serviceNetworkName", "wb_builtin_services")
