@@ -21,6 +21,7 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+	"go/types"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -282,6 +283,7 @@ func TestGetJSONInt64_Unsuccessful(t *testing.T) {
 		field string
 		out int64
 		expectedErr string
+		expectedNil types.Nil
 	}{
 		{data: map[string]interface{}{"field": 450}, field: "field", out: 30, expectedErr: "incorrect type for field"},
 		{data: map[string]interface{}{}, field: "field", out: 40, expectedErr: "nil"},
@@ -290,15 +292,11 @@ func TestGetJSONInt64_Unsuccessful(t *testing.T) {
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			err := GetJSONInt64(tt.data, tt.field, &tt.out)
-
-			if err != nil {
-				if err.Error() != tt.expectedErr {
-					t.Errorf("GetJSONInt did not return the expected error")
-				}
+			if (err != nil) && (err.Error() != tt.expectedErr) {
+				t.Errorf("GetJSONInt64 did not return expected error")
 			}
-
-			if err == nil {
-
+			if (err != nil) && (tt.expectedErr == "nil") {
+				t.Errorf("GetJSONInt64 did not return expected error")
 			}
 		})
 	}
