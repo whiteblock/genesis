@@ -37,16 +37,16 @@ type Config struct {
 	Listen                  string  `mapstructure:"listen"`
 	Verbosity               string  `mapstructure:"verbosity"`
 	DockerOutputFile        string  `mapstructure:"dockerOutputFile"`
-	Influx                  string  `mapstructure:"influx"`
-	InfluxUser              string  `mapstructure:"influxUser"`
-	InfluxPassword          string  `mapstructure:"influxPassword"`
+	Influx                  string  `mapstructure:"influx"`         //No default
+	InfluxUser              string  `mapstructure:"influxUser"`     //No default
+	InfluxPassword          string  `mapstructure:"influxPassword"` //No default
 	ServiceNetwork          string  `mapstructure:"serviceNetwork"`
 	ServiceNetworkName      string  `mapstructure:"serviceNetworkName"`
 	NodePrefix              string  `mapstructure:"nodePrefix"`
 	NodeNetworkPrefix       string  `mapstructure:"nodeNetworkPrefix"`
 	ServicePrefix           string  `mapstructure:"servicePrefix"`
-	NodesPublicKey          string  `mapstructure:"nodesPublicKey"`
-	NodesPrivateKey         string  `mapstructure:"nodesPrivateKey"`
+	NodesPublicKey          string  `mapstructure:"nodesPublicKey"`  //No default
+	NodesPrivateKey         string  `mapstructure:"nodesPrivateKey"` //No default
 	HandleNodeSSHKeys       bool    `mapstructure:"handleNodeSshKeys"`
 	MaxNodes                int     `mapstructure:"maxNodes"`
 	MaxNodeMemory           string  `mapstructure:"maxNodeMemory"`
@@ -107,24 +107,27 @@ func setViperEnvBindings() {
 }
 func setViperDefaults() {
 	viper.SetDefault("sshUser", os.Getenv("USER"))
-	viper.SetDefault("listen", "127.0.0.1:8000")
 	viper.SetDefault("sshKey", os.Getenv("HOME")+"/.ssh/id_rsa")
+	viper.SetDefault("sshHost", "127.0.0.1")
 	viper.SetDefault("serverBits", 8)
 	viper.SetDefault("clusterBits", 12)
 	viper.SetDefault("nodeBits", 4)
 	viper.SetDefault("ipPrefix", 10)
+	viper.SetDefault("listen", "127.0.0.1:8000")
+	viper.SetDefault("verbosity", "INFO")
 	viper.SetDefault("dockerOutputFile", "/output.log")
 	viper.SetDefault("serviceNetwork", "172.30.0.1/16")
 	viper.SetDefault("serviceNetworkName", "wb_builtin_services")
 	viper.SetDefault("nodePrefix", "whiteblock-node")
 	viper.SetDefault("nodeNetworkPrefix", "wb_vlan")
 	viper.SetDefault("servicePrefix", "wb_service")
-	viper.SetDefault("sshHost", "127.0.0.1")
-	viper.SetDefault("verbosity", "INFO")
 	viper.SetDefault("maxNodes", 200)
+	viper.SetDefault("maxNodeMemory", "")
+	viper.SetDefault("maxNodeCpu", -1)
 	viper.SetDefault("bridgePrefix", "wb_bridge")
 	viper.SetDefault("apiEndpoint", "https://api.whiteblock.io")
 	viper.SetDefault("nibblerEndPoint", "https://storage.googleapis.com/genesis-public/nibbler/master/bin/linux/amd64/nibbler")
+	viper.SetDefault("logJson", false)
 	viper.SetDefault("prometheusConfig", "/tmp/prometheus.yml")
 	viper.SetDefault("prometheusPort", 8088)
 	viper.SetDefault("prometheusInstrumentationPort", 8008)

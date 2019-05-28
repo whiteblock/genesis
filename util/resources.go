@@ -89,18 +89,24 @@ func (res Resources) Validate() error {
 	}
 
 	if !res.NoMemoryLimits() {
-		m1, err := memconv(conf.MaxNodeMemory)
-		if err != nil {
-			panic(err)
-		}
+
 		m2, err := res.GetMemory()
-		log.WithFields(log.Fields{"maxMemory": m1, "givenMemory": m2}).Trace("checking memory")
+
 		if err != nil {
 			return err
 		}
-		if m2 > m1 {
-			return fmt.Errorf("assigning too much RAM: max is %s", conf.MaxNodeMemory)
+		if len(conf.MaxNodeMemory) != 0 {
+			m1, err := memconv(conf.MaxNodeMemory)
+			if err != nil {
+				log.WithFields(log.Fields{"error": err,
+					"memLimit": conf.MaxNodeMemory}).Panic("error parsing memory limit. check config file.")
+			}
+			log.WithFields(log.Fields{"maxMemory": m1, "givenMemory": m2}).Trace("checking memory")
+			if m2 > m1 {
+				return fmt.Errorf("assigning too much RAM: max is %s", conf.MaxNodeMemory)
+			}
 		}
+
 	}
 
 	if !res.NoCPULimits() {
@@ -110,7 +116,7 @@ func (res Resources) Validate() error {
 			return err
 		}
 
-		if c1 <= 0 && c2 > c1 {
+		if c1 > 0 && c2 > c1 {
 			return fmt.Errorf("assigning too much CPU: max is %f", conf.MaxNodeCPU)
 		}
 	}
