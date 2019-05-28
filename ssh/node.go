@@ -20,6 +20,7 @@ package ssh
 
 // Node represents the interface which all nodes must follow.
 type Node interface {
+	GetID() string
 	GetAbsoluteNumber() int
 	GetIP() string
 	GetRelativeNumber() int
