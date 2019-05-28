@@ -96,7 +96,17 @@ func makeNodeConfig(aconf artemisConf, identity string, peers string, node int, 
 	if providerType == "" {
 		providerType = "JSON"
 	}
+	var prometheusInstrumentationPort string
+	obj = details.Params["prometheusInstrumentationPort"]
+	if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
+		prometheusInstrumentationPort = obj.(string)
+	}
+	if prometheusInstrumentationPort == "" {
+		prometheusInstrumentationPort = "8088"
+	}
+
 	filler["providerType"] = providerType
+	filler["metricsPort"] = prometheusInstrumentationPort
 	filler["constants"] = constantsRaw
 
 	filler["validators"] = fmt.Sprintf("%.0f", aconf["validators"])
