@@ -19,6 +19,8 @@
 package util
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -231,3 +233,75 @@ func TestLsr(t *testing.T) {
 		}
 	}
 }
+
+// TODO: I don't think this function does what it purports to.. is it deprecated?
+//  There is only one usage in the code base
+func TestGetPath(t *testing.T) {
+	var test = []struct {
+		path string
+	}{
+		{path: "var/test/testing/123"},
+		{path: "var/test"},
+		{path: "var/"},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			fmt.Println(GetPath(tt.path))
+		})
+	}
+}
+
+func TestGetJSONInt64_Successful(t *testing.T) {
+	var test = []struct {
+		data map[string]interface{}
+		field string
+		out int64
+		expected int64
+		expectedErr string
+	}{
+		{data: map[string]interface{}{"field": json.Number("450")}, field: "field", out: 50, expected: 450},
+		{data: map[string]interface{}{"int64": json.Number("670")}, field: "int64", out: 40, expected: 670},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			GetJSONInt64(tt.data, tt.field, &tt.out)
+
+			if tt.out != tt.expected {
+				t.Errorf("GetJSONInt64 did not extract an int64 from data[field]")
+			}
+		})
+	}
+}
+
+// TODO: Finish this one
+func TestGetJSONInt64_Unsuccessful(t *testing.T) {
+	var test = []struct {
+		data map[string]interface{}
+		field string
+		out int64
+		expectedErr string
+	}{
+		{data: map[string]interface{}{"field": 450}, field: "field", out: 30, expectedErr: "incorrect type for field"},
+		{data: map[string]interface{}{}, field: "field", out: 40, expectedErr: "nil"},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			err := GetJSONInt64(tt.data, tt.field, &tt.out)
+
+			if err != nil {
+				if err.Error() != tt.expectedErr {
+					t.Errorf("GetJSONInt did not return the expected error")
+				}
+			}
+
+			if err == nil {
+
+			}
+		})
+	}
+
+}
+
