@@ -156,7 +156,6 @@ func init() {
 	setViperEnvBindings()
 	viper.AddConfigPath("/etc/whiteblock/")          // path to look for the config file in
 	viper.AddConfigPath("$HOME/.config/whiteblock/") // call multiple times to add many search paths
-	viper.AddConfigPath("./config/")
 	viper.SetConfigName("genesis")
 	viper.SetConfigType("yaml")
 	err := viper.ReadInConfig()
