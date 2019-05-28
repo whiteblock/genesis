@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"testing"
 )
@@ -344,6 +345,38 @@ func TestGetJSONString_Unsuccessful(t *testing.T) {
 
 			if err != nil && tt.expectedErr == "nil" {
 				t.Errorf("GETJSONString did not return the correct error")
+			}
+		})
+	}
+}
+
+func TestMergeStringMaps(t *testing.T) {
+	var test = []struct{
+		m1		map[string]interface{}
+		m2		map[string]interface{}
+		out		map[string]interface{}
+	}{
+		{
+			m1:  map[string]interface{}{"one": 1, "two": 2, "three": 3},
+			m2:  map[string]interface{}{"four": 4, "five": 5, "six": 6},
+			out: map[string]interface{}{"five": 5, "four": 4, "one": 1, "six": 6, "three": 3, "two": 2},
+		},
+		{
+			m1:  map[string]interface{}{"1": "one", "2": "two", "3": "three"},
+			m2:  map[string]interface{}{"4": "four", "5": "five", "6": "six"},
+			out: map[string]interface{}{"1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six"},
+		},
+		{
+			m1: map[string]interface{}{"test": 123},
+			m2: map[string]interface{}{"test": 456},
+			out: map[string]interface{}{"test": 456},
+		},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(MergeStringMaps(tt.m1, tt.m2), tt.out) {
+				t.Errorf("return value of MergeStringMaps does not match expected value")
 			}
 		})
 	}
