@@ -21,14 +21,12 @@ package docker
 
 import (
 	"fmt"
-	"log"
-	"strings"
-
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
+	"strings"
 )
 
 var conf *util.Config
@@ -106,8 +104,7 @@ func Pull(clients []ssh.Client, image string) error {
 	for _, client := range clients {
 		_, err := client.Run("docker pull " + image)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 	}
 	return nil
@@ -145,8 +142,7 @@ func dockerRunCmd(c Container) (string, error) {
 	}
 	ip, err := c.GetIP()
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", util.LogError(err)
 	}
 	command += fmt.Sprintf(" --ip %s", ip)
 	command += fmt.Sprintf(" --hostname %s", c.GetName())
@@ -159,13 +155,11 @@ func dockerRunCmd(c Container) (string, error) {
 func Run(tn *testnet.TestNet, serverID int, container Container) error {
 	command, err := dockerRunCmd(container)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	_, err = tn.Clients[serverID].Run(command)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	return nil
 }
@@ -204,10 +198,7 @@ func StopServices(tn *testnet.TestNet) error {
 	return helpers.AllServerExecCon(tn, func(client ssh.Client, _ *db.Server) error {
 		_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)", conf.ServicePrefix))
 		client.Run("docker network rm " + conf.ServiceNetworkName)
-		if err != nil {
-			log.Println(err)
-		}
-		return nil
+		return util.LogError(err)
 	})
 }
 
@@ -215,19 +206,16 @@ func StopServices(tn *testnet.TestNet) error {
 func StartServices(tn *testnet.TestNet, services []helpers.Service) error {
 	gateway, subnet, err := util.GetServiceNetwork()
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	client := tn.GetFlatClients()[0] //TODO make this nice
 	_, err = client.KeepTryRun(dockerNetworkCreateCmd(subnet, gateway, -1, conf.ServiceNetworkName))
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	ips, err := helpers.GetServiceIps(services)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	for i, service := range services {
@@ -245,8 +233,7 @@ func StartServices(tn *testnet.TestNet, services []helpers.Service) error {
 			service.GetPorts(),
 			service.GetImage()))
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		tn.BuildState.IncrementDeployProgress()
 	}

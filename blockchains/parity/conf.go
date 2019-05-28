@@ -25,7 +25,6 @@ import (
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
-	"log"
 )
 
 type parityConf struct {
@@ -102,28 +101,24 @@ func buildConfig(pconf *parityConf, details *db.DeploymentDetails, wallets []str
 
 	dat, err := helpers.GetBlockchainConfig("parity", node, "config.toml.template", details)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", util.LogError(err)
 	}
 	var tmp map[string]interface{}
 
 	raw, err := json.Marshal(*pconf)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", util.LogError(err)
 	}
 
 	err = json.Unmarshal(raw, &tmp)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", util.LogError(err)
 	}
 
 	mp := util.ConvertToStringMap(tmp)
 	raw, err = json.Marshal(wallets)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", util.LogError(err)
 	}
 	mp["unlock"] = string(raw)
 	mp["passwordFile"] = fmt.Sprintf("[\"%s\"]", passwordFile)
@@ -195,7 +190,7 @@ func buildSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []strin
 	filler := util.ConvertToStringMap(tmp)
 	dat, err := helpers.GetBlockchainConfig("parity", 0, "spec.json.mustache", details)
 	if err != nil {
-		return "", err
+		return "", util.LogError(err)
 	}
 	return mustache.Render(string(dat), filler)
 }
@@ -220,10 +215,10 @@ func gethSpec(pconf *parityConf, wallets []string) (string, error) {
 	filler := util.ConvertToStringMap(tmp)
 	dat, err := helpers.GetStaticBlockchainConfig("geth", "genesis.json")
 	if err != nil {
-		return "", err
+		return "", util.LogError(err)
 	}
 	data, err := mustache.Render(string(dat), filler)
-	return data, err
+	return data, util.LogError(err)
 }
 
 /*
@@ -234,28 +229,24 @@ func buildPoaConfig(pconf *parityConf, details *db.DeploymentDetails, wallets []
 
 	dat, err := helpers.GetBlockchainConfig("parity", i, "config.toml.poa.mustache", details)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", util.LogError(err)
 	}
 	var tmp map[string]interface{}
 
 	raw, err := json.Marshal(*pconf)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", util.LogError(err)
 	}
 
 	err = json.Unmarshal(raw, &tmp)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", util.LogError(err)
 	}
 
 	mp := util.ConvertToStringMap(tmp)
 	raw, err = json.Marshal(wallets)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", util.LogError(err)
 	}
 	mp["unlock"] = string(raw)
 	mp["passwordFile"] = fmt.Sprintf("[\"%s\"]", passwordFile)

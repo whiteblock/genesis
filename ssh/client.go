@@ -379,20 +379,17 @@ func (sshClient Client) Scpr(dir string) error {
 	path := GetPath(dir)
 	_, err := sshClient.Run("mkdir -p " + path)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	file := fmt.Sprintf("%s.tar.gz", dir)
 	_, err = BashExec(fmt.Sprintf("tar cfz %s %s", file, dir))
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	err = sshClient.Scp(file, file)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	_, err = sshClient.Run(fmt.Sprintf("tar xfz %s && rm %s", file, file))
 	return err

@@ -23,7 +23,6 @@ import (
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //Bring db in
 	"github.com/whiteblock/genesis/util"
-	"log"
 )
 
 /*
@@ -99,8 +98,7 @@ func (dd DeploymentDetails) GetKid() string {
 func QueryBuilds(query string) ([]DeploymentDetails, error) {
 	rows, err := db.Query(query)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	defer rows.Close()
 	builds := []DeploymentDetails{}
@@ -118,56 +116,47 @@ func QueryBuilds(query string) ([]DeploymentDetails, error) {
 
 		err = rows.Scan(&servers, &build.Blockchain, &build.Nodes, &images, &params, &resources, &files, &environment, &logs, &extras, &build.kid)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 
 		err = json.Unmarshal(servers, &build.Servers)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 
 		err = json.Unmarshal(params, &build.Params)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 
 		err = json.Unmarshal(resources, &build.Resources)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 
 		err = json.Unmarshal(files, &build.Files)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 
 		err = json.Unmarshal(environment, &build.Environments)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 
 		err = json.Unmarshal(logs, &build.Logs)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 
 		err = json.Unmarshal(extras, &build.Extras)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 
 		err = json.Unmarshal(images, &build.Images)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		builds = append(builds, build)
 	}
@@ -188,8 +177,7 @@ func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 
 	details, err := QueryBuilds(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid FROM %s WHERE testnet = \"%s\"", BuildsTable, id))
 	if err != nil {
-		log.Println(err)
-		return DeploymentDetails{}, err
+		return DeploymentDetails{}, util.LogError(err)
 	}
 	if len(details) == 0 {
 		return DeploymentDetails{}, fmt.Errorf("no results found")
@@ -204,8 +192,7 @@ func GetLastBuildByKid(kid string) (DeploymentDetails, error) {
 		"SELECT servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid FROM %s"+
 			" WHERE kid = \"%s\" ORDER BY id DESC LIMIT 1", BuildsTable, kid))
 	if err != nil {
-		log.Println(err)
-		return DeploymentDetails{}, err
+		return DeploymentDetails{}, util.LogError(err)
 	}
 	if len(details) == 0 {
 		return DeploymentDetails{}, fmt.Errorf("no results found")
@@ -219,16 +206,14 @@ func InsertBuild(dd DeploymentDetails, testnetID string) error {
 	tx, err := db.Begin()
 
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	stmt, err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (testnet,servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid)"+
 		" VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", BuildsTable))
 
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	defer stmt.Close()
@@ -242,23 +227,14 @@ func InsertBuild(dd DeploymentDetails, testnetID string) error {
 	files, _ := json.Marshal(dd.Files)
 	environment, err := json.Marshal(dd.Environments)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	_, err = stmt.Exec(testnetID, string(servers), dd.Blockchain, dd.Nodes, string(images),
 		string(params), string(resources), string(files), string(environment), string(logs), string(extras), dd.kid)
 
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
-
-	err = tx.Commit()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	return nil
+	return util.LogError(tx.Commit())
 }
