@@ -251,7 +251,7 @@ func parseItems(items []string, nconf *Netconf) error {
 
 //GetConfigOnServer gets the network impairments present on a server
 func GetConfigOnServer(client ssh.Client) ([]Netconf, error) {
-	res, err := client.Run("sudo -n tc qdisc show | grep wb_bridge | grep netem || true")
+	res, err := client.Run(fmt.Sprintf("sudo -n tc qdisc show | grep %s | grep netem || true", conf.BridgePrefix))
 	if err != nil {
 		return nil, util.LogError(err)
 	}
