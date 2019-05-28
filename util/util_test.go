@@ -430,6 +430,7 @@ func TestCopyMap(t *testing.T) {
 		{m: map[string]interface{}{"1": 1.0, "2": 2.0}},
 		{m: map[string]interface{}{"bool": false}},
 		{m: map[string]interface{}{"field": "this is a test string"}},
+		{m: map[string]interface{}{}},
 	}
 
 	for i, tt := range test {
