@@ -198,9 +198,15 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 func StopServices(tn *testnet.TestNet) error {
 	return helpers.AllServerExecCon(tn, func(client ssh.Client, _ *db.Server) error {
 		_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)", conf.ServicePrefix))
-		log.WithFields(log.Fields{"error": err}).Info("no service containers to remove")
+		if err != nil {
+			log.WithFields(log.Fields{"error": err}).Info("no service containers to remove")
+		}
+
 		_, err = client.Run("docker network rm " + conf.ServiceNetworkName)
-		log.WithFields(log.Fields{"error": err}).Info("no service network to remove")
+		if err != nil {
+			log.WithFields(log.Fields{"error": err}).Info("no service network to remove")
+		}
+
 		return nil
 	})
 }

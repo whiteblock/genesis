@@ -252,7 +252,7 @@ func (sshClient *client) DockerExec(node Node, command string) (string, error) {
 // DockerCp copies a file on a remote machine from source to the dest in the node
 func (sshClient *client) DockerCp(node Node, source string, dest string) error {
 	_, err := sshClient.Run(fmt.Sprintf("docker cp %s %s:%s", source, node.GetNodeName(), dest))
-	return err
+	return util.LogError(err)
 }
 
 // KeepTryDockerExec is like KeepTryRun for nodes
@@ -267,7 +267,7 @@ func (sshClient *client) KeepTryDockerExecAll(node Node, commands ...string) ([]
 	for _, command := range commands {
 		res, err := sshClient.KeepTryRun(fmt.Sprintf("docker exec %s %s", node.GetNodeName(), command))
 		if err != nil {
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		out = append(out, res)
 	}
@@ -304,7 +304,7 @@ func (sshClient *client) DockerExecdLog(node Node, command string) error {
 
 	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s bash -c '%s 2>&1 > %s'", node.GetNodeName(),
 		command, conf.DockerOutputFile))
-	return err
+	return util.LogError(err)
 }
 
 // DockerExecdLogAppend will cause the stdout and stderr of the command to be stored in the logs.
@@ -313,7 +313,7 @@ func (sshClient *client) DockerExecdLogAppend(node Node, command string) error {
 	sshClient.logSanitizeAndStore(node, command)
 	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s bash -c '%s 2>&1 >> %s'", node.GetNodeName(),
 		command, conf.DockerOutputFile))
-	return err
+	return util.LogError(err)
 }
 
 // DockerRead will read a file on a node, if lines > -1 then
