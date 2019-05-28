@@ -3,7 +3,8 @@
 substitutions:
   _BINARY: genesis
   _PROJECT: genesis
-  _IMAGE: 'gcr.io/wb-genesis/bitbucket.org/whiteblockio/genesis'
+  _LEGACY_IMAGE: 'gcr.io/wb-genesis/bitbucket.org/whiteblockio/genesis'
+  _IMAGE: 'gcr.io/wb-genesis/genesis'
 timeout: '300s'
 steps:
   # allow these steps to fail, they try to pull cache first
@@ -16,6 +17,8 @@ steps:
       'build',
       '-t', '$_IMAGE:$BRANCH_NAME',
       '-t', '$_IMAGE:$COMMIT_SHA',
+      '-t', '$_LEGACY_IMAGE:$BRANCH_NAME',
+      '-t', '$_LEGACY_IMAGE:$COMMIT_SHA',
       '--cache-from', '$_IMAGE:$BRANCH_NAME',
       '.'
     ]
@@ -24,6 +27,10 @@ steps:
     args: [ 'push', '$_IMAGE:$COMMIT_SHA' ]
   - name: 'gcr.io/cloud-builders/docker'
     args: [ 'push', '$_IMAGE:$BRANCH_NAME' ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', '$_LEGACY_IMAGE:$COMMIT_SHA' ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', '$_LEGACY_IMAGE:$BRANCH_NAME' ]
   # create container based off image (but don't run)
   - name: 'gcr.io/cloud-builders/docker'
     args: [ 'create', '--name', 'output', '$_IMAGE:$COMMIT_SHA' ]
@@ -35,4 +42,4 @@ steps:
   - name: 'gcr.io/cloud-builders/gsutil'
     args: [ 'cp', '$_BINARY', 'gs://genesis-public/$_PROJECT/$BRANCH_NAME/bin/linux/amd64/$_BINARY' ]
 
-images: [ '$_IMAGE:$COMMIT_SHA', '$_IMAGE:$BRANCH_NAME' ]
+images: [ '$_IMAGE:$COMMIT_SHA', '$_IMAGE:$BRANCH_NAME','$_LEGACY_IMAGE:$BRANCH_NAME','$_LEGACY_IMAGE:$COMMIT_SHA' ]
