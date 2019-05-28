@@ -20,10 +20,10 @@ package deploy
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"log"
 	"sync"
 )
 
@@ -101,6 +101,6 @@ func AddNodes(tn *testnet.TestNet) error {
 	}
 	wg.Wait()
 
-	log.Println("Finished adding nodes into the network")
+	log.Info("finished adding nodes into the network")
 	return tn.BuildState.GetError()
 }

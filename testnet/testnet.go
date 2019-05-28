@@ -46,15 +46,15 @@ type TestNet struct {
 	NewlyBuiltSideCars [][]db.SideCar
 
 	// Clients is a map of server ids to ssh clients
-	Clients map[int]ssh.Client
+	Clients map[int]ssh.Client `json:"-"`
 	// BuildState is the build state for the test net
-	BuildState *state.BuildState
+	BuildState *state.BuildState `json:"-"`
 	// Details contains all of the past deployments to tn test net
 	Details []db.DeploymentDetails
 	// CombinedDetails contains all of the deployments merged into one
 	CombinedDetails db.DeploymentDetails
 	// LDD is a pointer to latest deployment details
-	LDD *db.DeploymentDetails
+	LDD *db.DeploymentDetails `json:"-"`
 	mux *sync.RWMutex
 }
 
