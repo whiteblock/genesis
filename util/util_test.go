@@ -292,14 +292,36 @@ func TestGetJSONInt64_Unsuccessful(t *testing.T) {
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			err := GetJSONInt64(tt.data, tt.field, &tt.out)
-			if (err != nil) && (err.Error() != tt.expectedErr) {
+			if err != nil && err.Error() != tt.expectedErr {
 				t.Errorf("GetJSONInt64 did not return expected error")
 			}
-			if (err != nil) && (tt.expectedErr == "nil") {
+			if err != nil && tt.expectedErr == "nil" {
 				t.Errorf("GetJSONInt64 did not return expected error")
 			}
 		})
 	}
+}
 
+func TestGetJSONString_Successful(t *testing.T) {
+	var test = []struct {
+		data map[string]interface{}
+		field string
+		out string
+		expected string
+	}{
+		{data: map[string]interface{}{"field": "this is a test string"}, field: "field", out: "doesn't matter", expected: "this is a test string"},
+		{data: map[string]interface{}{"string": "this is another test"}, field: "string", out: "doesn't matter", expected: "this is another test"},
+		{data: map[string]interface{}{"test": "to be extracted"}, field: "test", out: "doesn't matter", expected: "to be extracted"},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			GetJSONString(tt.data, tt.field, &tt.out)
+
+			if tt.out != tt.expected {
+				t.Errorf("GetJSONString did not extract a string from data[field]")
+			}
+		})
+	}
 }
 
