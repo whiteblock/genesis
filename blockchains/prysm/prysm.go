@@ -27,6 +27,7 @@ import (
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
+	"reflect"
 )
 
 var conf *util.Config
@@ -63,7 +64,15 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Starting prysm")
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		return client.DockerExecdLog(node, "/beacon-chain --no-discovery "+peers)
+		var prometheusInstrumentationPort string
+		obj := tn.CombinedDetails.Params["prometheusInstrumentationPort"]
+		if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
+			prometheusInstrumentationPort = obj.(string)
+		}
+		if prometheusInstrumentationPort == "" {
+			prometheusInstrumentationPort = "8088"
+		}
+		return client.DockerExecdLog(node, fmt.Sprintf("/beacon-chain --monitoring-port=%s --no-discovery %s", prometheusInstrumentationPort, peers))
 	})
 	return util.LogError(err)
 }

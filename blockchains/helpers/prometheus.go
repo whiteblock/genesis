@@ -18,6 +18,7 @@ type PrometheusService struct {
 
 // Prepare prepares the prometheus service
 func (p PrometheusService) Prepare(client ssh.Client, tn *testnet.TestNet) error {
+
 	configTxt := "scrape_configs:\n"
 	for _, node := range tn.Nodes {
 		tmpl, err := template.New("prometheus-source").Parse(`
@@ -25,7 +26,7 @@ func (p PrometheusService) Prepare(client ssh.Client, tn *testnet.TestNet) error
   scrape_interval: 5s
   metrics_path: /metrics
   static_configs:
-    - targets: ['{{.Node.IP}}:{{.Conf.PrometheusInstrumentationPort}}']
+    - targets: ['{{.Node.IP}}:{{.Tn.CombinedDetails.Params["PrometheusInstrumentationPort"]}}']
       labels:
         group: '{{.Tn.LDD.Blockchain}}'
 

@@ -57,7 +57,6 @@ type Config struct {
 	LogJSON                       bool    `mapstructure:"logJson"`
 	PrometheusConfig              string  `mapstructure:"prometheusConfig"`
 	PrometheusPort                int     `mapstructure:"prometheusPort"`
-	PrometheusInstrumentationPort int     `mapstructure:"prometheusInstrumentationPort"`
 	MaxRunAttempts                int     `mapstructure:"maxRunAttempts"`
 	MaxConnections                int     `mapstructure:"maxConnections"`
 	DataDirectory                 string  `mapstructure:"datadir"`
