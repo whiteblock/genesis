@@ -70,6 +70,10 @@ type BuildState struct {
 
 	BuildProgress uint64
 	BuildTotal    uint64
+
+	SideCars        uint64 //The number of side cars
+	SideCarProgress uint64
+	SideCarTotal    uint64
 }
 
 //NewBuildState creates a new build state for the given servers with the given buildID
@@ -102,6 +106,8 @@ func NewBuildState(servers []int, buildID string) *BuildState {
 	out.DeployTotal = 0
 	out.BuildProgress = 0
 	out.BuildTotal = 1
+	out.SideCarProgress = 0
+	out.SideCarTotal = 1
 
 	err := os.MkdirAll("/tmp/"+buildID, 0755)
 	if err != nil {
@@ -215,10 +221,13 @@ func (bs *BuildState) DoneBuilding() {
 		bs.extraMux.RUnlock()
 		wg.Wait()
 	}
-	bs.asyncWaiter.Wait() //Wait for the async calls to complete
+	atomic.StoreUint64(&bs.DeployProgress, atomic.LoadUint64(&bs.DeployTotal))
+	atomic.StoreUint64(&bs.BuildProgress, atomic.LoadUint64(&bs.BuildTotal))
+	atomic.StoreUint64(&bs.SideCarProgress, atomic.LoadUint64(&bs.SideCarTotal))
 
+	bs.asyncWaiter.Wait() //Wait for the async calls to complete
 	bs.mutex.Lock()
-	atomic.StoreUint64(&bs.BuildProgress, bs.BuildTotal)
+
 	bs.BuildStage = "Finished"
 	bs.mutex.Unlock()
 
@@ -427,6 +436,29 @@ func (bs *BuildState) IncrementBuildProgress() {
 	atomic.AddUint64(&bs.BuildProgress, 1)
 }
 
+// FinishMainBuild sets the main build as finished, and signals the start of the
+// side car build
+func (bs *BuildState) FinishMainBuild() {
+	atomic.StoreUint64(&bs.BuildProgress, atomic.LoadUint64(&bs.BuildTotal)-1)
+}
+
+// SetSidecarSteps sets the number of steps in the sidecar specific
+// build process. Must be equivalent to the number of times IncrementBuildProgress()
+// will be called.
+func (bs *BuildState) SetSidecarSteps(steps int) {
+	atomic.StoreUint64(&bs.SideCarTotal, uint64(steps))
+}
+
+// SetSidecars sets the number of sidecars
+func (bs *BuildState) SetSidecars(sidecars int) {
+	atomic.StoreUint64(&bs.SideCars, uint64(sidecars))
+}
+
+// IncrementSideCarProgress increments the sidecar build progress by one step.
+func (bs *BuildState) IncrementSideCarProgress() {
+	atomic.AddUint64(&bs.SideCarProgress, 1)
+}
+
 // GetProgress gets the progress as a percentage, within the range
 // 0.0% - 100.0%
 func (bs *BuildState) GetProgress() float64 {
@@ -434,6 +466,8 @@ func (bs *BuildState) GetProgress() float64 {
 	dt := atomic.LoadUint64(&bs.DeployTotal)
 	bp := atomic.LoadUint64(&bs.BuildProgress)
 	bt := atomic.LoadUint64(&bs.BuildTotal)
+	sp := atomic.LoadUint64(&bs.SideCarProgress)
+	st := atomic.LoadUint64(&bs.SideCarTotal)
 
 	var out float64
 	if dp == 0 || dt == 0 {
@@ -447,10 +481,28 @@ func (bs *BuildState) GetProgress() float64 {
 	if bt == 0 {
 		return out
 	}
-	out += (float64(bp) / float64(bt)) * 75.0
+	buildTotalPercentage := 75.0
+	if bs.SideCars > 5 {
+		buildTotalPercentage -= 25.0
+	} else {
+		buildTotalPercentage -= float64(bs.SideCars) * 5.0
+	}
+
+	out += (float64(bp) / float64(bt)) * buildTotalPercentage
+
+	if st == 0 || bs.SideCars == 0 {
+		if !bs.Done() && out >= 100.0 {
+			out = 99.99 //Out cannot be 100% unless the build is completed
+		}
+		return out
+	}
+
+	out += (float64(sp) / float64(st)) * (75.0 - buildTotalPercentage)
+
 	if !bs.Done() && out >= 100.0 {
 		out = 99.99 //Out cannot be 100% unless the build is completed
 	}
+
 	return out
 }
 
