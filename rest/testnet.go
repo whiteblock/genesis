@@ -165,7 +165,7 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 	cmdRaw, ok := tn.BuildState.Get(nodeNum)
 	log.WithFields(log.Fields{"extras": tn.BuildState.GetExtras()}).Debug("fetched the previous build state")
 	if !ok {
-		log.Printf("Node %s not found", nodeNum)
+		log.WithFields(log.Fields{"node": nodeNum}).Error("node not found")
 		http.Error(w, fmt.Sprintf("Node %s not found", nodeNum), 404)
 		return
 	}
