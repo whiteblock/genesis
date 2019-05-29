@@ -232,7 +232,7 @@ func build(tn *testnet.TestNet) error {
 					return
 				}
 
-				//log.Println("Finished creating account for "+account)
+				log.WithFields(log.Fields{"account": account}).Trace("finished creating account")
 			}(masterIP, account, masterKeyPair, contractKeyPairs[account])
 
 		}

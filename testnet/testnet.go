@@ -308,9 +308,8 @@ func (tn *TestNet) StoreNodes() error {
 	for _, node := range tn.NewlyBuiltNodes {
 		_, er := db.InsertNode(node)
 		if er != nil {
-			log.WithFields(log.Fields{"build": tn.TestNetID,
+			log.WithFields(log.Fields{"build": tn.TestNetID, "error": er,
 				"node": node.ID}).Error("failed to store a node into db")
-			log.Println(er)
 			err = er
 		}
 	}

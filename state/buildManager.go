@@ -20,7 +20,7 @@ package state
 
 import (
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"sync"
 )
 
@@ -107,7 +107,7 @@ func GetBuildStateByID(buildID string) (*BuildState, error) {
 	defer mux.Unlock()
 	bs, err := RestoreBuildState(buildID)
 	if err != nil || bs == nil {
-		log.Println(err)
+		log.Error(err)
 		return nil, fmt.Errorf("couldn't find the request build")
 	}
 	buildStates = append(buildStates, bs)
@@ -142,7 +142,7 @@ func Stop(serverID int) bool {
 
 	bs := GetBuildStateByServerID(serverID)
 	if bs == nil {
-		log.Println("No build found for check")
+		log.WithFields(log.Fields{"server": serverID}).Error("no build found for check if stopped")
 		return false
 	}
 	return bs.Stop()
@@ -154,12 +154,12 @@ func Stop(serverID int) bool {
 func SignalStop(buildID string) error {
 	bs, err := GetBuildStateByID(buildID)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return err
 	}
 	if bs == nil {
 		return fmt.Errorf("build \"%s\" does not exist", buildID)
 	}
-	log.Printf("Sending stop signal to build:%s\n", buildID)
+	log.WithFields(log.Fields{"build": buildID}).Debug("sending stop signal to build")
 	return bs.SignalStop()
 }

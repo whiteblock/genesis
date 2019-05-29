@@ -78,7 +78,6 @@ func build(tn *testnet.TestNet) error {
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		_, err := client.DockerExec(node, fmt.Sprintf("bash -c '%s --help'", rConf.Command))
 		if err != nil {
-			//log.Println(err)
 			return fmt.Errorf("could not find command \"%s\"", rConf.Command)
 		}
 		return nil

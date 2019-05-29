@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"log"
+	"github.com/whiteblock/genesis/util"
 	"strings"
 )
 
@@ -71,8 +71,7 @@ func (acc *Account) UnmarshalJSON(data []byte) error {
 	var tmp map[string]string
 	err := json.Unmarshal(data, &tmp)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	pk, ok := tmp["privateKey"]
 	if !ok {
@@ -80,8 +79,7 @@ func (acc *Account) UnmarshalJSON(data []byte) error {
 	}
 	newAcc, err := CreateAccountFromHex(pk)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	acc.PrivateKey = newAcc.PrivateKey
 	acc.PublicKey = newAcc.PublicKey
@@ -100,8 +98,7 @@ func NewAccount(privKey *ecdsa.PrivateKey) *Account {
 func GenerateEthereumAddress() (*Account, error) {
 	privKey, err := crypto.GenerateKey()
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	return NewAccount(privKey), nil
 }
@@ -110,8 +107,7 @@ func GenerateEthereumAddress() (*Account, error) {
 func CreateAccountFromHex(hexPK string) (*Account, error) {
 	privKey, err := crypto.HexToECDSA(hexPK)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	return NewAccount(privKey), nil
 }
@@ -123,8 +119,7 @@ func GenerateAccounts(accounts int) ([]*Account, error) {
 	for i := 0; i < accounts; i++ {
 		acc, err := GenerateEthereumAddress()
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		out = append(out, acc)
 	}
