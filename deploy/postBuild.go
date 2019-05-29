@@ -20,12 +20,12 @@ package deploy
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"log"
 )
 
 func handleExtraPublicKeys(tn *testnet.TestNet) error {
@@ -33,7 +33,7 @@ func handleExtraPublicKeys(tn *testnet.TestNet) error {
 	if !ok {
 		return nil
 	}
-	fmt.Printf("%#v\n", tn.LDD.Extras["postbuild"])
+	log.WithFields(log.Fields{"postBuild": tn.LDD.Extras["postbuild"]}).Trace("extracted post build details")
 	SSHDetails, ok := util.ExtractStringMap(postBuild, "ssh")
 	if !ok || SSHDetails == nil {
 		return nil
@@ -49,8 +49,7 @@ func handleExtraPublicKeys(tn *testnet.TestNet) error {
 			for i := range pubKeys {
 				_, err := client.DockerExec(node, fmt.Sprintf(`bash -c 'echo "%v" >> /root/.ssh/authorized_keys'`, pubKeys[i]))
 				if err != nil {
-					log.Println(err)
-					return err
+					return util.LogError(err)
 				}
 			}
 			return nil

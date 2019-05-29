@@ -148,7 +148,7 @@ func (sshClient *client) getSession() (*Session, error) {
 
 	client, err := sshConnect(sshClient.host)
 	for err != nil && (strings.Contains(err.Error(), "connection reset by peer") || strings.Contains(err.Error(), "EOF")) {
-		log.Println(err)
+		log.WithFields(log.Fields{"error": err}).Error("error connecting to remote host,retrying once")
 		time.Sleep(50 * time.Millisecond)
 		client, err = sshConnect(sshClient.host)
 	}

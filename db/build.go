@@ -29,6 +29,9 @@ import (
 DeploymentDetails represents the data for the construction of a testnet.
 */
 type DeploymentDetails struct {
+	// ID will be included when it is queried from the database.
+	ID string `json:"id,omitempty"`
+
 	/*
 	   Servers: The ids of the servers to build on
 	*/
@@ -114,7 +117,7 @@ func QueryBuilds(query string) ([]DeploymentDetails, error) {
 		var images []byte
 		var files []byte
 
-		err = rows.Scan(&servers, &build.Blockchain, &build.Nodes, &images, &params, &resources, &files, &environment, &logs, &extras, &build.kid)
+		err = rows.Scan(&build.ID, &servers, &build.Blockchain, &build.Nodes, &images, &params, &resources, &files, &environment, &logs, &extras, &build.kid)
 		if err != nil {
 			return nil, util.LogError(err)
 		}
@@ -167,7 +170,7 @@ func QueryBuilds(query string) ([]DeploymentDetails, error) {
 GetAllBuilds gets all of the builds done by a user
 */
 func GetAllBuilds() ([]DeploymentDetails, error) {
-	return QueryBuilds(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid FROM %s", BuildsTable))
+	return QueryBuilds(fmt.Sprintf("SELECT testnet,servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid FROM %s", BuildsTable))
 }
 
 /*
@@ -175,7 +178,7 @@ GetBuildByTestnet gets the build parameters based off testnet id
 */
 func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 
-	details, err := QueryBuilds(fmt.Sprintf("SELECT servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid FROM %s WHERE testnet = \"%s\"", BuildsTable, id))
+	details, err := QueryBuilds(fmt.Sprintf("SELECT testnet,servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid FROM %s WHERE testnet = \"%s\"", BuildsTable, id))
 	if err != nil {
 		return DeploymentDetails{}, util.LogError(err)
 	}
@@ -189,7 +192,7 @@ func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 func GetLastBuildByKid(kid string) (DeploymentDetails, error) {
 
 	details, err := QueryBuilds(fmt.Sprintf(
-		"SELECT servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid FROM %s"+
+		"SELECT testnet,servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid FROM %s"+
 			" WHERE kid = \"%s\" ORDER BY id DESC LIMIT 1", BuildsTable, kid))
 	if err != nil {
 		return DeploymentDetails{}, util.LogError(err)

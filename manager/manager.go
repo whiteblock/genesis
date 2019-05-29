@@ -64,9 +64,8 @@ func init() {
 // implemented here, other it will not be called during the build process.
 func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 	if details.Servers == nil || len(details.Servers) == 0 {
-		err := fmt.Errorf("missing servers")
 		log.WithFields(log.Fields{"build": testnetID}).Error("build request doesn't have any servers")
-		return err
+		return fmt.Errorf("missing servers")
 	}
 	//STEP 1: SETUP THE TESTNET
 	tn, err := testnet.NewTestNet(*details, testnetID)
@@ -80,18 +79,19 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 	//STEP 0: VALIDATE
 	err = validate(details)
 	if err != nil {
-		buildState.ReportError(err)
+		log.WithFields(log.Fields{"details": details}).Error("invalid build details")
+		tn.BuildState.ReportError(err)
 		return err
 	}
 
-	buildState.Async(func() {
+	tn.BuildState.Async(func() {
 		declareTestnet(testnetID, details)
 	})
 
 	//STEP 3: GET THE SERVICES
 	servicesFn, err := registrar.GetServiceFunc(details.Blockchain)
 	if err != nil {
-		buildState.ReportError(err)
+		tn.BuildState.ReportError(err)
 		return err
 	}
 	services := servicesFn()
@@ -99,7 +99,7 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 
 	err = deploy.Build(tn, services)
 	if err != nil {
-		buildState.ReportError(err)
+		tn.BuildState.ReportError(err)
 		return err
 	}
 	log.WithFields(log.Fields{"build": testnetID}).Trace("Built the docker containers")

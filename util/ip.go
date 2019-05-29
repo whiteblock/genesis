@@ -20,7 +20,7 @@ package util
 
 import (
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net"
 )
 
@@ -52,7 +52,7 @@ func GetNodeIP(server int, network int, index int) (string, error) {
 	ip += uint32(server) << serverShift
 	//set cluster bits
 	cluster := uint32(network)
-	//fmt.Printf("CLUSTER IS %d\n",cluster)
+	log.WithFields(log.Fields{"cluster": cluster}).Trace("calculated the node cluster")
 	ip += cluster << clusterShift
 	//set the node bits
 
@@ -154,8 +154,7 @@ func Inc(ip net.IP) {
 func GetServiceNetwork() (string, string, error) {
 	ip, ipnet, err := net.ParseCIDR(conf.ServiceNetwork)
 	if err != nil {
-		log.Println(err)
-		return "", "", err
+		return "", "", LogError(err)
 	}
 	return ip.String(), ipnet.String(), nil
 }

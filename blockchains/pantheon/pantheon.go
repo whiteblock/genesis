@@ -156,7 +156,6 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 	err = helpers.CopyBytesToAllNodes(tn, enodes, "/pantheon/data/static-nodes.json")
 	if err != nil {
-		log.Println(err)
 		return util.LogError(err)
 	}
 
