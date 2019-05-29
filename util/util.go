@@ -201,13 +201,11 @@ func CombineConfig(entries []string) string {
 	cmd.Stdout = &resultsRaw
 	err := cmd.Start()
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", LogError(err)
 	}
 	err = cmd.Wait()
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", LogError(err)
 	}
 
 	return resultsRaw.String(), nil
@@ -302,14 +300,12 @@ func CopyMap(m map[string]interface{}) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, LogError(err)
 	}
-
-	err = json.Unmarshal(tmp, &out)
-	return out, err
+	return out, LogError(json.Unmarshal(tmp, &out))
 }
 
-// LogError acts like log.Println() but takes in an error and returns that error.
-// Used to help reduce code clutter from all the log.Println(err) in the code.
-// Has no effect is err == nil
+// LogError takes in an error, logs that error and returns that error.
+// Used to help reduce code clutter and unify the error handling in the code.
+// Has no effect if err == nil
 func LogError(err error) error {
 	if err == nil {
 		return err // do nothing if the given err is nil

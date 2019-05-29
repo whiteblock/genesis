@@ -21,13 +21,13 @@ package syscoin
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"log"
 	"sync"
 )
 
@@ -47,7 +47,7 @@ func init() {
 // regTest sets up Syscoin Testnet in Regtest mode
 func regTest(tn *testnet.TestNet) error {
 	if tn.LDD.Nodes < 3 {
-		log.Println("Tried to build syscoin with not enough nodes")
+		log.Error("Tried to build syscoin without enough nodes")
 		return fmt.Errorf("not enough nodes")
 	}
 
@@ -87,16 +87,16 @@ func handleConf(tn *testnet.TestNet, sysconf *sysConf) error {
 	}
 
 	noMasterNodes := int(float64(len(ips)) * (float64(sysconf.PercOfMNodes) / float64(100)))
-	//log.Println(fmt.Sprintf("PERC = %d; NUM = %d;",sysconf.PercOfMNodes,noMasterNodes))
+	log.WithFields(log.Fields{"perc": sysconf.PercOfMNodes, "numMasterNodes": noMasterNodes}).Trace("dividing up the nodes")
 
 	if (len(ips) - noMasterNodes) == 0 {
-		log.Println("Warning: No sender/receiver nodes available. Removing 2 master nodes and setting them as sender/receiver")
+		log.Debug("no sender/receiver nodes available. Removing 2 master nodes and setting them as sender/receiver")
 		noMasterNodes -= 2
 	} else if (len(ips)-noMasterNodes)%2 != 0 {
-		log.Println("Warning: Removing a master node to keep senders and receivers equal")
+		log.Debug("removing a master node to keep senders and receivers equal")
 		noMasterNodes--
 		if noMasterNodes < 0 {
-			log.Println("Warning: Attempt to remove a master node failed, adding one instead")
+			log.Debug("attempt to remove a master node failed, adding one instead")
 			noMasterNodes += 2
 		}
 	}

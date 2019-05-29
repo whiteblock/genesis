@@ -20,7 +20,6 @@ package util
 
 import (
 	"fmt"
-	"log"
 	"net"
 )
 
@@ -154,8 +153,7 @@ func Inc(ip net.IP) {
 func GetServiceNetwork() (string, string, error) {
 	ip, ipnet, err := net.ParseCIDR(conf.ServiceNetwork)
 	if err != nil {
-		log.Println(err)
-		return "", "", err
+		return "", "", LogError(err)
 	}
 	return ip.String(), ipnet.String(), nil
 }
