@@ -49,8 +49,8 @@ func init() {
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
-	//registrar.RegisterBlockchainSideCars(blockchain, []string{"geth", "orion"})
-	registrar.RegisterBlockchainSideCars(blockchain, []string{"orion"})
+	registrar.RegisterBlockchainSideCars(blockchain, []string{"geth", "orion"})
+	//registrar.RegisterBlockchainSideCars(blockchain, []string{"orion"})
 
 }
 
