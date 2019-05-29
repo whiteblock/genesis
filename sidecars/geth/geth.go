@@ -42,6 +42,9 @@ func init() {
 
 	registrar.RegisterSideCar(sidecar, registrar.SideCar{
 		Image: "gcr.io/whiteblock/geth:dev",
+		BuildStepsCalc: func(nodes int, _ int) int {
+			return 5 * nodes
+		},
 	})
 	registrar.RegisterBuildSideCar(sidecar, Build)
 	registrar.RegisterAddSideCar(sidecar, Add)
@@ -72,6 +75,7 @@ func Build(tn *testnet.Adjunct) error {
 	}
 
 	err = helpers.CreateConfigsSC(tn, "/geth/genesis.json", func(node ssh.Node) ([]byte, error) {
+		defer tn.BuildState.IncrementSideCarProgress()
 		if wallets != nil {
 			return gethSpec(conf, wallets)
 		}
@@ -107,6 +111,8 @@ func Build(tn *testnet.Adjunct) error {
 	err = helpers.AllNodeExecConSC(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		_, err = client.DockerExec(node,
 			fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/genesis.json", networkID))
+
+		tn.BuildState.IncrementSideCarProgress()
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -132,7 +138,7 @@ func Build(tn *testnet.Adjunct) error {
 			}(account, i)
 		}
 		wg.Wait()
-
+		tn.BuildState.IncrementSideCarProgress()
 		unlock := ""
 		for i, account := range accounts {
 			if i != 0 {
@@ -149,6 +155,7 @@ func Build(tn *testnet.Adjunct) error {
 		_, err := client.DockerExecdit(node, fmt.Sprintf(` bash -ic 'geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
 			` --rpcapi "admin,web3,miner,db,eth,net,personal,debug,txpool" --rpccorsdomain "0.0.0.0"%s --nodiscover --unlock="%s"`+
 			` --password /geth/passwd --networkid %d --verbosity 5 console 2>&1 >> /output.log'`, flags, unlock, networkID))
+		tn.BuildState.IncrementSideCarProgress()
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -166,6 +173,7 @@ func Build(tn *testnet.Adjunct) error {
 				break
 			}
 		}
+		tn.BuildState.IncrementSideCarProgress()
 		return util.LogError(err)
 	})
 	if err != nil {

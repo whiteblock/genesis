@@ -27,6 +27,8 @@ import (
 type SideCar struct {
 	// Image is the docker image to build the side car from
 	Image string
+	// BuildStepsCalc calculates the number of times the sidecar will be calling IncrementSideCarProgress
+	BuildStepsCalc func(int, int) int //(nodes,servers)
 }
 
 var (

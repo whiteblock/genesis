@@ -48,9 +48,9 @@ func (p PrometheusService) Prepare(client ssh.Client, tn *testnet.TestNet) error
 
 		var tpl bytes.Buffer
 		if err = tmpl.Execute(&tpl, struct {
-			Tn   *testnet.TestNet
-			Node db.Node
-			Conf *util.Config
+			Tn                  *testnet.TestNet
+			Node                db.Node
+			Conf                *util.Config
 			InstrumentationPort string
 		}{tn, node, conf, prometheusInstrumentationPort}); err != nil {
 			log.Error(err)

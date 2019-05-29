@@ -109,11 +109,32 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 		buildState.ReportError(err)
 		return err
 	}
+	sidecars, err := registrar.GetBlockchainSideCars(tn.LDD.Blockchain)
+	if err == nil && len(sidecars) > 0 {
+		tn.BuildState.SetSidecars(len(sidecars))
+	}
 
 	err = buildFn(tn)
 	if err != nil {
 		buildState.ReportError(err)
 		return err
+	}
+
+	if err == nil && len(sidecars) > 0 {
+		tn.BuildState.SetBuildStage("setting up the sidecars")
+		steps := 0
+		for _, sidecarName := range sidecars {
+			sidecar, err := registrar.GetSideCar(sidecarName)
+			if err != nil {
+				buildState.ReportError(err)
+				return err
+			}
+			if sidecar.BuildStepsCalc != nil {
+				steps += sidecar.BuildStepsCalc(tn.LDD.Nodes, len(tn.Servers))
+			}
+		}
+		tn.BuildState.SetSidecarSteps(steps)
+		tn.BuildState.FinishMainBuild()
 	}
 
 	err = handleSideCars(tn, false)
