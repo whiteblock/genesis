@@ -34,7 +34,6 @@ func TestRemoveAllOutages(t *testing.T) {
 	client.
 		EXPECT().
 		Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD || true").
-		Times(1).
 		Return("sudo blah -A test test\nsudo this is a test\nsudo this is another test for the loop\nsudo test\n\n", nil)
 
 	expectations := []string{
@@ -44,13 +43,8 @@ func TestRemoveAllOutages(t *testing.T) {
 		"sudo iptables -D sudo test",
 	}
 
-	var previous *gomock.Call
-
 	for _, expectation := range expectations {
-		call := client.EXPECT().Run(expectation)
-		if previous != nil {
-			call = call.After(previous)
-		}
+		 client.EXPECT().Run(expectation)
 	}
 
 	RemoveAllOutages(client)

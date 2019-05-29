@@ -82,7 +82,6 @@ func TestApply(t *testing.T) {
 	}
 
 	var previous *gomock.Call
-
 	for _, expectation := range expectations {
 		call := client.EXPECT().Run(expectation)
 		if previous != nil {
@@ -126,3 +125,11 @@ func Test_parseItems(t *testing.T) {
 	}
 }
 
+//func TestGetConfigOnServer(t *testing.T) {
+//	ctrl := gomock.NewController(t)
+//	defer ctrl.Finish()
+//
+//	client := mocks.NewMockClient(ctrl)
+//
+//
+//}
