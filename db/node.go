@@ -55,6 +55,11 @@ type Node struct {
 	Blockchain string `json:"blockchain"`
 }
 
+// GetIP gets the id of this side car
+func (n Node) GetID() string {
+	return n.ID
+}
+
 // GetAbsoluteNumber gets the absolute number of the node in the testnet
 func (n Node) GetAbsoluteNumber() int {
 	return n.AbsoluteNum

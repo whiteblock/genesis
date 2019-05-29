@@ -20,21 +20,25 @@
 package prysm
 
 import (
+	"crypto/rand"
 	"fmt"
+	"github.com/libp2p/go-libp2p-crypto"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
+	log "github.com/sirupsen/logrus"
 	"reflect"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 var conf *util.Config
 
 const (
 	blockchain = "prysm"
-	p2pPort    = 9000
+	p2pPort    = 12000
 )
 
 func init() {
@@ -55,14 +59,36 @@ func build(tn *testnet.TestNet) error {
 	}
 	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
 
-	peers := ""
+	nodeKeyPairs := map[string]crypto.PrivKey{}
 	for _, node := range tn.Nodes {
-		peers += fmt.Sprintf(" --peer=/dns4/whiteblock-node%d@%s/tcp/%d", node.LocalID, node.IP, p2pPort)
-		tn.BuildState.IncrementBuildProgress()
+		prvKey, _, _ := crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, rand.Reader)
+		nodeKeyPairs[node.ID] = prvKey
 	}
 
 	tn.BuildState.SetBuildStage("Starting prysm")
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		peers := ""
+
+		for _, peerNode := range tn.Nodes {
+			if node == peerNode {
+				continue
+			}
+			peers += fmt.Sprintf(" --peer=/ip4/%s/tcp/%d/p2p/%s", peerNode.IP, p2pPort, IDString(nodeKeyPairs[peerNode.GetID()]))
+			tn.BuildState.IncrementBuildProgress()
+		}
+
+		marshaled, err := crypto.MarshalPrivateKey(nodeKeyPairs[node.GetID()])
+		if err != nil {
+			log.WithError(err).Error("Could not marshal key")
+			return err
+		}
+		keyStr := crypto.ConfigEncodeKey(marshaled)
+
+		err = helpers.SingleCp(client, tn.BuildState, node, []byte(keyStr), "/etc/identity.key")
+		if err != nil {
+			log.WithError(err).Error("Could not marshal key")
+			return err
+		}
 		defer tn.BuildState.IncrementBuildProgress()
 		var prometheusInstrumentationPort string
 		obj := tn.CombinedDetails.Params["prometheusInstrumentationPort"]
@@ -72,7 +98,9 @@ func build(tn *testnet.TestNet) error {
 		if prometheusInstrumentationPort == "" {
 			prometheusInstrumentationPort = "8088"
 		}
-		return client.DockerExecdLog(node, fmt.Sprintf("/beacon-chain --monitoring-port=%s --no-discovery %s", prometheusInstrumentationPort, peers))
+
+		_, err = client.DockerExecd(node, fmt.Sprintf("/beacon-chain --monitoring-port=%s --no-discovery %s --log-file /output.log --p2p-priv-key /etc/identity.key", prometheusInstrumentationPort, peers))
+		return err
 	})
 	return util.LogError(err)
 }
@@ -80,4 +108,12 @@ func build(tn *testnet.TestNet) error {
 // add handles adding nodes to the testnet
 func add(tn *testnet.TestNet) error {
 	return nil
+}
+
+func IDString(k crypto.PrivKey) string {
+	pid, err := peer.IDFromPrivateKey(k)
+	if err != nil {
+		panic(err)
+	}
+	return pid.Pretty()
 }
