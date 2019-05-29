@@ -50,8 +50,6 @@ func init() {
 	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 	registrar.RegisterBlockchainSideCars(blockchain, []string{"geth", "orion"})
-	//registrar.RegisterBlockchainSideCars(blockchain, []string{"orion"})
-
 }
 
 // build builds out a fresh new ethereum test network using pantheon
