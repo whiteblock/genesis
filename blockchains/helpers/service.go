@@ -5,7 +5,6 @@ import (
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"log"
 	"net"
 )
 
@@ -86,8 +85,7 @@ func GetServiceIps(services []Service) (map[string]string, error) {
 	ip, ipnet, err := net.ParseCIDR(conf.ServiceNetwork)
 	ip = ip.Mask(ipnet.Mask)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	util.Inc(ip) //skip first ip
 
