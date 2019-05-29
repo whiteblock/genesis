@@ -20,6 +20,7 @@ package docker
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/util"
 )
@@ -117,7 +118,8 @@ func (cd *ContainerDetails) GetIP() (string, error) {
 	case SideCar:
 		return util.GetNodeIP(cd.SubnetID, cd.Node, cd.NetworkIndex)
 	}
-	panic("Unsupported type")
+	log.Panic("Unsupported type")
+	return "", nil
 }
 
 // GetName gets the name of the container
@@ -128,7 +130,8 @@ func (cd *ContainerDetails) GetName() string {
 	case SideCar:
 		return fmt.Sprintf("%s%d-%d", conf.NodePrefix, cd.Node, cd.NetworkIndex)
 	}
-	panic("Unsupported type")
+	log.Panic("Unsupported type")
+	return ""
 }
 
 // GetPorts gets the ports to open for the node, if instructed.

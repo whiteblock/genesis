@@ -21,6 +21,7 @@ package helpers
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
@@ -129,7 +130,8 @@ func DefaultGetParamsFn(blockchain string) func() string {
 	return func() string {
 		dat, err := GetStaticBlockchainConfig(blockchain, "params.json")
 		if err != nil {
-			panic(err) //Missing required files is a fatal error
+			//Missing required files is a fatal error
+			log.WithFields(log.Fields{"blockchain": blockchain, "file": "params.json"}).Panic(err)
 		}
 		return string(dat)
 	}
@@ -140,7 +142,8 @@ func DefaultGetDefaultsFn(blockchain string) func() string {
 	return func() string {
 		dat, err := GetStaticBlockchainConfig(blockchain, "defaults.json")
 		if err != nil {
-			panic(err) //Missing required files is a fatal error
+			//Missing required files is a fatal error
+			log.WithFields(log.Fields{"blockchain": blockchain, "file": "defaults.json"}).Panic(err)
 		}
 		return string(dat)
 	}

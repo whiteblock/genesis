@@ -291,7 +291,7 @@ func (sshClient *client) DockerExecdit(node Node, command string) (string, error
 
 func (sshClient *client) logSanitizeAndStore(node Node, command string) {
 	if strings.Count(command, "'") != strings.Count(command, "\\'") {
-		panic("DockerExecdLog commands cannot contain unescaped ' characters")
+		log.Panic("DockerExecdLog commands cannot contain unescaped ' characters")
 	}
 	bs := state.GetBuildStateByServerID(sshClient.serverID)
 	bs.Set(fmt.Sprintf("%d", node.GetAbsoluteNumber()), util.Command{Cmdline: command, ServerID: sshClient.serverID, Node: node.GetRelativeNumber()})
