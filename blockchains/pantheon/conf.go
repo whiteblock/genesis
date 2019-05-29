@@ -35,6 +35,7 @@ type panConf struct {
 	RequestTimeoutSeconds int64  `json:"requesttimeoutseconds"`
 	Accounts              int64  `json:"accounts"`
 	Orion                 bool   `json:"orion"`
+	Validators            int    `json:"validators"`
 }
 
 /**

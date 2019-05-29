@@ -205,7 +205,7 @@ func (sshClient *client) Run(command string) (string, error) {
 	if err != nil {
 		return "", util.LogError(err)
 	}
-	log.WithFields(log.Fields{"host": sshClient.host, "command": command}).Debug("executing command")
+	log.WithFields(log.Fields{"host": sshClient.host, "command": command}).Trace("executing command")
 
 	bs := state.GetBuildStateByServerID(sshClient.serverID)
 	defer session.Close()

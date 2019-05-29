@@ -20,6 +20,7 @@
 package pantheon
 
 import (
+	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/ethereum"
@@ -30,6 +31,7 @@ import (
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
+	"strings"
 	"sync"
 )
 
@@ -47,7 +49,8 @@ func init() {
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
-	registrar.RegisterBlockchainSideCars(blockchain, []string{"geth", "orion"})
+	//registrar.RegisterBlockchainSideCars(blockchain, []string{"geth", "orion"})
+	registrar.RegisterBlockchainSideCars(blockchain, []string{"orion"})
 
 }
 
@@ -128,9 +131,7 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	/* Create Genesis File */
-	tn.BuildState.SetBuildStage("Generating Genesis File")
-	err = createGenesisfile(panconf, tn, accounts, rlpEncodedData[0])
+	err = createGenesisfile(panconf, tn, accounts)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -214,7 +215,7 @@ func build(tn *testnet.TestNet) error {
 	return nil
 }
 
-func createGenesisfile(panconf *panConf, tn *testnet.TestNet, accounts []*ethereum.Account, ibftExtraData string) error {
+func createGenesisfile(panconf *panConf, tn *testnet.TestNet, accounts []*ethereum.Account) error {
 	alloc := map[string]map[string]string{}
 	for _, acc := range accounts {
 		alloc[acc.HexAddress()] = map[string]string{
@@ -245,7 +246,11 @@ func createGenesisfile(panconf *panConf, tn *testnet.TestNet, accounts []*ethere
 
 	switch panconf.Consensus {
 	case "ibft2":
-		genesis["extraData"] = ibftExtraData
+		var err error
+		genesis["extraData"], err = getIBFTExtraData(tn, panconf, accounts)
+		if err != nil {
+			return util.LogError(err)
+		}
 	case "clique":
 		fallthrough
 	case "ethash":
@@ -272,6 +277,50 @@ func createGenesisfile(panconf *panConf, tn *testnet.TestNet, accounts []*ethere
 	log.Trace("writing the genesis file")
 	return util.LogError(tn.BuildState.Write("genesis.json", data))
 
+}
+
+func getIBFTExtraData(tn *testnet.TestNet, panconf *panConf, accounts []*ethereum.Account) (string, error) {
+	if panconf.Validators > tn.LDD.Nodes {
+		return "", util.LogError(fmt.Errorf("invalid number of validators(%d), cannot be greater than number of nodes (%d)",
+			panconf.Validators, tn.LDD.Nodes))
+	}
+	validatorAccounts := []string{}
+	/* Create Genesis File */
+	tn.BuildState.SetBuildStage("Generating Genesis File")
+	for i := 0; i < panconf.Validators; i++ {
+
+		toAdd := accounts[i].HexAddress()
+
+		log.WithFields(log.Fields{"address": toAdd, "index": i}).Trace("adding validator address")
+		if strings.HasPrefix(toAdd, "0x") {
+			toAdd = toAdd[2:]
+		}
+		validatorAccounts = append(validatorAccounts, toAdd)
+	}
+	vaJSON, err := json.Marshal(validatorAccounts)
+	if err != nil {
+		return "", util.LogError(err)
+	}
+	//add the extra escapes by marshaling it as a string again
+	vaJSON, err = json.Marshal(string(vaJSON))
+	if err != nil {
+		return "", util.LogError(err)
+	}
+
+	_, err = tn.Clients[tn.Nodes[0].Server].DockerExec(tn.Nodes[0],
+		fmt.Sprintf("bash -c 'echo %s > /pantheon/rlpValidators.json'", string(vaJSON)))
+	if err != nil {
+		return "", util.LogError(err)
+	}
+
+	ibftExtraData, err := tn.Clients[tn.Nodes[0].Server].DockerExec(
+		tn.Nodes[0], "pantheon rlp encode --from=/pantheon/rlpValidators.json")
+	if err != nil {
+		return "", util.LogError(err)
+	}
+
+	log.WithFields(log.Fields{"ibftExtras": ibftExtraData}).Debug("got the validator address list in rlp")
+	return strings.Trim(ibftExtraData, "\n\r"), nil
 }
 
 func getExtraConfigurationFlags(tn *testnet.TestNet, node ssh.Node, pconf *panConf) (string, error) {
