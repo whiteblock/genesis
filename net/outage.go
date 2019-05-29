@@ -50,7 +50,7 @@ func RemoveAllOutages(client ssh.Client) error {
 		wg.Add(1)
 		go func(cmd string) {
 			defer wg.Done()
-			_, err = client.Run(fmt.Sprintf("sudo iptables -D %s", cmd))
+			_, err := client.Run(fmt.Sprintf("sudo iptables -D %s", cmd))
 			if err != nil {
 				log.Error(err)
 			}

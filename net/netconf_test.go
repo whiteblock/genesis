@@ -95,4 +95,15 @@ func TestApply(t *testing.T) {
 	Apply(client, netconf, serverId)
 }
 
+//func TestRemoveAllOnServer(t *testing.T) {
+//	ctrl := gomock.NewController(t)
+//	defer ctrl.Finish()
+//
+//	client := mocks.NewMockClient(ctrl)
+//	nodes := 3
+//
+//
+//
+//}
+
 
