@@ -63,10 +63,9 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	tn.BuildState.SetBuildSteps(6*tn.LDD.Nodes + 2)
+	tn.BuildState.SetBuildSteps(5*tn.LDD.Nodes + 2)
 	tn.BuildState.IncrementBuildProgress()
 
-	rlpEncodedData := make([]string, tn.LDD.Nodes)
 	accounts := make([]*ethereum.Account, tn.LDD.Nodes)
 
 	extraAccounts, err := ethereum.GenerateAccounts(int(panconf.Accounts))
@@ -75,7 +74,7 @@ func build(tn *testnet.TestNet) error {
 	}
 	accounts = append(accounts, extraAccounts...)
 
-	tn.BuildState.SetBuildStage("Setting Up Accounts")
+	tn.BuildState.SetBuildStage("Setting up accounts")
 
 	helpers.MkdirAllNodes(tn, "/pantheon/genesis")
 
@@ -100,29 +99,6 @@ func build(tn *testnet.TestNet) error {
 		mux.Lock()
 		accounts[node.GetAbsoluteNumber()] = acc
 		mux.Unlock()
-		tn.BuildState.IncrementBuildProgress()
-		addr := acc.HexAddress()
-
-		_, err = client.DockerExec(node, "bash -c 'echo \"[\\\""+addr[2:]+"\\\"]\" >> /pantheon/data/toEncode.json'")
-		if err != nil {
-			return util.LogError(err)
-		}
-		// used for IBFT2 extraData
-		_, err = client.DockerExec(node,
-			"pantheon rlp encode --from=/pantheon/data/toEncode.json --to=/pantheon/rlpEncodedExtraData")
-		if err != nil {
-			return util.LogError(err)
-		}
-
-		rlpEncoded, err := client.DockerRead(node, "/pantheon/rlpEncodedExtraData", -1)
-		if err != nil {
-			return util.LogError(err)
-		}
-
-		mux.Lock()
-		rlpEncodedData[node.GetAbsoluteNumber()] = rlpEncoded
-		mux.Unlock()
-
 		tn.BuildState.IncrementBuildProgress()
 		return nil
 
