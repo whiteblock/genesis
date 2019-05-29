@@ -62,6 +62,7 @@ type Config struct {
 	DataDirectory           string  `mapstructure:"datadir"`
 	DisableNibbler          bool    `mapstructure:"disableNibbler"`
 	DisableTestnetReporting bool    `mapstructure:"disableTestnetReporting"`
+	RequireAuth             bool    `mapstructure:"requireAuth"`
 	MaxCommandOutputLogSize int     `mapstructure:"maxCommandOutputLogSize"`
 }
 
@@ -103,6 +104,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("datadir", "DATADIR")
 	viper.BindEnv("disableNibbler", "DISABLE_NIBBLER")
 	viper.BindEnv("disableTestnetReporting", "DISABLE_TESTNET_REPORTING")
+	viper.BindEnv("requireAuth", "REQUIRE_AUTH")
 	viper.BindEnv("maxCommandOutputLogSize", "MAX_COMMAND_OUTPUT_LOG_SIZE")
 }
 func setViperDefaults() {
@@ -136,6 +138,7 @@ func setViperDefaults() {
 	viper.SetDefault("datadir", os.Getenv("HOME")+"/.config/whiteblock/")
 	viper.SetDefault("disableNibbler", false)
 	viper.SetDefault("disableTestnetReporting", false)
+	viper.SetDefault("requireAuth", false)
 	viper.SetDefault("maxCommandOutputLogSize", -1)
 }
 

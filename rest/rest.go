@@ -219,12 +219,12 @@ func thawBuild(w http.ResponseWriter, r *http.Request) {
 func getPreviousBuild(w http.ResponseWriter, r *http.Request) {
 
 	jwt, err := util.ExtractJwt(r)
-	if err != nil {
+	if err != nil && conf.RequireAuth {
 		http.Error(w, util.LogError(err).Error(), 403)
 		return
 	}
 	kid, err := util.GetKidFromJwt(jwt)
-	if err != nil {
+	if err != nil && conf.RequireAuth {
 		http.Error(w, util.LogError(err).Error(), 403)
 	}
 	build, err := db.GetLastBuildByKid(kid)
