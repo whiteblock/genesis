@@ -19,11 +19,51 @@
 package netconf
 
 import (
+	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/whiteblock/genesis/net/mocks"
 )
+
+func TestCreateCommands(t *testing.T) {
+	var test = []struct {
+		netconf Netconf
+		serverID int
+		expected []string
+	}{
+		{
+			netconf:  Netconf{Node: 3, Limit: 5, Loss: 0.06, Delay: 1, Rate: "", Duplication: 0.02, Corrupt: 0, Reorder: 0.01},
+			serverID: 2,
+			expected: []string {
+				"sudo -n tc qdisc del dev wb_bridge3 root",
+				"sudo -n tc qdisc add dev wb_bridge3 root handle 1: prio",
+				"sudo -n tc qdisc add dev wb_bridge3 parent 1:1 handle 2: netem limit 5 loss 0.0600 delay 1us duplicate 0.0200 reorder 0.0100",
+				"sudo -n tc filter add dev wb_bridge3 parent 1:0 protocol ip pref 55 handle 6 fw flowid 2:1",
+				"sudo -n iptables -t mangle -A PREROUTING  ! -d 10.2.0.49 -j MARK --set-mark 6",
+			},
+		},
+		{netconf: Netconf{Node: 3, Limit: 0, Loss: 0, Delay: 0, Rate: "0", Duplication: 0, Corrupt: 0, Reorder: 0},
+			serverID: 3,
+			expected: []string {
+				"sudo -n tc qdisc del dev wb_bridge3 root",
+				"sudo -n tc qdisc add dev wb_bridge3 root handle 1: prio",
+				"sudo -n tc qdisc add dev wb_bridge3 parent 1:1 handle 2: netem rate 0",
+				"sudo -n tc filter add dev wb_bridge3 parent 1:0 protocol ip pref 55 handle 6 fw flowid 2:1",
+				"sudo -n iptables -t mangle -A PREROUTING  ! -d 10.3.0.49 -j MARK --set-mark 6",
+			},
+		},
+	}
+
+	for i, tt := range test {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(CreateCommands(tt.netconf, tt.serverID), tt.expected) {
+				t.Errorf("return value of CreateCommands does not match expected value")
+			}
+		})
+	}
+}
 
 func TestApply(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -54,3 +94,5 @@ func TestApply(t *testing.T) {
 
 	Apply(client, netconf, serverId)
 }
+
+
