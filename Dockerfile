@@ -1,11 +1,14 @@
 FROM golang:1.12.5-stretch as built
 
+ENV GO111MODULE on
+
 ADD . /go/src/github.com/whiteblock/genesis
 
 WORKDIR /go/src/github.com/whiteblock/genesis
 RUN go get && go build
 
 FROM ubuntu:latest as final
+ENV DEBIAN_FRONTEND noninteractive
 
 RUN mkdir -p /genesis && apt-get update && apt-get install -y openssh-client ca-certificates
 RUN mkdir -p /etc/whiteblock
