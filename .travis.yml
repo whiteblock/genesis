@@ -8,7 +8,7 @@ matrix:
       sudo: required
       go: 1.12.x
       install:
-        - sudo apt-get install golint -y
+        - sudo apt-get install golint mockgen -y
       before_script:
         - go get github.com/whiteblock/genesis
         - go get github.com/golang/mock/gomock
