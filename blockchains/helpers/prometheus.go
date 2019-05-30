@@ -29,7 +29,9 @@ func (p PrometheusService) Prepare(client ssh.Client, tn *testnet.TestNet) error
   static_configs:
     - targets: ['{{.Node.IP}}:{{.InstrumentationPort}}']
       labels:
-        group: '{{.Tn.LDD.Blockchain}}'
+        blockchain: '{{.Tn.LDD.Blockchain}}'
+        testnet: '{{.Tn.TestNetID}}'
+        ip: '{{.Node.IP}}'
 
 `)
 
