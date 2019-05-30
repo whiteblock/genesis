@@ -125,11 +125,24 @@ func Test_parseItems(t *testing.T) {
 	}
 }
 
-//func TestGetConfigOnServer(t *testing.T) {
-//	ctrl := gomock.NewController(t)
-//	defer ctrl.Finish()
-//
-//	client := mocks.NewMockClient(ctrl)
-//
-//
-//}
+func TestGetConfigOnServer_Successful(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mocks.NewMockClient(ctrl)
+	out := []Netconf{
+		{Node: 3, Limit: 2, Loss: 0.5, Delay: 0, Rate: "", Duplication: 0, Corrupt: 0, Reorder: 0},
+		{Node: 4, Limit: 2, Loss: 1.3, Delay: 415900000, Rate: "1", Duplication: 0, Corrupt: 0.4, Reorder: 0.7},
+	}
+
+	client.
+		EXPECT().
+		Run("sudo -n tc qdisc show | grep wb_bridge | grep netem || true").
+		Return("some random words testing wb_bridge3 test test limit 2 loss 0.5%\nsome random words testing wb_bridge4 test test limit 2 delay 415.9s loss 1.3% corrupt 0.4% rate 1 reorder 0.7% duplication 0", nil)
+
+	netconf, _ := GetConfigOnServer(client)
+
+	if !reflect.DeepEqual(netconf, out) {
+		t.Errorf("return value of GetConfigOnServer does not match expected value")
+	}
+}
