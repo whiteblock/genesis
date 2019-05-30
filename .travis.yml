@@ -11,8 +11,7 @@ matrix:
         - sudo apt-get install golint -y
       before_script:
         - go get github.com/whiteblock/genesis
-        - go get github.com/golang/mock/gomock
-        - go install github.com/golang/mock/mockgen
+        - sudo apt-get install -y mockgen
         - mockgen -source=ssh/client.go -destination=net/mocks/client_mock.go -package=mocks
       script:
         - go test github.com/whiteblock/genesis/...

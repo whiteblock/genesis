@@ -5,7 +5,6 @@ go 1.12
 require (
 	github.com/btcsuite/btcd v0.0.0-20190427004231-96897255fd17 // indirect
 	github.com/ethereum/go-ethereum v1.8.27
-	github.com/golang/mock v1.3.1 // indirect
 	github.com/gorilla/mux v1.7.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0
