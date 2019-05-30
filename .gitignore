@@ -6,3 +6,4 @@
 /.idea
 /.gdata
 *grind.out*
+*_mock.go
