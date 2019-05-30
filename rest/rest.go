@@ -120,7 +120,7 @@ func StartServer() {
 
 	router.HandleFunc("/blockchains", getAllSupportedBlockchains).Methods("GET")
 	log.WithFields(log.Fields{"socket": conf.Listen}).Info("listening for requests")
-	http.ListenAndServe(conf.Listen, removeTrailingSlash(router))
+	log.Fatal(http.ListenAndServe(conf.Listen, removeTrailingSlash(router)))
 }
 
 func removeTrailingSlash(next http.Handler) http.Handler {
