@@ -146,3 +146,42 @@ func TestGetConfigOnServer_Successful(t *testing.T) {
 		t.Errorf("return value of GetConfigOnServer does not match expected value")
 	}
 }
+
+//TODO finish this test func
+func TestGetConfigOnServer_Unsuccessful1(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mocks.NewMockClient(ctrl)
+	out := []Netconf{
+		{Node: 3, Limit: 0, Loss: 0, Delay: 0, Rate: "", Duplication: 0, Corrupt: 0, Reorder: 0},
+	}
+
+	client.
+		EXPECT().
+		Run("sudo -n tc qdisc show | grep wb_bridge | grep netem || true").
+		Return("some random words testing wb_bridge3\nsome words random test\n", nil)
+
+	netconf, _ := GetConfigOnServer(client)
+	if !reflect.DeepEqual(netconf, out) {
+		t.Errorf("return value of GetConfigOnServer does not match expected value")
+	}
+}
+
+func TestGetConfigOnServer_Unsuccessful2(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mocks.NewMockClient(ctrl)
+	out := []Netconf{}
+
+	client.
+		EXPECT().
+		Run("sudo -n tc qdisc show | grep wb_bridge | grep netem || true").
+		Return("", nil)
+
+	netconf, _ := GetConfigOnServer(client)
+	if !reflect.DeepEqual(netconf, out) {
+		t.Errorf("return value of GetConfigOnServer does not match expected value")
+	}
+}
