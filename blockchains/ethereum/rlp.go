@@ -16,15 +16,19 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package ssh
+package ethereum
 
-// Node represents the interface which all nodes must follow.
-type Node interface {
-	GetID() string
-	GetAbsoluteNumber() int
-	GetIP() string
-	GetRelativeNumber() int
-	GetServerID() int
-	GetTestNetID() string
-	GetNodeName() string
+import (
+	"encoding/hex"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/whiteblock/genesis/util"
+)
+
+// RLPHexEncode converts an object into hex encoded RLP
+func RLPHexEncode(v interface{}) (string, error) {
+	rlp, err := rlp.EncodeToBytes(v)
+	if err != nil {
+		return "", util.LogError(err)
+	}
+	return hex.EncodeToString(rlp), nil
 }

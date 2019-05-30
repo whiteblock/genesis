@@ -100,7 +100,7 @@ func GetFileDefault(details *db.DeploymentDetails, file string) (string, bool) {
 
 // GetStaticBlockchainConfig fetches a static file resource for a blockchain, which will never change
 func GetStaticBlockchainConfig(blockchain string, file string) ([]byte, error) {
-	return ioutil.ReadFile(fmt.Sprintf("./resources/%s/%s", blockchain, file))
+	return ioutil.ReadFile(fmt.Sprintf("%s/%s/%s", conf.ResourceDir, blockchain, file))
 }
 
 // GetBlockchainConfig fetches dynamic config template files for the blockchain. Should be used in most cases instead of
@@ -120,7 +120,7 @@ func GetBlockchainConfig(blockchain string, node int, file string, details *db.D
 			}
 		}
 	}
-	return ioutil.ReadFile(fmt.Sprintf("./resources/%s/%s", blockchain, file))
+	return ioutil.ReadFile(fmt.Sprintf("%s/%s/%s", conf.ResourceDir, blockchain, file))
 }
 
 // HandleBlockchainConfig handles the creation of a blockchain configuration from the defaults and given
