@@ -29,14 +29,14 @@ import (
 
 func TestCreateCommands(t *testing.T) {
 	var test = []struct {
-		netconf Netconf
+		netconf  Netconf
 		serverID int
 		expected []string
 	}{
 		{
 			netconf:  Netconf{Node: 3, Limit: 5, Loss: 0.06, Delay: 1, Rate: "", Duplication: 0.02, Corrupt: 0, Reorder: 0.01},
 			serverID: 2,
-			expected: []string {
+			expected: []string{
 				"sudo -n tc qdisc del dev wb_bridge3 root",
 				"sudo -n tc qdisc add dev wb_bridge3 root handle 1: prio",
 				"sudo -n tc qdisc add dev wb_bridge3 parent 1:1 handle 2: netem limit 5 loss 0.0600 delay 1us duplicate 0.0200 reorder 0.0100",
@@ -46,7 +46,7 @@ func TestCreateCommands(t *testing.T) {
 		},
 		{netconf: Netconf{Node: 3, Limit: 0, Loss: 0, Delay: 0, Rate: "0", Duplication: 0, Corrupt: 0, Reorder: 0},
 			serverID: 3,
-			expected: []string {
+			expected: []string{
 				"sudo -n tc qdisc del dev wb_bridge3 root",
 				"sudo -n tc qdisc add dev wb_bridge3 root handle 1: prio",
 				"sudo -n tc qdisc add dev wb_bridge3 parent 1:1 handle 2: netem rate 0",
@@ -98,18 +98,18 @@ func TestApply(t *testing.T) {
 
 func Test_parseItems(t *testing.T) {
 	var test = []struct {
-		items []string
-		nconf *Netconf
+		items    []string
+		nconf    *Netconf
 		expected *Netconf
 	}{
 		{
-			items: []string{"limit", "3", "test2", "test3"},
-			nconf: &Netconf{Node: 2, Limit: 0, Loss: 0, Delay: 0, Rate: "0", Duplication: 0, Corrupt: 0, Reorder: 0},
+			items:    []string{"limit", "3", "test2", "test3"},
+			nconf:    &Netconf{Node: 2, Limit: 0, Loss: 0, Delay: 0, Rate: "0", Duplication: 0, Corrupt: 0, Reorder: 0},
 			expected: &Netconf{Node: 2, Limit: 3, Loss: 0, Delay: 0, Rate: "0", Duplication: 0, Corrupt: 0, Reorder: 0},
 		},
 		{
-			items: []string{"limit", "2", "loss", "0.5%", "delay", "415.9s", "rate", "2", "duplicate", "1.7%", "corrupt", "0.5%", "reorder", "0.07%"},
-			nconf: &Netconf{Node: 3, Limit: 0, Loss: 0, Delay: 0, Rate: "0", Duplication: 0, Corrupt: 0, Reorder: 0},
+			items:    []string{"limit", "2", "loss", "0.5%", "delay", "415.9s", "rate", "2", "duplicate", "1.7%", "corrupt", "0.5%", "reorder", "0.07%"},
+			nconf:    &Netconf{Node: 3, Limit: 0, Loss: 0, Delay: 0, Rate: "0", Duplication: 0, Corrupt: 0, Reorder: 0},
 			expected: &Netconf{Node: 3, Limit: 2, Loss: 0.5, Delay: 415900000, Rate: "2", Duplication: 1.7, Corrupt: 0.5, Reorder: 0.07},
 		},
 	}
@@ -147,7 +147,6 @@ func TestGetConfigOnServer_Successful(t *testing.T) {
 	}
 }
 
-//TODO finish this test func
 func TestGetConfigOnServer_Unsuccessful1(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
