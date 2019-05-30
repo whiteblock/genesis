@@ -13,11 +13,11 @@ matrix:
         - go get github.com/whiteblock/genesis
         - go get github.com/golang/mock/gomock
         - sudo apt-get install -y mockgen
-        - mockgen -source=ssh/client.go -destination=net/mocks/client_mock.go -package=mocks
       script:
-        - go test github.com/whiteblock/genesis/...
         - golint github.com/whiteblock/genesis/...
         - go vet github.com/whiteblock/genesis/...
+        - mockgen -source=ssh/client.go -destination=net/mocks/client_mock.go -package=mocks
+        - go test github.com/whiteblock/genesis/...
         - go test github.com/whiteblock/genesis/... -race -coverprofile=coverage.txt -covermode=atomic
       after_success:
         - bash <(curl -s https://codecov.io/bash)
