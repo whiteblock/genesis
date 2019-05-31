@@ -144,6 +144,7 @@ func dbInit(dataLoc string) error {
 //insertLocalServers adds the default server(s) to the servers database, allowing immediate use of the application
 //without having to register a server
 func insertLocalServers() error {
+	log.WithField("host", conf.SSHHost).Warn("Creating initial server")
 	_, err := InsertServer("cloud",
 		Server{
 			Addr:     conf.SSHHost,
