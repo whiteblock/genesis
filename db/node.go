@@ -55,7 +55,7 @@ type Node struct {
 	Blockchain string `json:"blockchain"`
 }
 
-// GetIP gets the id of this side car
+// GetID gets the id of this side car
 func (n Node) GetID() string {
 	return n.ID
 }

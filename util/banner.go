@@ -2,6 +2,7 @@ package util
 
 import "fmt"
 
+// DisplayBanner displays the startup banner
 func DisplayBanner() {
 	fmt.Println("                            _     \n" +
 		"                           (_)    \n" +

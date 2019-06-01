@@ -19,7 +19,6 @@
 package artemis
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/whiteblock/genesis/blockchains/helpers"
