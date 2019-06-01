@@ -49,7 +49,7 @@ func init() {
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
-	registrar.RegisterBlockchainSideCars(blockchain, []string{"geth", "orion"})
+	registrar.RegisterBlockchainSideCars(blockchain, []string{"orion"})
 }
 
 // build builds out a fresh new ethereum test network using pantheon
@@ -176,15 +176,6 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.Set("networkID", panconf.NetworkID)
 	tn.BuildState.SetExt("networkID", panconf.NetworkID)
 	tn.BuildState.Set("accounts", accounts)
-	tn.BuildState.Set("mine", false)
-	tn.BuildState.Set("peers", []string{})
-
-	tn.BuildState.Set("gethConf", map[string]interface{}{
-		"networkID":   panconf.NetworkID,
-		"initBalance": panconf.InitBalance,
-		"difficulty":  fmt.Sprintf("0x%x", panconf.Difficulty),
-		"gasLimit":    fmt.Sprintf("0x%x", panconf.GasLimit),
-	})
 
 	tn.BuildState.Set("wallets", ethereum.ExtractAddresses(accounts))
 	return nil
