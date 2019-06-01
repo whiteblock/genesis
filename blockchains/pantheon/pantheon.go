@@ -174,6 +174,7 @@ func build(tn *testnet.TestNet) error {
 	}
 	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
 	tn.BuildState.Set("networkID", panconf.NetworkID)
+	tn.BuildState.SetExt("networkID", panconf.NetworkID)
 	tn.BuildState.Set("accounts", accounts)
 	tn.BuildState.Set("mine", false)
 	tn.BuildState.Set("peers", []string{})
