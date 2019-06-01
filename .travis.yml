@@ -2,7 +2,7 @@ language: go
 go_import_path: github.com/whiteblock/genesis
 sudo: false
 env:
-  - GO111MODULE=on
+#  - GO111MODULE=on
 matrix:
   include:
     - os: linux
