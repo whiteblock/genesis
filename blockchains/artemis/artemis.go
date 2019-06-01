@@ -28,6 +28,7 @@ import (
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
+	"reflect"
 	"strings"
 )
 
@@ -109,8 +110,14 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Starting Artemis")
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-
-		artemisCmd := `artemis -c /artemis/config/config.toml 2>&1 | tee /output.log`
+		var logFolder string
+		obj := tn.CombinedDetails.Params["logFolder"]
+		if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
+			logFolder = obj.(string)
+		} else {
+			logFolder = ""
+		}
+		artemisCmd := fmt.Sprintf("artemis -c /artemis/config/config.toml 2>&1 | tee %s/output%d.log", logFolder, node.GetAbsoluteNumber())
 
 		_, err := client.DockerExecd(node, "tmux new -s whiteblock -d")
 		if err != nil {
