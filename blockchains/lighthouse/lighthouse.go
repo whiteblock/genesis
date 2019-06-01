@@ -66,7 +66,7 @@ func build(tn *testnet.TestNet) error {
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 
-		lighthouseCmd := "beacon_node --listen-address 0.0.0.0 --port 9000 " + peers + " 2>&1 | tee /output.log"
+		lighthouseCmd := "RUST_LOG=libp2p=debug beacon_node --listen-address 0.0.0.0 --port 9000 " + peers + " 2>&1 | tee /output.log"
 
 		_, err := client.DockerExecd(node, "tmux new -s whiteblock -d")
 		if err != nil {
