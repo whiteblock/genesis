@@ -98,8 +98,15 @@ func build(tn *testnet.TestNet) error {
 		if prometheusInstrumentationPort == "" {
 			prometheusInstrumentationPort = "8088"
 		}
+		var logFolder string
+		obj = tn.CombinedDetails.Params["logFolder"]
+		if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
+			logFolder = obj.(string)
+		} else {
+			logFolder = ""
+		}
 
-		_, err = client.DockerExecd(node, fmt.Sprintf("/beacon-chain --monitoring-port=%s --no-discovery %s --log-file /output.log --p2p-priv-key /etc/identity.key", prometheusInstrumentationPort, peers))
+		_, err = client.DockerExecd(node, fmt.Sprintf("/beacon-chain --monitoring-port=%s --no-discovery %s --log-file %s/output-%d.log --p2p-priv-key /etc/identity.key", prometheusInstrumentationPort, peers, logFolder, node.GetAbsoluteNumber()))
 		return err
 	})
 	return util.LogError(err)
