@@ -95,7 +95,6 @@ func TestApply(t *testing.T) {
 	Apply(client, netconf, serverId)
 }
 
-//TODO: test RemoveAllOnServer()
 func TestRemoveAllOnServer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -108,6 +107,7 @@ func TestRemoveAllOnServer(t *testing.T) {
 	}
 
 	RemoveAllOutagesExpectations(client)
+
 	RemoveAllOnServer(client, nodes)
 }
 
