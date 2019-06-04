@@ -80,15 +80,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Initializing polkadot")
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		client.DockerExecdLog(node, fmt.Sprintf("polkadot"))
-		return nil
-	})
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		client.DockerExecdLog(node, fmt.Sprintf("kill $(ps aux | grep polkadot | awk \\'{print $2}\\')"))
+		client.DockerExecdLog(node, fmt.Sprintf("polkadot --chain=local"))
 		return nil
 	})
 	if err != nil {
@@ -116,6 +108,14 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		client.DockerExec(node, fmt.Sprintf("kill $(ps aux | grep polkadot | awk \\'{print $2}\\')"))
+		return nil
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+
 	//should delete output.log so there is no overlapping data (?)
 
 	tn.BuildState.IncrementBuildProgress()
@@ -124,7 +124,7 @@ func build(tn *testnet.TestNet) error {
 	nid := strings.Join(nodeIDList," ")
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		client.DockerExecdLog(node, fmt.Sprintf("polkadot --reserved-nodes %s", nid))
+		client.DockerExecdLog(node, fmt.Sprintf("polkadot --chain=local --reserved-nodes %s", nid))
 		if err != nil {
 			return util.LogError(err)
 		}
