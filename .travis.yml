@@ -13,10 +13,13 @@ matrix:
         - sudo apt-get install golint mockgen -y
       before_script:
         - go get github.com/whiteblock/genesis
+        - go get github.com/golang/mock/gomock
+        - sudo apt-get install -y mockgen
       script:
         - go test github.com/whiteblock/genesis/...
         - golint github.com/whiteblock/genesis/...
         - go vet github.com/whiteblock/genesis/...
+        - mockgen -source=/home/travis/gopath/src/github.com/whiteblock/genesis/ssh/client.go -destination=/home/travis/gopath/src/github.com/whiteblock/genesis/net/mocks/client_mock.go -package=mocks
         - go test github.com/whiteblock/genesis/... -race -coverprofile=coverage.txt -covermode=atomic
         - go build github.com/whiteblock/genesis
       after_success:
