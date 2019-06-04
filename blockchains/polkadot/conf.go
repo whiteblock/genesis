@@ -19,57 +19,37 @@
 package polkadot
 
 import (
-	"encoding/json"
-	"fmt"
+	// "encoding/json"
+	// "fmt"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 )
 
-type ethConf struct {
-	ExtraAccounts  int64  `json:"extraAccounts"`
-	NetworkID      int64  `json:"networkId"`
-	Difficulty     int64  `json:"difficulty"`
-	InitBalance    string `json:"initBalance"`
-	MaxPeers       int64  `json:"maxPeers"`
-	GasLimit       int64  `json:"gasLimit"`
-	HomesteadBlock int64  `json:"homesteadBlock"`
-	Eip155Block    int64  `json:"eip155Block"`
-	Eip158Block    int64  `json:"eip158Block"`
+type dotConf struct {
+	validatorMode  bool  `json:"validatorMode"`
 }
 
 /**
  * Fills in the defaults for missing parts,
  */
-func newConf(data map[string]interface{}) (*ethConf, error) {
-	out := new(ethConf)
+func newConf(data map[string]interface{}) (*dotConf, error) {
+	out := new(dotConf)
 	err := helpers.HandleBlockchainConfig(blockchain, data, out)
 	if err != nil || data == nil {
 		return out, err
 	}
 
-	initBalance, exists := data["initBalance"]
-	if exists && initBalance != nil {
-		switch initBalance.(type) {
-		case json.Number:
-			out.InitBalance = initBalance.(json.Number).String()
-		case string:
-			out.InitBalance = initBalance.(string)
-		default:
-			return nil, fmt.Errorf("incorrect type for initBalance given")
-		}
-	}
-
+	// vMode := data["validatorMode"]
+	// if vMode == true {
+	// 	filler := util.ConvertToStringMap(dotConf)
+	// 	filler["validatorMode"] = "validator"
+	// 	}
+	// }
+	
 	return out, nil
 }
 
 // GetServices returns the services which are used by artemis
 func GetServices() []helpers.Service {
-	return []helpers.Service{
-		helpers.SimpleService{
-			Name:    "ethNetStats",
-			Image:   "gcr.io/whiteblock/polkadot:dev",
-			Env:     nil,
-			Network: "host",
-		},
-	}
+	return nil
 }
 // ``

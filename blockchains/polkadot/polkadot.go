@@ -20,17 +20,15 @@
 package polkadot
 
 import (
-	"encoding/json"
 	"fmt"
+	"strings"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/blockchains/ethereum"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"github.com/whiteblock/mustache"
 	"regexp"
 	// "sync"
 )
@@ -61,10 +59,11 @@ func init() {
 // build builds out a fresh new ethereum test network using geth
 func build(tn *testnet.TestNet) error {
 	// mux := sync.Mutex{}
-	ethconf, err := newConf(tn.LDD.Params)
+	dotconf, err := newConf(tn.LDD.Params)
 	if err != nil {
 		return util.LogError(err)
 	}
+	fmt.Println(dotconf)
 
 	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes))
 
@@ -90,10 +89,8 @@ func build(tn *testnet.TestNet) error {
 	var nodeIDList []string
 
 	tn.BuildState.IncrementBuildProgress()
-
 	
 	/**Create the wallets**/
-
 	/*
 	tn.BuildState.SetBuildStage("Creating the wallets")
 	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
@@ -116,130 +113,57 @@ func build(tn *testnet.TestNet) error {
 
 	//read from directory to get nodeID
 
-	// ('/ip4/%s/tcp/30333/p2p/%s', ip, id)
-
 
 	tn.BuildState.IncrementBuildProgress()
 	// tn.BuildState.SetBuildStage("Bootstrapping network")
 
-
 	tn.BuildState.SetBuildStage("Initializing polkadot")
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		out, err := client.DockerExec(node, fmt.Sprintf("polkadot"))
+		client.DockerExecdLog(node, fmt.Sprintf("polkadot"))
+		return nil
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		output, err := client.DockerExec(node, fmt.Sprintf("cat %s", conf.DockerOutputFile))
 		if err != nil {
-			return util.LogError(err)
+				return util.LogError(err)
 		}
 		reNodeID := regexp.MustCompile(`(?m)Local node identity is: (.*)`)
-		nodeID := reNodeID.FindAllString(out, 1)[0]
-		nodeIDList = append(nodeIDList, nodeID)
+		nodeID := reNodeID.FindAllString(output,1)[0]
+		url := fmt.Sprintf("/ip4/%s/tcp/30333/p2p/%s", node.GetIP(), nodeID)
+		nodeIDList = append(nodeIDList, url)
 		return nil
 	})
 	if err != nil {
 		return util.LogError(err)
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		_, err := client.DockerExecd(node, fmt.Sprintf("kill $(ps aux | grep polkadot | awk '{print $2;exit}')"))
-		if err != nil {
-			return util.LogError(err)
-		}
-		return nil
-	})
-	if err != nil {
-		return util.LogError(err)
-	}
+	//should delete output.log so there is no overlapping data (?)
+
+	tn.BuildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Starting polkadot")
+
+	nid := strings.Join(nodeIDList," ")
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		_, err := client.DockerExecd(node, fmt.Sprintf("polkadot"))
-		if err != nil {
-			return util.LogError(err)
-		}
-		return nil
-	})
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		//Load the CustomGenesis file
-		_, err := client.DockerExecd(node,
-			fmt.Sprintf("polkadot %d", ethconf.NetworkID))
+		err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+			client.DockerExecdLog(node, fmt.Sprintf("polkadot --reserved-nodes %s", nid))
+			return nil
+		})
 		if err != nil {
 			return util.LogError(err)
 		}
 		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
-
-		// log.WithFields(log.Fields{"raw": gethResults}).Trace("grabbed raw enode info")
-		// enodePattern := regexp.MustCompile(`(?m)Local node identity is: (.*)`)
-		// enode := enodePattern.FindAllString(gethResults, 1)[0]
-		// log.WithFields(log.Fields{"enode": enode}).Trace("parsed the enode")
-
-		// enode = enodeAddressPattern.ReplaceAllString(enode, node.GetIP())
-
-		// mux.Lock()
-		// nodeIDList[node.GetAbsoluteNumber()] = nodeID
-		// mux.Unlock()
-
 		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 	if err != nil {
 		return util.LogError(err)
 	}
-
-	out, err := json.Marshal(nodeIDList)
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	tn.BuildState.IncrementBuildProgress()
-	tn.BuildState.SetBuildStage("Starting polkadot")
-	// Copy static-nodes to every server
-	err = helpers.CopyBytesToAllNodes(tn, string(out), "/polkadot/reserved-nodes.txt")
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		tn.BuildState.IncrementBuildProgress()
-
-		/*
-		gethCmd := fmt.Sprintf(
-			`geth --datadir /geth/ --maxpeers %d --networkid %d --rpc --nodiscover --rpcaddr %s`+
-				` --rpcapi "web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
-				` --password /geth/passwd --etherbase %s console  2>&1 | tee %s`,
-			ethconf.MaxPeers,
-			ethconf.NetworkID,
-			node.GetIP(),
-			unlock,
-			accounts[node.GetAbsoluteNumber()].HexAddress(),
-			conf.DockerOutputFile)
-
-		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
-		if err != nil {
-			return util.LogError(err)
-		}
-		*/
-
-		tn.BuildState.IncrementBuildProgress()
-		return nil
-	})
-	if err != nil {
-		return util.LogError(err)
-	}
-	
-	/*
-	tn.BuildState.IncrementBuildProgress()
-	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
-
-	for _, account := range accounts {
-		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
-			"privateKey": account.HexPrivateKey(),
-			"publicKey":  account.HexPublicKey(),
-		})
-	}
-	*/
 	return nil
 }
 
@@ -249,58 +173,5 @@ func build(tn *testnet.TestNet) error {
 // TODO
 func add(tn *testnet.TestNet) error {
 	return nil
-}
-
-// MakeFakeAccounts creates ethereum addresses which can be marked as funded to produce a
-// larger initial state
-func MakeFakeAccounts(accs int) []string {
-	out := make([]string, accs)
-	for i := 1; i <= accs; i++ {
-		out[i-1] = fmt.Sprintf("0x%.40x", i)
-	}
-	return out
-}
-
-/**
- * Create the custom genesis file for Ethereum
- * @param  *ethConf ethconf     The chain configuration
- * @param  []string wallets     The wallets to be allocated a balance
- */
-
-func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) error {
-
-	genesis := map[string]interface{}{
-		"chainId":        ethconf.NetworkID,
-		"homesteadBlock": ethconf.HomesteadBlock,
-		"eip155Block":    ethconf.Eip155Block,
-		"eip158Block":    ethconf.Eip158Block,
-		"difficulty":     fmt.Sprintf("0x0%X", ethconf.Difficulty),
-		"gasLimit":       fmt.Sprintf("0x0%X", ethconf.GasLimit),
-	}
-	alloc := map[string]map[string]string{}
-	for _, account := range accounts {
-		alloc[account.HexAddress()] = map[string]string{
-			"balance": ethconf.InitBalance,
-		}
-	}
-
-	accs := MakeFakeAccounts(int(ethconf.ExtraAccounts))
-
-	for _, wallet := range accs {
-		alloc[wallet] = map[string]string{
-			"balance": ethconf.InitBalance,
-		}
-	}
-	genesis["alloc"] = alloc
-	dat, err := helpers.GetBlockchainConfig("polkadot", 0, "genesis.json", tn.LDD)
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	data, err := mustache.Render(string(dat), util.ConvertToStringMap(genesis))
-	if err != nil {
-		return util.LogError(err)
-	}
-	return tn.BuildState.Write("CustomGenesis.json", data)
 }
 
