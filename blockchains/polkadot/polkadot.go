@@ -30,7 +30,6 @@ import (
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"regexp"
-	// "sync"
 )
 
 var conf *util.Config
@@ -40,8 +39,9 @@ const blockchain = "polkadot"
 func init() {
 	conf = util.GetConfig()
 	alias := "polkadot"
+
 	registrar.RegisterBuild(blockchain, build)
-	registrar.RegisterBuild(alias, build) //ethereum default to geth
+	registrar.RegisterBuild(alias, build) 
 
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterAddNodes(alias, add)
@@ -56,7 +56,7 @@ func init() {
 	registrar.RegisterParams(alias, helpers.DefaultGetParamsFn(blockchain))
 }
 
-// build builds out a fresh new ethereum test network using geth
+// build builds out a fresh new polkadot test network
 func build(tn *testnet.TestNet) error {
 	// mux := sync.Mutex{}
 	dotconf, err := newConf(tn.LDD.Params)
@@ -73,49 +73,9 @@ func build(tn *testnet.TestNet) error {
 
 	helpers.MkdirAllNodes(tn, "/polkadot")
 
-	// {
-	// 	/**Create the Static Nodes files**/
-	// 	var nodeID string
-	// 	for i := 1; i <= tn.LDD.Nodes; i++ {
-	// 		data += "password\n"
-	// 	}
-	// 	/**Copy over the password file**/
-	// 	err = helpers.CopyBytesToAllNodes(tn, data, "/geth/passwd")
-	// 	if err != nil {
-	// 		return util.LogError(err)
-	// 	}
-	// }
-
 	var nodeIDList []string
 
 	tn.BuildState.IncrementBuildProgress()
-	
-	/**Create the wallets**/
-	/*
-	tn.BuildState.SetBuildStage("Creating the wallets")
-	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
-	if err != nil {
-		return util.LogError(err)
-	}
-	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		_, err := client.DockerExecd(node, fmt.Sprintf("polkadot"))
-		if err != nil {
-			return util.LogError(err)
-		}
-		return nil
-	})
-	if err != nil {
-		return util.LogError(err)
-	}
-	*/
-
-	// tn.BuildState.IncrementBuildProgress()
-
-	//read from directory to get nodeID
-
-
-	tn.BuildState.IncrementBuildProgress()
-	// tn.BuildState.SetBuildStage("Bootstrapping network")
 
 	tn.BuildState.SetBuildStage("Initializing polkadot")
 
@@ -169,7 +129,7 @@ func build(tn *testnet.TestNet) error {
 
 /***************************************************************************************************************************/
 
-// Add handles adding a node to the geth testnet
+// Add handles adding a node to the polkadot testnet
 // TODO
 func add(tn *testnet.TestNet) error {
 	return nil
