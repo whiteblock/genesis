@@ -31,21 +31,7 @@ func TestRemoveAllOutages(t *testing.T) {
 
 	client := mocks.NewMockClient(ctrl)
 
-	client.
-		EXPECT().
-		Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD || true").
-		Return("sudo blah -A test test\nsudo this is a test\nsudo this is another test for the loop\nsudo test\n\n", nil)
-
-	expectations := []string{
-		"sudo iptables -D sudo blah test test",
-		"sudo iptables -D sudo this is a test",
-		"sudo iptables -D sudo this is another test for the loop",
-		"sudo iptables -D sudo test",
-	}
-
-	for _, expectation := range expectations {
-		 client.EXPECT().Run(expectation)
-	}
+	RemoveAllOutagesExpectations(client)
 
 	RemoveAllOutages(client)
 }
