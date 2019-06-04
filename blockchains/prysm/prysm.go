@@ -23,15 +23,15 @@ import (
 	"crypto/rand"
 	"fmt"
 	"github.com/libp2p/go-libp2p-crypto"
+	peer "github.com/libp2p/go-libp2p-peer"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	log "github.com/sirupsen/logrus"
 	"reflect"
-	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 var conf *util.Config
@@ -73,7 +73,7 @@ func build(tn *testnet.TestNet) error {
 			if node == peerNode {
 				continue
 			}
-			peers += fmt.Sprintf(" --peer=/ip4/%s/tcp/%d/p2p/%s", peerNode.IP, p2pPort, IDString(nodeKeyPairs[peerNode.GetID()]))
+			peers += fmt.Sprintf(" --peer=/ip4/%s/tcp/%d/p2p/%s", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]))
 			tn.BuildState.IncrementBuildProgress()
 		}
 
@@ -98,8 +98,15 @@ func build(tn *testnet.TestNet) error {
 		if prometheusInstrumentationPort == "" {
 			prometheusInstrumentationPort = "8088"
 		}
+		var logFolder string
+		obj = tn.CombinedDetails.Params["logFolder"]
+		if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
+			logFolder = obj.(string)
+		} else {
+			logFolder = ""
+		}
 
-		_, err = client.DockerExecd(node, fmt.Sprintf("/beacon-chain --monitoring-port=%s --no-discovery %s --log-file /output.log --p2p-priv-key /etc/identity.key", prometheusInstrumentationPort, peers))
+		_, err = client.DockerExecd(node, fmt.Sprintf("/beacon-chain --monitoring-port=%s --no-discovery %s --log-file %s/output-%d.log --p2p-priv-key /etc/identity.key", prometheusInstrumentationPort, peers, logFolder, node.GetAbsoluteNumber()))
 		return err
 	})
 	return util.LogError(err)
@@ -110,7 +117,7 @@ func add(tn *testnet.TestNet) error {
 	return nil
 }
 
-func IDString(k crypto.PrivKey) string {
+func idString(k crypto.PrivKey) string {
 	pid, err := peer.IDFromPrivateKey(k)
 	if err != nil {
 		panic(err)

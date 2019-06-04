@@ -27,6 +27,7 @@ import (
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
+	"reflect"
 )
 
 var conf *util.Config
@@ -62,7 +63,14 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Starting lodestar")
 	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		return client.DockerExecdLog(node, "lodestar --listen-address 0.0.0.0 --port 9000 "+peers)
+		var logFolder string
+		obj := tn.CombinedDetails.Params["logFolder"]
+		if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
+			logFolder = obj.(string)
+		} else {
+			logFolder = ""
+		}
+		return client.DockerExecdLog(node, fmt.Sprintf("lodestar --listen-address 0.0.0.0 --port 9000 %s | tee %s/output%d.log", peers, logFolder, node.GetAbsoluteNumber()))
 	})
 }
 

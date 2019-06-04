@@ -19,7 +19,6 @@
 package artemis
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/whiteblock/genesis/blockchains/helpers"
@@ -57,15 +56,6 @@ func newConf(data map[string]interface{}) (artemisConf, error) {
 func GetServices() []helpers.Service {
 	return []helpers.Service{
 		helpers.RegisterPrometheus(),
-		helpers.SimpleService{
-			Name:  "wb_influx_proxy",
-			Image: "gcr.io/whiteblock/influx-proxy:master",
-			Env: map[string]string{
-				"BASIC_AUTH_BASE64": base64.StdEncoding.EncodeToString([]byte(conf.InfluxUser + ":" + conf.InfluxPassword)),
-				"INFLUXDB_URL":      conf.Influx,
-				"BIND_PORT":         "8086",
-			},
-		},
 	}
 }
 

@@ -51,7 +51,7 @@ type SideCar struct {
 	Type string `json:"type"`
 }
 
-// GetIP gets the id of this side car
+// GetID gets the id of this side car
 func (n SideCar) GetID() string {
 	return n.ID
 }

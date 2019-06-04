@@ -241,7 +241,7 @@ func (sshClient *client) KeepTryRun(command string) (string, error) {
 			break
 		}
 	}
-	return res, err
+	return res, util.LogError(err)
 }
 
 // DockerExec executes a command inside of a node
