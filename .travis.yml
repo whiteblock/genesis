@@ -10,10 +10,9 @@ matrix:
       sudo: required
       go: 1.12.5
       before_install:
+        - sudo apt-get install golint mockgen -y
         - go get github.com/golang/mock/gomock
         - mockgen -source=/home/travis/gopath/src/github.com/whiteblock/genesis/ssh/client.go -destination=/home/travis/gopath/src/github.com/whiteblock/genesis/net/mocks/client_mock.go -package=mocks
-      install:
-        - sudo apt-get install golint mockgen -y
       before_script:
         - go get github.com/whiteblock/genesis
       script:
