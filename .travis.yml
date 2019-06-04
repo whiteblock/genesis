@@ -17,10 +17,8 @@ matrix:
         - mockgen -source=/home/travis/gopath/src/github.com/whiteblock/genesis/ssh/client.go -destination=/home/travis/gopath/src/github.com/whiteblock/genesis/net/mocks/client_mock.go -package=mocks
       script:
         - go test github.com/whiteblock/genesis/...
-        - golint github.com/whiteblock/genesis/...
-        - go vet github.com/whiteblock/genesis/...
-        - go fmt $(go list ./... | grep -v /net/mocks/)
-        - go test $(go list ./... | grep -v /net/mocks/)
+        - golint $(go list github.com/whiteblock/genesis/... | grep -v /net/mocks/)
+        - go vet $(go list github.com/whiteblock/genesis/... | grep -v /net/mocks/)
         - go test github.com/whiteblock/genesis/... -race -coverprofile=coverage.txt -covermode=atomic
         - go build github.com/whiteblock/genesis
       after_success:
