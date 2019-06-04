@@ -88,14 +88,28 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		client.DockerExecdLog(node, fmt.Sprintf("kill $(ps aux | grep polkadot | awk '{print $2}')"))
+		return nil
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	loop := false
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		output, err := client.DockerExec(node, fmt.Sprintf("cat %s", conf.DockerOutputFile))
 		if err != nil {
 				return util.LogError(err)
 		}
-		reNodeID := regexp.MustCompile(`(?m)Local node identity is: (.*)`)
-		nodeID := reNodeID.FindAllString(output,1)[0]
-		url := fmt.Sprintf("/ip4/%s/tcp/30333/p2p/%s", node.GetIP(), nodeID)
-		nodeIDList = append(nodeIDList, url)
+		for loop {
+			reNodeID := regexp.MustCompile(`(?m)Local node identity is: (.*)`)
+			nodeID := reNodeID.FindAllString(output,1)[0]
+			if len(reNodeID.FindAllString(output,1)) != 0 {
+				loop = true
+			}
+			url := fmt.Sprintf("/ip4/%s/tcp/30333/p2p/%s", node.GetIP(), nodeID)
+			nodeIDList = append(nodeIDList, url)
+		}
 		return nil
 	})
 	if err != nil {
