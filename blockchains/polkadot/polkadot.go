@@ -88,7 +88,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		client.DockerExecdLog(node, fmt.Sprintf("kill $(ps aux | grep polkadot | awk '{print $2}')"))
+		client.DockerExecdLog(node, fmt.Sprintf("kill $(ps aux | grep polkadot | awk \\'{print $2}\\')"))
 		return nil
 	})
 	if err != nil {
@@ -124,10 +124,7 @@ func build(tn *testnet.TestNet) error {
 	nid := strings.Join(nodeIDList," ")
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-			client.DockerExecdLog(node, fmt.Sprintf("polkadot --reserved-nodes %s", nid))
-			return nil
-		})
+		client.DockerExecdLog(node, fmt.Sprintf("polkadot --reserved-nodes %s", nid))
 		if err != nil {
 			return util.LogError(err)
 		}
