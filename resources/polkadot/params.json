@@ -1,3 +1,15 @@
 [
-    ["validator","bool"]
+    ["validatorMode","bool"],
+    ["inPeers","int64"],
+    ["listenAddr","string"],
+    ["log","string"],
+    ["offChainWorker","string"],
+    ["offChainWokerExecution","string"],
+    ["otherExecution","string"],
+    ["outPeers","int64"],
+    ["poolKbytes","int64"],
+    ["poolLimit","int64"],
+    ["pruning","int64"],
+    ["stateCacheSize","int64"],
+    ["telemetryUrl","int64"]
 ]
