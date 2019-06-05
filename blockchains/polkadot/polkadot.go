@@ -87,13 +87,13 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	loop := true
+	
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		output, err := client.DockerRead(node, fmt.Sprintf("%s", conf.DockerOutputFile), -1)
 		if err != nil {
 				return util.LogError(err)
 		}
-		fmt.Println(output)
+		loop := true
 		for loop {
 			reNodeID := regexp.MustCompile(`(?m)Local node identity is: (.{46})`)
 			fmt.Println(reNodeID)
@@ -131,7 +131,7 @@ func build(tn *testnet.TestNet) error {
 	fmt.Println(nid)
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		client.DockerExecdLog(node, fmt.Sprintf("polkadot --chain=local --reserved-nodes %s", nid))
+		client.DockerExecd(node, fmt.Sprintf("bash -c 'polkadot --chain=local --reserved-nodes %s | tee /output.log'",nid))
 		if err != nil {
 			return util.LogError(err)
 		}
