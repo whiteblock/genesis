@@ -20,12 +20,9 @@ install: sudo apt-get install golint -y
 
 jobs:
   include:
-    - stage: Lint
+    - stage: validate
       script: make lint
-    - stage: Vet
       script: make vet
-    - stage: Test
       script: make test
-    - stage: Coverage
       script: make coverage
       after_success: bash <(curl -s https://codecov.io/bash)
