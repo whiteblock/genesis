@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/whiteblock/genesis/net/mocks"
+	"github.com/whiteblock/genesis/ssh/mocks"
 )
 
 func TestCreateCommands(t *testing.T) {

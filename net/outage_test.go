@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/whiteblock/genesis/net/mocks"
+	"github.com/whiteblock/genesis/ssh/mocks"
 )
 
 func TestRemoveAllOutages(t *testing.T) {
