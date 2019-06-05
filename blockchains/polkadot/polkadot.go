@@ -95,11 +95,13 @@ func build(tn *testnet.TestNet) error {
 		}
 		fmt.Println(output)
 		for loop {
-			reNodeID := regexp.MustCompile(`(?m)Local node identity is: (.*)`)
+			reNodeID := regexp.MustCompile(`(?m)Local node identity is: (.{46})`)
 			fmt.Println(reNodeID)
-			nodeID := reNodeID.FindAllString(output,-1)[0]
+			regNodeID := reNodeID.FindAllString(output,1)[0]
+			splitNodeID := strings.Split(regNodeID, ":")
+			nodeID := strings.Replace(splitNodeID[1], " ", "", -1)
 			fmt.Println(nodeID)
-			if len(reNodeID.FindAllString(output,-1)) != 0 {
+			if len(reNodeID.FindAllString(output,1)) != 0 {
 				loop = false
 			}
 			url := fmt.Sprintf("/ip4/%s/tcp/30333/p2p/%s", node.GetIP(), nodeID)
