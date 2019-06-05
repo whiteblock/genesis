@@ -1,5 +1,11 @@
 language: go
 go_import_path: github.com/whiteblock/genesis
+before_install:
+  - sudo apt-get install golint mockgen -y
+  - mkdir -p /home/travis/gopath/src/github.com/whiteblock/genesis/net/mocks
+  - go get github.com/golang/mock/mockgen
+  - go get ./... || true
+  - mockgen -destination=/home/travis/gopath/src/github.com/whiteblock/genesis/net/mocks/client_mock.go -package=mocks github.com/whiteblock/genesis/ssh Client,Node
 sudo: false
 env:
    - GOPATH=/home/travis/gopath
