@@ -18,10 +18,10 @@ coverage:
 	go test ./... -coverprofile=coverage.txt -covermode=atomic
 
 lint:
-	golint ./...
+	golint $(go list ./... | grep -v mocks)
 
 vet:
-	go vet ./...
+	go vet $(go list ./... | grep -v mocks)
 
 install-deps:
 	go get ./...
