@@ -31,4 +31,4 @@ install-mock:
 	go install github.com/golang/mock/mockgen
 
 mocks:
-	mockgen -destination=./ssh/mocks/client_mock.go -source=./ssh/client.go
+	mockgen -destination=./ssh/mocks/client_mock.go -source=./ssh/client.go -package=mocks
