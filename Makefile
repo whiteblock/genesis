@@ -5,7 +5,7 @@ GO111MODULE=on
 
 all: genesis
 
-genesis:
+genesis: | install-deps
 	$(GOC) build ./...
 
 test:
