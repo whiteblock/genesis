@@ -1,3 +1,4 @@
+
 module github.com/whiteblock/genesis
 
 go 1.12

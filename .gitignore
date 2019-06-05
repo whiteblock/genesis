@@ -6,5 +6,4 @@
 /.gdata
 *grind.out*
 *_mock.go
-net/mocks/client_mock.go
 /genesis
