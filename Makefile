@@ -14,9 +14,6 @@ test:
 test_race:
 	go test ./... -race 
 
-coverage:
-	go test ./... -coverprofile=coverage.txt -covermode=atomic
-
 lint:
 	golint $(go list ./... | grep -v mocks)
 
