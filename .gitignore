@@ -5,4 +5,5 @@
 /.idea
 /.gdata
 *grind.out*
-.vscode
+*_mock.go
+net/mocks/client_mock.go

@@ -1,22 +1,26 @@
 language: go
 go_import_path: github.com/whiteblock/genesis
+#gobuild_args: 
+before_install:
+  - sudo apt-get install golint mockgen -y
+  - mkdir -p /home/travis/gopath/src/github.com/whiteblock/genesis/net/mocks
+  - go get github.com/golang/mock/mockgen
+  - go get ./... || true
+  - mockgen -destination=/home/travis/gopath/src/github.com/whiteblock/genesis/net/mocks/client_mock.go -package=mocks github.com/whiteblock/genesis/ssh Client,Node
 sudo: false
 env:
+   - GOPATH=/home/travis/gopath
 #  - GO111MODULE=on
 matrix:
   include:
     - os: linux
       dist: xenial
       sudo: required
-      go: 1.12.x
-      install:
-        - sudo apt-get install golint mockgen -y
-      before_script:
-        - go get github.com/whiteblock/genesis
+      go: 1.12.5
       script:
         - go test github.com/whiteblock/genesis/...
-        - golint github.com/whiteblock/genesis/...
-        - go vet github.com/whiteblock/genesis/...
+        - golint $(go list github.com/whiteblock/genesis/... | grep -v /net/mocks/)
+        - go vet $(go list github.com/whiteblock/genesis/... | grep -v /net/mocks/)
         - go test github.com/whiteblock/genesis/... -race -coverprofile=coverage.txt -covermode=atomic
         - go build github.com/whiteblock/genesis
       after_success:
