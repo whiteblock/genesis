@@ -109,7 +109,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		client.DockerExec(node, fmt.Sprintf("pkill -SIGINT polkadot --chain=local"))
+		client.DockerExec(node, fmt.Sprintf("pkill -f \"^polkadot\""))
 		return nil
 	})
 	if err != nil {
