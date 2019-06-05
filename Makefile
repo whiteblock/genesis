@@ -1,30 +1,27 @@
-SHELL := /bin/bash
+GOC=go
+GO111MODULE=on
 
-GO111MODULE = on
+.PHONY: build test test_race lint vet install-deps coverage
 
-build:
-	go build ./...
-.PHONY: build
+all: genesis
+
+genesis:
+	$(GOC) build ./...
 
 test:
 	go test ./...
-.PHONY: test
 
 test_race:
-	go test ./... -race -coverprofile=coverage.txt -covermode=atomic
-.PHONY: test_race
+	go test ./... -race 
+
+coverage:
+	go test ./... -coverprofile=coverage.txt -covermode=atomic
 
 lint:
 	golint ./...
-.PHONY: lint
 
 vet:
 	go vet ./...
-.PHONY: vet
 
-install-dev:
-	go get github.com/whiteblock/genesis
-.PHONY: install-dev
-
-
-
+install-deps:
+	go get ./...
