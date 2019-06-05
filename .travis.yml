@@ -3,13 +3,22 @@ go_import_path: github.com/whiteblock/genesis
 sudo: false
 env:
 #  - GO111MODULE=on
-matrix:
+
+os: linux
+dist: xenial
+sudo: required
+go: 1.12.x
+
+install: sudo apt-get install golint -y
+
+jobs:
   include:
-    - os: linux
-      dist: xenial
-      sudo: required
-      go: 1.12.x
-      install:
-        - sudo apt-get install golint -y
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
+    - stage: Lint
+      script: make lint
+    - stage: Vet
+      script: make vet
+    - stage: Test
+      script: make test
+    - stage: Test Race
+      script: make test_race
+      after_success: bash <(curl -s https://codecov.io/bash)
