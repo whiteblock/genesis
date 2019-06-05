@@ -45,11 +45,7 @@ type dotConf struct {
  */
 func newConf(data map[string]interface{}) (*dotConf, error) {
 	out := new(dotConf)
-	err := helpers.HandleBlockchainConfig(blockchain, data, out)
-	if err != nil || data == nil {
-		return out, err
-	}
-	return out, nil
+	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
 // GetServices returns the services which are used by artemis
