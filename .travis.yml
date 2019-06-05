@@ -13,15 +13,12 @@ go: 1.12.x
 before_install:
   - make install-mock
   - make mocks
+  - sudo apt-get -y golint
 
 jobs:
   include:
-    - stage: Lint
-      script: make lint
-    - stage: Vet
-      script: make vet
-    - stage: Test
-      script: make test
-    - stage: Coverage
-      script: make coverage
-      after_success: bash <(curl -s https://codecov.io/bash)
+     - script: make lint
+     - script: make vet
+     - script: make test
+     - script: make coverage
+     - after_success: bash <(curl -s https://codecov.io/bash)
