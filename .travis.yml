@@ -19,6 +19,6 @@ jobs:
       script: make vet
     - stage: Test
       script: make test
-    - stage: Test Race
-      script: make test_race
+    - stage: Coverage
+      script: make coverage
       after_success: bash <(curl -s https://codecov.io/bash)
