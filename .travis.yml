@@ -2,6 +2,7 @@ language: go
 go_import_path: github.com/whiteblock/genesis
 sudo: false
 env:
+   - GOPATH=/home/travis/gopath
 #  - GO111MODULE=on
 
 os: linux
