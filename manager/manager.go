@@ -44,6 +44,7 @@ import (
 	_ "github.com/whiteblock/genesis/blockchains/pantheon"
 	_ "github.com/whiteblock/genesis/blockchains/parity"
 	_ "github.com/whiteblock/genesis/blockchains/plumtree"
+	_ "github.com/whiteblock/genesis/blockchains/polkadot"
 	_ "github.com/whiteblock/genesis/blockchains/prysm"
 	_ "github.com/whiteblock/genesis/blockchains/rchain"
 	_ "github.com/whiteblock/genesis/blockchains/syscoin"
