@@ -28,7 +28,7 @@ func validateResources(details *db.DeploymentDetails) error {
 	for i, res := range details.Resources {
 		err := res.ValidateAndSetDefaults()
 		if err != nil {
-			return util.LogError(fmt.Errorf("", err.Error(), i))
+			return util.LogError(fmt.Errorf("%s. For node %d", err.Error(), i))
 		}
 	}
 	return nil
