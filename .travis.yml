@@ -10,14 +10,6 @@ matrix:
       sudo: required
       go: 1.12.x
       install:
-        - sudo apt-get install golint mockgen -y
-      before_script:
-        - go get github.com/whiteblock/genesis
-      script:
-        - go test github.com/whiteblock/genesis/...
-        - golint github.com/whiteblock/genesis/...
-        - go vet github.com/whiteblock/genesis/...
-        - go test github.com/whiteblock/genesis/... -race -coverprofile=coverage.txt -covermode=atomic
-        - go build github.com/whiteblock/genesis
+        - sudo apt-get install golint -y
       after_success:
         - bash <(curl -s https://codecov.io/bash)
