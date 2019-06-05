@@ -28,19 +28,19 @@ import (
 
 func TestCreateLinks(t *testing.T) {
 	var test = []struct {
-		pnts []util.Point
-		c *Calculator
+		pnts     []util.Point
+		c        *Calculator
 		expected [][]Link
 	}{
 		{
 			pnts: []util.Point{{X: 0, Y: 2}, {X: 3, Y: 2}},
 			c: &Calculator{
-				Loss: func(float64) float64 {return 3.5},
-				Delay: func(float64) int {return 2},
-				Rate: func(float64) string {return "0"},
-				Duplication: func(float64) float64 {return 0},
-				Corrupt: func(float64) float64 {return 0.2},
-				Reorder: func(float64) float64 {return 0.1},
+				Loss:        func(float64) float64 { return 3.5 },
+				Delay:       func(float64) int { return 2 },
+				Rate:        func(float64) string { return "0" },
+				Duplication: func(float64) float64 { return 0 },
+				Corrupt:     func(float64) float64 { return 0.2 },
+				Reorder:     func(float64) float64 { return 0.1 },
 			},
 			expected: [][]Link{
 				{{0, 0, 3.5, 2, "0", 0, 0.2, 0.1}, {0, 1, 3.5, 2, "0", 0, 0.2, 0.1}},
@@ -50,16 +50,16 @@ func TestCreateLinks(t *testing.T) {
 		{
 			pnts: []util.Point{{X: 5, Y: 4}, {X: 0, Y: 0}},
 			c: &Calculator{
-				Loss: func(float64) float64 {return 1.5},
-				Delay: func(float64) int {return 1},
-				Rate: func(float64) string {return "2"},
-				Duplication: func(float64) float64 {return 0.5},
-				Corrupt: func(float64) float64 {return 1.5},
-				Reorder: func(float64) float64 {return 0},
+				Loss:        func(float64) float64 { return 1.5 },
+				Delay:       func(float64) int { return 1 },
+				Rate:        func(float64) string { return "2" },
+				Duplication: func(float64) float64 { return 0.5 },
+				Corrupt:     func(float64) float64 { return 1.5 },
+				Reorder:     func(float64) float64 { return 0 },
 			},
 			expected: [][]Link{
 				{{0, 0, 1.5, 1, "2", 0.5, 1.5, 0}, {0, 1, 1.5, 1, "2", 0.5, 1.5, 0}},
-				{{1, 0, 1.5, 1, "2", 0.5, 1.5, 0}, {1, 1, 1.5,1, "2", 0.5, 1.5, 0}},
+				{{1, 0, 1.5, 1, "2", 0.5, 1.5, 0}, {1, 1, 1.5, 1, "2", 0.5, 1.5, 0}},
 			},
 		},
 	}
