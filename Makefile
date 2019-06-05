@@ -28,7 +28,7 @@ install-deps:
 
 install-mock:
 	go get github.com/golang/mock/gomock
-    go install github.com/golang/mock/mockgen
+	go install github.com/golang/mock/mockgen
 
 mocks:
 	mockgen -destination=./ssh/mocks/client_mock.go -source=./ssh/client.go
