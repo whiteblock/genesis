@@ -80,24 +80,27 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Initializing polkadot")
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		client.DockerExecdLog(node, fmt.Sprintf("polkadot --chain=local"))
+		client.DockerExecd(node, fmt.Sprintf("bash -c 'polkadot --chain=local 2>&1 | tee /output.log'"))
 		return nil
 	})
 	if err != nil {
 		return util.LogError(err)
 	}
 
-	loop := false
+	loop := true
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		output, err := client.DockerExec(node, fmt.Sprintf("cat %s", conf.DockerOutputFile))
+		output, err := client.DockerRead(node, fmt.Sprintf("%s", conf.DockerOutputFile), -1)
 		if err != nil {
 				return util.LogError(err)
 		}
+		fmt.Println(output)
 		for loop {
 			reNodeID := regexp.MustCompile(`(?m)Local node identity is: (.*)`)
-			nodeID := reNodeID.FindAllString(output,1)[0]
-			if len(reNodeID.FindAllString(output,1)) != 0 {
-				loop = true
+			fmt.Println(reNodeID)
+			nodeID := reNodeID.FindAllString(output,-1)[0]
+			fmt.Println(nodeID)
+			if len(reNodeID.FindAllString(output,-1)) != 0 {
+				loop = false
 			}
 			url := fmt.Sprintf("/ip4/%s/tcp/30333/p2p/%s", node.GetIP(), nodeID)
 			nodeIDList = append(nodeIDList, url)
@@ -122,6 +125,8 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Starting polkadot")
 
 	nid := strings.Join(nodeIDList," ")
+
+	fmt.Println(nid)
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		client.DockerExecdLog(node, fmt.Sprintf("polkadot --chain=local --reserved-nodes %s", nid))
