@@ -20,5 +20,5 @@ jobs:
      - script: make lint
      - script: make vet
      - script: make test
-     - script: go test ./... -coverprofile=coverage.txt -covermode=atomic
+     - script: go get ./.. && go test ./... -coverprofile=coverage.txt -covermode=atomic
        after_success: bash <(curl -s https://codecov.io/bash)
