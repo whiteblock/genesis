@@ -16,8 +16,6 @@ dist: xenial
 sudo: required
 go: 1.12.x
 
-install: sudo apt-get install golint -y
-
 jobs:
   include:
     - stage: validate
