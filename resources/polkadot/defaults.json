@@ -1,3 +1,15 @@
 {
-    "validatorMode":true
+    "validatorMode":false,
+    "inPeers":25,
+    "listenAddr":"",
+    "log":"",
+    "offChainWorker":"WhenValidating",
+    "offChainWokerExecution":"NativeWhenPossible",
+    "otherExecution":"Wasm",
+    "outPeers":25,
+    "poolKbytes":10240,
+    "poolLimit":512,
+    "pruning":256,
+    "stateCacheSize":67108864,
+    "telemetryUrl":0
 }

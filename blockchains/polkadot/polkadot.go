@@ -63,7 +63,6 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	fmt.Println(dotconf)
 
 	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes))
 
@@ -129,9 +128,15 @@ func build(tn *testnet.TestNet) error {
 	nid := strings.Join(nodeIDList," ")
 
 	fmt.Println(nid)
+	
+	var vmode string
+
+	if (dotconf.ValidatorMode) {
+		vmode = " --validator"
+	}
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		client.DockerExecd(node, fmt.Sprintf("bash -c 'polkadot --chain=local --reserved-nodes %s 2>&1 | tee %s'", nid, conf.DockerOutputFile))
+		client.DockerExecd(node, fmt.Sprintf("bash -c 'polkadot --chain=local %s --reserved-nodes %s 2>&1 | tee %s'", vmode, nid, conf.DockerOutputFile))
 		if err != nil {
 			return util.LogError(err)
 		}
