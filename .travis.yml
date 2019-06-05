@@ -2,24 +2,19 @@ language: go
 go_import_path: github.com/whiteblock/genesis
 sudo: false
 env:
+   - GOPATH=/home/travis/gopath
 #  - GO111MODULE=on
-matrix:
+
+os: linux
+dist: xenial
+sudo: required
+go: 1.12.x
+
+jobs:
   include:
-    - os: linux
-      dist: xenial
-      sudo: required
-      go: 1.12.5
-      before_install:
-        - sudo apt-get install golint mockgen -y
-        - go get github.com/golang/mock/gomock
-        - mockgen -source=/home/travis/gopath/src/github.com/whiteblock/genesis/ssh/client.go -destination=/home/travis/gopath/src/github.com/whiteblock/genesis/net/mocks/client_mock.go -package=mocks
-      before_script:
-        - go get github.com/whiteblock/genesis
-      script:
-        - go test github.com/whiteblock/genesis/...
-        - golint $(go list github.com/whiteblock/genesis/... | grep -v /net/mocks/)
-        - go vet $(go list github.com/whiteblock/genesis/... | grep -v /net/mocks/)
-        - go test github.com/whiteblock/genesis/... -race -coverprofile=coverage.txt -covermode=atomic
-        - go build github.com/whiteblock/genesis
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
+    - stage: validate
+      script: make lint
+    - script: make vet
+    - script: make test
+    - script: make coverage
+      after_success: bash <(curl -s https://codecov.io/bash)

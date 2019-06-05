@@ -1,4 +1,3 @@
-/genesis
 /config.json
 /tmp
 /**/.DS_Store
@@ -7,3 +6,4 @@
 /.gdata
 *grind.out*
 *_mock.go
+/genesis
