@@ -76,10 +76,12 @@ func buildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 
 // BuildNode builds out a single node in a testnet
 func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
-	/*tn.BuildState.OnError(func() {
-		docker.Kill(tn.Clients[server.ID], node.LocalID)
-		docker.NetworkDestroy(tn.Clients[server.ID], node.LocalID)
-	})*/
+	if conf.RemoveNodesOnFailure {
+		tn.BuildState.OnError(func() {
+			docker.Kill(tn.Clients[server.ID], node.LocalID)
+			docker.NetworkDestroy(tn.Clients[server.ID], node.LocalID)
+		})
+	}
 	defer buildSideCars(tn, server, node) //Needs to be handled better
 	err := docker.NetworkCreate(tn, server.ID, server.SubnetID, node.LocalID)
 	if err != nil {

@@ -65,6 +65,7 @@ type Config struct {
 	RequireAuth             bool    `mapstructure:"requireAuth"`
 	MaxCommandOutputLogSize int     `mapstructure:"maxCommandOutputLogSize"`
 	ResourceDir             string  `mapstructure:"resourceDir"`
+	RemoveNodesOnFailure    bool    `mapstructure:"removeNodesOnFailure"`
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
@@ -108,6 +109,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("requireAuth", "REQUIRE_AUTH")
 	viper.BindEnv("maxCommandOutputLogSize", "MAX_COMMAND_OUTPUT_LOG_SIZE")
 	viper.BindEnv("resourceDir", "RESOURCE_DIR")
+	viper.BindEnv("removeNodesOnFailure", "REMOVE_NODES_ON_FAILURE")
 }
 func setViperDefaults() {
 	viper.SetDefault("sshUser", os.Getenv("USER"))
@@ -143,6 +145,7 @@ func setViperDefaults() {
 	viper.SetDefault("requireAuth", false)
 	viper.SetDefault("maxCommandOutputLogSize", -1)
 	viper.SetDefault("resourceDir", "./resources")
+	viper.SetDefault("removeNodesOnFailure", false)
 }
 
 // GCPFormatter enables the ability to use genesis logging with Stackdriver
