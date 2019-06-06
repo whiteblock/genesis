@@ -22,7 +22,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
 	"github.com/whiteblock/genesis/ssh"

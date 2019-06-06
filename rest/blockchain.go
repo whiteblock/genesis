@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/manager"
 	"github.com/whiteblock/genesis/state"

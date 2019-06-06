@@ -19,7 +19,7 @@
 package deploy
 
 import (
-	"github.com/whiteblock/genesis/blockchains/helpers"
+	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
 	//netem "github.com/whiteblock/genesis/net"

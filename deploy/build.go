@@ -22,8 +22,8 @@ package deploy
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/blockchains/helpers"
-	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
 	"github.com/whiteblock/genesis/ssh"

@@ -20,7 +20,7 @@ package manager
 
 import (
 	"fmt"
-	"github.com/whiteblock/genesis/blockchains/registrar"
+	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/deploy"
 	"github.com/whiteblock/genesis/state"
