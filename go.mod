@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/btcsuite/btcd v0.0.0-20190427004231-96897255fd17 // indirect
 	github.com/ethereum/go-ethereum v1.8.27
+	github.com/golang/mock v1.1.1
 	github.com/gorilla/mux v1.7.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/libp2p/go-libp2p-crypto v0.1.0

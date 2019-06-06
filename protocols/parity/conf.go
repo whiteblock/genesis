@@ -21,8 +21,8 @@ package parity
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
 )

@@ -71,7 +71,7 @@ func Distribute(nodes []string, dist []int) ([][]string, error) {
 	for i := range nodes {
 		conns := []string{}
 
-		DISTRIBUTE:
+	DISTRIBUTE:
 		for j := 0; j < dist[i]; j++ {
 			newConnIndex := r1.Intn(len(nodes))
 			if newConnIndex == i {

@@ -22,9 +22,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
+	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
@@ -37,11 +37,25 @@ func distributeNibbler(tn *testnet.TestNet) {
 		return
 	}
 	tn.BuildState.Async(func() {
-		nibbler, err := util.HTTPRequest("GET", conf.NibblerEndPoint, "")
+		var nibbler []byte
+		var err error
+		for i := 0; i < conf.MaxRunAttempts; i++ {
+			nibbler, err = util.HTTPRequest("GET", conf.NibblerEndPoint, "")
+			if err != nil {
+				log.WithFields(log.Fields{"error": err, "attempt": i}).Error("failed to download nibbler. retrying...")
+				continue
+			}
+			if nibbler == nil || len(nibbler) == 0 {
+				log.WithFields(log.Fields{"error": err, "attempt": i}).Error("downloaded an empty nibbler")
+				continue
+			}
+			break
+		}
 		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Error("failed to download nibbler")
+			log.WithFields(log.Fields{"error": err}).Error("failed to download nibbler.")
 			return
 		}
+
 		err = tn.BuildState.Write("nibbler", string(nibbler))
 		if err != nil {
 			log.Error(err)

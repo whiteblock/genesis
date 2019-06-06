@@ -19,9 +19,9 @@
 package deploy
 
 import (
-	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
+	"github.com/whiteblock/genesis/protocols/helpers"
 	//netem "github.com/whiteblock/genesis/net"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"

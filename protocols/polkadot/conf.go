@@ -25,19 +25,19 @@ import (
 )
 
 type dotConf struct {
-	ValidatorMode            bool    `json:"validatorMode"`
-	InPeers                  int64   `json:"inPeers"`
-	ListenAddr               string  `json:"listenAddr"`
-	Log                      string  `json:"log"`
-	OffchainWorker           string  `json:"offChainWorker"`
-	OffchainWorkerExecution  string  `json:"offChainWokerExecution"`
-	OtherExecution           string  `json:"otherExecution"`
-	OutPeers                 int64   `json:"outPeers"`
-	PoolKbytes               int64   `json:"poolKbytes"`
-	PoolLimit                int64   `json:"poolLimit"`
-	Pruning                  int64   `json:"pruning"`
-	StateCacheSize           int64   `json:"stateCacheSize"`
-	TelemetryUrl             int64   `json:"telemetryUrl"`
+	ValidatorMode           bool   `json:"validatorMode"`
+	InPeers                 int64  `json:"inPeers"`
+	ListenAddr              string `json:"listenAddr"`
+	Log                     string `json:"log"`
+	OffchainWorker          string `json:"offChainWorker"`
+	OffchainWorkerExecution string `json:"offChainWokerExecution"`
+	OtherExecution          string `json:"otherExecution"`
+	OutPeers                int64  `json:"outPeers"`
+	PoolKbytes              int64  `json:"poolKbytes"`
+	PoolLimit               int64  `json:"poolLimit"`
+	Pruning                 int64  `json:"pruning"`
+	StateCacheSize          int64  `json:"stateCacheSize"`
+	TelemetryUrl            int64  `json:"telemetryUrl"`
 }
 
 /**
@@ -52,4 +52,5 @@ func newConf(data map[string]interface{}) (*dotConf, error) {
 func GetServices() []helpers.Service {
 	return nil
 }
+
 // ``

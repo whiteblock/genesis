@@ -21,15 +21,15 @@ package polkadot
 
 import (
 	"fmt"
-	"strings"
 	log "github.com/sirupsen/logrus"
+	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
-	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"regexp"
+	"strings"
 )
 
 var conf *util.Config
@@ -41,7 +41,7 @@ func init() {
 	alias := "polkadot"
 
 	registrar.RegisterBuild(blockchain, build)
-	registrar.RegisterBuild(alias, build) 
+	registrar.RegisterBuild(alias, build)
 
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterAddNodes(alias, add)
@@ -86,21 +86,20 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		output, err := client.DockerRead(node, fmt.Sprintf("%s", conf.DockerOutputFile), -1)
 		if err != nil {
-				return util.LogError(err)
+			return util.LogError(err)
 		}
 		loop := true
 		for loop {
 			reNodeID := regexp.MustCompile(`(?m)Local node identity is: (.{46})`)
 			fmt.Println(reNodeID)
-			regNodeID := reNodeID.FindAllString(output,1)[0]
+			regNodeID := reNodeID.FindAllString(output, 1)[0]
 			splitNodeID := strings.Split(regNodeID, ":")
 			nodeID := strings.Replace(splitNodeID[1], " ", "", -1)
 			fmt.Println(nodeID)
-			if len(reNodeID.FindAllString(output,1)) != 0 {
+			if len(reNodeID.FindAllString(output, 1)) != 0 {
 				loop = false
 			}
 			url := fmt.Sprintf("/ip4/%s/tcp/30333/p2p/%s", node.GetIP(), nodeID)
@@ -125,13 +124,13 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Starting polkadot")
 
-	nid := strings.Join(nodeIDList," ")
+	nid := strings.Join(nodeIDList, " ")
 
 	fmt.Println(nid)
-	
+
 	var vmode string
 
-	if (dotconf.ValidatorMode) {
+	if dotconf.ValidatorMode {
 		vmode = " --validator"
 	}
 
@@ -157,4 +156,3 @@ func build(tn *testnet.TestNet) error {
 func add(tn *testnet.TestNet) error {
 	return nil
 }
-
