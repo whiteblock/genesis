@@ -66,6 +66,7 @@ type Config struct {
 	MaxCommandOutputLogSize int     `mapstructure:"maxCommandOutputLogSize"`
 	ResourceDir             string  `mapstructure:"resourceDir"`
 	RemoveNodesOnFailure    bool    `mapstructure:"removeNodesOnFailure"`
+	NibblerRetries          uint    `mapstructure:"nibblerRetries"`
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
@@ -110,6 +111,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("maxCommandOutputLogSize", "MAX_COMMAND_OUTPUT_LOG_SIZE")
 	viper.BindEnv("resourceDir", "RESOURCE_DIR")
 	viper.BindEnv("removeNodesOnFailure", "REMOVE_NODES_ON_FAILURE")
+	viper.BindEnv("nibblerRetries", "NIBBLER_RETRIES")
 }
 func setViperDefaults() {
 	viper.SetDefault("sshUser", os.Getenv("USER"))
@@ -146,6 +148,7 @@ func setViperDefaults() {
 	viper.SetDefault("maxCommandOutputLogSize", -1)
 	viper.SetDefault("resourceDir", "./resources")
 	viper.SetDefault("removeNodesOnFailure", false)
+	viper.SetDefault("nibblerRetries", 2)
 }
 
 // GCPFormatter enables the ability to use genesis logging with Stackdriver

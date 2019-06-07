@@ -37,7 +37,7 @@ type dotConf struct {
 	PoolLimit               int64  `json:"poolLimit"`
 	Pruning                 int64  `json:"pruning"`
 	StateCacheSize          int64  `json:"stateCacheSize"`
-	TelemetryUrl            int64  `json:"telemetryUrl"`
+	TelemetryURL            int64  `json:"telemetryUrl"`
 }
 
 /**

@@ -27,6 +27,12 @@ import (
 	"sync"
 )
 
+type settings struct {
+	useNew      bool
+	sidecar     int
+	reportError bool
+}
+
 // CopyAllToServers copies all of the src files to all of the servers within the given testnet.
 // This can handle multiple pairs in form of ...,source,destination,source2,destination2
 func CopyAllToServers(tn *testnet.TestNet, srcDst ...string) error {
@@ -52,12 +58,12 @@ func CopyAllToServers(tn *testnet.TestNet, srcDst ...string) error {
 	return tn.BuildState.GetError()
 }
 
-func copyToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, srcDst ...string) error {
+func copyToAllNodes(tn *testnet.TestNet, s settings, srcDst ...string) error {
 	if len(srcDst)%2 != 0 {
 		return fmt.Errorf("invalid number of variadic arguments, must be given an even number of them")
 	}
 	wg := sync.WaitGroup{}
-	preOrderedNodes := tn.PreOrderNodes(useNew, sidecar != -1, sidecar)
+	preOrderedNodes := tn.PreOrderNodes(s.useNew, s.sidecar != -1, s.sidecar)
 
 	for sid, nodes := range preOrderedNodes {
 		for j := 0; j < len(srcDst)/2; j++ {
@@ -81,7 +87,12 @@ func copyToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, srcDst ...str
 						defer wg.Done()
 						err := tn.Clients[node.GetServerID()].DockerCp(node, intermediateDst, srcDst[2*j+1])
 						if err != nil {
-							tn.BuildState.ReportError(err)
+							if s.reportError {
+								tn.BuildState.ReportError(err)
+							} else {
+								tn.BuildState.Set("error", err)
+							}
+
 							return
 						}
 					}(nodes[i], j, intermediateDst)
@@ -91,32 +102,53 @@ func copyToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, srcDst ...str
 	}
 
 	wg.Wait()
-	return tn.BuildState.GetError()
+	if s.reportError {
+		return tn.BuildState.GetError()
+	}
+	var err error
+	hasErr := tn.BuildState.GetP("error", &err)
+	if !hasErr {
+		return nil
+	}
+	return err
+
 }
 
 // CopyToAllNodes copies files written with BuildState's write function over to all of the nodes.
 // Can handle multiple files, in pairs of src and dst
 func CopyToAllNodes(tn *testnet.TestNet, srcDst ...string) error {
-	return copyToAllNodes(tn, false, -1, srcDst...)
+	return copyToAllNodes(tn, settings{useNew: false, sidecar: -1, reportError: true}, srcDst...)
 }
 
 // CopyToAllNewNodes copies files written with BuildState's write function over to all of the newly built nodes.
 // Can handle multiple files, in pairs of src and dst
 func CopyToAllNewNodes(tn *testnet.TestNet, srcDst ...string) error {
-	return copyToAllNodes(tn, true, -1, srcDst...)
+	return copyToAllNodes(tn, settings{useNew: true, sidecar: -1, reportError: true}, srcDst...)
+}
+
+// CopyToAllNodesDR copies files written with BuildState's write function over to all of the nodes.
+// Can handle multiple files, in pairs of src and dst. DR means it doesn't report the error to build state.
+func CopyToAllNodesDR(tn *testnet.TestNet, srcDst ...string) error {
+	return copyToAllNodes(tn, settings{useNew: false, sidecar: -1, reportError: false}, srcDst...)
+}
+
+// CopyToAllNewNodesDR copies files written with BuildState's write function over to all of the newly built nodes.
+// Can handle multiple files, in pairs of src and dst. DR means it doesn't report the error to build state.
+func CopyToAllNewNodesDR(tn *testnet.TestNet, srcDst ...string) error {
+	return copyToAllNodes(tn, settings{useNew: true, sidecar: -1, reportError: false}, srcDst...)
 }
 
 // CopyToAllNodesSC is CopyToAllNodes for side cars
 func CopyToAllNodesSC(ad *testnet.Adjunct, srcDst ...string) error {
-	return copyToAllNodes(ad.Main, false, ad.Index, srcDst...)
+	return copyToAllNodes(ad.Main, settings{useNew: false, sidecar: ad.Index, reportError: true}, srcDst...)
 }
 
 // CopyToAllNewNodesSC is CopyToAllNewNodes for side cars
 func CopyToAllNewNodesSC(ad *testnet.Adjunct, srcDst ...string) error {
-	return copyToAllNodes(ad.Main, true, ad.Index, srcDst...)
+	return copyToAllNodes(ad.Main, settings{useNew: true, sidecar: ad.Index, reportError: true}, srcDst...)
 }
 
-func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, dataDst ...string) error {
+func copyBytesToAllNodes(tn *testnet.TestNet, s settings, dataDst ...string) error {
 	fmted := []string{}
 	for i := 0; i < len(dataDst)/2; i++ {
 		tmpFilename, err := util.GetUUIDString()
@@ -130,28 +162,28 @@ func copyBytesToAllNodes(tn *testnet.TestNet, useNew bool, sidecar int, dataDst 
 		}
 		fmted = append(fmted, tmpFilename, dataDst[i*2+1])
 	}
-	return copyToAllNodes(tn, useNew, sidecar, fmted...)
+	return copyToAllNodes(tn, s, fmted...)
 }
 
 // CopyBytesToAllNodes functions similarly to CopyToAllNodes, except it operates on data and dst pairs instead of
 // src and dest pairs, so you can just pass data directly to all of the nodes without having to call buildState.Write first.
 func CopyBytesToAllNodes(tn *testnet.TestNet, dataDst ...string) error {
-	return copyBytesToAllNodes(tn, false, -1, dataDst...)
+	return copyBytesToAllNodes(tn, settings{useNew: false, sidecar: -1, reportError: true}, dataDst...)
 }
 
 // CopyBytesToAllNewNodes is CopyBytesToAllNodes but only operates on newly built nodes
 func CopyBytesToAllNewNodes(tn *testnet.TestNet, dataDst ...string) error {
-	return copyBytesToAllNodes(tn, true, -1, dataDst...)
+	return copyBytesToAllNodes(tn, settings{useNew: true, sidecar: -1, reportError: true}, dataDst...)
 }
 
 // CopyBytesToAllNodesSC is CopyBytesToAllNodes but only operates on sidecar nodes
 func CopyBytesToAllNodesSC(ad *testnet.Adjunct, dataDst ...string) error {
-	return copyBytesToAllNodes(ad.Main, false, ad.Index, dataDst...)
+	return copyBytesToAllNodes(ad.Main, settings{useNew: false, sidecar: ad.Index, reportError: true}, dataDst...)
 }
 
 // CopyBytesToAllNewNodesSC is CopyBytesToAllNewNodes but only operates on sidecar nodes
 func CopyBytesToAllNewNodesSC(ad *testnet.Adjunct, dataDst ...string) error {
-	return copyBytesToAllNodes(ad.Main, true, ad.Index, dataDst...)
+	return copyBytesToAllNodes(ad.Main, settings{useNew: true, sidecar: ad.Index, reportError: true}, dataDst...)
 }
 
 // SingleCp copies over data to the given dest on node localNodeID.

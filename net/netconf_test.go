@@ -71,7 +71,7 @@ func TestApply(t *testing.T) {
 	defer ctrl.Finish()
 
 	netconf := Netconf{Node: 3}
-	serverId := 1
+	serverID := 1
 	client := mocks.NewMockClient(ctrl)
 
 	expectations := []string{
@@ -92,7 +92,7 @@ func TestApply(t *testing.T) {
 		previous = call
 	}
 
-	Apply(client, netconf, serverId)
+	Apply(client, netconf, serverID)
 }
 
 func TestRemoveAllOnServer(t *testing.T) {

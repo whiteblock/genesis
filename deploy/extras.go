@@ -37,9 +37,9 @@ func distributeNibbler(tn *testnet.TestNet) {
 		return
 	}
 	tn.BuildState.Async(func() {
-		var nibbler []byte
 		var err error
-		for i := 0; i < conf.MaxRunAttempts; i++ {
+		for i := uint(0); i < conf.NibblerRetries; i++ {
+			var nibbler []byte
 			nibbler, err = util.HTTPRequest("GET", conf.NibblerEndPoint, "")
 			if err != nil {
 				log.WithFields(log.Fields{"error": err, "attempt": i}).Error("failed to download nibbler. retrying...")
@@ -49,29 +49,31 @@ func distributeNibbler(tn *testnet.TestNet) {
 				log.WithFields(log.Fields{"error": err, "attempt": i}).Error("downloaded an empty nibbler")
 				continue
 			}
-			break
-		}
-		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Error("failed to download nibbler.")
-			return
-		}
 
-		err = tn.BuildState.Write("nibbler", string(nibbler))
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		err = helpers.CopyToAllNewNodes(tn, "nibbler", "/usr/local/bin/nibbler")
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-			_, err := client.DockerExec(node, "chmod +x /usr/local/bin/nibbler")
-			return err
-		})
-		if err != nil {
-			log.Error(err)
+			if err != nil {
+				log.WithFields(log.Fields{"error": err}).Error("failed to download nibbler.")
+				continue
+			}
+
+			err = tn.BuildState.Write("nibbler", string(nibbler))
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			err = helpers.CopyToAllNewNodesDR(tn, "nibbler", "/usr/local/bin/nibbler")
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+				_, err := client.DockerExec(node, "chmod +x /usr/local/bin/nibbler")
+				return err
+			})
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			break
 		}
 	})
 }
