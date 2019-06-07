@@ -125,7 +125,11 @@ func build(tn *testnet.TestNet) error {
 		}
 		unlock += account.HexAddress()
 	}
-
+	extraAccounts, err := ethereum.GenerateAccounts(int(ethconf.ExtraAccounts))
+	if err != nil {
+		return util.LogError(err)
+	}
+	accounts = append(accounts, extraAccounts...)
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Creating the genesis block")
 	err = createGenesisfile(ethconf, tn, accounts)
