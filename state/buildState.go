@@ -151,11 +151,9 @@ func (bs *BuildState) Freeze() error {
 	log.WithFields(log.Fields{"build": bs.BuildID}).Info("freezing the build")
 
 	if atomic.LoadInt32(&bs.frozen) != 0 {
-		bs.mutex.Unlock()
 		return fmt.Errorf("already frozen")
 	}
 	if atomic.LoadInt32(&bs.stopping) != 0 {
-
 		return fmt.Errorf("build terminating")
 	}
 
