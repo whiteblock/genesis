@@ -89,17 +89,17 @@ func checkForNilOrMissing(details *db.DeploymentDetails) error {
 }
 
 func validate(details *db.DeploymentDetails) error {
-	err := checkForNilOrMissing(details)
+	err := validateNumOfNodes(details)
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	err = checkForNilOrMissing(details)
 	if err != nil {
 		return util.LogError(err)
 	}
 
 	err = validateResources(details)
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	err = validateNumOfNodes(details)
 	if err != nil {
 		return util.LogError(err)
 	}

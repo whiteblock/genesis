@@ -224,8 +224,8 @@ func (bs *BuildState) DoneBuilding() {
 	atomic.StoreUint64(&bs.SideCarProgress, atomic.LoadUint64(&bs.SideCarTotal))
 
 	bs.asyncWaiter.Wait() //Wait for the async calls to complete
-	bs.mutex.Lock()
 
+	bs.mutex.Lock()
 	bs.BuildStage = "Finished"
 	bs.mutex.Unlock()
 
