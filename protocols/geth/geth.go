@@ -222,8 +222,9 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-
+	tn.BuildState.SetExt("networkID", ethconf.NetworkID)
 	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
+	tn.BuildState.SetExt("port", 8545)
 
 	for _, account := range accounts {
 		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
@@ -231,6 +232,7 @@ func build(tn *testnet.TestNet) error {
 			"publicKey":  account.HexPublicKey(),
 		})
 	}
+
 	return setupEthNetIntelligenceAPI(tn)
 }
 

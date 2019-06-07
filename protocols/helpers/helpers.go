@@ -29,17 +29,13 @@ import (
 	"sync"
 )
 
-var conf *util.Config
-
-func init() {
-	conf = util.GetConfig()
-}
+var conf = util.GetConfig()
 
 /*
 	fn func(client ssh.Client, server &db.Server,localNodeNum int,absoluteNodeNum int)(error)
 */
-func allNodeExecCon(tn *testnet.TestNet, useNew bool, sideCar int, fn func(ssh.Client, *db.Server, ssh.Node) error) error {
-	nodes := tn.GetSSHNodes(useNew, sideCar != -1, sideCar)
+func allNodeExecCon(tn *testnet.TestNet, s settings, fn func(ssh.Client, *db.Server, ssh.Node) error) error {
+	nodes := tn.GetSSHNodes(s.useNew, s.sidecar != -1, s.sidecar)
 	wg := sync.WaitGroup{}
 	for _, node := range nodes {
 
@@ -65,22 +61,33 @@ func allNodeExecCon(tn *testnet.TestNet, useNew bool, sideCar int, fn func(ssh.C
 // return a non-nil error value, one of those errors will be returned. Currently there is no guarantee as to which one,
 // however this should be implemented in the future.
 func AllNodeExecCon(tn *testnet.TestNet, fn func(ssh.Client, *db.Server, ssh.Node) error) error {
-	return allNodeExecCon(tn, false, -1, fn)
+
+	return allNodeExecCon(tn, settings{useNew: false, sidecar: -1, reportError: true}, fn)
 }
 
 // AllNewNodeExecCon is AllNodeExecCon but executes only for new nodes
 func AllNewNodeExecCon(tn *testnet.TestNet, fn func(ssh.Client, *db.Server, ssh.Node) error) error {
-	return allNodeExecCon(tn, true, -1, fn)
+
+	return allNodeExecCon(tn, settings{useNew: true, sidecar: -1, reportError: true}, fn)
+}
+
+// AllNewNodeExecConDR is AllNodeExecCon but executes only for new nodes, but only returns the error, doesn't
+// report it to the build state automatically. (You most likely do NOT want this)
+func AllNewNodeExecConDR(tn *testnet.TestNet, fn func(ssh.Client, *db.Server, ssh.Node) error) error {
+
+	return allNodeExecCon(tn, settings{useNew: true, sidecar: -1, reportError: false}, fn)
 }
 
 // AllNodeExecConSC is AllNodeExecCon but executes only for sidecar nodes
 func AllNodeExecConSC(ad *testnet.Adjunct, fn func(ssh.Client, *db.Server, ssh.Node) error) error {
-	return allNodeExecCon(ad.Main, false, ad.Index, fn)
+
+	return allNodeExecCon(ad.Main, settings{useNew: false, sidecar: ad.Index, reportError: true}, fn)
 }
 
 // AllNewNodeExecConSC is AllNewNodeExecCon but executes only for sidecar nodes
 func AllNewNodeExecConSC(ad *testnet.Adjunct, fn func(ssh.Client, *db.Server, ssh.Node) error) error {
-	return allNodeExecCon(ad.Main, true, ad.Index, fn)
+
+	return allNodeExecCon(ad.Main, settings{useNew: true, sidecar: ad.Index, reportError: true}, fn)
 }
 
 // AllServerExecCon executes fn for every server in the testnet. Is sementatically similar to
@@ -103,8 +110,8 @@ func AllServerExecCon(tn *testnet.TestNet, fn func(ssh.Client, *db.Server) error
 	return tn.BuildState.GetError()
 }
 
-func mkdirAllNodes(tn *testnet.TestNet, dir string, useNew bool, sideCar int) error {
-	return allNodeExecCon(tn, useNew, sideCar, func(client ssh.Client, server *db.Server, node ssh.Node) error {
+func mkdirAllNodes(tn *testnet.TestNet, dir string, s settings) error {
+	return allNodeExecCon(tn, s, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		_, err := client.DockerExec(node, fmt.Sprintf("mkdir -p %s", dir))
 		return err
 	})
@@ -112,12 +119,12 @@ func mkdirAllNodes(tn *testnet.TestNet, dir string, useNew bool, sideCar int) er
 
 // MkdirAllNodes makes a dir on all nodes
 func MkdirAllNodes(tn *testnet.TestNet, dir string) error {
-	return mkdirAllNodes(tn, dir, false, -1)
+	return mkdirAllNodes(tn, dir, settings{useNew: false, sidecar: -1, reportError: true})
 }
 
 // MkdirAllNewNodes makes a dir on all new nodes
 func MkdirAllNewNodes(tn *testnet.TestNet, dir string) error {
-	return mkdirAllNodes(tn, dir, true, -1)
+	return mkdirAllNodes(tn, dir, settings{useNew: true, sidecar: -1, reportError: true})
 }
 
 // AllServerExecConSC is like AllServerExecCon but for side cars

@@ -26,6 +26,7 @@ import (
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/state"
+	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"io/ioutil"
 ) //log "github.com/sirupsen/logrus"
@@ -139,4 +140,17 @@ func HandleBlockchainConfig(blockchain string, data map[string]interface{}, out 
 		return util.LogError(err)
 	}
 	return json.Unmarshal(tmp, out)
+}
+
+// getError retrieves the error value from the build state, depending on the settings.
+func getError(tn *testnet.TestNet, s settings) error {
+	if s.reportError {
+		return tn.BuildState.GetError()
+	}
+	var err error
+	hasErr := tn.BuildState.GetP("error", &err)
+	if !hasErr {
+		return nil
+	}
+	return err
 }

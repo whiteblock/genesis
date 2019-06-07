@@ -102,16 +102,7 @@ func copyToAllNodes(tn *testnet.TestNet, s settings, srcDst ...string) error {
 	}
 
 	wg.Wait()
-	if s.reportError {
-		return tn.BuildState.GetError()
-	}
-	var err error
-	hasErr := tn.BuildState.GetP("error", &err)
-	if !hasErr {
-		return nil
-	}
-	return err
-
+	return getError(tn, s)
 }
 
 // CopyToAllNodes copies files written with BuildState's write function over to all of the nodes.
@@ -211,8 +202,8 @@ func SingleCp(client ssh.Client, buildState *state.BuildState, node ssh.Node, da
 /*
 	fn func(serverid int, localNodeNum int, absoluteNodeNum int) ([]byte, error)
 */
-func createConfigs(tn *testnet.TestNet, dest string, useNew bool, sidecar int, fn func(ssh.Node) ([]byte, error)) error {
-	nodes := tn.GetSSHNodes(useNew, sidecar != -1, sidecar)
+func createConfigs(tn *testnet.TestNet, dest string, s settings, fn func(ssh.Node) ([]byte, error)) error {
+	nodes := tn.GetSSHNodes(s.useNew, s.sidecar != -1, s.sidecar)
 	wg := sync.WaitGroup{}
 	for _, node := range nodes {
 		wg.Add(1)
@@ -243,20 +234,20 @@ func createConfigs(tn *testnet.TestNet, dest string, useNew bool, sidecar int, f
 // For each node, fn will be called, with (Server ID, local node number, absolute node number), and it will expect
 // to have the configuration file returned or error.
 func CreateConfigs(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
-	return createConfigs(tn, dest, false, -1, fn)
+	return createConfigs(tn, dest, settings{useNew: false, sidecar: -1, reportError: true}, fn)
 }
 
 // CreateConfigsNewNodes is CreateConfigs but it only operates on new nodes
 func CreateConfigsNewNodes(tn *testnet.TestNet, dest string, fn func(ssh.Node) ([]byte, error)) error {
-	return createConfigs(tn, dest, true, -1, fn)
+	return createConfigs(tn, dest, settings{useNew: true, sidecar: -1, reportError: true}, fn)
 }
 
 // CreateConfigsSC is CreateConfigs but it only operates on side cars
 func CreateConfigsSC(ad *testnet.Adjunct, dest string, fn func(ssh.Node) ([]byte, error)) error {
-	return createConfigs(ad.Main, dest, false, ad.Index, fn)
+	return createConfigs(ad.Main, dest, settings{useNew: false, sidecar: ad.Index, reportError: true}, fn)
 }
 
 // CreateConfigsNewNodesSC is CreateConfigsNewNodes but it only operates on side cars
 func CreateConfigsNewNodesSC(ad *testnet.Adjunct, dest string, fn func(ssh.Node) ([]byte, error)) error {
-	return createConfigs(ad.Main, dest, true, ad.Index, fn)
+	return createConfigs(ad.Main, dest, settings{useNew: true, sidecar: ad.Index, reportError: true}, fn)
 }
