@@ -21,17 +21,17 @@ package deploy
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/ssh"
-	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/status"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"io/ioutil"
-	"strings"
 )
 
 /*
@@ -78,7 +78,7 @@ func alwaysRunFinalize(tn *testnet.TestNet) {
 	copy(newNodes, tn.NewlyBuiltNodes)
 	tn.BuildState.Defer(func() {
 		for i, node := range newNodes {
-			err := finalizeNode(node, tn.LDD, tn.BuildState, i)
+			err := finalizeNode(node, tn.LDD, i)
 			if err != nil {
 				tn.BuildState.ReportError(err)
 			}
@@ -164,7 +164,7 @@ func declareNode(node *db.Node, tn *testnet.TestNet) error {
 	return err
 }
 
-func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state.BuildState, absNum int) error {
+func finalizeNode(node db.Node, details *db.DeploymentDetails, absNum int) error {
 	if conf.DisableNibbler {
 		log.Info("skipping nibbler setup as it is disabled")
 		return nil
