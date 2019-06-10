@@ -20,22 +20,21 @@ package netconf
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/status"
 	"github.com/whiteblock/genesis/util"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
 )
 
 //RemoveAllOutages removes all blocked connections on a server via the given client
-func RemoveAllOutages(client *ssh.Client) error {
+func RemoveAllOutages(client ssh.Client) error {
 	res, err := client.Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD || true")
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	if len(res) == 0 {
 		return nil
@@ -51,9 +50,9 @@ func RemoveAllOutages(client *ssh.Client) error {
 		wg.Add(1)
 		go func(cmd string) {
 			defer wg.Done()
-			_, err = client.Run(fmt.Sprintf("sudo iptables -D %s", cmd))
+			_, err := client.Run(fmt.Sprintf("sudo iptables -D %s", cmd))
 			if err != nil {
-				log.Println(err)
+				log.Error(err)
 			}
 		}(cmd)
 	}
@@ -78,23 +77,19 @@ func mkrmOutage(node1 db.Node, node2 db.Node, create bool) error {
 
 	client, err := status.GetClient(node1.Server)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	_, err = client.Run(fmt.Sprintf("sudo iptables %s %s", flag, cmds[0]))
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	client, err = status.GetClient(node2.Server)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	_, err = client.Run(fmt.Sprintf("sudo iptables %s %s", flag, cmds[1]))
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	return nil
@@ -120,7 +115,7 @@ func CreatePartitionOutage(side1 []db.Node, side2 []db.Node) { //Doesn't report 
 				defer wg.Done()
 				err := MakeOutage(node1, node2)
 				if err != nil {
-					log.Println(err)
+					log.Error(err)
 				}
 			}(node1, node2)
 		}
@@ -130,11 +125,10 @@ func CreatePartitionOutage(side1 []db.Node, side2 []db.Node) { //Doesn't report 
 
 //GetCutConnections fetches the cut connections on a server
 //TODO: Naive Implementation, does not yet take multiple servers into account
-func GetCutConnections(client *ssh.Client) ([]Connection, error) {
+func GetCutConnections(client ssh.Client) ([]Connection, error) {
 	res, err := client.Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD | awk '{print $4,$6}' | sed -e 's/\\/32//g' || true")
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	out := []Connection{}
 	if len(res) == 0 { //No cut connections on this server
@@ -159,8 +153,7 @@ func GetCutConnections(client *ssh.Client) ([]Connection, error) {
 
 		fromNode, err := strconv.Atoi(cutPair[1][len(conf.BridgePrefix):])
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		out = append(out, Connection{To: toNode, From: fromNode})
 	}
@@ -171,15 +164,13 @@ func GetCutConnections(client *ssh.Client) ([]Connection, error) {
 func CalculatePartitions(nodes []db.Node) ([][]int, error) {
 	clients, err := status.GetClientsFromNodes(nodes)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	cutConnections := []Connection{}
 	for _, client := range clients {
 		conns, err := GetCutConnections(client)
 		if err != nil {
-			log.Println(err)
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		cutConnections = append(cutConnections, conns...)
 	}

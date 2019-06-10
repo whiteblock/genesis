@@ -51,6 +51,11 @@ type SideCar struct {
 	Type string `json:"type"`
 }
 
+// GetID gets the id of this side car
+func (n SideCar) GetID() string {
+	return n.ID
+}
+
 // GetAbsoluteNumber gets the absolute node number of the corresponding ndoe
 func (n SideCar) GetAbsoluteNumber() int {
 	return n.AbsoluteNodeNum

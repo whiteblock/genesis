@@ -20,7 +20,7 @@ package status
 
 import (
 	"github.com/whiteblock/genesis/db"
-	"log"
+	"github.com/whiteblock/genesis/util"
 )
 
 // GetLatestServers gets the servers used in the latest testnet, populated with the
@@ -28,15 +28,13 @@ import (
 func GetLatestServers(testnetID string) ([]db.Server, error) {
 	nodes, err := db.GetAllNodesByTestNet(testnetID)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	serverIDs := db.GetUniqueServerIDs(nodes)
 
 	servers, err := db.GetServers(serverIDs)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	for _, node := range nodes {
 		for i := range servers {

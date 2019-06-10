@@ -20,12 +20,12 @@ package deploy
 
 import (
 	"fmt"
-	"github.com/whiteblock/genesis/blockchains/helpers"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"log"
 )
 
 func handleExtraPublicKeys(tn *testnet.TestNet) error {
@@ -33,7 +33,7 @@ func handleExtraPublicKeys(tn *testnet.TestNet) error {
 	if !ok {
 		return nil
 	}
-	fmt.Printf("%#v\n", tn.LDD.Extras["postbuild"])
+	log.WithFields(log.Fields{"postBuild": tn.LDD.Extras["postbuild"]}).Trace("extracted post build details")
 	SSHDetails, ok := util.ExtractStringMap(postBuild, "ssh")
 	if !ok || SSHDetails == nil {
 		return nil
@@ -45,12 +45,11 @@ func handleExtraPublicKeys(tn *testnet.TestNet) error {
 	pubKeys := iPubKeys.([]interface{})
 
 	tn.BuildState.Async(func() {
-		helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+		helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 			for i := range pubKeys {
 				_, err := client.DockerExec(node, fmt.Sprintf(`bash -c 'echo "%v" >> /root/.ssh/authorized_keys'`, pubKeys[i]))
 				if err != nil {
-					log.Println(err)
-					return err
+					return util.LogError(err)
 				}
 			}
 			return nil

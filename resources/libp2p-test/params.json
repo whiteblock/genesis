@@ -3,5 +3,6 @@
     ["connections","int"],
     ["interval","int"],
     ["senders","int"],
-    ["payloadSize","int"]
+    ["payloadSize","int"],
+    ["useValgrind","bool"]
 ]

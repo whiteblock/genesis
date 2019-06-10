@@ -19,282 +19,169 @@
 package util
 
 import (
-	"encoding/json"
-	"fmt"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
+	"github.com/spf13/viper"
 	"os"
-	"strconv"
 )
 
 // Config groups all of the global configuration parameters into
 // a single struct
 type Config struct {
-	SSHUser            string  `json:"ssh-user"`
-	SSHKey             string  `json:"ssh-key"`
-	ServerBits         uint32  `json:"server-bits"`
-	ClusterBits        uint32  `json:"cluster-bits"`
-	NodeBits           uint32  `json:"node-bits"`
-	IPPrefix           uint32  `json:"ip-prefix"`
-	Listen             string  `json:"listen"`
-	Verbosity          string  `json:"verbosity"`
-	ThreadLimit        int64   `json:"thread-limit"`
-	DockerOutputFile   string  `json:"docker-output-file"`
-	Influx             string  `json:"influx"`
-	InfluxUser         string  `json:"influx-user"`
-	InfluxPassword     string  `json:"influx-password"`
-	ServiceNetwork     string  `json:"service-network"`
-	ServiceNetworkName string  `json:"service-network-name"`
-	NodePrefix         string  `json:"node-prefix"`
-	NodeNetworkPrefix  string  `json:"node-network-prefix"`
-	ServicePrefix      string  `json:"service-prefix"`
-	NodesPublicKey     string  `json:"nodes-public-key"`
-	NodesPrivateKey    string  `json:"nodes-private-key"`
-	HandleNodeSSHKeys  bool    `json:"handle-node-ssh-keys"`
-	MaxNodes           int     `json:"max-nodes"`
-	MaxNodeMemory      string  `json:"max-node-memory"`
-	MaxNodeCPU         float64 `json:"max-node-cpu"`
-	BridgePrefix       string  `json:"bridge-prefix"`
-	APIEndpoint        string  `json:"api-endpoint"`
-	NibblerEndPoint    string  `json:"nibbler-end-point"`
-}
-
-// LoadFromEnv loads the configuration from the Environment
-func (c *Config) LoadFromEnv() {
-	var err error
-	val, exists := os.LookupEnv("RSA_USER")
-	if exists {
-		c.SSHUser = val
-	}
-	val, exists = os.LookupEnv("LISTEN")
-	if exists {
-		c.Listen = val
-	}
-	val, exists = os.LookupEnv("RSA_KEY")
-	if exists {
-		c.SSHKey = val
-	}
-
-	val, exists = os.LookupEnv("VERBOSITY")
-	if exists {
-		c.Verbosity = val
-	}
-	val, exists = os.LookupEnv("SERVER_BITS")
-	if exists {
-		tmp, err := strconv.ParseUint(val, 0, 32)
-		c.ServerBits = uint32(tmp)
-		if err != nil {
-			fmt.Println("Invalid ENV value for SERVER_BITS")
-			os.Exit(1)
-		}
-	}
-	val, exists = os.LookupEnv("CLUSTER_BITS")
-	if exists {
-		tmp, err := strconv.ParseUint(val, 0, 32)
-		c.ClusterBits = uint32(tmp)
-		if err != nil {
-			fmt.Println("Invalid ENV value for CLUSTER_BITS")
-			os.Exit(1)
-		}
-	}
-	val, exists = os.LookupEnv("NODE_BITS")
-	if exists {
-		tmp, err := strconv.ParseUint(val, 0, 32)
-		c.NodeBits = uint32(tmp)
-		if err != nil {
-			fmt.Println("Invalid ENV value for NODE_BITS")
-			os.Exit(1)
-		}
-	}
-	val, exists = os.LookupEnv("THREAD_LIMIT")
-	if exists {
-		c.ThreadLimit, err = strconv.ParseInt(val, 0, 64)
-		if err != nil {
-			fmt.Println("Invalid ENV value for THREAD_LIMIT")
-			os.Exit(1)
-		}
-	}
-	val, exists = os.LookupEnv("IP_PREFIX")
-	if exists {
-		tmp, err := strconv.ParseUint(val, 0, 32)
-		c.IPPrefix = uint32(tmp)
-		if err != nil {
-			fmt.Println("Invalid ENV value for IP_PREFIX")
-			os.Exit(1)
-		}
-	}
-	val, exists = os.LookupEnv("DOCKER_OUTPUT_FILE")
-	if exists {
-		c.DockerOutputFile = val
-	}
-	val, exists = os.LookupEnv("INFLUX")
-	if exists {
-		c.Influx = val
-	}
-	val, exists = os.LookupEnv("INFLUX_USER")
-	if exists {
-		c.InfluxUser = val
-	}
-	val, exists = os.LookupEnv("INFLUX_PASSWORD")
-	if exists {
-		c.InfluxPassword = val
-	}
-	val, exists = os.LookupEnv("SERVICE_NETWORK")
-	if exists {
-		c.ServiceNetwork = val
-	}
-	val, exists = os.LookupEnv("SERVICE_NETWORK_NAME")
-	if exists {
-		c.ServiceNetworkName = val
-	}
-	val, exists = os.LookupEnv("NODE_PREFIX")
-	if exists {
-		c.NodePrefix = val
-	}
-	val, exists = os.LookupEnv("NODE_NETWORK_PREFIX")
-	if exists {
-		c.NodeNetworkPrefix = val
-	}
-	val, exists = os.LookupEnv("SERVICE_PREFIX")
-	if exists {
-		c.ServicePrefix = val
-	}
-
-	val, exists = os.LookupEnv("NODES_PUBLIC_KEY")
-	if exists {
-		c.NodesPublicKey = val
-	}
-
-	val, exists = os.LookupEnv("NODES_PRIVATE_KEY")
-	if exists {
-		c.NodesPrivateKey = val
-	}
-
-	_, exists = os.LookupEnv("HANDLE_NODES_SSH_KEYS")
-	if exists {
-		c.HandleNodeSSHKeys = true
-	}
-
-	val, exists = os.LookupEnv("MAX_NODES")
-	if exists {
-		tmp, err := strconv.ParseInt(val, 0, 32)
-		c.MaxNodes = int(tmp)
-		if err != nil {
-			fmt.Println("Invalid ENV value for MAX_NODES")
-			os.Exit(1)
-		}
-	}
-
-	val, exists = os.LookupEnv("MAX_NODE_MEMORY")
-	if exists {
-		c.MaxNodeMemory = val
-	}
-
-	val, exists = os.LookupEnv("MAX_NODE_CPU")
-	if exists {
-		c.MaxNodeCPU, err = strconv.ParseFloat(val, 64)
-		if err != nil {
-			fmt.Println("Invalid ENV value for MAX_NODE_CPU")
-			os.Exit(1)
-		}
-	}
-	val, exists = os.LookupEnv("BRIDGE_PREFIX")
-	if exists {
-		c.BridgePrefix = val
-	}
-
-	val, exists = os.LookupEnv("API_ENDPOINT")
-	if exists {
-		c.APIEndpoint = val
-	}
-	val, exists = os.LookupEnv("NIBBLER_END_POINT")
-	if exists {
-		c.APIEndpoint = val
-	}
-
-}
-
-// AutoFillMissing fills in the missing essential values with the defaults.
-func (c *Config) AutoFillMissing() {
-	if len(c.SSHUser) == 0 {
-		c.SSHUser = "appo"
-	}
-
-	if len(c.Listen) == 0 {
-		c.Listen = "127.0.0.1:8000"
-	}
-	if len(c.SSHKey) == 0 {
-		home := os.Getenv("HOME")
-		c.SSHKey = home + "/.ssh/id_rsa"
-	}
-	if c.ServerBits <= 0 {
-		log.Warn("Using default server bits")
-		c.ServerBits = 8
-	}
-	if c.ClusterBits <= 0 {
-		log.Warn("Using default cluster bits")
-		c.ClusterBits = 12
-	}
-	if c.NodeBits <= 0 {
-		log.Warn("Using default node bits")
-		c.NodeBits = 4
-	}
-	if c.ThreadLimit <= 0 {
-		log.Warn("Using default thread limit")
-		c.ThreadLimit = 10
-	}
-
-	if len(c.DockerOutputFile) == 0 {
-		c.DockerOutputFile = "/output.log"
-	}
-
-	if len(c.ServiceNetwork) == 0 {
-		c.ServiceNetwork = "172.30.0.0/16"
-	}
-	if len(c.ServiceNetworkName) == 0 {
-		c.ServiceNetworkName = "wb_builtin_services"
-	}
-
-	if len(c.NodePrefix) == 0 {
-		c.NodePrefix = "whiteblock-node"
-	}
-
-	if len(c.NodeNetworkPrefix) == 0 {
-		c.NodeNetworkPrefix = "wb_vlan"
-	}
-
-	if len(c.ServicePrefix) == 0 {
-		c.ServicePrefix = "wb_service"
-	}
-
-	if c.MaxNodes <= 0 {
-		log.Warn("No setting given for max nodes, defaulting to 200")
-		c.MaxNodes = 200
-	}
-
-	if len(c.BridgePrefix) == 0 {
-		c.BridgePrefix = "wb_bridge"
-	}
-
-	if len(c.APIEndpoint) == 0 {
-		c.APIEndpoint = "https://api.whiteblock.io"
-	}
-
-	if len(c.NibblerEndPoint) == 0 {
-		c.NibblerEndPoint = "https://storage.googleapis.com/genesis-public/nibbler/dev/bin/linux/amd64/nibbler"
-	}
+	SSHUser                 string  `mapstructure:"sshUser"`
+	SSHKey                  string  `mapstructure:"sshKey"`
+	SSHHost                 string  `mapstructure:"sshHost"`
+	ServerBits              uint32  `mapstructure:"serverBits"`
+	ClusterBits             uint32  `mapstructure:"clusterBits"`
+	NodeBits                uint32  `mapstructure:"nodeBits"`
+	IPPrefix                uint32  `mapstructure:"ipPrefix"`
+	Listen                  string  `mapstructure:"listen"`
+	Verbosity               string  `mapstructure:"verbosity"`
+	DockerOutputFile        string  `mapstructure:"dockerOutputFile"`
+	Influx                  string  `mapstructure:"influx"`         //No default
+	InfluxUser              string  `mapstructure:"influxUser"`     //No default
+	InfluxPassword          string  `mapstructure:"influxPassword"` //No default
+	ServiceNetwork          string  `mapstructure:"serviceNetwork"`
+	ServiceNetworkName      string  `mapstructure:"serviceNetworkName"`
+	NodePrefix              string  `mapstructure:"nodePrefix"`
+	NodeNetworkPrefix       string  `mapstructure:"nodeNetworkPrefix"`
+	ServicePrefix           string  `mapstructure:"servicePrefix"`
+	NodesPublicKey          string  `mapstructure:"nodesPublicKey"`  //No default
+	NodesPrivateKey         string  `mapstructure:"nodesPrivateKey"` //No default
+	HandleNodeSSHKeys       bool    `mapstructure:"handleNodeSshKeys"`
+	MaxNodes                int     `mapstructure:"maxNodes"`
+	MaxNodeMemory           string  `mapstructure:"maxNodeMemory"`
+	MaxNodeCPU              float64 `mapstructure:"maxNodeCpu"`
+	BridgePrefix            string  `mapstructure:"bridgePrefix"`
+	APIEndpoint             string  `mapstructure:"apiEndpoint"`
+	NibblerEndPoint         string  `mapstructure:"nibblerEndPoint"`
+	LogJSON                 bool    `mapstructure:"logJson"`
+	PrometheusConfig        string  `mapstructure:"prometheusConfig"`
+	PrometheusPort          int     `mapstructure:"prometheusPort"`
+	MaxRunAttempts          int     `mapstructure:"maxRunAttempts"`
+	MaxConnections          int     `mapstructure:"maxConnections"`
+	DataDirectory           string  `mapstructure:"datadir"`
+	DisableNibbler          bool    `mapstructure:"disableNibbler"`
+	DisableTestnetReporting bool    `mapstructure:"disableTestnetReporting"`
+	RequireAuth             bool    `mapstructure:"requireAuth"`
+	MaxCommandOutputLogSize int     `mapstructure:"maxCommandOutputLogSize"`
+	ResourceDir             string  `mapstructure:"resourceDir"`
+	RemoveNodesOnFailure    bool    `mapstructure:"removeNodesOnFailure"`
+	NibblerRetries          uint    `mapstructure:"nibblerRetries"`
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
 var NodesPerCluster uint32
 
-var conf *Config
+var conf = new(Config)
+
+func setViperEnvBindings() {
+	viper.BindEnv("sshUser", "SSH_USER")
+	viper.BindEnv("listen", "LISTEN")
+	viper.BindEnv("sshKey", "SSH_KEY")
+	viper.BindEnv("verbosity", "VERBOSITY")
+	viper.BindEnv("serverBits", "SERVER_BITS")
+	viper.BindEnv("clusterBits", "CLUSTER_BITS")
+	viper.BindEnv("nodeBits", "NODE_BITS")
+	viper.BindEnv("ipPrefix", "IP_PREFIX")
+	viper.BindEnv("dockerOutputFile", "DOCKER_OUTPUT_FILE")
+	viper.BindEnv("influx", "INFLUX")
+	viper.BindEnv("influxUser", "INFLUX_USER")
+	viper.BindEnv("influxPassword", "INFLUX_PASSWORD")
+	viper.BindEnv("serviceNetwork", "SERVICE_NETWORK")
+	viper.BindEnv("serviceNetworkName", "SERVICE_NETWORK_NAME")
+	viper.BindEnv("nodePrefix", "NODE_PREFIX")
+	viper.BindEnv("nodeNetworkPrefix", "NODE_NETWORK_PREFIX")
+	viper.BindEnv("servicePrefix", "SERVICE_PREFIX")
+	viper.BindEnv("nodesPublicKey", "NODES_PUBLIC_KEY")
+	viper.BindEnv("nodesPrivateKey", "NODES_PRIVATE_KEY")
+	viper.BindEnv("handleNodeSshKeys", "HANDLE_NODES_SSH_KEYS")
+	viper.BindEnv("maxNodes", "MAX_NODES")
+	viper.BindEnv("maxNodeMemory", "MAX_NODE_MEMORY")
+	viper.BindEnv("maxNodeCPU", "MAX_NODE_CPU")
+	viper.BindEnv("bridgePrefix", "BRIDGE_PREFIX")
+	viper.BindEnv("apiEndpoint", "API_ENDPOINT")
+	viper.BindEnv("nibblerEndPoint", "NIBBLER_END_POINT")
+	viper.BindEnv("logJson", "LOG_JSON")
+	viper.BindEnv("maxRunAttempts", "MAX_RUN_ATTEMPTS")
+	viper.BindEnv("maxConnections", "MAX_CONNECTIONS")
+	viper.BindEnv("datadir", "DATADIR")
+	viper.BindEnv("disableNibbler", "DISABLE_NIBBLER")
+	viper.BindEnv("disableTestnetReporting", "DISABLE_TESTNET_REPORTING")
+	viper.BindEnv("requireAuth", "REQUIRE_AUTH")
+	viper.BindEnv("maxCommandOutputLogSize", "MAX_COMMAND_OUTPUT_LOG_SIZE")
+	viper.BindEnv("resourceDir", "RESOURCE_DIR")
+	viper.BindEnv("removeNodesOnFailure", "REMOVE_NODES_ON_FAILURE")
+	viper.BindEnv("nibblerRetries", "NIBBLER_RETRIES")
+}
+func setViperDefaults() {
+	viper.SetDefault("sshUser", os.Getenv("USER"))
+	viper.SetDefault("sshKey", os.Getenv("HOME")+"/.ssh/id_rsa")
+	viper.SetDefault("sshHost", "127.0.0.1")
+	viper.SetDefault("serverBits", 8)
+	viper.SetDefault("clusterBits", 12)
+	viper.SetDefault("nodeBits", 4)
+	viper.SetDefault("ipPrefix", 10)
+	viper.SetDefault("listen", "127.0.0.1:8000")
+	viper.SetDefault("verbosity", "INFO")
+	viper.SetDefault("dockerOutputFile", "/output.log")
+	viper.SetDefault("serviceNetwork", "172.30.0.1/16")
+	viper.SetDefault("serviceNetworkName", "wb_builtin_services")
+	viper.SetDefault("nodePrefix", "whiteblock-node")
+	viper.SetDefault("nodeNetworkPrefix", "wb_vlan")
+	viper.SetDefault("servicePrefix", "wb_service")
+	viper.SetDefault("maxNodes", 200)
+	viper.SetDefault("maxNodeMemory", "")
+	viper.SetDefault("maxNodeCpu", -1)
+	viper.SetDefault("bridgePrefix", "wb_bridge")
+	viper.SetDefault("apiEndpoint", "https://api.whiteblock.io")
+	viper.SetDefault("nibblerEndPoint", "https://storage.googleapis.com/genesis-public/nibbler/master/bin/linux/amd64/nibbler")
+	viper.SetDefault("logJson", false)
+	viper.SetDefault("prometheusConfig", "/tmp/prometheus.yml")
+	viper.SetDefault("prometheusPort", 8088)
+	viper.SetDefault("prometheusInstrumentationPort", 8008)
+	viper.SetDefault("maxRunAttempts", 30)
+	viper.SetDefault("maxConnections", 50)
+	viper.SetDefault("datadir", os.Getenv("HOME")+"/.config/whiteblock/")
+	viper.SetDefault("disableNibbler", false)
+	viper.SetDefault("disableTestnetReporting", false)
+	viper.SetDefault("requireAuth", false)
+	viper.SetDefault("maxCommandOutputLogSize", -1)
+	viper.SetDefault("resourceDir", "./resources")
+	viper.SetDefault("removeNodesOnFailure", false)
+	viper.SetDefault("nibblerRetries", 2)
+}
+
+// GCPFormatter enables the ability to use genesis logging with Stackdriver
+type GCPFormatter struct {
+	JSON           *log.JSONFormatter
+	ConstantFields log.Fields
+}
+
+// Format takes in the entry and processes it into the appropiate log entry
+func (gf GCPFormatter) Format(entry *log.Entry) ([]byte, error) {
+	for k, v := range gf.ConstantFields {
+		entry.Data[k] = v
+	}
+	return gf.JSON.Format(entry)
+}
 
 func init() {
-	LoadConfig()
-	conf.LoadFromEnv()
-	conf.AutoFillMissing()
-	//log.SetReportCaller(true)
+	setViperDefaults()
+	setViperEnvBindings()
+	viper.AddConfigPath("/etc/whiteblock/")          // path to look for the config file in
+	viper.AddConfigPath("$HOME/.config/whiteblock/") // call multiple times to add many search paths
+	viper.SetConfigName("genesis")
+	viper.SetConfigType("yaml")
+	err := viper.ReadInConfig()
+
+	if err != nil {
+		log.WithFields(log.Fields{"error": err}).Warn("could not find the config file")
+	}
+	err = viper.Unmarshal(&conf)
+	if err != nil {
+		log.Fatalf("unable to decode into struct, %v", err)
+	}
+
 	lvl, err := log.ParseLevel(conf.Verbosity)
 	if err != nil {
 		log.SetLevel(log.InfoLevel)
@@ -302,28 +189,30 @@ func init() {
 	}
 	log.SetLevel(lvl)
 	NodesPerCluster = (1 << conf.NodeBits) - ReservedIps
-}
 
-// LoadConfig loads the config from the configuration file
-func LoadConfig() *Config {
-
-	conf = new(Config)
-	/**Load configuration**/
-	dat, err := ioutil.ReadFile("./config.json")
-	if err != nil {
-		log.Warn("config.json not found, using defaults")
-	} else {
-		json.Unmarshal(dat, conf)
+	if conf.LogJSON {
+		log.SetFormatter(&GCPFormatter{
+			JSON: &log.JSONFormatter{
+				FieldMap: log.FieldMap{
+					log.FieldKeyTime:  "eventTime",
+					log.FieldKeyLevel: "severity",
+					log.FieldKeyMsg:   "message",
+				},
+			},
+			ConstantFields: log.Fields{
+				"serviceContext": map[string]string{"service": "genesis", "version": "1.8.2"},
+			},
+		})
 	}
 
-	return conf
+	err = os.MkdirAll(conf.DataDirectory, 0776)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err, "dir": conf.DataDirectory}).Fatal("could not create data directory")
+	}
 }
 
 // GetConfig gets a pointer to the global config object.
-// Do not modify c object
+// Do not modify conf object
 func GetConfig() *Config {
-	if conf == nil {
-		LoadConfig()
-	}
 	return conf
 }

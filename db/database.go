@@ -23,21 +23,19 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //needed for db
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/util"
 	"os"
 )
 
 //ServerTable contains name of the server table
-const ServerTable string = "servers"
+const ServerTable = "servers"
 
 //NodesTable contains name of the nodes table
-const NodesTable string = "nodes"
+const NodesTable = "nodes"
 
 //BuildsTable contains name of the builds table
-const BuildsTable string = "builds"
-
-var dataFolder = os.Getenv("HOME") + "/.config/whiteblock/"
-var dataLoc = dataFolder + ".gdata"
+const BuildsTable = "builds"
 
 var conf = util.GetConfig()
 
@@ -47,26 +45,23 @@ func init() {
 	var err error
 	db, err = getDB()
 	if err != nil {
-		panic(err)
+		log.WithFields(log.Fields{"error": err}).Panic("unable to create the database")
 	}
 	db.SetMaxOpenConns(50)
 	checkAndUpdate()
 }
 func getDB() (*sql.DB, error) {
-
-	err := os.MkdirAll(dataFolder, 0777)
-	if err != nil {
-		return nil, err
-	}
+	dataLoc := conf.DataDirectory + "/.gdata"
 	if _, err := os.Stat(dataLoc); os.IsNotExist(err) {
+		log.WithFields(log.Fields{"loc": dataLoc}).Info("creating data store")
 		err = dbInit(dataLoc)
 		if err != nil {
-			return nil, err
+			return nil, util.LogError(err)
 		}
 	}
 	d, err := sql.Open("sqlite3", dataLoc)
 	if err != nil {
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	return d, nil
 }
@@ -74,16 +69,15 @@ func getDB() (*sql.DB, error) {
 func dbInit(dataLoc string) error {
 	_, err := os.Create(dataLoc)
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
 	db, err = getDB()
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
-
+	log.Debug("initializing tables")
 	serverSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s);",
 		ServerTable,
-
 		"id INTEGER PRIMARY KEY AUTOINCREMENT",
 		"server_id INTEGER",
 		"addr TEXT NOT NULL",
@@ -124,39 +118,40 @@ func dbInit(dataLoc string) error {
 
 	_, err = db.Exec(serverSchema)
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
 
 	_, err = db.Exec(nodesSchema)
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
 	_, err = db.Exec(buildSchema)
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
 	_, err = db.Exec(versionSchema)
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
 	err = insertLocalServers()
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
 	err = setVersion(Version)
-	return err
+	return util.LogError(err)
 }
 
 //insertLocalServers adds the default server(s) to the servers database, allowing immediate use of the application
 //without having to register a server
 func insertLocalServers() error {
+	log.WithField("host", conf.SSHHost).Warn("Creating initial server")
 	_, err := InsertServer("cloud",
 		Server{
-			Addr:     "127.0.0.1",
+			Addr:     conf.SSHHost,
 			Nodes:    0,
 			Max:      conf.MaxNodes,
 			SubnetID: 1,
 			ID:       -1,
 			Ips:      []string{}})
-	return err
+	return util.LogError(err)
 }

@@ -20,10 +20,10 @@ package deploy
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"log"
 	"sync"
 )
 
@@ -97,10 +97,10 @@ func AddNodes(tn *testnet.TestNet) error {
 
 	for _, client := range tn.Clients {
 		//noinspection SpellCheckingInspection
-		client.Run("sudo iptables --flush DOCKER-ISOLATION-STAGE-1")
+		client.Run("sudo -n iptables --flush DOCKER-ISOLATION-STAGE-1")
 	}
 	wg.Wait()
 
-	log.Println("Finished adding nodes into the network")
+	log.Info("finished adding nodes into the network")
 	return tn.BuildState.GetError()
 }

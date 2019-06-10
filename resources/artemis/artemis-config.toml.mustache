@@ -10,9 +10,13 @@ peers={{{peers}}}
 numValidators={{validators}}
 numNodes={{{numNodes}}}
 
+[metrics]
+enabled = true
+metricsPort = {{{metricsPort}}}
+
 [output]
 outputFile = "{{{outputFile}}}"
-providerType = "JSON"
+providerType = "{{{providerType}}}"
 events = [ "TimeSeriesRecord" ]
 formatted = false
 

@@ -1,7 +1,9 @@
-/genesis
 /config.json
 /tmp
 /**/.DS_Store
 /.DS_Store
 /.idea
 /.gdata
+*grind.out*
+*_mock.go
+/genesis

@@ -21,7 +21,7 @@ package status
 
 import (
 	"github.com/whiteblock/genesis/state"
-	"log"
+	"github.com/whiteblock/genesis/util"
 )
 
 // CheckBuildStatus checks the current status of the build relating to the
@@ -29,8 +29,7 @@ import (
 func CheckBuildStatus(buildID string) (string, error) {
 	bs, err := state.GetBuildStateByID(buildID)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", util.LogError(err)
 	}
 	return bs.Marshal(), nil
 }

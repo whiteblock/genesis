@@ -1,4 +1,6 @@
-FROM golang:1.12.2-stretch as built
+FROM golang:1.12.5-stretch as built
+
+ENV GO111MODULE on
 
 ADD . /go/src/github.com/whiteblock/genesis
 
@@ -6,12 +8,15 @@ WORKDIR /go/src/github.com/whiteblock/genesis
 RUN go get && go build
 
 FROM ubuntu:latest as final
+ENV DEBIAN_FRONTEND noninteractive
 
 RUN mkdir -p /genesis && apt-get update && apt-get install -y openssh-client ca-certificates
+RUN mkdir -p /etc/whiteblock
+
 WORKDIR /genesis
 
 COPY --from=built /go/src/github.com/whiteblock/genesis/resources /genesis/resources
-COPY --from=built /go/src/github.com/whiteblock/genesis/config.json /genesis/config.json
+COPY --from=built /go/src/github.com/whiteblock/genesis/config/genesis.yaml /etc/whiteblock/genesis.yaml
 COPY --from=built /go/src/github.com/whiteblock/genesis/genesis /genesis/genesis
 
 RUN ln -s /genesis/resources/geth/ /genesis/resources/ethereum

@@ -70,6 +70,8 @@ func Distribute(nodes []string, dist []int) ([][]string, error) {
 	out := [][]string{}
 	for i := range nodes {
 		conns := []string{}
+
+	DISTRIBUTE:
 		for j := 0; j < dist[i]; j++ {
 			newConnIndex := r1.Intn(len(nodes))
 			if newConnIndex == i {
@@ -77,17 +79,13 @@ func Distribute(nodes []string, dist []int) ([][]string, error) {
 				continue
 			}
 			newConn := nodes[newConnIndex]
-			unique := true
 			for _, conn := range conns {
 				if newConn == conn {
-					unique = false
-					break
+					j--
+					continue DISTRIBUTE
 				}
 			}
-			if !unique {
-				j--
-				continue
-			}
+
 			conns = append(conns, newConn)
 
 		}
@@ -96,11 +94,16 @@ func Distribute(nodes []string, dist []int) ([][]string, error) {
 	return out, nil
 }
 
-// GenerateworstCaseNetwork generates a random path through all nodes
-func GenerateworstCaseNetwork(nodes int) [][]int {
+// GenerateWorstCaseNetwork generates a random path through all nodes
+func GenerateWorstCaseNetwork(nodes int) [][]int {
+	return generateWorstCaseNetwork(nodes, time.Now().UnixNano())
+}
+
+// private test function of exported function GenerateWorstCaseNetwork()
+func generateWorstCaseNetwork(nodes int, seed int64) [][]int {
 	out := make([][]int, nodes)
 
-	s1 := rand.NewSource(time.Now().UnixNano())
+	s1 := rand.NewSource(seed)
 	rng := rand.New(s1)
 
 	nodePool := make([]int, nodes)
@@ -122,15 +125,20 @@ func GenerateworstCaseNetwork(nodes int) [][]int {
 // GenerateUniformRandMeshNetwork generates a random mesh network that ensures
 // that there is always a path between all the nodes
 func GenerateUniformRandMeshNetwork(nodes int, conns int) ([][]int, error) {
+	return generateUniformRandMeshNetwork(nodes, conns, time.Now().UnixNano())
+}
+
+// private func for GenerateUniformRandMeshNetwork for testing purposes
+func generateUniformRandMeshNetwork(nodes int, conns int, seed int64) ([][]int, error) {
 	if conns < 1 {
 		return nil, fmt.Errorf("each node must have at least one connection")
 	}
 	if conns >= nodes {
 		return nil, fmt.Errorf("too many connection to distribute without duplicates")
 	}
-	s1 := rand.NewSource(time.Now().UnixNano())
+	s1 := rand.NewSource(seed)
 	rng := rand.New(s1)
-	out := GenerateworstCaseNetwork(nodes)
+	out := generateWorstCaseNetwork(nodes, seed)
 
 	for i := 0; i < nodes; i++ {
 		for j := 1; j < conns; j++ {
@@ -159,7 +167,12 @@ func GenerateUniformRandMeshNetwork(nodes int, conns int) ([][]int, error) {
 // that peering there is always a path between all the nodes, without any duplication.
 // That is, if 1 contains 3, 3 won't contain 1 by elimination
 func GenerateNoDuplicateMeshNetwork(nodes int, conns int) ([][]int, error) {
-	out, err := GenerateUniformRandMeshNetwork(nodes, conns)
+	return generateNoDuplicateMeshNetwork(nodes, conns, time.Now().UnixNano())
+}
+
+// private func of GenerateNoDuplicateMeshNetwork for testing purposes
+func generateNoDuplicateMeshNetwork(nodes int, conns int, seed int64) ([][]int, error) {
+	out, err := generateUniformRandMeshNetwork(nodes, conns, seed)
 	if err != nil {
 		return nil, err
 	}

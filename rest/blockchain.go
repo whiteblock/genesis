@@ -23,9 +23,9 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/manager"
+	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/status"
 	"github.com/whiteblock/genesis/util"
@@ -90,13 +90,13 @@ func getConfFile(w http.ResponseWriter, r *http.Request) {
 
 	log.WithFields(log.Fields{"path": path, "blockchain": params["blockchain"], "file": params["file"]}).Debug("got the file path")
 
-	fmt.Println(path)
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
+		log.WithFields(log.Fields{"path": path, "error": err}).Error("error reading the requested config")
 		http.Error(w, "File not found", 404)
 		return
 	}
-	json.NewEncoder(w).Encode(string(data))
+	util.LogError(json.NewEncoder(w).Encode(string(data)))
 }
 
 func getBlockChainParams(w http.ResponseWriter, r *http.Request) {

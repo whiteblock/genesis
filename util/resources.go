@@ -20,6 +20,7 @@ package util
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 )
@@ -42,31 +43,26 @@ type Resources struct {
 }
 
 func memconv(mem string) (int64, error) {
+
 	m := strings.ToLower(mem)
-	var multiplier int64 = -1
 
-	switch m[len(m)-2:] {
-	case "kb":
+	var multiplier int64 = 1
+
+	if strings.HasSuffix(m, "kb") || strings.HasSuffix(m, "k") {
 		multiplier = 1000
-
-	case "mb":
+	} else if strings.HasSuffix(m, "mb") || strings.HasSuffix(m, "m") {
 		multiplier = 1000000
-
-	case "gb":
+	} else if strings.HasSuffix(m, "gb") || strings.HasSuffix(m, "g") {
 		multiplier = 1000000000
-
-	case "tb":
+	} else if strings.HasSuffix(m, "tb") || strings.HasSuffix(m, "t") {
 		multiplier = 1000000000000
 	}
 
-	if multiplier == -1 {
-		return strconv.ParseInt(m, 10, 64)
-	}
-
-	i, err := strconv.ParseInt(m[:len(m)-2], 10, 64)
+	i, err := strconv.ParseInt(strings.Trim(m, "bgkmt"), 10, 64)
 	if err != nil {
 		return -1, err
 	}
+
 	return i * multiplier, nil
 }
 
@@ -93,18 +89,24 @@ func (res Resources) Validate() error {
 	}
 
 	if !res.NoMemoryLimits() {
-		m1, err := memconv(conf.MaxNodeMemory)
-		if err != nil {
-			panic(err)
-		}
+
 		m2, err := res.GetMemory()
-		fmt.Printf("m2 = %d\n", m2)
+
 		if err != nil {
 			return err
 		}
-		if m2 > m1 {
-			return fmt.Errorf("assigning too much RAM: max is %s", conf.MaxNodeMemory)
+		if len(conf.MaxNodeMemory) != 0 {
+			m1, err := memconv(conf.MaxNodeMemory)
+			if err != nil {
+				log.WithFields(log.Fields{"error": err,
+					"memLimit": conf.MaxNodeMemory}).Panic("error parsing memory limit. check config file.")
+			}
+			log.WithFields(log.Fields{"maxMemory": m1, "givenMemory": m2}).Trace("checking memory")
+			if m2 > m1 {
+				return fmt.Errorf("assigning too much RAM: max is %s", conf.MaxNodeMemory)
+			}
 		}
+
 	}
 
 	if !res.NoCPULimits() {
@@ -113,7 +115,8 @@ func (res Resources) Validate() error {
 		if err != nil {
 			return err
 		}
-		if c2 > c1 {
+
+		if c1 > 0 && c2 > c1 {
 			return fmt.Errorf("assigning too much CPU: max is %f", conf.MaxNodeCPU)
 		}
 	}

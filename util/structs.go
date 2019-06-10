@@ -33,15 +33,6 @@ type Command struct {
 	ServerID int
 }
 
-// Service represents a service for a blockchain.
-// All env variables will be passed to the container.
-type Service struct {
-	Name    string            `json:"name"`
-	Image   string            `json:"image"`
-	Env     map[string]string `json:"env"`
-	Network string            `json:"network"`
-}
-
 // EndPoint represents an endpoint with basic auth
 type EndPoint struct {
 	URL  string `json:"url"`

@@ -23,30 +23,32 @@ package manager
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/whiteblock/genesis/blockchains/helpers"
-	"github.com/whiteblock/genesis/blockchains/registrar"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/deploy"
+	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"log"
 	"sync"
 	//Put the relative path to your blockchain/sidecar library below this line, otherwise it won't be compiled
 	//blockchains
-	_ "github.com/whiteblock/genesis/blockchains/artemis"
-	_ "github.com/whiteblock/genesis/blockchains/beam"
-	_ "github.com/whiteblock/genesis/blockchains/cosmos"
-	_ "github.com/whiteblock/genesis/blockchains/eos"
-	_ "github.com/whiteblock/genesis/blockchains/geth"
-	_ "github.com/whiteblock/genesis/blockchains/libp2p-test"
-	_ "github.com/whiteblock/genesis/blockchains/lighthouse"
-	_ "github.com/whiteblock/genesis/blockchains/pantheon"
-	_ "github.com/whiteblock/genesis/blockchains/parity"
-	_ "github.com/whiteblock/genesis/blockchains/plumtree"
-	_ "github.com/whiteblock/genesis/blockchains/prysm"
-	_ "github.com/whiteblock/genesis/blockchains/rchain"
-	_ "github.com/whiteblock/genesis/blockchains/syscoin"
-	_ "github.com/whiteblock/genesis/blockchains/tendermint"
+	_ "github.com/whiteblock/genesis/protocols/artemis"
+	_ "github.com/whiteblock/genesis/protocols/beam"
+	_ "github.com/whiteblock/genesis/protocols/cosmos"
+	_ "github.com/whiteblock/genesis/protocols/eos"
+	_ "github.com/whiteblock/genesis/protocols/geth"
+	_ "github.com/whiteblock/genesis/protocols/libp2p-test"
+	_ "github.com/whiteblock/genesis/protocols/lighthouse"
+	_ "github.com/whiteblock/genesis/protocols/lodestar"
+	_ "github.com/whiteblock/genesis/protocols/pantheon"
+	_ "github.com/whiteblock/genesis/protocols/parity"
+	_ "github.com/whiteblock/genesis/protocols/plumtree"
+	_ "github.com/whiteblock/genesis/protocols/polkadot"
+	_ "github.com/whiteblock/genesis/protocols/prysm"
+	_ "github.com/whiteblock/genesis/protocols/rchain"
+	_ "github.com/whiteblock/genesis/protocols/syscoin"
+	_ "github.com/whiteblock/genesis/protocols/tendermint"
 
 	//side cars
 	_ "github.com/whiteblock/genesis/sidecars/geth"
@@ -63,14 +65,13 @@ func init() {
 // implemented here, other it will not be called during the build process.
 func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 	if details.Servers == nil || len(details.Servers) == 0 {
-		err := fmt.Errorf("missing servers")
-		log.Println(err)
-		return err
+		log.WithFields(log.Fields{"build": testnetID}).Error("build request doesn't have any servers")
+		return fmt.Errorf("missing servers")
 	}
 	//STEP 1: SETUP THE TESTNET
 	tn, err := testnet.NewTestNet(*details, testnetID)
 	if err != nil {
-		log.Println(err)
+		log.WithFields(log.Fields{"build": testnetID, "error": err}).Error("failed to create new testnet")
 		return err
 	}
 	buildState := tn.BuildState
@@ -79,20 +80,19 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 	//STEP 0: VALIDATE
 	err = validate(details)
 	if err != nil {
-		log.Println(err)
-		buildState.ReportError(err)
+		log.WithFields(log.Fields{"details": details}).Error("invalid build details")
+		tn.BuildState.ReportError(err)
 		return err
 	}
 
-	buildState.Async(func() {
+	tn.BuildState.Async(func() {
 		declareTestnet(testnetID, details)
 	})
 
 	//STEP 3: GET THE SERVICES
 	servicesFn, err := registrar.GetServiceFunc(details.Blockchain)
 	if err != nil {
-		log.Println(err)
-		buildState.ReportError(err)
+		tn.BuildState.ReportError(err)
 		return err
 	}
 	services := servicesFn()
@@ -100,22 +100,42 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 
 	err = deploy.Build(tn, services)
 	if err != nil {
-		log.Println(err)
-		buildState.ReportError(err)
+		tn.BuildState.ReportError(err)
 		return err
 	}
-	fmt.Println("Built the docker containers")
+	log.WithFields(log.Fields{"build": testnetID}).Trace("Built the docker containers")
 
 	buildFn, err := registrar.GetBuildFunc(details.Blockchain)
 	if err != nil {
 		buildState.ReportError(err)
 		return err
 	}
+	sidecars, err := registrar.GetBlockchainSideCars(tn.LDD.Blockchain)
+	if err == nil && len(sidecars) > 0 {
+		tn.BuildState.SetSidecars(len(sidecars))
+	}
 
 	err = buildFn(tn)
 	if err != nil {
 		buildState.ReportError(err)
 		return err
+	}
+
+	if err == nil && len(sidecars) > 0 {
+		tn.BuildState.SetBuildStage("setting up the sidecars")
+		steps := 0
+		for _, sidecarName := range sidecars {
+			sidecar, err := registrar.GetSideCar(sidecarName)
+			if err != nil {
+				buildState.ReportError(err)
+				return err
+			}
+			if sidecar.BuildStepsCalc != nil {
+				steps += sidecar.BuildStepsCalc(tn.LDD.Nodes, len(tn.Servers))
+			}
+		}
+		tn.BuildState.SetSidecarSteps(steps)
+		tn.BuildState.FinishMainBuild()
 	}
 
 	err = handleSideCars(tn, false)
@@ -172,7 +192,7 @@ func handleSideCars(tn *testnet.TestNet, append bool) error {
 }
 
 func declareTestnet(testnetID string, details *db.DeploymentDetails) error {
-	if len(details.GetJwt()) == 0 {
+	if len(details.GetJwt()) == 0 || conf.DisableTestnetReporting {
 		return nil
 	}
 	data := map[string]interface{}{

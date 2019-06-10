@@ -19,10 +19,10 @@
 package deploy
 
 import (
-	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
-	netem "github.com/whiteblock/genesis/net"
+	"github.com/whiteblock/genesis/protocols/helpers"
+	//netem "github.com/whiteblock/genesis/net"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 )
@@ -35,7 +35,7 @@ func PurgeTestNetwork(tn *testnet.TestNet) error {
 		tn.BuildState.SetBuildStage("Tearing down the previous testnet")
 	}
 	docker.StopServices(tn)
-	return helpers.AllServerExecCon(tn, func(client *ssh.Client, server *db.Server) error {
+	return helpers.AllServerExecCon(tn, func(client ssh.Client, server *db.Server) error {
 		docker.KillAll(client)
 		if tn.BuildState != nil {
 			tn.BuildState.IncrementDeployProgress()
@@ -44,7 +44,8 @@ func PurgeTestNetwork(tn *testnet.TestNet) error {
 		if tn.BuildState != nil {
 			tn.BuildState.IncrementDeployProgress()
 		}
-		netem.RemoveAllOnServer(client, server.Nodes)
+		//Redundant because the network is already destroy, so the tc rules are implicitly destroyed.
+		//netem.RemoveAllOnServer(client, server.Nodes)
 
 		return nil
 	})

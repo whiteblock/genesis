@@ -20,8 +20,6 @@ package manager
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/util"
 )
@@ -30,8 +28,7 @@ func validateResources(details *db.DeploymentDetails) error {
 	for i, res := range details.Resources {
 		err := res.ValidateAndSetDefaults()
 		if err != nil {
-			log.Println(err)
-			return fmt.Errorf("%s. For node %d", err.Error(), i)
+			return util.LogError(fmt.Errorf("%s. For node %d", err.Error(), i))
 		}
 	}
 	return nil
@@ -53,7 +50,7 @@ func validateImages(details *db.DeploymentDetails) error {
 	for _, image := range details.Images {
 		err := util.ValidateCommandLine(image)
 		if err != nil {
-			return err
+			return util.LogError(err)
 		}
 	}
 	return nil
@@ -62,7 +59,7 @@ func validateImages(details *db.DeploymentDetails) error {
 func validateBlockchain(details *db.DeploymentDetails) error {
 	err := util.ValidateCommandLine(details.Blockchain)
 	if err != nil {
-		return err
+		return util.LogError(err)
 	}
 	return nil
 }
@@ -92,28 +89,24 @@ func checkForNilOrMissing(details *db.DeploymentDetails) error {
 }
 
 func validate(details *db.DeploymentDetails) error {
-	err := checkForNilOrMissing(details)
+	err := validateNumOfNodes(details)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
+	}
+
+	err = checkForNilOrMissing(details)
+	if err != nil {
+		return util.LogError(err)
 	}
 
 	err = validateResources(details)
 	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	err = validateNumOfNodes(details)
-	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	err = validateImages(details)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	return validateBlockchain(details)

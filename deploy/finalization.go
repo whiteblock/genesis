@@ -21,16 +21,16 @@ package deploy
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/whiteblock/genesis/blockchains/helpers"
-	"github.com/whiteblock/genesis/blockchains/registrar"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/status"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"io/ioutil"
-	"log"
 	"strings"
 )
 
@@ -70,7 +70,7 @@ func alwaysRunFinalize(tn *testnet.TestNet) {
 		for _, node := range tn.NewlyBuiltNodes {
 			err := declareNode(&node, tn)
 			if err != nil {
-				log.Println(err)
+				log.WithFields(log.Fields{"node": node.AbsoluteNum}).Error(err)
 			}
 		}
 	})
@@ -92,18 +92,19 @@ func alwaysRunFinalize(tn *testnet.TestNet) {
 */
 func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 	tmp, err := ioutil.ReadFile(conf.NodesPublicKey)
-	pubKey := string(tmp)
-	pubKey = strings.Trim(pubKey, "\t\n\v\r")
 	if err != nil {
+		log.WithFields(log.Fields{"loc": conf.NodesPublicKey, "error": err}).Error("failed to read the public key file")
 		return util.LogError(err)
 	}
+	pubKey := string(tmp)
+	pubKey = strings.Trim(pubKey, "\t\n\v\r")
 
 	privKey, err := ioutil.ReadFile(conf.NodesPrivateKey)
 	if err != nil {
 		return util.LogError(err)
 	}
 
-	fn := func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
+	fn := func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementDeployProgress()
 
 		_, err := client.DockerExec(node, "mkdir -p /root/.ssh/")
@@ -134,6 +135,10 @@ func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 }
 
 func declareNode(node *db.Node, tn *testnet.TestNet) error {
+	if conf.DisableTestnetReporting {
+		log.Info("skipping node declaration since testnet reporting is disabled")
+		return nil
+	}
 	if len(tn.LDD.GetJwt()) == 0 { //If there isn't a JWT, return immediately
 		return nil
 	}
@@ -160,6 +165,10 @@ func declareNode(node *db.Node, tn *testnet.TestNet) error {
 }
 
 func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state.BuildState, absNum int) error {
+	if conf.DisableNibbler {
+		log.Info("skipping nibbler setup as it is disabled")
+		return nil
+	}
 	client, err := status.GetClient(node.Server)
 	if err != nil {
 		return util.LogError(err)

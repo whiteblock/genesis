@@ -21,14 +21,13 @@ package docker
 
 import (
 	"fmt"
-	"log"
-	"strings"
-
-	"github.com/whiteblock/genesis/blockchains/helpers"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
+	"strings"
 )
 
 var conf *util.Config
@@ -38,13 +37,13 @@ func init() {
 }
 
 // Kill kills a single node by index on a server
-func Kill(client *ssh.Client, node int) error {
+func Kill(client ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker rm -f %s%d", conf.NodePrefix, node))
 	return err
 }
 
 // KillAll kills all nodes on a server
-func KillAll(client *ssh.Client) error {
+func KillAll(client ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s\")", conf.NodePrefix))
 	return err
 }
@@ -75,20 +74,20 @@ func NetworkCreate(tn *testnet.TestNet, serverID int, subnetID int, node int) er
 }
 
 // NetworkDestroy tears down a single docker network
-func NetworkDestroy(client *ssh.Client, node int) error {
+func NetworkDestroy(client ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker network rm %s%d", conf.NodeNetworkPrefix, node))
 	return err
 }
 
 // NetworkDestroyAll removes all whiteblock networks on a node
-func NetworkDestroyAll(client *ssh.Client) error {
+func NetworkDestroyAll(client ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf(
 		"for net in $(docker network ls | grep %s | awk '{print $1}'); do docker network rm $net; done", conf.NodeNetworkPrefix))
 	return err
 }
 
 // Login is an abstraction of docker login
-func Login(client *ssh.Client, username string, password string) error {
+func Login(client ssh.Client, username string, password string) error {
 	user := strings.Replace(username, "\"", "\\\"", -1) //Escape the quotes
 	pass := strings.Replace(password, "\"", "\\\"", -1) //Escape the quotes
 	_, err := client.Run(fmt.Sprintf("docker login -u \"%s\" -p \"%s\"", user, pass))
@@ -96,18 +95,17 @@ func Login(client *ssh.Client, username string, password string) error {
 }
 
 // Logout is an abstraction of docker logout
-func Logout(client *ssh.Client) error {
+func Logout(client ssh.Client) error {
 	_, err := client.Run("docker logout")
 	return err
 }
 
 // Pull pulls an image on all the given servers
-func Pull(clients []*ssh.Client, image string) error {
+func Pull(clients []ssh.Client, image string) error {
 	for _, client := range clients {
 		_, err := client.Run("docker pull " + image)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 	}
 	return nil
@@ -145,8 +143,7 @@ func dockerRunCmd(c Container) (string, error) {
 	}
 	ip, err := c.GetIP()
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", util.LogError(err)
 	}
 	command += fmt.Sprintf(" --ip %s", ip)
 	command += fmt.Sprintf(" --hostname %s", c.GetName())
@@ -159,18 +156,16 @@ func dockerRunCmd(c Container) (string, error) {
 func Run(tn *testnet.TestNet, serverID int, container Container) error {
 	command, err := dockerRunCmd(container)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	_, err = tn.Clients[serverID].Run(command)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	return nil
 }
 
-func serviceDockerRunCmd(network string, ip string, name string, env map[string]string, image string) string {
+func serviceDockerRunCmd(network string, ip string, name string, env map[string]string, volumes []string, ports []string, image string) string {
 	envFlags := ""
 	for k, v := range env {
 		envFlags += fmt.Sprintf("-e \"%s=%s\" ", k, v)
@@ -180,60 +175,74 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 	if len(ip) > 0 {
 		ipFlag = fmt.Sprintf("--ip %s", ip)
 	}
-	return fmt.Sprintf("docker run -itd --network %s %s --hostname %s --name %s %s %s",
+	volumestr := ""
+	for _, vol := range volumes {
+		volumestr += fmt.Sprintf("-v %s ", vol)
+	}
+	portstr := ""
+	for _, port := range ports {
+		portstr += fmt.Sprintf("-p %s ", port)
+	}
+	return fmt.Sprintf("docker run -itd --network %s %s --hostname %s --name %s %s %s %s %s",
 		network,
 		ipFlag,
 		name,
 		name,
 		envFlags,
+		volumestr,
+		portstr,
 		image)
 }
 
 // StopServices stops all services and remove the service network from a server
 func StopServices(tn *testnet.TestNet) error {
-	return helpers.AllServerExecCon(tn, func(client *ssh.Client, _ *db.Server) error {
+	return helpers.AllServerExecCon(tn, func(client ssh.Client, _ *db.Server) error {
 		_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)", conf.ServicePrefix))
-		client.Run("docker network rm " + conf.ServiceNetworkName)
 		if err != nil {
-			log.Println(err)
+			log.WithFields(log.Fields{"error": err}).Info("no service containers to remove")
 		}
+
+		_, err = client.Run("docker network rm " + conf.ServiceNetworkName)
+		if err != nil {
+			log.WithFields(log.Fields{"error": err}).Info("no service network to remove")
+		}
+
 		return nil
 	})
 }
 
 // StartServices creates the service network and starts all the services on a server
-func StartServices(tn *testnet.TestNet, services []util.Service) error {
+func StartServices(tn *testnet.TestNet, services []helpers.Service) error {
 	gateway, subnet, err := util.GetServiceNetwork()
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	client := tn.GetFlatClients()[0] //TODO make this nice
 	_, err = client.KeepTryRun(dockerNetworkCreateCmd(subnet, gateway, -1, conf.ServiceNetworkName))
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
-	ips, err := util.GetServiceIps(services)
+	ips, err := helpers.GetServiceIps(services)
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	for i, service := range services {
 		net := conf.ServiceNetworkName
-		ip := ips[service.Name]
-		if len(service.Network) != 0 {
-			net = service.Network
+		ip := ips[service.GetName()]
+		if len(service.GetNetwork()) != 0 {
+			net = service.GetNetwork()
 			ip = ""
 		}
+		err = service.Prepare(client, tn)
 		_, err = client.KeepTryRun(serviceDockerRunCmd(net, ip,
 			fmt.Sprintf("%s%d", conf.ServicePrefix, i),
-			service.Env,
-			service.Image))
+			service.GetEnv(),
+			service.GetVolumes(),
+			service.GetPorts(),
+			service.GetImage()))
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		tn.BuildState.IncrementDeployProgress()
 	}

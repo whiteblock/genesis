@@ -40,7 +40,6 @@ func init() {
 // StartServer starts the rest server, blocking the calling thread from returning
 func StartServer() {
 	router := mux.NewRouter()
-	router.Use(authN)
 	router.HandleFunc("/servers", getAllServerInfo).Methods("GET")
 
 	router.HandleFunc("/servers/{name}", addNewServer).Methods("PUT")
@@ -121,7 +120,7 @@ func StartServer() {
 
 	router.HandleFunc("/blockchains", getAllSupportedBlockchains).Methods("GET")
 	log.WithFields(log.Fields{"socket": conf.Listen}).Info("listening for requests")
-	http.ListenAndServe(conf.Listen, removeTrailingSlash(router))
+	log.Fatal(http.ListenAndServe(conf.Listen, removeTrailingSlash(router)))
 }
 
 func removeTrailingSlash(next http.Handler) http.Handler {
@@ -220,12 +219,12 @@ func thawBuild(w http.ResponseWriter, r *http.Request) {
 func getPreviousBuild(w http.ResponseWriter, r *http.Request) {
 
 	jwt, err := util.ExtractJwt(r)
-	if err != nil {
+	if err != nil && conf.RequireAuth {
 		http.Error(w, util.LogError(err).Error(), 403)
 		return
 	}
 	kid, err := util.GetKidFromJwt(jwt)
-	if err != nil {
+	if err != nil && conf.RequireAuth {
 		http.Error(w, util.LogError(err).Error(), 403)
 	}
 	build, err := db.GetLastBuildByKid(kid)

@@ -140,7 +140,7 @@ func InsertServer(name string, server Server) (int, error) {
 	}
 	tx.Commit()
 	id, err := res.LastInsertId()
-	return int(id), err
+	return int(id), util.LogError(err)
 }
 
 // DeleteServer deletes a server by id
@@ -172,7 +172,7 @@ func UpdateServer(id int, server Server) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	return tx.Commit()
+	return util.LogError(tx.Commit())
 }
 
 //UpdateServerNodes update the number of nodes a server has
@@ -194,7 +194,7 @@ func UpdateServerNodes(id int, nodes int) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	return tx.Commit()
+	return util.LogError(tx.Commit())
 
 }
 

@@ -21,37 +21,61 @@ package deploy
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/whiteblock/genesis/blockchains/helpers"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
+	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"log"
 	"sync"
 )
 
 func distributeNibbler(tn *testnet.TestNet) {
+	if conf.DisableNibbler {
+		log.Info("nibbler is disabled")
+		return
+	}
 	tn.BuildState.Async(func() {
-		nibbler, err := util.HTTPRequest("GET", conf.NibblerEndPoint, "")
-		//nibbler, err := util.HTTPRequest("GET", "http://127.0.0.1/nibbler", "")
-		if err != nil {
-			log.Println(err)
-		}
-		err = tn.BuildState.Write("nibbler", string(nibbler))
-		if err != nil {
-			log.Println(err)
-		}
-		err = helpers.CopyToAllNewNodes(tn, "nibbler", "/usr/local/bin/nibbler")
-		if err != nil {
-			log.Println(err)
-		}
-		err = helpers.AllNewNodeExecCon(tn, func(client *ssh.Client, _ *db.Server, node ssh.Node) error {
-			_, err := client.DockerExec(node, "chmod +x /usr/local/bin/nibbler")
-			return err
-		})
-		if err != nil {
-			log.Println(err)
+		var err error
+		for i := uint(0); i < conf.NibblerRetries; i++ {
+			var nibbler []byte
+			nibbler, err = util.HTTPRequest("GET", conf.NibblerEndPoint, "")
+			if err != nil {
+				log.WithFields(log.Fields{"error": err, "attempt": i}).Error("failed to download nibbler. retrying...")
+				continue
+			}
+			if nibbler == nil || len(nibbler) == 0 {
+				log.WithFields(log.Fields{"error": err, "attempt": i}).Error("downloaded an empty nibbler")
+				continue
+			}
+
+			if err != nil {
+				log.WithFields(log.Fields{"error": err}).Error("failed to download nibbler.")
+				continue
+			}
+
+			err = tn.BuildState.Write("nibbler", string(nibbler))
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+
+			err = helpers.CopyToAllNewNodesDR(tn, "nibbler", "/usr/local/bin/nibbler")
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+
+			err = helpers.AllNewNodeExecConDR(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+				_, err := client.DockerExec(node, "chmod +x /usr/local/bin/nibbler")
+				return err
+			})
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			break
 		}
 	})
 }
@@ -65,24 +89,21 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 
 	dockerfile, err := base64.StdEncoding.DecodeString(prebuild["dockerfile"].(string))
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 	err = tn.BuildState.Write("Dockerfile", string(dockerfile))
 	if err != nil {
-		log.Println(err)
+		return util.LogError(err)
 	}
 
 	err = helpers.CopyAllToServers(tn, "Dockerfile", "/tmp/Dockerfile")
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	tag, err := util.GetUUIDString()
 	if err != nil {
-		log.Println(err)
-		return err
+		return util.LogError(err)
 	}
 
 	tn.BuildState.SetBuildStage("Building your custom image")
@@ -90,13 +111,12 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 	wg := sync.WaitGroup{}
 	for _, client := range tn.Clients {
 		wg.Add(1)
-		go func(client *ssh.Client) {
+		go func(client ssh.Client) {
 			defer wg.Done()
 
 			_, err := client.Run(fmt.Sprintf("docker build /tmp/ -t %s", imageName))
 			tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
 			if err != nil {
-				log.Println(err)
 				tn.BuildState.ReportError(err)
 				return
 			}
@@ -104,17 +124,16 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		}(client)
 	}
 	wg.Wait()
-	return tn.BuildState.GetError()
+	return util.LogError(tn.BuildState.GetError())
 }
 
 func handleDockerAuth(tn *testnet.TestNet, auth map[string]interface{}) error {
 	wg := sync.WaitGroup{}
 	for _, client := range tn.Clients {
 		wg.Add(1)
-		go func(client *ssh.Client) { //TODO add validation
+		go func(client ssh.Client) { //TODO add validation
 			err := docker.Login(client, auth["username"].(string), auth["password"].(string))
 			if err != nil {
-				log.Println(err)
 				tn.BuildState.ReportError(err)
 			}
 			tn.BuildState.Defer(func() { docker.Logout(client) })
@@ -122,7 +141,7 @@ func handleDockerAuth(tn *testnet.TestNet, auth map[string]interface{}) error {
 	}
 
 	wg.Wait()
-	return tn.BuildState.GetError()
+	return util.LogError(tn.BuildState.GetError())
 }
 
 func handlePreBuildExtras(tn *testnet.TestNet) error {
@@ -142,8 +161,7 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 	if ok {
 		err := handleDockerAuth(tn, iDockerAuth.(map[string]interface{}))
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 	}
 	//Handle docker build
@@ -151,8 +169,7 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 	if ok && dockerBuild.(bool) {
 		err := handleDockerBuildRequest(tn, prebuild)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 	}
 	//Force docker pull
@@ -167,7 +184,6 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 				defer wg.Done()
 				err := docker.Pull(tn.GetFlatClients(), image) //OPTMZ
 				if err != nil {
-					log.Println(err)
 					tn.BuildState.ReportError(err)
 					return
 				}
