@@ -121,7 +121,7 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 		return err
 	}
 
-	if err == nil && len(sidecars) > 0 {
+	if len(sidecars) > 0 {
 		tn.BuildState.SetBuildStage("setting up the sidecars")
 		steps := 0
 		for _, sidecarName := range sidecars {
