@@ -50,11 +50,6 @@ func distributeNibbler(tn *testnet.TestNet) {
 				continue
 			}
 
-			if err != nil {
-				log.WithFields(log.Fields{"error": err}).Error("failed to download nibbler.")
-				continue
-			}
-
 			err = tn.BuildState.Write("nibbler", string(nibbler))
 			if err != nil {
 				log.Error(err)
