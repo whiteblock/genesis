@@ -22,16 +22,16 @@ package util
 func GetUniqueStrings(in []string) []string {
 	out := []string{}
 
+OUTER:
 	for _, str := range in {
-		shouldAdd := true
 		for _, alreadyAdded := range out {
 			if alreadyAdded == str {
-				shouldAdd = false
+				continue OUTER
 			}
 		}
-		if shouldAdd {
-			out = append(out, str)
-		}
+
+		out = append(out, str)
 	}
+
 	return out
 }
