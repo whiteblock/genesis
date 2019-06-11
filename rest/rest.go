@@ -75,7 +75,7 @@ func StartServer() {
 
 	router.HandleFunc("/nodes/{id}/{num}", delNodes).Methods("DELETE") //Completely remove x nodes
 
-	router.HandleFunc("/nodes/restart/{testnetID}/{num}", restartNode).Methods("POST")
+	router.HandleFunc("/nodes/restart/{id}/{num}", restartNode).Methods("POST")
 
 	router.HandleFunc("/nodes/raise/{testnetID}/{node}/{signal}", signalNode).Methods("POST")
 
