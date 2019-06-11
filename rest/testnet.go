@@ -159,7 +159,8 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 	log.WithFields(log.Fields{"testnet": testnetID, "node": nodeNum}).Info("restarting a node")
 	tn, err := testnet.RestoreTestNet(testnetID)
 	if err != nil {
-		http.Error(w, util.LogError(err).Error(), 404)
+		util.LogError(err)
+		http.Error(w, fmt.Sprintf("unable to restore testnet \"%s\"", testnetID), 404)
 		return
 	}
 	cmdRaw, ok := tn.BuildState.Get(nodeNum)
@@ -222,7 +223,7 @@ func signalNode(w http.ResponseWriter, r *http.Request) {
 	err = util.ValidateCommandLine(signal)
 	if err != nil {
 		util.LogError(err)
-		http.Error(w, fmt.Sprintf("Invalid signal \"%s\", see `man 7 signal` for help", signal), 400)
+		http.Error(w, fmt.Sprintf("invalid signal \"%s\", see `man 7 signal` for help", signal), 400)
 	}
 
 	tn, err := testnet.RestoreTestNet(testnetID)
@@ -235,13 +236,13 @@ func signalNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	n := &tn.Nodes[nodeNum]
-	cmdRaw, ok := tn.BuildState.Get(node)
+	var cmd util.Command
+	ok := tn.BuildState.GetP(node, &cmd)
 	if !ok {
 		log.WithFields(log.Fields{"node": node}).Error("node not found")
 		http.Error(w, fmt.Sprintf("Node %s not found", node), 404)
 		return
 	}
-	cmd := cmdRaw.(util.Command)
 
 	cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep|  awk '{print $2}'| tail -n 1", strings.Split(cmd.Cmdline, " ")[0])
 	pid, err := tn.Clients[n.Server].DockerExec(n, cmdgexCmd)
@@ -267,13 +268,13 @@ func killNode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, util.LogError(err).Error(), 404)
 		return
 	}
-	cmdRaw, ok := tn.BuildState.Get(params["node"])
+	var cmd util.Command
+	ok := tn.BuildState.GetP(params["node"], &cmd)
 	if !ok {
 		log.WithFields(log.Fields{"node": params["node"]}).Warn("node not found")
 		http.Error(w, fmt.Sprintf("Node %s not found", params["node"]), 404)
 		return
 	}
-	cmd := cmdRaw.(util.Command)
 
 	client, err := status.GetClient(cmd.ServerID)
 	if err != nil {
