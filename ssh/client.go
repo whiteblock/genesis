@@ -299,6 +299,13 @@ func (sshClient *client) logSanitizeAndStore(node Node, command string) {
 
 // DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs.
 // Should only be used for the blockchain process.
+func (sshClient *client) DockerRunMainDaemon(node Node, command string) error {
+	sshClient.logSanitizeAndStore(node, command)
+	return sshClient.DockerExecdLog(node,command)
+}
+
+// DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs.
+// Should only be used for the blockchain process.
 func (sshClient *client) DockerExecdLog(node Node, command string) error {
 	sshClient.logSanitizeAndStore(node, command)
 
