@@ -37,8 +37,9 @@ import (
 var conf *util.Config
 
 const (
-	blockchain = "prysm"
-	p2pPort    = 12000
+	blockchain    = "prysm"
+	p2pPort       = 12000
+	numValidators = 8
 )
 
 func init() {
@@ -124,20 +125,19 @@ func build(tn *testnet.TestNet) error {
 			return util.LogError(err)
 		}
 
-		for i := 1; i <= 8; i++ {
+		for i := 1; i <= numValidators; i++ {
 			_, err = client.DockerExecd(node, fmt.Sprintf("/validator accounts create --password %s --keystore-path %s/key%d-%d", validatorsPassword, logFolder, node.GetRelativeNumber(), i))
 			if err != nil {
 				return util.LogError(err)
 			}
 		}
 
-		for i := 1; i <= 8; i++ {
+		for i := 1; i <= numValidators; i++ {
 			_, err = client.DockerExecd(node, fmt.Sprintf("bash -c \"/validator --password %s --keystore-path %s/key%d-%d 2>&1 --monitoring-port 10%d%d| tee %s/validator%d-%d.log\"", validatorsPassword, logFolder, node.GetRelativeNumber(), i, node.GetRelativeNumber(), i, logFolder, node.GetRelativeNumber(), i))
 			if err != nil {
 				return util.LogError(err)
 			}
 		}
-
 
 		return err
 	})

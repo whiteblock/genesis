@@ -260,8 +260,8 @@ func signalNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep| grep -v nibbler |  awk '{print $2}'| tail -n 1", 
-						     strings.Split(cmd.Cmdline, " ")[0])
+	cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep| grep -v nibbler |  awk '{print $2}'| tail -n 1",
+		strings.Split(cmd.Cmdline, " ")[0])
 	pid, err := tn.Clients[n.Server].DockerExec(n, cmdgexCmd)
 	if err != nil {
 		http.Error(w, util.LogError(err).Error(), 500)
