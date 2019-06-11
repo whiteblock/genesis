@@ -67,7 +67,7 @@ func build(tn *testnet.TestNet) error {
 				tn.BuildState.IncrementBuildProgress()
 			}
 		}
-		return client.DockerExecdLog(node, "gossip --sending --payloadSize 5000 --sendInterval 100 --numberOfMessages 10000 -n 0.0.0.0 -l 9000 -r 9001 -m /plumtree/data/log.json "+peers)
+		return client.DockerRunMainDaemon(node, "gossip --sending --payloadSize 5000 --sendInterval 100 --numberOfMessages 10000 -n 0.0.0.0 -l 9000 -r 9001 -m /plumtree/data/log.json "+peers)
 	}))
 }
 

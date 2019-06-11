@@ -152,7 +152,7 @@ func build(tn *testnet.TestNet) error {
 		if err != nil {
 			return util.LogError(err)
 		}
-		return client.DockerExecdLog(node, fmt.Sprintf("beam-wallet --command listen -n 0.0.0.0:%d --pass password", port))
+		return client.DockerRunMainDaemon(node, fmt.Sprintf("beam-wallet --command listen -n 0.0.0.0:%d --pass password", port))
 	})
 
 	return err

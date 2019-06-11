@@ -69,7 +69,7 @@ func regTest(tn *testnet.TestNet) error {
 
 	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		return client.DockerExecdLog(node,
+		return client.DockerRunMainDaemon(node,
 			"syscoind -conf=\"/syscoin/datadir/regtest.conf\" -datadir=\"/syscoin/datadir/\"")
 	})
 }

@@ -78,6 +78,8 @@ type Client interface {
 	// Also flags the session as interactive and sets up a virtual tty.
 	DockerExecdit(node Node, command string) (string, error)
 
+	//DockerRunMainDaemon should be used to start the main daemon process
+	DockerRunMainDaemon(node Node, command string) error
 	// DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs.
 	// Should only be used for the blockchain process.
 	DockerExecdLog(node Node, command string) error
@@ -297,8 +299,7 @@ func (sshClient *client) logSanitizeAndStore(node Node, command string) {
 	bs.Set(fmt.Sprintf("%d", node.GetAbsoluteNumber()), util.Command{Cmdline: command, ServerID: sshClient.serverID, Node: node.GetRelativeNumber()})
 }
 
-// DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs.
-// Should only be used for the blockchain process.
+// DockerRunMainDaemon should be used to start the main daemon process
 func (sshClient *client) DockerRunMainDaemon(node Node, command string) error {
 	sshClient.logSanitizeAndStore(node, command)
 	return sshClient.DockerExecdLog(node,command)
@@ -307,8 +308,6 @@ func (sshClient *client) DockerRunMainDaemon(node Node, command string) error {
 // DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs.
 // Should only be used for the blockchain process.
 func (sshClient *client) DockerExecdLog(node Node, command string) error {
-	sshClient.logSanitizeAndStore(node, command)
-
 	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s bash -c '%s 2>&1 > %s'", node.GetNodeName(),
 		command, conf.DockerOutputFile))
 	return util.LogError(err)
@@ -317,7 +316,6 @@ func (sshClient *client) DockerExecdLog(node Node, command string) error {
 // DockerExecdLogAppend will cause the stdout and stderr of the command to be stored in the logs.
 // Should only be used for the blockchain process. Will append to existing logs.
 func (sshClient *client) DockerExecdLogAppend(node Node, command string) error {
-	sshClient.logSanitizeAndStore(node, command)
 	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s bash -c '%s 2>&1 >> %s'", node.GetNodeName(),
 		command, conf.DockerOutputFile))
 	return util.LogError(err)

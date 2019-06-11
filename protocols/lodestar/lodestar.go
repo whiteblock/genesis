@@ -70,7 +70,7 @@ func build(tn *testnet.TestNet) error {
 		} else {
 			logFolder = ""
 		}
-		return client.DockerExecdLog(node, fmt.Sprintf("lodestar --listen-address 0.0.0.0 --port 9000 %s | tee %s/output%d.log", peers, logFolder, node.GetAbsoluteNumber()))
+		return client.DockerRunMainDaemon(node, fmt.Sprintf("lodestar --listen-address 0.0.0.0 --port 9000 %s | tee %s/output%d.log", peers, logFolder, node.GetAbsoluteNumber()))
 	})
 }
 

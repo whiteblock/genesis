@@ -67,7 +67,7 @@ func build(tn *testnet.TestNet) error {
 		defer tn.BuildState.IncrementBuildProgress()
 
 		lighthouseCmd := "RUST_LOG=libp2p=debug beacon_node --listen-address 0.0.0.0 --port 9000 " + peers + " 2>&1 | tee /output.log"
-		return client.DockerExecdLog(node, lighthouseCmd)
+		return client.DockerRunMainDaemon(node, lighthouseCmd)
 	})
 	return util.LogError(err)
 }

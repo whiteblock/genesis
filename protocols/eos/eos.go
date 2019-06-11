@@ -200,7 +200,7 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	err = masterClient.DockerExecdLog(masterNode,
+	err = masterClient.DockerRunMainDaemon(masterNode,
 		fmt.Sprintf(`nodeos -e -p eosio --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s`,
 			eosGetkeypairflag(keyPairs[masterIP]),
 			eosGetptpflags(tn.Nodes, 0)))
@@ -340,7 +340,7 @@ func build(tn *testnet.TestNet) error {
 			prodFlags = " -p " + eosGetproducername(node.GetAbsoluteNumber()) + " "
 		}
 
-		return client.DockerExecdLog(node,
+		return client.DockerRunMainDaemon(node,
 			fmt.Sprintf(`nodeos --genesis-json /datadir/genesis.json --config-dir /datadir --data-dir /datadir %s %s %s`,
 				prodFlags,
 				eosGetkeypairflag(keyPairs[node.GetIP()]),

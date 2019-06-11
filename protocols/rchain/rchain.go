@@ -148,7 +148,7 @@ func build(tn *testnet.TestNet) error {
 	buildState.SetBuildStage("Starting the boot node")
 	var enode string
 	{
-		err = masterClient.DockerExecdLog(masterNode,
+		err = masterClient.DockerRunMainDaemon(masterNode,
 			fmt.Sprintf("%s run --standalone --data-dir \"/datadir\" --host %s --bonds-file /bonds.txt --has-faucet",
 				rConf.Command, masterNode.IP))
 		buildState.IncrementBuildProgress()
@@ -213,11 +213,11 @@ func build(tn *testnet.TestNet) error {
 		validators++
 		mux.Unlock()
 		if isValidator {
-			return client.DockerExecdLog(node,
+			return client.DockerRunMainDaemon(node,
 				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
 					rConf.Command, enode, keyPairs[node.GetAbsoluteNumber()].PrivateKey, node.GetIP()))
 		}
-		return client.DockerExecdLog(node,
+		return client.DockerRunMainDaemon(node,
 			fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s",
 				rConf.Command, enode, node.GetIP()))
 	})
@@ -318,12 +318,12 @@ func add(tn *testnet.TestNet) error {
 		mux.Unlock()
 
 		if isValidator {
-			err = client.DockerExecdLog(node,
+			err = client.DockerRunMainDaemon(node,
 				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
 					rConf.Command, enode, keyPairs[node.GetAbsoluteNumber()].PrivateKey, node.GetIP()))
 			return err
 		}
-		return client.DockerExecdLog(node,
+		return client.DockerRunMainDaemon(node,
 			fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s",
 				rConf.Command, enode, node.GetIP()))
 	})
