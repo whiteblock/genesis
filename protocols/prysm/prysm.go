@@ -98,6 +98,19 @@ func build(tn *testnet.TestNet) error {
 		if prometheusInstrumentationPort == "" {
 			prometheusInstrumentationPort = "8088"
 		}
+
+		var contract string
+		obj = tn.CombinedDetails.Params["contract"]
+		if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
+			contract = obj.(string)
+		}
+
+		var validatorsPassword string
+		obj = tn.CombinedDetails.Params["validatorsPassword"]
+		if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
+			validatorsPassword = obj.(string)
+		}
+
 		var logFolder string
 		obj = tn.CombinedDetails.Params["logFolder"]
 		if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
@@ -106,7 +119,26 @@ func build(tn *testnet.TestNet) error {
 			logFolder = ""
 		}
 
-		_, err = client.DockerExecd(node, fmt.Sprintf("/beacon-chain --monitoring-port=%s --no-discovery %s --log-file %s/output-%d.log --p2p-priv-key /etc/identity.key", prometheusInstrumentationPort, peers, logFolder, node.GetAbsoluteNumber()))
+		_, err = client.DockerExecd(node, fmt.Sprintf("/beacon-chain --monitoring-port=%s --no-discovery %s --log-file %s/output-%d.log  --deposit-contract %s --p2p-priv-key /etc/identity.key", prometheusInstrumentationPort, peers, logFolder, node.GetAbsoluteNumber(), contract))
+		if err != nil {
+			return util.LogError(err)
+		}
+
+		for i := 1; i <= 8; i++ {
+			_, err = client.DockerExecd(node, fmt.Sprintf("/validator accounts create --password %s --keystore-path %s/key%d-%d", validatorsPassword, logFolder, node.GetRelativeNumber(), i))
+			if err != nil {
+				return util.LogError(err)
+			}
+		}
+
+		for i := 1; i <= 8; i++ {
+			_, err = client.DockerExecd(node, fmt.Sprintf("bash -c \"/validator --password %s --keystore-path %s/key%d-%d 2>&1 --monitoring-port 10%d%d| tee %s/validator%d-%d.log\"", validatorsPassword, logFolder, node.GetRelativeNumber(), i, node.GetRelativeNumber(), i, logFolder, node.GetRelativeNumber(), i))
+			if err != nil {
+				return util.LogError(err)
+			}
+		}
+
+
 		return err
 	})
 	return util.LogError(err)
