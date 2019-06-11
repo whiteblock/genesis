@@ -177,29 +177,38 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, util.LogError(err).Error(), 500)
 		return
 	}
-	cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep|  awk '{print $2}'| tail -n 1", strings.Split(cmd.Cmdline, " ")[0])
+	cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep|  awk '{print $2}'", strings.Split(cmd.Cmdline, " ")[0])
 	node, err := db.GetNodeByLocalID(tn.Nodes, cmd.Node)
 	if err != nil {
 		http.Error(w, util.LogError(err).Error(), 500)
 		return
 	}
-	pid, err := client.DockerExec(node, cmdgexCmd)
+	procsRaw, err := client.DockerExec(node, cmdgexCmd)
 	if err != nil {
 		http.Error(w, util.LogError(err).Error(), 500)
 		return
 	}
-	_, err = client.DockerExec(node, fmt.Sprintf("kill -INT %s", pid))
-	if err != nil {
-		http.Error(w, util.LogError(err).Error(), 500)
-		return
+	procs := strings.Split(procsRaw, "\n")
+	log.WithFields(log.Fields{"procs": procs}).Debug("got the possible process ids")
+
+	for _, pid := range procs {
+		if pid == "" {
+			continue
+		}
+		_, err = client.DockerExec(node, fmt.Sprintf("kill -INT %s", pid))
+		if err != nil {
+			http.Error(w, util.LogError(err).Error(), 500)
+			return
+		}
 	}
+
 	killedSuccessfully := false
 	for i := uint(0); i < conf.KillRetries; i++ {
 		_, err = client.DockerExec(node, fmt.Sprintf("ps aux | grep '%s' | grep -v grep", strings.Split(cmd.Cmdline, " ")[0]))
 		if err != nil {
+			killedSuccessfully = true
 			break
 		}
-		killedSuccessfully = true
 	}
 
 	if !killedSuccessfully {
@@ -251,7 +260,8 @@ func signalNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep|  awk '{print $2}'| tail -n 1", strings.Split(cmd.Cmdline, " ")[0])
+	cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep| grep -v nibbler |  awk '{print $2}'| tail -n 1", 
+						     strings.Split(cmd.Cmdline, " ")[0])
 	pid, err := tn.Clients[n.Server].DockerExec(n, cmdgexCmd)
 	if err != nil {
 		http.Error(w, util.LogError(err).Error(), 500)
