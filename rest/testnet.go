@@ -193,12 +193,19 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, util.LogError(err).Error(), 500)
 		return
 	}
-
+	killedSuccessfully := false
 	for i := uint(0); i < conf.KillRetries; i++ {
 		_, err = client.DockerExec(node, fmt.Sprintf("ps aux | grep '%s' | grep -v grep", strings.Split(cmd.Cmdline, " ")[0]))
 		if err != nil {
 			break
 		}
+		killedSuccessfully = true
+	}
+
+	if !killedSuccessfully {
+		err := fmt.Errorf("Unable to kill the blockchain process")
+		http.Error(w, util.LogError(err).Error(), 500)
+		return
 	}
 
 	err = client.DockerExecdLogAppend(node, cmd.Cmdline)
