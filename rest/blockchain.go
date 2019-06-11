@@ -78,12 +78,8 @@ func getConfFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, util.LogError(err).Error(), 400)
 		return
 	}
-	if strings.Contains(params["blockchain"], "github.com/whiteblock/genesis") || strings.Contains(params["file"], "github.com/whiteblock/genesis") {
+	if strings.Contains(params["blockchain"], "..") || strings.Contains(params["file"], "./") {
 		http.Error(w, "relative path operators not allowed", 401)
-		return
-	}
-	if !strings.HasSuffix(params["file"], "mustache") && !strings.HasSuffix(params["file"], "json") {
-		http.Error(w, "Cannot read non mustache/json files", 403)
 		return
 	}
 	path := "./resources/" + params["blockchain"] + "/" + params["file"]
