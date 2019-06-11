@@ -302,7 +302,7 @@ func (sshClient *client) logSanitizeAndStore(node Node, command string) {
 // DockerRunMainDaemon should be used to start the main daemon process
 func (sshClient *client) DockerRunMainDaemon(node Node, command string) error {
 	sshClient.logSanitizeAndStore(node, command)
-	return sshClient.DockerExecdLog(node,command)
+	return sshClient.DockerExecdLog(node, command)
 }
 
 // DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs.

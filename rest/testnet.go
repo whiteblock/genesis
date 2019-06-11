@@ -163,14 +163,14 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("unable to restore testnet \"%s\"", testnetID), 404)
 		return
 	}
-	cmdRaw, ok := tn.BuildState.Get(nodeNum)
+	var cmd util.Command
+	ok := tn.BuildState.GetP(nodeNum, &cmd)
 	log.WithFields(log.Fields{"extras": tn.BuildState.GetExtras()}).Debug("fetched the previous build state")
 	if !ok {
 		log.WithFields(log.Fields{"node": nodeNum}).Error("node not found")
 		http.Error(w, fmt.Sprintf("Node %s not found", nodeNum), 404)
 		return
 	}
-	cmd := cmdRaw.(util.Command)
 
 	client, err := status.GetClient(cmd.ServerID)
 	if err != nil {
@@ -194,7 +194,7 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for {
+	for i := uint(0); i < conf.KillRetries; i++ {
 		_, err = client.DockerExec(node, fmt.Sprintf("ps aux | grep '%s' | grep -v grep", strings.Split(cmd.Cmdline, " ")[0]))
 		if err != nil {
 			break

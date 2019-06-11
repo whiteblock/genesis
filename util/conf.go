@@ -67,6 +67,7 @@ type Config struct {
 	ResourceDir             string  `mapstructure:"resourceDir"`
 	RemoveNodesOnFailure    bool    `mapstructure:"removeNodesOnFailure"`
 	NibblerRetries          uint    `mapstructure:"nibblerRetries"`
+	KillRetries             uint    `mapstructure:"killRetries"`
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
@@ -112,6 +113,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("resourceDir", "RESOURCE_DIR")
 	viper.BindEnv("removeNodesOnFailure", "REMOVE_NODES_ON_FAILURE")
 	viper.BindEnv("nibblerRetries", "NIBBLER_RETRIES")
+	viper.BindEnv("killRetries", "KILL_RETRIES")
 }
 func setViperDefaults() {
 	viper.SetDefault("sshUser", os.Getenv("USER"))
@@ -149,6 +151,7 @@ func setViperDefaults() {
 	viper.SetDefault("resourceDir", "./resources")
 	viper.SetDefault("removeNodesOnFailure", false)
 	viper.SetDefault("nibblerRetries", 2)
+	viper.SetDefault("killRetries", 100)
 }
 
 // GCPFormatter enables the ability to use genesis logging with Stackdriver
