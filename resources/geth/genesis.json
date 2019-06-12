@@ -6,13 +6,17 @@
         "eip155Block":{{{eip155Block}}},
         "eip158Block":{{{eip158Block}}},
         "eip160Block":10
+        "byzantiumBlock": 0,
+        "constantinopleBlock": 0,
+        "constantinopleFixBlock": 0,
+        {{{consensus}}}: {{{consensusParams}}}
     },
     "nonce": "0x0000000000000042",
+    "extraData":{{{extraData}}},
     "difficulty": {{{difficulty}}},
     "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "coinbase": "0x0000000000000000000000000000000000000000",
     "timestamp": "0x00",
-    "extraData": "0x3535353535353535353535353535353535353535353535353535353535353535",
     "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "gasLimit": {{{gasLimit}}},
     "alloc":{{{alloc}}}
