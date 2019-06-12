@@ -273,12 +273,22 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		"eip158Block":    ethconf.Eip158Block,
 		"difficulty":     fmt.Sprintf("0x0%X", ethconf.Difficulty),
 		"gasLimit":       fmt.Sprintf("0x0%X", ethconf.GasLimit),
+		"consensus":      ethconf.Consensus,
 	}
 	alloc := map[string]map[string]string{}
 	for _, account := range accounts {
 		alloc[account.HexAddress()] = map[string]string{
 			"balance": ethconf.InitBalance,
 		}
+	}
+
+	consensusParams := map[string]interface{}{}
+	switch ethconf.Consensus {
+	case "clique":
+		consensusParams["blockPeriodSeconds"] = ethconf.BlockPeriodSeconds
+		consensusParams["epoch"] = ethconf.Epoch
+	case "ethash":
+		consensusParams["difficulty"] = ethconf.Difficulty
 	}
 
 	accs := MakeFakeAccounts(int(ethconf.ExtraAccounts))
@@ -289,6 +299,7 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		}
 	}
 	genesis["alloc"] = alloc
+	genesis["consensusParams"] = consensusParams
 	dat, err := helpers.GetBlockchainConfig("geth", 0, "genesis.json", tn.LDD)
 	if err != nil {
 		return util.LogError(err)
