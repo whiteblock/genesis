@@ -292,6 +292,19 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		"consensus":      ethconf.Consensus,
 	}
 
+	switch ethconf.Consensus {
+	case "clique":
+		fallthrough
+	case "ethash":
+		extraData := "0x0000000000000000000000000000000000000000000000000000000000000000"
+		for i := 0; i < len(accounts) && i < tn.LDD.Nodes; i++ {
+			extraData += accounts[i].HexAddress()[2:]
+		}
+		extraData += "000000000000000000000000000000000000000000000000000000000000000000" +
+			"0000000000000000000000000000000000000000000000000000000000000000"
+		genesis["extraData"] = extraData
+	}
+
 	accs := MakeFakeAccounts(int(ethconf.ExtraAccounts))
 
 	for _, wallet := range accs {
