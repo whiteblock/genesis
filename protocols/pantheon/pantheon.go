@@ -151,7 +151,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Starting Pantheon")
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		flags, err := getExtraConfigurationFlags(tn, node, panconf)
+		flags, err := getExtraConfigurationFlags(tn, node, panconf, accounts)
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -289,7 +289,7 @@ func getIBFTExtraData(tn *testnet.TestNet, panconf *panConf, accounts []*ethereu
 	return strings.Trim(ibftExtraData, "\n\r"), nil
 }
 
-func getExtraConfigurationFlags(tn *testnet.TestNet, node ssh.Node, pconf *panConf) (string, error) {
+func getExtraConfigurationFlags(tn *testnet.TestNet, node ssh.Node, pconf *panConf, accounts []*ethereum.Account) (string, error) {
 	out := ""
 	if pconf.Orion {
 		orionNode, err := tn.GetNodesSideCar(node, "orion")
@@ -297,6 +297,13 @@ func getExtraConfigurationFlags(tn *testnet.TestNet, node ssh.Node, pconf *panCo
 			return out, util.LogError(err)
 		}
 		out += fmt.Sprintf(` --privacy-url="http://%s:8888"`, orionNode.GetIP())
+	}
+
+	switch pconf.Consensus {
+	case "ibft2":
+	case "clique":
+	case "ethash":
+		out += fmt.Sprintf(` --miner-coinbase="%s"`, accounts[node.GetAbsoluteNumber()].HexAddress())
 	}
 
 	return out, nil
