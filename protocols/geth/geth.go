@@ -266,15 +266,6 @@ func MakeFakeAccounts(accs int) []string {
 
 func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) error {
 
-	genesis := map[string]interface{}{
-		"chainId":        ethconf.NetworkID,
-		"homesteadBlock": ethconf.HomesteadBlock,
-		"eip155Block":    ethconf.Eip155Block,
-		"eip158Block":    ethconf.Eip158Block,
-		"difficulty":     fmt.Sprintf("0x0%X", ethconf.Difficulty),
-		"gasLimit":       fmt.Sprintf("0x0%X", ethconf.GasLimit),
-		"consensus":      ethconf.Consensus,
-	}
 	alloc := map[string]map[string]string{}
 	for _, account := range accounts {
 		alloc[account.HexAddress()] = map[string]string{
@@ -289,6 +280,16 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		consensusParams["epoch"] = ethconf.Epoch
 	case "ethash":
 		consensusParams["difficulty"] = ethconf.Difficulty
+	}
+
+	genesis := map[string]interface{}{
+		"chainId":        ethconf.NetworkID,
+		"homesteadBlock": ethconf.HomesteadBlock,
+		"eip155Block":    ethconf.Eip155Block,
+		"eip158Block":    ethconf.Eip158Block,
+		"difficulty":     fmt.Sprintf("0x0%X", ethconf.Difficulty),
+		"gasLimit":       fmt.Sprintf("0x0%X", ethconf.GasLimit),
+		"consensus":      ethconf.Consensus,
 	}
 
 	accs := MakeFakeAccounts(int(ethconf.ExtraAccounts))

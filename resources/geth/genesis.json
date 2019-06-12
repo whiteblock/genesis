@@ -12,12 +12,12 @@
         {{{consensus}}}: {{{consensusParams}}}
     },
     "nonce": "0x0000000000000042",
-    "extraData":{{{extraData}}},
+    "extraData": {{{extraData}}},
     "difficulty": {{{difficulty}}},
     "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "coinbase": "0x0000000000000000000000000000000000000000",
     "timestamp": "0x00",
     "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "gasLimit": {{{gasLimit}}},
-    "alloc":{{{alloc}}}
+    "alloc": {{{alloc}}}
 }
