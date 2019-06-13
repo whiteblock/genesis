@@ -172,7 +172,7 @@ func Build(tn *testnet.TestNet, services []helpers.Service) error {
 
 		node := db.Node{
 			ID: nodeID, TestNetID: tn.TestNetID, Server: serverID,
-			LocalID: tn.Servers[serverIndex].Nodes, IP: nodeIP}
+			LocalID: tn.Servers[serverIndex].Nodes, IP: nodeIP, Protocol: tn.LDD.Blockchain}
 
 		tn.Servers[serverIndex].Ips = append(tn.Servers[serverIndex].Ips, nodeIP) //TODO: REMOVE
 		tn.Servers[serverIndex].Nodes++

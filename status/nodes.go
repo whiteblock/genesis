@@ -116,7 +116,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 			Server:    node.Server,
 			Up:        false,
 			ID:        node.ID,
-			Protocol:  node.Blockchain,
+			Protocol:  node.Protocol,
 			Image:     node.Image,
 			Resources: Comp{-1, -1, -1},
 		}

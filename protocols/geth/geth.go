@@ -298,10 +298,10 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 	case "ethash":
 		extraData := "0x0000000000000000000000000000000000000000000000000000000000000000"
 		//it does not work when there are multiple signers put into this extraData field
-		/* 
-		for i := 0; i < len(accounts) && i < tn.LDD.Nodes; i++ {
-			extraData += accounts[i].HexAddress()[2:]
-		}
+		/*
+			for i := 0; i < len(accounts) && i < tn.LDD.Nodes; i++ {
+				extraData += accounts[i].HexAddress()[2:]
+			}
 		*/
 		extraData += accounts[0].HexAddress()[2:]
 		extraData += "000000000000000000000000000000000000000000000000000000000000000000" +

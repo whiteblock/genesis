@@ -100,7 +100,7 @@ func getNodesByQuery(query string) ([]Node, error) {
 	nodes := []Node{}
 	for rows.Next() {
 		var node Node
-		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID,
+		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.IP,
 			&node.Label, &node.AbsoluteNum, &node.Image, &node.Protocol)
 		if err != nil {
 			return nil, util.LogError(err)

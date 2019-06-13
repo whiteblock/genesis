@@ -3,9 +3,9 @@ package helpers
 import (
 	"encoding/json"
 	"github.com/whiteblock/genesis/db"
-	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
 )
 
@@ -15,7 +15,6 @@ type SysethereumService struct {
 }
 
 type sysethereumConf map[string]interface{}
-
 
 func newConf(data map[string]interface{}) (sysethereumConf, error) {
 	rawDefaults := DefaultGetDefaultsFn("sysethereum")()
