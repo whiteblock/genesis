@@ -6,9 +6,6 @@
         "eip155Block":{{{eip155Block}}},
         "eip158Block":{{{eip158Block}}},
         "eip160Block":0,
-        "byzantiumBlock": 0,
-        "constantinopleBlock": 0,
-        "constantinopleFixBlock": 0,
         {{{consensus}}}: {{{consensusParams}}}
     },
     "nonce": "0x0000000000000042",
