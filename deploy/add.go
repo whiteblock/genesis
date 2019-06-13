@@ -67,14 +67,14 @@ func AddNodes(tn *testnet.TestNet) error {
 			return util.LogError(err)
 		}
 
-		node := tn.AddNode(db.Node{
+		node := db.Node{
 			ID: nodeID, TestNetID: tn.TestNetID, Server: serverID,
-			LocalID: tn.Servers[serverIndex].Nodes, IP: nodeIP})
+			LocalID: tn.Servers[serverIndex].Nodes, IP: nodeIP}
 
 		tn.Servers[serverIndex].Nodes++
 
 		wg.Add(1)
-		go func(server *db.Server, node *db.Node) {
+		go func(server *db.Server, node db.Node) {
 			defer wg.Done()
 			BuildNode(tn, server, node)
 		}(&tn.Servers[serverIndex], node)

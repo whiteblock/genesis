@@ -306,6 +306,7 @@ func (tn *TestNet) Destroy() error {
 func (tn *TestNet) StoreNodes() error {
 	var err error
 	for _, node := range tn.NewlyBuiltNodes {
+		log.WithFields(log.Fields{"node":node}).Debug("storing a node")
 		_, er := db.InsertNode(node)
 		if er != nil {
 			log.WithFields(log.Fields{"build": tn.TestNetID, "error": er,

@@ -34,7 +34,7 @@ import (
 
 var conf = util.GetConfig()
 
-func buildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
+func buildSideCars(tn *testnet.TestNet, server *db.Server, node db.Node) {
 	sidecars, err := registrar.GetBlockchainSideCars(tn.LDD.Blockchain)
 	if err != nil {
 		//do not report
@@ -75,7 +75,7 @@ func buildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 }
 
 // BuildNode builds out a single node in a testnet
-func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
+func BuildNode(tn *testnet.TestNet, server *db.Server, node db.Node) {
 	if conf.RemoveNodesOnFailure {
 		tn.BuildState.OnError(func() {
 			docker.Kill(tn.Clients[server.ID], node.LocalID)
@@ -113,8 +113,8 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 		env = tn.LDD.Environments[node.AbsoluteNum]
 		log.WithFields(log.Fields{"env": env, "node": node.AbsoluteNum}).Trace("using custom env vars")
 	}
-
-	err = docker.Run(tn, server.ID, docker.NewNodeContainer(node, env, resource, server.SubnetID))
+	tn.AddNode(node)
+	err = docker.Run(tn, server.ID, docker.NewNodeContainer(&node, env, resource, server.SubnetID))
 	if err != nil {
 		tn.BuildState.ReportError(err)
 		return
@@ -170,15 +170,15 @@ func Build(tn *testnet.TestNet, services []helpers.Service) error {
 			return util.LogError(err)
 		}
 
-		node := tn.AddNode(db.Node{
+		node := db.Node{
 			ID: nodeID, TestNetID: tn.TestNetID, Server: serverID,
-			LocalID: tn.Servers[serverIndex].Nodes, IP: nodeIP})
+			LocalID: tn.Servers[serverIndex].Nodes, IP: nodeIP}
 
 		tn.Servers[serverIndex].Ips = append(tn.Servers[serverIndex].Ips, nodeIP) //TODO: REMOVE
 		tn.Servers[serverIndex].Nodes++
 
 		wg.Add(1)
-		go func(server *db.Server, node *db.Node) {
+		go func(server *db.Server, node db.Node) {
 			defer wg.Done()
 			BuildNode(tn, server, node)
 		}(&tn.Servers[serverIndex], node)
