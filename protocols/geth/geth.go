@@ -276,7 +276,7 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 	consensusParams := map[string]interface{}{}
 	switch ethconf.Consensus {
 	case "clique":
-		consensusParams["blockPeriodSeconds"] = ethconf.BlockPeriodSeconds
+		consensusParams["period"] = ethconf.BlockPeriodSeconds
 		consensusParams["epoch"] = ethconf.Epoch
 	case "ethash":
 		consensusParams["difficulty"] = ethconf.Difficulty
