@@ -30,6 +30,9 @@ type Service interface {
 
 	// GetVolumes gets the volumes mounted on the service container
 	GetVolumes() []string
+
+	// GetCommand gets the command to run for the service with Docker.
+	GetCommand() string
 }
 
 // SimpleService represents a service for a blockchain.
@@ -76,6 +79,11 @@ func (s SimpleService) GetPorts() []string {
 // GetVolumes gets the volumes mounted on the service container
 func (s SimpleService) GetVolumes() []string {
 	return s.Volumes
+}
+
+// GetCommand gets the command to run for the service with Docker.
+func (s SimpleService) GetCommand() string {
+	return ""
 }
 
 // GetServiceIps creates a map of the service names to their ip addresses. Useful

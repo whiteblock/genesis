@@ -101,5 +101,8 @@ func (sconf *sysConf) GenerateMN() string {
 
 // GetServices returns the services which are used by syscoin
 func GetServices() []helpers.Service {
-	return nil
+	return []helpers.Service{
+		helpers.RegisterGanache(),
+		helpers.RegisterSysethereum(),
+	}
 }

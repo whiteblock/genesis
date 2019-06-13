@@ -165,7 +165,7 @@ func Run(tn *testnet.TestNet, serverID int, container Container) error {
 	return nil
 }
 
-func serviceDockerRunCmd(network string, ip string, name string, env map[string]string, volumes []string, ports []string, image string) string {
+func serviceDockerRunCmd(network string, ip string, name string, env map[string]string, volumes []string, ports []string, image string, cmd string) string {
 	envFlags := ""
 	for k, v := range env {
 		envFlags += fmt.Sprintf("-e \"%s=%s\" ", k, v)
@@ -183,7 +183,7 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 	for _, port := range ports {
 		portstr += fmt.Sprintf("-p %s ", port)
 	}
-	return fmt.Sprintf("docker run -itd --network %s %s --hostname %s --name %s %s %s %s %s",
+	return fmt.Sprintf("docker run -itd --network %s %s --hostname %s --name %s %s %s %s %s %s",
 		network,
 		ipFlag,
 		name,
@@ -191,7 +191,8 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 		envFlags,
 		volumestr,
 		portstr,
-		image)
+		image,
+		cmd)
 }
 
 // StopServices stops all services and remove the service network from a server
@@ -240,7 +241,8 @@ func StartServices(tn *testnet.TestNet, services []helpers.Service) error {
 			service.GetEnv(),
 			service.GetVolumes(),
 			service.GetPorts(),
-			service.GetImage()))
+			service.GetImage(),
+			service.GetCommand()))
 		if err != nil {
 			return util.LogError(err)
 		}
