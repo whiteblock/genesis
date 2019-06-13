@@ -266,6 +266,22 @@ func MakeFakeAccounts(accs int) []string {
 
 func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) error {
 
+	alloc := map[string]map[string]string{}
+	for _, account := range accounts {
+		alloc[account.HexAddress()] = map[string]string{
+			"balance": ethconf.InitBalance,
+		}
+	}
+
+	consensusParams := map[string]interface{}{}
+	switch ethconf.Consensus {
+	case "clique":
+		consensusParams["period"] = ethconf.BlockPeriodSeconds
+		consensusParams["epoch"] = ethconf.Epoch
+	case "ethash":
+		consensusParams["difficulty"] = ethconf.Difficulty
+	}
+
 	genesis := map[string]interface{}{
 		"chainId":        ethconf.NetworkID,
 		"homesteadBlock": ethconf.HomesteadBlock,
@@ -273,12 +289,24 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		"eip158Block":    ethconf.Eip158Block,
 		"difficulty":     fmt.Sprintf("0x0%X", ethconf.Difficulty),
 		"gasLimit":       fmt.Sprintf("0x0%X", ethconf.GasLimit),
+		"consensus":      ethconf.Consensus,
 	}
-	alloc := map[string]map[string]string{}
-	for _, account := range accounts {
-		alloc[account.HexAddress()] = map[string]string{
-			"balance": ethconf.InitBalance,
+
+	switch ethconf.Consensus {
+	case "clique":
+		fallthrough
+	case "ethash":
+		extraData := "0x0000000000000000000000000000000000000000000000000000000000000000"
+		//it does not work when there are multiple signers put into this extraData field
+		/* 
+		for i := 0; i < len(accounts) && i < tn.LDD.Nodes; i++ {
+			extraData += accounts[i].HexAddress()[2:]
 		}
+		*/
+		extraData += accounts[0].HexAddress()[2:]
+		extraData += "000000000000000000000000000000000000000000000000000000000000000000" +
+			"0000000000000000000000000000000000000000000000000000000000000000"
+		genesis["extraData"] = extraData
 	}
 
 	accs := MakeFakeAccounts(int(ethconf.ExtraAccounts))
@@ -289,6 +317,7 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		}
 	}
 	genesis["alloc"] = alloc
+	genesis["consensusParams"] = consensusParams
 	dat, err := helpers.GetBlockchainConfig("geth", 0, "genesis.json", tn.LDD)
 	if err != nil {
 		return util.LogError(err)

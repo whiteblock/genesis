@@ -25,15 +25,18 @@ import (
 )
 
 type ethConf struct {
-	ExtraAccounts  int64  `json:"extraAccounts"`
-	NetworkID      int64  `json:"networkId"`
-	Difficulty     int64  `json:"difficulty"`
-	InitBalance    string `json:"initBalance"`
-	MaxPeers       int64  `json:"maxPeers"`
-	GasLimit       int64  `json:"gasLimit"`
-	HomesteadBlock int64  `json:"homesteadBlock"`
-	Eip155Block    int64  `json:"eip155Block"`
-	Eip158Block    int64  `json:"eip158Block"`
+	ExtraAccounts         int64  `json:"extraAccounts"`
+	NetworkID             int64  `json:"networkId"`
+	Difficulty            int64  `json:"difficulty"`
+	InitBalance           string `json:"initBalance"`
+	MaxPeers              int64  `json:"maxPeers"`
+	GasLimit              int64  `json:"gasLimit"`
+	Consensus             string `json:"consensus"`
+	BlockPeriodSeconds    int64  `json:"blockPeriodSeconds"`
+	Epoch                 int64  `json:"epoch"`
+	HomesteadBlock        int64  `json:"homesteadBlock"`
+	Eip155Block           int64  `json:"eip155Block"`
+	Eip158Block           int64  `json:"eip158Block"`
 }
 
 /**
