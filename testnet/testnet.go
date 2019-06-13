@@ -297,6 +297,15 @@ func (tn *TestNet) Store() {
 	db.SetMeta("testnet_"+tn.TestNetID, *tn)
 }
 
+func (tn *TestNet) UpdateAllImages(newImage string) {
+	if tn.LDD == nil {
+		log.Error("LDD is nil")
+	}
+	for i := range tn.LDD.Images {
+		tn.LDD.Images[i] = newImage
+	}
+}
+
 // Destroy removes all the testnets data
 func (tn *TestNet) Destroy() error {
 	return db.DeleteMeta("testnet_" + tn.TestNetID)
