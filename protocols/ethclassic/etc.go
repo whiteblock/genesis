@@ -238,6 +238,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetExt("networkID", etcconf.NetworkID)
 	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
 	tn.BuildState.SetExt("port", 8545)
+	tn.BuildState.SetExt("namespace", "eth")
 
 	for _, account := range accounts {
 		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
