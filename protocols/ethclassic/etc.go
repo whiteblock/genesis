@@ -154,6 +154,8 @@ func build(tn *testnet.TestNet) error {
 		// _, err := client.DockerExec(node,
 		// 	fmt.Sprintf("geth --datadir=/geth/ --network-id=%d --chain=chain.json", etcconf.NetworkID))
 
+			
+
 		gethCmd := fmt.Sprintf(
 			`geth --datadir=/geth/ --maxpeers=%d --network-id=%d --chain=chain.json --rpc --nodiscover --rpcaddr=%s`+
 			` --rpcapi="web3,db,eth,net,personal,miner,txpool" --rpccorsdomain="0.0.0.0" --mine --unlock="%s"`+
@@ -165,6 +167,11 @@ func build(tn *testnet.TestNet) error {
 			accounts[node.GetAbsoluteNumber()].HexAddress(),
 			conf.DockerOutputFile)
 		_, err = client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
+		if err != nil {
+			return util.LogError(err)
+		}
+
+		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -188,6 +195,7 @@ func build(tn *testnet.TestNet) error {
 		mux.Lock()
 		staticNodes[node.GetAbsoluteNumber()] = enode
 		mux.Unlock()
+		
 
 		tn.BuildState.IncrementBuildProgress()
 		return nil
@@ -234,7 +242,7 @@ func build(tn *testnet.TestNet) error {
 	// if err != nil {
 	// 	return util.LogError(err)
 	// }
-	tn.BuildState.IncrementBuildProgress()
+	// tn.BuildState.IncrementBuildProgress()
 
 	err = setupEthNetStats(tn.GetFlatClients()[0])
 	if err != nil {
