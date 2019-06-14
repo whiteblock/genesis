@@ -58,8 +58,6 @@ func init() {
 	registrar.RegisterParams(alias, helpers.DefaultGetParamsFn(blockchain))
 }
 
-const ethNetStatsPort = 3338
-
 // build builds out a fresh new ethereum test network using geth
 func build(tn *testnet.TestNet) error {
 	mux := sync.Mutex{}
@@ -244,10 +242,6 @@ func build(tn *testnet.TestNet) error {
 	// }
 	// tn.BuildState.IncrementBuildProgress()
 
-	err = setupEthNetStats(tn.GetFlatClients()[0])
-	if err != nil {
-		return util.LogError(err)
-	}
 	tn.BuildState.SetExt("networkID", etcconf.NetworkID)
 	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
 	tn.BuildState.SetExt("port", 8545)
@@ -259,7 +253,7 @@ func build(tn *testnet.TestNet) error {
 		})
 	}
 
-	return setupEthNetIntelligenceAPI(tn)
+	return nil
 }
 
 /***************************************************************************************************************************/
@@ -349,41 +343,4 @@ func createGenesisfile(etcconf *etcConf, tn *testnet.TestNet, accounts []*ethere
 		return util.LogError(err)
 	}
 	return tn.BuildState.Write("chain.json", data)
-}
-
-/**
- * Setup Eth Net Stats on a server
- * @param  string    ip     The servers config
- */
-func setupEthNetStats(client ssh.Client) error {
-	_, err := client.Run(fmt.Sprintf(
-		"docker exec -d wb_service0 bash -c 'cd /eth-netstats && WS_SECRET=second PORT=%d npm start'", ethNetStatsPort))
-	if err != nil {
-		return util.LogError(err)
-	}
-	return nil
-}
-
-func setupEthNetIntelligenceAPI(tn *testnet.TestNet) error {
-	return helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
-		defer tn.BuildState.IncrementBuildProgress()
-
-		absName := fmt.Sprintf("%s%d", conf.NodePrefix, node.GetAbsoluteNumber())
-		sedCmd := fmt.Sprintf(`sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`, absName)
-		sedCmd2 := fmt.Sprintf(`sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:%d"/g' /eth-net-intelligence-api/app.json`,
-			util.GetGateway(server.SubnetID, node.GetAbsoluteNumber()), ethNetStatsPort)
-		sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`, node.GetIP())
-
-		//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
-		_, err := client.DockerMultiExec(node, []string{
-			sedCmd,
-			sedCmd2,
-			sedCmd3})
-
-		if err != nil {
-			return util.LogError(err)
-		}
-		_, err = client.DockerExecd(node, "bash -c 'cd /eth-net-intelligence-api && pm2 start app.json'")
-		return util.LogError(err)
-	})
 }
