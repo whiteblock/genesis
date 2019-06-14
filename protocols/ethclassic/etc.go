@@ -253,7 +253,7 @@ func add(tn *testnet.TestNet) error {
 func MakeFakeAccounts(accs int) []string {
 	out := make([]string, accs)
 	for i := 1; i <= accs; i++ {
-		out[i-1] = fmt.Sprintf("0x%.40x", i)
+		out[i-1] = fmt.Sprintf("%.40x", i)
 	}
 	return out
 }
