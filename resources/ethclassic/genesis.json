@@ -1,8 +1,8 @@
 {
     "identity":{{{identity}}},
     "name":{{{name}}},
-    "network":{{{networkId}}},
-    "chainID":{{{networkId}}},
+    "network":{{{network}}},
+    "chainID":{{{network}}},
     "consensus":{{{consensus}}},
     "genesis":{
         "nonce": "0x0000000000000539",
