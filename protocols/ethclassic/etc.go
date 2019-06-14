@@ -41,7 +41,7 @@ const blockchain = "etc"
 
 func init() {
 	conf = util.GetConfig()
-	alias := "eth-classic"
+	alias := "ethclassic"
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterBuild(alias, build) //ethereum default to geth
 
