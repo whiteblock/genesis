@@ -1,7 +1,6 @@
 {
     "identity":"kensington",
     "name":"Kensington Testnet",
-    "network": 88,
     "networkId":15468,
     "extraAccounts":10,
     "difficulty":131072,

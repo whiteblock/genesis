@@ -140,7 +140,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Bootstrapping network")
 
-	err = helpers.CopyToAllNodes(tn, "CustomGenesis.json", "/geth/")
+	err = helpers.CopyToAllNodes(tn, "chain.json", "/geth/")
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -152,14 +152,14 @@ func build(tn *testnet.TestNet) error {
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		//Load the CustomGenesis file
 		_, err := client.DockerExec(node,
-			fmt.Sprintf("geth --datadir /geth/ --network-id %d import /geth/CustomGenesis.json", etcconf.NetworkID))
+			fmt.Sprintf("geth --datadir=/geth/ --network-id=%d --chain=chain.json", etcconf.NetworkID))
 		if err != nil {
 			return util.LogError(err)
 		}
 		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
 		gethResults, err := client.DockerExec(node,
 			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
-				"geth --rpc --datadir /geth/ --network-id %d console'", etcconf.NetworkID))
+				"geth --rpc --datadir=/geth/ --network-id=%d console'", etcconf.NetworkID))
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -286,6 +286,7 @@ func createGenesisfile(etcconf *etcConf, tn *testnet.TestNet, accounts []*ethere
 		"identity":       etcconf.Identity,
 		"name":           etcconf.Name,
 		"network":        etcconf.Network,
+		"chainId":        etcconf.ChainID,
 		"homesteadBlock": etcconf.HomesteadBlock,
 		"difficulty":     fmt.Sprintf("0x0%X", etcconf.Difficulty),
 		"gasLimit":       fmt.Sprintf("0x0%X", etcconf.GasLimit),
@@ -325,7 +326,7 @@ func createGenesisfile(etcconf *etcConf, tn *testnet.TestNet, accounts []*ethere
 	if err != nil {
 		return util.LogError(err)
 	}
-	return tn.BuildState.Write("CustomGenesis.json", data)
+	return tn.BuildState.Write("chain.json", data)
 }
 
 /**

@@ -3,7 +3,6 @@
     ["name","string"],
     ["networkId","int"],
     ["extraAccounts","int"],
-    ["networkId","int"],
     ["difficulty","int"],
     ["initBalance","string"],
     ["maxPeers","int"],
