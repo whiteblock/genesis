@@ -67,12 +67,5 @@ func newConf(data map[string]interface{}) (*etcConf, error) {
 
 // GetServices returns the services which are used by artemis
 func GetServices() []helpers.Service {
-	return []helpers.Service{
-		helpers.SimpleService{
-			Name:    "ethNetStats",
-			Image:   "gcr.io/whiteblock/ethnetstats:dev",
-			Env:     nil,
-			Network: "host",
-		},
-	}
+	return nil
 }

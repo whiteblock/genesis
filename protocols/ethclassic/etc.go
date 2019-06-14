@@ -37,11 +37,11 @@ import (
 
 var conf *util.Config
 
-const blockchain = "etc"
+const blockchain = "ethclassic"
 
 func init() {
 	conf = util.GetConfig()
-	alias := "ethclassic"
+	alias := "etc"
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterBuild(alias, build) //ethereum default to geth
 
@@ -314,7 +314,7 @@ func createGenesisfile(etcconf *etcConf, tn *testnet.TestNet, accounts []*ethere
 	}
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
-	dat, err := helpers.GetBlockchainConfig("etc", 0, "genesis.json", tn.LDD)
+	dat, err := helpers.GetBlockchainConfig("ethclassic", 0, "genesis.json", tn.LDD)
 	if err != nil {
 		return util.LogError(err)
 	}
