@@ -268,7 +268,7 @@ func createGenesisfile(etcconf *etcConf, tn *testnet.TestNet, accounts []*ethere
 
 	alloc := map[string]map[string]string{}
 	for _, account := range accounts {
-		alloc[account.HexAddress()] = map[string]string{
+		alloc[account.HexAddress()[2:]] = map[string]string{
 			"balance": etcconf.InitBalance,
 		}
 	}
@@ -287,7 +287,7 @@ func createGenesisfile(etcconf *etcConf, tn *testnet.TestNet, accounts []*ethere
 		"name":           etcconf.Name,
 		"network":        etcconf.Network,
 		"homesteadBlock": etcconf.HomesteadBlock,
-		"difficulty":     fmt.Sprintf("%X", etcconf.Difficulty),
+		"difficulty":     fmt.Sprintf("0x0%X", etcconf.Difficulty),
 		"gasLimit":       fmt.Sprintf("0x0%X", etcconf.GasLimit),
 		"consensus":      etcconf.Consensus,
 	}
