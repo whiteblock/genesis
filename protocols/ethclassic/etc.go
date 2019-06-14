@@ -149,32 +149,10 @@ func build(tn *testnet.TestNet) error {
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		//Load the CustomGenesis file
-		// _, err := client.DockerExec(node,
-		// 	fmt.Sprintf("geth --datadir=/geth/ --network-id=%d --chain=chain.json", etcconf.NetworkID))
+		_, err := client.DockerExec(node,
+			fmt.Sprintf("geth --datadir=/geth/ --network-id=%d --chain=chain.json", etcconf.NetworkID))
 
-			
-
-		gethCmd := fmt.Sprintf(
-			`geth --datadir=/geth/ --maxpeers=%d --network-id=%d --chain=chain.json --rpc --nodiscover --rpcaddr=%s`+
-			` --rpcapi="web3,db,eth,net,personal,miner,txpool" --rpccorsdomain="0.0.0.0" --mine --unlock="%s"`+
-			` --password=/geth/passwd --etherbase=%s console  2>&1 | tee %s`,
-			etcconf.MaxPeers,
-			etcconf.NetworkID,
-			node.GetIP(),
-			unlock,
-			accounts[node.GetAbsoluteNumber()].HexAddress(),
-			conf.DockerOutputFile)
-		_, err = client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
-		if err != nil {
-			return util.LogError(err)
-		}
-
-		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
-		if err != nil {
-			return util.LogError(err)
-		}
-
-		// log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
+		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
 		
 		gethResults, err := client.DockerExec(node,
 			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
@@ -215,32 +193,32 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	// err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-	// 	tn.BuildState.IncrementBuildProgress()
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		tn.BuildState.IncrementBuildProgress()
 
-	// 	gethCmd := fmt.Sprintf(
-	// 		`geth --datadir /geth/ --maxpeers %d --network-id %d --rpc --nodiscover --rpcaddr %s`+
-	// 			` --rpcapi "web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
-	// 			` --password /geth/passwd --etherbase %s console  2>&1 | tee %s`,
-	// 		etcconf.MaxPeers,
-	// 		etcconf.NetworkID,
-	// 		node.GetIP(),
-	// 		unlock,
-	// 		accounts[node.GetAbsoluteNumber()].HexAddress(),
-	// 		conf.DockerOutputFile)
+		gethCmd := fmt.Sprintf(
+		`geth --datadir=/geth/ --maxpeers=%d --network-id=%d --chain=chain.json --rpc --nodiscover --rpcaddr=%s`+
+		` --rpcapi="web3,db,eth,net,personal,miner,txpool" --rpccorsdomain="0.0.0.0" --mine --unlock="%s"`+
+		` --password=/geth/passwd --etherbase=%s console  2>&1 | tee %s`,
+		etcconf.MaxPeers,
+		etcconf.NetworkID,
+		node.GetIP(),
+		unlock,
+		accounts[node.GetAbsoluteNumber()].HexAddress(),
+		conf.DockerOutputFile)
 
-	// 	_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
-	// 	if err != nil {
-	// 		return util.LogError(err)
-	// 	}
+		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
+		if err != nil {
+			return util.LogError(err)
+		}
 
-	// 	tn.BuildState.IncrementBuildProgress()
-	// 	return nil
-	// })
-	// if err != nil {
-	// 	return util.LogError(err)
-	// }
-	// tn.BuildState.IncrementBuildProgress()
+		tn.BuildState.IncrementBuildProgress()
+		return nil
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetExt("networkID", etcconf.NetworkID)
 	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
