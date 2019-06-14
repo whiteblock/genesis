@@ -150,14 +150,14 @@ func build(tn *testnet.TestNet) error {
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		//Load the CustomGenesis file
-		_, err := client.DockerExec(node,
-			fmt.Sprintf("geth --datadir=/geth/ --network-id=%d --chain=chain.json", etcconf.NetworkID))
+		// _, err := client.DockerExec(node,
+		// 	fmt.Sprintf("geth --datadir=/geth/ --network-id=%d --chain=chain.json", etcconf.NetworkID))
 
-		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
+		// log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
 		
 		gethResults, err := client.DockerExec(node,
 			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
-				"geth --rpc --datadir=/geth/ --network-id=%d console'", etcconf.NetworkID))
+				"geth --rpc --datadir=/geth/ --network-id=%d --chain=/geth/chain.json console'", etcconf.NetworkID))
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -194,19 +194,19 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		//Load the CustomGenesis file
-		mux.Lock()
-		_, err := client.DockerExec(node, fmt.Sprintf("cp /geth/mainnet/keystore/* /geth/%s/keystore/", etcconf.Identity))
-		if err != nil {
-			return util.LogError(err)
-		}
-		mux.Unlock()
-		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("adding accounts to right directory")
+	// err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+	// 	//Load the CustomGenesis file
+	// 	mux.Lock()
+	// 	_, err := client.DockerExec(node, fmt.Sprintf("cp /geth/mainnet/keystore/* /geth/%s/keystore/", etcconf.Identity))
+	// 	if err != nil {
+	// 		return util.LogError(err)
+	// 	}
+	// 	mux.Unlock()
+	// 	log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("adding accounts to right directory")
 
-		tn.BuildState.IncrementBuildProgress()
-		return nil
-	})
+	// 	tn.BuildState.IncrementBuildProgress()
+	// 	return nil
+	// })
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		tn.BuildState.IncrementBuildProgress()
