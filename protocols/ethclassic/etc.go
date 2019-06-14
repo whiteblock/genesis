@@ -152,14 +152,14 @@ func build(tn *testnet.TestNet) error {
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		//Load the CustomGenesis file
 		_, err := client.DockerExec(node,
-			fmt.Sprintf("geth --datadir /geth/ --networkid %d import /geth/CustomGenesis.json", etcconf.NetworkID))
+			fmt.Sprintf("geth --datadir /geth/ --network-id %d import /geth/CustomGenesis.json", etcconf.NetworkID))
 		if err != nil {
 			return util.LogError(err)
 		}
 		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
 		gethResults, err := client.DockerExec(node,
 			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
-				"geth --rpc --datadir /geth/ --networkid %d console'", etcconf.NetworkID))
+				"geth --rpc --datadir /geth/ --network-id %d console'", etcconf.NetworkID))
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -199,7 +199,7 @@ func build(tn *testnet.TestNet) error {
 		tn.BuildState.IncrementBuildProgress()
 
 		gethCmd := fmt.Sprintf(
-			`geth --datadir /geth/ --maxpeers %d --networkid %d --rpc --nodiscover --rpcaddr %s`+
+			`geth --datadir /geth/ --maxpeers %d --network-id %d --rpc --nodiscover --rpcaddr %s`+
 				` --rpcapi "web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
 				` --password /geth/passwd --etherbase %s console  2>&1 | tee %s`,
 			etcconf.MaxPeers,
@@ -285,7 +285,6 @@ func createGenesisfile(etcconf *etcConf, tn *testnet.TestNet, accounts []*ethere
 	genesis := map[string]interface{}{
 		"identity":       etcconf.Identity,
 		"name":           etcconf.Name,
-		"network":        etcconf.Network,
 		"homesteadBlock": etcconf.HomesteadBlock,
 		"difficulty":     fmt.Sprintf("0x0%X", etcconf.Difficulty),
 		"gasLimit":       fmt.Sprintf("0x0%X", etcconf.GasLimit),

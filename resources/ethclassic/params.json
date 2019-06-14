@@ -1,7 +1,6 @@
 [
     ["identity","string"],
     ["name","string"],
-    ["network","int"],
     ["networkId","int"],
     ["extraAccounts","int"],
     ["networkId","int"],
