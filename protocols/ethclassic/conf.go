@@ -27,9 +27,7 @@ import (
 type etcConf struct {
 	Identity           string `json:"identity"`
 	Name               string `json:"name"`
-	Network            int64  `json:"network"`
-	NetworkID          int64  `json:"networkId"`
-	ChainID            int64  `json:"chainId"`
+	NetworkID            int64  `json:"networkId"`
 	Consensus          string `json:"consensus"`
 	GasLimit           int64  `json:"gasLimit"`
 	Difficulty         int64  `json:"difficulty"`
