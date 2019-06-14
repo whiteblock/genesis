@@ -194,19 +194,19 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	// err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-	// 	//Load the CustomGenesis file
-	// 	mux.Lock()
-	// 	_, err := client.DockerExec(node, fmt.Sprintf("cp /geth/mainnet/keystore/* /geth/%s/keystore/", etcconf.Identity))
-	// 	if err != nil {
-	// 		return util.LogError(err)
-	// 	}
-	// 	mux.Unlock()
-	// 	log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("adding accounts to right directory")
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		//Load the CustomGenesis file
+		mux.Lock()
+		_, err := client.DockerExec(node, fmt.Sprintf("cp /geth/mainnet/keystore/* /geth/%s/keystore/", etcconf.Identity))
+		if err != nil {
+			return util.LogError(err)
+		}
+		mux.Unlock()
+		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("adding accounts to right directory")
 
-	// 	tn.BuildState.IncrementBuildProgress()
-	// 	return nil
-	// })
+		tn.BuildState.IncrementBuildProgress()
+		return nil
+	})
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		tn.BuildState.IncrementBuildProgress()
