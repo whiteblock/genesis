@@ -38,6 +38,7 @@ import (
 	_ "github.com/whiteblock/genesis/protocols/cosmos"
 	_ "github.com/whiteblock/genesis/protocols/eos"
 	_ "github.com/whiteblock/genesis/protocols/geth"
+	_ "github.com/whiteblock/genesis/protocols/ethclassic"
 	_ "github.com/whiteblock/genesis/protocols/libp2p-test"
 	_ "github.com/whiteblock/genesis/protocols/lighthouse"
 	_ "github.com/whiteblock/genesis/protocols/lodestar"
