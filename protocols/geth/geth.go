@@ -105,7 +105,7 @@ func build(tn *testnet.TestNet) error {
 				return util.LogError(err)
 			}
 			_, err = client.DockerExec(node,
-				fmt.Sprintf("geth --datadir /geth/ --password /geth/passwd account import --password /geth/passwd /geth/pk%d", i))
+				fmt.Sprintf("geth --datadir /geth/ --password /geth/passwd account import /geth/pk%d", i))
 			if err != nil {
 				return util.LogError(err)
 			}
