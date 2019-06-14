@@ -197,7 +197,7 @@ func build(tn *testnet.TestNet) error {
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		//Load the CustomGenesis file
 		mux.Lock()
-		_, err := client.DockerExecd(node, fmt.Sprintf("cp /geth/mainnet/keystore/ /geth/%s/", etcconf.Identity))
+		_, err := client.DockerExec(node, fmt.Sprintf("mv /geth/mainnet/keystore/ /geth/%s/", etcconf.Identity))
 		if err != nil {
 			return util.LogError(err)
 		}
