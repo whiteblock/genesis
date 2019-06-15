@@ -134,6 +134,11 @@ func (tn *TestNet) AddNode(node db.Node) *db.Node {
 	tn.mux.Lock()
 	defer tn.mux.Unlock()
 	node.AbsoluteNum = len(tn.Nodes)
+	node.Image = tn.LDD.Images[0]
+	if len(tn.LDD.Images) > node.AbsoluteNum {
+		node.Image = tn.LDD.Images[node.AbsoluteNum]
+		log.WithFields(log.Fields{"image": node.Image, "node": node.AbsoluteNum}).Trace("using given image")
+	}
 	log.WithFields(log.Fields{"node": node}).Debug("adding a node")
 	tn.NewlyBuiltNodes = append(tn.NewlyBuiltNodes, node)
 	tn.Nodes = append(tn.Nodes, node)

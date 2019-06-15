@@ -97,16 +97,12 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 	} else {
 		resource = tn.LDD.Resources[0]
 	}
-	node.Image = tn.LDD.Images[0]
+
 	var env map[string]string
 
 	if len(tn.LDD.Resources) > node.AbsoluteNum {
 		resource = tn.LDD.Resources[node.AbsoluteNum]
 		log.WithFields(log.Fields{"resource": resource, "node": node.AbsoluteNum}).Trace("using given resources")
-	}
-	if len(tn.LDD.Images) > node.AbsoluteNum {
-		node.Image = tn.LDD.Images[node.AbsoluteNum]
-		log.WithFields(log.Fields{"image": node.Image, "node": node.AbsoluteNum}).Trace("using given image")
 	}
 
 	if tn.LDD.Environments != nil && len(tn.LDD.Environments) > node.AbsoluteNum && tn.LDD.Environments[node.AbsoluteNum] != nil {

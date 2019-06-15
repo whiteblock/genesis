@@ -196,11 +196,10 @@ func build(tn *testnet.TestNet) error {
 		tn.BuildState.IncrementBuildProgress()
 
 		gethCmd := fmt.Sprintf(
-			`geth --datadir=/geth/ --maxpeers=%d --network-id=%d --chain=/geth/chain.json --rpc --nodiscover --rpcaddr=%s`+
+			`geth --datadir=/geth/ --maxpeers=%d --chain=/geth/chain.json --rpc --nodiscover --rpcaddr=%s`+
 				` --rpcapi="admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain="0.0.0.0" --mine --unlock="%s"`+
 				` --password=/geth/passwd --etherbase=%s console  2>&1 | tee %s`,
 			etcconf.MaxPeers,
-			etcconf.NetworkID,
 			node.GetIP(),
 			unlock,
 			accounts[node.GetAbsoluteNumber()].HexAddress(),
