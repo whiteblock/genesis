@@ -6,7 +6,7 @@
     "difficulty":131072,
     "initBalance":"100000000000000000000",
     "maxPeers":1000,
-    "gasLimit":10000,
+    "gasLimit":4000000,
     "extraData":"0xdeadbeefcafe1337",
     "consensus":"ethash",
     "blockPeriodSeconds":2,

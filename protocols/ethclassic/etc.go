@@ -41,7 +41,7 @@ const (
 	blockchain     = "ethclassic"
 	alias          = "etc"
 	peeringRetries = 5
-	password	= "password"
+	password       = "password"
 )
 
 func init() {
@@ -83,7 +83,7 @@ func build(tn *testnet.TestNet) error {
 		/**Create the Password files**/
 		var data string
 		for i := 1; i <= tn.LDD.Nodes; i++ {
-			data += password+"\n"
+			data += password + "\n"
 		}
 		/**Copy over the password file**/
 		err = helpers.CopyBytesToAllNodes(tn, data, "/geth/passwd")
@@ -223,7 +223,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
 	tn.BuildState.SetExt("port", 8545)
 	tn.BuildState.SetExt("namespace", "eth")
-	tn.BuildState.SetExt("password",password)
+	tn.BuildState.SetExt("password", password)
 
 	for _, account := range accounts {
 		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
@@ -238,6 +238,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+	unlockAllAccounts(tn, accounts,extraAccounts)
 	return nil
 }
 
@@ -282,6 +283,30 @@ func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 				return util.LogError(err)
 			}
 		}
+		return nil
+	})
+}
+
+func unlockAllAccounts(tn *testnet.TestNet, accounts []*ethereum.Account,unknownAccounts []*ethereum.Account) error {
+	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		tn.BuildState.Defer(func() { //Can happen eventually
+			for _, account := range unknownAccounts {
+				client.Run( //Doesn't really need to succeed, it is a nice to have, but not required.
+						fmt.Sprintf(
+							`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
+								`'{ "method": "personal_importRawKey", "params": ["%s","%s"], "id": 2, "jsonrpc": "2.0" }'`,
+							node.GetIP(), account.HexPrivateKey()[2:], password))
+			}
+			for _, account := range accounts {
+				
+					client.Run( //Doesn't really need to succeed, it is a nice to have, but not required.
+						fmt.Sprintf(
+							`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
+								`'{ "method": "personal_unlockAccount", "params": ["%s","%s",0], "id": 3, "jsonrpc": "2.0" }'`,
+							node.GetIP(), account.HexAddress(), password))
+				
+			}
+		})
 		return nil
 	})
 }
