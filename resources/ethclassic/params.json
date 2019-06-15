@@ -1,0 +1,14 @@
+[
+    ["identity","string"],
+    ["name","string"],
+    ["networkId","int"],
+    ["extraAccounts","int"],
+    ["difficulty","int"],
+    ["initBalance","string"],
+    ["maxPeers","int"],
+    ["gasLimit","int"],
+    ["consensus","string"],
+    ["blockPeriodSeconds","int"],
+    ["epoch","int"],
+    ["homesteadBlock","int"]
+]
