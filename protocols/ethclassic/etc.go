@@ -128,11 +128,11 @@ func build(tn *testnet.TestNet) error {
 		}
 		unlock += account.HexAddress()
 	}
-	extraAccounts, err := ethereum.GenerateAccounts(int(etcconf.ExtraAccounts))
+	/*extraAccounts, err := ethereum.GenerateAccounts(int(etcconf.ExtraAccounts))
 	if err != nil {
 		return util.LogError(err)
 	}
-	accounts = append(accounts, extraAccounts...)
+	accounts = append(accounts, extraAccounts...)*/
 	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetBuildStage("Creating the genesis block")
@@ -238,7 +238,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	unlockAllAccounts(tn, accounts,extraAccounts)
+	unlockAllAccounts(tn, accounts)
 	return nil
 }
 
@@ -287,23 +287,16 @@ func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 	})
 }
 
-func unlockAllAccounts(tn *testnet.TestNet, accounts []*ethereum.Account,unknownAccounts []*ethereum.Account) error {
+func unlockAllAccounts(tn *testnet.TestNet, accounts []*ethereum.Account) error {
 	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		tn.BuildState.Defer(func() { //Can happen eventually
-			for _, account := range unknownAccounts {
-				client.Run( //Doesn't really need to succeed, it is a nice to have, but not required.
-						fmt.Sprintf(
-							`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
-								`'{ "method": "personal_importRawKey", "params": ["%s","%s"], "id": 2, "jsonrpc": "2.0" }'`,
-							node.GetIP(), account.HexPrivateKey()[2:], password))
-			}
 			for _, account := range accounts {
 				
-					client.Run( //Doesn't really need to succeed, it is a nice to have, but not required.
-						fmt.Sprintf(
-							`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
-								`'{ "method": "personal_unlockAccount", "params": ["%s","%s",0], "id": 3, "jsonrpc": "2.0" }'`,
-							node.GetIP(), account.HexAddress(), password))
+				client.Run( //Doesn't really need to succeed, it is a nice to have, but not required.
+					fmt.Sprintf(
+						`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
+							`'{ "method": "personal_unlockAccount", "params": ["%s","%s",0], "id": 3, "jsonrpc": "2.0" }'`,
+						node.GetIP(), account.HexAddress(), password))
 				
 			}
 		})
