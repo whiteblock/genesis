@@ -200,7 +200,7 @@ func SingleCp(client ssh.Client, buildState *state.BuildState, node ssh.Node, da
 }
 
 /*
-	fn func(serverid int, localNodeNum int, absoluteNodeNum int) ([]byte, error)
+	fn func(node ssh.Node) ([]byte, error)
 */
 func createConfigs(tn *testnet.TestNet, dest string, s settings, fn func(ssh.Node) ([]byte, error)) error {
 	nodes := tn.GetSSHNodes(s.useNew, s.sidecar != -1, s.sidecar)

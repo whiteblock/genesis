@@ -20,7 +20,6 @@
 package ethclassic
 
 import (
-	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
@@ -33,6 +32,7 @@ import (
 	"github.com/whiteblock/mustache"
 	"regexp"
 	"sync"
+	"time"
 )
 
 var conf *util.Config
@@ -66,7 +66,7 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes))
+	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes) + (tn.LDD.Nodes * (tn.LDD.Nodes - 1)))
 
 	tn.BuildState.IncrementBuildProgress()
 
@@ -139,11 +139,6 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Bootstrapping network")
 
-	err = helpers.CopyToAllNodes(tn, "chain.json", "/geth/")
-	if err != nil {
-		return util.LogError(err)
-	}
-
 	staticNodes := make([]string, tn.LDD.Nodes)
 
 	tn.BuildState.SetBuildStage("Initializing geth")
@@ -154,7 +149,7 @@ func build(tn *testnet.TestNet) error {
 		// 	fmt.Sprintf("geth --datadir=/geth/ --network-id=%d --chain=/geth/chain.json", etcconf.NetworkID))
 
 		// log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
-		
+
 		gethResults, err := client.DockerExec(node,
 			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
 				"geth --rpc --datadir=/geth/ --network-id=%d --chain=/geth/chain.json console'", etcconf.NetworkID))
@@ -164,35 +159,20 @@ func build(tn *testnet.TestNet) error {
 		log.WithFields(log.Fields{"raw": gethResults}).Trace("grabbed raw enode info")
 		enodePattern := regexp.MustCompile(`enode:\/\/[A-z|0-9]+@(\[\:\:\]|([0-9]|\.)+)\:[0-9]+`)
 		enode := enodePattern.FindAllString(gethResults, 1)[0]
-		log.WithFields(log.Fields{"enode": enode}).Trace("parsed the enode")
+		log.WithFields(log.Fields{"enode": enode, "node": node.GetIP()}).Trace("parsed the enode")
 		enodeAddressPattern := regexp.MustCompile(`\[\:\:\]|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})`)
-
 		enode = enodeAddressPattern.ReplaceAllString(enode, node.GetIP())
 
 		mux.Lock()
 		staticNodes[node.GetAbsoluteNumber()] = enode
 		mux.Unlock()
-		
 
 		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	out, err := json.Marshal(staticNodes)
-	if err != nil {
-		return util.LogError(err)
-	}
 
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Starting geth")
-	//Copy static-nodes to every server
-	err = helpers.CopyBytesToAllNodes(tn, string(out), "/geth/static-nodes.json")
-	if err != nil {
-		return util.LogError(err)
-	}
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		//Load the CustomGenesis file
@@ -212,15 +192,15 @@ func build(tn *testnet.TestNet) error {
 		tn.BuildState.IncrementBuildProgress()
 
 		gethCmd := fmt.Sprintf(
-		`geth --datadir=/geth/ --maxpeers=%d --network-id=%d --chain=/geth/chain.json --rpc --nodiscover --rpcaddr=%s`+
-		` --rpcapi="web3,db,eth,net,personal,miner,txpool" --rpccorsdomain="0.0.0.0" --mine --unlock="%s"`+
-		` --password=/geth/passwd --etherbase=%s console  2>&1 | tee %s`,
-		etcconf.MaxPeers,
-		etcconf.NetworkID,
-		node.GetIP(),
-		unlock,
-		accounts[node.GetAbsoluteNumber()].HexAddress(),
-		conf.DockerOutputFile)
+			`geth --datadir=/geth/ --maxpeers=%d --network-id=%d --chain=/geth/chain.json --rpc --nodiscover --rpcaddr=%s`+
+				` --rpcapi="admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain="0.0.0.0" --mine --unlock="%s"`+
+				` --password=/geth/passwd --etherbase=%s console  2>&1 | tee %s`,
+			etcconf.MaxPeers,
+			etcconf.NetworkID,
+			node.GetIP(),
+			unlock,
+			accounts[node.GetAbsoluteNumber()].HexAddress(),
+			conf.DockerOutputFile)
 
 		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
 		if err != nil {
@@ -246,7 +226,13 @@ func build(tn *testnet.TestNet) error {
 			"publicKey":  account.HexPublicKey(),
 		})
 	}
-
+	tn.BuildState.SetBuildStage("peering the nodes")
+	time.Sleep(3 * time.Second)
+	log.WithFields(log.Fields{"staticNodes": staticNodes}).Debug("peering")
+	err = peerAllNodes(tn, staticNodes)
+	if err != nil {
+		return util.LogError(err)
+	}
 	return nil
 }
 
@@ -266,6 +252,26 @@ func MakeFakeAccounts(accs int) []string {
 		out[i-1] = fmt.Sprintf("%.40x", i)
 	}
 	return out
+}
+
+func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
+	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		for i, enode := range enodes {
+			if i == node.GetAbsoluteNumber() {
+				continue
+			}
+			_, err := client.KeepTryRun(
+				fmt.Sprintf(
+					`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
+						`'{ "method": "admin_addPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
+					node.GetIP(), enode))
+			tn.BuildState.IncrementBuildProgress()
+			if err != nil {
+				return util.LogError(err)
+			}
+		}
+		return nil
+	})
 }
 
 /**
@@ -327,14 +333,17 @@ func createGenesisfile(etcconf *etcConf, tn *testnet.TestNet, accounts []*ethere
 	}
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
-	dat, err := helpers.GetBlockchainConfig("ethclassic", 0, "genesis.json", tn.LDD)
-	if err != nil {
-		return util.LogError(err)
-	}
 
-	data, err := mustache.Render(string(dat), util.ConvertToStringMap(genesis))
-	if err != nil {
-		return util.LogError(err)
-	}
-	return tn.BuildState.Write("chain.json", data)
+	return helpers.CreateConfigs(tn, "/geth/chain.json", func(node ssh.Node) ([]byte, error) {
+		template, err := helpers.GetBlockchainConfig(blockchain, node.GetAbsoluteNumber(), "chain.json", tn.LDD)
+		if err != nil {
+			return nil, util.LogError(err)
+		}
+
+		data, err := mustache.Render(string(template), util.ConvertToStringMap(genesis))
+		if err != nil {
+			return nil, util.LogError(err)
+		}
+		return []byte(data), nil
+	})
 }
