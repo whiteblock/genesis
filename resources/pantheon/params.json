@@ -3,6 +3,11 @@
     ["difficulty","int"],
     ["initBalance","string"],
     ["gasLimit","int"],
+    ["consensus","string"],
+    ["fixedDifficulty","int"],
     ["blockPeriodSeconds","int"],
-    ["epoch","int"]
+    ["epoch","int"],
+    ["requesttimeoutseconds","int"],
+    ["accounts","int"],
+    ["orion","bool"]
 ]

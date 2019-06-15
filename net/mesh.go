@@ -1,10 +1,29 @@
+/*
+	Copyright 2019 whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package netconf
 
 import (
-	util "../util"
+	"github.com/whiteblock/genesis/util"
 	"math"
 )
 
+//Calculator contains functions used to calculate network impairments based on a distance
 type Calculator struct {
 	Loss        func(float64) float64
 	Delay       func(float64) int
@@ -14,6 +33,7 @@ type Calculator struct {
 	Reorder     func(float64) float64
 }
 
+//Link is a naive representation of a network link
 type Link struct {
 	EgressNode  int     `json:"egressNode"`  //redundant info
 	IngressNode int     `json:"ingressNode"` //redundant info
@@ -25,9 +45,7 @@ type Link struct {
 	Reorder     float64 `json:"reorder"`
 }
 
-/*
-   Create a calculator which can be used to calculate latency
-*/
+//GetDefaultCalculator creates a calculator which can be used to calculate latency
 func GetDefaultCalculator() *Calculator { //TODO: improve the equations
 	return &Calculator{
 		Loss: func(dist float64) float64 {
@@ -63,6 +81,8 @@ func GetDefaultCalculator() *Calculator { //TODO: improve the equations
 	}
 }
 
+// CreateLinks generates a naive representation of a mesh network, which includes
+// basic network impairments based on the distance between the points
 func CreateLinks(pnts []util.Point, c *Calculator) [][]Link {
 	if c == nil {
 		c = GetDefaultCalculator()

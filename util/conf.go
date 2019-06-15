@@ -1,303 +1,225 @@
+/*
+	Copyright 2019 whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 package util
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"log"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"os"
-	"strconv"
 )
 
+// Config groups all of the global configuration parameters into
+// a single struct
 type Config struct {
-	SshUser     		string 	`json:"ssh-user"`
-	SshPassword 		string 	`json:"ssh-password"`
-	RsaKey      		string 	`json:"rsa-key"`
-	RsaUser     		string 	`json:"rsa-user"`
-	ServerBits  		uint32 	`json:"server-bits"` 
-	ClusterBits 		uint32 	`json:"cluster-bits"`
-	NodeBits    		uint32 	`json:"node-bits"`
-	IPPrefix    		uint32 	`json:"ip-prefix"`
-	Listen      		string 	`json:"listen"`
-	Verbose     		bool   	`json:"verbose"`
-	ThreadLimit 		int64  	`json:"thread-limit"`
-	DockerOutputFile   	string 	`json:"docker-output-file"`
-	Influx             	string 	`json:"influx"`
-	InfluxUser         	string 	`json:"influx-user"`
-	InfluxPassword     	string 	`json:"influx-password"`
-	ServiceNetwork     	string 	`json:"service-network"`
-	ServiceNetworkName 	string 	`json:"service-network-name"`
-	NodePrefix         	string 	`json:"node-prefix"`
-	NodeNetworkPrefix  	string 	`json:"node-network-prefix"`
-	ServicePrefix      	string 	`json:"service-prefix"`
-	NodesPublicKey    	string 	`json:"nodes-public-key"`
-	NodesPrivateKey   	string 	`json:"nodes-private-key"`
-	HandleNodeSshKeys 	bool   	`json:"handle-node-ssh-keys"`
-	MaxNodes      		int     `json:"max-nodes"`
-	MaxNodeMemory 		string  `json:"max-node-memory"`
-	MaxNodeCpu    		float64 `json:"max-node-cpu"`
-	BridgePrefix  		string  `json:"bridge-prefix"`
+	SSHUser                 string  `mapstructure:"sshUser"`
+	SSHKey                  string  `mapstructure:"sshKey"`
+	SSHHost                 string  `mapstructure:"sshHost"`
+	ServerBits              uint32  `mapstructure:"serverBits"`
+	ClusterBits             uint32  `mapstructure:"clusterBits"`
+	NodeBits                uint32  `mapstructure:"nodeBits"`
+	IPPrefix                uint32  `mapstructure:"ipPrefix"`
+	Listen                  string  `mapstructure:"listen"`
+	Verbosity               string  `mapstructure:"verbosity"`
+	DockerOutputFile        string  `mapstructure:"dockerOutputFile"`
+	Influx                  string  `mapstructure:"influx"`         //No default
+	InfluxUser              string  `mapstructure:"influxUser"`     //No default
+	InfluxPassword          string  `mapstructure:"influxPassword"` //No default
+	ServiceNetwork          string  `mapstructure:"serviceNetwork"`
+	ServiceNetworkName      string  `mapstructure:"serviceNetworkName"`
+	NodePrefix              string  `mapstructure:"nodePrefix"`
+	NodeNetworkPrefix       string  `mapstructure:"nodeNetworkPrefix"`
+	ServicePrefix           string  `mapstructure:"servicePrefix"`
+	NodesPublicKey          string  `mapstructure:"nodesPublicKey"`  //No default
+	NodesPrivateKey         string  `mapstructure:"nodesPrivateKey"` //No default
+	HandleNodeSSHKeys       bool    `mapstructure:"handleNodeSshKeys"`
+	MaxNodes                int     `mapstructure:"maxNodes"`
+	MaxNodeMemory           string  `mapstructure:"maxNodeMemory"`
+	MaxNodeCPU              float64 `mapstructure:"maxNodeCpu"`
+	BridgePrefix            string  `mapstructure:"bridgePrefix"`
+	APIEndpoint             string  `mapstructure:"apiEndpoint"`
+	NibblerEndPoint         string  `mapstructure:"nibblerEndPoint"`
+	LogJSON                 bool    `mapstructure:"logJson"`
+	PrometheusConfig        string  `mapstructure:"prometheusConfig"`
+	PrometheusPort          int     `mapstructure:"prometheusPort"`
+	GanacheCLIOptions       string  `mapstructure:"ganacheCLIOptions"`
+	GanacheRPCPort          int     `mapstructure:"ganacheRPCPort"`
+	MaxRunAttempts          int     `mapstructure:"maxRunAttempts"`
+	MaxConnections          int     `mapstructure:"maxConnections"`
+	DataDirectory           string  `mapstructure:"datadir"`
+	DisableNibbler          bool    `mapstructure:"disableNibbler"`
+	DisableTestnetReporting bool    `mapstructure:"disableTestnetReporting"`
+	RequireAuth             bool    `mapstructure:"requireAuth"`
+	MaxCommandOutputLogSize int     `mapstructure:"maxCommandOutputLogSize"`
+	ResourceDir             string  `mapstructure:"resourceDir"`
+	RemoveNodesOnFailure    bool    `mapstructure:"removeNodesOnFailure"`
+	NibblerRetries          uint    `mapstructure:"nibblerRetries"`
+	KillRetries             uint    `mapstructure:"killRetries"`
 }
 
-/*
-   Load the configuration from the Environment
-*/
-func (this *Config) LoadFromEnv() {
-	var err error
-	val, exists := os.LookupEnv("SSH_USER")
-	if exists {
-		this.SshUser = val
-	}
-	val, exists = os.LookupEnv("SSH_PASSWORD")
-	if exists {
-		this.SshPassword = val
-	}
-	val, exists = os.LookupEnv("LISTEN")
-	if exists {
-		this.Listen = val
-	}
-	val, exists = os.LookupEnv("RSA_KEY")
-	if exists {
-		this.RsaKey = val
-	}
-	val, exists = os.LookupEnv("RSA_USER")
-	if exists {
-		this.RsaUser = val
-	}
-	_, exists = os.LookupEnv("VERBOSE")
-	if exists {
-		this.Verbose = true
-	}
-	val, exists = os.LookupEnv("SERVER_BITS")
-	if exists {
-		tmp, err := strconv.ParseUint(val, 0, 32)
-		this.ServerBits = uint32(tmp)
-		if err != nil {
-			fmt.Println("Invalid ENV value for SERVER_BITS")
-			os.Exit(1)
-		}
-	}
-	val, exists = os.LookupEnv("CLUSTER_BITS")
-	if exists {
-		tmp, err := strconv.ParseUint(val, 0, 32)
-		this.ClusterBits = uint32(tmp)
-		if err != nil {
-			fmt.Println("Invalid ENV value for CLUSTER_BITS")
-			os.Exit(1)
-		}
-	}
-	val, exists = os.LookupEnv("NODE_BITS")
-	if exists {
-		tmp, err := strconv.ParseUint(val, 0, 32)
-		this.NodeBits = uint32(tmp)
-		if err != nil {
-			fmt.Println("Invalid ENV value for NODE_BITS")
-			os.Exit(1)
-		}
-	}
-	val, exists = os.LookupEnv("THREAD_LIMIT")
-	if exists {
-		this.ThreadLimit, err = strconv.ParseInt(val, 0, 64)
-		if err != nil {
-			fmt.Println("Invalid ENV value for THREAD_LIMIT")
-			os.Exit(1)
-		}
-	}
-	val, exists = os.LookupEnv("IP_PREFIX")
-	if exists {
-		tmp, err := strconv.ParseUint(val, 0, 32)
-		this.IPPrefix = uint32(tmp)
-		if err != nil {
-			fmt.Println("Invalid ENV value for IP_PREFIX")
-			os.Exit(1)
-		}
-	}
-	val, exists = os.LookupEnv("DOCKER_OUTPUT_FILE")
-	if exists {
-		this.DockerOutputFile = val
-	}
-	val, exists = os.LookupEnv("INFLUX")
-	if exists {
-		this.Influx = val
-	}
-	val, exists = os.LookupEnv("INFLUX_USER")
-	if exists {
-		this.InfluxUser = val
-	}
-	val, exists = os.LookupEnv("INFLUX_PASSWORD")
-	if exists {
-		this.InfluxPassword = val
-	}
-	val, exists = os.LookupEnv("SERVICE_NETWORK")
-	if exists {
-		this.ServiceNetwork = val
-	}
-	val, exists = os.LookupEnv("SERVICE_NETWORK_NAME")
-	if exists {
-		this.ServiceNetworkName = val
-	}
-	val, exists = os.LookupEnv("NODE_PREFIX")
-	if exists {
-		this.NodePrefix = val
-	}
-	val, exists = os.LookupEnv("NODE_NETWORK_PREFIX")
-	if exists {
-		this.NodeNetworkPrefix = val
-	}
-	val, exists = os.LookupEnv("SERVICE_PREFIX")
-	if exists {
-		this.ServicePrefix = val
-	}
-
-	val, exists = os.LookupEnv("NODES_PUBLIC_KEY")
-	if exists {
-		this.NodesPublicKey = val
-	}
-
-	val, exists = os.LookupEnv("NODES_PRIVATE_KEY")
-	if exists {
-		this.NodesPrivateKey = val
-	}
-
-	_, exists = os.LookupEnv("HANDLE_NODES_SSH_KEYS")
-	if exists {
-		this.HandleNodeSshKeys = true
-	}
-
-	val, exists = os.LookupEnv("MAX_NODES")
-	if exists {
-		tmp, err := strconv.ParseInt(val, 0, 32)
-		this.MaxNodes = int(tmp)
-		if err != nil {
-			fmt.Println("Invalid ENV value for MAX_NODES")
-			os.Exit(1)
-		}
-	}
-
-	val, exists = os.LookupEnv("MAX_NODE_MEMORY")
-	if exists {
-		this.MaxNodeMemory = val
-	}
-
-	val, exists = os.LookupEnv("MAX_NODE_CPU")
-	if exists {
-		this.MaxNodeCpu, err = strconv.ParseFloat(val, 64)
-		if err != nil {
-			fmt.Println("Invalid ENV value for MAX_NODE_CPU")
-			os.Exit(1)
-		}
-	}
-	val, exists = os.LookupEnv("BRIDGE_PREFIX")
-	if exists {
-		this.BridgePrefix = val
-	}
-}
-
-/*
-   Fill in the missing essential values with the defaults.
-*/
-func (c *Config) AutoFillMissing() {
-	if len(c.SshUser) == 0 {
-		c.SshUser = "appo"
-	}
-	if len(c.SshPassword) == 0 {
-		c.SshPassword = "w@ntest"
-	}
-	if len(c.Listen) == 0 {
-		c.Listen = "127.0.0.1:8000"
-	}
-	if len(c.RsaKey) == 0 {
-		home := os.Getenv("HOME")
-		c.RsaKey = home + "/.ssh/id_rsa"
-	}
-	if len(c.RsaUser) == 0 {
-		c.RsaUser = "appo"
-	}
-	if c.ServerBits <= 0 {
-		fmt.Println("Warning: Using default server bits")
-		c.ServerBits = 8
-	}
-	if c.ClusterBits <= 0 {
-		fmt.Println("Warning: Using default cluster bits")
-		c.ClusterBits = 14
-	}
-	if c.NodeBits <= 0 {
-		fmt.Println("Warning: Using default node bits")
-		c.NodeBits = 2
-	}
-	if c.ThreadLimit <= 0 {
-		fmt.Println("Warning: Using default thread limit")
-		c.ThreadLimit = 10
-	}
-
-	if len(c.DockerOutputFile) == 0 {
-		c.DockerOutputFile = "/output.log"
-	}
-
-	if len(c.ServiceNetwork) == 0 {
-		c.ServiceNetwork = "172.30.0.0/16"
-	}
-	if len(c.ServiceNetworkName) == 0 {
-		c.ServiceNetworkName = "wb_builtin_services"
-	}
-
-	if len(c.NodePrefix) == 0 {
-		c.NodePrefix = "whiteblock-node"
-	}
-
-	if len(c.NodeNetworkPrefix) == 0 {
-		c.NodeNetworkPrefix = "wb_vlan"
-	}
-
-	if len(c.ServicePrefix) == 0 {
-		c.ServicePrefix = "wb_service"
-	}
-
-	if c.MaxNodes <= 0 {
-		log.Println("Warning: No setting given for max nodes, defaulting to 200")
-		c.MaxNodes = 200
-	}
-
-	if len(c.BridgePrefix) == 0 {
-		c.BridgePrefix = "wb_bridge"
-	}
-}
-
+//NodesPerCluster represents the maximum number of nodes allowed in a cluster
 var NodesPerCluster uint32
 
-var conf *Config = nil
+var conf = new(Config)
+
+func setViperEnvBindings() {
+	viper.BindEnv("sshUser", "SSH_USER")
+	viper.BindEnv("listen", "LISTEN")
+	viper.BindEnv("sshKey", "SSH_KEY")
+	viper.BindEnv("verbosity", "VERBOSITY")
+	viper.BindEnv("serverBits", "SERVER_BITS")
+	viper.BindEnv("clusterBits", "CLUSTER_BITS")
+	viper.BindEnv("nodeBits", "NODE_BITS")
+	viper.BindEnv("ipPrefix", "IP_PREFIX")
+	viper.BindEnv("dockerOutputFile", "DOCKER_OUTPUT_FILE")
+	viper.BindEnv("influx", "INFLUX")
+	viper.BindEnv("influxUser", "INFLUX_USER")
+	viper.BindEnv("influxPassword", "INFLUX_PASSWORD")
+	viper.BindEnv("serviceNetwork", "SERVICE_NETWORK")
+	viper.BindEnv("serviceNetworkName", "SERVICE_NETWORK_NAME")
+	viper.BindEnv("nodePrefix", "NODE_PREFIX")
+	viper.BindEnv("nodeNetworkPrefix", "NODE_NETWORK_PREFIX")
+	viper.BindEnv("servicePrefix", "SERVICE_PREFIX")
+	viper.BindEnv("nodesPublicKey", "NODES_PUBLIC_KEY")
+	viper.BindEnv("nodesPrivateKey", "NODES_PRIVATE_KEY")
+	viper.BindEnv("handleNodeSshKeys", "HANDLE_NODES_SSH_KEYS")
+	viper.BindEnv("maxNodes", "MAX_NODES")
+	viper.BindEnv("maxNodeMemory", "MAX_NODE_MEMORY")
+	viper.BindEnv("maxNodeCPU", "MAX_NODE_CPU")
+	viper.BindEnv("bridgePrefix", "BRIDGE_PREFIX")
+	viper.BindEnv("apiEndpoint", "API_ENDPOINT")
+	viper.BindEnv("nibblerEndPoint", "NIBBLER_END_POINT")
+	viper.BindEnv("logJson", "LOG_JSON")
+	viper.BindEnv("maxRunAttempts", "MAX_RUN_ATTEMPTS")
+	viper.BindEnv("maxConnections", "MAX_CONNECTIONS")
+	viper.BindEnv("datadir", "DATADIR")
+	viper.BindEnv("disableNibbler", "DISABLE_NIBBLER")
+	viper.BindEnv("disableTestnetReporting", "DISABLE_TESTNET_REPORTING")
+	viper.BindEnv("requireAuth", "REQUIRE_AUTH")
+	viper.BindEnv("maxCommandOutputLogSize", "MAX_COMMAND_OUTPUT_LOG_SIZE")
+	viper.BindEnv("resourceDir", "RESOURCE_DIR")
+	viper.BindEnv("removeNodesOnFailure", "REMOVE_NODES_ON_FAILURE")
+	viper.BindEnv("nibblerRetries", "NIBBLER_RETRIES")
+	viper.BindEnv("killRetries", "KILL_RETRIES")
+}
+func setViperDefaults() {
+	viper.SetDefault("sshUser", os.Getenv("USER"))
+	viper.SetDefault("sshKey", os.Getenv("HOME")+"/.ssh/id_rsa")
+	viper.SetDefault("sshHost", "127.0.0.1")
+	viper.SetDefault("serverBits", 8)
+	viper.SetDefault("clusterBits", 12)
+	viper.SetDefault("nodeBits", 4)
+	viper.SetDefault("ipPrefix", 10)
+	viper.SetDefault("listen", "127.0.0.1:8000")
+	viper.SetDefault("verbosity", "INFO")
+	viper.SetDefault("dockerOutputFile", "/output.log")
+	viper.SetDefault("serviceNetwork", "172.30.0.1/16")
+	viper.SetDefault("serviceNetworkName", "wb_builtin_services")
+	viper.SetDefault("nodePrefix", "whiteblock-node")
+	viper.SetDefault("nodeNetworkPrefix", "wb_vlan")
+	viper.SetDefault("servicePrefix", "wb_service")
+	viper.SetDefault("maxNodes", 200)
+	viper.SetDefault("maxNodeMemory", "")
+	viper.SetDefault("maxNodeCpu", -1)
+	viper.SetDefault("bridgePrefix", "wb_bridge")
+	viper.SetDefault("apiEndpoint", "https://api.whiteblock.io")
+	viper.SetDefault("nibblerEndPoint", "https://storage.googleapis.com/genesis-public/nibbler/master/bin/linux/amd64/nibbler")
+	viper.SetDefault("logJson", false)
+	viper.SetDefault("prometheusConfig", "/tmp/prometheus.yml")
+	viper.SetDefault("prometheusPort", 8088)
+	viper.SetDefault("prometheusInstrumentationPort", 8008)
+	viper.SetDefault("maxRunAttempts", 30)
+	viper.SetDefault("maxConnections", 50)
+	viper.SetDefault("datadir", os.Getenv("HOME")+"/.config/whiteblock/")
+	viper.SetDefault("disableNibbler", false)
+	viper.SetDefault("disableTestnetReporting", false)
+	viper.SetDefault("requireAuth", false)
+	viper.SetDefault("maxCommandOutputLogSize", -1)
+	viper.SetDefault("resourceDir", "./resources")
+	viper.SetDefault("removeNodesOnFailure", false)
+	viper.SetDefault("nibblerRetries", 2)
+	viper.SetDefault("killRetries", 100)
+	viper.SetDefault("ganacheRPCPort", 8545)
+	viper.SetDefault("ganacheCLIOptions", "--gasLimit 4000000000000")
+}
+
+// GCPFormatter enables the ability to use genesis logging with Stackdriver
+type GCPFormatter struct {
+	JSON           *log.JSONFormatter
+	ConstantFields log.Fields
+}
+
+// Format takes in the entry and processes it into the appropiate log entry
+func (gf GCPFormatter) Format(entry *log.Entry) ([]byte, error) {
+	for k, v := range gf.ConstantFields {
+		entry.Data[k] = v
+	}
+	return gf.JSON.Format(entry)
+}
 
 func init() {
-	LoadConfig()
-	conf.LoadFromEnv()
-	conf.AutoFillMissing()
-	NodesPerCluster = (1 << conf.NodeBits) - ReservedIps
-}
+	setViperDefaults()
+	setViperEnvBindings()
+	viper.AddConfigPath("/etc/whiteblock/")          // path to look for the config file in
+	viper.AddConfigPath("$HOME/.config/whiteblock/") // call multiple times to add many search paths
+	viper.SetConfigName("genesis")
+	viper.SetConfigType("yaml")
+	err := viper.ReadInConfig()
 
-/*
-   The config from a file
-*/
-func LoadConfig() *Config {
-
-	conf = new(Config)
-	/**Load configuration**/
-	dat, err := ioutil.ReadFile("./config.json")
 	if err != nil {
-		log.Println("Warning: config.json not found, using defaults")
-	} else {
-		json.Unmarshal(dat, conf)
+		log.WithFields(log.Fields{"error": err}).Warn("could not find the config file")
+	}
+	err = viper.Unmarshal(&conf)
+	if err != nil {
+		log.Fatalf("unable to decode into struct, %v", err)
 	}
 
-	return conf
+	lvl, err := log.ParseLevel(conf.Verbosity)
+	if err != nil {
+		log.SetLevel(log.InfoLevel)
+		log.Warn(err)
+	}
+	log.SetLevel(lvl)
+	NodesPerCluster = (1 << conf.NodeBits) - ReservedIps
+
+	if conf.LogJSON {
+		log.SetFormatter(&GCPFormatter{
+			JSON: &log.JSONFormatter{
+				FieldMap: log.FieldMap{
+					log.FieldKeyTime:  "eventTime",
+					log.FieldKeyLevel: "severity",
+					log.FieldKeyMsg:   "message",
+				},
+			},
+			ConstantFields: log.Fields{
+				"serviceContext": map[string]string{"service": "genesis", "version": "1.8.2"},
+			},
+		})
+	}
+
+	err = os.MkdirAll(conf.DataDirectory, 0776)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err, "dir": conf.DataDirectory}).Fatal("could not create data directory")
+	}
 }
 
-/*
-   Get a pointer to the global config object.
-   Do not modify this object
-*/
+// GetConfig gets a pointer to the global config object.
+// Do not modify conf object
 func GetConfig() *Config {
-	if conf == nil {
-		LoadConfig()
-	}
 	return conf
 }

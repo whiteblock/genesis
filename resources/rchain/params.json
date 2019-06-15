@@ -8,5 +8,6 @@
     ["validatorCount","int"],
     ["validators","int"],
     ["sigAlgorithm","string"],
-    ["command","string"]
+    ["command","string"],
+    ["bondsValue","int"]
 ]

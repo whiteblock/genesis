@@ -1,35 +1,35 @@
 /*
-Handles functions related to the current state of the network
+	Copyright 2019 whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+
+// Package status handles functions related to the current state of the network
 package status
 
 import (
-	state "../state"
-	"encoding/json"
-	"fmt"
-	"log"
+	"github.com/whiteblock/genesis/state"
+	"github.com/whiteblock/genesis/util"
 )
 
-type BuildStatus struct {
-	Error    state.CustomError `json:"error"`
-	Progress float64           `json:"progress"`
-	Stage    string            `json:"stage"`
-	Frozen   bool              `json:"frozen"`
-}
-
-/*
-   Check the current status of the build
-*/
-func CheckBuildStatus(buildId string) (string, error) {
-	bs, err := state.GetBuildStateById(buildId)
+// CheckBuildStatus checks the current status of the build relating to the
+// given build id
+func CheckBuildStatus(buildID string) (string, error) {
+	bs, err := state.GetBuildStateByID(buildID)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", util.LogError(err)
 	}
-	if bs.ErrorFree() { //error should be null if there is not an error
-		return fmt.Sprintf("{\"progress\":%f,\"error\":null,\"stage\":\"%s\",\"frozen\":%v}", bs.BuildingProgress, bs.BuildStage, bs.Frozen), nil
-	}
-	//otherwise give the error as an object
-	out, _ := json.Marshal(BuildStatus{Progress: bs.BuildingProgress, Error: bs.BuildError, Stage: bs.BuildStage, Frozen: bs.Frozen})
-	return string(out), nil
+	return bs.Marshal(), nil
 }

@@ -1,14 +1,34 @@
 /*
-   Allows the ability for the simulation of network conditions accross nodes.
+	Copyright 2019 whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+
+//Package netconf provides the basic functionality for the simulation of network conditions across nodes.
 package netconf
 
 import (
-	db "../db"
-	status "../status"
-	util "../util"
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/status"
+	"github.com/whiteblock/genesis/util"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 /**
@@ -25,8 +45,9 @@ import (
 [ rate RATE [PACKETOVERHEAD] [CELLSIZE] [CELLOVERHEAD]]
 */
 
-var conf *util.Config = util.GetConfig()
+var conf = util.GetConfig()
 
+//Netconf is a representation of the impairments applied to a node
 type Netconf struct {
 	Node        int     `json:"node"`
 	Limit       int     `json:"limit"`
@@ -38,20 +59,18 @@ type Netconf struct {
 	Reorder     float64 `json:"reorder"`
 }
 
-/*
-   CreateCommands generates the commands needed to obtain the desired
-   network conditions
-*/
-func CreateCommands(netconf Netconf, serverId int) []string {
+// CreateCommands generates the commands needed to obtain the desired
+// network conditions
+func CreateCommands(netconf Netconf, serverID int) []string {
 	const offset int = 6
 	out := []string{
-		fmt.Sprintf("sudo tc qdisc del dev %s%d root", conf.BridgePrefix, netconf.Node),
-		fmt.Sprintf("sudo tc qdisc add dev %s%d root handle 1: prio", conf.BridgePrefix, netconf.Node),
-		fmt.Sprintf("sudo tc qdisc add dev %s%d parent 1:1 handle 2: netem", conf.BridgePrefix, netconf.Node), //unf
-		fmt.Sprintf("sudo tc filter add dev %s%d parent 1:0 protocol ip pref 55 handle %d fw flowid 2:1",
+		fmt.Sprintf("sudo -n tc qdisc del dev %s%d root", conf.BridgePrefix, netconf.Node),
+		fmt.Sprintf("sudo -n tc qdisc add dev %s%d root handle 1: prio", conf.BridgePrefix, netconf.Node),
+		fmt.Sprintf("sudo -n tc qdisc add dev %s%d parent 1:1 handle 2: netem", conf.BridgePrefix, netconf.Node), //unf
+		fmt.Sprintf("sudo -n tc filter add dev %s%d parent 1:0 protocol ip pref 55 handle %d fw flowid 2:1",
 			conf.BridgePrefix, netconf.Node, offset),
-		fmt.Sprintf("sudo iptables -t mangle -A PREROUTING  ! -d %s -j MARK --set-mark %d",
-			util.GetGateway(serverId, netconf.Node), offset),
+		fmt.Sprintf("sudo -n iptables -t mangle -A PREROUTING  ! -d %s -j MARK --set-mark %d",
+			util.GetGateway(serverID, netconf.Node), offset),
 	}
 
 	if netconf.Limit > 0 {
@@ -85,101 +104,183 @@ func CreateCommands(netconf Netconf, serverId int) []string {
 	return out
 }
 
-/*
-   Apply applies the given network config.
-*/
-func Apply(client *util.SshClient, netconf Netconf, serverId int) error {
-	cmds := CreateCommands(netconf, serverId)
+//Apply applies the given network config.
+func Apply(client ssh.Client, netconf Netconf, serverID int) error {
+	cmds := CreateCommands(netconf, serverID)
 	for i, cmd := range cmds {
-		res, err := client.Run(cmd)
+		_, err := client.Run(cmd)
 		if i == 0 {
 			//Don't check the success of the first command which clears
 			continue
 		}
 		if err != nil {
-			log.Println(res)
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 	}
 	return nil
 }
 
-/*
-   ApplyAll applies all of the given netconfs
-*/
+//ApplyAll applies all of the given netconfs
 func ApplyAll(netconfs []Netconf, nodes []db.Node) error {
 	for _, netconf := range netconfs {
-		node, err := db.GetNodeByLocalId(nodes, netconf.Node)
+		node, err := db.GetNodeByLocalID(nodes, netconf.Node)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		client, err := status.GetClient(node.Server)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 		err = Apply(client, netconf, node.Server)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
 	}
 	return nil
 }
 
-/*
-   ApplyToAll applies the given netconf to `nodes` nodes in the network on the given server
-*/
+//ApplyToAll applies the given netconf to `nodes` nodes in the network on the given server
 func ApplyToAll(netconf Netconf, nodes []db.Node) error {
 	for _, node := range nodes {
-		netconf.Node = node.LocalId
+		netconf.Node = node.LocalID
 		cmds := CreateCommands(netconf, node.Server)
 		for i, cmd := range cmds {
 			client, err := status.GetClient(node.Server)
 			if err != nil {
-				log.Println(err)
-				return err
+				log.WithFields(log.Fields{"i": i, "cmd": cmd, "error": err}).Error("error running netem command")
+				return util.LogError(err)
 			}
-			res, err := client.Run(cmd)
+			_, err = client.Run(cmd)
 			if i == 0 {
 				//Don't check the success of the first command which clears
 				continue
 			}
 			if err != nil {
-				log.Println(res)
-				log.Println(err)
-				return err
+				return util.LogError(err)
 			}
 		}
 	}
 	return nil
 }
 
-/*
-   RemoveAll removes network conditions from the given number of nodes
-*/
+//RemoveAll removes network conditions from the given nodes
 func RemoveAll(nodes []db.Node) error {
 	for _, node := range nodes {
 		client, err := status.GetClient(node.Server)
 		if err != nil {
-			log.Println(err)
-			return err
+			return util.LogError(err)
 		}
-		client.Run(
-			fmt.Sprintf("sudo tc qdisc del dev %s%d root", conf.BridgePrefix, node.LocalId))
+		_, err = client.Run(
+			fmt.Sprintf("sudo -n tc qdisc del dev %s%d root", conf.BridgePrefix, node.LocalID))
+		if err != nil {
+			log.Error(err)
+		}
 	}
 	return nil
 }
 
-/*
-   RemoveAll removes network conditions from the given number of nodes
-*/
-func RemoveAllOnServer(client *util.SshClient, nodes int) {
+//RemoveAllOnServer removes network conditions from the given number of nodes on the given client
+func RemoveAllOnServer(client ssh.Client, nodes int) {
 	for i := 0; i < nodes; i++ {
-
 		client.Run(
 			fmt.Sprintf("sudo tc qdisc del dev %s%d root", conf.BridgePrefix, i))
 	}
+	RemoveAllOutages(client)
+}
+
+func parseItems(items []string, nconf *Netconf) error {
+
+	for i := 0; i < len(items)/2; i++ {
+		switch items[2*i] {
+		case "limit":
+			val, err := strconv.Atoi(items[2*i+1])
+			if err != nil {
+				return util.LogError(err)
+			}
+			nconf.Limit = val
+		case "loss":
+			val, err := strconv.ParseFloat(items[2*i+1][:len(items[2*i+1])-1], 64)
+			if err != nil {
+				return util.LogError(err)
+			}
+			nconf.Loss = val
+		case "delay":
+			re := regexp.MustCompile(`(?m)[0-9]+\.[0-9]+`)
+			matches := re.FindAllString(items[2*i+1], -1)
+			if len(matches) == 0 {
+				return fmt.Errorf("unexpected delay value \"%s\"", items[2*i+1])
+			}
+
+			val, err := strconv.ParseFloat(matches[0], 64)
+			if err != nil {
+				return util.LogError(err)
+			}
+			unit := items[2*i+1][len(matches[0]):]
+			switch unit {
+			case "s":
+				val *= 1000
+				fallthrough
+			case "ms":
+				val *= 1000
+			}
+			nconf.Delay = int(val)
+		case "rate":
+			nconf.Rate = items[2*i+1]
+		case "duplicate":
+			val, err := strconv.ParseFloat(items[2*i+1][:len(items[2*i+1])-1], 64)
+			if err != nil {
+				return util.LogError(err)
+			}
+			nconf.Duplication = val
+		case "corrupt":
+			val, err := strconv.ParseFloat(items[2*i+1][:len(items[2*i+1])-1], 64)
+			if err != nil {
+				return util.LogError(err)
+			}
+			nconf.Corrupt = val
+		case "reorder":
+			val, err := strconv.ParseFloat(items[2*i+1][:len(items[2*i+1])-1], 64)
+			if err != nil {
+				return util.LogError(err)
+			}
+			nconf.Reorder = val
+		}
+	}
+	return nil
+}
+
+//GetConfigOnServer gets the network impairments present on a server
+func GetConfigOnServer(client ssh.Client) ([]Netconf, error) {
+	res, err := client.Run(fmt.Sprintf("sudo -n tc qdisc show | grep %s | grep netem || true", conf.BridgePrefix))
+	if err != nil {
+		return nil, util.LogError(err)
+	}
+	if len(res) == 0 {
+		return []Netconf{}, nil
+	}
+	out := []Netconf{}
+	rawConfigs := strings.Split(res, "\n")
+
+	for _, rawConfig := range rawConfigs { //4 for bridge name //7 for start of the shit
+		rawItems := strings.Split(rawConfig, " ")
+		if len(rawItems) < 5 {
+			continue
+		}
+		bridgeName := rawItems[4]
+
+		num, err := strconv.Atoi(bridgeName[len(conf.BridgePrefix):])
+		if err != nil {
+			return nil, util.LogError(err)
+		}
+		nconf := Netconf{Node: num}
+		if len(rawItems) >= 8 {
+			items := rawItems[7:]
+			err = parseItems(items, &nconf)
+			if err != nil {
+				return nil, util.LogError(err)
+			}
+		}
+		out = append(out, nconf)
+	}
+	return out, nil
 }

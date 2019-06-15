@@ -1,24 +1,45 @@
 # https://cloud.google.com/cloud-build/docs/speeding-up-builds
 # https://cloud.google.com/cloud-build/docs/configuring-builds/substitute-variable-values
 substitutions:
-  _IMAGE: 'gcr.io/wb-genesis/bitbucket.org/whiteblockio/genesis'
+  _BINARY: genesis
+  _PROJECT: genesis
+  _LEGACY_IMAGE: 'gcr.io/wb-genesis/bitbucket.org/whiteblockio/genesis'
+  _IMAGE: 'gcr.io/wb-genesis/genesis'
 timeout: '300s'
 steps:
-# allow these steps to fail, they try to pull cache first
-- name: 'gcr.io/cloud-builders/docker'
-  entrypoint: 'bash'
-  args: ['-c', 'docker pull $_IMAGE:$BRANCH_NAME || true' ]
-# build final docker image
-- name: 'gcr.io/cloud-builders/docker'
-  args: [
-            'build',
-            '-t', '$_IMAGE:$BRANCH_NAME',
-            '-t', '$_IMAGE:$COMMIT_SHA',
-            '--cache-from', '$_IMAGE:$BRANCH_NAME',
-            '.'
-        ]
-# push docker image tag(s) one branch, one immutable
-- name: 'gcr.io/cloud-builders/docker'
-  args: [ 'push', '$_IMAGE:$COMMIT_SHA' ]
-- name: 'gcr.io/cloud-builders/docker'
-  args: [ 'push', '$_IMAGE:$BRANCH_NAME' ]
+  # allow these steps to fail, they try to pull cache first
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args: ['-c', 'docker pull $_IMAGE:$BRANCH_NAME || true' ]
+  # build final docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', '$_IMAGE:$BRANCH_NAME',
+      '-t', '$_IMAGE:$COMMIT_SHA',
+      '-t', '$_LEGACY_IMAGE:$BRANCH_NAME',
+      '-t', '$_LEGACY_IMAGE:$COMMIT_SHA',
+      '--cache-from', '$_IMAGE:$BRANCH_NAME',
+      '.'
+    ]
+  # push docker image tag(s) one branch, one immutable
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', '$_IMAGE:$COMMIT_SHA' ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', '$_IMAGE:$BRANCH_NAME' ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', '$_LEGACY_IMAGE:$COMMIT_SHA' ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', '$_LEGACY_IMAGE:$BRANCH_NAME' ]
+  # create container based off image (but don't run)
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'create', '--name', 'output', '$_IMAGE:$COMMIT_SHA' ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'cp', 'output:/$_PROJECT/$_BINARY', '$_BINARY' ]
+  # copy binary to public bucket
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: [ 'cp', '$_BINARY', 'gs://genesis-public/$_PROJECT/$COMMIT_SHA/bin/linux/amd64/$_BINARY' ]
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: [ 'cp', '$_BINARY', 'gs://genesis-public/$_PROJECT/$BRANCH_NAME/bin/linux/amd64/$_BINARY' ]
+
+images: [ '$_IMAGE:$COMMIT_SHA', '$_IMAGE:$BRANCH_NAME','$_LEGACY_IMAGE:$BRANCH_NAME','$_LEGACY_IMAGE:$COMMIT_SHA' ]

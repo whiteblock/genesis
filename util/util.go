@@ -1,8 +1,24 @@
 /*
-   Provides a multitude of support functions to
-   help make development easier. Use of these functions should be prefered,
-   as it allows for easier maintainence.
+	Copyright 2019 whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Genesis is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+
+// Package util provides a multitude of support functions to
+// help make development easier. Use of these functions should be preferred,
+// as it allows for easier maintenance.
 package util
 
 import (
@@ -10,34 +26,29 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
+	"github.com/whiteblock/go.uuid"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
-	"os/exec"
+	"runtime"
 	"strings"
 )
 
-/*
-   Sends an http request and returns the body. Gives an error if the http request failed
-   or returned a non success code.
-*/
-func HttpRequest(method string, url string, bodyData string) (string, error) {
-	//log.Println("URL IS "+url)
+// HTTPRequest Sends a HTTP request and returns the body. Gives an error if the http request failed
+// or returned a non success code.
+func HTTPRequest(method string, url string, bodyData string) ([]byte, error) {
+	log.WithFields(log.Fields{"method": method, "url": url, "body": bodyData}).Trace("sending an http request")
 	body := strings.NewReader(bodyData)
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return nil, LogError(err)
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	req.Close = true
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return nil, LogError(err)
 	}
 
 	defer resp.Body.Close()
@@ -45,8 +56,37 @@ func HttpRequest(method string, url string, bodyData string) (string, error) {
 
 	_, err = buf.ReadFrom(resp.Body)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return nil, LogError(err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf(buf.String())
+	}
+	return []byte(buf.String()), nil
+}
+
+// JwtHTTPRequest is similar to HttpRequest, but it have the content-type set as application/json and it will
+// put the given jwt in the auth header
+func JwtHTTPRequest(method string, url string, jwt string, bodyData string) (string, error) {
+	log.WithFields(log.Fields{"method": method, "url": url, "body": bodyData}).Trace("sending an http request with a jwt")
+	body := strings.NewReader(bodyData)
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return "", LogError(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", jwt))
+	req.Close = true
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", LogError(err)
+	}
+
+	defer resp.Body.Close()
+	buf := new(bytes.Buffer)
+
+	_, err = buf.ReadFrom(resp.Body)
+	if err != nil {
+		return "", LogError(err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return "", fmt.Errorf(buf.String())
@@ -54,6 +94,47 @@ func HttpRequest(method string, url string, bodyData string) (string, error) {
 	return buf.String(), nil
 }
 
+// ExtractJwt will attempt to extract and return the jwt from the auth header
+func ExtractJwt(r *http.Request) (string, error) {
+	tokenString := r.Header.Get("Authorization")
+
+	if len(tokenString) == 0 {
+		return "", fmt.Errorf("missing JWT in authorization header")
+	}
+	splt := strings.Split(tokenString, " ")
+	if len(splt) < 2 {
+		return "", fmt.Errorf("invalid auth header")
+	}
+	return splt[1], nil
+}
+
+//GetKidFromJwt will attempt to extract the kid from the given jwt
+func GetKidFromJwt(jwt string) (string, error) {
+	if len(jwt) == 0 {
+		return "", fmt.Errorf("given empty string for JWT")
+	}
+	headerb64 := strings.Split(jwt, ".")[0]
+	headerJSON, err := base64.StdEncoding.DecodeString(headerb64)
+	if err != nil {
+		return "", LogError(err)
+	}
+	var header map[string]interface{}
+	err = json.Unmarshal(headerJSON, &header)
+	if err != nil {
+		return "", LogError(err)
+	}
+	kidAsI, ok := header["kid"]
+	if !ok {
+		return "", fmt.Errorf("JWT does not have kid in header")
+	}
+	kid, ok := kidAsI.(string)
+	if !ok {
+		return "", fmt.Errorf("kid is not string as expected")
+	}
+	return kid, nil
+}
+
+//GetUUIDString generates a new UUID
 func GetUUIDString() (string, error) {
 	uid, err := uuid.NewV4()
 	return uid.String(), err
@@ -61,80 +142,20 @@ func GetUUIDString() (string, error) {
 
 /****Basic Linux Functions****/
 
-/*
-   Rm removes all of the given directories or files
-*/
+// Rm removes all of the given directories or files. Convenience function for os.RemoveAll
 func Rm(directories ...string) error {
 	for _, directory := range directories {
-		if conf.Verbose {
-			fmt.Printf("Removing  %s...", directory)
-		}
+		log.WithFields(log.Fields{"dir": directory}).Info("removing directory")
+
 		err := os.RemoveAll(directory)
-		if conf.Verbose {
-			fmt.Printf("done\n")
-		}
 		if err != nil {
-			log.Println(err)
-			return err
+			return LogError(err)
 		}
 	}
 	return nil
 }
 
-/*
-   Mkdir creates a directory
-*/
-func Mkdir(directory string) error {
-	if conf.Verbose {
-		fmt.Printf("Creating directory %s\n", directory)
-	}
-	return os.MkdirAll(directory, 0755)
-}
-
-/*
-   Cp copies a file
-*/
-func Cp(src string, dest string) error {
-	if conf.Verbose {
-		fmt.Printf("Copying %s to %s\n", src, dest)
-	}
-
-	cmd := exec.Command("bash", "-c", fmt.Sprintf("cp %s %s", src, dest))
-	return cmd.Run()
-}
-
-/*
-   Cpr copies a directory
-*/
-func Cpr(src string, dest string) error {
-	if conf.Verbose {
-		fmt.Printf("Copying %s to %s\n", src, dest)
-	}
-
-	cmd := exec.Command("cp", "-r", src, dest)
-	return cmd.Run()
-}
-
-/*
-   Write writes data to a file, creating it if it doesn't exist,
-   deleting and recreating it if it does.
-*/
-func Write(path string, data string) error {
-	if conf.Verbose {
-		fmt.Printf("Writing to file %s...", path)
-	}
-
-	err := ioutil.WriteFile(path, []byte(data), 0664)
-
-	if conf.Verbose {
-		fmt.Printf("done\n")
-	}
-	return err
-}
-
-/*
-   Lsr lists the contents of a directory recursively
-*/
+// Lsr lists the contents of a directory recursively
 func Lsr(_dir string) ([]string, error) {
 	dir := _dir
 	if dir[len(dir)-1:] != "/" {
@@ -143,13 +164,13 @@ func Lsr(_dir string) ([]string, error) {
 	out := []string{}
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return nil, err
+		return nil, LogError(err)
 	}
 	for _, f := range files {
 		if f.IsDir() {
 			contents, err := Lsr(fmt.Sprintf("%s%s/", dir, f.Name()))
 			if err != nil {
-				return nil, err
+				return nil, LogError(err)
 			}
 			out = append(out, contents...)
 		} else {
@@ -159,38 +180,8 @@ func Lsr(_dir string) ([]string, error) {
 	return out, nil
 }
 
-/*
-   LsDir lists directories in order of construction
-*/
-func LsDir(_dir string) ([]string, error) {
-	dir := _dir
-	if dir[len(dir)-1:] != "/" {
-		dir += "/"
-	}
-	out := []string{}
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	for _, f := range files {
-		if f.IsDir() {
-			out = append(out, fmt.Sprintf("%s%s/", dir, f.Name()))
-			content, err := LsDir(fmt.Sprintf("%s%s/", dir, f.Name()))
-			if err != nil {
-				log.Println(err)
-				return nil, err
-			}
-			out = append(out, content...)
-		}
-	}
-	return out, nil
-}
-
-/*
-   CombineConfig combines an Array with \n as the delimiter.
-   Useful for generating configuration files.
-*/
+// CombineConfig combines an Array with \n as the delimiter.
+// Useful for generating configuration files. DEPRECATED
 func CombineConfig(entries []string) string {
 	out := ""
 	for _, entry := range entries {
@@ -202,11 +193,7 @@ func CombineConfig(entries []string) string {
 /*
    BashExec executes _cmd in bash then return the result
 */
-func BashExec(_cmd string) (string, error) {
-	if conf.Verbose {
-		fmt.Printf("Executing : %s\n", _cmd)
-	}
-
+/*func BashExec(_cmd string) (string, error) {
 	cmd := exec.Command("bash", "-c", _cmd)
 
 	var resultsRaw bytes.Buffer
@@ -214,21 +201,17 @@ func BashExec(_cmd string) (string, error) {
 	cmd.Stdout = &resultsRaw
 	err := cmd.Start()
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", LogError(err)
 	}
 	err = cmd.Wait()
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return "", LogError(err)
 	}
 
 	return resultsRaw.String(), nil
-}
+}*/
 
-/*
-   GetPath extracts the base path of the given path
-*/
+// GetPath extracts the base path of the given path
 func GetPath(path string) string {
 	index := strings.LastIndex(path, "/")
 	if index != -1 {
@@ -237,50 +220,10 @@ func GetPath(path string) string {
 	return path[:index]
 }
 
-/*
-   IntArrRemove removes an element from an array of ints
-*/
-func IntArrRemove(op []int, index int) []int {
-	return append(op[:index], op[index+1:]...)
-}
+/******* JSON helper functions *******/
 
-/*
-   IntArrFill fills the elements of an array according the given
-   function, and then returns it.
-   f takes in the index and returns the value to place at that index.
-*/
-func IntArrFill(size int, f func(int) int) []int {
-	out := make([]int, size)
-	for i := 0; i < size; i++ {
-		out[i] = f(i)
-	}
-	return out
-}
-
-/*
-   GetJSONNumber checks and extracts a json.Number from data[field].
-   Will return an error if data[field] does not exist or is of the wrong type.
-*/
-func GetJSONNumber(data map[string]interface{}, field string) (json.Number, error) {
-	rawValue, exists := data[field]
-	if exists && rawValue != nil {
-		switch rawValue.(type) {
-		case json.Number:
-			value, valid := rawValue.(json.Number)
-			if !valid {
-				return "", fmt.Errorf("Invalid json number")
-			}
-			return value, nil
-
-		}
-	}
-	return "", fmt.Errorf("Incorrect type for %s given", field)
-}
-
-/*
-   GetJSONInt64 checks and extracts a int64 from data[field].
-   Will return an error if data[field] does not exist or is of the wrong type.
-*/
+// GetJSONInt64 checks and extracts a int64 from data[field].
+// Will return an error if data[field] does not exist or is of the wrong type.
 func GetJSONInt64(data map[string]interface{}, field string, out *int64) error {
 	rawValue, exists := data[field]
 	if exists && rawValue != nil {
@@ -293,38 +236,14 @@ func GetJSONInt64(data map[string]interface{}, field string, out *int64) error {
 			*out = value
 			return nil
 		default:
-			return fmt.Errorf("Incorrect type for %s given", field)
+			return fmt.Errorf("incorrect type for %s", field)
 		}
 	}
 	return nil
 }
 
-/*
-   GetJSONInt64 checks and extracts a []string from data[field].
-   Will return an error if data[field] does not exist or is of the wrong type.
-*/
-func GetJSONStringArr(data map[string]interface{}, field string, out *[]string) error {
-	rawValue, exists := data[field]
-	if exists && rawValue != nil {
-		switch rawValue.(type) {
-		case []string:
-			value, valid := rawValue.([]string)
-			if !valid {
-				return fmt.Errorf("Invalid string array")
-			}
-			*out = value
-			return nil
-		default:
-			return fmt.Errorf("Incorrect type for %s given", field)
-		}
-	}
-	return nil
-}
-
-/*
-   GetJSONInt64 checks and extracts a string from data[field].
-   Will return an error if data[field] does not exist or is of the wrong type.
-*/
+// GetJSONString checks and extracts a string from data[field].
+// Will return an error if data[field] does not exist or is of the wrong type.
 func GetJSONString(data map[string]interface{}, field string, out *string) error {
 	rawValue, exists := data[field]
 	if exists && rawValue != nil {
@@ -332,39 +251,19 @@ func GetJSONString(data map[string]interface{}, field string, out *string) error
 		case string:
 			value, valid := rawValue.(string)
 			if !valid {
-				return fmt.Errorf("Invalid string")
+				return fmt.Errorf("invalid string")
 			}
 			*out = value
 			return nil
 		default:
-			return fmt.Errorf("Incorrect type for %s given", field)
+			return fmt.Errorf("incorrect type for %s", field)
 		}
 	}
 	return nil
 }
 
-/*
-   GetJSONInt64 checks and extracts a bool from data[field].
-   Will return an error if data[field] does not exist or is of the wrong type.
-*/
-func GetJSONBool(data map[string]interface{}, field string, out *bool) error {
-	rawValue, exists := data[field]
-	if exists && rawValue != nil {
-		switch rawValue.(type) {
-		case bool:
-			value, valid := rawValue.(bool)
-			if !valid {
-				return fmt.Errorf("Invalid bool")
-			}
-			*out = value
-			return nil
-		default:
-			return fmt.Errorf("Incorrect type for %s given", field)
-		}
-	}
-	return nil
-}
-
+// MergeStringMaps merges two maps of string to interface together and returns it
+// If there are conflicting keys, the value in m2 will be chosen.
 func MergeStringMaps(m1 map[string]interface{}, m2 map[string]interface{}) map[string]interface{} {
 	out := make(map[string]interface{})
 	for k1, v1 := range m1 {
@@ -377,51 +276,46 @@ func MergeStringMaps(m1 map[string]interface{}, m2 map[string]interface{}) map[s
 	return out
 }
 
-func ConvertToStringMap(in interface{}) map[string]string {
+// ConvertToStringMap converts a map of string to interface to a map of string to json
+func ConvertToStringMap(data map[string]interface{}) map[string]string {
 
-	data := in.(map[string]interface{})
 	out := make(map[string]string)
 
 	for key, value := range data {
 		strval, _ := json.Marshal(value)
-		/*switch v := i.(type) {
-		    case int:
-		        fallthrough
-		    case int8:
-		        fallthrough
-		    case int16:
-		        fallthrough
-		    case int32:
-		        fallthrough
-		    case int64:
-		        strval = string(strconv.AppendInt(nil, int64(v), 10))
-
-		    case float:
-		        fallthrough
-		    case float32:
-		        fallthrough
-		    case float64:
-		        b64 = strconv.AppendFloat(nil,float64(v), 'f', -1, 64)
-		        fmt.Println("the reciprocal of i is", 1/v)
-		    case string:
-		        strval = v
-		    case []byte:
-
-		    default:
-		        // i isn't one of the types above
-		}*/
 		out[key] = string(strval)
 	}
 	return out
 }
 
-func GetBlockchainConfig(blockchain string, file string, files map[string]string) ([]byte, error) {
-	if files != nil {
-		res, exists := files["genesis.json"]
-		if exists {
-			return base64.StdEncoding.DecodeString(res)
-		}
-	}
-	return ioutil.ReadFile(fmt.Sprintf("./resources/%s/%s", blockchain, file))
+// FormatError produced a standard error for execution.
+func FormatError(res string, err error) error {
+	return fmt.Errorf("%s\n%s", res, err.Error())
+}
 
+// CopyMap performs a deep copy of the given map m.
+func CopyMap(m map[string]interface{}) (map[string]interface{}, error) {
+	var out map[string]interface{}
+	tmp, err := json.Marshal(m)
+	if err != nil {
+		return nil, LogError(err)
+	}
+	return out, LogError(json.Unmarshal(tmp, &out))
+}
+
+// LogError takes in an error, logs that error and returns that error.
+// Used to help reduce code clutter and unify the error handling in the code.
+// Has no effect if err == nil
+func LogError(err error) error {
+	if err == nil {
+		return err // do nothing if the given err is nil
+	}
+	_, file, line, ok := runtime.Caller(1)
+	if !ok {
+		log.Error(err.Error())
+	} else {
+		log.WithFields(log.Fields{"file": file, "line": line}).Error(err.Error())
+	}
+
+	return err
 }
