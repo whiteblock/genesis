@@ -41,6 +41,7 @@ const (
 	blockchain     = "ethclassic"
 	alias          = "etc"
 	peeringRetries = 5
+	password	= "password"
 )
 
 func init() {
@@ -82,7 +83,7 @@ func build(tn *testnet.TestNet) error {
 		/**Create the Password files**/
 		var data string
 		for i := 1; i <= tn.LDD.Nodes; i++ {
-			data += "password\n"
+			data += password+"\n"
 		}
 		/**Copy over the password file**/
 		err = helpers.CopyBytesToAllNodes(tn, data, "/geth/passwd")
@@ -222,6 +223,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
 	tn.BuildState.SetExt("port", 8545)
 	tn.BuildState.SetExt("namespace", "eth")
+	tn.BuildState.SetExt("password",password)
 
 	for _, account := range accounts {
 		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
