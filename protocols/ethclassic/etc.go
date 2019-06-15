@@ -37,11 +37,15 @@ import (
 
 var conf *util.Config
 
-const blockchain = "ethclassic"
+const (
+	blockchain     = "ethclassic"
+	alias          = "etc"
+	peeringRetries = 5
+)
 
 func init() {
 	conf = util.GetConfig()
-	alias := "etc"
+
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterBuild(alias, build) //ethereum default to geth
 
@@ -260,11 +264,18 @@ func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 			if i == node.GetAbsoluteNumber() {
 				continue
 			}
-			_, err := client.KeepTryRun(
-				fmt.Sprintf(
-					`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
-						`'{ "method": "admin_addPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
-					node.GetIP(), enode))
+			var err error
+			for i := 0; i < peeringRetries; i++ { //give it some extra tries
+				_, err = client.KeepTryRun(
+					fmt.Sprintf(
+						`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
+							`'{ "method": "admin_addPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
+						node.GetIP(), enode))
+				if err == nil {
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
 			tn.BuildState.IncrementBuildProgress()
 			if err != nil {
 				return util.LogError(err)

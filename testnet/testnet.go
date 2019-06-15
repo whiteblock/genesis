@@ -134,9 +134,10 @@ func (tn *TestNet) AddNode(node db.Node) *db.Node {
 	tn.mux.Lock()
 	defer tn.mux.Unlock()
 	node.AbsoluteNum = len(tn.Nodes)
+	log.WithFields(log.Fields{"node": node}).Debug("adding a node")
 	tn.NewlyBuiltNodes = append(tn.NewlyBuiltNodes, node)
 	tn.Nodes = append(tn.Nodes, node)
-	return &tn.Nodes[node.AbsoluteNum]
+	return &tn.NewlyBuiltNodes[len(tn.NewlyBuiltNodes)-1]
 }
 
 // AddSideCar adds a side car to the testnet
