@@ -494,7 +494,7 @@ func setupNewPOA(tn *testnet.TestNet, pconf *parityConf, wallets []string) error
 	}
 
 	//handle configuration file
-	return helpers.CreateConfigs(tn, "/parity/config.toml",
+	return helpers.CreateConfigsNewNodes(tn, "/parity/config.toml",
 		func(node ssh.Node) ([]byte, error) {
 			configToml, err := buildPoaConfig(pconf, tn.LDD, wallets, "/parity/passwd", node.GetAbsoluteNumber())
 			if err != nil {
@@ -513,7 +513,7 @@ func setupNewPOW(tn *testnet.TestNet, pconf *parityConf, wallets []string) error
 		return util.LogError(err)
 	}
 	//create config file
-	err = helpers.CreateConfigs(tn, "/parity/config.toml", func(node ssh.Node) ([]byte, error) {
+	err = helpers.CreateConfigsNewNodes(tn, "/parity/config.toml", func(node ssh.Node) ([]byte, error) {
 		configToml, err := buildConfig(pconf, tn.LDD, wallets, "/parity/passwd", node.GetAbsoluteNumber())
 		if err != nil {
 			return nil, util.LogError(err)
