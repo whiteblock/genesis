@@ -29,6 +29,7 @@ import (
 
 type parityConf struct {
 	Name                      string `json:"name"`
+	DataDir                   string `json:"dataDir"`
 	BlockReward               int64  `json:"blockReward"`
 	ChainID                   int64  `json:"chainId"`
 	Consensus                 string `json:"consensus"` //TODO

@@ -25,6 +25,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/ethereum"
+	"github.com/whiteblock/genesis/protocols/ethclassic"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/ssh"
@@ -209,7 +210,11 @@ func add(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildStage("Pulling the genesis block")
 
-	etcGenesisFile, _ := tn.BuildState.Get("genesisParams")
+	var etcGenesisFile ethclassic.EtcConf
+	tn.BuildState.GetP("etcconf", etcGenesisFile)
+
+	var genesisAlloc map[string]map[string]string
+	tn.BuildState.GetP("alloc", genesisAlloc)
 	
 	fmt.Println(etcGenesisFile)
 	
@@ -219,16 +224,14 @@ func add(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	parityConf.Name = etcGenesisFile["name"]
-	parityConf.DataDir = etcGenesisFile["identity"]
-	parityConf.Consensus = etcGenesisFile["network"]
-	parityConf[""] = etcGenesisFile["chainId"]
-	parityConf[""] = etcGenesisFile["consensusParams"]
-	parityConf[""] = etcGenesisFile["difficulty"]
-	parityConf[""] = etcGenesisFile["homesteadBlock"]
-	parityConf[""] = etcGenesisFile["consensus"]
-	parityConf[""] = etcGenesisFile["gasLimit"]
-
+	parityConf.Name = etcGenesisFile.Name
+	parityConf.DataDir = etcGenesisFile.Identity
+	parityConf.NetworkID = etcGenesisFile.NetworkID
+	parityConf.ChainID = etcGenesisFile.NetworkID
+	parityConf.MinimumDifficulty = etcGenesisFile.Difficulty
+	parityConf.Difficulty = etcGenesisFile.Difficulty
+	parityConf.GasLimit = 3141592
+	parityConf.MinGasLimit = 3141592
 
 	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		_, err := client.DockerExec(node, fmt.Sprintf("mkdir -p /parity"))
@@ -240,7 +243,7 @@ func add(tn *testnet.TestNet) error {
 
 	wallets := make([]string, tn.LDD.Nodes)
 	rawWallets := make([]string, tn.LDD.Nodes)
-	err := helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		res, err := client.DockerExec(node, "parity --base-path=/parity/ --password=/parity/passwd account new")
 		if err != nil {
 			return util.LogError(err)
@@ -269,9 +272,13 @@ func add(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
+	for i := range genesisAlloc {
+		fmt.Println(i)
+	}
+
 	// ***********************************************************************************************************
 
-	switch parityConf.Consensus {
+	switch etcGenesisFile.Consensus {
 	case "ethash":
 		err = setupPOW(tn, parityConf, wallets)
 	case "poa":

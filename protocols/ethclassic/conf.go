@@ -24,7 +24,7 @@ import (
 	"github.com/whiteblock/genesis/protocols/helpers"
 )
 
-type etcConf struct {
+type EtcConf struct {
 	Identity           string `json:"identity"`
 	Name               string `json:"name"`
 	NetworkID          int64  `json:"networkId"`
@@ -42,8 +42,8 @@ type etcConf struct {
 /**
  * Fills in the defaults for missing parts,
  */
-func newConf(data map[string]interface{}) (*etcConf, error) {
-	out := new(etcConf)
+func newConf(data map[string]interface{}) (*EtcConf, error) {
+	out := new(EtcConf)
 	err := helpers.HandleBlockchainConfig(blockchain, data, out)
 	if err != nil || data == nil {
 		return out, err
@@ -64,8 +64,8 @@ func newConf(data map[string]interface{}) (*etcConf, error) {
 	return out, nil
 }
 
-func NewEtcConf(data map[string]interface{}) (*etcConf, error) {
-	out := new(etcConf)
+func NewEtcConf(data map[string]interface{}) (*EtcConf, error) {
+	out := new(EtcConf)
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
