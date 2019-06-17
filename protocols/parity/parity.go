@@ -373,7 +373,7 @@ func add(tn *testnet.TestNet) error {
 		}
 		tn.BuildState.IncrementBuildProgress()
 		mux.Lock()
-		enodes[node.GetAbsoluteNumber()] = enode
+		enodes[node.GetAbsoluteNumber()%tn.LDD.Nodes] = enode
 		mux.Unlock()
 		return nil
 	})
