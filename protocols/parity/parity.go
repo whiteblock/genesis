@@ -256,8 +256,8 @@ func add(tn *testnet.TestNet) error {
 		tn.BuildState.IncrementBuildProgress()
 	}
 
-	wallets := make([]string, tn.LDD.Nodes)
-	rawWallets := make([]string, tn.LDD.Nodes)
+	wallets := []string{}
+	rawWallets := []string{}
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		res, err := client.DockerExec(node, "parity --base-path=/parity/ --password=/parity/passwd account new")
 		if err != nil {
@@ -269,7 +269,7 @@ func add(tn *testnet.TestNet) error {
 		}
 
 		mux.Lock()
-		wallets[node.GetAbsoluteNumber()] = res[:len(res)-1]
+		wallets = append(wallets, res[:len(res)-1]) 
 		mux.Unlock()
 
 		res, err = client.DockerExec(node, "bash -c 'cat /parity/keys/ethereum/*'")
@@ -279,7 +279,7 @@ func add(tn *testnet.TestNet) error {
 		tn.BuildState.IncrementBuildProgress()
 
 		mux.Lock()
-		rawWallets[node.GetAbsoluteNumber()] = strings.Replace(res, "\"", "\\\"", -1)
+		rawWallets = append(rawWallets, strings.Replace(res, "\"", "\\\"", -1))
 		mux.Unlock()
 		return nil
 	})
