@@ -295,9 +295,9 @@ func add(tn *testnet.TestNet) error {
 
 	switch etcGenesisFile.Consensus {
 	case "ethash":
-		err = setupPOW(tn, parityConf, wallets)
+		err = setupNewPOW(tn, parityConf, wallets)
 	case "poa":
-		err = setupPOA(tn, parityConf, wallets)
+		err = setupNewPOA(tn, parityConf, wallets)
 	default:
 		return util.LogError(fmt.Errorf("Unknown consensus %s", parityConf.Consensus))
 	}
@@ -479,4 +479,50 @@ func setupPOW(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 	}
 	//Copy over the config file, spec file, and the accounts
 	return helpers.CopyBytesToAllNodes(tn, spec, "/parity/spec.json")
+}
+
+func setupNewPOA(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
+	//Create the chain spec files
+	spec, err := buildPoaSpec(pconf, tn.LDD, wallets)
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	err = helpers.CopyBytesToAllNewNodes(tn, spec, "/parity/spec.json")
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	//handle configuration file
+	return helpers.CreateConfigs(tn, "/parity/config.toml",
+		func(node ssh.Node) ([]byte, error) {
+			configToml, err := buildPoaConfig(pconf, tn.LDD, wallets, "/parity/passwd", node.GetAbsoluteNumber())
+			if err != nil {
+				return nil, util.LogError(err)
+			}
+			return []byte(configToml), nil
+		})
+}
+
+func setupNewPOW(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
+	tn.BuildState.IncrementBuildProgress()
+
+	//Create the chain spec files
+	spec, err := buildSpec(pconf, tn.LDD, wallets)
+	if err != nil {
+		return util.LogError(err)
+	}
+	//create config file
+	err = helpers.CreateConfigs(tn, "/parity/config.toml", func(node ssh.Node) ([]byte, error) {
+		configToml, err := buildConfig(pconf, tn.LDD, wallets, "/parity/passwd", node.GetAbsoluteNumber())
+		if err != nil {
+			return nil, util.LogError(err)
+		}
+		return []byte(configToml), nil
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+	//Copy over the config file, spec file, and the accounts
+	return helpers.CopyBytesToAllNewNodes(tn, spec, "/parity/spec.json")
 }
