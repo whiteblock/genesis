@@ -61,7 +61,7 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildSteps(9 + (7 * tn.LDD.Nodes))
 	//Make the data directories
-	err = helpers.MkdirAllNodes(tn, "/parity")
+	err = helpers.MkdirAllNewNodes(tn, "/parity")
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -211,12 +211,13 @@ func add(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Pulling the genesis block")
 
 	var etcGenesisFile ethclassic.EtcConf
-	tn.BuildState.GetP("etcconf", etcGenesisFile)
+	tn.BuildState.GetP("etcconf", &etcGenesisFile)
 
 	var genesisAlloc map[string]map[string]string
-	tn.BuildState.GetP("alloc", genesisAlloc)
+	tn.BuildState.GetP("alloc", &genesisAlloc)
 	
-	fmt.Println(etcGenesisFile)
+	fmt.Println(fmt.Sprintf("etc Config is: %+v",etcGenesisFile))
+	fmt.Println(fmt.Sprintf("etc alloc is: %+v",genesisAlloc))
 	
 	parityConf, err := NewParityConf(tn.LDD.Params)
 	tn.BuildState.SetBuildSteps(1 + 2*len(tn.NewlyBuiltNodes)) //TODO

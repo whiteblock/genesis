@@ -365,7 +365,7 @@ func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethere
 	}
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
-	tn.BuildState.Set("alloc", genesis["alloc"])
+	tn.BuildState.Set("alloc", alloc)
 	tn.BuildState.Set("etcconf", etcconf)
 
 	return helpers.CreateConfigs(tn, "/geth/chain.json", func(node ssh.Node) ([]byte, error) {
