@@ -389,7 +389,7 @@ func add(tn *testnet.TestNet) error {
 }
 
 func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
-	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+	return helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, enode := range enodes {
 			if i == node.GetAbsoluteNumber() {
 				continue
