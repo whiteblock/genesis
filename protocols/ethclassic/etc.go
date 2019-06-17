@@ -50,8 +50,7 @@ func init() {
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterBuild(alias, build) //ethereum default to geth
 
-	registrar.RegisterAddNodes(blockchain, add)
-	registrar.RegisterAddNodes(alias, add)
+	registrar.RegisterAddNodes("parity", add)
 
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterServices(alias, GetServices)
