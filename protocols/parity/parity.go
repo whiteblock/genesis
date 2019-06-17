@@ -338,6 +338,7 @@ func add(tn *testnet.TestNet) error {
 
 	var snodes []string
 	tn.BuildState.GetP("staticNodes", &snodes)
+	fmt.Println(fmt.Sprintf("enode address : %+v", snodes))
 	if err != nil {
 		return util.LogError(err)
 	}
