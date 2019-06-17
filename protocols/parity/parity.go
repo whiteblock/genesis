@@ -337,7 +337,7 @@ func add(tn *testnet.TestNet) error {
 	}
 
 	var snodes []string
-	tn.BuildState.GetP("staticNodes", snodes)
+	tn.BuildState.GetP("staticNodes", &snodes)
 	if err != nil {
 		return util.LogError(err)
 	}
