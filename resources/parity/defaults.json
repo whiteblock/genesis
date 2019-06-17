@@ -1,4 +1,6 @@
 {
+    "name":"whiteblock",
+    "dataDir":"",
     "blockReward":5000000000000000000,
     "chainId":15468,
     "consensus":"ethash",

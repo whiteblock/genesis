@@ -209,17 +209,26 @@ func add(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildStage("Pulling the genesis block")
 
-	var etcGenesisFile map[string]interface{}
-	tn.BuildState.GetP("genesisParams", &etcGenesisFile)
+	etcGenesisFile, _ := tn.BuildState.Get("genesisParams")
 	
 	fmt.Println(etcGenesisFile)
-
-
-	parityConf, err := NewParityConf(etcGenesisFile)
+	
+	parityConf, err := NewParityConf(tn.LDD.Params)
 	tn.BuildState.SetBuildSteps(1 + 2*len(tn.NewlyBuiltNodes)) //TODO
 	if err != nil {
 		return util.LogError(err)
 	}
+
+	parityConf.Name = etcGenesisFile["name"]
+	parityConf.DataDir = etcGenesisFile["identity"]
+	parityConf.Consensus = etcGenesisFile["network"]
+	parityConf[""] = etcGenesisFile["chainId"]
+	parityConf[""] = etcGenesisFile["consensusParams"]
+	parityConf[""] = etcGenesisFile["difficulty"]
+	parityConf[""] = etcGenesisFile["homesteadBlock"]
+	parityConf[""] = etcGenesisFile["consensus"]
+	parityConf[""] = etcGenesisFile["gasLimit"]
+
 
 	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		_, err := client.DockerExec(node, fmt.Sprintf("mkdir -p /parity"))
@@ -231,7 +240,7 @@ func add(tn *testnet.TestNet) error {
 
 	wallets := make([]string, tn.LDD.Nodes)
 	rawWallets := make([]string, tn.LDD.Nodes)
-	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+	err := helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		res, err := client.DockerExec(node, "parity --base-path=/parity/ --password=/parity/passwd account new")
 		if err != nil {
 			return util.LogError(err)

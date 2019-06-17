@@ -1,4 +1,6 @@
 [
+    ["name", "string"],
+    ["dataDir", "string"],
     ["blockReward","int"],
     ["chainId","int"],
     ["consensus","string"],
