@@ -74,7 +74,7 @@ func build(tn *testnet.TestNet) error {
 			data += "second\n"
 		}
 		tn.BuildState.IncrementBuildProgress()
-		err = helpers.CopyBytesToAllNodes(tn, data, "/parity/passwd")
+		err = helpers.CopyBytesToAllNewNodes(tn, data, "/parity/passwd")
 		if err != nil {
 			return util.LogError(err)
 		}
