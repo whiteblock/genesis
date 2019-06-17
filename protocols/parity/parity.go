@@ -61,7 +61,7 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildSteps(9 + (7 * tn.LDD.Nodes))
 	//Make the data directories
-	err = helpers.MkdirAllNewNodes(tn, "/parity")
+	err = helpers.MkdirAllNodes(tn, "/parity")
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -74,7 +74,7 @@ func build(tn *testnet.TestNet) error {
 			data += "second\n"
 		}
 		tn.BuildState.IncrementBuildProgress()
-		err = helpers.CopyBytesToAllNewNodes(tn, data, "/parity/passwd")
+		err = helpers.CopyBytesToAllNodes(tn, data, "/parity/passwd")
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -240,6 +240,20 @@ func add(tn *testnet.TestNet) error {
 	})
 	if err != nil {
 		return util.LogError(err)
+	}
+
+	/**Create the Password file and copy it over**/
+	{
+		var data string
+		for i := 1; i <= tn.LDD.Nodes; i++ {
+			data += "second\n"
+		}
+		tn.BuildState.IncrementBuildProgress()
+		err = helpers.CopyBytesToAllNewNodes(tn, data, "/parity/passwd")
+		if err != nil {
+			return util.LogError(err)
+		}
+		tn.BuildState.IncrementBuildProgress()
 	}
 
 	wallets := make([]string, tn.LDD.Nodes)
