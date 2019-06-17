@@ -202,7 +202,159 @@ func build(tn *testnet.TestNet) error {
 // Add handles adding a node to the geth testnet
 // TODO
 func add(tn *testnet.TestNet) error {
-	return nil
+	//etc attachment
+	mux := sync.Mutex{}
+
+	tn.BuildState.IncrementBuildProgress()
+
+	tn.BuildState.SetBuildStage("Pulling the genesis block")
+
+	var etcGenesisFile map[string]interface{}
+	tn.BuildState.GetP("genesisParams", &etcGenesisFile)
+	
+
+
+
+	parityConf, err := NewParityConf(etcGenesisFile)
+	tn.BuildState.SetBuildSteps(1 + 2*len(tn.NewlyBuiltNodes)) //TODO
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		_, err := client.DockerExec(node, fmt.Sprintf("mkdir -p /parity"))
+		return err
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	wallets := make([]string, tn.LDD.Nodes)
+	rawWallets := make([]string, tn.LDD.Nodes)
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		res, err := client.DockerExec(node, "parity --base-path=/parity/ --password=/parity/passwd account new")
+		if err != nil {
+			return util.LogError(err)
+		}
+
+		if len(res) == 0 {
+			return fmt.Errorf("account new returned an empty response")
+		}
+
+		mux.Lock()
+		wallets[node.GetAbsoluteNumber()] = res[:len(res)-1]
+		mux.Unlock()
+
+		res, err = client.DockerExec(node, "bash -c 'cat /parity/keys/ethereum/*'")
+		if err != nil {
+			return util.LogError(err)
+		}
+		tn.BuildState.IncrementBuildProgress()
+
+		mux.Lock()
+		rawWallets[node.GetAbsoluteNumber()] = strings.Replace(res, "\"", "\\\"", -1)
+		mux.Unlock()
+		return nil
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	// ***********************************************************************************************************
+
+	switch parityConf.Consensus {
+	case "ethash":
+		err = setupPOW(tn, parityConf, wallets)
+	case "poa":
+		err = setupPOA(tn, parityConf, wallets)
+	default:
+		return util.LogError(fmt.Errorf("Unknown consensus %s", parityConf.Consensus))
+	}
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	// ***********************************************************************************************************
+
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		for i, rawWallet := range rawWallets {
+			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\">/parity/account%d'", rawWallet, i))
+			if err != nil {
+				return util.LogError(err)
+			}
+
+			_, err = client.DockerExec(node,
+				fmt.Sprintf("parity --base-path=/parity/ --chain /parity/spec.json --password=/parity/passwd account import /parity/account%d", i))
+			if err != nil {
+				return util.LogError(err)
+			}
+		}
+		tn.BuildState.IncrementBuildProgress()
+		return nil
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		defer tn.BuildState.IncrementBuildProgress()
+		return client.DockerRunMainDaemon(node,
+			fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`, wallets[node.GetAbsoluteNumber()]))
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	var snodes []string
+	tn.BuildState.GetP("staticNodes", snodes)
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	//Start peering via curl
+	time.Sleep(time.Duration(5 * time.Second))
+	//Get the enode addresses
+	enodes := make([]string, tn.LDD.Nodes)
+	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
+		enode := ""
+		for len(enode) == 0 {
+			res, err := client.KeepTryRun(
+				fmt.Sprintf(
+					`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json" `+
+						` -d '{ "method": "parity_enode", "params": [], "id": 1, "jsonrpc": "2.0" }'`,
+					node.GetIP()))
+
+			if err != nil {
+				return util.LogError(err)
+			}
+			var result map[string]interface{}
+
+			err = json.Unmarshal([]byte(res), &result)
+			if err != nil {
+				return util.LogError(err)
+			}
+			log.WithFields(log.Fields{"result": result}).Trace("fetched enode addr from parity_enode")
+
+			err = util.GetJSONString(result, "result", &enode)
+			if err != nil {
+				return util.LogError(err)
+			}
+		}
+		tn.BuildState.IncrementBuildProgress()
+		mux.Lock()
+		enodes[node.GetAbsoluteNumber()] = enode
+		mux.Unlock()
+		return nil
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+	storeGethParameters(tn, parityConf, wallets, enodes)
+	
+	tn.BuildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Bootstrapping network")
+
+	return peerAllNodes(tn, snodes)
 }
 
 func peerAllNodes(tn *testnet.TestNet, enodes []string) error {

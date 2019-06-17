@@ -50,7 +50,8 @@ func init() {
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterBuild(alias, build) //ethereum default to geth
 
-	registrar.RegisterAddNodes("parity", add)
+	registrar.RegisterAddNodes(blockchain, add)
+	registrar.RegisterAddNodes(alias, add)
 
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterServices(alias, GetServices)
@@ -117,6 +118,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+	tn.BuildState.Set("generatedAccs", accounts)
 
 	tn.BuildState.IncrementBuildProgress()
 	unlock := ""
@@ -144,6 +146,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Bootstrapping network")
 
 	staticNodes := make([]string, tn.LDD.Nodes)
+	tn.BuildState.Set("staticNodes", staticNodes)
 
 	tn.BuildState.SetBuildStage("Initializing geth")
 
@@ -362,6 +365,7 @@ func createGenesisfile(etcconf *etcConf, tn *testnet.TestNet, accounts []*ethere
 	}
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
+	tn.BuildState.Set("genesisParams", genesis)
 
 	return helpers.CreateConfigs(tn, "/geth/chain.json", func(node ssh.Node) ([]byte, error) {
 		template, err := helpers.GetBlockchainConfig(blockchain, node.GetAbsoluteNumber(), "chain.json", tn.LDD)
