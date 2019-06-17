@@ -83,7 +83,6 @@ type parityConf struct {
  */
 func newConf(data map[string]interface{}) (*parityConf, error) {
 	out := new(parityConf)
-	fmt.Println(helpers.HandleBlockchainConfig(blockchain, data, out))
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 

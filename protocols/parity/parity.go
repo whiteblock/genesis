@@ -212,7 +212,7 @@ func add(tn *testnet.TestNet) error {
 	var etcGenesisFile map[string]interface{}
 	tn.BuildState.GetP("genesisParams", &etcGenesisFile)
 	
-
+	fmt.Println(etcGenesisFile)
 
 
 	parityConf, err := NewParityConf(etcGenesisFile)
