@@ -112,9 +112,6 @@ func build(tn *testnet.TestNet) error {
 			if err != nil {
 				return util.LogError(err)
 			}
-			cont, err := client.DockerExec(node,
-				fmt.Sprintf("cat $(ls | sed -n %dp)", i+1))
-			tn.BuildState.Set(fmt.Sprintf("node%dKey",i), cont)
 		}
 		return nil
 	})
@@ -193,6 +190,10 @@ func build(tn *testnet.TestNet) error {
 		}
 		mux.Unlock()
 		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("adding accounts to right directory")
+
+		cont, err := client.DockerExec(node,
+			fmt.Sprintf("cat $(ls /geth/%s/keystore | sed -n %dp)", etcconf.Identity, node.GetAbsoluteNumber()+1))
+		tn.BuildState.Set(fmt.Sprintf("node%dKey", node.GetAbsoluteNumber()+1), cont)
 
 		tn.BuildState.IncrementBuildProgress()
 		return nil
