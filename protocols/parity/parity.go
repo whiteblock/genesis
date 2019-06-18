@@ -300,6 +300,7 @@ func add(tn *testnet.TestNet) error {
 	}
 
 	for i, j := range genesisAlloc {
+		wallets = append(wallets, i)
 		genWallets = append(genWallets, i)
 		fmt.Println(i + " : " + j["balance"])
 	}
