@@ -300,7 +300,7 @@ func add(tn *testnet.TestNet) error {
 	}
 
 	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		for i:=0;i<len(genesisAlloc);i++ {
+		for i:=0;i<node.GetAbsoluteNumber()-1;i++ {
 			var nodeKeyStores string
 			tn.BuildState.GetP(fmt.Sprintf("node%dKey",i), &nodeKeyStores)
 			mux.Lock()
