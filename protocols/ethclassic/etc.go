@@ -192,7 +192,7 @@ func build(tn *testnet.TestNet) error {
 		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("adding accounts to right directory")
 
 		cont, err := client.DockerExec(node,
-			fmt.Sprintf("cat $(ls /geth/%s/keystore | sed -n %dp)", etcconf.Identity, node.GetAbsoluteNumber()+1))
+			fmt.Sprintf("cd /geth/%s/keystore && cat $(ls | sed -n %dp)", etcconf.Identity, node.GetAbsoluteNumber()+1))
 		fmt.Println(cont)
 		tn.BuildState.Set(fmt.Sprintf("node%dKey", node.GetAbsoluteNumber()), cont)
 
