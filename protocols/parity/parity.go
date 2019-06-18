@@ -71,7 +71,7 @@ func build(tn *testnet.TestNet) error {
 	{
 		var data string
 		for i := 1; i <= tn.LDD.Nodes; i++ {
-			data += "second\n"
+			data += "password\n"
 		}
 		tn.BuildState.IncrementBuildProgress()
 		err = helpers.CopyBytesToAllNodes(tn, data, "/parity/passwd")
