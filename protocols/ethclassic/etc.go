@@ -21,7 +21,6 @@ package ethclassic
 
 import (
 	"fmt"
-	"strings"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/ethereum"
