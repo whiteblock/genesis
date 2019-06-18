@@ -137,49 +137,6 @@ func buildConfig(pconf *parityConf, details *db.DeploymentDetails, wallets []str
 	return mustache.Render(string(dat), mp)
 }
 
-func buildPoaSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []string) (string, error) {
-
-	accounts := make(map[string]interface{})
-	for _, wallet := range wallets {
-		accounts[wallet] = map[string]interface{}{
-			"balance": pconf.InitBalance,
-		}
-	}
-
-	var validators []string
-	for _, wallet := range wallets {
-		validators = append(validators, wallet)
-	}
-
-	tmp := map[string]interface{}{
-		"stepDuration":              pconf.StepDuration,
-		"validators":                validators,
-		"difficulty":                fmt.Sprintf("0x%x", pconf.Difficulty),
-		"gasLimit":                  fmt.Sprintf("0x%x", pconf.GasLimit),
-		"networkId":                 fmt.Sprintf("0x%x", pconf.NetworkID),
-		"maximumExtraDataSize":      fmt.Sprintf("0x%x", pconf.MaximumExtraDataSize),
-		"minGasLimit":               fmt.Sprintf("0x%x", pconf.MinGasLimit),
-		"gasLimitBoundDivisor":      fmt.Sprintf("0x%x", pconf.GasLimitBoundDivisor),
-		"validateChainIdTransition": pconf.ValidateChainIDTransition,
-		"eip140Transition":          pconf.EIP140Transition,
-		"eip150Transition":          pconf.EIP150Transition,
-		"eip155Transition":          pconf.EIP155Transition,
-		"eip160Transition":          pconf.EIP160Transition,
-		"eip161abcTransition":       pconf.EIP161ABCTransition,
-		"eip161dTransition":         pconf.EIP161DTransition,
-		"eip211Transition":          pconf.EIP211Transition,
-		"eip214Transition":          pconf.EIP214Transition,
-		"eip658Transition":          pconf.EIP658Transition,
-		"accounts":                  accounts,
-	}
-	filler := util.ConvertToStringMap(tmp)
-	dat, err := helpers.GetBlockchainConfig("parity", 0, "spec.json.poa.mustache", details)
-	if err != nil {
-		return "", err
-	}
-	return mustache.Render(string(dat), filler)
-}
-
 func buildSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []string) (string, error) {
 
 	accounts := make(map[string]interface{})
@@ -197,6 +154,7 @@ func buildSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []strin
 		"difficulty":             fmt.Sprintf("0x%x", pconf.Difficulty),
 		"gasLimit":               fmt.Sprintf("0x%x", pconf.GasLimit),
 		"networkId":              fmt.Sprintf("0x%x", pconf.NetworkID),
+		"chainId":                fmt.Sprintf("0x%x", pconf.ChainID),
 		"maximumExtraDataSize":   fmt.Sprintf("0x%x", pconf.MaximumExtraDataSize),
 		"minGasLimit":            fmt.Sprintf("0x%x", pconf.MinGasLimit),
 		"gasLimitBoundDivisor":   fmt.Sprintf("0x%x", pconf.GasLimitBoundDivisor),
@@ -268,4 +226,48 @@ func buildPoaConfig(pconf *parityConf, details *db.DeploymentDetails, wallets []
 	mp["networkId"] = fmt.Sprintf("%d", pconf.NetworkID)
 	mp["signer"] = fmt.Sprintf("\"%s\"", wallets[i])
 	return mustache.Render(string(dat), mp)
+}
+
+func buildPoaSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []string) (string, error) {
+
+	accounts := make(map[string]interface{})
+	for _, wallet := range wallets {
+		accounts[wallet] = map[string]interface{}{
+			"balance": pconf.InitBalance,
+		}
+	}
+
+	var validators []string
+	for _, wallet := range wallets {
+		validators = append(validators, wallet)
+	}
+
+	tmp := map[string]interface{}{
+		"stepDuration":              pconf.StepDuration,
+		"validators":                validators,
+		"difficulty":                fmt.Sprintf("0x%x", pconf.Difficulty),
+		"gasLimit":                  fmt.Sprintf("0x%x", pconf.GasLimit),
+		"networkId":                 fmt.Sprintf("0x%x", pconf.NetworkID),
+		"chainId":                   fmt.Sprintf("0x%x", pconf.ChainID),
+		"maximumExtraDataSize":      fmt.Sprintf("0x%x", pconf.MaximumExtraDataSize),
+		"minGasLimit":               fmt.Sprintf("0x%x", pconf.MinGasLimit),
+		"gasLimitBoundDivisor":      fmt.Sprintf("0x%x", pconf.GasLimitBoundDivisor),
+		"validateChainIdTransition": pconf.ValidateChainIDTransition,
+		"eip140Transition":          pconf.EIP140Transition,
+		"eip150Transition":          pconf.EIP150Transition,
+		"eip155Transition":          pconf.EIP155Transition,
+		"eip160Transition":          pconf.EIP160Transition,
+		"eip161abcTransition":       pconf.EIP161ABCTransition,
+		"eip161dTransition":         pconf.EIP161DTransition,
+		"eip211Transition":          pconf.EIP211Transition,
+		"eip214Transition":          pconf.EIP214Transition,
+		"eip658Transition":          pconf.EIP658Transition,
+		"accounts":                  accounts,
+	}
+	filler := util.ConvertToStringMap(tmp)
+	dat, err := helpers.GetBlockchainConfig("parity", 0, "spec.json.poa.mustache", details)
+	if err != nil {
+		return "", err
+	}
+	return mustache.Render(string(dat), filler)
 }
