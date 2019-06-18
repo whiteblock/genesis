@@ -196,7 +196,6 @@ func build(tn *testnet.TestNet) error {
 		if err != nil {
 			return util.LogError(err)
 		}
-		fmt.Println("the utc ks is : " + cont)
 		tn.BuildState.Set(fmt.Sprintf("node%dKey", node.GetAbsoluteNumber()), cont)
 
 		tn.BuildState.IncrementBuildProgress()

@@ -304,7 +304,7 @@ func add(tn *testnet.TestNet) error {
 			var nodeKeyStores string
 			tn.BuildState.GetP(fmt.Sprintf("node%dKey",i), &nodeKeyStores)
 			mux.Lock()
-			_, err := client.DockerExec(node, fmt.Sprintf("echo \"%v\" | tee %v", nodeKeyStores, fmt.Sprintf("node%dKey",i)))
+			_, err := client.DockerExec(node, fmt.Sprintf("echo \"%v\" | tee /parity/keys/ethereum/%v", nodeKeyStores, fmt.Sprintf("node%dKey",i)))
 			if err != nil {
 				return util.LogError(err)
 			}
