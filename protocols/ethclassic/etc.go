@@ -21,6 +21,7 @@ package ethclassic
 
 import (
 	"fmt"
+	"strings"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/ethereum"
@@ -196,6 +197,7 @@ func build(tn *testnet.TestNet) error {
 		if err != nil {
 			return util.LogError(err)
 		}
+		strings.Replace(cont, "\"", "\\\"", -1)
 		tn.BuildState.Set(fmt.Sprintf("node%dKey", node.GetAbsoluteNumber()), cont)
 
 		tn.BuildState.IncrementBuildProgress()

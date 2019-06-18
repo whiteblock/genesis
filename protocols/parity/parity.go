@@ -300,12 +300,14 @@ func add(tn *testnet.TestNet) error {
 	}
 
 	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		for i:=0;i<node.GetAbsoluteNumber()-1;i++ {
-			fmt.Println(i)
+		for i:=0;i<node.GetAbsoluteNumber();i++ {
+			log.Debug(i)
 			var nodeKeyStores string
 			tn.BuildState.GetP(fmt.Sprintf("node%dKey",i), &nodeKeyStores)
-			strings.Replace(nodeKeyStores, "\"", "\\\"", -1)
-			client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%v\" >> /parity/account%d'", nodeKeyStores, i+1))
+			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%v\" >> /parity/account%d'", nodeKeyStores, i+1))
+			if err != nil {
+				return err
+			}
 			fmt.Println("Node" + string(i)+ " key store is : " + nodeKeyStores)
 		}
 		return err
