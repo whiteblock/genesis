@@ -11,8 +11,9 @@
         "gasLimit":{{{gasLimit}}},
         "difficulty":{{{difficulty}}},
         "mixhash":"0x00000000000000000000000000000000000000647572616c65787365646c6578",
-        "coinbase":"0x0000000000000000000000000000000000000000",
+        "coinbase":"",
         "alloc": {{{alloc}}}
+        "alloc_file":""
     },
     "chainConfig":{
         "forks":[
@@ -52,9 +53,7 @@
                 "name":"The DAO Hard Fork",
                 "block":0,
                 "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
-                "features":[
-
-                ]
+                "features":[]
             },
             {
                 "name":"Diehard",
@@ -122,9 +121,7 @@
                 ]
             }
         ],
-        "badHashes":[
-
-        ]
+        "badHashes":[]
     },
     "include":null
 }
