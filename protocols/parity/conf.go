@@ -147,6 +147,8 @@ func buildSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []strin
 	}
 
 	tmp := map[string]interface{}{
+		"name":                   pconf.Name,
+		"dataDir":                pconf.DataDir,
 		"minimumDifficulty":      fmt.Sprintf("0x%x", pconf.MinimumDifficulty),
 		"difficultyBoundDivisor": fmt.Sprintf("0x%x", pconf.DifficultyBoundDivisor),
 		"durationLimit":          fmt.Sprintf("0x%x", pconf.DurationLimit),
