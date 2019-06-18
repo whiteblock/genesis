@@ -219,7 +219,7 @@ func gethSpec(pconf *parityConf, wallets []string) (string, error) {
 	}
 
 	tmp := map[string]interface{}{
-		"chainId":        pconf.NetworkID,
+		"chainId":        pconf.ChainID,
 		"difficulty":     fmt.Sprintf("0x%x", pconf.Difficulty),
 		"gasLimit":       fmt.Sprintf("0x%x", pconf.GasLimit),
 		"homesteadBlock": 0,
