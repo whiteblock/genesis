@@ -38,6 +38,13 @@ type EtcConf struct {
 	BlockPeriodSeconds int64  `json:"blockPeriodSeconds"`
 	Epoch              int64  `json:"epoch"`
 	HomesteadBlock     int64  `json:"homesteadBlock"`
+	EIP150Block        int64  `json:"eip150Block"`
+	DAOHFBlock         int64  `json:"daoHFBlock"`
+	EIP155_160Block    int64  `json:"eip155_160Block"`
+	ECIP1010Length     int64  `json:"ecip1010Length"`
+	ECIP1017Block      int64  `json:"ecip1017Block"`
+	ECIP1017Era        int64  `json:"ecip1017Era"`
+
 }
 
 /**

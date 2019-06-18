@@ -89,7 +89,7 @@
                     {
                         "id":"reward",
                         "options":{
-                            "era":2000000,
+                            "era":{{{ecip1017Era}}},
                             "type":"ecip1017"
                         }
                     }

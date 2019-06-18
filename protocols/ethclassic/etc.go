@@ -340,15 +340,21 @@ func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethere
 	}
 
 	genesis := map[string]interface{}{
-		"identity":       etcconf.Identity,
-		"name":           etcconf.Name,
-		"network":        etcconf.NetworkID,
-		"chainId":        etcconf.NetworkID,
-		"homesteadBlock": etcconf.HomesteadBlock,
-		"difficulty":     fmt.Sprintf("0x0%x", etcconf.Difficulty),
-		"gasLimit":       fmt.Sprintf("0x%x", etcconf.GasLimit),
-		"extraData":      etcconf.ExtraData,
-		"consensus":      etcconf.Consensus,
+		"identity":         etcconf.Identity,
+		"name":             etcconf.Name,
+		"network":          etcconf.NetworkID,
+		"chainId":          etcconf.NetworkID,
+		"difficulty":       fmt.Sprintf("0x0%x", etcconf.Difficulty),
+		"gasLimit":         fmt.Sprintf("0x%x", etcconf.GasLimit),
+		"extraData":        etcconf.ExtraData,
+		"consensus":        etcconf.Consensus,
+		"homesteadBlock":   etcconf.HomesteadBlock,
+		"eip150Block":      etcconf.EIP150Block,
+		"daoHFBlock":       etcconf.DAOHFBlock,
+		"eip155_160Block":  etcconf.EIP155_160Block,
+		"ecip1010Length":   etcconf.ECIP1010Length,
+		"ecip1017Block":    etcconf.ECIP1017Block,
+		"ecip1017Era":      etcconf.ECIP1017Era,
 	}
 
 	switch etcconf.Consensus {

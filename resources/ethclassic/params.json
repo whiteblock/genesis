@@ -11,5 +11,12 @@
     ["consensus","string"],
     ["blockPeriodSeconds","int"],
     ["epoch","int"],
-    ["homesteadBlock","int"]
+    ["homesteadBlock","int"],
+    ["daoHFBlock","int"],
+    ["eip150Block","int"],
+    ["eip155_160Block","int"],
+    ["ecip1010Length","int"],
+    ["ecip1017Era","int"],
+    ["ecip1017Block","int"],
+    ["eip158Block","int"]
 ]
