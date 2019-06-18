@@ -31,7 +31,7 @@ type parityConf struct {
 	Name                      string `json:"name"`
 	DataDir                   string `json:"dataDir"`
 	BlockReward               int64  `json:"blockReward"`
-	ExtraData                 int64 `json:"extraData"`
+	ExtraData                 string `json:"extraData"`
 	ChainID                   int64  `json:"chainId"`
 	Consensus                 string `json:"consensus"` //TODO
 	Difficulty                int64  `json:"difficulty"`
@@ -154,7 +154,7 @@ func buildSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []strin
 		"difficultyBoundDivisor": fmt.Sprintf("0x%x", pconf.DifficultyBoundDivisor),
 		"durationLimit":          fmt.Sprintf("0x%x", pconf.DurationLimit),
 		"blockReward":            fmt.Sprintf("0x%x", pconf.BlockReward),
-		"extraData":              fmt.Sprintf("0x%x", pconf.ExtraData),
+		"extraData":              pconf.ExtraData,
 		"difficulty":             fmt.Sprintf("0x%x", pconf.Difficulty),
 		"gasLimit":               fmt.Sprintf("0x%x", pconf.GasLimit),
 		"networkId":              fmt.Sprintf("0x%x", pconf.NetworkID),
