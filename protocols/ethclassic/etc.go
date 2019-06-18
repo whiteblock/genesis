@@ -193,7 +193,8 @@ func build(tn *testnet.TestNet) error {
 
 		cont, err := client.DockerExec(node,
 			fmt.Sprintf("cat $(ls /geth/%s/keystore | sed -n %dp)", etcconf.Identity, node.GetAbsoluteNumber()+1))
-		tn.BuildState.Set(fmt.Sprintf("node%dKey", node.GetAbsoluteNumber()+1), cont)
+		fmt.Println(cont)
+		tn.BuildState.Set(fmt.Sprintf("node%dKey", node.GetAbsoluteNumber()), cont)
 
 		tn.BuildState.IncrementBuildProgress()
 		return nil
