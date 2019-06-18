@@ -365,13 +365,14 @@ func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethere
 		genesis["extraData"] = extraData
 	}
 
+	/*
 	accs := MakeFakeAccounts(int(etcconf.ExtraAccounts))
-
 	for _, wallet := range accs {
 		alloc[wallet] = map[string]string{
 			"balance": etcconf.InitBalance,
 		}
 	}
+	*/
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
 	tn.BuildState.Set("alloc", alloc)
