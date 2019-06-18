@@ -317,8 +317,8 @@ func add(tn *testnet.TestNet) error {
 	}
 
 	for i := range genesisAlloc {
-		wallets = append(wallets, i)
-		genWallets = append(genWallets, i)
+		wallets = append(wallets, "0x"+i)
+		genWallets = append(genWallets, "0x"+i)
 		fmt.Println(wallets)
 	}
 
