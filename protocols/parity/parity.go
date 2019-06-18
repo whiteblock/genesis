@@ -319,15 +319,16 @@ func add(tn *testnet.TestNet) error {
 	for i := range genesisAlloc {
 		wallets = append(wallets, i)
 		genWallets = append(genWallets, i)
+		fmt.Println(wallets)
 	}
 
 	// ***********************************************************************************************************
 
 	switch etcGenesisFile.Consensus {
 	case "ethash":
-		err = setupNewPOW(tn, parityConf, genWallets)
+		err = setupNewPOW(tn, parityConf, wallets, genWallets)
 	case "poa":
-		err = setupNewPOA(tn, parityConf, genWallets)
+		err = setupNewPOA(tn, parityConf, wallets, genWallets)
 	default:
 		return util.LogError(fmt.Errorf("Unknown consensus %s", parityConf.Consensus))
 	}
@@ -512,9 +513,9 @@ func setupPOW(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 	return helpers.CopyBytesToAllNodes(tn, spec, "/parity/spec.json")
 }
 
-func setupNewPOA(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
+func setupNewPOA(tn *testnet.TestNet, pconf *parityConf, wallets, genWallets []string) error {
 	//Create the chain spec files
-	spec, err := buildPoaSpec(pconf, tn.LDD, wallets)
+	spec, err := buildPoaSpec(pconf, tn.LDD, genWallets)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -535,11 +536,11 @@ func setupNewPOA(tn *testnet.TestNet, pconf *parityConf, wallets []string) error
 		})
 }
 
-func setupNewPOW(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
+func setupNewPOW(tn *testnet.TestNet, pconf *parityConf, wallets, genWallets []string) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	//Create the chain spec files
-	spec, err := buildSpec(pconf, tn.LDD, wallets)
+	spec, err := buildSpec(pconf, tn.LDD, genWallets)
 	if err != nil {
 		return util.LogError(err)
 	}
