@@ -232,7 +232,7 @@ func add(tn *testnet.TestNet) error {
 	parityConf.MinimumDifficulty = etcGenesisFile.Difficulty
 	parityConf.Difficulty = etcGenesisFile.Difficulty
 	parityConf.ExtraData = "0xdeadbeefcafe1337"
-	parityConf.GasLimit = 3141592
+	parityConf.GasLimit = etcGenesisFile.GasLimit
 	parityConf.MinGasLimit = 3141592
 
 	parityConf.EIP140Transition = 100

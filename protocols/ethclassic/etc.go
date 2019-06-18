@@ -345,8 +345,8 @@ func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethere
 		"network":        etcconf.NetworkID,
 		"chainId":        etcconf.NetworkID,
 		"homesteadBlock": etcconf.HomesteadBlock,
-		"difficulty":     fmt.Sprintf("0x0%X", etcconf.Difficulty),
-		"gasLimit":       fmt.Sprintf("0x%X", etcconf.GasLimit),
+		"difficulty":     fmt.Sprintf("0x0%x", etcconf.Difficulty),
+		"gasLimit":       fmt.Sprintf("0x%x", etcconf.GasLimit),
 		"consensus":      etcconf.Consensus,
 	}
 
