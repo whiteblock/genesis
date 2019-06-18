@@ -2,6 +2,7 @@
     "name":"whiteblock",
     "dataDir":"whiteblock",
     "blockReward":5000000000000000000,
+    "extraData": "0x3535353535353535353535353535353535353535353535353535353535353535",
     "networkId":15468,
     "chainId":15468,
     "consensus":"ethash",

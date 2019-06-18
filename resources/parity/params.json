@@ -1,7 +1,8 @@
 [
-    ["name", "string"],
-    ["dataDir", "string"],
+    ["name","string"],
+    ["dataDir","string"],
     ["blockReward","int"],
+    ["extraData","string"]
     ["chainId","int"],
     ["networkId","int"],
     ["consensus","string"],
