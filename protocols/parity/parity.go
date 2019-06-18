@@ -303,11 +303,13 @@ func add(tn *testnet.TestNet) error {
 		for i:=0;i<len(genesisAlloc);i++ {
 			var nodeKeyStores string
 			tn.BuildState.GetP(fmt.Sprintf("node%dKey",i), &nodeKeyStores)
+			my.Lock()
 			_, err := client.DockerExec(node, fmt.Sprintf("echo \"%v\" | tee %v", nodeKeyStores, fmt.Sprintf("node%dKey",i)))
 			if err != nil {
 				return util.LogError(err)
 			}
-			fmt.Println(nodeKeyStores)
+			mu.Unlock()
+			fmt.Println("key store is : " + nodeKeyStores)
 		}
 		return err
 	})
