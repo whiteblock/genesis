@@ -162,6 +162,15 @@ func buildSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []strin
 		"maximumExtraDataSize":   fmt.Sprintf("0x%x", pconf.MaximumExtraDataSize),
 		"minGasLimit":            fmt.Sprintf("0x%x", pconf.MinGasLimit),
 		"gasLimitBoundDivisor":   fmt.Sprintf("0x%x", pconf.GasLimitBoundDivisor),
+		"eip140Transition":       pconf.EIP140Transition,
+		"eip150Transition":       pconf.EIP150Transition,
+		"eip155Transition":       pconf.EIP155Transition,
+		"eip160Transition":       pconf.EIP160Transition,
+		"eip161abcTransition":    pconf.EIP161ABCTransition,
+		"eip161dTransition":      pconf.EIP161DTransition,
+		"eip211Transition":       pconf.EIP211Transition,
+		"eip214Transition":       pconf.EIP214Transition,
+		"eip658Transition":       pconf.EIP658Transition,
 		"accounts":               accounts,
 	}
 	filler := util.ConvertToStringMap(tmp)
