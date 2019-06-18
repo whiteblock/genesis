@@ -234,6 +234,17 @@ func add(tn *testnet.TestNet) error {
 	parityConf.GasLimit = 3141592
 	parityConf.MinGasLimit = 3141592
 
+	parityConf.EIP140Transition = 100
+	parityConf.EIP150Transition = 0
+	parityConf.EIP155Transition = 0
+	parityConf.EIP160Transition = 0
+	parityConf.EIP161ABCTransition = 100
+	parityConf.EIP161DTransition = 100
+	parityConf.EIP211Transition = 100
+	parityConf.EIP214Transition = 100
+	parityConf.EIP658Transition = 100
+	
+
 	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		_, err := client.DockerExec(node, fmt.Sprintf("mkdir -p /parity"))
 		return err

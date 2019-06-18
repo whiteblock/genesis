@@ -14,8 +14,8 @@
     "genesis": {
         "seal": {
             "ethereum": {
-                "nonce": "0x0000000000000042",
-                "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                "nonce": "0x0000000000000539",
+                "mixHash": "0x00000000000000000000000000000000000000647572616c65787365646c6578"
             }
         },
         "author": "0x0000000000000000000000000000000000000000",
@@ -27,11 +27,22 @@
     },
     "params": {
             "networkID" : {{{networkId}}},
+            "chainID":{{{chainID}}},
             "maximumExtraDataSize": {{{maximumExtraDataSize}}},
             "minGasLimit": {{{minGasLimit}}},
             "gasLimitBoundDivisor": {{{gasLimitBoundDivisor}}},
             "accountStartNonce": "0x0",
-            "eip98Transition": 9223372036854775807
+            "eip140Transition":100,
+            "eip150Transition":"0x0",
+            "eip155Transition":"0x0",
+            "eip160Transition":"0x0",
+            "eip161abcTransition":100,
+            "eip161dTransition":100,
+            "eip211Transition":100,
+            "eip214Transition":100,
+            "eip658Transition":100,
+            "maxCodeSize":"0x6000",
+            "maxCodeSizeTransition":100
     },
     "accounts": {{{accounts}}}
 }

@@ -40,7 +40,11 @@ type parityConf struct {
 	Eip155Block               int64  `json:"eip155Block"`
 	Eip158Block               int64  `json:"eip158Block"`
 	EIP140Transition          int64  `json:"eip140Transition"`
+	EIP150Transition          int64  `json:"eip150Transition"`
 	EIP155Transition          int64  `json:"eip155Transition"`
+	EIP160Transition          int64  `json:"eip160Transition"`
+	EIP161ABCTransition       int64  `json:"eip161abcTransition"`
+	EIP161DTransition        int64  `json:"eip161dTransition"`
 	EIP211Transition          int64  `json:"eip211Transition"`
 	EIP214Transition          int64  `json:"eip214Transition"`
 	EIP658Transition          int64  `json:"eip658Transition"`
@@ -157,8 +161,12 @@ func buildPoaSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []st
 		"minGasLimit":               fmt.Sprintf("0x%x", pconf.MinGasLimit),
 		"gasLimitBoundDivisor":      fmt.Sprintf("0x%x", pconf.GasLimitBoundDivisor),
 		"validateChainIdTransition": pconf.ValidateChainIDTransition,
-		"eip155Transition":          pconf.EIP155Transition,
 		"eip140Transition":          pconf.EIP140Transition,
+		"eip150Transition":          pconf.EIP150Transition,
+		"eip155Transition":          pconf.EIP155Transition,
+		"eip160Transition":          pconf.EIP160Transition,
+		"eip161abcTransition":       pconf.EIP161ABCTransition,
+		"eip161dTransition":         pconf.EIP161DTransition,
 		"eip211Transition":          pconf.EIP211Transition,
 		"eip214Transition":          pconf.EIP214Transition,
 		"eip658Transition":          pconf.EIP658Transition,
