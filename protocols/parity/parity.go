@@ -301,9 +301,9 @@ func add(tn *testnet.TestNet) error {
 
 	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i:=0;i<len(genesisAlloc);i++ {
-			var nodeKeyStores map[string]string
+			var nodeKeyStores string
 			tn.BuildState.GetP(fmt.Sprintf("node%dKey",i), &nodeKeyStores)
-			_, err := client.DockerExec(node, fmt.Sprintf("%v | tee %v", nodeKeyStores["node0Key"], fmt.Sprintf("node%dKey",i)))
+			_, err := client.DockerExec(node, fmt.Sprintf("echo \"%v\" | tee %v", nodeKeyStores, fmt.Sprintf("node%dKey",i)))
 			if err != nil {
 				return util.LogError(err)
 			}
