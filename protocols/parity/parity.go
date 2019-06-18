@@ -283,7 +283,7 @@ func add(tn *testnet.TestNet) error {
 		// wallets = append(wallets, res[:len(res)-1]) 
 		// mux.Unlock()
 
-		res, err = client.DockerExec(node, "bash -c 'cat /parity/keys/ethereum/*'")
+		res, err = client.DockerExec(node, fmt.Sprintf("bash -c 'cat /parity/keys/%s/*'", parityConf.DataDir))
 		if err != nil {
 			return util.LogError(err)
 		}
