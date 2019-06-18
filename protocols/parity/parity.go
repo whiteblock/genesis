@@ -216,9 +216,6 @@ func add(tn *testnet.TestNet) error {
 	var genesisAlloc map[string]map[string]string
 	tn.BuildState.GetP("alloc", &genesisAlloc)
 	
-	fmt.Println(fmt.Sprintf("etc Config is: %+v",etcGenesisFile))
-	fmt.Println(fmt.Sprintf("etc alloc is: %+v",genesisAlloc))
-	
 	parityConf, err := NewParityConf(tn.LDD.Params)
 	tn.BuildState.SetBuildSteps(1 + 2*len(tn.NewlyBuiltNodes)) //TODO
 	if err != nil {
@@ -231,9 +228,8 @@ func add(tn *testnet.TestNet) error {
 	parityConf.ChainID = etcGenesisFile.NetworkID
 	parityConf.MinimumDifficulty = etcGenesisFile.Difficulty
 	parityConf.Difficulty = etcGenesisFile.Difficulty
-	parityConf.ExtraData = "0xdeadbeefcafe1337"
+	parityConf.ExtraData = etcGenesisFile.ExtraData
 	parityConf.GasLimit = etcGenesisFile.GasLimit
-	// parityConf.MinGasLimit = 3141592
 	
 
 	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {

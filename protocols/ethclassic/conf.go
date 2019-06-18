@@ -29,6 +29,7 @@ type EtcConf struct {
 	Name               string `json:"name"`
 	NetworkID          int64  `json:"networkId"`
 	Consensus          string `json:"consensus"`
+	ExtraData          string `json:"extraData"`
 	GasLimit           int64  `json:"gasLimit"`
 	Difficulty         int64  `json:"difficulty"`
 	ExtraAccounts      int64  `json:"extraAccounts"`
