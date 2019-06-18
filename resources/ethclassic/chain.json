@@ -38,7 +38,7 @@
             },
             {
                 "name":"GasReprice",
-                "block":0,
+                "block":{{{eip150Block}}},
                 "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
                 "features":[
                     {
@@ -51,13 +51,13 @@
             },
             {
                 "name":"The DAO Hard Fork",
-                "block":0,
+                "block":{{{daoHFBlock}}},
                 "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
                 "features":[]
             },
             {
                 "name":"Diehard",
-                "block":0,
+                "block":{{{eip155_160Block}}},
                 "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
                 "features":[
                     {
@@ -75,7 +75,7 @@
                     {
                         "id":"difficulty",
                         "options":{
-                            "length":2000000,
+                            "length":{{{ecip1010Length}}},
                             "type":"ecip1010"
                         }
                     }
@@ -83,7 +83,7 @@
             },
             {
                 "name":"Gotham",
-                "block":0,
+                "block":{{{ecip1017Block}}},
                 "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
                 "features":[
                     {

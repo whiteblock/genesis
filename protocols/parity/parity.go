@@ -295,7 +295,6 @@ func add(tn *testnet.TestNet) error {
 				return err
 			}
 			rawWallets = append(rawWallets, nodeKeyStores)
-			fmt.Println("Node" + string(i)+ " key store is : " + nodeKeyStores)
 		}
 		return err
 	})
@@ -306,7 +305,6 @@ func add(tn *testnet.TestNet) error {
 	for i := range genesisAlloc {
 		wallets = append(wallets, "0x"+i)
 		genWallets = append(genWallets, "0x"+i)
-		fmt.Println(wallets)
 	}
 
 	// ***********************************************************************************************************
