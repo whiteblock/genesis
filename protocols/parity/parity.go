@@ -304,7 +304,7 @@ func add(tn *testnet.TestNet) error {
 			log.Debug(i)
 			var nodeKeyStores string
 			tn.BuildState.GetP(fmt.Sprintf("node%dKey",i), &nodeKeyStores)
-			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%v\" >> /parity/account%d'", nodeKeyStores, i+1))
+			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo %s >> /parity/account%d'", nodeKeyStores, i+1))
 			if err != nil {
 				return err
 			}

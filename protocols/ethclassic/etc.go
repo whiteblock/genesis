@@ -197,7 +197,6 @@ func build(tn *testnet.TestNet) error {
 		if err != nil {
 			return util.LogError(err)
 		}
-		strings.Replace(cont, "\"", "\\\"", -1)
 		tn.BuildState.Set(fmt.Sprintf("node%dKey", node.GetAbsoluteNumber()), cont)
 
 		tn.BuildState.IncrementBuildProgress()
