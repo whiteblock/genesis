@@ -112,6 +112,9 @@ func build(tn *testnet.TestNet) error {
 			if err != nil {
 				return util.LogError(err)
 			}
+			cont, err := client.DockerExec(node,
+				fmt.Sprintf("cat $(ls | sed -n %dp)", i+1))
+			tn.BuildState.Set(fmt.Sprintf("node%dKey",i), cont)
 		}
 		return nil
 	})

@@ -299,10 +299,25 @@ func add(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	for i, j := range genesisAlloc {
+	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		for i:=0;i<len(genesisAlloc);i++ {
+			var nodeKeyStores map[string]string
+			tn.BuildState.GetP(fmt.Sprintf("node%dKey",i), nodeKeyStores)
+			_, err := client.DockerExec(node, fmt.Sprintf("%v | tee %v", fmt.Sprintf("node%dKey",i), nodeKeyStores["node0Key"]))
+			if err != nil {
+				return util.LogError(err)
+			}
+			fmt.Println(nodeKeyStores)
+		}
+		return err
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	for i := range genesisAlloc {
 		wallets = append(wallets, i)
 		genWallets = append(genWallets, i)
-		fmt.Println(i + " : " + j["balance"])
 	}
 
 	// ***********************************************************************************************************
