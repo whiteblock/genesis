@@ -2,7 +2,7 @@
     ["name", "string"],
     ["dataDir", "string"],
     ["blockReward","int"],
-    ["chainId","int"],
+    ["chainID","int"],
     ["consensus","string"],
     ["difficulty","int"],
     ["difficultyBoundDivisor","int"],

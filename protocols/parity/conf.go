@@ -31,7 +31,7 @@ type parityConf struct {
 	Name                      string `json:"name"`
 	DataDir                   string `json:"dataDir"`
 	BlockReward               int64  `json:"blockReward"`
-	ChainID                   int64  `json:"chainId"`
+	ChainID                   int64  `json:"chainID"`
 	Consensus                 string `json:"consensus"` //TODO
 	Difficulty                int64  `json:"difficulty"`
 	DifficultyBoundDivisor    int64  `json:"difficultyBoundDivisor"`
