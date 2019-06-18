@@ -1,6 +1,6 @@
 {
     "name":"whiteblock",
-    "dataDir":"",
+    "dataDir":"whiteblock",
     "blockReward":5000000000000000000,
     "networkId":15468,
     "chainId":15468,
