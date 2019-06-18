@@ -301,15 +301,12 @@ func add(tn *testnet.TestNet) error {
 
 	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i:=0;i<node.GetAbsoluteNumber()-1;i++ {
+			fmt.Println(i)
 			var nodeKeyStores string
 			tn.BuildState.GetP(fmt.Sprintf("node%dKey",i), &nodeKeyStores)
-			mux.Lock()
-			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%v\" >> /parity/keys/ethereum/%v'", nodeKeyStores, fmt.Sprintf("node%dKey",i)))
-			if err != nil {
-				return util.LogError(err)
-			}
-			mux.Unlock()
-			fmt.Println("key store is : " + nodeKeyStores)
+			strings.Replace(nodeKeyStores, "\"", "\\\"", -1)
+			client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%v\" >> /parity/account%d'", nodeKeyStores, i+1))
+			fmt.Println("Node" + string(i)+ " key store is : " + nodeKeyStores)
 		}
 		return err
 	})
