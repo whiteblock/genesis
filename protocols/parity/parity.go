@@ -279,9 +279,9 @@ func add(tn *testnet.TestNet) error {
 			return fmt.Errorf("account new returned an empty response")
 		}
 
-		mux.Lock()
-		wallets = append(wallets, res[:len(res)-1]) 
-		mux.Unlock()
+		// mux.Lock()
+		// wallets = append(wallets, res[:len(res)-1]) 
+		// mux.Unlock()
 
 		res, err = client.DockerExec(node, "bash -c 'cat /parity/keys/ethereum/*'")
 		if err != nil {
@@ -289,17 +289,18 @@ func add(tn *testnet.TestNet) error {
 		}
 		tn.BuildState.IncrementBuildProgress()
 
-		mux.Lock()
-		rawWallets = append(rawWallets, strings.Replace(res, "\"", "\\\"", -1))
-		mux.Unlock()
+		// mux.Lock()
+		// rawWallets = append(rawWallets, strings.Replace(res, "\"", "\\\"", -1))
+		// mux.Unlock()
 		return nil
 	})
 	if err != nil {
 		return util.LogError(err)
 	}
 
-	for i := range genesisAlloc {
-		fmt.Println(i)
+	for i, j := range genesisAlloc {
+		wallets = append(wallets, i)
+		fmt.Println(i + " : " + j["balance"])
 	}
 
 	// ***********************************************************************************************************
