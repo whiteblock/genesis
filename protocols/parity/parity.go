@@ -47,7 +47,7 @@ func init() {
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
-	registrar.RegisterBlockchainSideCars(blockchain, []string{"geth"})
+	// registrar.RegisterBlockchainSideCars(blockchain, []string{"geth"})
 }
 
 // build builds out a fresh new ethereum test network using parity
@@ -193,7 +193,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	storeGethParameters(tn, pconf, wallets, enodes)
+	// storeGethParameters(tn, pconf, wallets, enodes)
 	tn.BuildState.IncrementBuildProgress()
 	return peerAllNodes(tn, enodes)
 }
