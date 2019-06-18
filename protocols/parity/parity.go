@@ -267,6 +267,7 @@ func add(tn *testnet.TestNet) error {
 		tn.BuildState.IncrementBuildProgress()
 	}
 
+	genWallets := []string{}
 	wallets := []string{}
 	rawWallets := []string{}
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
@@ -279,9 +280,9 @@ func add(tn *testnet.TestNet) error {
 			return fmt.Errorf("account new returned an empty response")
 		}
 
-		// mux.Lock()
-		// wallets = append(wallets, res[:len(res)-1]) 
-		// mux.Unlock()
+		mux.Lock()
+		wallets = append(wallets, res[:len(res)-1]) 
+		mux.Unlock()
 
 		res, err = client.DockerExec(node, "bash -c 'cat /parity/keys/ethereum/*'")
 		if err != nil {
@@ -289,9 +290,9 @@ func add(tn *testnet.TestNet) error {
 		}
 		tn.BuildState.IncrementBuildProgress()
 
-		// mux.Lock()
-		// rawWallets = append(rawWallets, strings.Replace(res, "\"", "\\\"", -1))
-		// mux.Unlock()
+		mux.Lock()
+		rawWallets = append(rawWallets, strings.Replace(res, "\"", "\\\"", -1))
+		mux.Unlock()
 		return nil
 	})
 	if err != nil {
@@ -299,7 +300,7 @@ func add(tn *testnet.TestNet) error {
 	}
 
 	for i, j := range genesisAlloc {
-		wallets = append(wallets, i)
+		genWallets = append(genWallets, i)
 		fmt.Println(i + " : " + j["balance"])
 	}
 
@@ -307,9 +308,9 @@ func add(tn *testnet.TestNet) error {
 
 	switch etcGenesisFile.Consensus {
 	case "ethash":
-		err = setupNewPOW(tn, parityConf, wallets)
+		err = setupNewPOW(tn, parityConf, genWallets)
 	case "poa":
-		err = setupNewPOA(tn, parityConf, wallets)
+		err = setupNewPOA(tn, parityConf, genWallets)
 	default:
 		return util.LogError(fmt.Errorf("Unknown consensus %s", parityConf.Consensus))
 	}
