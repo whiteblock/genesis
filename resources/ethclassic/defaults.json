@@ -13,6 +13,11 @@
     "epoch":30000,
     "validators":1,
     "homesteadBlock":0,
-    "eip155Block":0,
+    "daoHFBlock":0,
+    "eip150Block":0,
+    "eip155_160Block":0,
+    "ecip1010Length":2000000,
+    "ecip1017Era":2000000,
+    "ecip1017Block":0,
     "eip158Block":0
 }

@@ -2,18 +2,18 @@
     "identity":{{{identity}}},
     "name":{{{name}}},
     "network":{{{network}}},
-    "chainID":{{{network}}},
     "consensus":{{{consensus}}},
     "genesis":{
         "nonce": "0x0000000000000539",
         "timestamp":"0x42",
         "parentHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
-        "extraData":"0xdeadbeefcafe1337",
+        "extraData":{{{extraData}}},
         "gasLimit":{{{gasLimit}}},
         "difficulty":{{{difficulty}}},
         "mixhash":"0x00000000000000000000000000000000000000647572616c65787365646c6578",
-        "coinbase":"0x0000000000000000000000000000000000000000",
-        "alloc": {{{alloc}}}
+        "coinbase":"",
+        "alloc": {{{alloc}}},
+        "alloc_file":""
     },
     "chainConfig":{
         "forks":[
@@ -38,7 +38,7 @@
             },
             {
                 "name":"GasReprice",
-                "block":0,
+                "block":{{{eip150Block}}},
                 "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
                 "features":[
                     {
@@ -51,21 +51,19 @@
             },
             {
                 "name":"The DAO Hard Fork",
-                "block":0,
+                "block":{{{daoHFBlock}}},
                 "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
-                "features":[
-
-                ]
+                "features":[]
             },
             {
                 "name":"Diehard",
-                "block":0,
+                "block":{{{eip155_160Block}}},
                 "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
                 "features":[
                     {
                         "id":"eip155",
                         "options":{
-                            "chainID":1337
+                            "chainID":{{{network}}}
                         }
                     },
                     {
@@ -77,7 +75,7 @@
                     {
                         "id":"difficulty",
                         "options":{
-                            "length":2000000,
+                            "length":{{{ecip1010Length}}},
                             "type":"ecip1010"
                         }
                     }
@@ -85,13 +83,13 @@
             },
             {
                 "name":"Gotham",
-                "block":0,
+                "block":{{{ecip1017Block}}},
                 "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
                 "features":[
                     {
                         "id":"reward",
                         "options":{
-                            "era":2000000,
+                            "era":{{{ecip1017Era}}},
                             "type":"ecip1017"
                         }
                     }
@@ -123,9 +121,7 @@
                 ]
             }
         ],
-        "badHashes":[
-
-        ]
+        "badHashes":[]
     },
     "include":null
 }

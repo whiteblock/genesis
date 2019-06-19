@@ -24,11 +24,12 @@ import (
 	"github.com/whiteblock/genesis/protocols/helpers"
 )
 
-type etcConf struct {
+type EtcConf struct {
 	Identity           string `json:"identity"`
 	Name               string `json:"name"`
 	NetworkID          int64  `json:"networkId"`
 	Consensus          string `json:"consensus"`
+	ExtraData          string `json:"extraData"`
 	GasLimit           int64  `json:"gasLimit"`
 	Difficulty         int64  `json:"difficulty"`
 	ExtraAccounts      int64  `json:"extraAccounts"`
@@ -37,13 +38,20 @@ type etcConf struct {
 	BlockPeriodSeconds int64  `json:"blockPeriodSeconds"`
 	Epoch              int64  `json:"epoch"`
 	HomesteadBlock     int64  `json:"homesteadBlock"`
+	EIP150Block        int64  `json:"eip150Block"`
+	DAOHFBlock         int64  `json:"daoHFBlock"`
+	EIP155_160Block    int64  `json:"eip155_160Block"`
+	ECIP1010Length     int64  `json:"ecip1010Length"`
+	ECIP1017Block      int64  `json:"ecip1017Block"`
+	ECIP1017Era        int64  `json:"ecip1017Era"`
+
 }
 
 /**
  * Fills in the defaults for missing parts,
  */
-func newConf(data map[string]interface{}) (*etcConf, error) {
-	out := new(etcConf)
+func newConf(data map[string]interface{}) (*EtcConf, error) {
+	out := new(EtcConf)
 	err := helpers.HandleBlockchainConfig(blockchain, data, out)
 	if err != nil || data == nil {
 		return out, err
@@ -62,6 +70,11 @@ func newConf(data map[string]interface{}) (*etcConf, error) {
 	}
 
 	return out, nil
+}
+
+func NewEtcConf(data map[string]interface{}) (*EtcConf, error) {
+	out := new(EtcConf)
+	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
 // GetServices returns the services which are used by artemis

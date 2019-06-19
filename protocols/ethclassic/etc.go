@@ -21,6 +21,7 @@ package ethclassic
 
 import (
 	"fmt"
+	"strings"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/ethereum"
@@ -118,6 +119,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+	tn.BuildState.Set("generatedAccs", accounts)
 
 	tn.BuildState.IncrementBuildProgress()
 	unlock := ""
@@ -145,6 +147,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Bootstrapping network")
 
 	staticNodes := make([]string, tn.LDD.Nodes)
+	tn.BuildState.Set("staticNodes", staticNodes)
 
 	tn.BuildState.SetBuildStage("Initializing geth")
 
@@ -188,6 +191,14 @@ func build(tn *testnet.TestNet) error {
 		}
 		mux.Unlock()
 		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("adding accounts to right directory")
+
+		cont, err := client.DockerExec(node,
+			fmt.Sprintf("bash -c 'cd /geth/%s/keystore && cat $(ls | sed -n %dp)'", etcconf.Identity, node.GetAbsoluteNumber()+1))
+		if err != nil {
+			return util.LogError(err)
+		}
+		cont = strings.Replace(cont, "\"", "\\\"", -1)
+		tn.BuildState.Set(fmt.Sprintf("node%dKey", node.GetAbsoluteNumber()), cont)
 
 		tn.BuildState.IncrementBuildProgress()
 		return nil
@@ -310,7 +321,7 @@ func unlockAllAccounts(tn *testnet.TestNet, accounts []*ethereum.Account) error 
  * @param  []string wallets     The wallets to be allocated a balance
  */
 
-func createGenesisfile(etcconf *etcConf, tn *testnet.TestNet, accounts []*ethereum.Account) error {
+func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethereum.Account) error {
 
 	alloc := map[string]map[string]string{}
 	for _, account := range accounts {
@@ -329,14 +340,21 @@ func createGenesisfile(etcconf *etcConf, tn *testnet.TestNet, accounts []*ethere
 	}
 
 	genesis := map[string]interface{}{
-		"identity":       etcconf.Identity,
-		"name":           etcconf.Name,
-		"network":        etcconf.NetworkID,
-		"chainId":        etcconf.NetworkID,
-		"homesteadBlock": etcconf.HomesteadBlock,
-		"difficulty":     fmt.Sprintf("0x0%X", etcconf.Difficulty),
-		"gasLimit":       fmt.Sprintf("0x%X", etcconf.GasLimit),
-		"consensus":      etcconf.Consensus,
+		"identity":         etcconf.Identity,
+		"name":             etcconf.Name,
+		"network":          etcconf.NetworkID,
+		"chainId":          etcconf.NetworkID,
+		"difficulty":       fmt.Sprintf("0x0%x", etcconf.Difficulty),
+		"gasLimit":         fmt.Sprintf("0x%x", etcconf.GasLimit),
+		"extraData":        etcconf.ExtraData,
+		"consensus":        etcconf.Consensus,
+		"homesteadBlock":   etcconf.HomesteadBlock,
+		"eip150Block":      etcconf.EIP150Block,
+		"daoHFBlock":       etcconf.DAOHFBlock,
+		"eip155_160Block":  etcconf.EIP155_160Block,
+		"ecip1010Length":   etcconf.ECIP1010Length,
+		"ecip1017Block":    etcconf.ECIP1017Block,
+		"ecip1017Era":      etcconf.ECIP1017Era,
 	}
 
 	switch etcconf.Consensus {
@@ -354,15 +372,18 @@ func createGenesisfile(etcconf *etcConf, tn *testnet.TestNet, accounts []*ethere
 		genesis["extraData"] = extraData
 	}
 
+	/*
 	accs := MakeFakeAccounts(int(etcconf.ExtraAccounts))
-
 	for _, wallet := range accs {
 		alloc[wallet] = map[string]string{
 			"balance": etcconf.InitBalance,
 		}
 	}
+	*/
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
+	tn.BuildState.Set("alloc", alloc)
+	tn.BuildState.Set("etcconf", etcconf)
 
 	return helpers.CreateConfigs(tn, "/geth/chain.json", func(node ssh.Node) ([]byte, error) {
 		template, err := helpers.GetBlockchainConfig(blockchain, node.GetAbsoluteNumber(), "chain.json", tn.LDD)

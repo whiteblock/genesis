@@ -28,7 +28,10 @@ import (
 )
 
 type parityConf struct {
+	Name                      string `json:"name"`
+	DataDir                   string `json:"dataDir"`
 	BlockReward               int64  `json:"blockReward"`
+	ExtraData                 string `json:"extraData"`
 	ChainID                   int64  `json:"chainId"`
 	Consensus                 string `json:"consensus"` //TODO
 	Difficulty                int64  `json:"difficulty"`
@@ -38,7 +41,11 @@ type parityConf struct {
 	Eip155Block               int64  `json:"eip155Block"`
 	Eip158Block               int64  `json:"eip158Block"`
 	EIP140Transition          int64  `json:"eip140Transition"`
+	EIP150Transition          int64  `json:"eip150Transition"`
 	EIP155Transition          int64  `json:"eip155Transition"`
+	EIP160Transition          int64  `json:"eip160Transition"`
+	EIP161ABCTransition       int64  `json:"eip161abcTransition"`
+	EIP161DTransition        int64  `json:"eip161dTransition"`
 	EIP211Transition          int64  `json:"eip211Transition"`
 	EIP214Transition          int64  `json:"eip214Transition"`
 	EIP658Transition          int64  `json:"eip658Transition"`
@@ -86,6 +93,11 @@ func newConf(data map[string]interface{}) (*parityConf, error) {
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
+func NewParityConf(data map[string]interface{}) (*parityConf, error) {
+	out := new(parityConf)
+	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
+}
+
 // GetServices returns the services which are used by parity
 func GetServices() []helpers.Service {
 	return []helpers.Service{
@@ -126,45 +138,6 @@ func buildConfig(pconf *parityConf, details *db.DeploymentDetails, wallets []str
 	return mustache.Render(string(dat), mp)
 }
 
-func buildPoaSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []string) (string, error) {
-
-	accounts := make(map[string]interface{})
-	for _, wallet := range wallets {
-		accounts[wallet] = map[string]interface{}{
-			"balance": pconf.InitBalance,
-		}
-	}
-
-	var validators []string
-	for _, wallet := range wallets {
-		validators = append(validators, wallet)
-	}
-
-	tmp := map[string]interface{}{
-		"stepDuration":              pconf.StepDuration,
-		"validators":                validators,
-		"difficulty":                fmt.Sprintf("0x%x", pconf.Difficulty),
-		"gasLimit":                  fmt.Sprintf("0x%x", pconf.GasLimit),
-		"networkId":                 fmt.Sprintf("0x%x", pconf.NetworkID),
-		"maximumExtraDataSize":      fmt.Sprintf("0x%x", pconf.MaximumExtraDataSize),
-		"minGasLimit":               fmt.Sprintf("0x%x", pconf.MinGasLimit),
-		"gasLimitBoundDivisor":      fmt.Sprintf("0x%x", pconf.GasLimitBoundDivisor),
-		"validateChainIdTransition": pconf.ValidateChainIDTransition,
-		"eip155Transition":          pconf.EIP155Transition,
-		"eip140Transition":          pconf.EIP140Transition,
-		"eip211Transition":          pconf.EIP211Transition,
-		"eip214Transition":          pconf.EIP214Transition,
-		"eip658Transition":          pconf.EIP658Transition,
-		"accounts":                  accounts,
-	}
-	filler := util.ConvertToStringMap(tmp)
-	dat, err := helpers.GetBlockchainConfig("parity", 0, "spec.json.poa.mustache", details)
-	if err != nil {
-		return "", err
-	}
-	return mustache.Render(string(dat), filler)
-}
-
 func buildSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []string) (string, error) {
 
 	accounts := make(map[string]interface{})
@@ -175,16 +148,29 @@ func buildSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []strin
 	}
 
 	tmp := map[string]interface{}{
+		"name":                   pconf.Name,
+		"dataDir":                pconf.DataDir,
 		"minimumDifficulty":      fmt.Sprintf("0x%x", pconf.MinimumDifficulty),
 		"difficultyBoundDivisor": fmt.Sprintf("0x%x", pconf.DifficultyBoundDivisor),
 		"durationLimit":          fmt.Sprintf("0x%x", pconf.DurationLimit),
 		"blockReward":            fmt.Sprintf("0x%x", pconf.BlockReward),
+		"extraData":              pconf.ExtraData,
 		"difficulty":             fmt.Sprintf("0x%x", pconf.Difficulty),
 		"gasLimit":               fmt.Sprintf("0x%x", pconf.GasLimit),
-		"networkId":              fmt.Sprintf("0x%x", pconf.NetworkID),
+		"networkId":              pconf.NetworkID,
+		"chainId":                pconf.ChainID,
 		"maximumExtraDataSize":   fmt.Sprintf("0x%x", pconf.MaximumExtraDataSize),
 		"minGasLimit":            fmt.Sprintf("0x%x", pconf.MinGasLimit),
 		"gasLimitBoundDivisor":   fmt.Sprintf("0x%x", pconf.GasLimitBoundDivisor),
+		"eip140Transition":       pconf.EIP140Transition,
+		"eip150Transition":       pconf.EIP150Transition,
+		"eip155Transition":       pconf.EIP155Transition,
+		"eip160Transition":       pconf.EIP160Transition,
+		"eip161abcTransition":    pconf.EIP161ABCTransition,
+		"eip161dTransition":      pconf.EIP161DTransition,
+		"eip211Transition":       pconf.EIP211Transition,
+		"eip214Transition":       pconf.EIP214Transition,
+		"eip658Transition":       pconf.EIP658Transition,
 		"accounts":               accounts,
 	}
 	filler := util.ConvertToStringMap(tmp)
@@ -204,7 +190,7 @@ func gethSpec(pconf *parityConf, wallets []string) (string, error) {
 	}
 
 	tmp := map[string]interface{}{
-		"chainId":        pconf.NetworkID,
+		"chainId":        pconf.ChainID,
 		"difficulty":     fmt.Sprintf("0x%x", pconf.Difficulty),
 		"gasLimit":       fmt.Sprintf("0x%x", pconf.GasLimit),
 		"homesteadBlock": 0,
@@ -253,4 +239,48 @@ func buildPoaConfig(pconf *parityConf, details *db.DeploymentDetails, wallets []
 	mp["networkId"] = fmt.Sprintf("%d", pconf.NetworkID)
 	mp["signer"] = fmt.Sprintf("\"%s\"", wallets[i])
 	return mustache.Render(string(dat), mp)
+}
+
+func buildPoaSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []string) (string, error) {
+
+	accounts := make(map[string]interface{})
+	for _, wallet := range wallets {
+		accounts[wallet] = map[string]interface{}{
+			"balance": pconf.InitBalance,
+		}
+	}
+
+	var validators []string
+	for _, wallet := range wallets {
+		validators = append(validators, wallet)
+	}
+
+	tmp := map[string]interface{}{
+		"stepDuration":              pconf.StepDuration,
+		"validators":                validators,
+		"difficulty":                fmt.Sprintf("0x%x", pconf.Difficulty),
+		"gasLimit":                  fmt.Sprintf("0x%x", pconf.GasLimit),
+		"networkId":                 fmt.Sprintf("0x%x", pconf.NetworkID),
+		"chainId":                   fmt.Sprintf("0x%x", pconf.ChainID),
+		"maximumExtraDataSize":      fmt.Sprintf("0x%x", pconf.MaximumExtraDataSize),
+		"minGasLimit":               fmt.Sprintf("0x%x", pconf.MinGasLimit),
+		"gasLimitBoundDivisor":      fmt.Sprintf("0x%x", pconf.GasLimitBoundDivisor),
+		"validateChainIdTransition": pconf.ValidateChainIDTransition,
+		"eip140Transition":          pconf.EIP140Transition,
+		"eip150Transition":          pconf.EIP150Transition,
+		"eip155Transition":          pconf.EIP155Transition,
+		"eip160Transition":          pconf.EIP160Transition,
+		"eip161abcTransition":       pconf.EIP161ABCTransition,
+		"eip161dTransition":         pconf.EIP161DTransition,
+		"eip211Transition":          pconf.EIP211Transition,
+		"eip214Transition":          pconf.EIP214Transition,
+		"eip658Transition":          pconf.EIP658Transition,
+		"accounts":                  accounts,
+	}
+	filler := util.ConvertToStringMap(tmp)
+	dat, err := helpers.GetBlockchainConfig("parity", 0, "spec.json.poa.mustache", details)
+	if err != nil {
+		return "", err
+	}
+	return mustache.Render(string(dat), filler)
 }
