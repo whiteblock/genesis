@@ -77,7 +77,7 @@ func build(tn *testnet.TestNet) error {
 
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i:=0;i<node.GetAbsoluteNumber();i++ {
-			output, err := client.DockerExec(node, fmt.Sprintf("echo -e $(cat /aion/passwd) | /aion/./aion.sh ac -n custom"))
+			output, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh ac -n custom'"))
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -148,6 +148,17 @@ func build(tn *testnet.TestNet) error {
 			if err != nil {
 				return util.LogError(err)
 			}
+		}
+		return nil
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '/aion/aion.sh -n custom 2>&1 | tee %s'", conf.DockerOutputFile))
+		if err != nil {
+			return util.LogError(err)
 		}
 		return nil
 	})
