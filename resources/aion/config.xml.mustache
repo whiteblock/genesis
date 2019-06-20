@@ -3,11 +3,11 @@
         <mode>aion</mode>
         <id>{{{peerID}}}</id>
         <api>
-                <rpc active="false" ip="{{{ipAddress}}}" port="8545">
+                <rpc active="false" ip="127.0.0.1" port="8545">
                         <cors-enabled>{{{corsEnabled}}}</cors-enabled>
                         <apis-enabled>web3,eth,personal,stratum</apis-enabled>
                 </rpc>
-                <java active="false" ip="{{{ipAddress}}}" port="8547">
+                <java active="false" ip="127.0.0.1" port="8547">
                         <secure-connect>{{{secureConnect}}}</secure-connect>
                 </java>
                 <nrg-recommendation>
@@ -17,7 +17,6 @@
                 </nrg-recommendation>
         </api>
         <net>
-                <id>0</id>
                 <nodes>{{{nodes}}}</nodes>
                 <p2p>
                         <ip>0.0.0.0</ip>

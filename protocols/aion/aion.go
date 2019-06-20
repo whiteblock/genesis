@@ -238,7 +238,6 @@ func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallet strin
 	}
 
 	mp["peerID"] = nodeIDs[node]
-	mp["ipAddress"] = nodeIP
 	mp["corsEnabled"] = fmt.Sprintf("%v",aionconf.CorsEnabled)
 	mp["secureConnect"] = fmt.Sprintf("%v",aionconf.SecureConnect)
 	mp["nrgDefault"] = fmt.Sprintf("%d",aionconf.NRGDefault)
