@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package geth handles geth specific functionality
+//Package ethclassic handles ethclassic specific functionality
 package ethclassic
 
 import (

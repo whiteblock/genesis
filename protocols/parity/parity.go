@@ -216,7 +216,7 @@ func add(tn *testnet.TestNet) error {
 	var genesisAlloc map[string]map[string]string
 	tn.BuildState.GetP("alloc", &genesisAlloc)
 
-	parityConf, err := NewParityConf(tn.LDD.Params)
+	parityConf, err := newParityConf(tn.LDD.Params)
 	tn.BuildState.SetBuildSteps(1 + 2*len(tn.NewlyBuiltNodes)) //TODO
 	if err != nil {
 		return util.LogError(err)

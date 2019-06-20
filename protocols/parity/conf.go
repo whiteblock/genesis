@@ -94,7 +94,7 @@ func newConf(data map[string]interface{}) (*parityConf, error) {
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
-func NewParityConf(data map[string]interface{}) (*parityConf, error) {
+func newParityConf(data map[string]interface{}) (*parityConf, error) {
 	out := new(parityConf)
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }

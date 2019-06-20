@@ -303,6 +303,8 @@ func (tn *TestNet) Store() {
 	db.SetMeta("testnet_"+tn.TestNetID, *tn)
 }
 
+// UpdateAllImages switches all of the nodes to the given docker
+// image
 func (tn *TestNet) UpdateAllImages(newImage string) {
 	if tn.LDD == nil {
 		log.Error("LDD is nil")
