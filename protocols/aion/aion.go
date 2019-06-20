@@ -59,7 +59,7 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes) + (tn.LDD.Nodes * (tn.LDD.Nodes - 1)))
+	tn.BuildState.SetBuildSteps(8 + (tn.LDD.Nodes) + (tn.LDD.Nodes * (tn.LDD.Nodes - 1)))
 
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Distributing secrets")
@@ -77,6 +77,7 @@ func build(tn *testnet.TestNet) error {
 
 	var addresses = make([]string, tn.LDD.Nodes)
 	var nodeIDs = make([]string, tn.LDD.Nodes)
+	var nodeIPs = make([]string, tn.LDD.Nodes)
 
 	tn.BuildState.SetBuildStage("Creating the wallets")
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
@@ -99,6 +100,16 @@ func build(tn *testnet.TestNet) error {
 	}
 	tn.BuildState.Set("generatedAccs", addresses)
 	tn.BuildState.IncrementBuildProgress()
+
+	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		mux.Lock()
+		nodeIPs[node.GetAbsoluteNumber()] = node.GetIP()
+		mux.Unlock()
+		return nil
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
 
 	//get permanent node id from auto-generated config.xml
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
@@ -156,7 +167,7 @@ func build(tn *testnet.TestNet) error {
 					tmpNodeIDs = append(tmpNodeIDs, nid)
 				}
 			}
-			conf, err := buildConfig(aionconf, tn.LDD, wallet, tmpNodeIDs, node.GetIP(), node.GetAbsoluteNumber())
+			conf, err := buildConfig(aionconf, tn.LDD, wallet, tmpNodeIDs, nodeIDs, nodeIPs, node.GetAbsoluteNumber())
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -232,7 +243,7 @@ func createGenesisfile(aionconf *AionConf, tn *testnet.TestNet, accounts []strin
 	})
 }
 
-func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallet string, nodeIDs []string, nodeIP string, node int) (string, error) {
+func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallet string, peers []string, nodeIDs []string, nodeIPs []string, node int) (string, error) {
 
 	dat, err := helpers.GetBlockchainConfig("aion", node, "config.xml.mustache", details)
 	if err != nil {
@@ -253,8 +264,8 @@ func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallet strin
 	mp := util.ConvertToStringMap(tmp)
 
 	var p2pNodes string
-	for i := range nodeIDs {
-		p2pNodes += fmt.Sprintf("<node>p2p://%s@%s:30303</node>\n",nodeIDs[i],nodeIP)
+	for i := range peers {
+		p2pNodes += fmt.Sprintf("<node>p2p://%s@%s:30303</node>\n",peers[i],nodeIPs[i])
 	}
 
 	mp["peerID"] = nodeIDs[node]

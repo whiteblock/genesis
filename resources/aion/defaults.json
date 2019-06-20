@@ -1,5 +1,5 @@
 {
-    "corsEnabled":false,
+    "corsEnabled":true,
     "secureConnect":true,
     "nrgDefault":10000000000,
     "nrgMax":100000000000,
