@@ -59,6 +59,10 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
+	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes) + (tn.LDD.Nodes * (tn.LDD.Nodes - 1)))
+
+	tn.BuildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Distributing secrets")
 	{
 		/**Create the Password files**/
 		var data string
@@ -69,10 +73,12 @@ func build(tn *testnet.TestNet) error {
 			return util.LogError(err)
 		}
 	}
+	tn.BuildState.IncrementBuildProgress()
 
 	var addresses = make([]string, tn.LDD.Nodes)
-	var nodeIDs []string
+	var nodeIDs = make([]string, tn.LDD.Nodes)
 
+	tn.BuildState.SetBuildStage("Creating the wallets")
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		output, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh ac -n custom'"))
 		if err != nil {
@@ -85,12 +91,14 @@ func build(tn *testnet.TestNet) error {
 		// fmt.Println(addr)
 		mux.Lock()
 		addresses[node.GetAbsoluteNumber()] = addr
-			mux.Unlock()
+		mux.Unlock()
 		return nil
 	})
 	if err != nil {
 		return util.LogError(err)
 	}
+	tn.BuildState.Set("generatedAccs", addresses)
+	tn.BuildState.IncrementBuildProgress()
 
 	//get permanent node id from auto-generated config.xml
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
@@ -104,15 +112,17 @@ func build(tn *testnet.TestNet) error {
 		nodeID := strings.Replace(splitNodeID[1], " ", "", -1)
 		fmt.Println(nodeID)
 		mux.Lock()
-		nodeIDs = append(nodeIDs, nodeID)
+		nodeIDs[node.GetAbsoluteNumber()] = nodeID
 		mux.Unlock()
 		return nil
 	})
 	if err != nil {
 		return util.LogError(err)
 	}
-	fmt.Println(nodeIDs)
+	tn.BuildState.Set("nodeIDs", nodeIDs)
+	tn.BuildState.IncrementBuildProgress()
 
+	tn.BuildState.SetBuildStage("Creating the genesis block")
 	// delete auto generated genesis file and create custom genesis file
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		_, err := client.DockerExec(node, fmt.Sprintf("rm /aion/custom/config/genesis.json"))
@@ -128,7 +138,9 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+	tn.BuildState.IncrementBuildProgress()
 
+	tn.BuildState.SetBuildStage("Creating the configuration file")
 	// delete auto generated config gile and add custom config file 
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		mux.Lock()
@@ -137,9 +149,14 @@ func build(tn *testnet.TestNet) error {
 			return util.LogError(err)
 		}
 		mux.Unlock()
-
 		for _, wallet := range addresses {
-			conf, err := buildConfig(aionconf, tn.LDD, wallet, nodeIDs, node.GetIP(), node.GetAbsoluteNumber())
+			var tmpNodeIDs []string
+			for i, nid := range nodeIDs {
+				if node.GetAbsoluteNumber() != i {
+					tmpNodeIDs = append(tmpNodeIDs, nid)
+				}
+			}
+			conf, err := buildConfig(aionconf, tn.LDD, wallet, tmpNodeIDs, node.GetIP(), node.GetAbsoluteNumber())
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -148,12 +165,15 @@ func build(tn *testnet.TestNet) error {
 				return util.LogError(err)
 			}
 		}
+		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 	if err != nil {
 		return util.LogError(err)
 	}
+	tn.BuildState.IncrementBuildProgress()
 
+	tn.BuildState.SetBuildStage("Starting network")
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '/aion/aion.sh -n custom 2>&1 | tee %s'", conf.DockerOutputFile))
 		if err != nil {
@@ -164,7 +184,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-
+	tn.BuildState.IncrementBuildProgress()
 	return nil
 }
 
