@@ -28,7 +28,7 @@
     ["syncLogs","string"],
     ["dbLogs","string"],
     ["consLogs","string"],
-    ["p2plogs","string"],
+    ["p2pLogs","string"],
     ["cacheMax","int"],
     ["initBalance","string"],
     ["EnergyLimit","int"],

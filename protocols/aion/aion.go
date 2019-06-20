@@ -33,7 +33,7 @@ import (
 	// "reflect"
 	"strings"
 	"sync"
-	"encoding/xml"
+	"encoding/json"
 )
 
 var conf *util.Config
@@ -73,6 +73,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	var addresses []string
+	var nodeIDs []string
 
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i:=0;i<node.GetAbsoluteNumber();i++ {
@@ -84,8 +85,10 @@ func build(tn *testnet.TestNet) error {
 			regAddr := reAddr.FindAllString(output, 1)[0]
 			splitAddr := strings.Split(regAddr, "A new account has been created:")
 			addr := strings.Replace(splitAddr[1], " ", "", -1)
-			fmt.Println(addr)
+			// fmt.Println(addr)
+			mux.Lock()
 			addresses = append(addresses, addr)
+			mux.Unlock()
 		}
 		return nil
 	})
@@ -103,10 +106,9 @@ func build(tn *testnet.TestNet) error {
 		regNodeID := reNodeID.FindAllString(output, 1)[0]
 		splitNodeID := strings.Split(regNodeID, "<id>")
 		nodeID := strings.Replace(splitNodeID[1], " ", "", -1)
-		fmt.Println(nodeID)
-		//url := fmt.Sprintf("/ip4/%s/tcp/30333/p2p/%s", node.GetIP(), nodeID)
-		//nodeIDList = append(nodeIDList, url)
-		
+		mux.Lock()
+		nodeIDs = append(nodeIDs, nodeID)
+		mux.Unlock()
 		return nil
 	})
 	if err != nil {
@@ -129,8 +131,29 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
+	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		mux.Lock()
+		_, err := client.DockerExec(node, fmt.Sprintf("rm /aion/custom/config/config.xml"))
+		if err != nil {
+			return util.LogError(err)
+		}
+		mux.Unlock()
 
-
+		for _, wallet := range addresses {
+			conf, err := buildConfig(aionconf, tn.LDD, wallet, nodeIDs, node.GetIP(), node.GetAbsoluteNumber())
+			if err != nil {
+				return util.LogError(err)
+			}
+			err = helpers.SingleCp(client, tn.BuildState, node, []byte(conf), "/aion/custom/config/config.xml")
+			if err != nil {
+				return util.LogError(err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
 
 	return nil
 }
@@ -179,9 +202,7 @@ func createGenesisfile(aionconf *AionConf, tn *testnet.TestNet, accounts []strin
 	})
 }
 
-// fix 
-
-func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallets []string, passwordFile string, node int) (string, error) {
+func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallet string, nodeIDs []string, nodeIP string, node int) (string, error) {
 
 	dat, err := helpers.GetBlockchainConfig("aion", node, "config.xml.mustache", details)
 	if err != nil {
@@ -189,20 +210,58 @@ func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallets []st
 	}
 	var tmp map[string]interface{}
 
-	raw, err := xml.Marshal(*aionconf)
+	raw, err := json.Marshal(*aionconf)
 	if err != nil {
 		return "", util.LogError(err)
 	}
 
-	err = xml.Unmarshal(raw, &tmp)
+	err = json.Unmarshal(raw, &tmp)
 	if err != nil {
 		return "", util.LogError(err)
 	}
 
 	mp := util.ConvertToStringMap(tmp)
-	raw, err = xml.Marshal(wallets)
-	if err != nil {
-		return "", util.LogError(err)
+
+	var p2pNodes string
+	for i := range nodeIDs {
+		p2pNodes += fmt.Sprintf("<node>p2p://%s@%s:30303</node>\n",nodeIDs[i],nodeIP)
 	}
+
+	mp["peerID"] = nodeIDs[node]
+	mp["ipAddress"] = nodeIP
+	mp["corsEnabled"] = fmt.Sprintf("%v",aionconf.CorsEnabled)
+	mp["secureConnect"] = fmt.Sprintf("%v",aionconf.SecureConnect)
+	mp["nrgDefault"] = fmt.Sprintf("%d",aionconf.NRGDefault)
+	mp["nrgMax"] = fmt.Sprintf("%d",aionconf.NRGMax)
+	mp["oracleEnabled"] = fmt.Sprintf("%v",aionconf.OracleEnabled)
+	mp["nodes"] = p2pNodes
+	mp["blocksQueueMax"] = fmt.Sprintf("%v",aionconf.BlocksQueueMax)
+	mp["showStatus"] = fmt.Sprintf("%v",aionconf.ShowStatus)
+	mp["showStatistics"] = fmt.Sprintf("%v",aionconf.ShowStatistics)
+	mp["compactEnabled"] = fmt.Sprintf("%v",aionconf.CompactEnabled)
+	mp["slowImport"] = fmt.Sprintf("%d",aionconf.SlowImport)
+	mp["frequency"] = fmt.Sprintf("%d",aionconf.Frequency)
+	mp["mining"] = fmt.Sprintf("%v",aionconf.Mining)
+	mp["minerAddress"] = wallet
+	mp["mineThreads"] = fmt.Sprintf("%d",aionconf.MineThreads)
+	mp["extraData"] = aionconf.ExtraData
+	mp["clampedDecayUB"] = fmt.Sprintf("%d",aionconf.ClampedDecayUB)
+	mp["clampedDecayLB"] = fmt.Sprintf("%d",aionconf.ClampedDecayLB)
+	mp["database"] = aionconf.Database
+	mp["checkIntegrity"] = fmt.Sprintf("%v",aionconf.CheckIntegrity)
+	mp["stateStorage"] = aionconf.StateStorage
+	mp["vendor"] = aionconf.Vendor
+	mp["dbCompression"] = fmt.Sprintf("%v",aionconf.DBCompression)
+	mp["logFile"] = fmt.Sprintf("%v",aionconf.LogFile)
+	mp["logPath"] = aionconf.LogPath
+	mp["genLogs"] = aionconf.GenLogs
+	mp["vmLogs"] = aionconf.VMLogs
+	mp["apiLogs"] = aionconf.APILogs
+	mp["syncLogs"] = aionconf.SyncLogs
+	mp["dbLogs"] = aionconf.DBLogs
+	mp["consLogs"] = aionconf.ConsLogs
+	mp["p2pLogs"] = aionconf.P2PLogs
+	mp["cacheMax"] = fmt.Sprintf("%d",aionconf.CacheMax)
+
 	return mustache.Render(string(dat), mp)
 }

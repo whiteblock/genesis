@@ -28,7 +28,7 @@
     "syncLogs":"INFO",
     "dbLogs":"WARN",
     "consLogs":"INFO",
-    "p2plogs":"INFO",
+    "p2pLogs":"INFO",
     "cacheMax":256,
     "initBalance":"100000000000000000000",
     "EnergyLimit":15000000,

@@ -22,11 +22,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/services"
 )
 
 type AionConf struct {
-	IPAddress          string  `xml:"ipAddress"`
-	PeerID             string  `xml:"peerID"`
 	CorsEnabled        bool    `xml:"corsEnabled"`
 	SecureConnect      bool    `xml:"secureConnect"`
 	NRGDefault         int64   `xml:"nrgDefault"`
@@ -88,7 +87,6 @@ func newConf(data map[string]interface{}) (*AionConf, error) {
 			return nil, fmt.Errorf("incorrect type for initBalance given")
 		}
 	}
-
 	return out, nil
 }
 
@@ -98,6 +96,6 @@ func NewAionConf(data map[string]interface{}) (*AionConf, error) {
 }
 
 // GetServices returns the services which are used by artemis
-func GetServices() []helpers.Service {
+func GetServices() []services.Service {
 	return nil
 }

@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <aion>
         <mode>aion</mode>
-        <id>5047546c-d716-4e7b-8353-b9f93ceb4a2d</id>
-
         <id>{{{peerID}}}</id>
         <api>
                 <rpc active="false" ip="{{{ipAddress}}}" port="8545">
@@ -20,8 +18,7 @@
         </api>
         <net>
                 <id>0</id>
-                <nodes>
-                </nodes>
+                {{{nodes}}}
                 <p2p>
                         <ip>0.0.0.0</ip>
                         <port>30303</port>
@@ -29,8 +26,6 @@
                         <max-temp-nodes>128</max-temp-nodes>
                         <max-active-nodes>128</max-active-nodes>
                 </p2p>
-
-                {{{peers}}}
         </net>
         <sync>
                 <blocks-queue-max>{{{blocksQueueMax}}}</blocks-queue-max>
@@ -40,7 +35,6 @@
         </sync>
         <consensus>
                 <mining>{{{mining}}}</mining>
-                <miner-address>0000000000000000000000000000000000000000000000000000000000000000</miner-address>
 
                 <miner-address>{{{minerAddress}}}</miner-address>
 
@@ -66,7 +60,7 @@
                 <SYNC>{{{syncLogs}}}</SYNC>
                 <DB>{{{dbLogs}}}</DB>
                 <CONS>{{{consLogs}}}</CONS>
-                <P2P>{{{p2plogs}}}</P2P>
+                <P2P>{{{p2pLogs}}}</P2P>
         </log>
         <tx>
                 <cacheMax>{{{cacheMax}}}</cacheMax>
