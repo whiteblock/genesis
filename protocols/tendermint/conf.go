@@ -19,11 +19,10 @@
 package tendermint
 
 import (
-	//"github.com/whiteblock/genesis/protocols/helpers"
-	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/services"
 )
 
 // GetServices returns the services which are used by tendermint
-func GetServices() []helpers.Service {
+func GetServices() []services.Service {
 	return nil
 }

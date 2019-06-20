@@ -25,6 +25,7 @@ import (
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
@@ -48,7 +49,7 @@ func init() {
 		"json": "/plumtree/data/log.json"})
 }
 
-func getServices() []helpers.Service {
+func getServices() []services.Service {
 	return nil
 }
 

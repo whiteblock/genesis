@@ -19,9 +19,8 @@
 package polkadot
 
 import (
-	// "encoding/json"
-	// "fmt"
 	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/services"
 )
 
 type dotConf struct {
@@ -49,7 +48,7 @@ func newConf(data map[string]interface{}) (*dotConf, error) {
 }
 
 // GetServices returns the services which are used by artemis
-func GetServices() []helpers.Service {
+func GetServices() []services.Service {
 	return nil
 }
 

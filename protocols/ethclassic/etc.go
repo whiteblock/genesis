@@ -26,6 +26,7 @@ import (
 	"github.com/whiteblock/genesis/protocols/ethereum"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
@@ -49,7 +50,7 @@ func init() {
 	conf = util.GetConfig()
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
-	registrar.RegisterServices(blockchain, func() []helpers.Service { return nil })
+	registrar.RegisterServices(blockchain, func() []services.Service { return nil })
 	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }

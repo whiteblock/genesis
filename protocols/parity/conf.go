@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
 )
@@ -99,9 +100,9 @@ func NewParityConf(data map[string]interface{}) (*parityConf, error) {
 }
 
 // GetServices returns the services which are used by parity
-func GetServices() []helpers.Service {
-	return []helpers.Service{
-		helpers.SimpleService{
+func GetServices() []services.Service {
+	return []services.Service{
+		services.SimpleService{
 			Name:  "Geth",
 			Image: "gcr.io/whiteblock/ethereum:latest",
 			Env:   nil,

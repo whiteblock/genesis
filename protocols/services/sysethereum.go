@@ -1,8 +1,9 @@
-package helpers
+package services
 
 import (
 	"encoding/json"
 	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
@@ -17,7 +18,7 @@ type SysethereumService struct {
 type sysethereumConf map[string]interface{}
 
 func newConf(data map[string]interface{}) (sysethereumConf, error) {
-	rawDefaults := DefaultGetDefaultsFn("sysethereum")()
+	rawDefaults := helpers.DefaultGetDefaultsFn("sysethereum")()
 	defaults := map[string]interface{}{}
 
 	err := json.Unmarshal([]byte(rawDefaults), &defaults)
@@ -38,7 +39,7 @@ func (p SysethereumService) Prepare(client ssh.Client, tn *testnet.TestNet) erro
 		return util.LogError(err)
 	}
 
-	err = CreateConfigs(tn, "/sysethereum.conf", func(node ssh.Node) ([]byte, error) {
+	err = helpers.CreateConfigs(tn, "/sysethereum.conf", func(node ssh.Node) ([]byte, error) {
 		defer tn.BuildState.IncrementBuildProgress()
 		conf, err := makeConfig(aconf, &tn.CombinedDetails)
 		return []byte(conf), err
@@ -58,13 +59,14 @@ func makeConfig(aconf sysethereumConf, details *db.DeploymentDetails) (string, e
 	if err != nil {
 		return "", util.LogError(err)
 	}
-	dat, err := GetBlockchainConfig("sysethereum", 0, "sysethereum.conf.mustache", details)
+	dat, err := helpers.GetBlockchainConfig("sysethereum", 0, "sysethereum.conf.mustache", details)
 	if err != nil {
 		return "", util.LogError(err)
 	}
 	return mustache.Render(string(dat), filler)
 }
 
+//GetCommand gets the command flags
 func (p SysethereumService) GetCommand() string {
 	return "-Dsysethereum.agents.conf.file=/sysethereum.conf"
 }

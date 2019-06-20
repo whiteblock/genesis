@@ -24,6 +24,7 @@ import (
 	"github.com/whiteblock/genesis/protocols/helpers"
 )
 
+// EtcConf represents the settings for the etc build
 type EtcConf struct {
 	Identity           string `json:"identity"`
 	Name               string `json:"name"`

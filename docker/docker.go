@@ -24,6 +24,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
@@ -213,7 +214,7 @@ func StopServices(tn *testnet.TestNet) error {
 }
 
 // StartServices creates the service network and starts all the services on a server
-func StartServices(tn *testnet.TestNet, services []helpers.Service) error {
+func StartServices(tn *testnet.TestNet, servs []services.Service) error {
 	gateway, subnet, err := util.GetServiceNetwork()
 	if err != nil {
 		return util.LogError(err)
@@ -223,12 +224,12 @@ func StartServices(tn *testnet.TestNet, services []helpers.Service) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	ips, err := helpers.GetServiceIps(services)
+	ips, err := services.GetServiceIps(servs)
 	if err != nil {
 		return util.LogError(err)
 	}
 
-	for i, service := range services {
+	for i, service := range servs {
 		net := conf.ServiceNetworkName
 		ip := ips[service.GetName()]
 		if len(service.GetNetwork()) != 0 {
