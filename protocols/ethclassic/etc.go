@@ -47,22 +47,14 @@ const (
 
 func init() {
 	conf = util.GetConfig()
-
 	registrar.RegisterBuild(blockchain, build)
-	registrar.RegisterBuild(alias, build) //ethereum default to geth
-
 	registrar.RegisterAddNodes(blockchain, add)
-	registrar.RegisterAddNodes(alias, add)
-
-	registrar.RegisterServices(blockchain, GetServices)
-	registrar.RegisterServices(alias, GetServices)
-
+	registrar.RegisterServices(blockchain, func() []helpers.Service { return nil })
 	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
-	registrar.RegisterDefaults(alias, helpers.DefaultGetDefaultsFn(blockchain))
-
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
-	registrar.RegisterParams(alias, helpers.DefaultGetParamsFn(blockchain))
 }
+
+// GetServices returns the services which are used by artemis
 
 // build builds out a fresh new ethereum test network using geth
 func build(tn *testnet.TestNet) error {

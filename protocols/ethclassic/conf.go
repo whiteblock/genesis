@@ -71,12 +71,8 @@ func newConf(data map[string]interface{}) (*EtcConf, error) {
 	return out, nil
 }
 
+//NewEtcConf creates the configuration for etc
 func NewEtcConf(data map[string]interface{}) (*EtcConf, error) {
 	out := new(EtcConf)
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
-}
-
-// GetServices returns the services which are used by artemis
-func GetServices() []helpers.Service {
-	return nil
 }

@@ -17,7 +17,7 @@ before_install:
 
 jobs:
   include:
-     - script: make lint
+     - script: golint -set_exit_status $(go list ./... | grep -v mocks)
      - script: make vet
      - script: make test
      - script:
