@@ -41,7 +41,6 @@ var conf *util.Config
 
 const (
 	blockchain     = "ethclassic"
-	alias          = "etc"
 	peeringRetries = 5
 	password       = "password"
 )
