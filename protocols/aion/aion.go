@@ -62,9 +62,7 @@ func build(tn *testnet.TestNet) error {
 	{
 		/**Create the Password files**/
 		var data string
-		for i := 1; i <= tn.LDD.Nodes; i++ {
-			data += password + "\n" + password
-		}
+		data += password + "\\n" + password
 		/**Copy over the password file**/
 		err = helpers.CopyBytesToAllNodes(tn, data, "/aion/passwd")
 		if err != nil {
@@ -72,24 +70,22 @@ func build(tn *testnet.TestNet) error {
 		}
 	}
 
-	var addresses []string
+	var addresses = make([]string, tn.LDD.Nodes)
 	var nodeIDs []string
 
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		for i:=0;i<node.GetAbsoluteNumber();i++ {
-			output, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh ac -n custom'"))
-			if err != nil {
-				return util.LogError(err)
-			}
-			reAddr := regexp.MustCompile(`(?m)A new account has been created:(.{67})`)
-			regAddr := reAddr.FindAllString(output, 1)[0]
-			splitAddr := strings.Split(regAddr, "A new account has been created:")
-			addr := strings.Replace(splitAddr[1], " ", "", -1)
-			// fmt.Println(addr)
-			mux.Lock()
-			addresses = append(addresses, addr)
-			mux.Unlock()
+		output, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh ac -n custom'"))
+		if err != nil {
+			return util.LogError(err)
 		}
+		reAddr := regexp.MustCompile(`(?m)A new account has been created:(.{67})`)
+		regAddr := reAddr.FindAllString(output, 1)[0]
+		splitAddr := strings.Split(regAddr, "A new account has been created:")
+		addr := strings.Replace(splitAddr[1], " ", "", -1)
+		// fmt.Println(addr)
+		mux.Lock()
+		addresses[node.GetAbsoluteNumber()] = addr
+			mux.Unlock()
 		return nil
 	})
 	if err != nil {
@@ -106,6 +102,7 @@ func build(tn *testnet.TestNet) error {
 		regNodeID := reNodeID.FindAllString(output, 1)[0]
 		splitNodeID := strings.Split(regNodeID, "<id>")
 		nodeID := strings.Replace(splitNodeID[1], " ", "", -1)
+		fmt.Println(nodeID)
 		mux.Lock()
 		nodeIDs = append(nodeIDs, nodeID)
 		mux.Unlock()
@@ -114,9 +111,11 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+	fmt.Println(nodeIDs)
 
+	// delete auto generated genesis file and create custom genesis file
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		_, err := client.DockerExec(node, fmt.Sprintf("rm /aion/custom/config/config.xml"))
+		_, err := client.DockerExec(node, fmt.Sprintf("rm /aion/custom/config/genesis.json"))
 		if err != nil {
 			return util.LogError(err)
 		}		
@@ -125,12 +124,12 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-
 	err = createGenesisfile(aionconf, tn, addresses)
 	if err != nil {
 		return util.LogError(err)
 	}
 
+	// delete auto generated config gile and add custom config file 
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		mux.Lock()
 		_, err := client.DockerExec(node, fmt.Sprintf("rm /aion/custom/config/config.xml"))
@@ -199,8 +198,8 @@ func createGenesisfile(aionconf *AionConf, tn *testnet.TestNet, accounts []strin
 	tn.BuildState.Set("alloc", alloc)
 	tn.BuildState.Set("aionconf", aionconf)
 
-	return helpers.CreateConfigs(tn, "/aion/custom/genesis.json", func(node ssh.Node) ([]byte, error) {
-		template, err := helpers.GetBlockchainConfig(blockchain, node.GetAbsoluteNumber(), "chain.json", tn.LDD)
+	return helpers.CreateConfigsNewNodes(tn, "/aion/custom/config/genesis.json", func(node ssh.Node) ([]byte, error) {
+		template, err := helpers.GetBlockchainConfig(blockchain, node.GetAbsoluteNumber(), "genesis.json.mustache", tn.LDD)
 		if err != nil {
 			return nil, util.LogError(err)
 		}
