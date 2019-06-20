@@ -15,12 +15,11 @@ before_install:
   - make mocks
   - go get -u golang.org/x/lint/golint
 
-jobs:
-  include:
-     - script: golint -set_exit_status $(go list ./... | grep -v mocks)
-     - script: make vet
-     - script: make test
-     - script:
-         - go get ./...
-         - go test ./... -coverprofile=coverage.txt -covermode=atomic
-       after_success: bash <(curl -s https://codecov.io/bash)
+script: 
+  - golint -set_exit_status $(go list ./... | grep -v mocks)
+  - make vet
+  - make test
+  - go get ./...
+  - go test ./... -coverprofile=coverage.txt -covermode=atomic
+
+after_success: bash <(curl -s https://codecov.io/bash)
