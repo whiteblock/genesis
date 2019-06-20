@@ -13,7 +13,7 @@ go: 1.12.x
 before_install:
   - make install-mock
   - make mocks
-  - sudo apt-get install -y golint
+  - go get -u golang.org/x/lint/golint
 
 jobs:
   include:

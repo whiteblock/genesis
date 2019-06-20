@@ -15,7 +15,7 @@ test_race:
 	go test ./... -race 
 
 lint:
-	golint -set_exit_status $(go list ./... | grep -v mocks)
+	golint $(go list ./... | grep -v mocks)
 
 vet:
 	go vet $(go list ./... | grep -v mocks)
