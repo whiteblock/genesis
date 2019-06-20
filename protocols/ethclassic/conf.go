@@ -44,7 +44,6 @@ type EtcConf struct {
 	ECIP1010Length     int64  `json:"ecip1010Length"`
 	ECIP1017Block      int64  `json:"ecip1017Block"`
 	ECIP1017Era        int64  `json:"ecip1017Era"`
-
 }
 
 /**

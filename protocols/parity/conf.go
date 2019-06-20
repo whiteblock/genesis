@@ -45,7 +45,7 @@ type parityConf struct {
 	EIP155Transition          int64  `json:"eip155Transition"`
 	EIP160Transition          int64  `json:"eip160Transition"`
 	EIP161ABCTransition       int64  `json:"eip161abcTransition"`
-	EIP161DTransition        int64  `json:"eip161dTransition"`
+	EIP161DTransition         int64  `json:"eip161dTransition"`
 	EIP211Transition          int64  `json:"eip211Transition"`
 	EIP214Transition          int64  `json:"eip214Transition"`
 	EIP658Transition          int64  `json:"eip658Transition"`
