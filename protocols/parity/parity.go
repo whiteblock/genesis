@@ -24,8 +24,8 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
-	"github.com/whiteblock/genesis/protocols/ethereum"
 	"github.com/whiteblock/genesis/protocols/ethclassic"
+	"github.com/whiteblock/genesis/protocols/ethereum"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/ssh"
@@ -215,8 +215,8 @@ func add(tn *testnet.TestNet) error {
 
 	var genesisAlloc map[string]map[string]string
 	tn.BuildState.GetP("alloc", &genesisAlloc)
-	
-	parityConf, err := NewParityConf(tn.LDD.Params)
+
+	parityConf, err := newParityConf(tn.LDD.Params)
 	tn.BuildState.SetBuildSteps(1 + 2*len(tn.NewlyBuiltNodes)) //TODO
 	if err != nil {
 		return util.LogError(err)
@@ -230,7 +230,6 @@ func add(tn *testnet.TestNet) error {
 	parityConf.Difficulty = etcGenesisFile.Difficulty
 	parityConf.ExtraData = etcGenesisFile.ExtraData
 	parityConf.GasLimit = etcGenesisFile.GasLimit
-	
 
 	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		_, err := client.DockerExec(node, fmt.Sprintf("mkdir -p /parity"))
@@ -268,7 +267,7 @@ func add(tn *testnet.TestNet) error {
 		}
 
 		mux.Lock()
-		wallets = append(wallets, res[:len(res)-1]) 
+		wallets = append(wallets, res[:len(res)-1])
 		mux.Unlock()
 
 		res, err = client.DockerExec(node, "bash -c 'cat /parity/keys/ethereum/*'")
@@ -287,9 +286,9 @@ func add(tn *testnet.TestNet) error {
 	}
 
 	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		for i:=0;i<node.GetAbsoluteNumber();i++ {
+		for i := 0; i < node.GetAbsoluteNumber(); i++ {
 			var nodeKeyStores string
-			tn.BuildState.GetP(fmt.Sprintf("node%dKey",i), &nodeKeyStores)
+			tn.BuildState.GetP(fmt.Sprintf("node%dKey", i), &nodeKeyStores)
 			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /parity/account%d'", nodeKeyStores, i+1))
 			if err != nil {
 				return err
@@ -398,7 +397,7 @@ func add(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	storeGethParameters(tn, parityConf, wallets, enodes)
-	
+
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Bootstrapping network")
 

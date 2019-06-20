@@ -16,22 +16,23 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package geth handles geth specific functionality
+//Package ethclassic handles ethclassic specific functionality
 package ethclassic
 
 import (
 	"fmt"
-	"strings"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/ethereum"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 )
@@ -40,29 +41,20 @@ var conf *util.Config
 
 const (
 	blockchain     = "ethclassic"
-	alias          = "etc"
 	peeringRetries = 5
 	password       = "password"
 )
 
 func init() {
 	conf = util.GetConfig()
-
 	registrar.RegisterBuild(blockchain, build)
-	registrar.RegisterBuild(alias, build) //ethereum default to geth
-
 	registrar.RegisterAddNodes(blockchain, add)
-	registrar.RegisterAddNodes(alias, add)
-
-	registrar.RegisterServices(blockchain, GetServices)
-	registrar.RegisterServices(alias, GetServices)
-
+	registrar.RegisterServices(blockchain, func() []services.Service { return nil })
 	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
-	registrar.RegisterDefaults(alias, helpers.DefaultGetDefaultsFn(blockchain))
-
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
-	registrar.RegisterParams(alias, helpers.DefaultGetParamsFn(blockchain))
 }
+
+// GetServices returns the services which are used by artemis
 
 // build builds out a fresh new ethereum test network using geth
 func build(tn *testnet.TestNet) error {
@@ -302,13 +294,13 @@ func unlockAllAccounts(tn *testnet.TestNet, accounts []*ethereum.Account) error 
 	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		tn.BuildState.Defer(func() { //Can happen eventually
 			for _, account := range accounts {
-				
+
 				client.Run( //Doesn't really need to succeed, it is a nice to have, but not required.
 					fmt.Sprintf(
 						`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
 							`'{ "method": "personal_unlockAccount", "params": ["%s","%s",0], "id": 3, "jsonrpc": "2.0" }'`,
 						node.GetIP(), account.HexAddress(), password))
-				
+
 			}
 		})
 		return nil
@@ -340,21 +332,21 @@ func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethere
 	}
 
 	genesis := map[string]interface{}{
-		"identity":         etcconf.Identity,
-		"name":             etcconf.Name,
-		"network":          etcconf.NetworkID,
-		"chainId":          etcconf.NetworkID,
-		"difficulty":       fmt.Sprintf("0x0%x", etcconf.Difficulty),
-		"gasLimit":         fmt.Sprintf("0x%x", etcconf.GasLimit),
-		"extraData":        etcconf.ExtraData,
-		"consensus":        etcconf.Consensus,
-		"homesteadBlock":   etcconf.HomesteadBlock,
-		"eip150Block":      etcconf.EIP150Block,
-		"daoHFBlock":       etcconf.DAOHFBlock,
-		"eip155_160Block":  etcconf.EIP155_160Block,
-		"ecip1010Length":   etcconf.ECIP1010Length,
-		"ecip1017Block":    etcconf.ECIP1017Block,
-		"ecip1017Era":      etcconf.ECIP1017Era,
+		"identity":        etcconf.Identity,
+		"name":            etcconf.Name,
+		"network":         etcconf.NetworkID,
+		"chainId":         etcconf.NetworkID,
+		"difficulty":      fmt.Sprintf("0x0%x", etcconf.Difficulty),
+		"gasLimit":        fmt.Sprintf("0x%x", etcconf.GasLimit),
+		"extraData":       etcconf.ExtraData,
+		"consensus":       etcconf.Consensus,
+		"homesteadBlock":  etcconf.HomesteadBlock,
+		"eip150Block":     etcconf.EIP150Block,
+		"daoHFBlock":      etcconf.DAOHFBlock,
+		"eip155_160Block": etcconf.EIP155_160Block,
+		"ecip1010Length":  etcconf.ECIP1010Length,
+		"ecip1017Block":   etcconf.ECIP1017Block,
+		"ecip1017Era":     etcconf.ECIP1017Era,
 	}
 
 	switch etcconf.Consensus {
@@ -373,12 +365,12 @@ func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethere
 	}
 
 	/*
-	accs := MakeFakeAccounts(int(etcconf.ExtraAccounts))
-	for _, wallet := range accs {
-		alloc[wallet] = map[string]string{
-			"balance": etcconf.InitBalance,
+		accs := MakeFakeAccounts(int(etcconf.ExtraAccounts))
+		for _, wallet := range accs {
+			alloc[wallet] = map[string]string{
+				"balance": etcconf.InitBalance,
+			}
 		}
-	}
 	*/
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams

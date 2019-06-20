@@ -1,4 +1,4 @@
-package helpers
+package services
 
 import (
 	"github.com/whiteblock/genesis/ssh"
@@ -16,6 +16,7 @@ func (p GanacheService) Prepare(client ssh.Client, tn *testnet.TestNet) error {
 	return nil
 }
 
+// GetCommand get the ganache command line options
 func (p GanacheService) GetCommand() string {
 	return conf.GanacheCLIOptions
 }

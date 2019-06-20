@@ -24,8 +24,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
-	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
@@ -120,7 +120,7 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 
 // Build builds out the given docker network infrastructure according to the given parameters, and return
 // the given array of servers, with ips updated for the nodes added to that server
-func Build(tn *testnet.TestNet, services []helpers.Service) error {
+func Build(tn *testnet.TestNet, services []services.Service) error {
 	tn.BuildState.SetDeploySteps(3*tn.LDD.Nodes + 2 + len(services))
 	defer tn.BuildState.FinishDeploy()
 	wg := sync.WaitGroup{}

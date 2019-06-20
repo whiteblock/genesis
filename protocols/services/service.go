@@ -1,4 +1,4 @@
-package helpers
+package services
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 	"github.com/whiteblock/genesis/util"
 	"net"
 )
+
+var conf = util.GetConfig()
 
 // Service represents a service
 type Service interface {

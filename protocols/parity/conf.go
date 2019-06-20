@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
 )
@@ -45,7 +46,7 @@ type parityConf struct {
 	EIP155Transition          int64  `json:"eip155Transition"`
 	EIP160Transition          int64  `json:"eip160Transition"`
 	EIP161ABCTransition       int64  `json:"eip161abcTransition"`
-	EIP161DTransition        int64  `json:"eip161dTransition"`
+	EIP161DTransition         int64  `json:"eip161dTransition"`
 	EIP211Transition          int64  `json:"eip211Transition"`
 	EIP214Transition          int64  `json:"eip214Transition"`
 	EIP658Transition          int64  `json:"eip658Transition"`
@@ -93,15 +94,15 @@ func newConf(data map[string]interface{}) (*parityConf, error) {
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
-func NewParityConf(data map[string]interface{}) (*parityConf, error) {
+func newParityConf(data map[string]interface{}) (*parityConf, error) {
 	out := new(parityConf)
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
 // GetServices returns the services which are used by parity
-func GetServices() []helpers.Service {
-	return []helpers.Service{
-		helpers.SimpleService{
+func GetServices() []services.Service {
+	return []services.Service{
+		services.SimpleService{
 			Name:  "Geth",
 			Image: "gcr.io/whiteblock/ethereum:latest",
 			Env:   nil,

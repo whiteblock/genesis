@@ -25,6 +25,7 @@ import (
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
@@ -61,7 +62,7 @@ func build(tn *testnet.TestNet) error {
 	buildState.SetBuildSteps(9 + (len(tn.Servers) * 2) + (tn.LDD.Nodes * 2))
 	buildState.SetBuildStage("Setting up data collection")
 
-	services, err := helpers.GetServiceIps(GetServices())
+	services, err := services.GetServiceIps(GetServices())
 	buildState.IncrementBuildProgress()
 	if err != nil {
 		return util.LogError(err)
@@ -269,7 +270,7 @@ func add(tn *testnet.TestNet) error {
 	}
 	enode := iEnode.(string)
 
-	services, err := helpers.GetServiceIps(GetServices())
+	services, err := services.GetServiceIps(GetServices())
 	if err != nil {
 		return util.LogError(err)
 	}

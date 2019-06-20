@@ -20,6 +20,7 @@ package syscoin
 
 import (
 	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/services"
 )
 
 type sysConf struct {
@@ -100,9 +101,9 @@ func (sconf *sysConf) GenerateMN() string {
 }
 
 // GetServices returns the services which are used by syscoin
-func GetServices() []helpers.Service {
-	return []helpers.Service{
-		helpers.RegisterGanache(),
-		helpers.RegisterSysethereum(),
+func GetServices() []services.Service {
+	return []services.Service{
+		services.RegisterGanache(),
+		services.RegisterSysethereum(),
 	}
 }

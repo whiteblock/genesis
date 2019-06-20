@@ -21,6 +21,7 @@ package beam
 import (
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
 )
@@ -37,7 +38,7 @@ func newConf(data map[string]interface{}) (*beamConf, error) {
 }
 
 // GetServices returns the services which are used by artemis
-func GetServices() []helpers.Service {
+func GetServices() []services.Service {
 	return nil
 }
 

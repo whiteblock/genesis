@@ -20,6 +20,7 @@ package lighthouse
 
 import (
 	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/services"
 )
 
 type lighthouse struct {
@@ -31,8 +32,8 @@ func newConf(data map[string]interface{}) (*lighthouse, error) {
 }
 
 // GetServices returns the services which are used by lighthouse
-func GetServices() []helpers.Service {
-	return []helpers.Service{
-		helpers.RegisterPrometheus(),
+func GetServices() []services.Service {
+	return []services.Service{
+		services.RegisterPrometheus(),
 	}
 }

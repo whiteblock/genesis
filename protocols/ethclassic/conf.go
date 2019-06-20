@@ -24,6 +24,7 @@ import (
 	"github.com/whiteblock/genesis/protocols/helpers"
 )
 
+// EtcConf represents the settings for the etc build
 type EtcConf struct {
 	Identity           string `json:"identity"`
 	Name               string `json:"name"`
@@ -44,7 +45,6 @@ type EtcConf struct {
 	ECIP1010Length     int64  `json:"ecip1010Length"`
 	ECIP1017Block      int64  `json:"ecip1017Block"`
 	ECIP1017Era        int64  `json:"ecip1017Era"`
-
 }
 
 /**
@@ -72,12 +72,8 @@ func newConf(data map[string]interface{}) (*EtcConf, error) {
 	return out, nil
 }
 
+//NewEtcConf creates the configuration for etc
 func NewEtcConf(data map[string]interface{}) (*EtcConf, error) {
 	out := new(EtcConf)
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
-}
-
-// GetServices returns the services which are used by artemis
-func GetServices() []helpers.Service {
-	return nil
 }

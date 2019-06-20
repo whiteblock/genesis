@@ -13,14 +13,13 @@ go: 1.12.x
 before_install:
   - make install-mock
   - make mocks
-  - sudo apt-get install -y golint
+  - go get -u golang.org/x/lint/golint
 
-jobs:
-  include:
-     - script: make lint
-     - script: make vet
-     - script: make test
-     - script:
-         - go get ./...
-         - go test ./... -coverprofile=coverage.txt -covermode=atomic
-       after_success: bash <(curl -s https://codecov.io/bash)
+script: 
+  - golint -set_exit_status $(go list ./... | grep -v mocks)
+  - make vet
+  - make test
+  - go get ./...
+  - go test ./... -coverprofile=coverage.txt -covermode=atomic
+
+after_success: bash <(curl -s https://codecov.io/bash)
