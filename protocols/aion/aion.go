@@ -77,7 +77,7 @@ func build(tn *testnet.TestNet) error {
 
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i:=0;i<node.GetAbsoluteNumber();i++ {
-			output, err := client.DockerExec(node, fmt.Sprintf("echo -e $(cat /aion/password) | /aion/./aion.sh ac -n custom"))
+			output, err := client.DockerExec(node, fmt.Sprintf("echo -e $(cat /aion/passwd) | /aion/./aion.sh ac -n custom"))
 			if err != nil {
 				return util.LogError(err)
 			}
