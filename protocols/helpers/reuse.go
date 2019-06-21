@@ -163,13 +163,21 @@ func getError(tn *testnet.TestNet, s settings) error {
 	}
 	return err
 }
-
-// FetchPreGeneratedPrivateKeys gets the pregenerated private keys for a blockchain from privatekeys.json
-func FetchPreGeneratedPrivateKeys(tn *testnet.TestNet) ([]string, error) {
-	rawPrivateKeys, err := GetGlobalBlockchainConfig(tn, "privatekeys.json")
+func fetchPreGeneratedKeys(tn *testnet.TestNet, file string) ([]string, error) {
+	rawPrivateKeys, err := GetGlobalBlockchainConfig(tn, file)
 	if err != nil {
 		return nil, util.LogError(err)
 	}
 	var out []string
 	return out, util.LogError(json.Unmarshal(rawPrivateKeys, &out))
+}
+
+// FetchPreGeneratedPrivateKeys gets the pregenerated private keys for a blockchain from privatekeys.json
+func FetchPreGeneratedPrivateKeys(tn *testnet.TestNet) ([]string, error) {
+	return fetchPreGeneratedKeys(tn, "privatekeys.json")
+}
+
+// FetchPreGeneratedPublicKeys gets the pregenerated public keys for a blockchain from publickeys.json
+func FetchPreGeneratedPublicKeys(tn *testnet.TestNet) ([]string, error) {
+	return fetchPreGeneratedKeys(tn, "publickeys.json")
 }

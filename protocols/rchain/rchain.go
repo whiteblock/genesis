@@ -88,7 +88,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	buildState.IncrementBuildProgress()
-	km, err := helpers.NewKeyMaster(tn.LDD, blockchain)
+	km, err := helpers.NewKeyMaster(tn)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -275,7 +275,7 @@ func add(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	keyPairs := []util.KeyPair{}
-	km, err := helpers.NewKeyMaster(&tn.CombinedDetails, "rchain")
+	km, err := helpers.NewKeyMaster(tn)
 	if err != nil {
 		return util.LogError(err)
 	}
