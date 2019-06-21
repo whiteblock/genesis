@@ -164,6 +164,7 @@ func getError(tn *testnet.TestNet, s settings) error {
 	return err
 }
 
+// FetchPreGeneratedPrivateKeys gets the pregenerated private keys for a blockchain from privatekeys.json
 func FetchPreGeneratedPrivateKeys(tn *testnet.TestNet) ([]string, error) {
 	rawPrivateKeys, err := GetGlobalBlockchainConfig(tn, "privatekeys.json")
 	if err != nil {

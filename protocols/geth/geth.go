@@ -111,7 +111,6 @@ func build(tn *testnet.TestNet) error {
 			if err != nil {
 				return util.LogError(err)
 			}
-
 		}
 		return nil
 	})
@@ -312,7 +311,7 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 	}
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
-	dat, err := helpers.GetBlockchainConfig("geth", 0, "genesis.json", tn.LDD)
+	dat, err := helpers.GetBlockchainConfig(blockchain, 0, "genesis.json", tn.LDD)
 	if err != nil {
 		return util.LogError(err)
 	}
