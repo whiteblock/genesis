@@ -364,6 +364,7 @@ func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallet strin
 	return mustache.Render(string(dat), mp)
 }
 
+// doesnt work right now. need to have aion accounts be compatible with eth accounts
 func unlockAllAccounts(tn *testnet.TestNet, accounts []AionAcc) error {
 	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		tn.BuildState.Defer(func() { //Can happen eventually
