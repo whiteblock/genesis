@@ -39,8 +39,14 @@ import (
 var conf *util.Config
 const (
 	blockchain     = "aion"
-	password       = "password"
+	password       = "\n"
 )
+
+type AionAcc struct {
+	PrivateKey string
+	PublicKey  string
+	Address    string
+}
 
 func init() {
 	conf = util.GetConfig()
@@ -66,7 +72,7 @@ func build(tn *testnet.TestNet) error {
 	{
 		/**Create the Password files**/
 		var data string
-		data += password + "\\n" + password
+		data += "\\n"
 		/**Copy over the password file**/
 		err = helpers.CopyBytesToAllNodes(tn, data, "/aion/passwd")
 		if err != nil {
@@ -78,8 +84,10 @@ func build(tn *testnet.TestNet) error {
 	var addresses = make([]string, tn.LDD.Nodes)
 	var nodeIDs = make([]string, tn.LDD.Nodes)
 	var nodeIPs = make([]string, tn.LDD.Nodes)
+	var accounts = make([]AionAcc, tn.LDD.Nodes)
 
 	tn.BuildState.SetBuildStage("Creating the wallets")
+	
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		output, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh ac -n custom'"))
 		if err != nil {
@@ -93,18 +101,57 @@ func build(tn *testnet.TestNet) error {
 		mux.Lock()
 		addresses[node.GetAbsoluteNumber()] = addr
 		mux.Unlock()
+		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 	if err != nil {
 		return util.LogError(err)
 	}
-	tn.BuildState.Set("generatedAccs", addresses)
+
+	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		mux.Lock()
+		pubkeyOut, err := client.DockerExec(node, fmt.Sprintf("bash -c '/aion/./aion.sh -a list -n custom'"))
+		if err != nil {
+			return util.LogError(err)
+		}
+		pubk := regexp.MustCompile(`(?m)0x(.{64})`)
+		fmt.Println(pubk)
+		publicKey := pubk.FindAllString(pubkeyOut, 1)[0]
+		fmt.Println(publicKey)
+		mux.Unlock()
+		mux.Lock()
+		privatekeyOut, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh -a export %s -n custom'", publicKey))
+		if err != nil {
+			return util.LogError(err)
+		}
+		privk := regexp.MustCompile(`(?m)0x(.{128})`)
+		fmt.Println(privk)
+		privateKey := privk.FindAllString(privatekeyOut, 1)[0]
+		fmt.Println(privateKey)
+		mux.Unlock()
+
+		accounts[node.GetAbsoluteNumber()] = AionAcc{
+			PrivateKey: privateKey,
+			PublicKey: publicKey,
+			Address: addresses[node.GetAbsoluteNumber()],
+		}
+
+		tn.BuildState.IncrementBuildProgress()
+		return nil
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	fmt.Println(accounts)
+	tn.BuildState.Set("generatedAccs", accounts)
 	tn.BuildState.IncrementBuildProgress()
 
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		mux.Lock()
 		nodeIPs[node.GetAbsoluteNumber()] = node.GetIP()
 		mux.Unlock()
+		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 	if err != nil {
@@ -161,13 +208,7 @@ func build(tn *testnet.TestNet) error {
 		}
 		mux.Unlock()
 		for _, wallet := range addresses {
-			var tmpNodeIDs []string
-			for i, nid := range nodeIDs {
-				if node.GetAbsoluteNumber() != i {
-					tmpNodeIDs = append(tmpNodeIDs, nid)
-				}
-			}
-			conf, err := buildConfig(aionconf, tn.LDD, wallet, tmpNodeIDs, nodeIDs, nodeIPs, node.GetAbsoluteNumber())
+			conf, err := buildConfig(aionconf, tn.LDD, wallet, nodeIDs, nodeIPs, node.GetAbsoluteNumber())
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -175,6 +216,7 @@ func build(tn *testnet.TestNet) error {
 			if err != nil {
 				return util.LogError(err)
 			}
+			tn.BuildState.IncrementBuildProgress()
 		}
 		tn.BuildState.IncrementBuildProgress()
 		return nil
@@ -196,6 +238,21 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
+
+	tn.BuildState.SetExt("networkID", "custom")
+	tn.BuildState.SetExt("accounts", addresses)
+	tn.BuildState.SetExt("port", 8545)
+	tn.BuildState.SetExt("namespace", "eth")
+	tn.BuildState.SetExt("password", password)
+
+	for _, account := range accounts {
+		tn.BuildState.SetExt(account.Address, map[string]string{
+			"privateKey": account.PrivateKey,
+			"publicKey":  account.PublicKey,
+		})
+	}
+	unlockAllAccounts(tn, accounts)
+
 	return nil
 }
 
@@ -243,7 +300,7 @@ func createGenesisfile(aionconf *AionConf, tn *testnet.TestNet, accounts []strin
 	})
 }
 
-func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallet string, peers []string, nodeIDs []string, nodeIPs []string, node int) (string, error) {
+func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallet string, nodeIDs []string, nodeIPs []string, node int) (string, error) {
 
 	dat, err := helpers.GetBlockchainConfig("aion", node, "config.xml.mustache", details)
 	if err != nil {
@@ -264,8 +321,8 @@ func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallet strin
 	mp := util.ConvertToStringMap(tmp)
 
 	var p2pNodes string
-	for i := range peers {
-		p2pNodes += fmt.Sprintf("<node>p2p://%s@%s:30303</node>\n",peers[i],nodeIPs[i])
+	for i := range nodeIDs {
+		p2pNodes += fmt.Sprintf("<node>p2p://%s@%s:30303</node>\n",nodeIDs[i],nodeIPs[i])
 	}
 
 	mp["peerID"] = nodeIDs[node]
@@ -275,6 +332,7 @@ func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallet strin
 	mp["nrgMax"] = fmt.Sprintf("%d",aionconf.NRGMax)
 	mp["oracleEnabled"] = fmt.Sprintf("%v",aionconf.OracleEnabled)
 	mp["nodes"] = p2pNodes
+	mp["ipAddr"] = nodeIPs[node]
 	mp["blocksQueueMax"] = fmt.Sprintf("%v",aionconf.BlocksQueueMax)
 	mp["showStatus"] = fmt.Sprintf("%v",aionconf.ShowStatus)
 	mp["showStatistics"] = fmt.Sprintf("%v",aionconf.ShowStatistics)
@@ -304,4 +362,21 @@ func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallet strin
 	mp["cacheMax"] = fmt.Sprintf("%d",aionconf.CacheMax)
 
 	return mustache.Render(string(dat), mp)
+}
+
+func unlockAllAccounts(tn *testnet.TestNet, accounts []AionAcc) error {
+	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		tn.BuildState.Defer(func() { //Can happen eventually
+			for _, account := range accounts {
+
+				client.Run( //Doesn't really need to succeed, it is a nice to have, but not required.
+					fmt.Sprintf(
+						`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
+							`'{ "method": "personal_unlockAccount", "params": ["%s","%s",0], "id": 3, "jsonrpc": "2.0" }'`,
+						node.GetIP(), account.Address, password))
+
+			}
+		})
+		return nil
+	})
 }
