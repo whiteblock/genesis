@@ -112,6 +112,20 @@ func CreateAccountFromHex(hexPK string) (*Account, error) {
 	return NewAccount(privKey), nil
 }
 
+// ImportAccounts creates account objects from an array of hex
+// private keys
+func ImportAccounts(hexPks []string) ([]*Account, error) {
+	out := make([]*Account, len(hexPks))
+	for i := range hexPks {
+		acc, err := CreateAccountFromHex(hexPks[i])
+		if err != nil {
+			return nil, err
+		}
+		out[i] = acc
+	}
+	return out, nil
+}
+
 // GenerateAccounts is a convience function to generate an arbitrary number of accounts
 // using GenerateEthereumAddress
 func GenerateAccounts(accounts int) ([]*Account, error) {
