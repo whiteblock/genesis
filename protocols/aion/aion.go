@@ -39,7 +39,7 @@ import (
 var conf *util.Config
 const (
 	blockchain     = "aion"
-	password       = "\n"
+	password       = ""
 )
 
 type AionAcc struct {
@@ -375,7 +375,6 @@ func unlockAllAccounts(tn *testnet.TestNet, accounts []AionAcc) error {
 						`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
 							`'{ "method": "personal_unlockAccount", "params": ["%s","%s",0], "id": 3, "jsonrpc": "2.0" }'`,
 						node.GetIP(), account.Address, password))
-
 			}
 		})
 		return nil
