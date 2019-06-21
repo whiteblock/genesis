@@ -184,6 +184,7 @@ func build(tn *testnet.TestNet) error {
 	}
 	buildState.Set("bootnode", enode)
 	buildState.Set("rConf", *rConf)
+	helpers.SetAlternativeCmdExprs(tn, "/docker-java-home/bin/java")
 
 	err = helpers.CreateConfigs(tn, "/datadir/rnode.conf", func(node ssh.Node) ([]byte, error) {
 		if node.GetAbsoluteNumber() == 0 {
