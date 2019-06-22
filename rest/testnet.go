@@ -196,8 +196,8 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, util.LogError(err).Error(), 500)
 		return
 	}
-
-	procs, err := getNodePids(tn, &tn.Nodes[cmd.Node], nodeNum)
+	node := &tn.Nodes[cmd.Node]
+	procs, err := getNodePids(tn, node, nodeNum)
 	if err != nil {
 		http.Error(w, util.LogError(err).Error(), 500)
 		return
@@ -208,17 +208,17 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 		if pid == "" {
 			continue
 		}
-		_, err = client.DockerExec(&tn.Nodes[cmd.Node], fmt.Sprintf("kill -INT %s", pid))
+		_, err = client.DockerExec(node, fmt.Sprintf("kill -INT %s", pid))
 		if err != nil {
 			http.Error(w, util.LogError(err).Error(), 500)
 			return
 		}
 	}
-	node := &tn.Nodes[cmd.Node]
+	
 	killedSuccessfully := false
 	for i := uint(0); i < conf.KillRetries; i++ {
 		_, err = client.DockerExec(node,
-			fmt.Sprintf("ps aux | grep '%s' | grep -v grep", strings.Split(cmd.Cmdline, " ")[0]))
+			fmt.Sprintf("ps aux | grep '%s' | grep -v grep | grep -v nibbler", strings.Split(cmd.Cmdline, " ")[0]))
 		if err != nil {
 			killedSuccessfully = true
 			break
@@ -324,7 +324,7 @@ func killNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for {
-		_, err = client.DockerExec(node, fmt.Sprintf("ps aux | grep '%s' | grep -v grep", strings.Split(cmd.Cmdline, " ")[0]))
+		_, err = client.DockerExec(node, fmt.Sprintf("ps aux | grep '%s' | grep -v grep | grep -v nibbler", strings.Split(cmd.Cmdline, " ")[0]))
 		if err != nil {
 			break
 		}
