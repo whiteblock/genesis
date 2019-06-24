@@ -25,7 +25,7 @@ import (
 	"github.com/whiteblock/genesis/protocols/services"
 )
 
-// AionConf represents the settings for the aion build
+// AConf represents the settings for the aion build
 type AConf struct {
 	CorsEnabled        bool    `xml:"corsEnabled"`
 	SecureConnect      bool    `xml:"secureConnect"`
