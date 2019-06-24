@@ -267,7 +267,7 @@ func add(tn *testnet.TestNet) error {
 // create network configuration files
 // ************************************************************************************
 
-func createGenesisfile(aionconf *AionConf, tn *testnet.TestNet, accounts []string) error {
+func createGenesisfile(aionconf *AConf, tn *testnet.TestNet, accounts []string) error {
 	alloc := map[string]map[string]string{}
 	for _, account := range accounts {
 		alloc[account] = map[string]string{
@@ -302,7 +302,7 @@ func createGenesisfile(aionconf *AionConf, tn *testnet.TestNet, accounts []strin
 	})
 }
 
-func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallet string, nodeIDs []string, nodeIPs []string, node int) (string, error) {
+func buildConfig(aionconf *AConf, details *db.DeploymentDetails, wallet string, nodeIDs []string, nodeIPs []string, node int) (string, error) {
 
 	dat, err := helpers.GetBlockchainConfig("aion", node, "config.xml.mustache", details)
 	if err != nil {

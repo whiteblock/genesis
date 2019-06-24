@@ -26,7 +26,7 @@ import (
 )
 
 // AionConf represents the settings for the aion build
-type AionConf struct {
+type AConf struct {
 	CorsEnabled        bool    `xml:"corsEnabled"`
 	SecureConnect      bool    `xml:"secureConnect"`
 	NRGDefault         int64   `xml:"nrgDefault"`
@@ -70,8 +70,8 @@ type AionConf struct {
 /**
  * Fills in the defaults for missing parts,
  */
-func newConf(data map[string]interface{}) (*AionConf, error) {
-	out := new(AionConf)
+func newConf(data map[string]interface{}) (*AConf, error) {
+	out := new(AConf)
 	err := helpers.HandleBlockchainConfig(blockchain, data, out)
 	if err != nil || data == nil {
 		return out, err
@@ -92,8 +92,8 @@ func newConf(data map[string]interface{}) (*AionConf, error) {
 }
 
 //NewAionConf creates the configuration for aion
-func NewAionConf(data map[string]interface{}) (*AionConf, error) {
-	out := new(AionConf)
+func NewAionConf(data map[string]interface{}) (*AConf, error) {
+	out := new(AConf)
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
