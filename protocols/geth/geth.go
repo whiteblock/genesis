@@ -72,6 +72,11 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
+	err = loadForExpand(tn, ethconf) //Prepare everything if it is large state
+	if err != nil {
+		return util.LogError(err)
+	}
+
 	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes))
 
 	tn.BuildState.IncrementBuildProgress()
@@ -307,13 +312,6 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		genesis["extraData"] = extraData
 	}
 
-	accs := MakeFakeAccounts(int(ethconf.ExtraAccounts))
-
-	for _, wallet := range accs {
-		alloc[wallet] = map[string]string{
-			"balance": ethconf.InitBalance,
-		}
-	}
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
 	dat, err := helpers.GetBlockchainConfig(blockchain, 0, "genesis.json", tn.LDD)
@@ -362,6 +360,31 @@ func setupEthNetIntelligenceAPI(tn *testnet.TestNet) error {
 	})
 }
 
+func loadForExpand(tn *testnet.TestNet, ethconf *ethConf) error {
+	if ethconf.Mode != expansionMode {
+		return nil
+	}
+	masterNode := tn.Nodes[0]
+	masterClient := tn.Clients[masterNode.Server]
+	data, err := masterClient.DockerRead(masterNode, "/important_data", -1)
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	var clientData map[string]interface{}
+	err = json.Unmarshal([]byte(data), &clientData)
+	if err != nil {
+		return util.LogError(err)
+	}
+	for key, value := range clientData {
+		if key == "blockchain" || key == "blockchain_prefix" {
+			continue
+		}
+		tn.BuildState.Set(key, value)
+	}
+	return nil
+}
+
 func getAccountPool(tn *testnet.TestNet, numOfAccounts int) ([]*ethereum.Account, error) {
 	accounts := []*ethereum.Account{}
 	rawPreGen, err := helpers.FetchPreGeneratedPrivateKeys(tn)
@@ -376,9 +399,18 @@ func getAccountPool(tn *testnet.TestNet, numOfAccounts int) ([]*ethereum.Account
 	if len(accounts) >= numOfAccounts {
 		return accounts[:numOfAccounts], nil
 	}
+	var tmp []string
+	tn.BuildState.GetP("accounts", &tmp)
+	newAccs, err := ethereum.ImportAccounts(tmp)
+	if err == nil {
+		accounts = append(accounts, newAccs...)
+	}
+	if len(accounts) >= numOfAccounts {
+		return accounts[:numOfAccounts], nil
+	}
 	fillerAccounts, err := ethereum.GenerateAccounts(numOfAccounts - len(accounts))
 	if err != nil {
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	return append(accounts, fillerAccounts...), nil
 }
