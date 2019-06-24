@@ -257,7 +257,9 @@ func buildPoaSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []st
 	}
 
 	tmp := map[string]interface{}{
+		"name":                      pconf.Name,
 		"stepDuration":              pconf.StepDuration,
+		"dataDir":                   pconf.DataDir,
 		"validators":                validators,
 		"difficulty":                fmt.Sprintf("0x%x", pconf.Difficulty),
 		"gasLimit":                  fmt.Sprintf("0x%x", pconf.GasLimit),

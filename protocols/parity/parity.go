@@ -193,7 +193,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	storeGethParameters(tn, pconf, wallets, enodes)
+	storeParameters(tn, pconf, wallets, enodes)
 	tn.BuildState.IncrementBuildProgress()
 	return peerAllNodes(tn, enodes)
 }
@@ -396,7 +396,7 @@ func add(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	storeGethParameters(tn, parityConf, wallets, enodes)
+	storeParameters(tn, parityConf, wallets, enodes)
 
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Bootstrapping network")
@@ -424,7 +424,7 @@ func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 	})
 }
 
-func storeGethParameters(tn *testnet.TestNet, pconf *parityConf, wallets []string, enodes []string) {
+func storeParameters(tn *testnet.TestNet, pconf *parityConf, wallets []string, enodes []string) {
 	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Warn("couldn't create geth accounts")
@@ -432,6 +432,18 @@ func storeGethParameters(tn *testnet.TestNet, pconf *parityConf, wallets []strin
 
 	tn.BuildState.Set("networkID", pconf.NetworkID)
 	tn.BuildState.Set("accounts", accounts)
+
+	tn.BuildState.SetExt("networkID", pconf.NetworkID)
+	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
+	tn.BuildState.SetExt("port", 8545)
+
+	for _, account := range accounts {
+		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
+			"privateKey": account.HexPrivateKey(),
+			"publicKey":  account.HexPublicKey(),
+		})
+	}
+
 	switch pconf.Consensus {
 	case "ethash":
 		tn.BuildState.Set("mine", true)
