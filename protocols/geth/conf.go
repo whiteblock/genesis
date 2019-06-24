@@ -38,6 +38,7 @@ type ethConf struct {
 	HomesteadBlock     int64  `json:"homesteadBlock"`
 	Eip155Block        int64  `json:"eip155Block"`
 	Eip158Block        int64  `json:"eip158Block"`
+	Mode               string `json:"mode"`
 }
 
 /**

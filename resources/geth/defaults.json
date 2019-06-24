@@ -12,5 +12,6 @@
     "validators":1,
     "homesteadBlock":0,
     "eip155Block":0,
-    "eip158Block":0
+    "eip158Block":0,
+    "mode":"default"
 }

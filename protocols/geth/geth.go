@@ -41,6 +41,8 @@ const (
 	blockchain      = "geth"
 	ethNetStatsPort = 3338
 	password        = "password"
+	defaultMode     = "default"
+	expansionMode   = "expand"
 )
 
 func init() {
@@ -102,7 +104,7 @@ func build(tn *testnet.TestNet) error {
 	}
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, account := range accounts[:tn.LDD.Nodes] {
-			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
+			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" > /geth/pk%d'", account.HexPrivateKey(), i))
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -129,17 +131,20 @@ func build(tn *testnet.TestNet) error {
 	}
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Creating the genesis block")
-	err = createGenesisfile(ethconf, tn, accounts)
-	if err != nil {
-		return util.LogError(err)
+	if ethconf.Mode != expansionMode {
+		err = createGenesisfile(ethconf, tn, accounts)
+		if err != nil {
+			return util.LogError(err)
+		}
 	}
-
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Bootstrapping network")
 
-	err = helpers.CopyToAllNodes(tn, "CustomGenesis.json", "/geth/")
-	if err != nil {
-		return util.LogError(err)
+	if ethconf.Mode != expansionMode {
+		err = helpers.CopyToAllNodes(tn, "CustomGenesis.json", "/geth/")
+		if err != nil {
+			return util.LogError(err)
+		}
 	}
 
 	staticNodes := make([]string, tn.LDD.Nodes)

@@ -10,5 +10,6 @@
     ["epoch","int"],
     ["homesteadBlock","int"],
     ["eip155Block","int"],
-    ["eip158Block","int"]
+    ["eip158Block","int"],
+    ["mode","string"]
 ]
