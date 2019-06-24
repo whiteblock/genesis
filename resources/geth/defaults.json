@@ -5,7 +5,7 @@
     "initBalance":"100000000000000000000",
     "maxPeers":1000,
     "gasLimit":4000000,
-    "extraData":"",
+    "extraData":"0x3535353535353535353535353535353535353535353535353535353535353535",
     "consensus":"clique",
     "blockPeriodSeconds":2,
     "epoch":30000,

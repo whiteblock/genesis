@@ -111,11 +111,11 @@ func Build(tn *testnet.Adjunct) error {
 	err = helpers.AllNodeExecConSC(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		_, err = client.DockerExec(node,
 			fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/genesis.json", networkID))
-
-		tn.BuildState.IncrementSideCarProgress()
 		if err != nil {
 			return util.LogError(err)
 		}
+		tn.BuildState.IncrementSideCarProgress()
+
 		wg := &sync.WaitGroup{}
 
 		for i, account := range accounts {
@@ -205,13 +205,16 @@ func gethSpec(conf map[string]interface{}, wallets []string) ([]byte, error) {
 	}
 
 	tmp := map[string]interface{}{
-		"chainId":        conf["networkID"],
-		"difficulty":     conf["difficulty"],
-		"gasLimit":       conf["gasLimit"],
-		"homesteadBlock": 0,
-		"eip155Block":    10,
-		"eip158Block":    10,
-		"alloc":          accounts,
+		"chainId":         conf["networkID"],
+		"difficulty":      conf["difficulty"],
+		"gasLimit":        conf["gasLimit"],
+		"homesteadBlock":  0,
+		"eip155Block":     10,
+		"eip158Block":     10,
+		"alloc":           accounts,
+		"extraData":       conf["extraData"],
+		"consensus":       conf["consensus"],
+		"consensusParams": conf["consensusParams"],
 	}
 	filler := util.ConvertToStringMap(tmp)
 	dat, err := helpers.GetStaticBlockchainConfig(sidecar, "genesis.json")

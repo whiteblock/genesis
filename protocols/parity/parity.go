@@ -446,7 +446,11 @@ func storeGethParameters(tn *testnet.TestNet, pconf *parityConf, wallets []strin
 		"initBalance": pconf.InitBalance,
 		"difficulty":  fmt.Sprintf("0x%x", pconf.Difficulty),
 		"gasLimit":    fmt.Sprintf("0x%x", pconf.GasLimit),
-	})
+		"extraData":   pconf.ExtraData,
+		"consensus":   pconf.Consensus,
+		"consensusParams": map[string]interface{}{
+			"difficulty": pconf.Difficulty,
+		}})
 
 	tn.BuildState.Set("wallets", wallets)
 }

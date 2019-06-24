@@ -214,7 +214,7 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	
+
 	killedSuccessfully := false
 	for i := uint(0); i < conf.KillRetries; i++ {
 		_, err = client.DockerExec(node,
