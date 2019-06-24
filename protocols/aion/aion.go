@@ -253,6 +253,8 @@ func build(tn *testnet.TestNet) error {
 	}
 	unlockAllAccounts(tn, accounts)
 
+	tn.BuildState.IncrementBuildProgress()
+
 	return nil
 }
 
@@ -364,19 +366,21 @@ func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallet strin
 	return mustache.Render(string(dat), mp)
 }
 
-// doesnt work right now. need to have aion accounts be compatible with eth accounts
+
+// works but need to wait for some time before it actually works. Need to figure out what the reason for the needed delay is
 func unlockAllAccounts(tn *testnet.TestNet, accounts []AionAcc) error {
 	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		tn.BuildState.Defer(func() { //Can happen eventually
-			for _, account := range accounts {
-
-				client.Run( //Doesn't really need to succeed, it is a nice to have, but not required.
+			pass := true
+			for range accounts {
+				for pass {
+					out, _ := client.Run(
 					fmt.Sprintf(
 						`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
 							`'{ "method": "personal_unlockAccount", "params": ["%s","%s",0], "id": 3, "jsonrpc": "2.0" }'`,
-						node.GetIP(), account.Address, password))
+						node.GetIP(), accounts[node.GetAbsoluteNumber()].Address, password))
+					pass = !(strings.Contains(out, ":true"))
+				}
 			}
-		})
 		return nil
 	})
 }
