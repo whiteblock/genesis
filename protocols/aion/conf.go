@@ -25,6 +25,7 @@ import (
 	"github.com/whiteblock/genesis/protocols/services"
 )
 
+// AionConf represents the settings for the aion build
 type AionConf struct {
 	CorsEnabled        bool    `xml:"corsEnabled"`
 	SecureConnect      bool    `xml:"secureConnect"`
@@ -90,6 +91,7 @@ func newConf(data map[string]interface{}) (*AionConf, error) {
 	return out, nil
 }
 
+//NewAionConf creates the configuration for aion
 func NewAionConf(data map[string]interface{}) (*AionConf, error) {
 	out := new(AionConf)
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)

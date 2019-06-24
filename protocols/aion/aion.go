@@ -42,7 +42,7 @@ const (
 	password       = ""
 )
 
-type AionAcc struct {
+type aionAcc struct {
 	PrivateKey string
 	PublicKey  string
 	Address    string
@@ -84,7 +84,7 @@ func build(tn *testnet.TestNet) error {
 	var addresses = make([]string, tn.LDD.Nodes)
 	var nodeIDs = make([]string, tn.LDD.Nodes)
 	var nodeIPs = make([]string, tn.LDD.Nodes)
-	var accounts = make([]AionAcc, tn.LDD.Nodes)
+	var accounts = make([]aionAcc, tn.LDD.Nodes)
 
 	tn.BuildState.SetBuildStage("Creating the wallets")
 	
@@ -130,7 +130,7 @@ func build(tn *testnet.TestNet) error {
 		fmt.Println(privateKey)
 		mux.Unlock()
 
-		accounts[node.GetAbsoluteNumber()] = AionAcc{
+		accounts[node.GetAbsoluteNumber()] = aionAcc{
 			PrivateKey: privateKey,
 			PublicKey: publicKey,
 			Address: addresses[node.GetAbsoluteNumber()],
@@ -368,7 +368,7 @@ func buildConfig(aionconf *AionConf, details *db.DeploymentDetails, wallet strin
 
 
 // works but need to wait for some time before it actually works. Need to figure out what the reason for the needed delay is
-func unlockAllAccounts(tn *testnet.TestNet, accounts []AionAcc) error {
+func unlockAllAccounts(tn *testnet.TestNet, accounts []aionAcc) error {
 	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 			pass := true
 			for range accounts {
