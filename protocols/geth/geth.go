@@ -76,6 +76,8 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
+	validFlags := checkFlagsExist(tn)
+
 	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes))
 
 	tn.BuildState.IncrementBuildProgress()
@@ -115,7 +117,7 @@ func build(tn *testnet.TestNet) error {
 			_, err = client.DockerExec(node,
 				fmt.Sprintf("geth --datadir /geth/ --password /geth/passwd account import /geth/pk%d", i))
 			if err != nil {
-				return util.LogError(err)
+				util.LogError(err) //dont report the error
 			}
 		}
 		return nil
@@ -155,7 +157,7 @@ func build(tn *testnet.TestNet) error {
 			`geth --datadir /geth/ %s --rpc --nodiscover --rpcaddr 0.0.0.0`+
 				` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine`+
 				` --txpool.nolocals --port %d console  2>&1 | tee %s`,
-			getExtraFlags(ethconf, account) /*unlock,*/, p2pPort, conf.DockerOutputFile)
+			getExtraFlags(ethconf, account, validFlags[node.GetAbsoluteNumber()]), p2pPort, conf.DockerOutputFile)
 
 		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
 		tn.BuildState.IncrementBuildProgress()
@@ -333,9 +335,10 @@ func loadForExpand(tn *testnet.TestNet, ethconf *ethConf) error {
 	var err error
 	for _, file := range files {
 		data, err = masterClient.DockerRead(masterNode, file, -1)
-		if err != nil {
-			continue
+		if err == nil {
+			break
 		}
+
 	}
 	if err != nil {
 		return util.LogError(err)
@@ -371,11 +374,22 @@ func getAccountPool(tn *testnet.TestNet, numOfAccounts int) ([]*ethereum.Account
 	}
 	var tmp []string
 	tn.BuildState.GetP("accounts", &tmp)
-	newAccs, err := ethereum.ImportAccounts(tmp)
-	if err == nil {
-		accounts = append(accounts, newAccs...)
+	for _, addr := range tmp {
+		var accountData map[string]string
+		ok := tn.BuildState.GetP(addr, &accountData)
+		if !ok {
+			log.WithFields(log.Fields{"address": addr}).Trace("skipping address without entry")
+			continue
+		}
+		acc, err := ethereum.CreateAccountFromHex(accountData["privateKey"])
+		if err != nil {
+			log.WithFields(log.Fields{"error": err}).Info("there was an error with the given private key")
+		} else {
+			accounts = append(accounts, acc)
+		}
 	}
 	if len(accounts) >= numOfAccounts {
+		log.Info("Fetched all the accounts from the build state store")
 		return accounts, nil
 	}
 	fillerAccounts, err := ethereum.GenerateAccounts(numOfAccounts - len(accounts))
@@ -385,7 +399,7 @@ func getAccountPool(tn *testnet.TestNet, numOfAccounts int) ([]*ethereum.Account
 	return append(accounts, fillerAccounts...), nil
 }
 
-func getExtraFlags(ethconf *ethConf, account *ethereum.Account) string {
+func getExtraFlags(ethconf *ethConf, account *ethereum.Account, validFlags map[string]bool) string {
 	out := fmt.Sprintf("--maxpeers %d --networkid %d --nodekeyhex %s",
 		ethconf.MaxPeers, ethconf.NetworkID, account.HexPrivateKey())
 	out += fmt.Sprintf(" --verbosity %d", ethconf.Verbosity)
@@ -400,8 +414,32 @@ func getExtraFlags(ethconf *ethConf, account *ethereum.Account) string {
 
 	if ethconf.Unlock {
 		out += fmt.Sprintf(` --unlock="%s" --password /geth/passwd`, account.HexAddress())
+		if validFlags["--allow-insecure-unlock"] {
+			out += " --allow-insecure-unlock"
+		}
 	}
 
+	return out
+}
+
+func checkFlagsExist(tn *testnet.TestNet) []map[string]bool {
+	flagsToCheck := []string{"--allow-insecure-unlock"}
+
+	out := make([]map[string]bool, tn.LDD.Nodes)
+	for i, _ := range tn.Nodes {
+		out[i] = map[string]bool{}
+	}
+	mux := sync.Mutex{}
+
+	helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		for _, flag := range flagsToCheck {
+			_, err := client.DockerExec(node, fmt.Sprintf("geth --help | grep -- '%s'", flag))
+			mux.Lock()
+			out[node.GetAbsoluteNumber()][flag] = (err == nil)
+			mux.Unlock()
+		}
+		return nil
+	})
 	return out
 }
 
