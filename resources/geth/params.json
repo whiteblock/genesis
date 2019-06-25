@@ -11,5 +11,6 @@
     ["homesteadBlock","int"],
     ["eip155Block","int"],
     ["eip158Block","int"],
-    ["mode","string"]
+    ["mode","string"],
+    ["verbosity","int"]
 ]

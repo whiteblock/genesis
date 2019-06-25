@@ -31,6 +31,7 @@ import (
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
+	"sync"
 )
 
 var conf *util.Config
@@ -41,6 +42,7 @@ const (
 	defaultMode   = "default"
 	expansionMode = "expand"
 	p2pPort       = 30303
+	rpcPort       = 8545
 )
 
 func init() {
@@ -131,29 +133,16 @@ func build(tn *testnet.TestNet) error {
 		}
 		unlock += account.HexAddress()
 	}
-	tn.BuildState.IncrementBuildProgress()
-	tn.BuildState.SetBuildStage("Creating the genesis block")
-	if ethconf.Mode != expansionMode {
-		err = createGenesisfile(ethconf, tn, accounts)
-		if err != nil {
-			return util.LogError(err)
-		}
-	}
-	tn.BuildState.IncrementBuildProgress()
-	tn.BuildState.SetBuildStage("Bootstrapping network")
-
-	if ethconf.Mode != expansionMode {
-		err = helpers.CopyToAllNodes(tn, "CustomGenesis.json", "/geth/")
-		if err != nil {
-			return util.LogError(err)
-		}
+	err = handleGenesisFileDist(tn, ethconf, accounts)
+	if err != nil {
+		return util.LogError(err)
 	}
 
 	staticNodes := getEnodes(tn, accounts)
 
 	tn.BuildState.SetBuildStage("Initializing geth")
 
-	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+	/*TAGGED err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		//Load the CustomGenesis file
 		if ethconf.Mode != expansionMode {
 			_, err := client.DockerExec(node,
@@ -168,7 +157,7 @@ func build(tn *testnet.TestNet) error {
 	})
 	if err != nil {
 		return util.LogError(err)
-	}
+	}*/
 
 	out, err := json.Marshal(staticNodes)
 	if err != nil {
@@ -185,18 +174,12 @@ func build(tn *testnet.TestNet) error {
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		tn.BuildState.IncrementBuildProgress()
-
+		account := accounts[node.GetAbsoluteNumber()]
 		gethCmd := fmt.Sprintf(
-			`geth --datadir /geth/ --maxpeers %d --networkid %d --rpc --nodiscover --rpcaddr %s`+
+			`geth --datadir /geth/ %s --rpc --nodiscover --rpcaddr 0.0.0.0`+
 				` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
-				` --password /geth/passwd --etherbase %s --nodekeyhex %s --txpool.nolocals console  2>&1 | tee %s`,
-			ethconf.MaxPeers,
-			ethconf.NetworkID,
-			node.GetIP(),
-			unlock,
-			accounts[node.GetAbsoluteNumber()].HexAddress(),
-			accounts[node.GetAbsoluteNumber()].HexPrivateKey(),
-			conf.DockerOutputFile)
+				` --password /geth/passwd --txpool.nolocals --port %d console  2>&1 | tee %s`,
+			getExtraFlags(ethconf, account), unlock, p2pPort, conf.DockerOutputFile)
 
 		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
 		tn.BuildState.IncrementBuildProgress()
@@ -209,7 +192,7 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetExt("networkID", ethconf.NetworkID)
 	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
-	tn.BuildState.SetExt("port", 8545)
+	tn.BuildState.SetExt("port", rpcPort)
 
 	for _, account := range accounts {
 		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
@@ -245,7 +228,7 @@ func MakeFakeAccounts(accs int) []string {
  * @param  []string wallets     The wallets to be allocated a balance
  */
 
-func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) error {
+func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) (string, error) {
 
 	alloc := map[string]map[string]string{}
 	for _, account := range accounts {
@@ -292,16 +275,75 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
-	dat, err := helpers.GetBlockchainConfig(blockchain, 0, "genesis.json", tn.LDD)
+	dat, err := helpers.GetGlobalBlockchainConfig(tn, "genesis.json")
 	if err != nil {
-		return util.LogError(err)
+		return "", util.LogError(err)
 	}
 
 	data, err := mustache.Render(string(dat), util.ConvertToStringMap(genesis))
 	if err != nil {
+		return "", util.LogError(err)
+	}
+	return data, nil
+}
+
+func handleGenesisFileDist(tn *testnet.TestNet, ethconf *ethConf, accounts []*ethereum.Account) error {
+	tn.BuildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Creating the genesis block")
+	genesisFileName := "CustomGenesis.json"
+	genesisFileLoc := fmt.Sprintf("/geth/%s", genesisFileName)
+
+	genesisData, err := createGenesisfile(ethconf, tn, accounts)
+	if err != nil {
 		return util.LogError(err)
 	}
-	return tn.BuildState.Write("CustomGenesis.json", data)
+
+	tn.BuildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Bootstrapping network")
+	hasGenesis := make([]bool, tn.LDD.Nodes)
+
+	if ethconf.Mode != expansionMode {
+		err := helpers.CopyToAllNodes(tn, genesisFileName, "/geth/")
+		if err != nil {
+			return util.LogError(err)
+		}
+	} else {
+		//if it is expansion mode, do not create it if it does not exist
+
+		mux := sync.Mutex{}
+
+		helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+			_, err := client.DockerExec(node, fmt.Sprintf("test -f %s", genesisFileLoc))
+			mux.Lock()
+			hasGenesis[node.GetAbsoluteNumber()] = (err == nil)
+			mux.Unlock()
+			return nil
+		})
+
+		err := helpers.CreateConfigs(tn, genesisFileLoc, func(node ssh.Node) ([]byte, error) {
+			if hasGenesis[node.GetAbsoluteNumber()] {
+				log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Debug("node already has a genesis file")
+				return nil, nil
+			}
+			return []byte(genesisData), nil
+		})
+		if err != nil {
+			return util.LogError(err)
+		}
+	}
+	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		//Load the CustomGenesis file
+		if ethconf.Mode != expansionMode || !hasGenesis[node.GetAbsoluteNumber()] {
+			_, err := client.DockerExec(node,
+				fmt.Sprintf("geth --datadir /geth/ --networkid %d init %s", ethconf.NetworkID, genesisFileLoc))
+			if err != nil {
+				return util.LogError(err)
+			}
+		}
+		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
+		tn.BuildState.IncrementBuildProgress()
+		return nil
+	})
 }
 
 func loadForExpand(tn *testnet.TestNet, ethconf *ethConf) error {
@@ -310,7 +352,15 @@ func loadForExpand(tn *testnet.TestNet, ethconf *ethConf) error {
 	}
 	masterNode := tn.Nodes[0]
 	masterClient := tn.Clients[masterNode.Server]
-	data, err := masterClient.DockerRead(masterNode, "/important_data", -1)
+	files := []string{"/important_data", "/important_info"}
+	var data string
+	var err error
+	for _, file := range files {
+		data, err = masterClient.DockerRead(masterNode, file, -1)
+		if err != nil {
+			continue
+		}
+	}
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -341,7 +391,7 @@ func getAccountPool(tn *testnet.TestNet, numOfAccounts int) ([]*ethereum.Account
 		}
 	}
 	if len(accounts) >= numOfAccounts {
-		return accounts[:numOfAccounts], nil
+		return accounts, nil
 	}
 	var tmp []string
 	tn.BuildState.GetP("accounts", &tmp)
@@ -350,13 +400,28 @@ func getAccountPool(tn *testnet.TestNet, numOfAccounts int) ([]*ethereum.Account
 		accounts = append(accounts, newAccs...)
 	}
 	if len(accounts) >= numOfAccounts {
-		return accounts[:numOfAccounts], nil
+		return accounts, nil
 	}
 	fillerAccounts, err := ethereum.GenerateAccounts(numOfAccounts - len(accounts))
 	if err != nil {
 		return nil, util.LogError(err)
 	}
 	return append(accounts, fillerAccounts...), nil
+}
+
+func getExtraFlags(ethconf *ethConf, account *ethereum.Account) string {
+	out := fmt.Sprintf("--maxpeers %d --networkid %d --nodekeyhex %s",
+		ethconf.MaxPeers, ethconf.NetworkID, account.HexPrivateKey())
+	out += fmt.Sprintf(" --verbosity %d", ethconf.Verbosity)
+
+	if ethconf.Consensus == "ethash" {
+		out += fmt.Sprintf(" --miner.etherbase %s", account.HexAddress())
+	}
+	if ethconf.Mode == expansionMode {
+		out += " --syncmode full"
+	}
+
+	return out
 }
 
 func getEnodes(tn *testnet.TestNet, accounts []*ethereum.Account) []string {
