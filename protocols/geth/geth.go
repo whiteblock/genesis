@@ -189,7 +189,7 @@ func build(tn *testnet.TestNet) error {
 		gethCmd := fmt.Sprintf(
 			`geth --datadir /geth/ --maxpeers %d --networkid %d --rpc --nodiscover --rpcaddr %s`+
 				` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
-				` --password /geth/passwd --etherbase %s --nodekeyhex %s console  2>&1 | tee %s`,
+				` --password /geth/passwd --etherbase %s --nodekeyhex %s --txpool.nolocals console  2>&1 | tee %s`,
 			ethconf.MaxPeers,
 			ethconf.NetworkID,
 			node.GetIP(),
