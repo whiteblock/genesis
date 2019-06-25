@@ -14,5 +14,6 @@
     "eip155Block":0,
     "eip158Block":0,
     "mode":"default",
-    "verbosity":3
+    "verbosity":3,
+    "unlock":true
 }

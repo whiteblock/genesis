@@ -125,14 +125,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	tn.BuildState.IncrementBuildProgress()
-	unlock := ""
 
-	for i, account := range accounts[:tn.LDD.Nodes] {
-		if i != 0 {
-			unlock += ","
-		}
-		unlock += account.HexAddress()
-	}
 	err = handleGenesisFileDist(tn, ethconf, accounts)
 	if err != nil {
 		return util.LogError(err)
@@ -141,23 +134,6 @@ func build(tn *testnet.TestNet) error {
 	staticNodes := getEnodes(tn, accounts)
 
 	tn.BuildState.SetBuildStage("Initializing geth")
-
-	/*TAGGED err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		//Load the CustomGenesis file
-		if ethconf.Mode != expansionMode {
-			_, err := client.DockerExec(node,
-				fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/CustomGenesis.json", ethconf.NetworkID))
-			if err != nil {
-				return util.LogError(err)
-			}
-		}
-		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
-		tn.BuildState.IncrementBuildProgress()
-		return nil
-	})
-	if err != nil {
-		return util.LogError(err)
-	}*/
 
 	out, err := json.Marshal(staticNodes)
 	if err != nil {
@@ -177,9 +153,9 @@ func build(tn *testnet.TestNet) error {
 		account := accounts[node.GetAbsoluteNumber()]
 		gethCmd := fmt.Sprintf(
 			`geth --datadir /geth/ %s --rpc --nodiscover --rpcaddr 0.0.0.0`+
-				` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
-				` --password /geth/passwd --txpool.nolocals --port %d console  2>&1 | tee %s`,
-			getExtraFlags(ethconf, account), unlock, p2pPort, conf.DockerOutputFile)
+				` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine`+
+				` --txpool.nolocals --port %d console  2>&1 | tee %s`,
+			getExtraFlags(ethconf, account) /*unlock,*/, p2pPort, conf.DockerOutputFile)
 
 		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
 		tn.BuildState.IncrementBuildProgress()
@@ -303,7 +279,7 @@ func handleGenesisFileDist(tn *testnet.TestNet, ethconf *ethConf, accounts []*et
 	hasGenesis := make([]bool, tn.LDD.Nodes)
 
 	if ethconf.Mode != expansionMode {
-		err := helpers.CopyToAllNodes(tn, genesisFileName, "/geth/")
+		err := helpers.CopyBytesToAllNewNodes(tn, genesisData, genesisFileLoc)
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -417,8 +393,13 @@ func getExtraFlags(ethconf *ethConf, account *ethereum.Account) string {
 	if ethconf.Consensus == "ethash" {
 		out += fmt.Sprintf(" --miner.etherbase %s", account.HexAddress())
 	}
+
 	if ethconf.Mode == expansionMode {
 		out += " --syncmode full"
+	}
+
+	if ethconf.Unlock {
+		out += fmt.Sprintf(` --unlock="%s" --password /geth/passwd`, account.HexAddress())
 	}
 
 	return out

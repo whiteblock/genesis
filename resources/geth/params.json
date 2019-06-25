@@ -12,5 +12,6 @@
     ["eip155Block","int"],
     ["eip158Block","int"],
     ["mode","string"],
-    ["verbosity","int"]
+    ["verbosity","int"],
+    ["unlock","bool"]
 ]
