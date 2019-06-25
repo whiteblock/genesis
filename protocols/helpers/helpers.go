@@ -20,6 +20,7 @@
 package helpers
 
 import (
+	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
@@ -154,4 +155,44 @@ func DefaultGetDefaultsFn(blockchain string) func() string {
 		}
 		return string(dat)
 	}
+}
+
+//JSONRPCAllNodes calls a JSON RPC call on all nodes and then returns the result
+func JSONRPCAllNodes(tn *testnet.TestNet, call string, port int) ([]interface{}, error) {
+	mux := sync.Mutex{}
+	out := make([]interface{}, tn.LDD.Nodes)
+	err := AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		for {
+			res, err := client.KeepTryRun(
+				fmt.Sprintf(
+					`curl -sS -X POST http://%s:%d -H "Content-Type: application/json" `+
+						` -d '{ "method": "%s", "params": [], "id": 1, "jsonrpc": "2.0" }'`,
+					node.GetIP(), port, call))
+
+			if err != nil {
+				continue //could be infinite
+			}
+			var result map[string]interface{}
+
+			err = json.Unmarshal([]byte(res), &result)
+			if err != nil {
+				return util.LogError(err)
+			}
+			_, ok := result["result"]
+			if !ok {
+				_, hasError := result["error"]
+				if hasError {
+					return fmt.Errorf("%v", result["error"])
+				} else {
+					return fmt.Errorf(res)
+				}
+			}
+			mux.Lock()
+			out[node.GetAbsoluteNumber()] = result["result"]
+			mux.Unlock()
+			break
+		}
+		return nil
+	})
+	return out, err
 }
