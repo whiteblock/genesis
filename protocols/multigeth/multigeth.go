@@ -92,6 +92,8 @@ func build(tn *testnet.TestNet) error {
 	case "eth":
 		network = ""
 	case "etc":
+		fallthrough
+	case "classic":
 		network = "--classic"
 	}
 
