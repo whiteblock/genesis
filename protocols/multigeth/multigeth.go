@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package geth handles geth specific functionality
+//Package multigeth handles multigeth specific functionality
 package multigeth
 
 import (
@@ -50,7 +50,7 @@ func init() {
 
 const ethNetStatsPort = 3338
 
-// build builds out a fresh new ethereum test network using geth
+// build builds out a fresh new ethereum test network using multi-geth
 func build(tn *testnet.TestNet) error {
 	mux := sync.Mutex{}
 	ethconf, err := newConf(tn.LDD.Params)
@@ -58,14 +58,9 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	fmt.Println(ethconf)
-
 	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes))
-
 	tn.BuildState.IncrementBuildProgress()
-
 	tn.BuildState.SetBuildStage("Distributing secrets")
-
 	helpers.MkdirAllNodes(tn, "/multi-geth")
 
 	{
@@ -75,29 +70,36 @@ func build(tn *testnet.TestNet) error {
 			data += "password\n"
 		}
 		/**Copy over the password file**/
-		err = helpers.CopyBytesToAllNodes(tn, data, "/geth/passwd")
+		err = helpers.CopyBytesToAllNodes(tn, data, "/multi-geth/passwd")
 		if err != nil {
 			return util.LogError(err)
 		}
 	}
-
 	tn.BuildState.IncrementBuildProgress()
+
+	/* get the proper directory for specified network */
+	var network string
+	switch ethconf.Network {
+	case "eth":
+		network = ""
+	case "etc":
+		network = "--classic"
+}
 
 	/**Create the wallets**/
 	tn.BuildState.SetBuildStage("Creating the wallets")
-
 	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
 	if err != nil {
 		return util.LogError(err)
 	}
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, account := range accounts {
-			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
+			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /multi-geth/pk%d'", account.HexPrivateKey(), i))
 			if err != nil {
 				return util.LogError(err)
 			}
 			_, err = client.DockerExec(node,
-				fmt.Sprintf("geth --%s --datadir /geth/ --password /geth/passwd account import /geth/pk%d", ethconf.Network, i))
+				fmt.Sprintf("geth %s --datadir /multi-geth/ --password /multi-geth/passwd account import /multi-geth/pk%d", network, i))
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -124,7 +126,7 @@ func build(tn *testnet.TestNet) error {
 	accounts = append(accounts, extraAccounts...)
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Creating the genesis block")
-	err = createGenesisfile(ethconf, tn, accounts)
+	genesisFile, err := createGenesisfile(ethconf, tn, accounts)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -132,7 +134,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Bootstrapping network")
 
-	err = helpers.CopyToAllNodes(tn, "CustomGenesis.json", "/geth/")
+	err = helpers.CopyToAllNodes(tn, genesisFile, "/multi-geth/")
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -144,14 +146,16 @@ func build(tn *testnet.TestNet) error {
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		//Load the CustomGenesis file
 		_, err := client.DockerExec(node,
-			fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/CustomGenesis.json", ethconf.NetworkID))
+			fmt.Sprintf("geth %s --datadir /geth/ --networkid %d init /geth/CustomGenesis.json", network, ethconf.NetworkID))
 		if err != nil {
 			return util.LogError(err)
 		}
 		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
 		gethResults, err := client.DockerExec(node,
 			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
-				"geth --rpc --datadir /geth/ --networkid %d console'", ethconf.NetworkID))
+				"geth %s --rpc --datadir /geth/ --networkid %d console'",
+				network,
+				ethconf.NetworkID))
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -182,7 +186,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Starting geth")
 	//Copy static-nodes to every server
-	err = helpers.CopyBytesToAllNodes(tn, string(out), "/geth/static-nodes.json")
+	err = helpers.CopyBytesToAllNodes(tn, string(out), "/multi-geth/static-nodes.json")
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -191,10 +195,10 @@ func build(tn *testnet.TestNet) error {
 		tn.BuildState.IncrementBuildProgress()
 
 		gethCmd := fmt.Sprintf(
-			`geth --%s --datadir /geth/ --maxpeers %d --networkid %d --rpc --nodiscover --rpcaddr %s`+
+			`geth %s --datadir /geth/ --maxpeers %d --networkid %d --rpc --nodiscover --rpcaddr %s`+
 				` --rpcapi "web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
 				` --password /geth/passwd --etherbase %s console  2>&1 | tee %s`,
-			ethconf.Network,
+			network,
 			ethconf.MaxPeers,
 			ethconf.NetworkID,
 			node.GetIP(),
@@ -257,7 +261,7 @@ func MakeFakeAccounts(accs int) []string {
  * @param  []string wallets     The wallets to be allocated a balance
  */
 
-func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) error {
+func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) (string,error) {
 
 	alloc := map[string]map[string]string{}
 	for _, account := range accounts {
@@ -342,14 +346,14 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 
 	template, err := helpers.GetBlockchainConfig(blockchain, 0, genesisFile, tn.LDD)
 	if err != nil {
-		return util.LogError(err)
+		return "", util.LogError(err)
 	}
 
 	data, err := mustache.Render(string(template), util.ConvertToStringMap(genesis))
 	if err != nil {
-		return util.LogError(err)
+		return "", util.LogError(err)
 	}
-	return tn.BuildState.Write(genesisOut, data)
+	return genesisOut, tn.BuildState.Write(genesisOut, data)
 }
 
 /**
