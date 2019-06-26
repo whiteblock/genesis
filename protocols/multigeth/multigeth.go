@@ -275,6 +275,8 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		case "eth":
 			genesisFile = "eth_genesis.json"
 			genesisOut = "CustomGenesis.json"
+		case "classic":
+			fallthrough
 		case "etc":
 			genesisFile = "etc_chain.json"
 			genesisOut = "chain.json"
