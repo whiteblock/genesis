@@ -233,6 +233,8 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		genesis["gasLimit"]=        fmt.Sprintf("0x0%X", ethconf.GasLimit)
 		genesis["consensus"]=       ethconf.Consensus
 	case "etc":
+		fallthrough
+	case "classic":
 		genesis["identity"]=            ethconf.EtcIdentity
 		genesis["name"]=                ethconf.EtcName
 		genesis["network"]=             ethconf.NetworkID
