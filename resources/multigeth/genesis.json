@@ -1,11 +1,17 @@
 {
     "config": {
+        "networkdId": {{{networkId}}},
         "chainId": {{{chainId}}},
         "homesteadBlock":{{{homesteadBlock}}},
-        "eip150Block":0,
+        "eip7FBlock":{{{eip7FBlock}}},
+        "eip150Block":{{{eip150Block}}},
         "eip155Block":{{{eip155Block}}},
         "eip158Block":{{{eip158Block}}},
-        "eip160Block":0,
+        "byzantiumBlock":{{{byzantiumBlock}}},
+        "disposalBlock":{{{disposalBlock}}},
+        "constantinopleBlock":{{{constantinopleBlock}}},
+        "ecip1017EraRounds":{{{ecip1017EraRounds}}},
+        "eip160FBlock":{{{eip160FBlock}}},
         {{{consensus}}}: {{{consensusParams}}}
     },
     "nonce": "0x0000000000000042",

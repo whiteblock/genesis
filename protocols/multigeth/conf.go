@@ -43,18 +43,16 @@ type ethConf struct {
 	Mode                  string `json:"mode"`
 	Verbosity             int64  `json:"verbosity"`
 	Unlock                bool   `json:"unlock"`
-
 	HomesteadBlock        int64  `json:"homesteadBlock"`
-	EthEip155Block        int64  `json:"eip155Block"`
-	EthEip158Block        int64  `json:"eip158Block"`
-	EtcIdentity           string `json:"identity"`
-	EtcName               string `json:"name"`
-	EtcEIP150Block        int64  `json:"eip150Block"`
-	EtcDAOHFBlock         int64  `json:"daoHFBlock"`
-	EtcEIP155_160Block    int64  `json:"eip155_160Block"`
-	EtcECIP1010Length     int64  `json:"ecip1010Length"`
-	EtcECIP1017Block      int64  `json:"ecip1017Block"`
-	EtcECIP1017Era        int64  `json:"ecip1017Era"`
+	EIP7FBlock            int64  `json:"eip7FBlock"`
+	EIP150Block           int64  `json:"eip150Block"`
+	EIP155Block           int64  `json:"eip155Block"`
+	EIP158Block           int64  `json:"eip158Block"`
+	ByzantiumBlock        int64  `json:"byzantiumBlock"`
+	DisposalBlock         int64  `json:"disposalBlock"`
+	ConstantinopleBlock   int64  `json:"constantinopleBlock"`
+	ECIP1017EraRounds     int64  `json:"ecip1017EraRounds"`
+	EIP160FBlock           int64  `json:"eip160FBlock"`
 }
 
 /**

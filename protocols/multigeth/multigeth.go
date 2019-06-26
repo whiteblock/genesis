@@ -90,10 +90,6 @@ func build(tn *testnet.TestNet) error {
 	/* get the proper directory for specified network */
 	var network string
 	switch ethconf.Network {
-	case "eth":
-		network = ""
-	case "etc":
-		fallthrough
 	case "classic":
 		network = "--classic"
 	}
@@ -125,7 +121,7 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.IncrementBuildProgress()
 
-	err = handleGenesisFileDist(tn, ethconf, accounts)
+	err = handleGenesisFileDist(tn, ethconf, network, accounts)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -223,41 +219,23 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		consensusParams["difficulty"] = ethconf.Difficulty
 	}
 
-	genesis := map[string]interface{}{}
-	genesis["chainId"]=         ethconf.NetworkID
-		genesis["homesteadBlock"]=  ethconf.HomesteadBlock
-		genesis["eip155Block"]=     ethconf.EthEip155Block
-		genesis["eip158Block"]=     ethconf.EthEip158Block
-		genesis["difficulty"]=      fmt.Sprintf("0x0%X", ethconf.Difficulty)
-		genesis["gasLimit"]=        fmt.Sprintf("0x0%X", ethconf.GasLimit)
-		genesis["consensus"]=       ethconf.Consensus
-	// switch ethconf.Network {
-	// case "eth": 
-	// 	genesis["chainId"]=         ethconf.NetworkID
-	// 	genesis["homesteadBlock"]=  ethconf.HomesteadBlock
-	// 	genesis["eip155Block"]=     ethconf.EthEip155Block
-	// 	genesis["eip158Block"]=     ethconf.EthEip158Block
-	// 	genesis["difficulty"]=      fmt.Sprintf("0x0%X", ethconf.Difficulty)
-	// 	genesis["gasLimit"]=        fmt.Sprintf("0x0%X", ethconf.GasLimit)
-	// 	genesis["consensus"]=       ethconf.Consensus
-	// case "etc":
-	// 	fallthrough
-	// case "classic":
-	// 	genesis["identity"]=            ethconf.EtcIdentity
-	// 	genesis["name"]=                ethconf.EtcName
-	// 	genesis["network"]=             ethconf.NetworkID
-	// 	genesis["chainId"]=             ethconf.NetworkID
-	// 	genesis["difficulty"]=          fmt.Sprintf("0x0%x", ethconf.Difficulty)
-	// 	genesis["gasLimit"]=            fmt.Sprintf("0x%x", ethconf.GasLimit)
-	// 	genesis["consensus"]=           ethconf.Consensus
-	// 	genesis["homesteadBlock"]=      ethconf.HomesteadBlock
-	// 	genesis["eip150Block"]=         ethconf.EtcEIP150Block
-	// 	genesis["daoHFBlock"]=          ethconf.EtcDAOHFBlock
-	// 	genesis["eip155_160Block"]=     ethconf.EtcEIP155_160Block
-	// 	genesis["ecip1010Length"]=      ethconf.EtcECIP1010Length
-	// 	genesis["ecip1017Block"]=       ethconf.EtcECIP1017Block
-	// 	genesis["ecip1017Era"]=         ethconf.EtcECIP1017Era
-	// }
+	genesis := map[string]interface{}{
+		"networkId":           ethconf.NetworkID,
+		"chainId":             ethconf.NetworkID,
+		"homesteadBlock":      checkIntToNull(ethconf.HomesteadBlock),
+		"eip7FBlock":          checkIntToNull(ethconf.EIP7FBlock),
+		"eip150Block":         checkIntToNull(ethconf.EIP150Block),
+		"eip155Block":         checkIntToNull(ethconf.EIP155Block),
+		"eip158Block":         checkIntToNull(ethconf.EIP158Block),
+		"byzantiumBlock":      checkIntToNull(ethconf.ByzantiumBlock),
+		"disposalBlock":       checkIntToNull(ethconf.DisposalBlock),
+		"constantinopleBlock": checkIntToNull(ethconf.ConstantinopleBlock),
+		"ecip1017EraRounds":   checkIntToNull(ethconf.ECIP1017EraRounds),
+		"eip160FBlock":        checkIntToNull(ethconf.EIP160FBlock),
+		"consensus":           ethconf.Consensus,
+		"gasLimit":            fmt.Sprintf("0x0%X", ethconf.GasLimit),
+		"difficulty":          fmt.Sprintf("0x0%X", ethconf.Difficulty),
+	}
 
 	switch ethconf.Consensus {
 	case "clique":
@@ -279,20 +257,6 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
 
-	// var genesisFile string
-	// var genesisOut string
-	// switch ethconf.Network {
-	// 	case "eth":
-	// 		genesisFile = "eth_genesis.json"
-	// 		genesisOut = "CustomGenesis.json"
-	// 	case "classic":
-	// 		fallthrough
-	// 	case "etc":
-	// 		genesisFile = "etc_chain.json"
-	// 		genesisOut = "chain.json"
-	// }
-
-
 	dat, err := helpers.GetGlobalBlockchainConfig(tn, "genesis.json")
 	if err != nil {
 		return "", util.LogError(err)
@@ -305,7 +269,7 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 	return data, nil
 }
 
-func handleGenesisFileDist(tn *testnet.TestNet, ethconf *ethConf, accounts []*ethereum.Account) error {
+func handleGenesisFileDist(tn *testnet.TestNet, ethconf *ethConf, network string, accounts []*ethereum.Account) error {
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Creating the genesis block")
 
@@ -353,7 +317,7 @@ func handleGenesisFileDist(tn *testnet.TestNet, ethconf *ethConf, accounts []*et
 		//Load the CustomGenesis file
 		if ethconf.Mode != expansionMode || !hasGenesis[node.GetAbsoluteNumber()] {
 			_, err := client.DockerExec(node,
-				fmt.Sprintf("geth --datadir /multi-geth/ --networkid %d init %s", ethconf.NetworkID, genesisFileLoc))
+				fmt.Sprintf("geth %s --datadir /multi-geth/ --networkid %d init %s", network, ethconf.NetworkID, genesisFileLoc))
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -494,4 +458,12 @@ func getEnodes(tn *testnet.TestNet, accounts []*ethereum.Account) []string {
 		enodes = append(enodes, enodeAddress)
 	}
 	return enodes
+}
+
+func checkIntToNull(v int64) interface{} {
+	if v < 0 {
+		return "null"
+	} else {
+		return v
+	}
 }

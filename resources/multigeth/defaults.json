@@ -17,15 +17,13 @@
     "validators":1,
 
     "homesteadBlock":0,
+    "eip7FBlock":-1,
+    "eip150Block":0,
     "eip155Block":0,
     "eip158Block":0,
-
-    "name":"Whiteblock Testnet",
-    "identity":"whiteblock",
-    "daoHFBlock":0,
-    "eip150Block":0,
-    "eip155_160Block":0,
-    "ecip1010Length":2000000,
-    "ecip1017Era":2000000,
-    "ecip1017Block":0
+    "byzantiumBlock":0,
+    "disposalBlock":0,
+    "constantinopleBlock":-1,
+    "ecip1017EraRounds":5000000,
+    "eip160FBlock":0
 }
