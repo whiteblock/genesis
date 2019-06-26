@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
 	"reflect"
@@ -53,9 +54,9 @@ func newConf(data map[string]interface{}) (artemisConf, error) {
 }
 
 // GetServices returns the services which are used by artemis
-func GetServices() []helpers.Service {
-	return []helpers.Service{
-		helpers.RegisterPrometheus(),
+func GetServices() []services.Service {
+	return []services.Service{
+		services.RegisterPrometheus(),
 	}
 }
 

@@ -85,7 +85,7 @@ func dbInit(dataLoc string) error {
 		"max INTEGER",
 		"name TEXT")
 
-	nodesSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s);",
+	nodesSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s,%s,%s);",
 		NodesTable,
 		"id TEXT",
 		"abs_num INTEGER",
@@ -93,7 +93,9 @@ func dbInit(dataLoc string) error {
 		"server INTEGER",
 		"local_id INTEGER",
 		"ip TEXT NOT NULL",
-		"label TEXT")
+		"label TEXT",
+		"image TEXT",
+		"protocol TEXT")
 
 	buildSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s,%s, %s);",
 		BuildsTable,

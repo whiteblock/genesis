@@ -57,6 +57,8 @@ type Config struct {
 	LogJSON                 bool    `mapstructure:"logJson"`
 	PrometheusConfig        string  `mapstructure:"prometheusConfig"`
 	PrometheusPort          int     `mapstructure:"prometheusPort"`
+	GanacheCLIOptions       string  `mapstructure:"ganacheCLIOptions"`
+	GanacheRPCPort          int     `mapstructure:"ganacheRPCPort"`
 	MaxRunAttempts          int     `mapstructure:"maxRunAttempts"`
 	MaxConnections          int     `mapstructure:"maxConnections"`
 	DataDirectory           string  `mapstructure:"datadir"`
@@ -103,6 +105,10 @@ func setViperEnvBindings() {
 	viper.BindEnv("apiEndpoint", "API_ENDPOINT")
 	viper.BindEnv("nibblerEndPoint", "NIBBLER_END_POINT")
 	viper.BindEnv("logJson", "LOG_JSON")
+	viper.BindEnv("prometheusConfig", "PROMETHEUS_CONFIG")
+	viper.BindEnv("prometheusPort", "PROMETHEUS_PORT")
+	viper.BindEnv("ganacheCLIOptions", "GANACHE_CLI_OPTIONS")
+	viper.BindEnv("ganacheRPCPort", "GANACHE_RPC_PORT")
 	viper.BindEnv("maxRunAttempts", "MAX_RUN_ATTEMPTS")
 	viper.BindEnv("maxConnections", "MAX_CONNECTIONS")
 	viper.BindEnv("datadir", "DATADIR")
@@ -152,6 +158,8 @@ func setViperDefaults() {
 	viper.SetDefault("removeNodesOnFailure", false)
 	viper.SetDefault("nibblerRetries", 2)
 	viper.SetDefault("killRetries", 100)
+	viper.SetDefault("ganacheRPCPort", 8545)
+	viper.SetDefault("ganacheCLIOptions", "--gasLimit 4000000000000")
 }
 
 // GCPFormatter enables the ability to use genesis logging with Stackdriver

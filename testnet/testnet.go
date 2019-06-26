@@ -134,9 +134,15 @@ func (tn *TestNet) AddNode(node db.Node) *db.Node {
 	tn.mux.Lock()
 	defer tn.mux.Unlock()
 	node.AbsoluteNum = len(tn.Nodes)
+	node.Image = tn.LDD.Images[0]
+	if len(tn.LDD.Images) > node.AbsoluteNum {
+		node.Image = tn.LDD.Images[node.AbsoluteNum]
+		log.WithFields(log.Fields{"image": node.Image, "node": node.AbsoluteNum}).Trace("using given image")
+	}
+	log.WithFields(log.Fields{"node": node}).Debug("adding a node")
 	tn.NewlyBuiltNodes = append(tn.NewlyBuiltNodes, node)
 	tn.Nodes = append(tn.Nodes, node)
-	return &tn.Nodes[node.AbsoluteNum]
+	return &tn.NewlyBuiltNodes[len(tn.NewlyBuiltNodes)-1]
 }
 
 // AddSideCar adds a side car to the testnet
@@ -297,6 +303,17 @@ func (tn *TestNet) Store() {
 	db.SetMeta("testnet_"+tn.TestNetID, *tn)
 }
 
+// UpdateAllImages switches all of the nodes to the given docker
+// image
+func (tn *TestNet) UpdateAllImages(newImage string) {
+	if tn.LDD == nil {
+		log.Error("LDD is nil")
+	}
+	for i := range tn.LDD.Images {
+		tn.LDD.Images[i] = newImage
+	}
+}
+
 // Destroy removes all the testnets data
 func (tn *TestNet) Destroy() error {
 	return db.DeleteMeta("testnet_" + tn.TestNetID)
@@ -306,6 +323,7 @@ func (tn *TestNet) Destroy() error {
 func (tn *TestNet) StoreNodes() error {
 	var err error
 	for _, node := range tn.NewlyBuiltNodes {
+		log.WithFields(log.Fields{"node": node}).Debug("storing a node")
 		_, er := db.InsertNode(node)
 		if er != nil {
 			log.WithFields(log.Fields{"build": tn.TestNetID, "error": er,

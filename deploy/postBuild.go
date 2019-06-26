@@ -60,5 +60,4 @@ func handleExtraPublicKeys(tn *testnet.TestNet) error {
 
 func handlePostBuild(tn *testnet.TestNet) error {
 	return handleExtraPublicKeys(tn)
-	//return nil
 }

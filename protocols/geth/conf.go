@@ -22,18 +22,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/services"
 )
 
 type ethConf struct {
-	ExtraAccounts  int64  `json:"extraAccounts"`
-	NetworkID      int64  `json:"networkId"`
-	Difficulty     int64  `json:"difficulty"`
-	InitBalance    string `json:"initBalance"`
-	MaxPeers       int64  `json:"maxPeers"`
-	GasLimit       int64  `json:"gasLimit"`
-	HomesteadBlock int64  `json:"homesteadBlock"`
-	Eip155Block    int64  `json:"eip155Block"`
-	Eip158Block    int64  `json:"eip158Block"`
+	ExtraAccounts      int64  `json:"extraAccounts"`
+	NetworkID          int64  `json:"networkId"`
+	Difficulty         int64  `json:"difficulty"`
+	InitBalance        string `json:"initBalance"`
+	MaxPeers           int64  `json:"maxPeers"`
+	GasLimit           int64  `json:"gasLimit"`
+	Consensus          string `json:"consensus"`
+	BlockPeriodSeconds int64  `json:"blockPeriodSeconds"`
+	Epoch              int64  `json:"epoch"`
+	HomesteadBlock     int64  `json:"homesteadBlock"`
+	Eip155Block        int64  `json:"eip155Block"`
+	Eip158Block        int64  `json:"eip158Block"`
 }
 
 /**
@@ -62,9 +66,9 @@ func newConf(data map[string]interface{}) (*ethConf, error) {
 }
 
 // GetServices returns the services which are used by artemis
-func GetServices() []helpers.Service {
-	return []helpers.Service{
-		helpers.SimpleService{
+func GetServices() []services.Service {
+	return []services.Service{
+		services.SimpleService{
 			Name:    "ethNetStats",
 			Image:   "gcr.io/whiteblock/ethnetstats:dev",
 			Env:     nil,

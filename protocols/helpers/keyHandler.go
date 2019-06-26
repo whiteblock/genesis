@@ -19,10 +19,10 @@
 package helpers
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
+	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 )
 
@@ -45,21 +45,14 @@ type KeyMaster struct {
 // NewKeyMaster creates a new KeyMaster using the provided deployment details and blockchain.
 // Currently details is not used, but in the future, it should be used to allow the user to provide
 // their own static keys to be used in the pool.
-func NewKeyMaster(details *db.DeploymentDetails, blockchain string) (*KeyMaster, error) {
+func NewKeyMaster(tn *testnet.TestNet) (*KeyMaster, error) {
 	out := new(KeyMaster)
-	dat, err := GetStaticBlockchainConfig(blockchain, "privatekeys.json")
+	var err error
+	out.PrivateKeys, err = FetchPreGeneratedPrivateKeys(tn)
 	if err != nil {
 		return nil, util.LogError(err)
 	}
-	err = json.Unmarshal(dat, &out.PrivateKeys)
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	dat, err = GetStaticBlockchainConfig(blockchain, "publickeys.json")
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	err = json.Unmarshal(dat, &out.PublicKeys)
+	out.PublicKeys, err = FetchPreGeneratedPublicKeys(tn)
 	if err != nil {
 		return nil, util.LogError(err)
 	}

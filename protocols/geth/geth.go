@@ -37,7 +37,11 @@ import (
 
 var conf *util.Config
 
-const blockchain = "geth"
+const (
+	blockchain      = "geth"
+	ethNetStatsPort = 3338
+	password        = "password"
+)
 
 func init() {
 	conf = util.GetConfig()
@@ -57,8 +61,6 @@ func init() {
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 	registrar.RegisterParams(alias, helpers.DefaultGetParamsFn(blockchain))
 }
-
-const ethNetStatsPort = 3338
 
 // build builds out a fresh new ethereum test network using geth
 func build(tn *testnet.TestNet) error {
@@ -80,7 +82,7 @@ func build(tn *testnet.TestNet) error {
 		/**Create the Password files**/
 		var data string
 		for i := 1; i <= tn.LDD.Nodes; i++ {
-			data += "password\n"
+			data += password + "\n"
 		}
 		/**Copy over the password file**/
 		err = helpers.CopyBytesToAllNodes(tn, data, "/geth/passwd")
@@ -94,18 +96,18 @@ func build(tn *testnet.TestNet) error {
 	/**Create the wallets**/
 	tn.BuildState.SetBuildStage("Creating the wallets")
 
-	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
+	accounts, err := getAccountPool(tn, int(ethconf.ExtraAccounts)+tn.LDD.Nodes)
 	if err != nil {
 		return util.LogError(err)
 	}
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		for i, account := range accounts {
+		for i, account := range accounts[:tn.LDD.Nodes] {
 			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
 			if err != nil {
 				return util.LogError(err)
 			}
 			_, err = client.DockerExec(node,
-				fmt.Sprintf("geth --datadir /geth/ --password /geth/passwd account import --password /geth/passwd /geth/pk%d", i))
+				fmt.Sprintf("geth --datadir /geth/ --password /geth/passwd account import /geth/pk%d", i))
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -119,17 +121,12 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 	unlock := ""
 
-	for i, account := range accounts {
+	for i, account := range accounts[:tn.LDD.Nodes] {
 		if i != 0 {
 			unlock += ","
 		}
 		unlock += account.HexAddress()
 	}
-	extraAccounts, err := ethereum.GenerateAccounts(int(ethconf.ExtraAccounts))
-	if err != nil {
-		return util.LogError(err)
-	}
-	accounts = append(accounts, extraAccounts...)
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Creating the genesis block")
 	err = createGenesisfile(ethconf, tn, accounts)
@@ -200,7 +197,7 @@ func build(tn *testnet.TestNet) error {
 
 		gethCmd := fmt.Sprintf(
 			`geth --datadir /geth/ --maxpeers %d --networkid %d --rpc --nodiscover --rpcaddr %s`+
-				` --rpcapi "web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
+				` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
 				` --password /geth/passwd --etherbase %s console  2>&1 | tee %s`,
 			ethconf.MaxPeers,
 			ethconf.NetworkID,
@@ -210,12 +207,8 @@ func build(tn *testnet.TestNet) error {
 			conf.DockerOutputFile)
 
 		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
-		if err != nil {
-			return util.LogError(err)
-		}
-
 		tn.BuildState.IncrementBuildProgress()
-		return nil
+		return util.LogError(err)
 	})
 	if err != nil {
 		return util.LogError(err)
@@ -266,6 +259,22 @@ func MakeFakeAccounts(accs int) []string {
 
 func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) error {
 
+	alloc := map[string]map[string]string{}
+	for _, account := range accounts {
+		alloc[account.HexAddress()] = map[string]string{
+			"balance": ethconf.InitBalance,
+		}
+	}
+
+	consensusParams := map[string]interface{}{}
+	switch ethconf.Consensus {
+	case "clique":
+		consensusParams["period"] = ethconf.BlockPeriodSeconds
+		consensusParams["epoch"] = ethconf.Epoch
+	case "ethash":
+		consensusParams["difficulty"] = ethconf.Difficulty
+	}
+
 	genesis := map[string]interface{}{
 		"chainId":        ethconf.NetworkID,
 		"homesteadBlock": ethconf.HomesteadBlock,
@@ -273,12 +282,24 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		"eip158Block":    ethconf.Eip158Block,
 		"difficulty":     fmt.Sprintf("0x0%X", ethconf.Difficulty),
 		"gasLimit":       fmt.Sprintf("0x0%X", ethconf.GasLimit),
+		"consensus":      ethconf.Consensus,
 	}
-	alloc := map[string]map[string]string{}
-	for _, account := range accounts {
-		alloc[account.HexAddress()] = map[string]string{
-			"balance": ethconf.InitBalance,
-		}
+
+	switch ethconf.Consensus {
+	case "clique":
+		fallthrough
+	case "ethash":
+		extraData := "0x0000000000000000000000000000000000000000000000000000000000000000"
+		//it does not work when there are multiple signers put into this extraData field
+		/*
+			for i := 0; i < len(accounts) && i < tn.LDD.Nodes; i++ {
+				extraData += accounts[i].HexAddress()[2:]
+			}
+		*/
+		extraData += accounts[0].HexAddress()[2:]
+		extraData += "000000000000000000000000000000000000000000000000000000000000000000" +
+			"0000000000000000000000000000000000000000000000000000000000000000"
+		genesis["extraData"] = extraData
 	}
 
 	accs := MakeFakeAccounts(int(ethconf.ExtraAccounts))
@@ -289,7 +310,8 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		}
 	}
 	genesis["alloc"] = alloc
-	dat, err := helpers.GetBlockchainConfig("geth", 0, "genesis.json", tn.LDD)
+	genesis["consensusParams"] = consensusParams
+	dat, err := helpers.GetBlockchainConfig(blockchain, 0, "genesis.json", tn.LDD)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -325,10 +347,7 @@ func setupEthNetIntelligenceAPI(tn *testnet.TestNet) error {
 		sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`, node.GetIP())
 
 		//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
-		_, err := client.DockerMultiExec(node, []string{
-			sedCmd,
-			sedCmd2,
-			sedCmd3})
+		_, err := client.DockerMultiExec(node, []string{sedCmd, sedCmd2, sedCmd3})
 
 		if err != nil {
 			return util.LogError(err)
@@ -336,4 +355,25 @@ func setupEthNetIntelligenceAPI(tn *testnet.TestNet) error {
 		_, err = client.DockerExecd(node, "bash -c 'cd /eth-net-intelligence-api && pm2 start app.json'")
 		return util.LogError(err)
 	})
+}
+
+func getAccountPool(tn *testnet.TestNet, numOfAccounts int) ([]*ethereum.Account, error) {
+	accounts := []*ethereum.Account{}
+	rawPreGen, err := helpers.FetchPreGeneratedPrivateKeys(tn)
+	if err != nil {
+		log.Debug("There are not any pregenerated accounts availible")
+	} else {
+		accounts, err = ethereum.ImportAccounts(rawPreGen)
+		if err != nil {
+			return nil, util.LogError(err)
+		}
+	}
+	if len(accounts) >= numOfAccounts {
+		return accounts[:numOfAccounts], nil
+	}
+	fillerAccounts, err := ethereum.GenerateAccounts(numOfAccounts - len(accounts))
+	if err != nil {
+		return nil, err
+	}
+	return append(accounts, fillerAccounts...), nil
 }

@@ -40,9 +40,9 @@ func allNodeExecCon(tn *testnet.TestNet, s settings, fn func(ssh.Client, *db.Ser
 	for _, node := range nodes {
 
 		wg.Add(1)
-		go func(client ssh.Client, server *db.Server, node ssh.Node) {
+		go func(fwdClient ssh.Client, fwdServer *db.Server, fwdNode ssh.Node) {
 			defer wg.Done()
-			err := fn(client, server, node)
+			err := fn(fwdClient, fwdServer, fwdNode)
 			if err != nil {
 				tn.BuildState.ReportError(err)
 				return

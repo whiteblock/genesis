@@ -1,9 +1,10 @@
-package helpers
+package services
 
 import (
 	"bytes"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
@@ -77,7 +78,7 @@ func (p PrometheusService) Prepare(client ssh.Client, tn *testnet.TestNet) error
 	if err != nil {
 		return util.LogError(err)
 	}
-	return CopyAllToServers(tn, tmpFilename, conf.PrometheusConfig)
+	return helpers.CopyAllToServers(tn, tmpFilename, conf.PrometheusConfig)
 }
 
 // RegisterPrometheus exposes a Prometheus service on the testnet.

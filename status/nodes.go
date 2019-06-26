@@ -51,6 +51,8 @@ type NodeStatus struct {
 	Up        bool   `json:"up"`
 	Resources Comp   `json:"resourceUse"`
 	ID        string `json:"id"`
+	Protocol  string `json:"protocol"`
+	Image     string `json:"image"`
 }
 
 // FindNodeIndex finds the index of a node by name and server id
@@ -114,9 +116,10 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 			Server:    node.Server,
 			Up:        false,
 			ID:        node.ID,
+			Protocol:  node.Protocol,
+			Image:     node.Image,
 			Resources: Comp{-1, -1, -1},
 		}
-
 	}
 	servers, err := db.GetServers(serverIDs)
 	if err != nil {

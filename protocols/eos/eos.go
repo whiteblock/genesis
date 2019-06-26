@@ -85,7 +85,7 @@ func build(tn *testnet.TestNet) error {
 		"eosio.token",
 		"eosio.vpay",
 	}
-	km, err := helpers.NewKeyMaster(tn.LDD, blockchain)
+	km, err := helpers.NewKeyMaster(tn)
 	if err != nil {
 		return util.LogError(err)
 	}

@@ -20,6 +20,7 @@ package prysm
 
 import (
 	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/services"
 )
 
 type prysm struct {
@@ -31,8 +32,8 @@ func newConf(data map[string]interface{}) (*prysm, error) {
 }
 
 // GetServices returns the services which are used by rchain
-func GetServices() []helpers.Service {
-	return []helpers.Service{
-		helpers.RegisterPrometheus(),
+func GetServices() []services.Service {
+	return []services.Service{
+		services.RegisterPrometheus(),
 	}
 }

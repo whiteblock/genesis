@@ -24,8 +24,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
-	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
@@ -97,23 +97,18 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 	} else {
 		resource = tn.LDD.Resources[0]
 	}
-	node.Image = tn.LDD.Images[0]
+
 	var env map[string]string
 
 	if len(tn.LDD.Resources) > node.AbsoluteNum {
 		resource = tn.LDD.Resources[node.AbsoluteNum]
 		log.WithFields(log.Fields{"resource": resource, "node": node.AbsoluteNum}).Trace("using given resources")
 	}
-	if len(tn.LDD.Images) > node.AbsoluteNum {
-		node.Image = tn.LDD.Images[node.AbsoluteNum]
-		log.WithFields(log.Fields{"image": node.Image, "node": node.AbsoluteNum}).Trace("using given image")
-	}
 
 	if tn.LDD.Environments != nil && len(tn.LDD.Environments) > node.AbsoluteNum && tn.LDD.Environments[node.AbsoluteNum] != nil {
 		env = tn.LDD.Environments[node.AbsoluteNum]
 		log.WithFields(log.Fields{"env": env, "node": node.AbsoluteNum}).Trace("using custom env vars")
 	}
-
 	err = docker.Run(tn, server.ID, docker.NewNodeContainer(node, env, resource, server.SubnetID))
 	if err != nil {
 		tn.BuildState.ReportError(err)
@@ -125,7 +120,7 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 
 // Build builds out the given docker network infrastructure according to the given parameters, and return
 // the given array of servers, with ips updated for the nodes added to that server
-func Build(tn *testnet.TestNet, services []helpers.Service) error {
+func Build(tn *testnet.TestNet, services []services.Service) error {
 	tn.BuildState.SetDeploySteps(3*tn.LDD.Nodes + 2 + len(services))
 	defer tn.BuildState.FinishDeploy()
 	wg := sync.WaitGroup{}
@@ -165,14 +160,14 @@ func Build(tn *testnet.TestNet, services []helpers.Service) error {
 			return util.LogError(err)
 		}
 
-		nodeIP, err := util.GetNodeIP(tn.Servers[serverIndex].SubnetID, len(tn.Nodes), 0)
+		nodeIP, err := util.GetNodeIP(tn.Servers[serverIndex].SubnetID, tn.Servers[serverIndex].Nodes, 0)
 		if err != nil {
 			return util.LogError(err)
 		}
 
 		node := tn.AddNode(db.Node{
 			ID: nodeID, TestNetID: tn.TestNetID, Server: serverID,
-			LocalID: tn.Servers[serverIndex].Nodes, IP: nodeIP})
+			LocalID: tn.Servers[serverIndex].Nodes, IP: nodeIP, Protocol: tn.LDD.Blockchain})
 
 		tn.Servers[serverIndex].Ips = append(tn.Servers[serverIndex].Ips, nodeIP) //TODO: REMOVE
 		tn.Servers[serverIndex].Nodes++

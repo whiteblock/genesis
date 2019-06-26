@@ -91,7 +91,22 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		return util.LogError(err)
 	}
 
-	err = helpers.CopyAllToServers(tn, "Dockerfile", "/tmp/Dockerfile")
+	dir, err := util.GetUUIDString()
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	err = helpers.AllServerExecCon(tn, func(client ssh.Client, _ *db.Server) error {
+		tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("rm /tmp/%s/", dir)) })
+		_, err := client.Run(fmt.Sprintf("mkdir /tmp/%s/", dir))
+		return err
+	})
+
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	err = helpers.CopyAllToServers(tn, "Dockerfile", fmt.Sprintf("/tmp/%s/Dockerfile", dir))
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -109,7 +124,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		go func(client ssh.Client) {
 			defer wg.Done()
 
-			_, err := client.Run(fmt.Sprintf("docker build /tmp/ -t %s", imageName))
+			_, err := client.Run(fmt.Sprintf("docker build /tmp/%s -t %s", dir, imageName))
 			tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
 			if err != nil {
 				tn.BuildState.ReportError(err)
@@ -119,6 +134,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		}(client)
 	}
 	wg.Wait()
+	tn.UpdateAllImages(imageName)
 	return util.LogError(tn.BuildState.GetError())
 }
 

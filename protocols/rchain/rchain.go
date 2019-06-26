@@ -25,6 +25,7 @@ import (
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
@@ -61,7 +62,7 @@ func build(tn *testnet.TestNet) error {
 	buildState.SetBuildSteps(9 + (len(tn.Servers) * 2) + (tn.LDD.Nodes * 2))
 	buildState.SetBuildStage("Setting up data collection")
 
-	services, err := helpers.GetServiceIps(GetServices())
+	services, err := services.GetServiceIps(GetServices())
 	buildState.IncrementBuildProgress()
 	if err != nil {
 		return util.LogError(err)
@@ -87,7 +88,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	buildState.IncrementBuildProgress()
-	km, err := helpers.NewKeyMaster(tn.LDD, blockchain)
+	km, err := helpers.NewKeyMaster(tn)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -183,6 +184,7 @@ func build(tn *testnet.TestNet) error {
 	}
 	buildState.Set("bootnode", enode)
 	buildState.Set("rConf", *rConf)
+	helpers.SetAlternativeCmdExprs(tn, "/docker-java-home/bin/java")
 
 	err = helpers.CreateConfigs(tn, "/datadir/rnode.conf", func(node ssh.Node) ([]byte, error) {
 		if node.GetAbsoluteNumber() == 0 {
@@ -269,12 +271,12 @@ func add(tn *testnet.TestNet) error {
 	}
 	enode := iEnode.(string)
 
-	services, err := helpers.GetServiceIps(GetServices())
+	services, err := services.GetServiceIps(GetServices())
 	if err != nil {
 		return util.LogError(err)
 	}
 	keyPairs := []util.KeyPair{}
-	km, err := helpers.NewKeyMaster(&tn.CombinedDetails, "rchain")
+	km, err := helpers.NewKeyMaster(tn)
 	if err != nil {
 		return util.LogError(err)
 	}

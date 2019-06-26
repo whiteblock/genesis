@@ -156,6 +156,7 @@ func GetCutConnections(client ssh.Client) ([]Connection, error) {
 			return nil, util.LogError(err)
 		}
 		out = append(out, Connection{To: toNode, From: fromNode})
+		log.WithFields(log.Fields{"to": toNode, "from": fromNode}).Debug("found a disconnection")
 	}
 	return out, nil
 }
