@@ -257,7 +257,9 @@ func buildPoaSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []st
 	}
 
 	tmp := map[string]interface{}{
+		"name":                      pconf.Name,
 		"stepDuration":              pconf.StepDuration,
+		"dataDir":                   pconf.DataDir,
 		"validators":                validators,
 		"difficulty":                fmt.Sprintf("0x%x", pconf.Difficulty),
 		"gasLimit":                  fmt.Sprintf("0x%x", pconf.GasLimit),
@@ -281,7 +283,7 @@ func buildPoaSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []st
 	filler := util.ConvertToStringMap(tmp)
 	dat, err := helpers.GetBlockchainConfig("parity", 0, "spec.json.poa.mustache", details)
 	if err != nil {
-		return "", err
+		return "", util.LogError(err)
 	}
 	return mustache.Render(string(dat), filler)
 }

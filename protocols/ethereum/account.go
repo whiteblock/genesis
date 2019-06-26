@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 //Package ethereum provides functions to assist with Ethereum related functionality
@@ -110,6 +110,20 @@ func CreateAccountFromHex(hexPK string) (*Account, error) {
 		return nil, util.LogError(err)
 	}
 	return NewAccount(privKey), nil
+}
+
+// ImportAccounts creates account objects from an array of hex
+// private keys
+func ImportAccounts(hexPks []string) ([]*Account, error) {
+	out := make([]*Account, len(hexPks))
+	for i := range hexPks {
+		acc, err := CreateAccountFromHex(hexPks[i])
+		if err != nil {
+			return nil, err
+		}
+		out[i] = acc
+	}
+	return out, nil
 }
 
 // GenerateAccounts is a convience function to generate an arbitrary number of accounts

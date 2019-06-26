@@ -88,7 +88,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	buildState.IncrementBuildProgress()
-	km, err := helpers.NewKeyMaster(tn.LDD, blockchain)
+	km, err := helpers.NewKeyMaster(tn)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -184,6 +184,7 @@ func build(tn *testnet.TestNet) error {
 	}
 	buildState.Set("bootnode", enode)
 	buildState.Set("rConf", *rConf)
+	helpers.SetAlternativeCmdExprs(tn, "/docker-java-home/bin/java")
 
 	err = helpers.CreateConfigs(tn, "/datadir/rnode.conf", func(node ssh.Node) ([]byte, error) {
 		if node.GetAbsoluteNumber() == 0 {
@@ -275,7 +276,7 @@ func add(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	keyPairs := []util.KeyPair{}
-	km, err := helpers.NewKeyMaster(&tn.CombinedDetails, "rchain")
+	km, err := helpers.NewKeyMaster(tn)
 	if err != nil {
 		return util.LogError(err)
 	}

@@ -25,6 +25,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/manager"
+	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/status"
 	"github.com/whiteblock/genesis/testnet"
@@ -152,6 +154,23 @@ func delNodes(w http.ResponseWriter, r *http.Request) {
 	go manager.DelNodes(num, testnetID)
 }
 
+func getNodePids(tn *testnet.TestNet, n ssh.Node, node string) ([]string, error) {
+	cmdsToTry, err := helpers.GetCommandExprs(tn, node)
+	if err != nil {
+		return nil, util.LogError(err)
+	}
+	log.WithFields(log.Fields{"toTry": cmdsToTry}).Info("got the commands to try")
+	out := []string{}
+	for _, cmd := range cmdsToTry {
+		pid, err := tn.Clients[n.GetServerID()].DockerExec(n, fmt.Sprintf(
+			"ps aux | grep '%s' | grep -v grep | grep -v nibbler |  awk '{print $2}'", cmd))
+		if err == nil {
+			out = append(out, strings.Split(pid, "\n")...)
+		}
+	}
+	return out, nil
+}
+
 func restartNode(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	testnetID := params["id"]
@@ -177,18 +196,12 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, util.LogError(err).Error(), 500)
 		return
 	}
-	cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep|  awk '{print $2}'", strings.Split(cmd.Cmdline, " ")[0])
-	node, err := db.GetNodeByLocalID(tn.Nodes, cmd.Node)
+	node := &tn.Nodes[cmd.Node]
+	procs, err := getNodePids(tn, node, nodeNum)
 	if err != nil {
 		http.Error(w, util.LogError(err).Error(), 500)
 		return
 	}
-	procsRaw, err := client.DockerExec(node, cmdgexCmd)
-	if err != nil {
-		http.Error(w, util.LogError(err).Error(), 500)
-		return
-	}
-	procs := strings.Split(procsRaw, "\n")
 	log.WithFields(log.Fields{"procs": procs}).Debug("got the possible process ids")
 
 	for _, pid := range procs {
@@ -204,7 +217,8 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 
 	killedSuccessfully := false
 	for i := uint(0); i < conf.KillRetries; i++ {
-		_, err = client.DockerExec(node, fmt.Sprintf("ps aux | grep '%s' | grep -v grep", strings.Split(cmd.Cmdline, " ")[0]))
+		_, err = client.DockerExec(node,
+			fmt.Sprintf("ps aux | grep '%s' | grep -v grep | grep -v nibbler", strings.Split(cmd.Cmdline, " ")[0]))
 		if err != nil {
 			killedSuccessfully = true
 			break
@@ -252,26 +266,18 @@ func signalNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	n := &tn.Nodes[nodeNum]
-	var cmd util.Command
-	ok := tn.BuildState.GetP(node, &cmd)
-	if !ok {
-		log.WithFields(log.Fields{"node": node}).Error("node not found")
-		http.Error(w, fmt.Sprintf("Node %s not found", node), 404)
-		return
-	}
-
-	cmdgexCmd := fmt.Sprintf("ps aux | grep '%s' | grep -v grep| grep -v nibbler |  awk '{print $2}'| tail -n 1",
-		strings.Split(cmd.Cmdline, " ")[0])
-	pid, err := tn.Clients[n.Server].DockerExec(n, cmdgexCmd)
+	procs, err := getNodePids(tn, tn.Nodes[nodeNum], node)
 	if err != nil {
 		http.Error(w, util.LogError(err).Error(), 500)
 		return
 	}
+	log.WithFields(log.Fields{"procs": procs}).Debug("got the possible process ids")
 
-	_, err = tn.Clients[n.Server].DockerExec(n, fmt.Sprintf("kill -%s %s", signal, pid))
-	if err != nil {
-		http.Error(w, util.LogError(err).Error(), 500)
-		return
+	for _, pid := range procs {
+		if pid == "" {
+			continue
+		}
+		_, err = tn.Clients[n.GetServerID()].DockerExec(n, fmt.Sprintf("kill -%s %s", signal, pid))
 	}
 	w.Write([]byte(fmt.Sprintf("Sent signal %s to node %s", signal, node)))
 }
@@ -318,7 +324,7 @@ func killNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for {
-		_, err = client.DockerExec(node, fmt.Sprintf("ps aux | grep '%s' | grep -v grep", strings.Split(cmd.Cmdline, " ")[0]))
+		_, err = client.DockerExec(node, fmt.Sprintf("ps aux | grep '%s' | grep -v grep | grep -v nibbler", strings.Split(cmd.Cmdline, " ")[0]))
 		if err != nil {
 			break
 		}

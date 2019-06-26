@@ -31,12 +31,11 @@ import (
 	"sync"
 )
 
-var conf *util.Config
+var conf = util.GetConfig()
 
 const blockchain = "cosmos"
 
 func init() {
-	conf = util.GetConfig()
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)

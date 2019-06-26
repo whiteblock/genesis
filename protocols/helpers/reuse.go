@@ -104,6 +104,15 @@ func GetStaticBlockchainConfig(blockchain string, file string) ([]byte, error) {
 	return ioutil.ReadFile(fmt.Sprintf("%s/%s/%s", conf.ResourceDir, blockchain, file))
 }
 
+// GetGlobalBlockchainConfig fetches a static file resource for a blockchain, which will be the same for all of the nodes
+func GetGlobalBlockchainConfig(tn *testnet.TestNet, file string) ([]byte, error) {
+	res, exists := GetFileDefault(&tn.CombinedDetails, file)
+	if exists && len(res) != 0 {
+		return base64.StdEncoding.DecodeString(res)
+	}
+	return GetStaticBlockchainConfig(tn.LDD.Blockchain, file)
+}
+
 // GetBlockchainConfig fetches dynamic config template files for the blockchain. Should be used in most cases instead of
 // GetStaticBlockchainConfig as it provides the user the functionality for `-t..` in the build command for the CLI
 func GetBlockchainConfig(blockchain string, node int, file string, details *db.DeploymentDetails) ([]byte, error) {
@@ -153,4 +162,22 @@ func getError(tn *testnet.TestNet, s settings) error {
 		return nil
 	}
 	return err
+}
+func fetchPreGeneratedKeys(tn *testnet.TestNet, file string) ([]string, error) {
+	rawPrivateKeys, err := GetGlobalBlockchainConfig(tn, file)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	return out, util.LogError(json.Unmarshal(rawPrivateKeys, &out))
+}
+
+// FetchPreGeneratedPrivateKeys gets the pregenerated private keys for a blockchain from privatekeys.json
+func FetchPreGeneratedPrivateKeys(tn *testnet.TestNet) ([]string, error) {
+	return fetchPreGeneratedKeys(tn, "privatekeys.json")
+}
+
+// FetchPreGeneratedPublicKeys gets the pregenerated public keys for a blockchain from publickeys.json
+func FetchPreGeneratedPublicKeys(tn *testnet.TestNet) ([]string, error) {
+	return fetchPreGeneratedKeys(tn, "publickeys.json")
 }

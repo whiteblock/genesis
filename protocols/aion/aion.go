@@ -31,15 +31,16 @@ import (
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
 	// "reflect"
+	"encoding/json"
 	"strings"
 	"sync"
-	"encoding/json"
 )
 
 var conf *util.Config
+
 const (
-	blockchain     = "aion"
-	password       = ""
+	blockchain = "aion"
+	password   = ""
 )
 
 type aionAcc struct {
@@ -87,7 +88,7 @@ func build(tn *testnet.TestNet) error {
 	var accounts = make([]aionAcc, tn.LDD.Nodes)
 
 	tn.BuildState.SetBuildStage("Creating the wallets")
-	
+
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		output, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh ac -n custom'"))
 		if err != nil {
@@ -132,8 +133,8 @@ func build(tn *testnet.TestNet) error {
 
 		accounts[node.GetAbsoluteNumber()] = aionAcc{
 			PrivateKey: privateKey,
-			PublicKey: publicKey,
-			Address: addresses[node.GetAbsoluteNumber()],
+			PublicKey:  publicKey,
+			Address:    addresses[node.GetAbsoluteNumber()],
 		}
 
 		tn.BuildState.IncrementBuildProgress()
@@ -186,7 +187,7 @@ func build(tn *testnet.TestNet) error {
 		_, err := client.DockerExec(node, fmt.Sprintf("rm /aion/custom/config/genesis.json"))
 		if err != nil {
 			return util.LogError(err)
-		}		
+		}
 		return nil
 	})
 	if err != nil {
@@ -199,7 +200,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetBuildStage("Creating the configuration file")
-	// delete auto generated config gile and add custom config file 
+	// delete auto generated config gile and add custom config file
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		mux.Lock()
 		_, err := client.DockerExec(node, fmt.Sprintf("rm /aion/custom/config/config.xml"))
@@ -278,10 +279,10 @@ func createGenesisfile(aionconf *AConf, tn *testnet.TestNet, accounts []string) 
 	genesis := map[string]interface{}{
 		"initBalance": aionconf.InitBalance,
 		"energyLimit": aionconf.EnergyLimit,
-		"nonce": aionconf.Nonce,
-		"difficulty": aionconf.Difficulty,
-		"timeStamp": aionconf.TimeStamp,
-		"chainId": aionconf.ChainID,
+		"nonce":       aionconf.Nonce,
+		"difficulty":  aionconf.Difficulty,
+		"timeStamp":   aionconf.TimeStamp,
+		"chainId":     aionconf.ChainID,
 	}
 
 	genesis["alloc"] = alloc
@@ -324,35 +325,35 @@ func buildConfig(aionconf *AConf, details *db.DeploymentDetails, wallet string, 
 
 	var p2pNodes string
 	for i := range nodeIDs {
-		p2pNodes += fmt.Sprintf("<node>p2p://%s@%s:30303</node>\n",nodeIDs[i],nodeIPs[i])
+		p2pNodes += fmt.Sprintf("<node>p2p://%s@%s:30303</node>\n", nodeIDs[i], nodeIPs[i])
 	}
 
 	mp["peerID"] = nodeIDs[node]
-	mp["corsEnabled"] = fmt.Sprintf("%v",aionconf.CorsEnabled)
-	mp["secureConnect"] = fmt.Sprintf("%v",aionconf.SecureConnect)
-	mp["nrgDefault"] = fmt.Sprintf("%d",aionconf.NRGDefault)
-	mp["nrgMax"] = fmt.Sprintf("%d",aionconf.NRGMax)
-	mp["oracleEnabled"] = fmt.Sprintf("%v",aionconf.OracleEnabled)
+	mp["corsEnabled"] = fmt.Sprintf("%v", aionconf.CorsEnabled)
+	mp["secureConnect"] = fmt.Sprintf("%v", aionconf.SecureConnect)
+	mp["nrgDefault"] = fmt.Sprintf("%d", aionconf.NRGDefault)
+	mp["nrgMax"] = fmt.Sprintf("%d", aionconf.NRGMax)
+	mp["oracleEnabled"] = fmt.Sprintf("%v", aionconf.OracleEnabled)
 	mp["nodes"] = p2pNodes
 	mp["ipAddr"] = nodeIPs[node]
-	mp["blocksQueueMax"] = fmt.Sprintf("%v",aionconf.BlocksQueueMax)
-	mp["showStatus"] = fmt.Sprintf("%v",aionconf.ShowStatus)
-	mp["showStatistics"] = fmt.Sprintf("%v",aionconf.ShowStatistics)
-	mp["compactEnabled"] = fmt.Sprintf("%v",aionconf.CompactEnabled)
-	mp["slowImport"] = fmt.Sprintf("%d",aionconf.SlowImport)
-	mp["frequency"] = fmt.Sprintf("%d",aionconf.Frequency)
-	mp["mining"] = fmt.Sprintf("%v",aionconf.Mining)
+	mp["blocksQueueMax"] = fmt.Sprintf("%v", aionconf.BlocksQueueMax)
+	mp["showStatus"] = fmt.Sprintf("%v", aionconf.ShowStatus)
+	mp["showStatistics"] = fmt.Sprintf("%v", aionconf.ShowStatistics)
+	mp["compactEnabled"] = fmt.Sprintf("%v", aionconf.CompactEnabled)
+	mp["slowImport"] = fmt.Sprintf("%d", aionconf.SlowImport)
+	mp["frequency"] = fmt.Sprintf("%d", aionconf.Frequency)
+	mp["mining"] = fmt.Sprintf("%v", aionconf.Mining)
 	mp["minerAddress"] = wallet
-	mp["mineThreads"] = fmt.Sprintf("%d",aionconf.MineThreads)
+	mp["mineThreads"] = fmt.Sprintf("%d", aionconf.MineThreads)
 	mp["extraData"] = aionconf.ExtraData
-	mp["clampedDecayUB"] = fmt.Sprintf("%d",aionconf.ClampedDecayUB)
-	mp["clampedDecayLB"] = fmt.Sprintf("%d",aionconf.ClampedDecayLB)
+	mp["clampedDecayUB"] = fmt.Sprintf("%d", aionconf.ClampedDecayUB)
+	mp["clampedDecayLB"] = fmt.Sprintf("%d", aionconf.ClampedDecayLB)
 	mp["database"] = aionconf.Database
-	mp["checkIntegrity"] = fmt.Sprintf("%v",aionconf.CheckIntegrity)
+	mp["checkIntegrity"] = fmt.Sprintf("%v", aionconf.CheckIntegrity)
 	mp["stateStorage"] = aionconf.StateStorage
 	mp["vendor"] = aionconf.Vendor
-	mp["dbCompression"] = fmt.Sprintf("%v",aionconf.DBCompression)
-	mp["logFile"] = fmt.Sprintf("%v",aionconf.LogFile)
+	mp["dbCompression"] = fmt.Sprintf("%v", aionconf.DBCompression)
+	mp["logFile"] = fmt.Sprintf("%v", aionconf.LogFile)
 	mp["logPath"] = aionconf.LogPath
 	mp["genLogs"] = aionconf.GenLogs
 	mp["vmLogs"] = aionconf.VMLogs
@@ -361,26 +362,25 @@ func buildConfig(aionconf *AConf, details *db.DeploymentDetails, wallet string, 
 	mp["dbLogs"] = aionconf.DBLogs
 	mp["consLogs"] = aionconf.ConsLogs
 	mp["p2pLogs"] = aionconf.P2PLogs
-	mp["cacheMax"] = fmt.Sprintf("%d",aionconf.CacheMax)
+	mp["cacheMax"] = fmt.Sprintf("%d", aionconf.CacheMax)
 
 	return mustache.Render(string(dat), mp)
 }
 
-
 // works but need to wait for some time before it actually works. Need to figure out what the reason for the needed delay is
 func unlockAllAccounts(tn *testnet.TestNet, accounts []aionAcc) error {
 	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-			pass := true
-			for range accounts {
-				for pass {
-					out, _ := client.Run(
+		pass := true
+		for range accounts {
+			for pass {
+				out, _ := client.Run(
 					fmt.Sprintf(
 						`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
 							`'{ "method": "personal_unlockAccount", "params": ["%s","%s",0], "id": 3, "jsonrpc": "2.0" }'`,
 						node.GetIP(), accounts[node.GetAbsoluteNumber()].Address, password))
-					pass = !(strings.Contains(out, ":true"))
-				}
+				pass = !(strings.Contains(out, ":true"))
 			}
+		}
 		return nil
 	})
 }

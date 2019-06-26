@@ -31,11 +31,7 @@ import (
 	"strings"
 )
 
-var conf *util.Config
-
-func init() {
-	conf = util.GetConfig()
-}
+var conf = util.GetConfig()
 
 // Kill kills a single node by index on a server
 func Kill(client ssh.Client, node int) error {
@@ -237,6 +233,9 @@ func StartServices(tn *testnet.TestNet, servs []services.Service) error {
 			ip = ""
 		}
 		err = service.Prepare(client, tn)
+		if err != nil {
+			return util.LogError(err)
+		}
 		_, err = client.KeepTryRun(serviceDockerRunCmd(net, ip,
 			fmt.Sprintf("%s%d", conf.ServicePrefix, i),
 			service.GetEnv(),
