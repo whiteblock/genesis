@@ -37,12 +37,13 @@ import (
 var conf *util.Config
 
 const (
-	blockchain    = "geth"
-	password      = "password"
-	defaultMode   = "default"
-	expansionMode = "expand"
-	p2pPort       = 30303
-	rpcPort       = 8545
+	blockchain      = "geth"
+	password        = "password"
+	defaultMode     = "default"
+	expansionMode   = "expand"
+	p2pPort         = 30303
+	rpcPort         = 8545
+	genesisFileName = "CustomGenesis.json"
 )
 
 func init() {
@@ -268,7 +269,6 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 func handleGenesisFileDist(tn *testnet.TestNet, ethconf *ethConf, accounts []*ethereum.Account) error {
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Creating the genesis block")
-	genesisFileName := "CustomGenesis.json"
 	genesisFileLoc := fmt.Sprintf("/geth/%s", genesisFileName)
 
 	genesisData, err := createGenesisfile(ethconf, tn, accounts)
@@ -400,8 +400,8 @@ func getAccountPool(tn *testnet.TestNet, numOfAccounts int) ([]*ethereum.Account
 }
 
 func getExtraFlags(ethconf *ethConf, account *ethereum.Account, validFlags map[string]bool) string {
-	out := fmt.Sprintf("--maxpeers %d --networkid %d --nodekeyhex %s",
-		ethconf.MaxPeers, ethconf.NetworkID, account.HexPrivateKey())
+	out := fmt.Sprintf("--maxpeers %d --nodekeyhex %s",
+		ethconf.MaxPeers, account.HexPrivateKey())
 	out += fmt.Sprintf(" --verbosity %d", ethconf.Verbosity)
 
 	if ethconf.Consensus == "ethash" {
@@ -426,7 +426,7 @@ func checkFlagsExist(tn *testnet.TestNet) []map[string]bool {
 	flagsToCheck := []string{"--allow-insecure-unlock"}
 
 	out := make([]map[string]bool, tn.LDD.Nodes)
-	for i, _ := range tn.Nodes {
+	for i := range tn.Nodes {
 		out[i] = map[string]bool{}
 	}
 	mux := sync.Mutex{}

@@ -183,9 +183,9 @@ func JSONRPCAllNodes(tn *testnet.TestNet, call string, port int) ([]interface{},
 				_, hasError := result["error"]
 				if hasError {
 					return fmt.Errorf("%v", result["error"])
-				} else {
-					return fmt.Errorf(res)
 				}
+				return fmt.Errorf(res)
+
 			}
 			mux.Lock()
 			out[node.GetAbsoluteNumber()] = result["result"]
