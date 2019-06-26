@@ -33,6 +33,7 @@ import (
 	"sync"
 	//Put the relative path to your blockchain/sidecar library below this line, otherwise it won't be compiled
 	//blockchains
+	_ "github.com/whiteblock/genesis/protocols/aion"
 	_ "github.com/whiteblock/genesis/protocols/artemis"
 	_ "github.com/whiteblock/genesis/protocols/beam"
 	_ "github.com/whiteblock/genesis/protocols/cosmos"
