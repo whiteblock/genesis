@@ -1,0 +1,25 @@
+[
+    ["network","string"],
+    ["extraAccounts","int"],
+    ["networkId","int"],
+    ["difficulty","int"],
+    ["initBalance","string"],
+    ["maxPeers","int"],
+    ["gasLimit","int"],
+    ["consensus","string"],
+    ["blockPeriodSeconds","int"],
+    ["epoch","int"],
+
+    ["homesteadBlock","int"],
+    ["eip155Block","int"],
+    ["eip158Block","int"],
+
+    ["name","string"],
+    ["identity","string"],
+    ["daoHFBlock","int"],
+    ["eip150Block","int"],
+    ["eip155_160Block","int"],
+    ["ecip1010Length","int"],
+    ["ecip1017Era","int"],
+    ["ecip1017Block","int"]
+]

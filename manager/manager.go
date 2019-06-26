@@ -43,6 +43,7 @@ import (
 	_ "github.com/whiteblock/genesis/protocols/libp2p-test"
 	_ "github.com/whiteblock/genesis/protocols/lighthouse"
 	_ "github.com/whiteblock/genesis/protocols/lodestar"
+	_ "github.com/whiteblock/genesis/protocols/multigeth"
 	_ "github.com/whiteblock/genesis/protocols/pantheon"
 	_ "github.com/whiteblock/genesis/protocols/parity"
 	_ "github.com/whiteblock/genesis/protocols/plumtree"
