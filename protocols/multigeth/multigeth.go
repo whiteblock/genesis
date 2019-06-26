@@ -337,10 +337,10 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 	var genesisOut string
 	switch ethconf.Network {
 		case "eth":
-			genesisFile = "multigeth/eth_genesis.json"
+			genesisFile = "eth_genesis.json"
 			genesisOut = "CustomGenesis.json"
 		case "etc":
-			genesisFile = "multigeth/etc_chain.json"
+			genesisFile = "etc_chain.json"
 			genesisOut = "chain.json"
 	}
 
