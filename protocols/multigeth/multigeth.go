@@ -146,7 +146,7 @@ func build(tn *testnet.TestNet) error {
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		//Load the CustomGenesis file
 		_, err := client.DockerExec(node,
-			fmt.Sprintf("geth %s --datadir /geth/ --networkid %d init /multi-geth/CustomGenesis.json", network, ethconf.NetworkID))
+			fmt.Sprintf("geth %s --datadir /multi-geth/ --networkid %d init /multi-geth/CustomGenesis.json", network, ethconf.NetworkID))
 		if err != nil {
 			return util.LogError(err)
 		}
