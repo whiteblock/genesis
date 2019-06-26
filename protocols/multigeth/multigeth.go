@@ -224,33 +224,40 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 	}
 
 	genesis := map[string]interface{}{}
-	switch ethconf.Network {
-	case "eth": 
-		genesis["chainId"]=         ethconf.NetworkID
+	genesis["chainId"]=         ethconf.NetworkID
 		genesis["homesteadBlock"]=  ethconf.HomesteadBlock
 		genesis["eip155Block"]=     ethconf.EthEip155Block
 		genesis["eip158Block"]=     ethconf.EthEip158Block
 		genesis["difficulty"]=      fmt.Sprintf("0x0%X", ethconf.Difficulty)
 		genesis["gasLimit"]=        fmt.Sprintf("0x0%X", ethconf.GasLimit)
 		genesis["consensus"]=       ethconf.Consensus
-	case "etc":
-		fallthrough
-	case "classic":
-		genesis["identity"]=            ethconf.EtcIdentity
-		genesis["name"]=                ethconf.EtcName
-		genesis["network"]=             ethconf.NetworkID
-		genesis["chainId"]=             ethconf.NetworkID
-		genesis["difficulty"]=          fmt.Sprintf("0x0%x", ethconf.Difficulty)
-		genesis["gasLimit"]=            fmt.Sprintf("0x%x", ethconf.GasLimit)
-		genesis["consensus"]=           ethconf.Consensus
-		genesis["homesteadBlock"]=      ethconf.HomesteadBlock
-		genesis["eip150Block"]=         ethconf.EtcEIP150Block
-		genesis["daoHFBlock"]=          ethconf.EtcDAOHFBlock
-		genesis["eip155_160Block"]=     ethconf.EtcEIP155_160Block
-		genesis["ecip1010Length"]=      ethconf.EtcECIP1010Length
-		genesis["ecip1017Block"]=       ethconf.EtcECIP1017Block
-		genesis["ecip1017Era"]=         ethconf.EtcECIP1017Era
-	}
+	// switch ethconf.Network {
+	// case "eth": 
+	// 	genesis["chainId"]=         ethconf.NetworkID
+	// 	genesis["homesteadBlock"]=  ethconf.HomesteadBlock
+	// 	genesis["eip155Block"]=     ethconf.EthEip155Block
+	// 	genesis["eip158Block"]=     ethconf.EthEip158Block
+	// 	genesis["difficulty"]=      fmt.Sprintf("0x0%X", ethconf.Difficulty)
+	// 	genesis["gasLimit"]=        fmt.Sprintf("0x0%X", ethconf.GasLimit)
+	// 	genesis["consensus"]=       ethconf.Consensus
+	// case "etc":
+	// 	fallthrough
+	// case "classic":
+	// 	genesis["identity"]=            ethconf.EtcIdentity
+	// 	genesis["name"]=                ethconf.EtcName
+	// 	genesis["network"]=             ethconf.NetworkID
+	// 	genesis["chainId"]=             ethconf.NetworkID
+	// 	genesis["difficulty"]=          fmt.Sprintf("0x0%x", ethconf.Difficulty)
+	// 	genesis["gasLimit"]=            fmt.Sprintf("0x%x", ethconf.GasLimit)
+	// 	genesis["consensus"]=           ethconf.Consensus
+	// 	genesis["homesteadBlock"]=      ethconf.HomesteadBlock
+	// 	genesis["eip150Block"]=         ethconf.EtcEIP150Block
+	// 	genesis["daoHFBlock"]=          ethconf.EtcDAOHFBlock
+	// 	genesis["eip155_160Block"]=     ethconf.EtcEIP155_160Block
+	// 	genesis["ecip1010Length"]=      ethconf.EtcECIP1010Length
+	// 	genesis["ecip1017Block"]=       ethconf.EtcECIP1017Block
+	// 	genesis["ecip1017Era"]=         ethconf.EtcECIP1017Era
+	// }
 
 	switch ethconf.Consensus {
 	case "clique":
