@@ -462,7 +462,7 @@ func getEnodes(tn *testnet.TestNet, accounts []*ethereum.Account) []string {
 
 func checkIntToNull(v int64) interface{} {
 	if v < 0 {
-		return "null"
+		return nil
 	} else {
 		return v
 	}
