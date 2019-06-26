@@ -43,6 +43,7 @@ const (
 	expansionMode   = "expand"
 	p2pPort         = 30303
 	rpcPort         = 8545
+	genesisFileName = "CustomGenesis.json"
 )
 
 func init() {
@@ -204,7 +205,7 @@ func MakeFakeAccounts(accs int) []string {
  * @param  []string wallets     The wallets to be allocated a balance
  */
 
-func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) (string, string, error) {
+func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) (string, error) {
 
 	alloc := map[string]map[string]string{}
 	for _, account := range accounts {
@@ -271,37 +272,37 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
 
-	var genesisFile string
-	var genesisOut string
-	switch ethconf.Network {
-		case "eth":
-			genesisFile = "eth_genesis.json"
-			genesisOut = "CustomGenesis.json"
-		case "classic":
-			fallthrough
-		case "etc":
-			genesisFile = "etc_chain.json"
-			genesisOut = "chain.json"
-	}
+	// var genesisFile string
+	// var genesisOut string
+	// switch ethconf.Network {
+	// 	case "eth":
+	// 		genesisFile = "eth_genesis.json"
+	// 		genesisOut = "CustomGenesis.json"
+	// 	case "classic":
+	// 		fallthrough
+	// 	case "etc":
+	// 		genesisFile = "etc_chain.json"
+	// 		genesisOut = "chain.json"
+	// }
 
 
-	dat, err := helpers.GetGlobalBlockchainConfig(tn, genesisFile)
+	dat, err := helpers.GetGlobalBlockchainConfig(tn, "genesis.json")
 	if err != nil {
-		return "", "", util.LogError(err)
+		return "", util.LogError(err)
 	}
 
 	data, err := mustache.Render(string(dat), util.ConvertToStringMap(genesis))
 	if err != nil {
-		return "", "", util.LogError(err)
+		return "", util.LogError(err)
 	}
-	return genesisOut, data, nil
+	return data, nil
 }
 
 func handleGenesisFileDist(tn *testnet.TestNet, ethconf *ethConf, accounts []*ethereum.Account) error {
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Creating the genesis block")
 
-	genesisFileName, genesisData, err := createGenesisfile(ethconf, tn, accounts)
+	genesisData, err := createGenesisfile(ethconf, tn, accounts)
 	if err != nil {
 		return util.LogError(err)
 	}
