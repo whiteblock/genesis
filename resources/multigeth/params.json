@@ -9,6 +9,9 @@
     ["consensus","string"],
     ["blockPeriodSeconds","int"],
     ["epoch","int"],
+    ["mode","string"],
+    ["verbosity","int"],
+    ["unlock","bool"],
 
     ["homesteadBlock","int"],
     ["eip155Block","int"],

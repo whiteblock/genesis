@@ -40,6 +40,9 @@ type ethConf struct {
 	Consensus             string `json:"consensus"`
 	BlockPeriodSeconds    int64  `json:"blockPeriodSeconds"`
 	Epoch                 int64  `json:"epoch"`
+	Mode                  string `json:"mode"`
+	Verbosity             int64  `json:"verbosity"`
+	Unlock                bool   `json:"unlock"`
 
 	HomesteadBlock        int64  `json:"homesteadBlock"`
 	EthEip155Block        int64  `json:"eip155Block"`

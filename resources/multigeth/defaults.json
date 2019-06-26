@@ -10,6 +10,9 @@
     "consensus":"clique",
     "blockPeriodSeconds":2,
     "epoch":30000,
+    "mode":"default",
+    "verbosity":3,
+    "unlock":true,
 
     "validators":1,
 
