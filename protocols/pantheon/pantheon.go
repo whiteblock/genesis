@@ -176,7 +176,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.Set("networkID", panconf.NetworkID)
 	tn.BuildState.SetExt("networkID", panconf.NetworkID)
 	tn.BuildState.Set("accounts", accounts)
-
+	helpers.SetFunctionalityGroup(tn, "eth")
 	tn.BuildState.Set("wallets", ethereum.ExtractAddresses(accounts))
 	return nil
 }
