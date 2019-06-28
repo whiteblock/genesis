@@ -117,15 +117,17 @@ func dockerRunCmd(c Container) (string, error) {
 		command += fmt.Sprintf(" --cpus %s", c.GetResources().Cpus)
 	}
 
-	if c.GetResources().Volumes != nil {
+	if c.GetResources().Volumes != nil && conf.EnableDockerVolumes {
 		for _, volume := range c.GetResources().Volumes {
 			command += fmt.Sprintf(" -v %s", volume)
 		}
 	}
 
-	ports := c.GetPorts()
-	for _, port := range ports {
-		command += fmt.Sprintf(" -p %s", port)
+	if conf.EnablePortForwarding {
+		ports := c.GetPorts()
+		for _, port := range ports {
+			command += fmt.Sprintf(" -p %s", port)
+		}
 	}
 
 	if !c.GetResources().NoMemoryLimits() {
@@ -173,13 +175,19 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 		ipFlag = fmt.Sprintf("--ip %s", ip)
 	}
 	volumestr := ""
-	for _, vol := range volumes {
-		volumestr += fmt.Sprintf("-v %s ", vol)
+	if conf.EnableDockerVolumes {
+		for _, vol := range volumes {
+			volumestr += fmt.Sprintf("-v %s ", vol)
+		}
 	}
+
 	portstr := ""
-	for _, port := range ports {
-		portstr += fmt.Sprintf("-p %s ", port)
+	if conf.EnablePortForwarding {
+		for _, port := range ports {
+			portstr += fmt.Sprintf("-p %s ", port)
+		}
 	}
+
 	return fmt.Sprintf("docker run -itd --network %s %s --hostname %s --name %s %s %s %s %s %s",
 		network,
 		ipFlag,
