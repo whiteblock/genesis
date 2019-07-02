@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/services"
+	"github.com/whiteblock/genesis/testnet"
 )
 
 type ethConf struct {
@@ -41,12 +42,14 @@ type ethConf struct {
 	Mode               string `json:"mode"`
 	Verbosity          int64  `json:"verbosity"`
 	Unlock             bool   `json:"unlock"`
+	ExposedAccounts    int64  `json:"exposedAccounts"`
 }
 
 /**
  * Fills in the defaults for missing parts,
  */
-func newConf(data map[string]interface{}) (*ethConf, error) {
+func newConf(tn *testnet.TestNet) (*ethConf, error) {
+	data := tn.LDD.Params
 	out := new(ethConf)
 	err := helpers.HandleBlockchainConfig(blockchain, data, out)
 	if err != nil || data == nil {
@@ -63,6 +66,9 @@ func newConf(data map[string]interface{}) (*ethConf, error) {
 		default:
 			return nil, fmt.Errorf("incorrect type for initBalance given")
 		}
+	}
+	if out.ExposedAccounts != -1 && out.ExposedAccounts > out.ExtraAccounts+int64(tn.LDD.Nodes) {
+		out.ExtraAccounts = out.ExposedAccounts - int64(tn.LDD.Nodes)
 	}
 
 	return out, nil

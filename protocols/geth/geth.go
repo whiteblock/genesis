@@ -67,7 +67,7 @@ func init() {
 
 // build builds out a fresh new ethereum test network using geth
 func build(tn *testnet.TestNet) error {
-	ethconf, err := newConf(tn.LDD.Params)
+	ethconf, err := newConf(tn)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -404,6 +404,8 @@ func getExtraFlags(ethconf *ethConf, account *ethereum.Account, validFlags map[s
 	out := fmt.Sprintf("--maxpeers %d --nodekeyhex %s",
 		ethconf.MaxPeers, account.HexPrivateKey())
 	out += fmt.Sprintf(" --verbosity %d", ethconf.Verbosity)
+	out += fmt.Sprintf(" --miner.gaslimit %d", ethconf.GasLimit)
+	out += fmt.Sprintf(" --miner.gastarget %d", ethconf.GasLimit)
 
 	if ethconf.Consensus == "ethash" {
 		out += fmt.Sprintf(" --miner.etherbase %s", account.HexAddress())
