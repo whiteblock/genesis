@@ -53,7 +53,7 @@ func init() {
 // build builds out a fresh new ethereum test network using parity
 func build(tn *testnet.TestNet) error {
 	mux := sync.Mutex{}
-	pconf, err := newConf(tn.LDD.Params)
+	pconf, err := NewConf(tn.LDD.Params)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -115,9 +115,9 @@ func build(tn *testnet.TestNet) error {
 	/***********************************************************SPLIT************************************************************/
 	switch pconf.Consensus {
 	case "ethash":
-		err = setupPOW(tn, pconf, wallets)
+		err = SetupPOW(tn, pconf, wallets)
 	case "poa":
-		err = setupPOA(tn, pconf, wallets)
+		err = SetupPOA(tn, pconf, wallets)
 	default:
 		return util.LogError(fmt.Errorf("Unknown consensus %s", pconf.Consensus))
 	}
@@ -216,7 +216,7 @@ func add(tn *testnet.TestNet) error {
 	var genesisAlloc map[string]map[string]string
 	tn.BuildState.GetP("alloc", &genesisAlloc)
 
-	parityConf, err := newParityConf(tn.LDD.Params)
+	parityConf, err := NewParityConf(tn.LDD.Params)
 	tn.BuildState.SetBuildSteps(1 + 2*len(tn.NewlyBuiltNodes)) //TODO
 	if err != nil {
 		return util.LogError(err)
@@ -310,9 +310,9 @@ func add(tn *testnet.TestNet) error {
 
 	switch etcGenesisFile.Consensus {
 	case "ethash":
-		err = setupNewPOW(tn, parityConf, wallets, genWallets)
+		err = SetupNewPOW(tn, parityConf, wallets, genWallets)
 	case "poa":
-		err = setupNewPOA(tn, parityConf, wallets, genWallets)
+		err = SetupNewPOA(tn, parityConf, wallets, genWallets)
 	default:
 		return util.LogError(fmt.Errorf("Unknown consensus %s", parityConf.Consensus))
 	}
@@ -424,7 +424,7 @@ func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 	})
 }
 
-func storeParameters(tn *testnet.TestNet, pconf *parityConf, wallets []string, enodes []string) {
+func storeParameters(tn *testnet.TestNet, pconf *ParityConf, wallets []string, enodes []string) {
 	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Warn("couldn't create geth accounts")
@@ -467,7 +467,8 @@ func storeParameters(tn *testnet.TestNet, pconf *parityConf, wallets []string, e
 	tn.BuildState.Set("wallets", wallets)
 }
 
-func setupPOA(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
+//SetupPOA sets the consensus rules for the genesis file with PoA
+func SetupPOA(tn *testnet.TestNet, pconf *ParityConf, wallets []string) error {
 	//Create the chain spec files
 	spec, err := buildPoaSpec(pconf, tn.LDD, wallets)
 	if err != nil {
@@ -490,7 +491,8 @@ func setupPOA(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 		})
 }
 
-func setupPOW(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
+//SetupPOW sets the consensus rules for the genesis file with PoW
+func SetupPOW(tn *testnet.TestNet, pconf *ParityConf, wallets []string) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	//Create the chain spec files
@@ -513,7 +515,8 @@ func setupPOW(tn *testnet.TestNet, pconf *parityConf, wallets []string) error {
 	return helpers.CopyBytesToAllNodes(tn, spec, "/parity/spec.json")
 }
 
-func setupNewPOA(tn *testnet.TestNet, pconf *parityConf, wallets, genWallets []string) error {
+// SetupNewPOA sets up new nodes with the consensus rules for the genesis block to PoA
+func SetupNewPOA(tn *testnet.TestNet, pconf *ParityConf, wallets, genWallets []string) error {
 	//Create the chain spec files
 	spec, err := buildPoaSpec(pconf, tn.LDD, genWallets)
 	if err != nil {
@@ -536,7 +539,8 @@ func setupNewPOA(tn *testnet.TestNet, pconf *parityConf, wallets, genWallets []s
 		})
 }
 
-func setupNewPOW(tn *testnet.TestNet, pconf *parityConf, wallets, genWallets []string) error {
+// SetupNewPOW sets up new nodes with the consensus rules for the genesis block to PoW
+func SetupNewPOW(tn *testnet.TestNet, pconf *ParityConf, wallets, genWallets []string) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	//Create the chain spec files

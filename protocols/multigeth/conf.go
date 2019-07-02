@@ -25,11 +25,8 @@ import (
 	"github.com/whiteblock/genesis/protocols/services"
 )
 
-type mgethConf struct {
-	Network            string `json:"network"`
-}
-
-type ethConf struct {
+// MgethConf represents the settings for the multi-geth build
+type MgethConf struct {
 	Network               string `json:"network"`
 	ExtraAccounts         int64  `json:"extraAccounts"`
 	NetworkID             int64  `json:"networkId"`
@@ -37,6 +34,7 @@ type ethConf struct {
 	InitBalance           string `json:"initBalance"`
 	MaxPeers              int64  `json:"maxPeers"`
 	GasLimit              int64  `json:"gasLimit"`
+	ExtraData             string `json:"extraData"`
 	Consensus             string `json:"consensus"`
 	BlockPeriodSeconds    int64  `json:"blockPeriodSeconds"`
 	Epoch                 int64  `json:"epoch"`
@@ -58,8 +56,8 @@ type ethConf struct {
 /**
  * Fills in the defaults for missing parts,
  */
-func newConf(data map[string]interface{}) (*ethConf, error) {
-	out := new(ethConf)
+func newConf(data map[string]interface{}) (*MgethConf, error) {
+	out := new(MgethConf)
 	err := helpers.HandleBlockchainConfig(blockchain, data, out)
 	if err != nil || data == nil {
 		return out, err
