@@ -100,7 +100,6 @@ func build(tn *testnet.TestNet) error {
 
 	/**Create the wallets**/
 	wallets := make([]string, tn.LDD.Nodes)
-	rawWallets := make([]string, tn.LDD.Nodes)
 	tn.BuildState.SetBuildStage("Creating the wallets")
 
 	accounts, err := getAccountPool(tn, int(ethconf.ExtraAccounts)+tn.LDD.Nodes)
