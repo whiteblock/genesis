@@ -6,6 +6,7 @@
         "eip155Block":{{{eip155Block}}},
         "eip158Block":{{{eip158Block}}},
         "eip160Block":0,
+        "whiteblockBlock":100,
         {{{consensus}}}: {{{consensusParams}}}
     },
     "nonce": "0x0000000000000042",

@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 //Package geth handles geth specific functionality
@@ -31,21 +31,24 @@ import (
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
-	"regexp"
 	"sync"
 )
 
-var conf *util.Config
+var conf = util.GetConfig()
 
 const (
+	alias           = "ethereum"
 	blockchain      = "geth"
-	ethNetStatsPort = 3338
 	password        = "password"
+	defaultMode     = "default"
+	expansionMode   = "expand"
+	p2pPort         = 30303
+	rpcPort         = 8545
+	genesisFileName = "CustomGenesis.json"
 )
 
 func init() {
-	conf = util.GetConfig()
-	alias := "ethereum"
+
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterBuild(alias, build) //ethereum default to geth
 
@@ -64,11 +67,17 @@ func init() {
 
 // build builds out a fresh new ethereum test network using geth
 func build(tn *testnet.TestNet) error {
-	mux := sync.Mutex{}
 	ethconf, err := newConf(tn.LDD.Params)
 	if err != nil {
 		return util.LogError(err)
 	}
+
+	err = loadForExpand(tn, ethconf) //Prepare everything if it is large state
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	validFlags := checkFlagsExist(tn)
 
 	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes))
 
@@ -102,14 +111,14 @@ func build(tn *testnet.TestNet) error {
 	}
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, account := range accounts[:tn.LDD.Nodes] {
-			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
+			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" > /geth/pk%d'", account.HexPrivateKey(), i))
 			if err != nil {
 				return util.LogError(err)
 			}
 			_, err = client.DockerExec(node,
 				fmt.Sprintf("geth --datadir /geth/ --password /geth/passwd account import /geth/pk%d", i))
 			if err != nil {
-				return util.LogError(err)
+				util.LogError(err) //dont report the error
 			}
 		}
 		return nil
@@ -119,65 +128,15 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	tn.BuildState.IncrementBuildProgress()
-	unlock := ""
 
-	for i, account := range accounts[:tn.LDD.Nodes] {
-		if i != 0 {
-			unlock += ","
-		}
-		unlock += account.HexAddress()
-	}
-	tn.BuildState.IncrementBuildProgress()
-	tn.BuildState.SetBuildStage("Creating the genesis block")
-	err = createGenesisfile(ethconf, tn, accounts)
+	err = handleGenesisFileDist(tn, ethconf, accounts)
 	if err != nil {
 		return util.LogError(err)
 	}
 
-	tn.BuildState.IncrementBuildProgress()
-	tn.BuildState.SetBuildStage("Bootstrapping network")
-
-	err = helpers.CopyToAllNodes(tn, "CustomGenesis.json", "/geth/")
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	staticNodes := make([]string, tn.LDD.Nodes)
+	staticNodes := getEnodes(tn, accounts)
 
 	tn.BuildState.SetBuildStage("Initializing geth")
-
-	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		//Load the CustomGenesis file
-		_, err := client.DockerExec(node,
-			fmt.Sprintf("geth --datadir /geth/ --networkid %d init /geth/CustomGenesis.json", ethconf.NetworkID))
-		if err != nil {
-			return util.LogError(err)
-		}
-		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
-		gethResults, err := client.DockerExec(node,
-			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
-				"geth --rpc --datadir /geth/ --networkid %d console'", ethconf.NetworkID))
-		if err != nil {
-			return util.LogError(err)
-		}
-		log.WithFields(log.Fields{"raw": gethResults}).Trace("grabbed raw enode info")
-		enodePattern := regexp.MustCompile(`enode:\/\/[A-z|0-9]+@(\[\:\:\]|([0-9]|\.)+)\:[0-9]+`)
-		enode := enodePattern.FindAllString(gethResults, 1)[0]
-		log.WithFields(log.Fields{"enode": enode}).Trace("parsed the enode")
-		enodeAddressPattern := regexp.MustCompile(`\[\:\:\]|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})`)
-
-		enode = enodeAddressPattern.ReplaceAllString(enode, node.GetIP())
-
-		mux.Lock()
-		staticNodes[node.GetAbsoluteNumber()] = enode
-		mux.Unlock()
-
-		tn.BuildState.IncrementBuildProgress()
-		return nil
-	})
-	if err != nil {
-		return util.LogError(err)
-	}
 
 	out, err := json.Marshal(staticNodes)
 	if err != nil {
@@ -194,17 +153,12 @@ func build(tn *testnet.TestNet) error {
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		tn.BuildState.IncrementBuildProgress()
-
+		account := accounts[node.GetAbsoluteNumber()]
 		gethCmd := fmt.Sprintf(
-			`geth --datadir /geth/ --maxpeers %d --networkid %d --rpc --nodiscover --rpcaddr %s`+
-				` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine --unlock="%s"`+
-				` --password /geth/passwd --etherbase %s console  2>&1 | tee %s`,
-			ethconf.MaxPeers,
-			ethconf.NetworkID,
-			node.GetIP(),
-			unlock,
-			accounts[node.GetAbsoluteNumber()].HexAddress(),
-			conf.DockerOutputFile)
+			`geth --datadir /geth/ %s --rpc --nodiscover --rpcaddr 0.0.0.0`+
+				` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine`+
+				` --txpool.nolocals --port %d console  2>&1 | tee %s`,
+			getExtraFlags(ethconf, account, validFlags[node.GetAbsoluteNumber()]), p2pPort, conf.DockerOutputFile)
 
 		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
 		tn.BuildState.IncrementBuildProgress()
@@ -215,13 +169,10 @@ func build(tn *testnet.TestNet) error {
 	}
 	tn.BuildState.IncrementBuildProgress()
 
-	err = setupEthNetStats(tn.GetFlatClients()[0])
-	if err != nil {
-		return util.LogError(err)
-	}
 	tn.BuildState.SetExt("networkID", ethconf.NetworkID)
 	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
-	tn.BuildState.SetExt("port", 8545)
+	tn.BuildState.SetExt("port", rpcPort)
+	helpers.SetFunctionalityGroup(tn, "eth")
 
 	for _, account := range accounts {
 		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
@@ -230,7 +181,7 @@ func build(tn *testnet.TestNet) error {
 		})
 	}
 
-	return setupEthNetIntelligenceAPI(tn)
+	return nil
 }
 
 /***************************************************************************************************************************/
@@ -257,7 +208,7 @@ func MakeFakeAccounts(accs int) []string {
  * @param  []string wallets     The wallets to be allocated a balance
  */
 
-func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) error {
+func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) (string, error) {
 
 	alloc := map[string]map[string]string{}
 	for _, account := range accounts {
@@ -302,59 +253,110 @@ func createGenesisfile(ethconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		genesis["extraData"] = extraData
 	}
 
-	accs := MakeFakeAccounts(int(ethconf.ExtraAccounts))
-
-	for _, wallet := range accs {
-		alloc[wallet] = map[string]string{
-			"balance": ethconf.InitBalance,
-		}
-	}
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
-	dat, err := helpers.GetBlockchainConfig(blockchain, 0, "genesis.json", tn.LDD)
+	dat, err := helpers.GetGlobalBlockchainConfig(tn, "genesis.json")
 	if err != nil {
-		return util.LogError(err)
+		return "", util.LogError(err)
 	}
 
 	data, err := mustache.Render(string(dat), util.ConvertToStringMap(genesis))
 	if err != nil {
-		return util.LogError(err)
+		return "", util.LogError(err)
 	}
-	return tn.BuildState.Write("CustomGenesis.json", data)
+	return data, nil
 }
 
-/**
- * Setup Eth Net Stats on a server
- * @param  string    ip     The servers config
- */
-func setupEthNetStats(client ssh.Client) error {
-	_, err := client.Run(fmt.Sprintf(
-		"docker exec -d wb_service0 bash -c 'cd /eth-netstats && WS_SECRET=second PORT=%d npm start'", ethNetStatsPort))
+func handleGenesisFileDist(tn *testnet.TestNet, ethconf *ethConf, accounts []*ethereum.Account) error {
+	tn.BuildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Creating the genesis block")
+	genesisFileLoc := fmt.Sprintf("/geth/%s", genesisFileName)
+
+	genesisData, err := createGenesisfile(ethconf, tn, accounts)
 	if err != nil {
 		return util.LogError(err)
 	}
-	return nil
-}
 
-func setupEthNetIntelligenceAPI(tn *testnet.TestNet) error {
-	return helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
-		defer tn.BuildState.IncrementBuildProgress()
+	tn.BuildState.IncrementBuildProgress()
+	tn.BuildState.SetBuildStage("Bootstrapping network")
+	hasGenesis := make([]bool, tn.LDD.Nodes)
 
-		absName := fmt.Sprintf("%s%d", conf.NodePrefix, node.GetAbsoluteNumber())
-		sedCmd := fmt.Sprintf(`sed -i -r 's/"INSTANCE_NAME"(\s)*:(\s)*"(\S)*"/"INSTANCE_NAME"\t: "%s"/g' /eth-net-intelligence-api/app.json`, absName)
-		sedCmd2 := fmt.Sprintf(`sed -i -r 's/"WS_SERVER"(\s)*:(\s)*"(\S)*"/"WS_SERVER"\t: "http:\/\/%s:%d"/g' /eth-net-intelligence-api/app.json`,
-			util.GetGateway(server.SubnetID, node.GetAbsoluteNumber()), ethNetStatsPort)
-		sedCmd3 := fmt.Sprintf(`sed -i -r 's/"RPC_HOST"(\s)*:(\s)*"(\S)*"/"RPC_HOST"\t: "%s"/g' /eth-net-intelligence-api/app.json`, node.GetIP())
-
-		//sedCmd3 := fmt.Sprintf("docker exec -it %s sed -i 's/\"WS_SECRET\"(\\s)*:(\\s)*\"[A-Z|a-z|0-9| ]*\"/\"WS_SECRET\"\\t: \"second\"/g' /eth-net-intelligence-api/app.json",container)
-		_, err := client.DockerMultiExec(node, []string{sedCmd, sedCmd2, sedCmd3})
-
+	if ethconf.Mode != expansionMode {
+		err := helpers.CopyBytesToAllNewNodes(tn, genesisData, genesisFileLoc)
 		if err != nil {
 			return util.LogError(err)
 		}
-		_, err = client.DockerExecd(node, "bash -c 'cd /eth-net-intelligence-api && pm2 start app.json'")
-		return util.LogError(err)
+	} else {
+		//if it is expansion mode, do not create it if it does not exist
+
+		mux := sync.Mutex{}
+
+		helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+			_, err := client.DockerExec(node, fmt.Sprintf("test -f %s", genesisFileLoc))
+			mux.Lock()
+			hasGenesis[node.GetAbsoluteNumber()] = (err == nil)
+			mux.Unlock()
+			return nil
+		})
+
+		err := helpers.CreateConfigs(tn, genesisFileLoc, func(node ssh.Node) ([]byte, error) {
+			if hasGenesis[node.GetAbsoluteNumber()] {
+				log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Debug("node already has a genesis file")
+				return nil, nil
+			}
+			return []byte(genesisData), nil
+		})
+		if err != nil {
+			return util.LogError(err)
+		}
+	}
+	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		//Load the CustomGenesis file
+		if ethconf.Mode != expansionMode || !hasGenesis[node.GetAbsoluteNumber()] {
+			_, err := client.DockerExec(node,
+				fmt.Sprintf("geth --datadir /geth/ --networkid %d init %s", ethconf.NetworkID, genesisFileLoc))
+			if err != nil {
+				return util.LogError(err)
+			}
+		}
+		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
+		tn.BuildState.IncrementBuildProgress()
+		return nil
 	})
+}
+
+func loadForExpand(tn *testnet.TestNet, ethconf *ethConf) error {
+	if ethconf.Mode != expansionMode {
+		return nil
+	}
+	masterNode := tn.Nodes[0]
+	masterClient := tn.Clients[masterNode.Server]
+	files := []string{"/important_data", "/important_info"}
+	var data string
+	var err error
+	for _, file := range files {
+		data, err = masterClient.DockerRead(masterNode, file, -1)
+		if err == nil {
+			break
+		}
+
+	}
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	var clientData map[string]interface{}
+	err = json.Unmarshal([]byte(data), &clientData)
+	if err != nil {
+		return util.LogError(err)
+	}
+	for key, value := range clientData {
+		if key == "blockchain" || key == "blockchain_prefix" {
+			continue
+		}
+		tn.BuildState.Set(key, value)
+	}
+	return nil
 }
 
 func getAccountPool(tn *testnet.TestNet, numOfAccounts int) ([]*ethereum.Account, error) {
@@ -369,11 +371,88 @@ func getAccountPool(tn *testnet.TestNet, numOfAccounts int) ([]*ethereum.Account
 		}
 	}
 	if len(accounts) >= numOfAccounts {
-		return accounts[:numOfAccounts], nil
+		return accounts, nil
+	}
+	var tmp []string
+	tn.BuildState.GetP("accounts", &tmp)
+	for _, addr := range tmp {
+		var accountData map[string]string
+		ok := tn.BuildState.GetP(addr, &accountData)
+		if !ok {
+			log.WithFields(log.Fields{"address": addr}).Trace("skipping address without entry")
+			continue
+		}
+		acc, err := ethereum.CreateAccountFromHex(accountData["privateKey"])
+		if err != nil {
+			log.WithFields(log.Fields{"error": err}).Info("there was an error with the given private key")
+		} else {
+			accounts = append(accounts, acc)
+		}
+	}
+	if len(accounts) >= numOfAccounts {
+		log.Info("Fetched all the accounts from the build state store")
+		return accounts, nil
 	}
 	fillerAccounts, err := ethereum.GenerateAccounts(numOfAccounts - len(accounts))
 	if err != nil {
-		return nil, err
+		return nil, util.LogError(err)
 	}
 	return append(accounts, fillerAccounts...), nil
+}
+
+func getExtraFlags(ethconf *ethConf, account *ethereum.Account, validFlags map[string]bool) string {
+	out := fmt.Sprintf("--maxpeers %d --nodekeyhex %s",
+		ethconf.MaxPeers, account.HexPrivateKey())
+	out += fmt.Sprintf(" --verbosity %d", ethconf.Verbosity)
+
+	if ethconf.Consensus == "ethash" {
+		out += fmt.Sprintf(" --miner.etherbase %s", account.HexAddress())
+	}
+
+	if ethconf.Mode == expansionMode {
+		out += " --syncmode full"
+	}
+
+	if ethconf.Unlock {
+		out += fmt.Sprintf(` --unlock="%s" --password /geth/passwd`, account.HexAddress())
+		if validFlags["--allow-insecure-unlock"] {
+			out += " --allow-insecure-unlock"
+		}
+	}
+
+	return out
+}
+
+func checkFlagsExist(tn *testnet.TestNet) []map[string]bool {
+	flagsToCheck := []string{"--allow-insecure-unlock"}
+
+	out := make([]map[string]bool, tn.LDD.Nodes)
+	for i := range tn.Nodes {
+		out[i] = map[string]bool{}
+	}
+	mux := sync.Mutex{}
+
+	helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		for _, flag := range flagsToCheck {
+			_, err := client.DockerExec(node, fmt.Sprintf("geth --help | grep -- '%s'", flag))
+			mux.Lock()
+			out[node.GetAbsoluteNumber()][flag] = (err == nil)
+			mux.Unlock()
+		}
+		return nil
+	})
+	return out
+}
+
+func getEnodes(tn *testnet.TestNet, accounts []*ethereum.Account) []string {
+	enodes := []string{}
+	for i, node := range tn.Nodes {
+		enodeAddress := fmt.Sprintf("enode://%s@%s:%d",
+			accounts[i].HexPublicKey(),
+			node.IP,
+			p2pPort)
+
+		enodes = append(enodes, enodeAddress)
+	}
+	return enodes
 }

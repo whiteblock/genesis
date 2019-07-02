@@ -330,6 +330,25 @@ func (bs *BuildState) GetExt(key string) (interface{}, bool) {
 	return res, ok
 }
 
+//GetExtP gets the value for key and puts it in the object that out is pointing to, from the exposed store
+func (bs *BuildState) GetExtP(key string, out interface{}) bool {
+	tmp, ok := bs.GetExt(key)
+	if !ok {
+		return false
+	}
+	tmpBytes, err := json.Marshal(tmp)
+	if err != nil {
+		log.WithFields(log.Fields{"build": bs.BuildID, "error": err}).Warn("couldn't marshal the value")
+		return false
+	}
+	err = json.Unmarshal(tmpBytes, out)
+	if err != nil {
+		log.WithFields(log.Fields{"build": bs.BuildID, "error": err}).Warn("couldn't unmarshal the value")
+		return false
+	}
+	return true
+}
+
 // GetExtExtras gets the entire external state store as JSON
 func (bs *BuildState) GetExtExtras() ([]byte, error) {
 	bs.extraMux.RLock()

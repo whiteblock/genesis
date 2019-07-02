@@ -166,7 +166,7 @@ func getError(tn *testnet.TestNet, s settings) error {
 func fetchPreGeneratedKeys(tn *testnet.TestNet, file string) ([]string, error) {
 	rawPrivateKeys, err := GetGlobalBlockchainConfig(tn, file)
 	if err != nil {
-		return nil, util.LogError(err)
+		return nil, err
 	}
 	var out []string
 	return out, util.LogError(json.Unmarshal(rawPrivateKeys, &out))

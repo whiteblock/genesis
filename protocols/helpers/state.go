@@ -30,6 +30,7 @@ import (
 
 const (
 	alternativeCommandRegexKey = "__alternative_commands"
+	functionalityGroupKey      = "namespace"
 )
 
 // SetAlternativeCmdExprs allows you to have your protocol support restart and related
@@ -51,4 +52,11 @@ func GetCommandExprs(tn *testnet.TestNet, node string) ([]string, error) {
 	var alts []string
 	tn.BuildState.GetP(alternativeCommandRegexKey, &alts)
 	return append(out, alts...), nil
+}
+
+//SetFunctionalityGroup allows you to mark your protocol
+//as being part of a functionality group. Most common group right now
+//is eth
+func SetFunctionalityGroup(tn *testnet.TestNet, name string) {
+	tn.BuildState.SetExt(functionalityGroupKey, name)
 }

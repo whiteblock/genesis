@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 //Package pantheon handles pantheon specific functionality
@@ -35,15 +35,16 @@ import (
 	"sync"
 )
 
-var conf *util.Config
+var conf = util.GetConfig()
 
 const (
-	blockchain = "pantheon"
-	p2pPort    = 30303
+	blockchain      = "pantheon"
+	genesisFile     = "genesis.json"
+	genesisFilePath = "/pantheon/genesis/"
+	p2pPort         = 30303
 )
 
 func init() {
-	conf = util.GetConfig()
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
@@ -54,6 +55,8 @@ func init() {
 
 // build builds out a fresh new ethereum test network using pantheon
 func build(tn *testnet.TestNet) error {
+	genesisFileLoc := genesisFilePath + genesisFile
+
 	mux := sync.Mutex{}
 
 	panconf, err := newConf(tn.LDD.Params)
@@ -74,7 +77,7 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildStage("Setting up accounts")
 
-	helpers.MkdirAllNodes(tn, "/pantheon/genesis")
+	helpers.MkdirAllNodes(tn, genesisFilePath)
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 
@@ -142,7 +145,7 @@ func build(tn *testnet.TestNet) error {
 	}
 	/* Copy static-nodes & genesis files to each node */
 	tn.BuildState.SetBuildStage("Distributing Files")
-	err = helpers.CopyToAllNodes(tn, "genesis.json", "/pantheon/genesis/genesis.json")
+	err = helpers.CopyToAllNodes(tn, genesisFile, genesisFileLoc)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -156,10 +159,10 @@ func build(tn *testnet.TestNet) error {
 			return util.LogError(err)
 		}
 		return client.DockerRunMainDaemon(node, fmt.Sprintf(
-			`pantheon --config-file=/pantheon/config.toml --data-path=/pantheon/data --genesis-file=/pantheon/genesis/genesis.json  `+
+			`pantheon --config-file=/pantheon/config.toml --data-path=/pantheon/data --genesis-file=%s  `+
 				`--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,TXPOOL,WEB3" `+
 				` --p2p-port=%d --rpc-http-port=8545 --rpc-http-host="0.0.0.0" --host-whitelist=all %s`,
-			p2pPort, flags))
+			genesisFileLoc, p2pPort, flags))
 	})
 
 	if err != nil {
@@ -176,7 +179,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.Set("networkID", panconf.NetworkID)
 	tn.BuildState.SetExt("networkID", panconf.NetworkID)
 	tn.BuildState.Set("accounts", accounts)
-
+	helpers.SetFunctionalityGroup(tn, "eth")
 	tn.BuildState.Set("wallets", ethereum.ExtractAddresses(accounts))
 	return nil
 }
@@ -231,7 +234,7 @@ func createGenesisfile(panconf *panConf, tn *testnet.TestNet, accounts []*ethere
 
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
-	dat, err := helpers.GetBlockchainConfig("pantheon", 0, "genesis.json", tn.LDD)
+	dat, err := helpers.GetGlobalBlockchainConfig(tn, genesisFile)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -240,8 +243,8 @@ func createGenesisfile(panconf *panConf, tn *testnet.TestNet, accounts []*ethere
 	if err != nil {
 		return util.LogError(err)
 	}
-	log.Trace("writing the genesis file")
-	return util.LogError(tn.BuildState.Write("genesis.json", data))
+	log.WithFields(log.Fields{"file": genesisFile}).Trace("writing the genesis file")
+	return util.LogError(tn.BuildState.Write(genesisFile, data))
 
 }
 

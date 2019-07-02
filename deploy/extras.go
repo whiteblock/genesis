@@ -76,7 +76,10 @@ func distributeNibbler(tn *testnet.TestNet) {
 }
 
 func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface{}) error {
-
+	if !conf.EnableImageBuilding {
+		log.Warn("got a request to build an image, when it is disabled")
+		return fmt.Errorf("image building is disabled")
+	}
 	_, hasDockerfile := prebuild["dockerfile"] //Must be base64
 	if !hasDockerfile {
 		return fmt.Errorf("cannot build without being given a dockerfile")

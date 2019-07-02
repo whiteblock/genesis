@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 //Package docker provides a quick naive interface to Docker calls over ssh
@@ -117,15 +117,17 @@ func dockerRunCmd(c Container) (string, error) {
 		command += fmt.Sprintf(" --cpus %s", c.GetResources().Cpus)
 	}
 
-	if c.GetResources().Volumes != nil {
+	if c.GetResources().Volumes != nil && conf.EnableDockerVolumes {
 		for _, volume := range c.GetResources().Volumes {
 			command += fmt.Sprintf(" -v %s", volume)
 		}
 	}
 
-	ports := c.GetPorts()
-	for _, port := range ports {
-		command += fmt.Sprintf(" -p %s", port)
+	if conf.EnablePortForwarding {
+		ports := c.GetPorts()
+		for _, port := range ports {
+			command += fmt.Sprintf(" -p %s", port)
+		}
 	}
 
 	if !c.GetResources().NoMemoryLimits() {
@@ -173,13 +175,19 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 		ipFlag = fmt.Sprintf("--ip %s", ip)
 	}
 	volumestr := ""
-	for _, vol := range volumes {
-		volumestr += fmt.Sprintf("-v %s ", vol)
+	if conf.EnableDockerVolumes {
+		for _, vol := range volumes {
+			volumestr += fmt.Sprintf("-v %s ", vol)
+		}
 	}
+
 	portstr := ""
-	for _, port := range ports {
-		portstr += fmt.Sprintf("-p %s ", port)
+	if conf.EnablePortForwarding {
+		for _, port := range ports {
+			portstr += fmt.Sprintf("-p %s ", port)
+		}
 	}
+
 	return fmt.Sprintf("docker run -itd --network %s %s --hostname %s --name %s %s %s %s %s %s",
 		network,
 		ipFlag,
