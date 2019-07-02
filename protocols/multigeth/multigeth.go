@@ -23,6 +23,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
+	"regexp"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/ethereum"
@@ -97,6 +99,8 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	/**Create the wallets**/
+	wallets := make([]string, tn.LDD.Nodes)
+	rawWallets := make([]string, tn.LDD.Nodes)
 	tn.BuildState.SetBuildStage("Creating the wallets")
 
 	accounts, err := getAccountPool(tn, int(ethconf.ExtraAccounts)+tn.LDD.Nodes)
@@ -109,11 +113,17 @@ func build(tn *testnet.TestNet) error {
 			if err != nil {
 				return util.LogError(err)
 			}
-			_, err = client.DockerExec(node,
+			walletOut, err := client.DockerExec(node,
 				fmt.Sprintf("geth %s --datadir /multi-geth/ --password /multi-geth/passwd account import /multi-geth/pk%d", network, i))
 			if err != nil {
 				util.LogError(err) //dont report the error
 			}
+			reAddr := regexp.MustCompile(`(?m)Address: {(.{41})`)
+			regAddr := reAddr.FindAllString(walletOut, 1)[0]
+			fmt.Println(regAddr)
+			addr := strings.Replace(regAddr, "Address: {", "", -1)
+			addr = strings.Replace(addr, "}", "", -1)
+			wallets = append(wallets, addr)
 		}
 		return nil
 	})
@@ -178,51 +188,11 @@ func build(tn *testnet.TestNet) error {
 		})
 	}
 
+	StoreParameters(tn, ethconf, wallets, staticNodes)
+
 	return nil
 }
 
-func storeParameters(tn *testnet.TestNet, mgeth *MgethConf, wallets []string, enodes []string) {
-	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
-	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Warn("couldn't create geth accounts")
-	}
-
-	tn.BuildState.Set("networkID", mgeth.NetworkID)
-	tn.BuildState.Set("accounts", accounts)
-
-	tn.BuildState.SetExt("networkID", mgeth.NetworkID)
-	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
-	tn.BuildState.SetExt("port", 8545)
-
-	for _, account := range accounts {
-		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
-			"privateKey": account.HexPrivateKey(),
-			"publicKey":  account.HexPublicKey(),
-		})
-	}
-
-	switch mgeth.Consensus {
-	case "ethash":
-		tn.BuildState.Set("mine", true)
-	case "poa":
-		tn.BuildState.Set("mine", false)
-	}
-
-	tn.BuildState.Set("peers", enodes)
-
-	tn.BuildState.Set("mgethConf", map[string]interface{}{
-		"networkID":   mgeth.NetworkID,
-		"initBalance": mgeth.InitBalance,
-		"difficulty":  fmt.Sprintf("0x%x", mgeth.Difficulty),
-		"gasLimit":    fmt.Sprintf("0x%x", mgeth.GasLimit),
-		"extraData":   mgeth.ExtraData,
-		"consensus":   mgeth.Consensus,
-		"consensusParams": map[string]interface{}{
-			"difficulty": mgeth.Difficulty,
-		}})
-
-	tn.BuildState.Set("wallets", wallets)
-}
 
 /***************************************************************************************************************************/
 
@@ -420,15 +390,12 @@ func add(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	storeParameters(tn, parityConf, wallets, enodes)
+	parity.StoreParameters(tn, parityConf, wallets, enodes)
 
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Bootstrapping network")
 
-	return peerAllNodes(tn, snodes)
-
-
-
+	return parity.PeerAllNodes(tn, snodes)
 
 	return nil
 }
@@ -714,4 +681,48 @@ func checkIntToNull(v int64) interface{} {
 	} else {
 		return v
 	}
+}
+
+// StoreParameters stores the parameters to be used for reference regarding build details
+func StoreParameters(tn *testnet.TestNet, mgeth *MgethConf, wallets []string, enodes []string) {
+	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err}).Warn("couldn't create geth accounts")
+	}
+
+	tn.BuildState.Set("networkID", mgeth.NetworkID)
+	tn.BuildState.Set("accounts", accounts)
+
+	tn.BuildState.SetExt("networkID", mgeth.NetworkID)
+	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
+	tn.BuildState.SetExt("port", 8545)
+
+	for _, account := range accounts {
+		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
+			"privateKey": account.HexPrivateKey(),
+			"publicKey":  account.HexPublicKey(),
+		})
+	}
+
+	switch mgeth.Consensus {
+	case "ethash":
+		tn.BuildState.Set("mine", true)
+	case "poa":
+		tn.BuildState.Set("mine", false)
+	}
+
+	tn.BuildState.Set("peers", enodes)
+
+	tn.BuildState.Set("mgethConf", map[string]interface{}{
+		"networkID":   mgeth.NetworkID,
+		"initBalance": mgeth.InitBalance,
+		"difficulty":  fmt.Sprintf("0x%x", mgeth.Difficulty),
+		"gasLimit":    fmt.Sprintf("0x%x", mgeth.GasLimit),
+		"extraData":   mgeth.ExtraData,
+		"consensus":   mgeth.Consensus,
+		"consensusParams": map[string]interface{}{
+			"difficulty": mgeth.Difficulty,
+		}})
+
+	tn.BuildState.Set("wallets", wallets)
 }

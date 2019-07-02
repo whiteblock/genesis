@@ -193,9 +193,9 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	storeParameters(tn, pconf, wallets, enodes)
+	StoreParameters(tn, pconf, wallets, enodes)
 	tn.BuildState.IncrementBuildProgress()
-	return peerAllNodes(tn, enodes)
+	return PeerAllNodes(tn, enodes)
 }
 
 /***************************************************************************************************************************/
@@ -396,15 +396,16 @@ func add(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	storeParameters(tn, parityConf, wallets, enodes)
+	StoreParameters(tn, parityConf, wallets, enodes)
 
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Bootstrapping network")
 
-	return peerAllNodes(tn, snodes)
+	return PeerAllNodes(tn, snodes)
 }
 
-func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
+// PeerAllNodes sends a curl command to peer nodes
+func PeerAllNodes(tn *testnet.TestNet, enodes []string) error {
 	return helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, enode := range enodes {
 			if i == node.GetAbsoluteNumber() {
@@ -424,7 +425,8 @@ func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 	})
 }
 
-func storeParameters(tn *testnet.TestNet, pconf *ParityConf, wallets []string, enodes []string) {
+// StoreParameters stores the parameters to be used for reference regarding build details
+func StoreParameters(tn *testnet.TestNet, pconf *ParityConf, wallets []string, enodes []string) {
 	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Warn("couldn't create geth accounts")
