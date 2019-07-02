@@ -304,7 +304,7 @@ func add(tn *testnet.TestNet) error {
 	switch mgethConf.Consensus {
 	case "ethash":
 		err = parity.SetupNewPOW(tn, parityConf, wallets, genWallets)
-	case "poa":
+	case "clique":
 		err = parity.SetupNewPOA(tn, parityConf, wallets, genWallets)
 	default:
 		return util.LogError(fmt.Errorf("Unknown consensus %s", parityConf.Consensus))
