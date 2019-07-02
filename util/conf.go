@@ -70,6 +70,9 @@ type Config struct {
 	RemoveNodesOnFailure    bool    `mapstructure:"removeNodesOnFailure"`
 	NibblerRetries          uint    `mapstructure:"nibblerRetries"`
 	KillRetries             uint    `mapstructure:"killRetries"`
+	EnablePortForwarding    bool    `mapstructure:"enablePortForwarding"`
+	EnableDockerVolumes     bool    `mapstructure:"enableDockerVolumes"`
+	EnableImageBuilding     bool    `mapstructure:"enableImageBuilding"`
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
@@ -120,6 +123,9 @@ func setViperEnvBindings() {
 	viper.BindEnv("removeNodesOnFailure", "REMOVE_NODES_ON_FAILURE")
 	viper.BindEnv("nibblerRetries", "NIBBLER_RETRIES")
 	viper.BindEnv("killRetries", "KILL_RETRIES")
+	viper.BindEnv("enablePortForwarding", "ENABLE_PORT_FORWARDING")
+	viper.BindEnv("enableDockerVolumes", "ENABLE_DOCKER_VOLUMES")
+	viper.BindEnv("enableImageBuilding", "ENABLE_IMAGE_BUILDING")
 }
 func setViperDefaults() {
 	viper.SetDefault("sshUser", os.Getenv("USER"))
@@ -160,6 +166,9 @@ func setViperDefaults() {
 	viper.SetDefault("killRetries", 100)
 	viper.SetDefault("ganacheRPCPort", 8545)
 	viper.SetDefault("ganacheCLIOptions", "--gasLimit 4000000000000")
+	viper.SetDefault("enablePortForwarding", true)
+	viper.SetDefault("enableDockerVolumes", true)
+	viper.SetDefault("enableImageBuilding", true)
 }
 
 // GCPFormatter enables the ability to use genesis logging with Stackdriver
