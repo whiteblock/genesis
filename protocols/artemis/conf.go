@@ -100,7 +100,7 @@ func makeNodeConfig(aconf artemisConf, identity string, peers string, node int, 
 	filler["metricsPort"] = prometheusInstrumentationPort
 	filler["constants"] = constantsRaw
 
-	filler["validators"] = fmt.Sprintf("%.0f", aconf["validators"])
+	filler["validators"] = fmt.Sprintf("%d", aconf["validators"])
 	dat, err := helpers.GetBlockchainConfig("artemis", node, "artemis-config.toml.mustache", details)
 	if err != nil {
 		return "", util.LogError(err)
