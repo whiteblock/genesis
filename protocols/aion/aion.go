@@ -3,26 +3,26 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 // Package aion handles artemis specific functionality
 package aion
 
 import (
+	"encoding/json"
 	"fmt"
-	"regexp"
-	// log "github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
@@ -30,8 +30,7 @@ import (
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
-	// "reflect"
-	"encoding/json"
+	"regexp"
 	"strings"
 	"sync"
 )
@@ -98,7 +97,7 @@ func build(tn *testnet.TestNet) error {
 		regAddr := reAddr.FindAllString(output, 1)[0]
 		splitAddr := strings.Split(regAddr, "A new account has been created:")
 		addr := strings.Replace(splitAddr[1], " ", "", -1)
-		// fmt.Println(addr)
+		log.WithFields(log.Fields{"addr": addr}).Trace("A new account has been created:")
 		mux.Lock()
 		addresses[node.GetAbsoluteNumber()] = addr
 		mux.Unlock()
@@ -116,9 +115,8 @@ func build(tn *testnet.TestNet) error {
 			return util.LogError(err)
 		}
 		pubk := regexp.MustCompile(`(?m)0x(.{64})`)
-		fmt.Println(pubk)
 		publicKey := pubk.FindAllString(pubkeyOut, 1)[0]
-		fmt.Println(publicKey)
+		log.WithFields(log.Fields{"regex": pubk, "pubkey": publicKey}).Trace("Extracted the public key")
 		mux.Unlock()
 		mux.Lock()
 		privatekeyOut, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh -a export %s -n custom'", publicKey))
@@ -126,9 +124,8 @@ func build(tn *testnet.TestNet) error {
 			return util.LogError(err)
 		}
 		privk := regexp.MustCompile(`(?m)0x(.{128})`)
-		fmt.Println(privk)
 		privateKey := privk.FindAllString(privatekeyOut, 1)[0]
-		fmt.Println(privateKey)
+		log.WithFields(log.Fields{"regex": privk, "privatekey": privateKey}).Trace("Extracted the private key")
 		mux.Unlock()
 
 		accounts[node.GetAbsoluteNumber()] = aionAcc{
@@ -143,8 +140,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-
-	fmt.Println(accounts)
+	log.WithFields(log.Fields{"accounts": accounts}).Trace("extracted accounts")
 	tn.BuildState.Set("generatedAccs", accounts)
 	tn.BuildState.IncrementBuildProgress()
 
@@ -169,7 +165,7 @@ func build(tn *testnet.TestNet) error {
 		regNodeID := reNodeID.FindAllString(output, 1)[0]
 		splitNodeID := strings.Split(regNodeID, "<id>")
 		nodeID := strings.Replace(splitNodeID[1], " ", "", -1)
-		fmt.Println(nodeID)
+		log.WithFields(log.Fields{"nodeID": nodeID}).Trace("extracted node id")
 		mux.Lock()
 		nodeIDs[node.GetAbsoluteNumber()] = nodeID
 		mux.Unlock()
