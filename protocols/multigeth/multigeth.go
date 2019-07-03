@@ -240,7 +240,7 @@ func add(tn *testnet.TestNet) error {
 			data += password + "\n"
 		}
 		/**Copy over the password file**/
-		err = helpers.CopyBytesToAllNodes(tn, data, "/multi-geth/passwd")
+		err = helpers.CopyBytesToAllNewNodes(tn, data, "/multi-geth/passwd")
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -304,6 +304,8 @@ func add(tn *testnet.TestNet) error {
 		snodes = append(snodes, staticNodes[i])
 	}
 
+	fmt.Println(wallets)
+	fmt.Println(accounts)
 	fmt.Println(staticNodes)
 
 	
