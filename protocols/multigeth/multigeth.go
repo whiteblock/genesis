@@ -22,6 +22,7 @@ package multigeth
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 	"strings"
 	"regexp"
 	log "github.com/sirupsen/logrus"
@@ -47,6 +48,7 @@ const (
 	p2pPort         = 30303
 	rpcPort         = 8545
 	genesisFileName = "CustomGenesis.json"
+	peeringRetries = 5
 )
 
 func init() {
@@ -230,8 +232,83 @@ func add(tn *testnet.TestNet) error {
 	// output to stdout mgeth genesis
 	fmt.Println(mgethConf)
 
+	helpers.MkdirAllNewNodes(tn, "/multi-geth")
+	{
+		/**Create the Password files**/
+		var data string
+		for i := 1; i <= tn.LDD.Nodes; i++ {
+			data += password + "\n"
+		}
+		/**Copy over the password file**/
+		err = helpers.CopyBytesToAllNodes(tn, data, "/multi-geth/passwd")
+		if err != nil {
+			return util.LogError(err)
+		}
+	}
 
-	return nil
+	wallets := make([]string, tn.LDD.Nodes)
+	accounts, err := getAccountPool(tn, int(mgethConf.ExtraAccounts)+tn.LDD.Nodes)
+	if err != nil {
+		return util.LogError(err)
+	}
+	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		for i, account := range accounts[:tn.LDD.Nodes] {
+			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" > /multi-geth/pk%d'", account.HexPrivateKey(), i))
+			if err != nil {
+				return util.LogError(err)
+			}
+			walletOut, err := client.DockerExec(node,
+				fmt.Sprintf("geth %s --datadir /multi-geth/ --password /multi-geth/passwd account import /multi-geth/pk%d", mgethConf.Network, i))
+			if err != nil {
+				util.LogError(err) //dont report the error
+			}
+			reAddr := regexp.MustCompile(`(?m)Address: {(.{41})`)
+			regAddr := reAddr.FindAllString(walletOut, 1)[0]
+			fmt.Println(regAddr)
+			addr := strings.Replace(regAddr, "Address: {", "", -1)
+			addr = strings.Replace(addr, "}", "", -1)
+			wallets = append(wallets, addr)
+		}
+		return nil
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	var snodes []string
+	tn.BuildState.GetP("staticNodes", &snodes)
+	fmt.Println(fmt.Sprintf("enode address : %+v", snodes))
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	switch etcGenesisFile.Consensus {
+	case "clique":
+		fallthrough
+	case "ethash":
+		extraData := "0x0000000000000000000000000000000000000000000000000000000000000000"
+		//it does not work when there are multiple signers put into this extraData field
+		/*
+			for i := 0; i < len(accounts) && i < tn.LDD.Nodes; i++ {
+				extraData += accounts[i].HexAddress()[2:]
+			}
+		*/
+		extraData += accounts[0].HexAddress()[2:]
+		extraData += "000000000000000000000000000000000000000000000000000000000000000000" +
+			"0000000000000000000000000000000000000000000000000000000000000000"
+		etcGenesisFile.ExtraData = extraData
+	}
+
+	staticNodes := getEnodes(tn, accounts)
+	for i := range staticNodes {
+		snodes = append(snodes, staticNodes[i])
+	}
+
+	fmt.Println(staticNodes)
+
+	
+	StoreParameters(tn, mgethConf, wallets, snodes)
+	return peerAllNodes(tn, snodes)
 }
 
 // MakeFakeAccounts creates ethereum addresses which can be marked as funded to produce a
@@ -507,6 +584,33 @@ func getEnodes(tn *testnet.TestNet, accounts []*ethereum.Account) []string {
 		enodes = append(enodes, enodeAddress)
 	}
 	return enodes
+}
+
+func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
+	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		for i, enode := range enodes {
+			if i == node.GetAbsoluteNumber() {
+				continue
+			}
+			var err error
+			for i := 0; i < peeringRetries; i++ { //give it some extra tries
+				_, err = client.KeepTryRun(
+					fmt.Sprintf(
+						`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
+							`'{ "method": "admin_addPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
+						node.GetIP(), enode))
+				if err == nil {
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
+			tn.BuildState.IncrementBuildProgress()
+			if err != nil {
+				return util.LogError(err)
+			}
+		}
+		return nil
+	})
 }
 
 func checkIntToNull(v int64) interface{} {
