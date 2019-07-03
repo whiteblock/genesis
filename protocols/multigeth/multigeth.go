@@ -218,7 +218,7 @@ func add(tn *testnet.TestNet) error {
 		util.LogError(err)
 	}
 
-	mgethConf.Network = "classic"
+	mgethConf.Network = "--classic"
 	mgethConf.NetworkID = etcGenesisFile.NetworkID
 	mgethConf.Difficulty = etcGenesisFile.Difficulty
 	mgethConf.GasLimit = etcGenesisFile.GasLimit
