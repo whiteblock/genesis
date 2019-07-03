@@ -21,9 +21,9 @@
     "eip150Block":0,
     "eip155Block":0,
     "eip158Block":0,
-    "byzantiumBlock":0,
+    "byzantiumBlock":100,
     "disposalBlock":0,
     "constantinopleBlock":-1,
-    "ecip1017EraRounds":5000000,
+    "ecip1017EraRounds":2000000,
     "eip160FBlock":0
 }

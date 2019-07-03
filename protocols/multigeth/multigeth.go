@@ -23,12 +23,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 	"regexp"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/ethereum"
-	"github.com/whiteblock/genesis/protocols/parity"
+	"github.com/whiteblock/genesis/protocols/ethclassic"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/ssh"
@@ -199,202 +198,38 @@ func build(tn *testnet.TestNet) error {
 // TODO
 func add(tn *testnet.TestNet) error {
 
-	//parity attachment
-	mux := sync.Mutex{}
+	// multigeth attachment to etc
+	// mux := sync.Mutex{}
 
 	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetBuildStage("Pulling the genesis block")
 
-	var mgethConf MgethConf
-	tn.BuildState.GetP("multigethConf", &mgethConf)
+	var etcGenesisFile ethclassic.EtcConf
+	tn.BuildState.GetP("etcconf", &etcGenesisFile)
 
 	var genesisAlloc map[string]map[string]string
 	tn.BuildState.GetP("alloc", &genesisAlloc)
 
-	parityConf, err := parity.NewParityConf(tn.LDD.Params)
-	tn.BuildState.SetBuildSteps(1 + 2*len(tn.NewlyBuiltNodes)) //TODO
+	mgethConf, err := newConf(tn.LDD.Params)
 	if err != nil {
-		return util.LogError(err)
+		util.LogError(err)
 	}
 
-	parityConf.NetworkID = mgethConf.NetworkID
-	parityConf.ChainID = mgethConf.NetworkID
-	parityConf.Difficulty = mgethConf.Difficulty
-	parityConf.ExtraData = mgethConf.ExtraData
-	parityConf.GasLimit = mgethConf.GasLimit
+	mgethConf.Network = "classic"
+	mgethConf.NetworkID = etcGenesisFile.NetworkID
+	mgethConf.Difficulty = etcGenesisFile.Difficulty
+	mgethConf.GasLimit = etcGenesisFile.GasLimit
+	mgethConf.ExtraData = etcGenesisFile.ExtraData
+	mgethConf.HomesteadBlock = etcGenesisFile.HomesteadBlock
+	mgethConf.EIP150Block = etcGenesisFile.EIP150Block
+	mgethConf.EIP155Block = etcGenesisFile.EIP155_160Block
+	mgethConf.ECIP1017EraRounds = etcGenesisFile.ECIP1017Era
+	mgethConf.EIP160FBlock = etcGenesisFile.EIP155_160Block
 
-	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		_, err := client.DockerExec(node, fmt.Sprintf("mkdir -p /parity"))
-		return err
-	})
-	if err != nil {
-		return util.LogError(err)
-	}
+	// output to stdout mgeth genesis
+	fmt.Println(mgethConf)
 
-	/**Create the Password file and copy it over**/
-	{
-		var data string
-		for i := 1; i <= tn.LDD.Nodes; i++ {
-			data += "password\n"
-		}
-		tn.BuildState.IncrementBuildProgress()
-		err = helpers.CopyBytesToAllNewNodes(tn, data, "/parity/passwd")
-		if err != nil {
-			return util.LogError(err)
-		}
-		tn.BuildState.IncrementBuildProgress()
-	}
-
-	genWallets := []string{}
-	wallets := []string{}
-	rawWallets := []string{}
-	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		res, err := client.DockerExec(node, "parity --base-path=/parity/ --password=/parity/passwd account new")
-		if err != nil {
-			return util.LogError(err)
-		}
-
-		if len(res) == 0 {
-			return fmt.Errorf("account new returned an empty response")
-		}
-
-		mux.Lock()
-		wallets = append(wallets, res[:len(res)-1])
-		mux.Unlock()
-
-		res, err = client.DockerExec(node, "bash -c 'cat /parity/keys/ethereum/*'")
-		if err != nil {
-			return util.LogError(err)
-		}
-		tn.BuildState.IncrementBuildProgress()
-
-		mux.Lock()
-		rawWallets = append(rawWallets, strings.Replace(res, "\"", "\\\"", -1))
-		mux.Unlock()
-		return nil
-	})
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		for i := 0; i < node.GetAbsoluteNumber(); i++ {
-			var nodeKeyStores string
-			tn.BuildState.GetP(fmt.Sprintf("node%dKey", i), &nodeKeyStores)
-			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /parity/account%d'", nodeKeyStores, i+1))
-			if err != nil {
-				return err
-			}
-			rawWallets = append(rawWallets, nodeKeyStores)
-		}
-		return err
-	})
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	for i := range genesisAlloc {
-		wallets = append(wallets, "0x"+i)
-		genWallets = append(genWallets, "0x"+i)
-	}
-
-	// ***********************************************************************************************************
-
-	switch mgethConf.Consensus {
-	case "ethash":
-		err = parity.SetupNewPOW(tn, parityConf, wallets, genWallets)
-	case "clique":
-		err = parity.SetupNewPOA(tn, parityConf, wallets, genWallets)
-	default:
-		return util.LogError(fmt.Errorf("Unknown consensus %s", parityConf.Consensus))
-	}
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	// ***********************************************************************************************************
-
-	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		for i, rawWallet := range rawWallets {
-			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\">/parity/account%d'", rawWallet, i))
-			if err != nil {
-				return util.LogError(err)
-			}
-
-			_, err = client.DockerExec(node,
-				fmt.Sprintf("parity --base-path=/parity/ --chain /parity/spec.json --password=/parity/passwd account import /parity/account%d", i))
-			if err != nil {
-				return util.LogError(err)
-			}
-		}
-		tn.BuildState.IncrementBuildProgress()
-		return nil
-	})
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		defer tn.BuildState.IncrementBuildProgress()
-		return client.DockerRunMainDaemon(node,
-			fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`, wallets[node.GetAbsoluteNumber()%tn.LDD.Nodes]))
-	})
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	var snodes []string
-	tn.BuildState.GetP("staticNodes", &snodes)
-	fmt.Println(fmt.Sprintf("enode address : %+v", snodes))
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	//Start peering via curl
-	time.Sleep(time.Duration(5 * time.Second))
-	//Get the enode addresses
-	enodes := make([]string, tn.LDD.Nodes)
-	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
-		enode := ""
-		for len(enode) == 0 {
-			res, err := client.KeepTryRun(
-				fmt.Sprintf(
-					`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json" `+
-						` -d '{ "method": "parity_enode", "params": [], "id": 1, "jsonrpc": "2.0" }'`,
-					node.GetIP()))
-
-			if err != nil {
-				return util.LogError(err)
-			}
-			var result map[string]interface{}
-
-			err = json.Unmarshal([]byte(res), &result)
-			if err != nil {
-				return util.LogError(err)
-			}
-			log.WithFields(log.Fields{"result": result}).Trace("fetched enode addr from parity_enode")
-
-			err = util.GetJSONString(result, "result", &enode)
-			if err != nil {
-				return util.LogError(err)
-			}
-		}
-		tn.BuildState.IncrementBuildProgress()
-		mux.Lock()
-		enodes[node.GetAbsoluteNumber()%tn.LDD.Nodes] = enode
-		mux.Unlock()
-		return nil
-	})
-	if err != nil {
-		return util.LogError(err)
-	}
-	parity.StoreParameters(tn, parityConf, wallets, enodes)
-
-	tn.BuildState.IncrementBuildProgress()
-	tn.BuildState.SetBuildStage("Bootstrapping network")
-
-	return parity.PeerAllNodes(tn, snodes)
 
 	return nil
 }
