@@ -36,12 +36,15 @@ import (
 	"time"
 )
 
-var conf *util.Config
+var conf = util.GetConfig()
 
-const blockchain = "parity"
+const (
+	blockchain   = "parity"
+	password     = "password"
+	passwordFile = "/parity/passwd"
+)
 
 func init() {
-	conf = util.GetConfig()
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
@@ -59,7 +62,7 @@ func build(tn *testnet.TestNet) error {
 	}
 	log.WithFields(log.Fields{"config": *pconf}).Trace("parsed the parity config")
 
-	tn.BuildState.SetBuildSteps(9 + (7 * tn.LDD.Nodes))
+	tn.BuildState.SetBuildSteps(9 + (6 * tn.LDD.Nodes))
 	//Make the data directories
 	err = helpers.MkdirAllNodes(tn, "/parity")
 	if err != nil {
@@ -67,19 +70,11 @@ func build(tn *testnet.TestNet) error {
 	}
 	tn.BuildState.IncrementBuildProgress()
 
-	/**Create the Password file and copy it over**/
-	{
-		var data string
-		for i := 1; i <= tn.LDD.Nodes; i++ {
-			data += "password\n"
-		}
-		tn.BuildState.IncrementBuildProgress()
-		err = helpers.CopyBytesToAllNodes(tn, data, "/parity/passwd")
-		if err != nil {
-			return util.LogError(err)
-		}
-		tn.BuildState.IncrementBuildProgress()
+	err = ethereum.CreatePasswordFile(tn, password, passwordFile)
+	if err != nil {
+		return util.LogError(err)
 	}
+	tn.BuildState.IncrementBuildProgress()
 
 	/**Create the wallets**/
 	wallets := make([]string, tn.LDD.Nodes)

@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 //Package ethclassic handles ethclassic specific functionality
@@ -37,24 +37,22 @@ import (
 	"time"
 )
 
-var conf *util.Config
+var conf = util.GetConfig()
 
 const (
 	blockchain     = "ethclassic"
 	peeringRetries = 5
 	password       = "password"
+	passwordFile   = "/geth/passwd"
 )
 
 func init() {
-	conf = util.GetConfig()
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, func() []services.Service { return nil })
 	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }
-
-// GetServices returns the services which are used by artemis
 
 // build builds out a fresh new ethereum test network using geth
 func build(tn *testnet.TestNet) error {
@@ -72,17 +70,9 @@ func build(tn *testnet.TestNet) error {
 
 	helpers.MkdirAllNodes(tn, "/geth")
 
-	{
-		/**Create the Password files**/
-		var data string
-		for i := 1; i <= tn.LDD.Nodes; i++ {
-			data += password + "\n"
-		}
-		/**Copy over the password file**/
-		err = helpers.CopyBytesToAllNodes(tn, data, "/geth/passwd")
-		if err != nil {
-			return util.LogError(err)
-		}
+	err = ethereum.CreatePasswordFile(tn, password, passwordFile)
+	if err != nil {
+		return util.LogError(err)
 	}
 
 	tn.BuildState.IncrementBuildProgress()
@@ -253,16 +243,6 @@ func add(tn *testnet.TestNet) error {
 	return nil
 }
 
-// MakeFakeAccounts creates ethereum addresses which can be marked as funded to produce a
-// larger initial state
-func MakeFakeAccounts(accs int) []string {
-	out := make([]string, accs)
-	for i := 1; i <= accs; i++ {
-		out[i-1] = fmt.Sprintf("%.40x", i)
-	}
-	return out
-}
-
 func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, enode := range enodes {
@@ -364,14 +344,6 @@ func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethere
 		genesis["extraData"] = extraData
 	}
 
-	/*
-		accs := MakeFakeAccounts(int(etcconf.ExtraAccounts))
-		for _, wallet := range accs {
-			alloc[wallet] = map[string]string{
-				"balance": etcconf.InitBalance,
-			}
-		}
-	*/
 	genesis["alloc"] = alloc
 	genesis["consensusParams"] = consensusParams
 	tn.BuildState.Set("alloc", alloc)

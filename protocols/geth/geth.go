@@ -40,6 +40,7 @@ const (
 	alias           = "ethereum"
 	blockchain      = "geth"
 	password        = "password"
+	passwordFile    = "/geth/passwd"
 	defaultMode     = "default"
 	expansionMode   = "expand"
 	p2pPort         = 30303
@@ -87,19 +88,10 @@ func build(tn *testnet.TestNet) error {
 
 	helpers.MkdirAllNodes(tn, "/geth")
 
-	{
-		/**Create the Password files**/
-		var data string
-		for i := 1; i <= tn.LDD.Nodes; i++ {
-			data += password + "\n"
-		}
-		/**Copy over the password file**/
-		err = helpers.CopyBytesToAllNodes(tn, data, "/geth/passwd")
-		if err != nil {
-			return util.LogError(err)
-		}
+	err = ethereum.CreatePasswordFile(tn, password, passwordFile)
+	if err != nil {
+		return util.LogError(err)
 	}
-
 	tn.BuildState.IncrementBuildProgress()
 
 	/**Create the wallets**/
@@ -190,16 +182,6 @@ func build(tn *testnet.TestNet) error {
 // TODO
 func add(tn *testnet.TestNet) error {
 	return nil
-}
-
-// MakeFakeAccounts creates ethereum addresses which can be marked as funded to produce a
-// larger initial state
-func MakeFakeAccounts(accs int) []string {
-	out := make([]string, accs)
-	for i := 1; i <= accs; i++ {
-		out[i-1] = fmt.Sprintf("0x%.40x", i)
-	}
-	return out
 }
 
 /**
@@ -449,12 +431,7 @@ func checkFlagsExist(tn *testnet.TestNet) []map[string]bool {
 func getEnodes(tn *testnet.TestNet, accounts []*ethereum.Account) []string {
 	enodes := []string{}
 	for i, node := range tn.Nodes {
-		enodeAddress := fmt.Sprintf("enode://%s@%s:%d",
-			accounts[i].HexPublicKey(),
-			node.IP,
-			p2pPort)
-
-		enodes = append(enodes, enodeAddress)
+		enodes = append(enodes, fmt.Sprintf("enode://%s@%s:%d", accounts[i].HexPublicKey(), node.IP, p2pPort))
 	}
 	return enodes
 }
