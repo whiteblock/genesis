@@ -33,3 +33,16 @@ func CreatePasswordFile(tn *testnet.TestNet, password string, dest string) error
 	}
 	return util.LogError(helpers.CopyBytesToAllNodes(tn, data, dest))
 }
+
+// ExposeAccounts exposes the given accounts to the external services which require this data in
+// order to function correctly.
+func ExposeAccounts(tn *testnet.TestNet, accounts []*Account) {
+	tn.BuildState.SetExt("accounts", ExtractAddresses(accounts))
+	tn.BuildState.Set("accounts", accounts)
+	for _, account := range accounts {
+		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
+			"privateKey": account.HexPrivateKey(),
+			"publicKey":  account.HexPublicKey(),
+		})
+	}
+}

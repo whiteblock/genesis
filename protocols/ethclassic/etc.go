@@ -213,17 +213,10 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetExt("networkID", etcconf.NetworkID)
-	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
+	ethereum.ExposeAccounts(tn, accounts)
 	tn.BuildState.SetExt("port", 8545)
 	tn.BuildState.SetExt("namespace", "eth")
 	tn.BuildState.SetExt("password", password)
-
-	for _, account := range accounts {
-		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
-			"privateKey": account.HexPrivateKey(),
-			"publicKey":  account.HexPublicKey(),
-		})
-	}
 	tn.BuildState.SetBuildStage("peering the nodes")
 	time.Sleep(3 * time.Second)
 	log.WithFields(log.Fields{"staticNodes": staticNodes}).Debug("peering")

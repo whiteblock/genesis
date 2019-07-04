@@ -162,16 +162,9 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetExt("networkID", ethconf.NetworkID)
-	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
 	tn.BuildState.SetExt("port", rpcPort)
 	helpers.SetFunctionalityGroup(tn, "eth")
-
-	for _, account := range accounts {
-		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
-			"privateKey": account.HexPrivateKey(),
-			"publicKey":  account.HexPublicKey(),
-		})
-	}
+	ethereum.ExposeAccounts(tn, accounts)
 
 	return nil
 }

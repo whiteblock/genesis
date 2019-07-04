@@ -426,18 +426,9 @@ func storeParameters(tn *testnet.TestNet, pconf *parityConf, wallets []string, e
 	}
 
 	tn.BuildState.Set("networkID", pconf.NetworkID)
-	tn.BuildState.Set("accounts", accounts)
-
 	tn.BuildState.SetExt("networkID", pconf.NetworkID)
-	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
 	tn.BuildState.SetExt("port", 8545)
-
-	for _, account := range accounts {
-		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
-			"privateKey": account.HexPrivateKey(),
-			"publicKey":  account.HexPublicKey(),
-		})
-	}
+	ethereum.ExposeAccounts(tn, accounts)
 
 	switch pconf.Consensus {
 	case "ethash":

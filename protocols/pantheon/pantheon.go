@@ -169,16 +169,10 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	for _, account := range accounts {
-		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
-			"privateKey": account.HexPrivateKey(),
-			"publicKey":  account.HexPublicKey(),
-		})
-	}
-	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
+	ethereum.ExposeAccounts(tn, accounts)
+
 	tn.BuildState.Set("networkID", panconf.NetworkID)
 	tn.BuildState.SetExt("networkID", panconf.NetworkID)
-	tn.BuildState.Set("accounts", accounts)
 	helpers.SetFunctionalityGroup(tn, "eth")
 	tn.BuildState.Set("wallets", ethereum.ExtractAddresses(accounts))
 	return nil
