@@ -606,9 +606,8 @@ func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 func checkIntToNull(v int64) interface{} {
 	if v < 0 {
 		return nil
-	} else {
-		return v
 	}
+	return v
 }
 
 // StoreParameters stores the parameters to be used for reference regarding build details
