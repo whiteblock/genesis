@@ -16,7 +16,6 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package geth handles geth specific functionality
 package multigeth
 
 import (
@@ -286,17 +285,7 @@ func add(tn *testnet.TestNet) error {
 	case "clique":
 		fallthrough
 	case "ethash":
-		extraData := "0x0000000000000000000000000000000000000000000000000000000000000000"
-		//it does not work when there are multiple signers put into this extraData field
-		/*
-			for i := 0; i < len(accounts) && i < tn.LDD.Nodes; i++ {
-				extraData += accounts[i].HexAddress()[2:]
-			}
-		*/
-		extraData += accounts[0].HexAddress()[2:]
-		extraData += "000000000000000000000000000000000000000000000000000000000000000000" +
-			"0000000000000000000000000000000000000000000000000000000000000000"
-		etcGenesisFile.ExtraData = extraData
+		mgethConf.ExtraData = etcGenesisFile.ExtraData
 	}
 
 	staticNodes := getEnodes(tn, accounts)
@@ -306,8 +295,7 @@ func add(tn *testnet.TestNet) error {
 
 	fmt.Println(wallets)
 	fmt.Println(accounts)
-	fmt.Println(staticNodes)
-
+	fmt.Println(snodes)
 	
 	StoreParameters(tn, mgethConf, wallets, snodes)
 	return peerAllNodes(tn, snodes)
