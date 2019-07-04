@@ -24,14 +24,17 @@ import (
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 )
-
+const(
+	P2PPort         = 30303
+	RPCPort         = 8545
+)
 //CreatePasswordFile turns the process of creating a password file into a single function call
 func CreatePasswordFile(tn *testnet.TestNet, password string, dest string) error {
 	var data string
 	for i := 1; i <= tn.LDD.Nodes; i++ {
 		data += fmt.Sprintf("%s\n", password)
 	}
-	return util.LogError(helpers.CopyBytesToAllNodes(tn, data, dest))
+	return util.LogError(helpers.CopyBytesToAllNewNodes(tn, data, dest))
 }
 
 // ExposeAccounts exposes the given accounts to the external services which require this data in

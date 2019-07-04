@@ -214,7 +214,7 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetExt("networkID", etcconf.NetworkID)
 	ethereum.ExposeAccounts(tn, accounts)
-	tn.BuildState.SetExt("port", 8545)
+	tn.BuildState.SetExt("port", ethereum.RPCPort)
 	tn.BuildState.SetExt("namespace", "eth")
 	tn.BuildState.SetExt("password", password)
 	tn.BuildState.SetBuildStage("peering the nodes")

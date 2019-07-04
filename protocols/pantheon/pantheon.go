@@ -170,7 +170,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	ethereum.ExposeAccounts(tn, accounts)
-
+	tn.BuildState.SetExt("port", ethereum.RPCPort)
 	tn.BuildState.Set("networkID", panconf.NetworkID)
 	tn.BuildState.SetExt("networkID", panconf.NetworkID)
 	helpers.SetFunctionalityGroup(tn, "eth")

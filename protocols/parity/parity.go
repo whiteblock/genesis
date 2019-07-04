@@ -235,19 +235,11 @@ func add(tn *testnet.TestNet) error {
 	}
 
 	/**Create the Password file and copy it over**/
-	{
-		var data string
-		for i := 1; i <= tn.LDD.Nodes; i++ {
-			data += "password\n"
-		}
-		tn.BuildState.IncrementBuildProgress()
-		err = helpers.CopyBytesToAllNewNodes(tn, data, "/parity/passwd")
-		if err != nil {
-			return util.LogError(err)
-		}
-		tn.BuildState.IncrementBuildProgress()
+	err = ethereum.CreatePasswordFile(tn, password, passwordFile)
+	if err != nil {
+		return util.LogError(err)
 	}
-
+	
 	genWallets := []string{}
 	wallets := []string{}
 	rawWallets := []string{}
@@ -427,7 +419,7 @@ func storeParameters(tn *testnet.TestNet, pconf *parityConf, wallets []string, e
 
 	tn.BuildState.Set("networkID", pconf.NetworkID)
 	tn.BuildState.SetExt("networkID", pconf.NetworkID)
-	tn.BuildState.SetExt("port", 8545)
+	tn.BuildState.SetExt("port", ethereum.RPCPort)
 	ethereum.ExposeAccounts(tn, accounts)
 
 	switch pconf.Consensus {

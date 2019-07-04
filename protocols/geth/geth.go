@@ -43,8 +43,6 @@ const (
 	passwordFile    = "/geth/passwd"
 	defaultMode     = "default"
 	expansionMode   = "expand"
-	p2pPort         = 30303
-	rpcPort         = 8545
 	genesisFileName = "CustomGenesis.json"
 )
 
@@ -150,7 +148,7 @@ func build(tn *testnet.TestNet) error {
 			`geth --datadir /geth/ %s --rpc --nodiscover --rpcaddr 0.0.0.0`+
 				` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine`+
 				` --txpool.nolocals --port %d console  2>&1 | tee %s`,
-			getExtraFlags(ethconf, account, validFlags[node.GetAbsoluteNumber()]), p2pPort, conf.DockerOutputFile)
+			getExtraFlags(ethconf, account, validFlags[node.GetAbsoluteNumber()]), ethereum.P2PPort, conf.DockerOutputFile)
 
 		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
 		tn.BuildState.IncrementBuildProgress()
@@ -162,7 +160,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetExt("networkID", ethconf.NetworkID)
-	tn.BuildState.SetExt("port", rpcPort)
+	tn.BuildState.SetExt("port", ethereum.RPCPort)
 	helpers.SetFunctionalityGroup(tn, "eth")
 	ethereum.ExposeAccounts(tn, accounts)
 
@@ -424,7 +422,7 @@ func checkFlagsExist(tn *testnet.TestNet) []map[string]bool {
 func getEnodes(tn *testnet.TestNet, accounts []*ethereum.Account) []string {
 	enodes := []string{}
 	for i, node := range tn.Nodes {
-		enodes = append(enodes, fmt.Sprintf("enode://%s@%s:%d", accounts[i].HexPublicKey(), node.IP, p2pPort))
+		enodes = append(enodes, fmt.Sprintf("enode://%s@%s:%d", accounts[i].HexPublicKey(), node.IP, ethereum.P2PPort))
 	}
 	return enodes
 }
