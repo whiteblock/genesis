@@ -15,5 +15,6 @@
     "eip158Block":0,
     "mode":"default",
     "verbosity":3,
-    "unlock":true
+    "unlock":true,
+    "exposedAccounts":-1
 }

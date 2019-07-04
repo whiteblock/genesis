@@ -46,7 +46,7 @@ func (p PrometheusService) Prepare(client ssh.Client, tn *testnet.TestNet) error
 			prometheusInstrumentationPort = obj.(string)
 		}
 		if prometheusInstrumentationPort == "" {
-			prometheusInstrumentationPort = "8088"
+			prometheusInstrumentationPort = "8008"
 		}
 
 		var tpl bytes.Buffer

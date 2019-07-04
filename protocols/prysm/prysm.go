@@ -97,7 +97,7 @@ func build(tn *testnet.TestNet) error {
 			prometheusInstrumentationPort = obj.(string)
 		}
 		if prometheusInstrumentationPort == "" {
-			prometheusInstrumentationPort = "8088"
+			prometheusInstrumentationPort = "8008"
 		}
 
 		var contract string

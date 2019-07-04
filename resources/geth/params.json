@@ -13,5 +13,6 @@
     ["eip158Block","int"],
     ["mode","string"],
     ["verbosity","int"],
-    ["unlock","bool"]
+    ["unlock","bool"],
+    ["exposedAccounts","int"]
 ]

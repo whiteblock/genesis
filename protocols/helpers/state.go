@@ -31,6 +31,7 @@ import (
 const (
 	alternativeCommandRegexKey = "__alternative_commands"
 	functionalityGroupKey      = "namespace"
+	protocolGroupKey           = "__protocol"
 )
 
 // SetAlternativeCmdExprs allows you to have your protocol support restart and related
@@ -59,4 +60,19 @@ func GetCommandExprs(tn *testnet.TestNet, node string) ([]string, error) {
 //is eth
 func SetFunctionalityGroup(tn *testnet.TestNet, name string) {
 	tn.BuildState.SetExt(functionalityGroupKey, name)
+}
+
+// SetProtocolGroup sets the protocol group for the testnet
+func SetProtocolGroup(tn *testnet.TestNet, name string) {
+	tn.BuildState.Set(protocolGroupKey, name)
+}
+
+// GetProtocolGroup gets the protocol group for the testnet
+func GetProtocolGroup(tn *testnet.TestNet) (string, error) {
+	var out string
+	exists := tn.BuildState.GetP(functionalityGroupKey, &out)
+	if !exists {
+		return "", fmt.Errorf("protocol group is not set")
+	}
+	return out, nil
 }

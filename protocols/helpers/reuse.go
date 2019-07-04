@@ -22,7 +22,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/state"

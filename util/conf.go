@@ -151,7 +151,7 @@ func setViperDefaults() {
 	viper.SetDefault("nibblerEndPoint", "https://storage.googleapis.com/genesis-public/nibbler/master/bin/linux/amd64/nibbler")
 	viper.SetDefault("logJson", false)
 	viper.SetDefault("prometheusConfig", "/tmp/prometheus.yml")
-	viper.SetDefault("prometheusPort", 8088)
+	viper.SetDefault("prometheusPort", 9090)
 	viper.SetDefault("prometheusInstrumentationPort", 8008)
 	viper.SetDefault("maxRunAttempts", 30)
 	viper.SetDefault("maxConnections", 50)
