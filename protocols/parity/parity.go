@@ -426,7 +426,7 @@ func PeerAllNodes(tn *testnet.TestNet, enodes []string) error {
 }
 
 // StoreParameters stores the parameters to be used for reference regarding build details
-func StoreParameters(tn *testnet.TestNet, pconf *ParityConf, wallets []string, enodes []string) {
+func StoreParameters(tn *testnet.TestNet, pconf *PConf, wallets []string, enodes []string) {
 	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Warn("couldn't create geth accounts")
@@ -470,7 +470,7 @@ func StoreParameters(tn *testnet.TestNet, pconf *ParityConf, wallets []string, e
 }
 
 //SetupPOA sets the consensus rules for the genesis file with PoA
-func SetupPOA(tn *testnet.TestNet, pconf *ParityConf, wallets []string) error {
+func SetupPOA(tn *testnet.TestNet, pconf *PConf, wallets []string) error {
 	//Create the chain spec files
 	spec, err := buildPoaSpec(pconf, tn.LDD, wallets)
 	if err != nil {
@@ -494,7 +494,7 @@ func SetupPOA(tn *testnet.TestNet, pconf *ParityConf, wallets []string) error {
 }
 
 //SetupPOW sets the consensus rules for the genesis file with PoW
-func SetupPOW(tn *testnet.TestNet, pconf *ParityConf, wallets []string) error {
+func SetupPOW(tn *testnet.TestNet, pconf *PConf, wallets []string) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	//Create the chain spec files
@@ -518,7 +518,7 @@ func SetupPOW(tn *testnet.TestNet, pconf *ParityConf, wallets []string) error {
 }
 
 // SetupNewPOA sets up new nodes with the consensus rules for the genesis block to PoA
-func SetupNewPOA(tn *testnet.TestNet, pconf *ParityConf, wallets, genWallets []string) error {
+func SetupNewPOA(tn *testnet.TestNet, pconf *PConf, wallets, genWallets []string) error {
 	//Create the chain spec files
 	spec, err := buildPoaSpec(pconf, tn.LDD, genWallets)
 	if err != nil {
@@ -542,7 +542,7 @@ func SetupNewPOA(tn *testnet.TestNet, pconf *ParityConf, wallets, genWallets []s
 }
 
 // SetupNewPOW sets up new nodes with the consensus rules for the genesis block to PoW
-func SetupNewPOW(tn *testnet.TestNet, pconf *ParityConf, wallets, genWallets []string) error {
+func SetupNewPOW(tn *testnet.TestNet, pconf *PConf, wallets, genWallets []string) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	//Create the chain spec files

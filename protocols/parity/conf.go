@@ -28,8 +28,8 @@ import (
 	"github.com/whiteblock/mustache"
 )
 
-// ParityConf represents the settings for the parity build
-type ParityConf struct {
+// PConf represents the settings for the parity build
+type PConf struct {
 	Name                      string `json:"name"`
 	DataDir                   string `json:"dataDir"`
 	BlockReward               int64  `json:"blockReward"`
@@ -92,14 +92,14 @@ type ParityConf struct {
 */
 
  // NewConf creates a new configuration for parity
-func NewConf(data map[string]interface{}) (*ParityConf, error) {
-	out := new(ParityConf)
+func NewConf(data map[string]interface{}) (*PConf, error) {
+	out := new(PConf)
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
 // NewParityConf creates a new configuration for parity
-func NewParityConf(data map[string]interface{}) (*ParityConf, error) {
-	out := new(ParityConf)
+func NewParityConf(data map[string]interface{}) (*PConf, error) {
+	out := new(PConf)
 	return out, helpers.HandleBlockchainConfig(blockchain, data, out)
 }
 
@@ -114,7 +114,7 @@ func GetServices() []services.Service {
 	}
 }
 
-func buildConfig(pconf *ParityConf, details *db.DeploymentDetails, wallets []string, passwordFile string, node int) (string, error) {
+func buildConfig(pconf *PConf, details *db.DeploymentDetails, wallets []string, passwordFile string, node int) (string, error) {
 
 	dat, err := helpers.GetBlockchainConfig("parity", node, "config.toml.template", details)
 	if err != nil {
@@ -143,7 +143,7 @@ func buildConfig(pconf *ParityConf, details *db.DeploymentDetails, wallets []str
 	return mustache.Render(string(dat), mp)
 }
 
-func buildSpec(pconf *ParityConf, details *db.DeploymentDetails, wallets []string) (string, error) {
+func buildSpec(pconf *PConf, details *db.DeploymentDetails, wallets []string) (string, error) {
 
 	accounts := make(map[string]interface{})
 	for _, wallet := range wallets {
@@ -186,7 +186,7 @@ func buildSpec(pconf *ParityConf, details *db.DeploymentDetails, wallets []strin
 	return mustache.Render(string(dat), filler)
 }
 
-func gethSpec(pconf *ParityConf, wallets []string) (string, error) {
+func gethSpec(pconf *PConf, wallets []string) (string, error) {
 	accounts := make(map[string]interface{})
 	for _, wallet := range wallets {
 		accounts[wallet] = map[string]interface{}{
@@ -216,7 +216,7 @@ func gethSpec(pconf *ParityConf, wallets []string) (string, error) {
    passwordFile
    unlock
 */
-func buildPoaConfig(pconf *ParityConf, details *db.DeploymentDetails, wallets []string, passwordFile string, i int) (string, error) {
+func buildPoaConfig(pconf *PConf, details *db.DeploymentDetails, wallets []string, passwordFile string, i int) (string, error) {
 
 	dat, err := helpers.GetBlockchainConfig("parity", i, "config.toml.poa.mustache", details)
 	if err != nil {
@@ -246,7 +246,7 @@ func buildPoaConfig(pconf *ParityConf, details *db.DeploymentDetails, wallets []
 	return mustache.Render(string(dat), mp)
 }
 
-func buildPoaSpec(pconf *ParityConf, details *db.DeploymentDetails, wallets []string) (string, error) {
+func buildPoaSpec(pconf *PConf, details *db.DeploymentDetails, wallets []string) (string, error) {
 
 	accounts := make(map[string]interface{})
 	for _, wallet := range wallets {
