@@ -38,7 +38,7 @@ var conf *util.Config
 
 const (
 	blockchain    = "prysm"
-	p2pPort       = 3000
+	p2pPort       = 4000
 	numValidators = 8
 )
 
@@ -127,7 +127,7 @@ func build(tn *testnet.TestNet) error {
 			logFolder = ""
 		}
 
-		_, err = client.DockerExecd(node, fmt.Sprintf("/prysm/bazel-bin/beacon-chain/linux_amd64_stripped/beacon-chain --monitoring-port=%s --no-discovery %s --log-file %s/output-%d.log  --p2p-priv-key /etc/identity.key --clear-db --hobbits --p2p-port 3000", prometheusInstrumentationPort, peers, logFolder, node.GetAbsoluteNumber()))
+		_, err = client.DockerExecd(node, fmt.Sprintf("/prysm/bazel-bin/beacon-chain/linux_amd64_stripped/beacon-chain --monitoring-port=%s --no-discovery %s --log-file %s/output-%d.log  --p2p-priv-key /etc/identity.key --clear-db --hobbits --p2p-port %d", prometheusInstrumentationPort, peers, logFolder, node.GetAbsoluteNumber(), p2pPort))
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -138,8 +138,6 @@ func build(tn *testnet.TestNet) error {
 				return util.LogError(err)
 			}
 		}
-		
-		//bazel run //beacon-chain -- --hobbits --p2p-host-ip 124.30.0.2 --p2p-port 3000 --peer 156.98.367
 
 		for i := 1; i <= numValidators; i++ {
 			_, err = client.DockerExecd(node, fmt.Sprintf("bash -c \"/prysm/bazel-bin/validator/linux_amd64_pure_stripped/validator --password %s --keystore-path %s/key%d-%d 2>&1 --monitoring-port 10%d%d| tee /output.log\"", validatorsPassword, logFolder, node.GetRelativeNumber(), i, node.GetRelativeNumber(), i))
