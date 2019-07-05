@@ -140,7 +140,7 @@ func add(tn *testnet.TestNet) error {
 	tn.BuildState.GetP("IPList", &prysymIPList)
 
 	var prysmP2PPort int64
-	tn.BuildState.GetP("prysmP2PPort", &prysmP2PPort)
+	tn.BuildState.GetP("p2pPort", &prysmP2PPort)
 
 	aconf, err := newConf(tn.LDD.Params)
 	if err != nil {
