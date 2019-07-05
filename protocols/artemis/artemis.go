@@ -159,7 +159,7 @@ func add(tn *testnet.TestNet) error {
 
 	artemisPort := 9000
 	prysmPort := 3000
-	peers := "["
+	peers := ",["
 	var peer string
 	for i, node := range tn.Nodes {
 		peer = fmt.Sprintf("%s://whiteblock-node%d@%s:%d",
