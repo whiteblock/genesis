@@ -202,7 +202,7 @@ func add(tn *testnet.TestNet) error {
 		return util.LogError(fmt.Errorf("couldn't find \"[constants]\" in file fetched from given source"))
 	}
 	rawConstants := fetchedConf[constantsIndex:]
-	err = helpers.CreateConfigs(tn, "/artemis/config/config.toml", func(node ssh.Node) ([]byte, error) {
+	err = helpers.CreateConfigsNewNodes(tn, "/artemis/config/config.toml", func(node ssh.Node) ([]byte, error) {
 		defer tn.BuildState.IncrementBuildProgress()
 		identity := fmt.Sprintf("0x%.8x", node.GetAbsoluteNumber())
 		artemisNodeConfig, err := makeNodeConfig(aconf, identity, peers, node.GetAbsoluteNumber(), tn.LDD, rawConstants)
