@@ -38,7 +38,7 @@ var conf *util.Config
 
 const (
 	blockchain    = "prysm"
-	p2pPort       = 4000
+	p2pPort       = 3000
 	numValidators = 8
 )
 
@@ -149,6 +149,7 @@ func build(tn *testnet.TestNet) error {
 		return err
 	})
 	tn.BuildState.Set("IPList", prysmIPList)
+	tn.BuildState.Set("p2pPort", p2pPort)
 	return util.LogError(err)
 }
 

@@ -139,6 +139,9 @@ func add(tn *testnet.TestNet) error {
 	var prysymIPList []string
 	tn.BuildState.GetP("IPList", &prysymIPList)
 
+	var prysmP2PPort int64
+	tn.BuildState.GetP("prysmP2PPort", &prysmP2PPort)
+
 	aconf, err := newConf(tn.LDD.Params)
 	if err != nil {
 		return util.LogError(err)
@@ -158,7 +161,6 @@ func add(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
 
 	artemisPort := 9000
-	prysmPort := 4000
 	peers := "["
 	var peer string
 	for i, node := range tn.Nodes {
@@ -182,7 +184,7 @@ func add(tn *testnet.TestNet) error {
 		aconf["networkMode"],
 		j,
 		nodeIP,
-		prysmPort,
+		prysmP2PPort,
 		)
 		if j != len(prysymIPList)-1 {
 			peers = peers + "\"" + peer + "\"" + ","
