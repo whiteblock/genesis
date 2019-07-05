@@ -158,8 +158,8 @@ func add(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
 
 	artemisPort := 9000
-	prysmPort := 3000
-	peers := ",["
+	prysmPort := 4000
+	peers := "["
 	var peer string
 	for i, node := range tn.Nodes {
 		peer = fmt.Sprintf("%s://whiteblock-node%d@%s:%d",
@@ -176,6 +176,7 @@ func add(tn *testnet.TestNet) error {
 		tn.BuildState.IncrementBuildProgress()
 	}
 
+	peers = peers + ","
 	for j, nodeIP := range prysymIPList {
 		peer = fmt.Sprintf("%s://whiteblock-node%d@%s:%d",
 		aconf["networkMode"],
