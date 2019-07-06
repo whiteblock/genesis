@@ -127,7 +127,7 @@ func build(tn *testnet.TestNet) error {
 			logFolder = ""
 		}
 
-		_, err = client.DockerExecd(node, fmt.Sprintf("/prysm/bazel-bin/beacon-chain/linux_amd64_stripped/beacon-chain --monitoring-port=%s --no-discovery %s --log-file %s/output-%d.log  --p2p-priv-key /etc/identity.key --clear-db --hobbits --p2p-port %d", prometheusInstrumentationPort, peers, logFolder, node.GetAbsoluteNumber(), p2pPort))
+		_, err = client.DockerExecd(node, fmt.Sprintf("/prysm/bazel-bin/beacon-chain/linux_amd64_stripped/beacon-chain --monitoring-port=%s --no-discovery %s --log-file %s/beacon-chain%d.log  --p2p-priv-key /etc/identity.key --clear-db --hobbits --p2p-port %d --p2p-host-ip %s --verbosity debug", prometheusInstrumentationPort, peers, logFolder, node.GetAbsoluteNumber(), p2pPort, node.GetIP()))
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -140,7 +140,7 @@ func build(tn *testnet.TestNet) error {
 		}
 
 		for i := 1; i <= numValidators; i++ {
-			_, err = client.DockerExecd(node, fmt.Sprintf("bash -c \"/prysm/bazel-bin/validator/linux_amd64_pure_stripped/validator --password %s --keystore-path %s/key%d-%d 2>&1 --monitoring-port 10%d%d| tee /output.log\"", validatorsPassword, logFolder, node.GetRelativeNumber(), i, node.GetRelativeNumber(), i))
+			_, err = client.DockerExecd(node, fmt.Sprintf("bash -c \"/prysm/bazel-bin/validator/linux_amd64_pure_stripped/validator --password %s --keystore-path %s/key%d-%d --monitoring-port 10%d%d 2>&1 | tee /output.log\"", validatorsPassword, logFolder, node.GetRelativeNumber(), i, node.GetRelativeNumber(), i))
 			if err != nil {
 				return util.LogError(err)
 			}
