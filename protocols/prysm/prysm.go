@@ -38,7 +38,7 @@ var conf *util.Config
 
 const (
 	blockchain    = "prysm"
-	p2pPort       = 12000
+	p2pPort       = 3000
 	numValidators = 8
 )
 
@@ -66,15 +66,20 @@ func build(tn *testnet.TestNet) error {
 		nodeKeyPairs[node.ID] = prvKey
 	}
 
+	prysmIPList := []string{}
+
 	tn.BuildState.SetBuildStage("Starting prysm")
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+
+		prysmIPList = append(prysmIPList,node.GetIP())
+
 		peers := ""
 
 		for _, peerNode := range tn.Nodes {
 			if node == peerNode {
 				continue
 			}
-			peers += fmt.Sprintf(" --peer=/ip4/%s/tcp/%d/p2p/%s", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]))
+			peers += fmt.Sprintf(" --peer=/ip4/%s/tcp/%d/p2p/%s:%d", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]), p2pPort)
 			tn.BuildState.IncrementBuildProgress()
 		}
 
@@ -100,11 +105,13 @@ func build(tn *testnet.TestNet) error {
 			prometheusInstrumentationPort = "8008"
 		}
 
+		/*
 		var contract string
 		obj = tn.CombinedDetails.Params["contract"]
 		if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
 			contract = obj.(string)
 		}
+		*/
 
 		var validatorsPassword string
 		obj = tn.CombinedDetails.Params["validatorsPassword"]
@@ -120,20 +127,20 @@ func build(tn *testnet.TestNet) error {
 			logFolder = ""
 		}
 
-		_, err = client.DockerExecd(node, fmt.Sprintf("/beacon-chain --monitoring-port=%s --no-discovery %s --log-file %s/output-%d.log  --deposit-contract %s --p2p-priv-key /etc/identity.key", prometheusInstrumentationPort, peers, logFolder, node.GetAbsoluteNumber(), contract))
+		_, err = client.DockerExecd(node, fmt.Sprintf("/prysm/bazel-bin/beacon-chain/linux_amd64_stripped/beacon-chain --monitoring-port=%s --no-discovery %s --log-file %s/beacon-chain%d.log  --p2p-priv-key /etc/identity.key --clear-db --hobbits --p2p-port %d --p2p-host-ip %s --verbosity debug", prometheusInstrumentationPort, peers, logFolder, node.GetAbsoluteNumber(), p2pPort, node.GetIP()))
 		if err != nil {
 			return util.LogError(err)
 		}
 
 		for i := 1; i <= numValidators; i++ {
-			_, err = client.DockerExecd(node, fmt.Sprintf("/validator accounts create --password %s --keystore-path %s/key%d-%d", validatorsPassword, logFolder, node.GetRelativeNumber(), i))
+			_, err = client.DockerExecd(node, fmt.Sprintf("/prysm/bazel-bin/validator/linux_amd64_pure_stripped/validator accounts create --password %s --keystore-path %s/key%d-%d", validatorsPassword, logFolder, node.GetRelativeNumber(), i))
 			if err != nil {
 				return util.LogError(err)
 			}
 		}
 
 		for i := 1; i <= numValidators; i++ {
-			_, err = client.DockerExecd(node, fmt.Sprintf("bash -c \"/validator --password %s --keystore-path %s/key%d-%d 2>&1 --monitoring-port 10%d%d| tee %s/validator%d-%d.log\"", validatorsPassword, logFolder, node.GetRelativeNumber(), i, node.GetRelativeNumber(), i, logFolder, node.GetRelativeNumber(), i))
+			_, err = client.DockerExecd(node, fmt.Sprintf("bash -c \"/prysm/bazel-bin/validator/linux_amd64_pure_stripped/validator --password %s --keystore-path %s/key%d-%d --monitoring-port 10%d%d 2>&1 | tee /output.log\"", validatorsPassword, logFolder, node.GetRelativeNumber(), i, node.GetRelativeNumber(), i))
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -141,6 +148,8 @@ func build(tn *testnet.TestNet) error {
 
 		return err
 	})
+	tn.BuildState.Set("IPList", prysmIPList)
+	tn.BuildState.Set("p2pPort", p2pPort)
 	return util.LogError(err)
 }
 
