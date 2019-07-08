@@ -28,11 +28,11 @@ import (
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"reflect"
+	// "reflect"
 	"strings"
 )
 
-var conf *util.Config
+var conf = util.GetConfig()
 
 const blockchain = "artemis"
 
@@ -110,14 +110,16 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Starting Artemis")
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		var logFolder string
-		obj := tn.CombinedDetails.Params["logFolder"]
-		if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
-			logFolder = obj.(string)
-		} else {
-			logFolder = ""
-		}
-		artemisCmd := fmt.Sprintf("artemis -c /artemis/config/config.toml 2>&1 | tee %s/output%d.log", logFolder, node.GetAbsoluteNumber())
+		/*
+			var logFolder string
+			obj := tn.CombinedDetails.Params["logFolder"]
+			if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
+				logFolder = obj.(string)
+			} else {
+				logFolder = ""
+			}
+		*/
+		artemisCmd := fmt.Sprintf("artemis -c /artemis/config/config.toml 2>&1 | tee /output.log")
 
 		_, err := client.DockerExecd(node, "tmux new -s whiteblock -d")
 		if err != nil {
@@ -133,5 +135,111 @@ func build(tn *testnet.TestNet) error {
 // Add handles adding a node to the artemis testnet
 // TODO
 func add(tn *testnet.TestNet) error {
-	return nil
+
+	var prysymIPList []string
+	tn.BuildState.GetP("IPList", &prysymIPList)
+
+	var prysmP2PPort int64
+	tn.BuildState.GetP("p2pPort", &prysmP2PPort)
+
+	aconf, err := newConf(tn.LDD.Params)
+	if err != nil {
+		return util.LogError(err)
+	}
+	fetchedConfChan := make(chan string)
+
+	go func(aconf artemisConf) {
+		res, err := util.HTTPRequest("GET", aconf["constantsSource"].(string), "")
+		if err != nil {
+			tn.BuildState.ReportError(err)
+			return
+		}
+		fetchedConfChan <- string(res)
+
+	}(aconf)
+
+	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
+
+	artemisPort := 9000
+	peers := "["
+	var peer string
+	for i, node := range tn.NewlyBuiltNodes {
+		peer = fmt.Sprintf("%s://whiteblock-node%d@%s:%d",
+			aconf["networkMode"],
+			node.LocalID,
+			node.IP,
+			artemisPort,
+		)
+		if i != len(tn.NewlyBuiltNodes)-1 {
+			peers = peers + "\"" + peer + "\"" + ","
+		} else {
+			peers = peers + "\"" + peer + "\""
+		}
+		tn.BuildState.IncrementBuildProgress()
+	}
+	if len(prysymIPList) > 0 {
+		peers = peers + ","
+	} else {
+		return fmt.Errorf("ip list is empty")
+	}
+
+	for j, nodeIP := range prysymIPList {
+		peer = fmt.Sprintf("%s://whiteblock-node%d@%s:%d",
+			aconf["networkMode"],
+			j,
+			nodeIP,
+			prysmP2PPort,
+		)
+		if j != len(prysymIPList)-1 {
+			peers = peers + "\"" + peer + "\"" + ","
+		} else {
+			peers = peers + "\"" + peer + "\""
+		}
+		tn.BuildState.IncrementBuildProgress()
+	}
+	peers = peers + "]"
+	log.WithFields(log.Fields{"peers": peers}).Trace("generated the peers")
+
+	tn.BuildState.SetBuildStage("Creating node configuration files")
+	/**Create node config files**/
+	fetchedConf := <-fetchedConfChan
+
+	constantsIndex := strings.Index(fetchedConf, "[constants]")
+	if constantsIndex == -1 {
+		return util.LogError(fmt.Errorf("couldn't find \"[constants]\" in file fetched from given source"))
+	}
+	rawConstants := fetchedConf[constantsIndex:]
+	err = helpers.CreateConfigsNewNodes(tn, "/artemis/config/config.toml", func(node ssh.Node) ([]byte, error) {
+		defer tn.BuildState.IncrementBuildProgress()
+		identity := fmt.Sprintf("0x%.8x", node.GetAbsoluteNumber())
+		artemisNodeConfig, err := makeNodeConfig(aconf, identity, peers, node.GetAbsoluteNumber(), tn.LDD, rawConstants)
+		return []byte(artemisNodeConfig), err
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	tn.BuildState.SetBuildStage("Starting Artemis")
+	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
+		defer tn.BuildState.IncrementBuildProgress()
+		/*
+			var logFolder string
+			obj := tn.CombinedDetails.Params["logFolder"]
+			if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
+				logFolder = obj.(string)
+			} else {
+				logFolder = ""
+			}
+		*/
+		artemisCmd := fmt.Sprintf("artemis -c /artemis/config/config.toml 2>&1 | tee /output.log")
+
+		_, err := client.DockerExecd(node, "tmux new -s whiteblock -d")
+		if err != nil {
+			return util.LogError(err)
+		}
+
+		_, err = client.DockerExecd(node, fmt.Sprintf("tmux send-keys -t whiteblock '%s' C-m", artemisCmd))
+		return util.LogError(err)
+	})
+	return util.LogError(err)
 }

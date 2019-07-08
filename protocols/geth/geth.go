@@ -40,10 +40,9 @@ const (
 	alias           = "ethereum"
 	blockchain      = "geth"
 	password        = "password"
+	passwordFile    = "/geth/passwd"
 	defaultMode     = "default"
 	expansionMode   = "expand"
-	p2pPort         = 30303
-	rpcPort         = 8545
 	genesisFileName = "CustomGenesis.json"
 )
 
@@ -87,19 +86,10 @@ func build(tn *testnet.TestNet) error {
 
 	helpers.MkdirAllNodes(tn, "/geth")
 
-	{
-		/**Create the Password files**/
-		var data string
-		for i := 1; i <= tn.LDD.Nodes; i++ {
-			data += password + "\n"
-		}
-		/**Copy over the password file**/
-		err = helpers.CopyBytesToAllNodes(tn, data, "/geth/passwd")
-		if err != nil {
-			return util.LogError(err)
-		}
+	err = ethereum.CreatePasswordFile(tn, password, passwordFile)
+	if err != nil {
+		return util.LogError(err)
 	}
-
 	tn.BuildState.IncrementBuildProgress()
 
 	/**Create the wallets**/
@@ -158,7 +148,7 @@ func build(tn *testnet.TestNet) error {
 			`geth --datadir /geth/ %s --rpc --nodiscover --rpcaddr 0.0.0.0`+
 				` --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine`+
 				` --txpool.nolocals --port %d console  2>&1 | tee %s`,
-			getExtraFlags(ethconf, account, validFlags[node.GetAbsoluteNumber()]), p2pPort, conf.DockerOutputFile)
+			getExtraFlags(ethconf, account, validFlags[node.GetAbsoluteNumber()]), ethereum.P2PPort, conf.DockerOutputFile)
 
 		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
 		tn.BuildState.IncrementBuildProgress()
@@ -170,16 +160,9 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetExt("networkID", ethconf.NetworkID)
-	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
-	tn.BuildState.SetExt("port", rpcPort)
+	tn.BuildState.SetExt("port", ethereum.RPCPort)
 	helpers.SetFunctionalityGroup(tn, "eth")
-
-	for _, account := range accounts {
-		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
-			"privateKey": account.HexPrivateKey(),
-			"publicKey":  account.HexPublicKey(),
-		})
-	}
+	ethereum.ExposeAccounts(tn, accounts)
 
 	return nil
 }
@@ -190,16 +173,6 @@ func build(tn *testnet.TestNet) error {
 // TODO
 func add(tn *testnet.TestNet) error {
 	return nil
-}
-
-// MakeFakeAccounts creates ethereum addresses which can be marked as funded to produce a
-// larger initial state
-func MakeFakeAccounts(accs int) []string {
-	out := make([]string, accs)
-	for i := 1; i <= accs; i++ {
-		out[i-1] = fmt.Sprintf("0x%.40x", i)
-	}
-	return out
 }
 
 /**
@@ -312,9 +285,9 @@ func handleGenesisFileDist(tn *testnet.TestNet, ethconf *ethConf, accounts []*et
 	}
 	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		//Load the CustomGenesis file
-		if ethconf.Mode != expansionMode || !hasGenesis[node.GetAbsoluteNumber()] {
+		if ethconf.Mode != expansionMode {
 			_, err := client.DockerExec(node,
-				fmt.Sprintf("geth --datadir /geth/ --networkid %d init %s", ethconf.NetworkID, genesisFileLoc))
+				fmt.Sprintf("geth --datadir /geth/  init %s", genesisFileLoc))
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -449,12 +422,7 @@ func checkFlagsExist(tn *testnet.TestNet) []map[string]bool {
 func getEnodes(tn *testnet.TestNet, accounts []*ethereum.Account) []string {
 	enodes := []string{}
 	for i, node := range tn.Nodes {
-		enodeAddress := fmt.Sprintf("enode://%s@%s:%d",
-			accounts[i].HexPublicKey(),
-			node.IP,
-			p2pPort)
-
-		enodes = append(enodes, enodeAddress)
+		enodes = append(enodes, fmt.Sprintf("enode://%s@%s:%d", accounts[i].HexPublicKey(), node.IP, ethereum.P2PPort))
 	}
 	return enodes
 }

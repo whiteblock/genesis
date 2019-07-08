@@ -236,7 +236,8 @@ func build(tn *testnet.TestNet) error {
 	}
 	tn.BuildState.IncrementBuildProgress()
 
-	tn.BuildState.SetExt("networkID", "custom")
+	tn.BuildState.SetExt("networkID", aionconf.ChainID)
+	helpers.SetFunctionalityGroup(tn, "eth")
 	tn.BuildState.SetExt("accounts", addresses)
 	tn.BuildState.SetExt("port", 8545)
 	tn.BuildState.SetExt("namespace", "eth")
@@ -368,6 +369,7 @@ func unlockAllAccounts(tn *testnet.TestNet, accounts []aionAcc) error {
 	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		pass := true
 		for range accounts {
+			pass = true
 			for pass {
 				out, _ := client.Run(
 					fmt.Sprintf(

@@ -36,12 +36,15 @@ import (
 	"time"
 )
 
-var conf *util.Config
+var conf = util.GetConfig()
 
-const blockchain = "parity"
+const (
+	blockchain   = "parity"
+	password     = "password"
+	passwordFile = "/parity/passwd"
+)
 
 func init() {
-	conf = util.GetConfig()
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
@@ -59,7 +62,7 @@ func build(tn *testnet.TestNet) error {
 	}
 	log.WithFields(log.Fields{"config": *pconf}).Trace("parsed the parity config")
 
-	tn.BuildState.SetBuildSteps(9 + (7 * tn.LDD.Nodes))
+	tn.BuildState.SetBuildSteps(9 + (6 * tn.LDD.Nodes))
 	//Make the data directories
 	err = helpers.MkdirAllNodes(tn, "/parity")
 	if err != nil {
@@ -67,19 +70,11 @@ func build(tn *testnet.TestNet) error {
 	}
 	tn.BuildState.IncrementBuildProgress()
 
-	/**Create the Password file and copy it over**/
-	{
-		var data string
-		for i := 1; i <= tn.LDD.Nodes; i++ {
-			data += "password\n"
-		}
-		tn.BuildState.IncrementBuildProgress()
-		err = helpers.CopyBytesToAllNodes(tn, data, "/parity/passwd")
-		if err != nil {
-			return util.LogError(err)
-		}
-		tn.BuildState.IncrementBuildProgress()
+	err = ethereum.CreatePasswordFile(tn, password, passwordFile)
+	if err != nil {
+		return util.LogError(err)
 	}
+	tn.BuildState.IncrementBuildProgress()
 
 	/**Create the wallets**/
 	wallets := make([]string, tn.LDD.Nodes)
@@ -240,17 +235,9 @@ func add(tn *testnet.TestNet) error {
 	}
 
 	/**Create the Password file and copy it over**/
-	{
-		var data string
-		for i := 1; i <= tn.LDD.Nodes; i++ {
-			data += "password\n"
-		}
-		tn.BuildState.IncrementBuildProgress()
-		err = helpers.CopyBytesToAllNewNodes(tn, data, "/parity/passwd")
-		if err != nil {
-			return util.LogError(err)
-		}
-		tn.BuildState.IncrementBuildProgress()
+	err = ethereum.CreatePasswordFile(tn, password, passwordFile)
+	if err != nil {
+		return util.LogError(err)
 	}
 
 	genWallets := []string{}
@@ -353,6 +340,7 @@ func add(tn *testnet.TestNet) error {
 
 	var snodes []string
 	tn.BuildState.GetP("staticNodes", &snodes)
+	log.WithFields(log.Fields{"enodes": snodes}).Debug("Fetched the enodes from the previous build")
 	fmt.Println(fmt.Sprintf("enode address : %+v", snodes))
 	if err != nil {
 		return util.LogError(err)
@@ -431,18 +419,9 @@ func storeParameters(tn *testnet.TestNet, pconf *parityConf, wallets []string, e
 	}
 
 	tn.BuildState.Set("networkID", pconf.NetworkID)
-	tn.BuildState.Set("accounts", accounts)
-
 	tn.BuildState.SetExt("networkID", pconf.NetworkID)
-	tn.BuildState.SetExt("accounts", ethereum.ExtractAddresses(accounts))
-	tn.BuildState.SetExt("port", 8545)
-
-	for _, account := range accounts {
-		tn.BuildState.SetExt(account.HexAddress(), map[string]string{
-			"privateKey": account.HexPrivateKey(),
-			"publicKey":  account.HexPublicKey(),
-		})
-	}
+	tn.BuildState.SetExt("port", ethereum.RPCPort)
+	ethereum.ExposeAccounts(tn, accounts)
 
 	switch pconf.Consensus {
 	case "ethash":
