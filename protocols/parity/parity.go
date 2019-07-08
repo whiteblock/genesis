@@ -239,7 +239,7 @@ func add(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	
+
 	genWallets := []string{}
 	wallets := []string{}
 	rawWallets := []string{}
@@ -340,6 +340,7 @@ func add(tn *testnet.TestNet) error {
 
 	var snodes []string
 	tn.BuildState.GetP("staticNodes", &snodes)
+	log.WithFields(log.Fields{"enodes": snodes}).Debug("Fetched the enodes from the previous build")
 	fmt.Println(fmt.Sprintf("enode address : %+v", snodes))
 	if err != nil {
 		return util.LogError(err)

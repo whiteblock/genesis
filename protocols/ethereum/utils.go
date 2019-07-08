@@ -24,10 +24,14 @@ import (
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 )
-const(
-	P2PPort         = 30303
-	RPCPort         = 8545
+
+const (
+	//P2PPort is the standard p2p port for all the ethereum clients
+	P2PPort = 30303
+	//RPCPort is the standard json rpc over http port
+	RPCPort = 8545
 )
+
 //CreatePasswordFile turns the process of creating a password file into a single function call
 func CreatePasswordFile(tn *testnet.TestNet, password string, dest string) error {
 	var data string

@@ -285,9 +285,9 @@ func handleGenesisFileDist(tn *testnet.TestNet, ethconf *ethConf, accounts []*et
 	}
 	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		//Load the CustomGenesis file
-		if ethconf.Mode != expansionMode || !hasGenesis[node.GetAbsoluteNumber()] {
+		if ethconf.Mode != expansionMode {
 			_, err := client.DockerExec(node,
-				fmt.Sprintf("geth --datadir /geth/ --networkid %d init %s", ethconf.NetworkID, genesisFileLoc))
+				fmt.Sprintf("geth --datadir /geth/  init %s", genesisFileLoc))
 			if err != nil {
 				return util.LogError(err)
 			}

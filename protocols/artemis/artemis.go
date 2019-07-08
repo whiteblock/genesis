@@ -32,7 +32,7 @@ import (
 	"strings"
 )
 
-var conf *util.Config
+var conf = util.GetConfig()
 
 const blockchain = "artemis"
 
@@ -111,13 +111,13 @@ func build(tn *testnet.TestNet) error {
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		/*
-		var logFolder string
-		obj := tn.CombinedDetails.Params["logFolder"]
-		if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
-			logFolder = obj.(string)
-		} else {
-			logFolder = ""
-		}
+			var logFolder string
+			obj := tn.CombinedDetails.Params["logFolder"]
+			if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
+				logFolder = obj.(string)
+			} else {
+				logFolder = ""
+			}
 		*/
 		artemisCmd := fmt.Sprintf("artemis -c /artemis/config/config.toml 2>&1 | tee /output.log")
 
@@ -163,28 +163,32 @@ func add(tn *testnet.TestNet) error {
 	artemisPort := 9000
 	peers := "["
 	var peer string
-	for i, node := range tn.Nodes {
+	for i, node := range tn.NewlyBuiltNodes {
 		peer = fmt.Sprintf("%s://whiteblock-node%d@%s:%d",
 			aconf["networkMode"],
 			node.LocalID,
 			node.IP,
 			artemisPort,
 		)
-		if i != len(tn.Nodes)-1 {
+		if i != len(tn.NewlyBuiltNodes)-1 {
 			peers = peers + "\"" + peer + "\"" + ","
 		} else {
 			peers = peers + "\"" + peer + "\""
 		}
 		tn.BuildState.IncrementBuildProgress()
 	}
+	if len(prysymIPList) > 0 {
+		peers = peers + ","
+	} else {
+		return fmt.Errorf("ip list is empty")
+	}
 
-	peers = peers + ","
 	for j, nodeIP := range prysymIPList {
 		peer = fmt.Sprintf("%s://whiteblock-node%d@%s:%d",
-		aconf["networkMode"],
-		j,
-		nodeIP,
-		prysmP2PPort,
+			aconf["networkMode"],
+			j,
+			nodeIP,
+			prysmP2PPort,
 		)
 		if j != len(prysymIPList)-1 {
 			peers = peers + "\"" + peer + "\"" + ","
@@ -219,13 +223,13 @@ func add(tn *testnet.TestNet) error {
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		/*
-		var logFolder string
-		obj := tn.CombinedDetails.Params["logFolder"]
-		if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
-			logFolder = obj.(string)
-		} else {
-			logFolder = ""
-		}
+			var logFolder string
+			obj := tn.CombinedDetails.Params["logFolder"]
+			if obj != nil && reflect.TypeOf(obj).Kind() == reflect.String {
+				logFolder = obj.(string)
+			} else {
+				logFolder = ""
+			}
 		*/
 		artemisCmd := fmt.Sprintf("artemis -c /artemis/config/config.toml 2>&1 | tee /output.log")
 
