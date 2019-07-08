@@ -158,7 +158,7 @@ func buildSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []strin
 		"difficultyBoundDivisor": fmt.Sprintf("0x%x", pconf.DifficultyBoundDivisor),
 		"durationLimit":          fmt.Sprintf("0x%x", pconf.DurationLimit),
 		"blockReward":            fmt.Sprintf("0x%x", pconf.BlockReward),
-		"nonce":                  fmt.Sprintf("0x%x", pconf.Nonce),
+		"nonce":                  fmt.Sprintf("0x%.16x", pconf.Nonce),
 		"mixhash":                pconf.Mixhash,
 		"timestamp":              fmt.Sprintf("0x%x", pconf.Timestamp),
 		"extraData":              pconf.ExtraData,
