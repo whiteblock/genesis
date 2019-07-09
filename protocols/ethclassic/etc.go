@@ -80,7 +80,7 @@ func build(tn *testnet.TestNet) error {
 	/**Create the wallets**/
 	tn.BuildState.SetBuildStage("Creating the wallets")
 
-	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes)
+	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes + int(etcconf.ExtraAccounts))
 	if err != nil {
 		return util.LogError(err)
 	}
