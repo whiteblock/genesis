@@ -70,11 +70,6 @@ func build(tn *testnet.TestNet) error {
 
 	helpers.MkdirAllNodes(tn, "/geth")
 
-	err = ethereum.CreatePasswordFile(tn, password, passwordFile)
-	if err != nil {
-		return util.LogError(err)
-	}
-
 	tn.BuildState.IncrementBuildProgress()
 
 	/**Create the wallets**/
@@ -84,6 +79,12 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+
+	err = generatePasswordFile(tn, accounts, password, passwordFile)
+	if err != nil {
+		return util.LogError(err)
+	}
+
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, account := range accounts {
 			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
@@ -112,11 +113,7 @@ func build(tn *testnet.TestNet) error {
 		}
 		unlock += account.HexAddress()
 	}
-	/*extraAccounts, err := ethereum.GenerateAccounts(int(etcconf.ExtraAccounts))
-	if err != nil {
-		return util.LogError(err)
-	}
-	accounts = append(accounts, extraAccounts...)*/
+
 	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetBuildStage("Creating the genesis block")
@@ -129,7 +126,6 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Bootstrapping network")
 
 	staticNodes := make([]string, tn.LDD.Nodes)
-	tn.BuildState.Set("staticNodes", staticNodes)
 
 	tn.BuildState.SetBuildStage("Initializing geth")
 
@@ -217,6 +213,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetExt("port", ethereum.RPCPort)
 	tn.BuildState.SetExt("namespace", "eth")
 	tn.BuildState.SetExt("password", password)
+	tn.BuildState.Set("staticNodes", staticNodes)
 	tn.BuildState.SetBuildStage("peering the nodes")
 	time.Sleep(3 * time.Second)
 	log.WithFields(log.Fields{"staticNodes": staticNodes}).Debug("peering")
@@ -357,4 +354,13 @@ func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethere
 		}
 		return []byte(data), nil
 	})
+}
+
+//CreatePasswordFile turns the process of creating a password file into a single function call
+func generatePasswordFile(tn *testnet.TestNet, accounts []*ethereum.Account, password string, dest string) error {
+	var data string
+	for i := 1; i <= len(accounts); i++ {
+		data += fmt.Sprintf("%s\n", password)
+	}
+	return util.LogError(helpers.CopyBytesToAllNewNodes(tn, data, dest))
 }
