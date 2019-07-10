@@ -41,7 +41,7 @@ var conf = util.GetConfig()
 
 const (
 	blockchain     = "ethclassic"
-	peeringRetries = 5
+	peeringRetries = 10
 	password       = "password"
 	passwordFile   = "/geth/passwd"
 )
