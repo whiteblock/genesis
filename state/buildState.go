@@ -207,6 +207,7 @@ func (bs *BuildState) DoneBuilding() {
 			log.WithFields(log.Fields{"build": bs.BuildID}).Error("couldn't store the build")
 		}
 	} else {
+		log.WithFields(log.Fields{"build": bs.BuildID}).Debug("running the on error function calls.")
 		bs.extraMux.RLock()
 		wg := sync.WaitGroup{} //Wait for completion, to prevent a potential race
 		for i := range bs.errorCleanupFuncs {

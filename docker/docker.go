@@ -33,9 +33,15 @@ import (
 
 var conf = util.GetConfig()
 
-// Kill kills a single node by index on a server
-func Kill(client ssh.Client, node int) error {
+// KillNode kills a single node by index on a server
+func KillNode(client ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker rm -f %s%d", conf.NodePrefix, node))
+	return err
+}
+
+//Kill kills a node and all of its sidecars
+func Kill(client ssh.Client, node int) error {
+	_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s%d\")", conf.NodePrefix, node))
 	return err
 }
 

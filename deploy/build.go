@@ -35,6 +35,7 @@ import (
 var conf = util.GetConfig()
 
 func buildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
+
 	sidecars, err := registrar.GetBlockchainSideCars(tn.LDD.Blockchain)
 	if err != nil {
 		//do not report
@@ -53,7 +54,6 @@ func buildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 			tn.BuildState.ReportError(err)
 			return
 		}
-
 		scNode := db.SideCar{
 			NodeID:          node.ID,
 			AbsoluteNodeNum: node.AbsoluteNum,
@@ -182,6 +182,11 @@ func Build(tn *testnet.TestNet, services []services.Service) error {
 	}
 
 	if services != nil { //Maybe distribute the services over multiple servers
+		if conf.RemoveNodesOnFailure {
+			tn.BuildState.OnError(func() {
+				docker.StopServices(tn)
+			})
+		}
 		log.WithFields(log.Fields{"services": services}).Trace("starting up services")
 		wg.Add(1)
 		go func() {
