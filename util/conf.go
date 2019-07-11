@@ -161,7 +161,7 @@ func setViperDefaults() {
 	viper.SetDefault("requireAuth", false)
 	viper.SetDefault("maxCommandOutputLogSize", -1)
 	viper.SetDefault("resourceDir", "./resources")
-	viper.SetDefault("removeNodesOnFailure", false)
+	viper.SetDefault("removeNodesOnFailure", true)
 	viper.SetDefault("nibblerRetries", 2)
 	viper.SetDefault("killRetries", 100)
 	viper.SetDefault("ganacheRPCPort", 8545)
