@@ -229,7 +229,7 @@ func (bs *BuildState) DoneBuilding() {
 	bs.mutex.Lock()
 	bs.BuildStage = "Finished"
 	bs.mutex.Unlock()
-
+	bs.errorCleanupFuncs = []func(){}
 	atomic.StoreInt32(&bs.building, 0)
 	atomic.StoreInt32(&bs.stopping, 0)
 	os.RemoveAll("/tmp/" + bs.BuildID)
