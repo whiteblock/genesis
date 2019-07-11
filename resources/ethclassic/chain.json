@@ -4,13 +4,13 @@
     "network":{{{network}}},
     "consensus":{{{consensus}}},
     "genesis":{
-        "nonce": "0x0000000000000539",
-        "timestamp":"0x42",
+        "nonce": {{{nonce}}},
+        "timestamp":{{{timestamp}}},
         "parentHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "extraData":{{{extraData}}},
         "gasLimit":{{{gasLimit}}},
         "difficulty":{{{difficulty}}},
-        "mixhash":"0x00000000000000000000000000000000000000647572616c65787365646c6578",
+        "mixhash":{{{mixhash}}},
         "coinbase":"",
         "alloc": {{{alloc}}},
         "alloc_file":""
