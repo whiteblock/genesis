@@ -51,7 +51,7 @@ func cleanBuildStates(servers []int) {
 			for _, serverID1 := range buildStates[i].Servers {
 				for j := 0; j < len(serversInUse); j++ {
 					if serverID1 == serversInUse[j] {
-						serversInUse = append(serversInUse[:i], serversInUse[i+1:]...)
+						serversInUse = append(serversInUse[:j], serversInUse[j+1:]...)
 						j--
 					}
 				}

@@ -34,8 +34,14 @@ const (
 
 //CreatePasswordFile turns the process of creating a password file into a single function call
 func CreatePasswordFile(tn *testnet.TestNet, password string, dest string) error {
+	return CreateNPasswordFile(tn, tn.LDD.Nodes, password, dest)
+}
+
+//CreateNPasswordFile turns the process of creating a password file into a single function call,
+//while also allowing you to specify the number of passwords in the file
+func CreateNPasswordFile(tn *testnet.TestNet, n int, password string, dest string) error {
 	var data string
-	for i := 1; i <= tn.LDD.Nodes; i++ {
+	for i := 0; i < n; i++ {
 		data += fmt.Sprintf("%s\n", password)
 	}
 	return util.LogError(helpers.CopyBytesToAllNewNodes(tn, data, dest))
