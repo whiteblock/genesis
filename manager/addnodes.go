@@ -61,7 +61,7 @@ func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 		}
 	}
 
-	if details.Nodes > conf.MaxNodes {
+	if len(tn.Nodes)+details.Nodes > conf.MaxNodes {
 		buildState.ReportError(fmt.Errorf("too many nodes"))
 		return fmt.Errorf("too many nodes")
 	}

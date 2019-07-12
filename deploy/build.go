@@ -36,7 +36,7 @@ var conf = util.GetConfig()
 
 func buildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 
-	sidecars, err := registrar.GetBlockchainSideCars(tn.LDD.Blockchain)
+	sidecars, err := registrar.GetBlockchainSideCars(tn)
 	if err != nil {
 		//do not report
 		return

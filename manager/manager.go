@@ -112,7 +112,7 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 		buildState.ReportError(err)
 		return err
 	}
-	sidecars, err := registrar.GetBlockchainSideCars(tn.LDD.Blockchain)
+	sidecars, err := registrar.GetBlockchainSideCars(tn)
 	if err == nil && len(sidecars) > 0 {
 		tn.BuildState.SetSidecars(len(sidecars))
 	}
@@ -160,7 +160,7 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 }
 
 func handleSideCars(tn *testnet.TestNet, append bool) error {
-	sidecars, err := registrar.GetBlockchainSideCars(tn.LDD.Blockchain)
+	sidecars, err := registrar.GetBlockchainSideCars(tn)
 	if err != nil || sidecars == nil || len(sidecars) == 0 {
 		return nil //Not an error, just means that the blockchain doesn't have any sidecars
 	}

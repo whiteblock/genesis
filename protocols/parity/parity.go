@@ -50,7 +50,18 @@ func init() {
 	registrar.RegisterServices(blockchain, GetServices)
 	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
-	registrar.RegisterBlockchainSideCars(blockchain, []string{"geth"})
+
+	registrar.RegisterBlockchainSideCars(blockchain, func(tn *testnet.TestNet) []string {
+		pconf, err := newConf(tn.LDD.Extras)
+		if err != nil {
+			util.LogError(err)
+			return nil
+		}
+		if pconf.Consensus == "ethash" {
+			return []string{"geth"}
+		}
+		return nil
+	})
 }
 
 // build builds out a fresh new ethereum test network using parity
@@ -211,7 +222,7 @@ func add(tn *testnet.TestNet) error {
 	var genesisAlloc map[string]map[string]string
 	tn.BuildState.GetP("alloc", &genesisAlloc)
 
-	parityConf, err := newParityConf(tn.LDD.Params)
+	parityConf, err := newConf(tn.LDD.Params)
 	tn.BuildState.SetBuildSteps(1 + 2*len(tn.NewlyBuiltNodes)) //TODO
 	if err != nil {
 		return util.LogError(err)
