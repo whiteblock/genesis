@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 //Package eos handles eos specific functionality
@@ -33,12 +33,11 @@ import (
 	"sync"
 )
 
-var conf *util.Config
+var conf = util.GetConfig()
 
 const blockchain = "eos"
 
 func init() {
-	conf = util.GetConfig()
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, Add)
 	registrar.RegisterServices(blockchain, GetServices)
@@ -48,11 +47,9 @@ func init() {
 
 // build builds out a fresh new eos test network using geth
 func build(tn *testnet.TestNet) error {
-	clients := tn.GetFlatClients()
 	if tn.LDD.Nodes < 2 {
 		return fmt.Errorf("cannot build network with less than 2 nodes")
 	}
-
 	eosconf, err := newConf(tn.LDD.Params)
 	if err != nil {
 		return util.LogError(err)
@@ -101,7 +98,7 @@ func build(tn *testnet.TestNet) error {
 		return util.KeyPair{PrivateKey: keyPair[0], PublicKey: keyPair[1]}, nil
 	})
 
-	keyPairs, err := km.GetServerKeyPairs(tn.Servers, clients)
+	keyPairs, err := km.GetServerKeyPairs(tn)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -172,7 +169,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetBuildStage("Building genesis block")
-	genesis, err := eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey, tn.LDD)
+	genesis, err := eosconf.GenerateGenesis(keyPairs[masterIP].PublicKey, tn)
 	if err != nil {
 		return util.LogError(err)
 	}

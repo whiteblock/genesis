@@ -154,7 +154,6 @@ func insertLocalServers() error {
 			Nodes:    0,
 			Max:      conf.MaxNodes,
 			SubnetID: 1,
-			ID:       -1,
-			Ips:      []string{}})
+			ID:       -1})
 	return util.LogError(err)
 }

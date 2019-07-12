@@ -3,24 +3,23 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package helpers
 
 import (
 	"fmt"
-	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
@@ -101,12 +100,11 @@ func (km *KeyMaster) GetMappedKeyPairs(args []string, client ssh.Client) (map[st
 }
 
 //GetServerKeyPairs is DEPRECATED, but maps the ip addresses of nodes to their own key pair
-func (km *KeyMaster) GetServerKeyPairs(servers []db.Server, clients []ssh.Client) (map[string]util.KeyPair, error) {
+func (km *KeyMaster) GetServerKeyPairs(tn *testnet.TestNet) (map[string]util.KeyPair, error) {
+	clients := tn.GetFlatClients()
 	ips := []string{}
-	for _, server := range servers {
-		for _, ip := range server.Ips {
-			ips = append(ips, ip)
-		}
+	for _, node := range tn.Nodes {
+		ips = append(ips, node.GetIP())
 	}
 	return km.GetMappedKeyPairs(ips, clients[0])
 }

@@ -30,22 +30,6 @@ func GetLatestServers(testnetID string) ([]db.Server, error) {
 	if err != nil {
 		return nil, util.LogError(err)
 	}
-	serverIDs := db.GetUniqueServerIDs(nodes)
-
-	servers, err := db.GetServers(serverIDs)
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	for _, node := range nodes {
-		for i := range servers {
-			if servers[i].Ips == nil {
-				servers[i].Ips = []string{}
-			}
-			if node.Server == servers[i].ID {
-				servers[i].Ips = append(servers[i].Ips, node.IP)
-			}
-			servers[i].Nodes++
-		}
-	}
-	return servers, nil
+	servers, err := db.GetServers(db.GetUniqueServerIDs(nodes))
+	return servers, util.LogError(err)
 }
