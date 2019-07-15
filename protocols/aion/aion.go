@@ -367,18 +367,25 @@ func buildConfig(aionconf *AConf, details *db.DeploymentDetails, wallet string, 
 // works but need to wait for some time before it actually works. Need to figure out what the reason for the needed delay is
 func unlockAllAccounts(tn *testnet.TestNet, accounts []aionAcc) error {
 	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		pass := true
-		for range accounts {
-			pass = true
-			for pass {
-				out, _ := client.Run(
-					fmt.Sprintf(
-						`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
-							`'{ "method": "personal_unlockAccount", "params": ["%s","%s",0], "id": 3, "jsonrpc": "2.0" }'`,
-						node.GetIP(), accounts[node.GetAbsoluteNumber()].Address, password))
-				pass = !(strings.Contains(out, ":true"))
-			}
+		wg := sync.WaitGroup{}
+		for _, acc := range accounts {
+			wg.Add(1)
+			go func(account aionAcc) {
+				defer wg.Done()
+				for {
+					_, err := client.Run(
+						fmt.Sprintf(
+							`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
+								`'{ "method": "personal_unlockAccount", "params": ["%s","%s",0], "id": 3, "jsonrpc": "2.0" }'`,
+							node.GetIP(), account.Address, password))
+					//pass = !(strings.Contains(out, ":true"))
+					if err == nil {
+						break
+					}
+				}
+			}(acc)
 		}
+		wg.Wait()
 		return nil
 	})
 }
