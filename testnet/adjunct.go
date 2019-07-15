@@ -34,3 +34,11 @@ type Adjunct struct {
 	BuildState *state.BuildState //ptr to the main one
 	LDD        *db.DeploymentDetails
 }
+
+func (adj *Adjunct) GetSCNodes() []ssh.Node {
+	return adj.Main.GetSSHNodes(false, true, adj.Index)
+}
+
+func (adj *Adjunct) GetNewSCNodes() []ssh.Node {
+	return adj.Main.GetSSHNodes(true, true, adj.Index)
+}
