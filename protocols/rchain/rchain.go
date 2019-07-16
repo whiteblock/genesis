@@ -321,12 +321,12 @@ func add(tn *testnet.TestNet) error {
 
 		if isValidator {
 			err = client.DockerRunMainDaemon(node,
-				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s",
+				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s --allow-private-addresses",
 					rConf.Command, enode, keyPairs[node.GetAbsoluteNumber()].PrivateKey, node.GetIP()))
 			return err
 		}
 		return client.DockerRunMainDaemon(node,
-			fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s",
+			fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s --allow-private-addresses",
 				rConf.Command, enode, node.GetIP()))
 	})
 }
