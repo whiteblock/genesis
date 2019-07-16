@@ -35,7 +35,7 @@ import (
 	"sync"
 )
 
-var conf *util.Config
+var conf = util.GetConfig()
 
 const (
 	blockchain = "aion"
@@ -49,7 +49,6 @@ type aionAcc struct {
 }
 
 func init() {
-	conf = util.GetConfig()
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
 	registrar.RegisterServices(blockchain, GetServices)
@@ -65,7 +64,7 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	tn.BuildState.SetBuildSteps(8 + (tn.LDD.Nodes) + (tn.LDD.Nodes * (tn.LDD.Nodes - 1)))
+	tn.BuildState.SetBuildSteps(8 + (tn.LDD.Nodes) + (tn.LDD.Nodes * (tn.LDD.Nodes - 2)))
 
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Distributing secrets")
@@ -83,7 +82,6 @@ func build(tn *testnet.TestNet) error {
 
 	var addresses = make([]string, tn.LDD.Nodes)
 	var nodeIDs = make([]string, tn.LDD.Nodes)
-	var nodeIPs = make([]string, tn.LDD.Nodes)
 
 	tn.BuildState.SetBuildStage("Creating the wallets")
 
@@ -124,7 +122,7 @@ func build(tn *testnet.TestNet) error {
 	accounts := []aionAcc{}
 
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		pubkeyOut, err := client.DockerExec(node, fmt.Sprintf("bash -c '/aion/./aion.sh -a list -n custom'"))
+		pubkeyOut, err := client.DockerExec(node, "bash -c '/aion/./aion.sh -a list -n custom'")
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -149,7 +147,7 @@ func build(tn *testnet.TestNet) error {
 				accounts = append(accounts, aionAcc{
 					PrivateKey: privateKey,
 					PublicKey:  publicKey,
-					Address:    addresses[node.GetAbsoluteNumber()],
+					Address:    publicKey,
 				})
 				mux.Unlock()
 			}(publicKey)
@@ -164,20 +162,24 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+
+	for _, acc := range accounts {
+		wg.Add(1)
+		go func(account aionAcc) {
+			defer wg.Done()
+			err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+				client.DockerExec(node,
+					fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh -a import %s -n custom'", account.PrivateKey))
+				//Errors are ok
+				return nil
+			})
+		}(acc)
+	}
+	wg.Wait()
+
 	log.WithFields(log.Fields{"accounts": accounts}).Trace("extracted accounts")
 	tn.BuildState.Set("generatedAccs", accounts)
 	tn.BuildState.IncrementBuildProgress()
-
-	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		mux.Lock()
-		nodeIPs[node.GetAbsoluteNumber()] = node.GetIP()
-		mux.Unlock()
-		tn.BuildState.IncrementBuildProgress()
-		return nil
-	})
-	if err != nil {
-		return util.LogError(err)
-	}
 
 	//get permanent node id from auto-generated config.xml
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
@@ -339,16 +341,17 @@ func buildConfig(aionconf *AConf, tn *testnet.TestNet, wallet string, node ssh.N
 	}
 
 	mp := util.ConvertToStringMap(tmp)
-
+	var nodeIDs []string
+	tn.BuildState.GetP("nodeIDs", &nodeIDs)
 	var p2pNodes string
 	for _, nod := range tn.NewlyBuiltNodes {
 		if nod.GetID() == node.GetID() {
 			continue
 		}
-		p2pNodes += fmt.Sprintf("<node>p2p://%s@%s:30303</node>\n", nod.GetID(), nod.GetIP())
+		p2pNodes += fmt.Sprintf("<node>p2p://%s@%s:30303</node>\n", nod.GetID(), nodeIDs[nod.GetAbsoluteNumber()])
 	}
 
-	mp["peerID"] = node.GetID()
+	mp["peerID"] = nodeIDs[node.GetAbsoluteNumber()]
 	mp["corsEnabled"] = fmt.Sprintf("%v", aionconf.CorsEnabled)
 	mp["secureConnect"] = fmt.Sprintf("%v", aionconf.SecureConnect)
 	mp["nrgDefault"] = fmt.Sprintf("%d", aionconf.NRGDefault)
