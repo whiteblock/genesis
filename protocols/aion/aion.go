@@ -183,7 +183,7 @@ func build(tn *testnet.TestNet) error {
 
 	//get permanent node id from auto-generated config.xml
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		output, err := client.DockerRead(node, fmt.Sprintf("/aion/custom/config/config.xml"), -1)
+		output, err := client.DockerRead(node, "/aion/custom/config/config.xml", -1)
 		if err != nil {
 			return util.LogError(err)
 		}
