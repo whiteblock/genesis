@@ -167,7 +167,7 @@ func build(tn *testnet.TestNet) error {
 		wg.Add(1)
 		go func(account aionAcc) {
 			defer wg.Done()
-			err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+			helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 				client.DockerExec(node,
 					fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh -a import %s -n custom'", account.PrivateKey))
 				//Errors are ok
