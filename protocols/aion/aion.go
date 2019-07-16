@@ -84,7 +84,6 @@ func build(tn *testnet.TestNet) error {
 	var addresses = make([]string, tn.LDD.Nodes)
 	var nodeIDs = make([]string, tn.LDD.Nodes)
 	var nodeIPs = make([]string, tn.LDD.Nodes)
-	var accounts = make([]aionAcc, tn.LDD.Nodes)
 
 	tn.BuildState.SetBuildStage("Creating the wallets")
 
@@ -122,32 +121,43 @@ func build(tn *testnet.TestNet) error {
 		wg.Wait()
 	}
 
+	accounts := []aionAcc{}
+
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		mux.Lock()
 		pubkeyOut, err := client.DockerExec(node, fmt.Sprintf("bash -c '/aion/./aion.sh -a list -n custom'"))
 		if err != nil {
 			return util.LogError(err)
 		}
 		pubk := regexp.MustCompile(`(?m)0x(.{64})`)
-		publicKey := pubk.FindAllString(pubkeyOut, 1)[0]
-		log.WithFields(log.Fields{"regex": pubk, "pubkey": publicKey}).Trace("Extracted the public key")
-		mux.Unlock()
-		mux.Lock()
-		privatekeyOut, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh -a export %s -n custom'", publicKey))
-		if err != nil {
-			return util.LogError(err)
-		}
-		privk := regexp.MustCompile(`(?m)0x(.{128})`)
-		privateKey := privk.FindAllString(privatekeyOut, 1)[0]
-		log.WithFields(log.Fields{"regex": privk, "privatekey": privateKey}).Trace("Extracted the private key")
-		mux.Unlock()
+		publicKeys := pubk.FindAllString(pubkeyOut, -1)
+		log.WithFields(log.Fields{"regex": pubk, "pubkey": publicKeys}).Trace("Extracted the public key")
+		wg := sync.WaitGroup{}
+		for _, publicKey := range publicKeys {
+			wg.Add(1)
+			go func(publicKey string) {
+				defer wg.Done()
+				privatekeyOut, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh -a export %s -n custom'", publicKey))
+				if err != nil {
+					tn.BuildState.ReportError(err)
+					return
+				}
+				privk := regexp.MustCompile(`(?m)0x(.{128})`)
+				privateKey := privk.FindAllString(privatekeyOut, 1)[0]
+				log.WithFields(log.Fields{"regex": privk, "privatekey": privateKey}).Trace("Extracted the private key")
 
-		accounts[node.GetAbsoluteNumber()] = aionAcc{
-			PrivateKey: privateKey,
-			PublicKey:  publicKey,
-			Address:    addresses[node.GetAbsoluteNumber()],
+				mux.Lock()
+				accounts = append(accounts, aionAcc{
+					PrivateKey: privateKey,
+					PublicKey:  publicKey,
+					Address:    addresses[node.GetAbsoluteNumber()],
+				})
+				mux.Unlock()
+			}(publicKey)
 		}
-
+		wg.Wait()
+		if !tn.BuildState.ErrorFree() {
+			return tn.BuildState.GetError()
+		}
 		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
