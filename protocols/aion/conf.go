@@ -27,12 +27,12 @@ import (
 
 // AConf represents the settings for the aion build
 type AConf struct {
-	CorsEnabled    bool   `xml:"corsEnabled"`
-	SecureConnect  bool   `xml:"secureConnect"`
-	NRGDefault     int64  `xml:"nrgDefault"`
-	NRGMax         int64  `xml:"nrgMax"`
-	OracleEnabled  bool   `xml:"oracleEnabled"`
-	BlocksQueueMax int64  `xml:"blocksQueueMax"`
+	CorsEnabled    bool   `xml:"corsEnabled" json:"corsEnabled"`
+	SecureConnect  bool   `xml:"secureConnect" json:"secureConnect"`
+	NRGDefault     int64  `xml:"nrgDefault" json:"nrgDefault"`
+	NRGMax         int64  `xml:"nrgMax" json:"nrgMax"`
+	OracleEnabled  bool   `xml:"oracleEnabled" json:"oracleEnabled"`
+	BlocksQueueMax int64  `xml:"blocksQueueMax"` //TODO continue adding JSON tags
 	ShowStatus     bool   `xml:"showStatus"`
 	ShowStatistics bool   `xml:"showStatistics"`
 	CompactEnabled bool   `xml:"compactEnabled"`
@@ -59,12 +59,13 @@ type AConf struct {
 	P2PLogs        string `xml:"p2plogs"`
 	CacheMax       int64  `xml:"cacheMax"`
 
-	InitBalance string `json:"initBalance"`
-	EnergyLimit int64  `json:"energyLimit"`
-	Nonce       int64  `json:"nonce"`
-	Difficulty  int64  `json:"difficulty"`
-	TimeStamp   int64  `json:"timeStamp"`
-	ChainID     int64  `json:"chainId"`
+	InitBalance   string `json:"initBalance"`
+	EnergyLimit   int64  `json:"energyLimit"`
+	Nonce         int64  `json:"nonce"`
+	Difficulty    int64  `json:"difficulty"`
+	TimeStamp     int64  `json:"timeStamp"`
+	ChainID       int64  `json:"chainId"`
+	ExtraAccounts int64  `json:"extraAccounts"`
 }
 
 /**

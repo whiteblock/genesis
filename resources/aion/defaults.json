@@ -31,9 +31,10 @@
     "p2pLogs":"INFO",
     "cacheMax":256,
     "initBalance":"100000000000000000000",
-    "EnergyLimit":15000000,
-    "Nonce":0,
-    "Difficulty":16,
-    "TimeStamp":1525924800,
-    "ChainID":0
+    "energyLimit":15000000,
+    "nonce":0,
+    "difficulty":16,
+    "timeStamp":1525924800,
+    "chainID":0,
+    "extraAccounts":0
 }

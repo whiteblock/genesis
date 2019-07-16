@@ -31,9 +31,10 @@
     ["p2pLogs","string"],
     ["cacheMax","int"],
     ["initBalance","string"],
-    ["EnergyLimit","int"],
-    ["Nonce","int"],
-    ["Difficulty","int"],
-    ["TimeStamp","int"],
-    ["ChainID","int"]
+    ["energyLimit","int"],
+    ["nonce","int"],
+    ["difficulty","int"],
+    ["timeStamp","int"],
+    ["chainID","int"],
+    ["extraAccounts","int"]
 ]

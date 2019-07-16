@@ -89,15 +89,10 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Creating the wallets")
 
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		output, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh ac -n custom'"))
+		addr, err := createAccount(client, node)
 		if err != nil {
 			return util.LogError(err)
 		}
-		reAddr := regexp.MustCompile(`(?m)A new account has been created:(.{67})`)
-		regAddr := reAddr.FindAllString(output, 1)[0]
-		splitAddr := strings.Split(regAddr, "A new account has been created:")
-		addr := strings.Replace(splitAddr[1], " ", "", -1)
-		log.WithFields(log.Fields{"addr": addr}).Trace("A new account has been created:")
 		mux.Lock()
 		addresses[node.GetAbsoluteNumber()] = addr
 		mux.Unlock()
@@ -106,6 +101,25 @@ func build(tn *testnet.TestNet) error {
 	})
 	if err != nil {
 		return util.LogError(err)
+	}
+	wg := sync.WaitGroup{}
+	for i := 0; i < int(aionconf.ExtraAccounts); i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			addr, err := createAccount(tn.Clients[tn.Nodes[0].Server], tn.Nodes[0])
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			log.Debug("created an extra account")
+			mux.Lock()
+			addresses = append(addresses, addr)
+			mux.Unlock()
+		}()
+	}
+	if aionconf.ExtraAccounts > 0 {
+		wg.Wait()
 	}
 
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
@@ -198,25 +212,20 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Creating the configuration file")
 	// delete auto generated config gile and add custom config file
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		mux.Lock()
-		_, err := client.DockerExec(node, fmt.Sprintf("rm /aion/custom/config/config.xml"))
+		defer tn.BuildState.IncrementBuildProgress()
+		_, err := client.DockerExec(node, "rm /aion/custom/config/config.xml")
+		return util.LogError(err)
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+	helpers.CreateConfigs(tn, "/aion/custom/config/config.xml", func(node ssh.Node) ([]byte, error) {
+		conf, err := buildConfig(aionconf, tn, addresses[node.GetAbsoluteNumber()], node)
 		if err != nil {
-			return util.LogError(err)
-		}
-		mux.Unlock()
-		for _, wallet := range addresses {
-			conf, err := buildConfig(aionconf, tn.LDD, wallet, nodeIDs, nodeIPs, node.GetAbsoluteNumber())
-			if err != nil {
-				return util.LogError(err)
-			}
-			err = helpers.SingleCp(client, tn.BuildState, node, []byte(conf), "/aion/custom/config/config.xml")
-			if err != nil {
-				return util.LogError(err)
-			}
-			tn.BuildState.IncrementBuildProgress()
+			return nil, util.LogError(err)
 		}
 		tn.BuildState.IncrementBuildProgress()
-		return nil
+		return []byte(conf), nil
 	})
 	if err != nil {
 		return util.LogError(err)
@@ -300,9 +309,10 @@ func createGenesisfile(aionconf *AConf, tn *testnet.TestNet, accounts []string) 
 	})
 }
 
-func buildConfig(aionconf *AConf, details *db.DeploymentDetails, wallet string, nodeIDs []string, nodeIPs []string, node int) (string, error) {
+//tn *testnet.TestNet
+func buildConfig(aionconf *AConf, tn *testnet.TestNet, wallet string, node ssh.Node) (string, error) {
 
-	dat, err := helpers.GetBlockchainConfig("aion", node, "config.xml.mustache", details)
+	dat, err := helpers.GetBlockchainConfig(blockchain, node.GetAbsoluteNumber(), "config.xml.mustache", tn.LDD)
 	if err != nil {
 		return "", util.LogError(err)
 	}
@@ -321,18 +331,21 @@ func buildConfig(aionconf *AConf, details *db.DeploymentDetails, wallet string, 
 	mp := util.ConvertToStringMap(tmp)
 
 	var p2pNodes string
-	for i := range nodeIDs {
-		p2pNodes += fmt.Sprintf("<node>p2p://%s@%s:30303</node>\n", nodeIDs[i], nodeIPs[i])
+	for _, nod := range tn.NewlyBuiltNodes {
+		if nod.GetID() == node.GetID() {
+			continue
+		}
+		p2pNodes += fmt.Sprintf("<node>p2p://%s@%s:30303</node>\n", nod.GetID(), nod.GetIP())
 	}
 
-	mp["peerID"] = nodeIDs[node]
+	mp["peerID"] = node.GetID()
 	mp["corsEnabled"] = fmt.Sprintf("%v", aionconf.CorsEnabled)
 	mp["secureConnect"] = fmt.Sprintf("%v", aionconf.SecureConnect)
 	mp["nrgDefault"] = fmt.Sprintf("%d", aionconf.NRGDefault)
 	mp["nrgMax"] = fmt.Sprintf("%d", aionconf.NRGMax)
 	mp["oracleEnabled"] = fmt.Sprintf("%v", aionconf.OracleEnabled)
 	mp["nodes"] = p2pNodes
-	mp["ipAddr"] = nodeIPs[node]
+	mp["ipAddr"] = node.GetIP()
 	mp["blocksQueueMax"] = fmt.Sprintf("%v", aionconf.BlocksQueueMax)
 	mp["showStatus"] = fmt.Sprintf("%v", aionconf.ShowStatus)
 	mp["showStatistics"] = fmt.Sprintf("%v", aionconf.ShowStatistics)
@@ -362,6 +375,19 @@ func buildConfig(aionconf *AConf, details *db.DeploymentDetails, wallet string, 
 	mp["cacheMax"] = fmt.Sprintf("%d", aionconf.CacheMax)
 
 	return mustache.Render(string(dat), mp)
+}
+
+func createAccount(client ssh.Client, node ssh.Node) (string, error) {
+	output, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh ac -n custom'"))
+	if err != nil {
+		return "", util.LogError(err)
+	}
+	reAddr := regexp.MustCompile(`(?m)A new account has been created:(.{67})`)
+	regAddr := reAddr.FindAllString(output, 1)[0]
+	splitAddr := strings.Split(regAddr, "A new account has been created:")
+	addr := strings.Replace(splitAddr[1], " ", "", -1)
+	log.WithFields(log.Fields{"addr": addr}).Trace("A new account has been created:")
+	return addr, nil
 }
 
 // works but need to wait for some time before it actually works. Need to figure out what the reason for the needed delay is
