@@ -157,6 +157,13 @@ func DefaultGetDefaultsFn(blockchain string) func() string {
 	}
 }
 
+//FirstNodeExec runs a command on the first node
+func FirstNodeExec(tn *testnet.TestNet, cmd string) (string, error) {
+	masterNode := tn.Nodes[0]
+	masterClient := tn.Clients[masterNode.Server]
+	return masterClient.DockerExec(masterNode, cmd)
+}
+
 //JSONRPCAllNodes calls a JSON RPC call on all nodes and then returns the result
 func JSONRPCAllNodes(tn *testnet.TestNet, call string, port int) ([]interface{}, error) {
 	mux := sync.Mutex{}

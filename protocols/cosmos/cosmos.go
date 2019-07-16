@@ -48,43 +48,40 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildSteps(4 + (tn.LDD.Nodes * 2))
 
 	tn.BuildState.SetBuildStage("Setting up the first node")
-
-	masterNode := tn.Nodes[0]
-	masterClient := tn.Clients[masterNode.Server]
 	/**
 	 * Set up first node
 	 */
-	_, err := masterClient.DockerExec(tn.Nodes[0], "gaiad init --chain-id=whiteblock whiteblock")
+	_, err := helpers.FirstNodeExec(tn, "gaiad init --chain-id=whiteblock whiteblock")
 	if err != nil {
 		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
-	_, err = masterClient.DockerExec(tn.Nodes[0], "bash -c 'echo \"password\\n\" | gaiacli keys add validator -ojson'")
+	_, err = helpers.FirstNodeExec(tn, "bash -c 'echo \"password\\n\" | gaiacli keys add validator -ojson'")
 	if err != nil {
 		return util.LogError(err)
 	}
 
-	res, err := masterClient.DockerExec(tn.Nodes[0], "gaiacli keys show validator -a")
+	res, err := helpers.FirstNodeExec(tn, "gaiacli keys show validator -a")
 	if err != nil {
 		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
-	_, err = masterClient.DockerExec(tn.Nodes[0], fmt.Sprintf("gaiad add-genesis-account %s 100000000stake,100000000validatortoken",
+	_, err = helpers.FirstNodeExec(tn, fmt.Sprintf("gaiad add-genesis-account %s 100000000stake,100000000validatortoken",
 		res[:len(res)-1]))
 	if err != nil {
 		return util.LogError(err)
 	}
 
-	_, err = masterClient.DockerExec(tn.Nodes[0], "bash -c 'echo \"password\\n\" | gaiad gentx --name validator'")
+	_, err = helpers.FirstNodeExec(tn, "bash -c 'echo \"password\\n\" | gaiad gentx --name validator'")
 	if err != nil {
 		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
-	_, err = masterClient.DockerExec(tn.Nodes[0], "gaiad collect-gentxs")
+	_, err = helpers.FirstNodeExec(tn, "gaiad collect-gentxs")
 	if err != nil {
 		return util.LogError(err)
 	}
-	genesisFile, err := masterClient.DockerExec(tn.Nodes[0], "cat /root/.gaiad/config/genesis.json")
+	genesisFile, err := helpers.FirstNodeExec(tn, "cat /root/.gaiad/config/genesis.json")
 	if err != nil {
 		return util.LogError(err)
 	}
