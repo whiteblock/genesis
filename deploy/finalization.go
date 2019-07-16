@@ -111,7 +111,7 @@ func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 		if err != nil {
 			return util.LogError(err)
 		}
-		_, err = client.DockerExec(node, fmt.Sprintf(`bash -c 'echo "%s" >> /root/.ssh/authorized_keys'`, pubKey))
+		_, err = client.DockerExec(node, fmt.Sprintf(`sh -c 'echo "%s" >> /root/.ssh/authorized_keys'`, pubKey))
 		if err != nil {
 			return util.LogError(err)
 		}
