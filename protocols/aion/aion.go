@@ -208,7 +208,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Creating the genesis block")
 	// delete auto generated genesis file and create custom genesis file
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		_, err := client.DockerExec(node, fmt.Sprintf("rm /aion/custom/config/genesis.json"))
+		_, err := client.DockerExec(node, "rm /aion/custom/config/genesis.json")
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -233,7 +233,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	helpers.CreateConfigs(tn, "/aion/custom/config/config.xml", func(node ssh.Node) ([]byte, error) {
+	err = helpers.CreateConfigs(tn, "/aion/custom/config/config.xml", func(node ssh.Node) ([]byte, error) {
 		conf, err := buildConfig(aionconf, tn, addresses[node.GetAbsoluteNumber()], node)
 		if err != nil {
 			return nil, util.LogError(err)
