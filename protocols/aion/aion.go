@@ -350,7 +350,7 @@ func buildConfig(aionconf *AConf, tn *testnet.TestNet, wallet string, node ssh.N
 		if nod.GetID() == node.GetID() {
 			continue
 		}
-		p2pNodes += fmt.Sprintf("<node>p2p://%s@%s:30303</node>\n", nod.GetID(), nodeIDs[nod.GetAbsoluteNumber()])
+		p2pNodes += fmt.Sprintf("<node>p2p://%s@%s:30303</node>\n", nodeIDs[nod.GetAbsoluteNumber()], nod.GetIP())
 	}
 
 	mp["peerID"] = nodeIDs[node.GetAbsoluteNumber()]
