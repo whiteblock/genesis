@@ -163,19 +163,21 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	for _, acc := range accounts {
-		wg.Add(1)
-		go func(account aionAcc) {
-			defer wg.Done()
-			helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		wg := sync.WaitGroup{}
+		for _, acc := range accounts {
+			wg.Add(1)
+			go func(account aionAcc) {
+				defer wg.Done()
 				client.DockerExec(node,
-					fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh -a import %s -n custom'", account.PrivateKey))
-				//Errors are ok
-				return nil
-			})
-		}(acc)
-	}
-	wg.Wait()
+					fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | "+
+						"/aion/./aion.sh -a import %s -n custom'", account.PrivateKey))
+			}(acc)
+		}
+		wg.Wait()
+		//Errors are ok
+		return nil
+	})
 
 	log.WithFields(log.Fields{"accounts": accounts}).Trace("extracted accounts")
 	tn.BuildState.Set("generatedAccs", accounts)
