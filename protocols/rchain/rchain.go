@@ -94,8 +94,8 @@ func build(tn *testnet.TestNet) error {
 	validatorKeyPairs := make([]util.KeyPair, rConf.Validators)
 	for i := range keyPairs {
 		keyPairs[i], err = km.GetKeyPair(masterClient)
-		if i < int(rConf.Validators) {
-			validatorKeyPairs[i] = keyPairs[i]
+		if i > 0 && i-1 < len(validatorKeyPairs) {
+			validatorKeyPairs[i-1] = keyPairs[i]
 		}
 		if err != nil {
 			return util.LogError(err)
@@ -118,8 +118,8 @@ func build(tn *testnet.TestNet) error {
 	buildState.SetBuildStage("Setting up bonds")
 	/**Setup bonds**/
 	{
-		bonds := make([]string, len(validatorKeyPairs))
-		for i, keyPair := range validatorKeyPairs {
+		bonds := make([]string, len(keyPairs))
+		for i, keyPair := range keyPairs {
 			bonds[i] = fmt.Sprintf("%s %d", keyPair.PublicKey, rConf.BondsValue)
 		}
 		buildState.IncrementBuildProgress()
