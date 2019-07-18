@@ -94,8 +94,8 @@ func build(tn *testnet.TestNet) error {
 	validatorKeyPairs := make([]util.KeyPair, rConf.Validators)
 	for i := range keyPairs {
 		keyPairs[i], err = km.GetKeyPair(masterClient)
-		if i > 0 && i-1 < len(validatorKeyPairs) {
-			validatorKeyPairs[i-1] = keyPairs[i]
+		if i < int(rConf.Validators) {
+			validatorKeyPairs[i] = keyPairs[i]
 		}
 		if err != nil {
 			return util.LogError(err)

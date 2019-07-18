@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 //Package tendermint handles tendermint specific functionality
@@ -168,24 +168,24 @@ func Add(tn *testnet.TestNet) error {
 func getGenesisFile(vdtrs []validator) string {
 	validatorsStr, _ := json.Marshal(vdtrs)
 	return fmt.Sprintf(`{
-      "genesis_time": "%s",
-      "chain_id": "whiteblock",
-      "consensus_params": {
-        "block_size": {
-          "max_bytes": "22020096",
-          "max_gas": "-1"
-        },
-        "evidence": {
-          "max_age": "100000"
-        },
-        "validator": {
-          "pub_key_types": [
-            "ed25519"
-          ]
-        }
-      },
-      "validators": %s,
-      "app_hash": "" 
-    }`, time.Now().Format("2006-01-02T15:04:05.000000000Z"),
+	  "genesis_time": "%s",
+	  "chain_id": "whiteblock",
+	  "consensus_params": {
+		"block_size": {
+		  "max_bytes": "22020096",
+		  "max_gas": "-1"
+		},
+		"evidence": {
+		  "max_age": "100000"
+		},
+		"validator": {
+		  "pub_key_types": [
+			"ed25519"
+		  ]
+		}
+	  },
+	  "validators": %s,
+	  "app_hash": "" 
+	}`, time.Now().Format("2006-01-02T15:04:05.000000000Z"),
 		validatorsStr)
 }
