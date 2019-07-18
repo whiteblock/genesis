@@ -278,11 +278,14 @@ func add(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	keyPairs := []util.KeyPair{}
+	tn.BuildState.GetP("keyPairs", &keyPairs)
+
 	km, err := helpers.NewKeyMaster(tn)
 	if err != nil {
 		return util.LogError(err)
 	}
-	for range tn.Nodes {
+
+	for i := len(keyPairs); i < len(tn.Nodes); i++ {
 		kp, err := km.GetKeyPair(tn.GetFlatClients()[0])
 		if err != nil {
 			return util.LogError(err)
