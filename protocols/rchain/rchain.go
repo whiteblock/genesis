@@ -310,7 +310,7 @@ func add(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildStage("Starting the rest of the nodes")
 	/**Start up the rest of the nodes**/
-	validators := len(tn.Nodes) - len(tn.NewlyBuiltNodes)
+	validators := len(tn.Nodes) - len(tn.NewlyBuiltNodes) - 1
 	mux := sync.Mutex{}
 	return helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
