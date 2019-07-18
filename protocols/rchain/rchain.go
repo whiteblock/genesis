@@ -215,7 +215,7 @@ func build(tn *testnet.TestNet) error {
 		if isValidator {
 			return client.DockerRunMainDaemon(node,
 				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s --allow-private-addresses",
-					rConf.Command, enode, keyPairs[node.GetAbsoluteNumber()].PrivateKey, node.GetIP()))
+					rConf.Command, enode, keyPairs[node.GetAbsoluteNumber()-1].PrivateKey, node.GetIP()))
 		}
 		return client.DockerRunMainDaemon(node,
 			fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --host %s --allow-private-addresses",
@@ -320,7 +320,7 @@ func add(tn *testnet.TestNet) error {
 		if isValidator {
 			err = client.DockerRunMainDaemon(node,
 				fmt.Sprintf("%s run --data-dir \"/datadir\" --bootstrap \"%s\" --validator-private-key %s --host %s --allow-private-addresses",
-					rConf.Command, enode, keyPairs[node.GetAbsoluteNumber()].PrivateKey, node.GetIP()))
+					rConf.Command, enode, keyPairs[node.GetAbsoluteNumber()-1].PrivateKey, node.GetIP()))
 			return err
 		}
 		return client.DockerRunMainDaemon(node,
