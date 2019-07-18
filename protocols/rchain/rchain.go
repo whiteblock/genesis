@@ -90,7 +90,11 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	keyPairs := make([]util.KeyPair, tn.LDD.Nodes)
+	numKeyPairs := tn.LDD.Nodes
+	if rConf.Validators > tn.LDD.Nodes {
+		numKeyPairs = rConf.Validators
+	}
+	keyPairs := make([]util.KeyPair, numKeyPairs)
 	validatorKeyPairs := make([]util.KeyPair, rConf.Validators)
 	for i := range keyPairs {
 		keyPairs[i], err = km.GetKeyPair(masterClient)
@@ -201,7 +205,7 @@ func build(tn *testnet.TestNet) error {
 	/**Start up the rest of the nodes**/
 	mux := sync.Mutex{}
 
-	var validators int64
+	validators := 0
 
 	return helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		defer buildState.IncrementBuildProgress()
@@ -307,7 +311,7 @@ func add(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildStage("Starting the rest of the nodes")
 	/**Start up the rest of the nodes**/
-	var validators int64
+	validators := 0
 	mux := sync.Mutex{}
 	return helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()

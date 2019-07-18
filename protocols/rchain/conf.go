@@ -31,7 +31,7 @@ type rChainConf struct {
 	CasperBlockStoreSize int64  `json:"casperBlockStoreSize"`
 	InMemoryStore        bool   `json:"inMemoryStore"`
 	MaxNumOfConnections  int64  `json:"maxNumOfConnections"`
-	Validators           int64  `json:"validators"`
+	Validators           int    `json:"validators"`
 	ValidatorCount       int64  `json:"validatorCount"`
 	SigAlgorithm         string `json:"sigAlgorithm"`
 	Command              string `json:"command"`
