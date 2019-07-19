@@ -380,12 +380,16 @@ func (bs *BuildState) GetP(key string, out interface{}) bool {
 	}
 	tmpBytes, err := json.Marshal(tmp)
 	if err != nil {
-		log.WithFields(log.Fields{"build": bs.BuildID, "error": err}).Warn("couldn't marshal the value")
+		_, file, line, _ := runtime.Caller(1)
+		log.WithFields(log.Fields{"build": bs.BuildID,
+			"error": err, "file": file, "line": line}).Warn("couldn't marshal the value")
 		return false
 	}
 	err = json.Unmarshal(tmpBytes, out)
 	if err != nil {
-		log.WithFields(log.Fields{"build": bs.BuildID, "error": err}).Warn("couldn't unmarshal the value")
+		_, file, line, _ := runtime.Caller(1)
+		log.WithFields(log.Fields{"build": bs.BuildID,
+			"error": err, "file": file, "line": line}).Warn("couldn't unmarshal the value")
 		return false
 	}
 	return true
