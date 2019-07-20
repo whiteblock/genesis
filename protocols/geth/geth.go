@@ -95,7 +95,7 @@ func build(tn *testnet.TestNet) error {
 	/**Create the wallets**/
 	tn.BuildState.SetBuildStage("Creating the wallets")
 
-	accounts, err := getAccountPool(tn, int(ethconf.ExtraAccounts)+tn.LDD.Nodes)
+	accounts, err := getAccountPool(tn, ethconf, int(ethconf.ExtraAccounts)+tn.LDD.Nodes)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -192,7 +192,7 @@ func add(tn *testnet.TestNet) error {
 
 	validFlags := checkFlagsExist(tn)
 
-	accounts, err := getAccountPool(tn, int(ethconf.ExtraAccounts)+len(tn.Nodes))
+	accounts, err := getAccountPool(tn, ethconf, int(ethconf.ExtraAccounts)+len(tn.Nodes))
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -420,7 +420,7 @@ func loadForExpand(tn *testnet.TestNet, ethconf *ethConf) error {
 	return nil
 }
 
-func getAccountPool(tn *testnet.TestNet, numOfAccounts int) ([]*ethereum.Account, error) {
+func getAccountPool(tn *testnet.TestNet, ethconf *ethConf, numOfAccounts int) ([]*ethereum.Account, error) {
 	accounts := []*ethereum.Account{}
 	rawPreGen, err := helpers.FetchPreGeneratedPrivateKeys(tn)
 	if err != nil {
@@ -434,9 +434,28 @@ func getAccountPool(tn *testnet.TestNet, numOfAccounts int) ([]*ethereum.Account
 	if len(accounts) >= numOfAccounts {
 		return accounts, nil
 	}
-	var accs []*ethereum.Account
-	tn.BuildState.GetP("accounts", &accs)
-	accounts = append(accounts, accs...)
+	if ethconf.Mode == expansionMode && len(tn.Details) == 1 { //first build
+		var tmp []string
+		tn.BuildState.GetP("accounts", &tmp)
+		for _, addr := range tmp {
+			var accountData map[string]string
+			ok := tn.BuildState.GetP(addr, &accountData)
+			if !ok {
+				log.WithFields(log.Fields{"address": addr}).Trace("skipping address without entry")
+				continue
+			}
+			acc, err := ethereum.CreateAccountFromHex(accountData["privateKey"])
+			if err != nil {
+				log.WithFields(log.Fields{"error": err}).Info("there was an error with the given private key")
+			} else {
+				accounts = append(accounts, acc)
+			}
+		}
+	} else {
+		var accs []*ethereum.Account
+		tn.BuildState.GetP("accounts", &accs)
+		accounts = append(accounts, accs...)
+	}
 
 	if len(accounts) >= numOfAccounts {
 		log.Info("Fetched all the accounts from the build state store")
