@@ -93,21 +93,8 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 	}
 	tn.BuildState.IncrementDeployProgress()
 
-	var resource util.Resources
-	if len(tn.LDD.Resources) == 0 {
-		resource = util.Resources{Cpus: "", Memory: ""}
-		log.WithFields(log.Fields{"resource": resource, "node": node.AbsoluteNum}).Trace("using default resources")
-	} else {
-		resource = tn.LDD.Resources[0]
-	}
-
+	resource := tn.GetNodeResources(node.AbsoluteNum)
 	var env map[string]string
-
-	if len(tn.LDD.Resources) > node.AbsoluteNum {
-		resource = tn.LDD.Resources[node.AbsoluteNum]
-		log.WithFields(log.Fields{"resource": resource, "node": node.AbsoluteNum}).Trace("using given resources")
-	}
-
 	if tn.LDD.Environments != nil && len(tn.LDD.Environments) > node.AbsoluteNum && tn.LDD.Environments[node.AbsoluteNum] != nil {
 		env = tn.LDD.Environments[node.AbsoluteNum]
 		log.WithFields(log.Fields{"env": env, "node": node.AbsoluteNum}).Trace("using custom env vars")

@@ -53,6 +53,7 @@ type NodeStatus struct {
 	ID        string `json:"id"`
 	Protocol  string `json:"protocol"`
 	Image     string `json:"image"`
+	PortMappings map[string]string `json:"portMappings,omitonempty"`
 }
 
 // FindNodeIndex finds the index of a node by name and server id
@@ -118,6 +119,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 			ID:        node.ID,
 			Protocol:  node.Protocol,
 			Image:     node.Image,
+			PortMappings: node.PortMappings,
 			Resources: Comp{-1, -1, -1},
 		}
 	}

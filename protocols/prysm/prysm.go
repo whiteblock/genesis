@@ -76,7 +76,7 @@ func build(tn *testnet.TestNet) error {
 		peers := ""
 
 		for _, peerNode := range tn.Nodes {
-			if node == peerNode {
+			if node.GetID() == peerNode.GetID() {
 				continue
 			}
 			peers += fmt.Sprintf(" --peer=/ip4/%s/tcp/%d/p2p/%s:%d", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]), p2pPort)

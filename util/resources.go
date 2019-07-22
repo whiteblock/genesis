@@ -154,3 +154,19 @@ func (res Resources) NoCPULimits() bool {
 func (res Resources) NoMemoryLimits() bool {
 	return len(res.Memory) == 0
 }
+
+func (res Resources) GetParsedPortMappings() map[string]string {
+	if res.Ports == nil || len(res.Ports) == 0 {
+		return nil
+	}
+	out := map[string]string{}
+	for _, rawMapping := range res.Ports {
+		mapping := strings.SplitN(rawMapping, ":", 2)
+		if len(mapping) != 2 {
+			log.WithFields(log.Fields{"raw": rawMapping}).Debug("invalid format for port mapping")
+			continue
+		}
+		out[mapping[1]] = mapping[0]
+	}
+	return out
+}

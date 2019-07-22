@@ -20,6 +20,7 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //Include sqlite as the db
 	"github.com/whiteblock/genesis/util"
@@ -53,6 +54,10 @@ type Node struct {
 
 	// Protocol is the protocol type of this node
 	Protocol string `json:"protocol"`
+
+	// PortMappings keeps tracks of the ports exposed externally on the for this
+	// node
+	PortMappings map[string]string `json:"portMappings,omitonempty"`
 }
 
 // GetID gets the id of this side car
@@ -90,6 +95,8 @@ func (n Node) GetNodeName() string {
 	return fmt.Sprintf("%s%d", conf.NodePrefix, n.AbsoluteNum)
 }
 
+const selectFieldStr = "id,test_net,server,local_id,ip,label,abs_num,image,protocol,port_mappings"
+
 func getNodesByQuery(query string) ([]Node, error) {
 	rows, err := db.Query(query)
 	if err != nil {
@@ -100,8 +107,13 @@ func getNodesByQuery(query string) ([]Node, error) {
 	nodes := []Node{}
 	for rows.Next() {
 		var node Node
+		var rawNodeMapping []byte
 		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.IP,
-			&node.Label, &node.AbsoluteNum, &node.Image, &node.Protocol)
+			&node.Label, &node.AbsoluteNum, &node.Image, &node.Protocol, &rawNodeMapping)
+		if err != nil {
+			return nil, util.LogError(err)
+		}
+		err = json.Unmarshal(rawNodeMapping, &node.PortMappings)
 		if err != nil {
 			return nil, util.LogError(err)
 		}
@@ -112,26 +124,25 @@ func getNodesByQuery(query string) ([]Node, error) {
 
 // GetAllNodesByServer gets all nodes that have ever existed on a server
 func GetAllNodesByServer(serverID int) ([]Node, error) {
-	return getNodesByQuery(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num,image,protocol"+
-		" FROM %s WHERE server = %d", NodesTable, serverID))
+	return getNodesByQuery(fmt.Sprintf("SELECT %s FROM %s WHERE server = %d",
+		selectFieldStr, NodesTable, serverID))
 }
 
 // GetAllNodesByTestNet gets all the nodes which are in the given testnet
 func GetAllNodesByTestNet(testID string) ([]Node, error) {
-	return getNodesByQuery(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num,image,protocol"+
-		" FROM %s WHERE test_net = \"%s\"", NodesTable, testID))
+	return getNodesByQuery(fmt.Sprintf("SELECT %s FROM %s WHERE test_net = \"%s\"",
+		selectFieldStr, NodesTable, testID))
 }
 
 // GetAllNodes gets every node that has ever existed.
 func GetAllNodes() ([]Node, error) {
-	return getNodesByQuery(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num,image,protocol"+
-		" FROM %s", NodesTable))
+	return getNodesByQuery(fmt.Sprintf("SELECT %s FROM %s", selectFieldStr, NodesTable))
 }
 
 // GetNode fetches a node by id
 func GetNode(id string) (Node, error) {
-	nodes, err := getNodesByQuery(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num,image,protocol"+
-		" FROM %s WHERE id = %s", NodesTable, id))
+	nodes, err := getNodesByQuery(
+		fmt.Sprintf("SELECT %s FROM %s WHERE id = %s", selectFieldStr, NodesTable, id))
 
 	if len(nodes) == 0 || err == sql.ErrNoRows {
 		return Node{}, fmt.Errorf("node %s not found", id)
@@ -147,8 +158,8 @@ func InsertNode(node Node) (int, error) {
 		return -1, util.LogError(err)
 	}
 
-	stmt, err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (id,test_net,server,local_id,ip,label,abs_num,image,protocol) "+
-		" VALUES (?,?,?,?,?,?,?,?,?)", NodesTable))
+	stmt, err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (%s) "+
+		" VALUES (?,?,?,?,?,?,?,?,?,?)", NodesTable, selectFieldStr))
 
 	if err != nil {
 		return -1, util.LogError(err)
@@ -156,10 +167,15 @@ func InsertNode(node Node) (int, error) {
 
 	defer stmt.Close()
 
-	res, err := stmt.Exec(node.ID, node.TestNetID, node.Server, node.LocalID, node.IP, node.Label,
-		node.AbsoluteNum, node.Image, node.Protocol)
+	rawNodeMapping, err := json.Marshal(node.PortMappings)
 	if err != nil {
-		return -1, nil
+		return -1, util.LogError(err)
+	}
+
+	res, err := stmt.Exec(node.ID, node.TestNetID, node.Server, node.LocalID, node.IP, node.Label,
+		node.AbsoluteNum, node.Image, node.Protocol, rawNodeMapping)
+	if err != nil {
+		return -1, util.LogError(err)
 	}
 
 	tx.Commit()

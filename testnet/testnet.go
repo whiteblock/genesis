@@ -27,6 +27,7 @@ import (
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/status"
+	"github.com/whiteblock/genesis/util"
 	"sync"
 )
 
@@ -139,6 +140,7 @@ func (tn *TestNet) AddNode(node db.Node) *db.Node {
 		node.Image = tn.LDD.Images[node.AbsoluteNum]
 		log.WithFields(log.Fields{"image": node.Image, "node": node.AbsoluteNum}).Trace("using given image")
 	}
+	node.PortMappings = tn.GetNodeResources(node.AbsoluteNum).GetParsedPortMappings()
 	log.WithFields(log.Fields{"node": node}).Debug("adding a node")
 	tn.NewlyBuiltNodes = append(tn.NewlyBuiltNodes, node)
 	tn.Nodes = append(tn.Nodes, node)
@@ -215,6 +217,8 @@ func (tn *TestNet) AddDetails(dd db.DeploymentDetails) error {
 			tn.CombinedDetails.Images = append(tn.CombinedDetails.Images, image)
 		}
 	}
+
+	tn.CombinedDetails.Resources = append(tn.CombinedDetails.Resources, dd.Resources...)
 	return nil
 }
 
@@ -389,4 +393,19 @@ func (tn *TestNet) GetNodesSideCar(node ssh.Node, name string) (*db.SideCar, err
 	}
 
 	return &tn.SideCars[index][node.GetAbsoluteNumber()], nil
+}
+
+// GetNodeResources gets the resources specified for the given node
+func (tn *TestNet) GetNodeResources(absoluteNum int) (resource util.Resources) {
+	if len(tn.CombinedDetails.Resources) == 0 {
+		resource = util.Resources{Cpus: "", Memory: ""}
+		log.WithFields(log.Fields{"resource": resource, "node": absoluteNum}).Trace("using default resources")
+	} else {
+		resource = tn.CombinedDetails.Resources[0]
+	}
+	if len(tn.CombinedDetails.Resources) > absoluteNum {
+		resource = tn.CombinedDetails.Resources[absoluteNum]
+		log.WithFields(log.Fields{"resource": resource, "node": absoluteNum}).Trace("using given resources")
+	}
+	return
 }
