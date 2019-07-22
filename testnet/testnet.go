@@ -304,6 +304,7 @@ func (tn *TestNet) PreOrderNewNodes(sidecar bool) map[int][]ssh.Node {
 
 // Store stores the TestNets data for later retrieval
 func (tn *TestNet) Store() {
+	db.DeleteMeta("testnet_" + tn.TestNetID)
 	db.SetMeta("testnet_"+tn.TestNetID, *tn)
 }
 
