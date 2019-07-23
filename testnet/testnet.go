@@ -135,10 +135,12 @@ func (tn *TestNet) AddNode(node db.Node) *db.Node {
 	tn.mux.Lock()
 	defer tn.mux.Unlock()
 	node.AbsoluteNum = len(tn.Nodes)
-	node.Image = tn.LDD.Images[0]
+
 	if len(tn.LDD.Images) > node.AbsoluteNum {
 		node.Image = tn.LDD.Images[node.AbsoluteNum]
 		log.WithFields(log.Fields{"image": node.Image, "node": node.AbsoluteNum}).Trace("using given image")
+	} else {
+		node.Image = tn.LDD.Images[0]
 	}
 	node.PortMappings = tn.GetNodeResources(node.AbsoluteNum).GetParsedPortMappings()
 	log.WithFields(log.Fields{"node": node}).Debug("adding a node")
@@ -208,14 +210,16 @@ func (tn *TestNet) AddDetails(dd db.DeploymentDetails) error {
 		if tn.CombinedDetails.Images == nil {
 			tn.CombinedDetails.Images = make([]string, oldCD.Nodes)
 		}
-		if len(tn.CombinedDetails.Images) < oldCD.Nodes {
-			for i := len(tn.CombinedDetails.Images); i < oldCD.Nodes; i++ {
-				tn.CombinedDetails.Images = append(tn.CombinedDetails.Images, tn.CombinedDetails.Images[0])
-			}
+		for i := len(tn.CombinedDetails.Images); i < oldCD.Nodes; i++ {
+			tn.CombinedDetails.Images = append(tn.CombinedDetails.Images, tn.CombinedDetails.Images[0])
 		}
+
 		for _, image := range dd.Images {
 			tn.CombinedDetails.Images = append(tn.CombinedDetails.Images, image)
 		}
+	}
+	for i := len(tn.CombinedDetails.Resources); i < oldCD.Nodes; i++ {
+		tn.CombinedDetails.Resources = append(tn.CombinedDetails.Resources, tn.GetNodeResources(i))
 	}
 
 	tn.CombinedDetails.Resources = append(tn.CombinedDetails.Resources, dd.Resources...)
@@ -401,12 +405,15 @@ func (tn *TestNet) GetNodeResources(absoluteNum int) (resource util.Resources) {
 	if len(tn.CombinedDetails.Resources) == 0 {
 		resource = util.Resources{Cpus: "", Memory: ""}
 		log.WithFields(log.Fields{"resource": resource, "node": absoluteNum}).Trace("using default resources")
-	} else {
-		resource = tn.CombinedDetails.Resources[0]
-	}
-	if len(tn.CombinedDetails.Resources) > absoluteNum {
+	} else if len(tn.CombinedDetails.Resources) > absoluteNum {
 		resource = tn.CombinedDetails.Resources[absoluteNum]
 		log.WithFields(log.Fields{"resource": resource, "node": absoluteNum}).Trace("using given resources")
+	} else {
+		resource = tn.CombinedDetails.Resources[0]
+		resource.Ports = []string{}
+		resource.Volumes = []string{}
 	}
+
+	log.WithFields(log.Fields{"res": resource}).Debug("got the resources")
 	return
 }
