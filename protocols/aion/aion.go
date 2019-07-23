@@ -64,7 +64,7 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	tn.BuildState.SetBuildSteps(8 + (tn.LDD.Nodes) + (tn.LDD.Nodes * (tn.LDD.Nodes - 2)))
+	tn.BuildState.SetBuildSteps(4 + (10 * tn.LDD.Nodes) + int(aionconf.ExtraAccounts))
 
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Distributing secrets")
@@ -103,6 +103,7 @@ func build(tn *testnet.TestNet) error {
 	for i := 0; i < int(aionconf.ExtraAccounts); i++ {
 		wg.Add(1)
 		go func() {
+			defer tn.BuildState.IncrementBuildProgress()
 			defer wg.Done()
 			addr, err := createAccount(tn.Clients[tn.Nodes[0].Server], tn.Nodes[0])
 			if err != nil {
@@ -126,6 +127,7 @@ func build(tn *testnet.TestNet) error {
 		if err != nil {
 			return util.LogError(err)
 		}
+		tn.BuildState.IncrementBuildProgress()
 		pubk := regexp.MustCompile(`(?m)0x(.{64})`)
 		publicKeys := pubk.FindAllString(pubkeyOut, -1)
 		log.WithFields(log.Fields{"regex": pubk, "pubkey": publicKeys}).Trace("Extracted the public key")
@@ -164,6 +166,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		defer tn.BuildState.IncrementBuildProgress()
 		wg := sync.WaitGroup{}
 		for _, acc := range accounts {
 			wg.Add(1)
@@ -181,10 +184,10 @@ func build(tn *testnet.TestNet) error {
 
 	log.WithFields(log.Fields{"accounts": accounts}).Trace("extracted accounts")
 	tn.BuildState.Set("generatedAccs", accounts)
-	tn.BuildState.IncrementBuildProgress()
 
 	//get permanent node id from auto-generated config.xml
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		defer tn.BuildState.IncrementBuildProgress()
 		output, err := client.DockerRead(node, "/aion/custom/config/config.xml", -1)
 		if err != nil {
 			return util.LogError(err)
@@ -203,16 +206,13 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	tn.BuildState.Set("nodeIDs", nodeIDs)
-	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetBuildStage("Creating the genesis block")
 	// delete auto generated genesis file and create custom genesis file
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		defer tn.BuildState.IncrementBuildProgress()
 		_, err := client.DockerExec(node, "rm /aion/custom/config/genesis.json")
-		if err != nil {
-			return util.LogError(err)
-		}
-		return nil
+		return util.LogError(err)
 	})
 	if err != nil {
 		return util.LogError(err)
@@ -234,30 +234,23 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	err = helpers.CreateConfigs(tn, "/aion/custom/config/config.xml", func(node ssh.Node) ([]byte, error) {
+		defer tn.BuildState.IncrementBuildProgress()
 		conf, err := buildConfig(aionconf, tn, addresses[node.GetAbsoluteNumber()], node)
-		if err != nil {
-			return nil, util.LogError(err)
-		}
-		tn.BuildState.IncrementBuildProgress()
-		return []byte(conf), nil
+		return []byte(conf), util.LogError(err)
 	})
 	if err != nil {
 		return util.LogError(err)
 	}
-	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetBuildStage("Starting network")
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		defer tn.BuildState.IncrementBuildProgress()
 		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '/aion/aion.sh -n custom 2>&1 | tee %s'", conf.DockerOutputFile))
-		if err != nil {
-			return util.LogError(err)
-		}
-		return nil
+		return util.LogError(err)
 	})
 	if err != nil {
 		return util.LogError(err)
 	}
-	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetExt("networkID", aionconf.ChainID)
 	helpers.SetFunctionalityGroup(tn, "eth")
@@ -413,20 +406,22 @@ func unlockAllAccounts(tn *testnet.TestNet, accounts []aionAcc) error {
 			wg.Add(1)
 			go func(account aionAcc) {
 				defer wg.Done()
-				for {
+				for i := 0; i < 10000; i++ {
 					_, err := client.Run(
 						fmt.Sprintf(
 							`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
 								`'{ "method": "personal_unlockAccount", "params": ["%s","%s",0], "id": 3, "jsonrpc": "2.0" }'`,
 							node.GetIP(), account.Address, password))
-					//pass = !(strings.Contains(out, ":true"))
 					if err == nil {
 						break
+					} else {
+						log.WithFields(log.Fields{"attempt": i, "msg": err}).Debug("failed to send unlock account call")
 					}
 				}
 			}(acc)
 		}
 		wg.Wait()
+		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
 }
