@@ -114,22 +114,20 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-
-	enodes := "["
+	enodeAddrs := []string{}
 	for i, node := range tn.Nodes {
-		enodeAddress := fmt.Sprintf("enode://%s@%s:%d",
+		enodeAddrs = append(enodeAddrs, fmt.Sprintf("enode://%s@%s:%d",
 			accounts[i].HexPublicKey(),
 			node.IP,
-			p2pPort)
-		if i != 0 {
-			enodes = enodes + ",\"" + enodeAddress + "\""
-		} else {
-			enodes = enodes + "\"" + enodeAddress + "\""
-		}
+			p2pPort))
 		tn.BuildState.IncrementBuildProgress()
 	}
 
-	enodes = enodes + "]"
+	tmp, err := json.Marshal(enodeAddrs)
+	if err != nil {
+		return util.LogError(err)
+	}
+	enodes := string(tmp)
 
 	/* Create Static Nodes File */
 	tn.BuildState.SetBuildStage("Setting Up Static Peers")
@@ -172,6 +170,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	ethereum.ExposeAccounts(tn, accounts)
+	ethereum.ExposeEnodes(tn, enodeAddrs)
 	tn.BuildState.SetExt("port", ethereum.RPCPort)
 	tn.BuildState.Set("networkID", panconf.NetworkID)
 	tn.BuildState.SetExt("networkID", panconf.NetworkID)
