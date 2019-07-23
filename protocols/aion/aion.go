@@ -33,6 +33,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 )
 
 var conf = util.GetConfig()
@@ -265,6 +266,8 @@ func build(tn *testnet.TestNet) error {
 			"publicKey":  account.PublicKey,
 		})
 	}
+	time.Sleep(1 * time.Second)
+
 	unlockAllAccounts(tn, accounts)
 
 	tn.BuildState.IncrementBuildProgress()
@@ -416,6 +419,7 @@ func unlockAllAccounts(tn *testnet.TestNet, accounts []aionAcc) error {
 						break
 					} else {
 						log.WithFields(log.Fields{"attempt": i, "msg": err}).Debug("failed to send unlock account call")
+						time.Sleep(500 * time.Millisecond)
 					}
 				}
 			}(acc)
