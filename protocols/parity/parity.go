@@ -249,7 +249,7 @@ func add(tn *testnet.TestNet) error {
 	}
 
 	/**Create the Password file and copy it over**/
-	err = ethereum.CreatePasswordFile(tn, password, passwordFile)
+	err = ethereum.CreateNPasswordFile(tn, len(tn.Nodes), password, passwordFile)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -345,8 +345,11 @@ func add(tn *testnet.TestNet) error {
 
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
+		/*return client.DockerRunMainDaemon(node,
+		fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`, wallets[node.GetAbsoluteNumber()%tn.LDD.Nodes]))*/
 		return client.DockerRunMainDaemon(node,
-			fmt.Sprintf(`parity --author=%s -c /parity/config.toml --chain=/parity/spec.json`, wallets[node.GetAbsoluteNumber()%tn.LDD.Nodes]))
+			fmt.Sprintf(`parity -c /parity/config.toml --chain=/parity/spec.json`))
+
 	})
 	if err != nil {
 		return util.LogError(err)
@@ -540,7 +543,7 @@ func setupNewPOW(tn *testnet.TestNet, pconf *parityConf, wallets, genWallets []s
 	}
 	//create config file
 	err = helpers.CreateConfigsNewNodes(tn, "/parity/config.toml", func(node ssh.Node) ([]byte, error) {
-		configToml, err := buildConfig(pconf, tn.LDD, wallets, "/parity/passwd", node.GetAbsoluteNumber())
+		configToml, err := buildConfig(pconf, tn.LDD, []string{}, "/parity/passwd", node.GetAbsoluteNumber())
 		if err != nil {
 			return nil, util.LogError(err)
 		}
