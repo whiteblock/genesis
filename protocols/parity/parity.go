@@ -436,6 +436,7 @@ func storeParameters(tn *testnet.TestNet, pconf *parityConf, wallets []string, e
 	tn.BuildState.SetExt("networkID", pconf.NetworkID)
 	tn.BuildState.SetExt("port", ethereum.RPCPort)
 	ethereum.ExposeAccounts(tn, accounts)
+	ethereum.ExposeEnodes(tn, enodes)
 
 	switch pconf.Consensus {
 	case "ethash":

@@ -155,6 +155,8 @@ func (res Resources) NoMemoryLimits() bool {
 	return len(res.Memory) == 0
 }
 
+// GetParsedPortMappings fetches the port mappings in a form which is easy to use,
+// using the source port as the key
 func (res Resources) GetParsedPortMappings() map[string]string {
 	if res.Ports == nil || len(res.Ports) == 0 {
 		return nil

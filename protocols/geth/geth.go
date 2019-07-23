@@ -165,6 +165,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetExt("port", ethereum.RPCPort)
 	helpers.SetFunctionalityGroup(tn, "eth")
 	ethereum.ExposeAccounts(tn, accounts)
+	ethereum.ExposeEnodes(tn, staticNodes)
 
 	return nil
 }
@@ -252,8 +253,8 @@ func add(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
-	tn.BuildState.Set("enodes", staticNodes)
 	tn.BuildState.Set("geth-conf", *ethconf)
+	ethereum.ExposeEnodes(tn, staticNodes)
 	ethereum.ExposeAccounts(tn, accounts)
 	return nil
 }
@@ -516,7 +517,7 @@ func checkFlagsExist(tn *testnet.TestNet) []map[string]bool {
 
 func getEnodes(tn *testnet.TestNet, accounts []*ethereum.Account) []string {
 	var enodes []string
-	tn.BuildState.GetP("enodes", &enodes)
+	tn.BuildState.GetP(ethereum.EnodeKey, &enodes)
 
 	for i, node := range tn.Nodes {
 		if len(enodes) > i {

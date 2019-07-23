@@ -30,6 +30,8 @@ const (
 	P2PPort = 30303
 	//RPCPort is the standard json rpc over http port
 	RPCPort = 8545
+	//EnodeKey is the state key for enodes
+	EnodeKey = "enodes"
 )
 
 //CreatePasswordFile turns the process of creating a password file into a single function call
@@ -58,4 +60,10 @@ func ExposeAccounts(tn *testnet.TestNet, accounts []*Account) {
 			"publicKey":  account.HexPublicKey(),
 		})
 	}
+}
+
+// ExposeEnodes provides a simple way to expose the enode addresses of the current nodes.
+func ExposeEnodes(tn *testnet.TestNet, enodes []string) {
+	tn.BuildState.SetExt(EnodeKey, enodes)
+	tn.BuildState.Set(EnodeKey, enodes)
 }
