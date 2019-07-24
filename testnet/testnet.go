@@ -27,6 +27,7 @@ import (
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/status"
+	"github.com/whiteblock/genesis/util"
 	"sync"
 )
 
@@ -134,9 +135,18 @@ func (tn *TestNet) AddNode(node db.Node) *db.Node {
 	tn.mux.Lock()
 	defer tn.mux.Unlock()
 	node.AbsoluteNum = len(tn.Nodes)
+
+	if len(tn.LDD.Images) > node.AbsoluteNum {
+		node.Image = tn.LDD.Images[node.AbsoluteNum]
+		log.WithFields(log.Fields{"image": node.Image, "node": node.AbsoluteNum}).Trace("using given image")
+	} else {
+		node.Image = tn.LDD.Images[0]
+	}
+	node.PortMappings = tn.GetNodeResources(node.AbsoluteNum).GetParsedPortMappings()
+	log.WithFields(log.Fields{"node": node}).Debug("adding a node")
 	tn.NewlyBuiltNodes = append(tn.NewlyBuiltNodes, node)
 	tn.Nodes = append(tn.Nodes, node)
-	return &tn.Nodes[node.AbsoluteNum]
+	return &tn.NewlyBuiltNodes[len(tn.NewlyBuiltNodes)-1]
 }
 
 // AddSideCar adds a side car to the testnet
@@ -200,15 +210,19 @@ func (tn *TestNet) AddDetails(dd db.DeploymentDetails) error {
 		if tn.CombinedDetails.Images == nil {
 			tn.CombinedDetails.Images = make([]string, oldCD.Nodes)
 		}
-		if len(tn.CombinedDetails.Images) < oldCD.Nodes {
-			for i := len(tn.CombinedDetails.Images); i < oldCD.Nodes; i++ {
-				tn.CombinedDetails.Images = append(tn.CombinedDetails.Images, tn.CombinedDetails.Images[0])
-			}
+		for i := len(tn.CombinedDetails.Images); i < oldCD.Nodes; i++ {
+			tn.CombinedDetails.Images = append(tn.CombinedDetails.Images, tn.CombinedDetails.Images[0])
 		}
+
 		for _, image := range dd.Images {
 			tn.CombinedDetails.Images = append(tn.CombinedDetails.Images, image)
 		}
 	}
+	for i := len(tn.CombinedDetails.Resources); i < oldCD.Nodes; i++ {
+		tn.CombinedDetails.Resources = append(tn.CombinedDetails.Resources, tn.GetNodeResources(i))
+	}
+
+	tn.CombinedDetails.Resources = append(tn.CombinedDetails.Resources, dd.Resources...)
 	return nil
 }
 
@@ -294,7 +308,19 @@ func (tn *TestNet) PreOrderNewNodes(sidecar bool) map[int][]ssh.Node {
 
 // Store stores the TestNets data for later retrieval
 func (tn *TestNet) Store() {
+	db.DeleteMeta("testnet_" + tn.TestNetID)
 	db.SetMeta("testnet_"+tn.TestNetID, *tn)
+}
+
+// UpdateAllImages switches all of the nodes to the given docker
+// image
+func (tn *TestNet) UpdateAllImages(newImage string) {
+	if tn.LDD == nil {
+		log.Error("LDD is nil")
+	}
+	for i := range tn.LDD.Images {
+		tn.LDD.Images[i] = newImage
+	}
 }
 
 // Destroy removes all the testnets data
@@ -306,11 +332,11 @@ func (tn *TestNet) Destroy() error {
 func (tn *TestNet) StoreNodes() error {
 	var err error
 	for _, node := range tn.NewlyBuiltNodes {
+		log.WithFields(log.Fields{"node": node}).Debug("storing a node")
 		_, er := db.InsertNode(node)
 		if er != nil {
-			log.WithFields(log.Fields{"build": tn.TestNetID,
+			log.WithFields(log.Fields{"build": tn.TestNetID, "error": er,
 				"node": node.ID}).Error("failed to store a node into db")
-			log.Println(er)
 			err = er
 		}
 	}
@@ -372,4 +398,22 @@ func (tn *TestNet) GetNodesSideCar(node ssh.Node, name string) (*db.SideCar, err
 	}
 
 	return &tn.SideCars[index][node.GetAbsoluteNumber()], nil
+}
+
+// GetNodeResources gets the resources specified for the given node
+func (tn *TestNet) GetNodeResources(absoluteNum int) (resource util.Resources) {
+	if len(tn.CombinedDetails.Resources) == 0 {
+		resource = util.Resources{Cpus: "", Memory: ""}
+		log.WithFields(log.Fields{"resource": resource, "node": absoluteNum}).Trace("using default resources")
+	} else if len(tn.CombinedDetails.Resources) > absoluteNum {
+		resource = tn.CombinedDetails.Resources[absoluteNum]
+		log.WithFields(log.Fields{"resource": resource, "node": absoluteNum}).Trace("using given resources")
+	} else {
+		resource = tn.CombinedDetails.Resources[0]
+		resource.Ports = []string{}
+		resource.Volumes = []string{}
+	}
+
+	log.WithFields(log.Fields{"res": resource}).Debug("got the resources")
+	return
 }

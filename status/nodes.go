@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package status
@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 var conf *util.Config
@@ -45,12 +46,16 @@ type Comp struct {
 
 // NodeStatus represents the status of the node
 type NodeStatus struct {
-	Name      string `json:"name"`
-	Server    int    `json:"server"`
-	IP        string `json:"ip"`
-	Up        bool   `json:"up"`
-	Resources Comp   `json:"resourceUse"`
-	ID        string `json:"id"`
+	Name         string            `json:"name"`
+	Server       int               `json:"server"`
+	IP           string            `json:"ip"`
+	Up           bool              `json:"up"`
+	Resources    Comp              `json:"resourceUse"`
+	ID           string            `json:"id"`
+	Protocol     string            `json:"protocol"`
+	Image        string            `json:"image"`
+	PortMappings map[string]string `json:"portMappings,omitonempty"`
+	Timestamp    int64             `json:"timestamp"`
 }
 
 // FindNodeIndex finds the index of a node by name and server id
@@ -109,14 +114,16 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 	for _, node := range nodes {
 		log.WithFields(log.Fields{"node": node.AbsoluteNum, "id": node.ID, "server": node.Server}).Trace("adding node to be check")
 		out[node.AbsoluteNum] = NodeStatus{
-			Name:      fmt.Sprintf("%s%d", conf.NodePrefix, node.LocalID),
-			IP:        node.IP,
-			Server:    node.Server,
-			Up:        false,
-			ID:        node.ID,
-			Resources: Comp{-1, -1, -1},
+			Name:         fmt.Sprintf("%s%d", conf.NodePrefix, node.LocalID),
+			IP:           node.IP,
+			Server:       node.Server,
+			Up:           false,
+			ID:           node.ID,
+			Protocol:     node.Protocol,
+			Image:        node.Image,
+			PortMappings: node.PortMappings,
+			Resources:    Comp{-1, -1, -1},
 		}
-
 	}
 	servers, err := db.GetServers(serverIDs)
 	if err != nil {
@@ -156,6 +163,7 @@ func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
 				mux.Lock()
 				out[index].Up = true
 				out[index].Resources = resUsage
+				out[index].Timestamp = time.Now().Unix()
 				mux.Unlock()
 			}(client, name, index)
 		}

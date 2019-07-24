@@ -3,32 +3,32 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package state
 
 import (
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"sync"
 )
 
-var buildStates = []*BuildState{}
-
-var serversInUse = []int{}
-
-var mux = sync.RWMutex{}
+var (
+	buildStates  = []*BuildState{}
+	serversInUse = []int{}
+	mux          = sync.RWMutex{}
+)
 
 /*
    Remove all of the finished build states
@@ -51,7 +51,7 @@ func cleanBuildStates(servers []int) {
 			for _, serverID1 := range buildStates[i].Servers {
 				for j := 0; j < len(serversInUse); j++ {
 					if serverID1 == serversInUse[j] {
-						serversInUse = append(serversInUse[:i], serversInUse[i+1:]...)
+						serversInUse = append(serversInUse[:j], serversInUse[j+1:]...)
 						j--
 					}
 				}
@@ -107,7 +107,7 @@ func GetBuildStateByID(buildID string) (*BuildState, error) {
 	defer mux.Unlock()
 	bs, err := RestoreBuildState(buildID)
 	if err != nil || bs == nil {
-		log.Println(err)
+		log.Error(err)
 		return nil, fmt.Errorf("couldn't find the request build")
 	}
 	buildStates = append(buildStates, bs)
@@ -142,7 +142,7 @@ func Stop(serverID int) bool {
 
 	bs := GetBuildStateByServerID(serverID)
 	if bs == nil {
-		log.Println("No build found for check")
+		log.WithFields(log.Fields{"server": serverID}).Error("no build found for check if stopped")
 		return false
 	}
 	return bs.Stop()
@@ -154,12 +154,12 @@ func Stop(serverID int) bool {
 func SignalStop(buildID string) error {
 	bs, err := GetBuildStateByID(buildID)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return err
 	}
 	if bs == nil {
 		return fmt.Errorf("build \"%s\" does not exist", buildID)
 	}
-	log.Printf("Sending stop signal to build:%s\n", buildID)
+	log.WithFields(log.Fields{"build": buildID}).Debug("sending stop signal to build")
 	return bs.SignalStop()
 }

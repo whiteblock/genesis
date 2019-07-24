@@ -3,23 +3,24 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3" //Include sqlite as the db
 	"github.com/whiteblock/genesis/util"
@@ -51,8 +52,17 @@ type Node struct {
 	// Image is the docker image used to build this node
 	Image string `json:"image"`
 
-	// Blockchain is the blockchain type of this node
-	Blockchain string `json:"blockchain"`
+	// Protocol is the protocol type of this node
+	Protocol string `json:"protocol"`
+
+	// PortMappings keeps tracks of the ports exposed externally on the for this
+	// node
+	PortMappings map[string]string `json:"portMappings,omitonempty"`
+}
+
+// GetID gets the id of this side car
+func (n Node) GetID() string {
+	return n.ID
 }
 
 // GetAbsoluteNumber gets the absolute number of the node in the testnet
@@ -85,10 +95,10 @@ func (n Node) GetNodeName() string {
 	return fmt.Sprintf("%s%d", conf.NodePrefix, n.AbsoluteNum)
 }
 
-// GetAllNodesByServer gets all nodes that have ever existed on a server
-func GetAllNodesByServer(serverID int) ([]Node, error) {
+const selectFieldStr = "id,test_net,server,local_id,ip,label,abs_num,image,protocol,port_mappings"
 
-	rows, err := db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s WHERE server = %d", NodesTable, serverID))
+func getNodesByQuery(query string) ([]Node, error) {
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, util.LogError(err)
 	}
@@ -97,70 +107,47 @@ func GetAllNodesByServer(serverID int) ([]Node, error) {
 	nodes := []Node{}
 	for rows.Next() {
 		var node Node
-		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.ID, &node.Label, &node.AbsoluteNum)
+		var rawNodeMapping []byte
+		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.IP,
+			&node.Label, &node.AbsoluteNum, &node.Image, &node.Protocol, &rawNodeMapping)
+		if err != nil {
+			return nil, util.LogError(err)
+		}
+		err = json.Unmarshal(rawNodeMapping, &node.PortMappings)
 		if err != nil {
 			return nil, util.LogError(err)
 		}
 		nodes = append(nodes, node)
 	}
 	return nodes, nil
+}
+
+// GetAllNodesByServer gets all nodes that have ever existed on a server
+func GetAllNodesByServer(serverID int) ([]Node, error) {
+	return getNodesByQuery(fmt.Sprintf("SELECT %s FROM %s WHERE server = %d",
+		selectFieldStr, NodesTable, serverID))
 }
 
 // GetAllNodesByTestNet gets all the nodes which are in the given testnet
 func GetAllNodesByTestNet(testID string) ([]Node, error) {
-	nodes := []Node{}
-
-	rows, err := db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s WHERE test_net = \"%s\"", NodesTable, testID))
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var node Node
-		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.IP, &node.Label, &node.AbsoluteNum)
-		if err != nil {
-			return nil, util.LogError(err)
-		}
-		nodes = append(nodes, node)
-	}
-	return nodes, nil
+	return getNodesByQuery(fmt.Sprintf("SELECT %s FROM %s WHERE test_net = \"%s\"",
+		selectFieldStr, NodesTable, testID))
 }
 
 // GetAllNodes gets every node that has ever existed.
 func GetAllNodes() ([]Node, error) {
-
-	rows, err := db.Query(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s", NodesTable))
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	defer rows.Close()
-	nodes := []Node{}
-
-	for rows.Next() {
-		var node Node
-		err := rows.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.IP, &node.Label, &node.AbsoluteNum)
-		if err != nil {
-			return nil, util.LogError(err)
-		}
-		nodes = append(nodes, node)
-	}
-	return nodes, nil
+	return getNodesByQuery(fmt.Sprintf("SELECT %s FROM %s", selectFieldStr, NodesTable))
 }
 
 // GetNode fetches a node by id
 func GetNode(id string) (Node, error) {
+	nodes, err := getNodesByQuery(
+		fmt.Sprintf("SELECT %s FROM %s WHERE id = %s", selectFieldStr, NodesTable, id))
 
-	row := db.QueryRow(fmt.Sprintf("SELECT id,test_net,server,local_id,ip,label,abs_num FROM %s WHERE id = %s", NodesTable, id))
-
-	var node Node
-
-	if row.Scan(&node.ID, &node.TestNetID, &node.Server, &node.LocalID, &node.IP, &node.Label, &node.AbsoluteNum) == sql.ErrNoRows {
-		return node, fmt.Errorf("node %s not found", id)
-
+	if len(nodes) == 0 || err == sql.ErrNoRows {
+		return Node{}, fmt.Errorf("node %s not found", id)
 	}
-
-	return node, nil
+	return nodes[0], nil
 }
 
 // InsertNode inserts a node into the database
@@ -171,7 +158,8 @@ func InsertNode(node Node) (int, error) {
 		return -1, util.LogError(err)
 	}
 
-	stmt, err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (id,test_net,server,local_id,ip,label,abs_num) VALUES (?,?,?,?,?,?,?)", NodesTable))
+	stmt, err := tx.Prepare(fmt.Sprintf("INSERT INTO %s (%s) "+
+		" VALUES (?,?,?,?,?,?,?,?,?,?)", NodesTable, selectFieldStr))
 
 	if err != nil {
 		return -1, util.LogError(err)
@@ -179,9 +167,15 @@ func InsertNode(node Node) (int, error) {
 
 	defer stmt.Close()
 
-	res, err := stmt.Exec(node.ID, node.TestNetID, node.Server, node.LocalID, node.IP, node.Label, node.AbsoluteNum)
+	rawNodeMapping, err := json.Marshal(node.PortMappings)
 	if err != nil {
-		return -1, nil
+		return -1, util.LogError(err)
+	}
+
+	res, err := stmt.Exec(node.ID, node.TestNetID, node.Server, node.LocalID, node.IP, node.Label,
+		node.AbsoluteNum, node.Image, node.Protocol, rawNodeMapping)
+	if err != nil {
+		return -1, util.LogError(err)
 	}
 
 	tx.Commit()

@@ -1,20 +1,41 @@
 [node]
 networkMode={{{networkMode}}}
 identity={{{identity}}}
+timer="QuartzTimer"
 networkInterface="0.0.0.0"
 port=9000
 advertisedPort=9000
 peers={{{peers}}}
 
-[sim]
-numValidators={{validators}}
-numNodes={{{numNodes}}}
+[interop]
+active = false
+inputFile = "interopDepositsAndKeys.json"
+
+[deposit]
+# normal, test, simulation
+# "test" pre-production
+# "simulation" to run a simulation of deposits with ganache-cli, if a inputFile is included the file will replay the deposits
+# "normal" production, must include contractAddr and nodeUrl
+mode = "test"
+inputFile = "validator_test_data.json"
+numValidators = 16
+numNodes = 1
+contractAddr = "0x77f7bED277449F51505a4C54550B074030d989bC"
+nodeUrl = "http://localhost:7545"
 
 [output]
+logPath = "."
+logFile = "artemis.log"
 outputFile = "{{{outputFile}}}"
 providerType = "{{{providerType}}}"
-events = [ "TimeSeriesRecord" ]
+events = [ "TimeSeriesRecord", "Eth2Genesis", "Deposit" ]
 formatted = false
+
+[output.fields]
+TimeSeriesRecord = ["date", "index", "slot", "epoch", "block_root", "block_body", "lastFinalizedBlockRoot", "lastFinalizedStateRoot", "block_parent_root", "validators_size", "validators", "lastJustifiedBlockRoot", "lastJustifiedStateRoot"]
+Eth2Genesis = ["deposit_root", "deposit_count"]
+Deposit = ["pubkey", "withdrawal_credentials", "proof_of_possession", "amount", "merkle_tree_index"]
+DepositSimulation = ["secp", "bls", "deposit_data", "events"]
 
 {{{constants}}}
 

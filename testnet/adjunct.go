@@ -34,3 +34,13 @@ type Adjunct struct {
 	BuildState *state.BuildState //ptr to the main one
 	LDD        *db.DeploymentDetails
 }
+
+// GetSCNodes gets all of the sidecar nodes with the same index
+func (adj *Adjunct) GetSCNodes() []ssh.Node {
+	return adj.Main.GetSSHNodes(false, true, adj.Index)
+}
+
+// GetNewSCNodes gets all of the new sidecar nodes with the same index
+func (adj *Adjunct) GetNewSCNodes() []ssh.Node {
+	return adj.Main.GetSSHNodes(true, true, adj.Index)
+}

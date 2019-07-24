@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 // Package ssh contains abstractions which manage SSH connections for the user,
@@ -77,6 +77,9 @@ type Client interface {
 	// This is useful if you are starting a persistent process inside a container.
 	// Also flags the session as interactive and sets up a virtual tty.
 	DockerExecdit(node Node, command string) (string, error)
+
+	//DockerRunMainDaemon should be used to start the main daemon process
+	DockerRunMainDaemon(node Node, command string) error
 
 	// DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs.
 	// Should only be used for the blockchain process.
@@ -148,7 +151,7 @@ func (sshClient *client) getSession() (*Session, error) {
 
 	client, err := sshConnect(sshClient.host)
 	for err != nil && (strings.Contains(err.Error(), "connection reset by peer") || strings.Contains(err.Error(), "EOF")) {
-		log.Println(err)
+		log.WithFields(log.Fields{"error": err}).Error("error connecting to remote host,retrying once")
 		time.Sleep(50 * time.Millisecond)
 		client, err = sshConnect(sshClient.host)
 	}
@@ -205,7 +208,7 @@ func (sshClient *client) Run(command string) (string, error) {
 	if err != nil {
 		return "", util.LogError(err)
 	}
-	log.WithFields(log.Fields{"host": sshClient.host, "command": command}).Debug("executing command")
+	log.WithFields(log.Fields{"host": sshClient.host, "command": command}).Trace("executing command")
 
 	bs := state.GetBuildStateByServerID(sshClient.serverID)
 	defer session.Close()
@@ -241,7 +244,7 @@ func (sshClient *client) KeepTryRun(command string) (string, error) {
 			break
 		}
 	}
-	return res, err
+	return res, util.LogError(err)
 }
 
 // DockerExec executes a command inside of a node
@@ -252,7 +255,7 @@ func (sshClient *client) DockerExec(node Node, command string) (string, error) {
 // DockerCp copies a file on a remote machine from source to the dest in the node
 func (sshClient *client) DockerCp(node Node, source string, dest string) error {
 	_, err := sshClient.Run(fmt.Sprintf("docker cp %s %s:%s", source, node.GetNodeName(), dest))
-	return err
+	return util.LogError(err)
 }
 
 // KeepTryDockerExec is like KeepTryRun for nodes
@@ -267,7 +270,7 @@ func (sshClient *client) KeepTryDockerExecAll(node Node, commands ...string) ([]
 	for _, command := range commands {
 		res, err := sshClient.KeepTryRun(fmt.Sprintf("docker exec %s %s", node.GetNodeName(), command))
 		if err != nil {
-			return nil, err
+			return nil, util.LogError(err)
 		}
 		out = append(out, res)
 	}
@@ -291,29 +294,32 @@ func (sshClient *client) DockerExecdit(node Node, command string) (string, error
 
 func (sshClient *client) logSanitizeAndStore(node Node, command string) {
 	if strings.Count(command, "'") != strings.Count(command, "\\'") {
-		panic("DockerExecdLog commands cannot contain unescaped ' characters")
+		log.Panic("DockerExecdLog commands cannot contain unescaped ' characters")
 	}
 	bs := state.GetBuildStateByServerID(sshClient.serverID)
 	bs.Set(fmt.Sprintf("%d", node.GetAbsoluteNumber()), util.Command{Cmdline: command, ServerID: sshClient.serverID, Node: node.GetRelativeNumber()})
 }
 
+// DockerRunMainDaemon should be used to start the main daemon process
+func (sshClient *client) DockerRunMainDaemon(node Node, command string) error {
+	sshClient.logSanitizeAndStore(node, command)
+	return sshClient.DockerExecdLog(node, command)
+}
+
 // DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs.
 // Should only be used for the blockchain process.
 func (sshClient *client) DockerExecdLog(node Node, command string) error {
-	sshClient.logSanitizeAndStore(node, command)
-
 	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s bash -c '%s 2>&1 > %s'", node.GetNodeName(),
 		command, conf.DockerOutputFile))
-	return err
+	return util.LogError(err)
 }
 
 // DockerExecdLogAppend will cause the stdout and stderr of the command to be stored in the logs.
 // Should only be used for the blockchain process. Will append to existing logs.
 func (sshClient *client) DockerExecdLogAppend(node Node, command string) error {
-	sshClient.logSanitizeAndStore(node, command)
 	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s bash -c '%s 2>&1 >> %s'", node.GetNodeName(),
 		command, conf.DockerOutputFile))
-	return err
+	return util.LogError(err)
 }
 
 // DockerRead will read a file on a node, if lines > -1 then

@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 //Package docker provides a quick naive interface to Docker calls over ssh
@@ -22,23 +22,26 @@ package docker
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"strings"
 )
 
-var conf *util.Config
+var conf = util.GetConfig()
 
-func init() {
-	conf = util.GetConfig()
+// KillNode kills a single node by index on a server
+func KillNode(client ssh.Client, node int) error {
+	_, err := client.Run(fmt.Sprintf("docker rm -f %s%d", conf.NodePrefix, node))
+	return err
 }
 
-// Kill kills a single node by index on a server
+//Kill kills a node and all of its sidecars
 func Kill(client ssh.Client, node int) error {
-	_, err := client.Run(fmt.Sprintf("docker rm -f %s%d", conf.NodePrefix, node))
+	_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s%d\")", conf.NodePrefix, node))
 	return err
 }
 
@@ -120,15 +123,17 @@ func dockerRunCmd(c Container) (string, error) {
 		command += fmt.Sprintf(" --cpus %s", c.GetResources().Cpus)
 	}
 
-	if c.GetResources().Volumes != nil {
+	if c.GetResources().Volumes != nil && conf.EnableDockerVolumes {
 		for _, volume := range c.GetResources().Volumes {
 			command += fmt.Sprintf(" -v %s", volume)
 		}
 	}
 
-	ports := c.GetPorts()
-	for _, port := range ports {
-		command += fmt.Sprintf(" -p %s", port)
+	if conf.EnablePortForwarding {
+		ports := c.GetPorts()
+		for _, port := range ports {
+			command += fmt.Sprintf(" -p %s", port)
+		}
 	}
 
 	if !c.GetResources().NoMemoryLimits() {
@@ -165,7 +170,7 @@ func Run(tn *testnet.TestNet, serverID int, container Container) error {
 	return nil
 }
 
-func serviceDockerRunCmd(network string, ip string, name string, env map[string]string, volumes []string, ports []string, image string) string {
+func serviceDockerRunCmd(network string, ip string, name string, env map[string]string, volumes []string, ports []string, image string, cmd string) string {
 	envFlags := ""
 	for k, v := range env {
 		envFlags += fmt.Sprintf("-e \"%s=%s\" ", k, v)
@@ -176,14 +181,20 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 		ipFlag = fmt.Sprintf("--ip %s", ip)
 	}
 	volumestr := ""
-	for _, vol := range volumes {
-		volumestr += fmt.Sprintf("-v %s ", vol)
+	if conf.EnableDockerVolumes {
+		for _, vol := range volumes {
+			volumestr += fmt.Sprintf("-v %s ", vol)
+		}
 	}
+
 	portstr := ""
-	for _, port := range ports {
-		portstr += fmt.Sprintf("-p %s ", port)
+	if conf.EnablePortForwarding {
+		for _, port := range ports {
+			portstr += fmt.Sprintf("-p %s ", port)
+		}
 	}
-	return fmt.Sprintf("docker run -itd --network %s %s --hostname %s --name %s %s %s %s %s",
+
+	return fmt.Sprintf("docker run -itd --network %s %s --hostname %s --name %s %s %s %s %s %s",
 		network,
 		ipFlag,
 		name,
@@ -191,22 +202,29 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 		envFlags,
 		volumestr,
 		portstr,
-		image)
+		image,
+		cmd)
 }
 
 // StopServices stops all services and remove the service network from a server
 func StopServices(tn *testnet.TestNet) error {
 	return helpers.AllServerExecCon(tn, func(client ssh.Client, _ *db.Server) error {
 		_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)", conf.ServicePrefix))
-		log.WithFields(log.Fields{"error": err}).Info("no service containers to remove")
+		if err != nil {
+			log.WithFields(log.Fields{"error": err}).Info("no service containers to remove")
+		}
+
 		_, err = client.Run("docker network rm " + conf.ServiceNetworkName)
-		log.WithFields(log.Fields{"error": err}).Info("no service network to remove")
+		if err != nil {
+			log.WithFields(log.Fields{"error": err}).Info("no service network to remove")
+		}
+
 		return nil
 	})
 }
 
 // StartServices creates the service network and starts all the services on a server
-func StartServices(tn *testnet.TestNet, services []helpers.Service) error {
+func StartServices(tn *testnet.TestNet, servs []services.Service) error {
 	gateway, subnet, err := util.GetServiceNetwork()
 	if err != nil {
 		return util.LogError(err)
@@ -216,12 +234,12 @@ func StartServices(tn *testnet.TestNet, services []helpers.Service) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	ips, err := helpers.GetServiceIps(services)
+	ips, err := services.GetServiceIps(servs)
 	if err != nil {
 		return util.LogError(err)
 	}
 
-	for i, service := range services {
+	for i, service := range servs {
 		net := conf.ServiceNetworkName
 		ip := ips[service.GetName()]
 		if len(service.GetNetwork()) != 0 {
@@ -229,12 +247,16 @@ func StartServices(tn *testnet.TestNet, services []helpers.Service) error {
 			ip = ""
 		}
 		err = service.Prepare(client, tn)
+		if err != nil {
+			return util.LogError(err)
+		}
 		_, err = client.KeepTryRun(serviceDockerRunCmd(net, ip,
 			fmt.Sprintf("%s%d", conf.ServicePrefix, i),
 			service.GetEnv(),
 			service.GetVolumes(),
 			service.GetPorts(),
-			service.GetImage()))
+			service.GetImage(),
+			service.GetCommand()))
 		if err != nil {
 			return util.LogError(err)
 		}

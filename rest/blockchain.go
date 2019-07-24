@@ -23,9 +23,9 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/manager"
+	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/status"
 	"github.com/whiteblock/genesis/util"
@@ -78,25 +78,21 @@ func getConfFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, util.LogError(err).Error(), 400)
 		return
 	}
-	if strings.Contains(params["blockchain"], "github.com/whiteblock/genesis") || strings.Contains(params["file"], "github.com/whiteblock/genesis") {
+	if strings.Contains(params["blockchain"], "..") || strings.Contains(params["file"], "./") {
 		http.Error(w, "relative path operators not allowed", 401)
-		return
-	}
-	if !strings.HasSuffix(params["file"], "mustache") && !strings.HasSuffix(params["file"], "json") {
-		http.Error(w, "Cannot read non mustache/json files", 403)
 		return
 	}
 	path := "./resources/" + params["blockchain"] + "/" + params["file"]
 
 	log.WithFields(log.Fields{"path": path, "blockchain": params["blockchain"], "file": params["file"]}).Debug("got the file path")
 
-	fmt.Println(path)
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
+		log.WithFields(log.Fields{"path": path, "error": err}).Error("error reading the requested config")
 		http.Error(w, "File not found", 404)
 		return
 	}
-	json.NewEncoder(w).Encode(string(data))
+	util.LogError(json.NewEncoder(w).Encode(string(data)))
 }
 
 func getBlockChainParams(w http.ResponseWriter, r *http.Request) {

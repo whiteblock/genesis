@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package deploy
@@ -21,17 +21,17 @@ package deploy
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"strings"
+
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/blockchains/helpers"
-	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/ssh"
-	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/status"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"io/ioutil"
-	"strings"
 )
 
 /*
@@ -78,7 +78,7 @@ func alwaysRunFinalize(tn *testnet.TestNet) {
 	copy(newNodes, tn.NewlyBuiltNodes)
 	tn.BuildState.Defer(func() {
 		for i, node := range newNodes {
-			err := finalizeNode(node, tn.LDD, tn.BuildState, i)
+			err := finalizeNode(node, tn.LDD, i)
 			if err != nil {
 				tn.BuildState.ReportError(err)
 			}
@@ -111,7 +111,7 @@ func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 		if err != nil {
 			return util.LogError(err)
 		}
-		_, err = client.DockerExec(node, fmt.Sprintf(`bash -c 'echo "%s" >> /root/.ssh/authorized_keys'`, pubKey))
+		_, err = client.DockerExec(node, fmt.Sprintf(`sh -c 'echo "%s" >> /root/.ssh/authorized_keys'`, pubKey))
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -164,7 +164,7 @@ func declareNode(node *db.Node, tn *testnet.TestNet) error {
 	return err
 }
 
-func finalizeNode(node db.Node, details *db.DeploymentDetails, buildState *state.BuildState, absNum int) error {
+func finalizeNode(node db.Node, details *db.DeploymentDetails, absNum int) error {
 	if conf.DisableNibbler {
 		log.Info("skipping nibbler setup as it is disabled")
 		return nil

@@ -1,0 +1,37 @@
+# https://cloud.google.com/cloud-build/docs/speeding-up-builds
+# https://cloud.google.com/cloud-build/docs/configuring-builds/substitute-variable-values
+substitutions:
+  _BINARY: genesis
+  _PROJECT: genesis
+  _LEGACY_IMAGE: 'gcr.io/wb-genesis/bitbucket.org/whiteblockio/genesis'
+  _IMAGE: 'gcr.io/wb-genesis/genesis'
+timeout: '300s'
+steps:
+  # allow these steps to fail, they try to pull cache first
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args: ['-c', 'docker pull $_IMAGE:$BRANCH_NAME || true' ]
+  # build final docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', '$_IMAGE:$TAG_NAME',
+      '-t', '$_LEGACY_IMAGE:$TAG_NAME',
+      '--cache-from', '$_IMAGE:$BRANCH_NAME',
+      '.'
+    ]
+  # push docker image tag(s) one branch, one immutable
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', '$_IMAGE:$TAG_NAME' ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', '$_LEGACY_IMAGE:$TAG_NAME' ]
+  # create container based off image (but don't run)
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'create', '--name', 'output', '$_IMAGE:$TAG_NAME' ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'cp', 'output:/$_PROJECT/$_BINARY', '$_BINARY' ]
+  # copy binary to public bucket
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: [ 'cp', '$_BINARY', 'gs://genesis-public/$_PROJECT/$TAG_NAME/bin/linux/amd64/$_BINARY' ]
+
+images: [ '$_IMAGE:$TAG_NAME', '$_LEGACY_IMAGE:$TAG_NAME' ]

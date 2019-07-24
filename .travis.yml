@@ -1,20 +1,25 @@
 language: go
 go_import_path: github.com/whiteblock/genesis
 sudo: false
-matrix:
-  include:
-    - os: linux
-      dist: xenial
-      sudo: required
-      go: 1.12.x
-      install:
-        - sudo apt-get install golint -y
-      before_script:
-        - go get github.com/whiteblock/genesis
-      script:
-        - go test github.com/whiteblock/genesis/...
-        - golint github.com/whiteblock/genesis/...
-        - go vet github.com/whiteblock/genesis/...
-        - go test github.com/whiteblock/genesis/... -race -coverprofile=coverage.txt -covermode=atomic
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
+env:
+   - GOPATH=/home/travis/gopath
+#  - GO111MODULE=on
+
+os: linux
+dist: xenial
+sudo: required
+go: 1.12.x
+
+before_install:
+  - make install-mock
+  - make mocks
+  - go get -u golang.org/x/lint/golint
+
+script: 
+  - golint -set_exit_status $(go list ./... | grep -v mocks)
+  - make vet
+  - make test
+  - go get ./...
+  - go test ./... -coverprofile=coverage.txt -covermode=atomic
+
+after_success: bash <(curl -s https://codecov.io/bash)

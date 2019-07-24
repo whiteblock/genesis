@@ -19,7 +19,6 @@
 package util
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"testing"
@@ -232,7 +231,6 @@ func TestGenerateDependentMeshNetwork(t *testing.T) {
 	for i, tt := range test {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			out, _ := GenerateDependentMeshNetwork(tt.nodes, tt.conns)
-			fmt.Println(out)
 			for n := range out {
 				for j := range out[n] {
 					if out[n][j] >= n {

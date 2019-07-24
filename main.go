@@ -27,6 +27,7 @@ import (
 var conf *util.Config
 
 func main() {
+	util.DisplayBanner()
 	conf = util.GetConfig()
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	rest.StartServer()

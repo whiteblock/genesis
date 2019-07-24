@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 // Package state provides utilities to manage state
@@ -70,6 +70,10 @@ type BuildState struct {
 
 	BuildProgress uint64
 	BuildTotal    uint64
+
+	SideCars        uint64 //The number of side cars
+	SideCarProgress uint64
+	SideCarTotal    uint64
 }
 
 //NewBuildState creates a new build state for the given servers with the given buildID
@@ -102,6 +106,8 @@ func NewBuildState(servers []int, buildID string) *BuildState {
 	out.DeployTotal = 0
 	out.BuildProgress = 0
 	out.BuildTotal = 1
+	out.SideCarProgress = 0
+	out.SideCarTotal = 1
 
 	err := os.MkdirAll("/tmp/"+buildID, 0755)
 	if err != nil {
@@ -145,11 +151,9 @@ func (bs *BuildState) Freeze() error {
 	log.WithFields(log.Fields{"build": bs.BuildID}).Info("freezing the build")
 
 	if atomic.LoadInt32(&bs.frozen) != 0 {
-		bs.mutex.Unlock()
 		return fmt.Errorf("already frozen")
 	}
 	if atomic.LoadInt32(&bs.stopping) != 0 {
-
 		return fmt.Errorf("build terminating")
 	}
 
@@ -203,6 +207,7 @@ func (bs *BuildState) DoneBuilding() {
 			log.WithFields(log.Fields{"build": bs.BuildID}).Error("couldn't store the build")
 		}
 	} else {
+		log.WithFields(log.Fields{"build": bs.BuildID}).Debug("running the on error function calls.")
 		bs.extraMux.RLock()
 		wg := sync.WaitGroup{} //Wait for completion, to prevent a potential race
 		for i := range bs.errorCleanupFuncs {
@@ -215,18 +220,21 @@ func (bs *BuildState) DoneBuilding() {
 		bs.extraMux.RUnlock()
 		wg.Wait()
 	}
+	atomic.StoreUint64(&bs.DeployProgress, atomic.LoadUint64(&bs.DeployTotal))
+	atomic.StoreUint64(&bs.BuildProgress, atomic.LoadUint64(&bs.BuildTotal))
+	atomic.StoreUint64(&bs.SideCarProgress, atomic.LoadUint64(&bs.SideCarTotal))
+
 	bs.asyncWaiter.Wait() //Wait for the async calls to complete
 
 	bs.mutex.Lock()
-	atomic.StoreUint64(&bs.BuildProgress, bs.BuildTotal)
 	bs.BuildStage = "Finished"
 	bs.mutex.Unlock()
-
+	bs.errorCleanupFuncs = []func(){}
 	atomic.StoreInt32(&bs.building, 0)
 	atomic.StoreInt32(&bs.stopping, 0)
 	os.RemoveAll("/tmp/" + bs.BuildID)
+	log.WithFields(log.Fields{"build": bs.BuildID}).Debug("running the defered functions")
 	for _, fn := range bs.defers {
-		log.WithFields(log.Fields{"build": bs.BuildID}).Debug("running the defered functions")
 		go fn() //No need to wait to confirm completion
 	}
 }
@@ -323,6 +331,25 @@ func (bs *BuildState) GetExt(key string) (interface{}, bool) {
 	return res, ok
 }
 
+//GetExtP gets the value for key and puts it in the object that out is pointing to, from the exposed store
+func (bs *BuildState) GetExtP(key string, out interface{}) bool {
+	tmp, ok := bs.GetExt(key)
+	if !ok {
+		return false
+	}
+	tmpBytes, err := json.Marshal(tmp)
+	if err != nil {
+		log.WithFields(log.Fields{"build": bs.BuildID, "error": err}).Warn("couldn't marshal the value")
+		return false
+	}
+	err = json.Unmarshal(tmpBytes, out)
+	if err != nil {
+		log.WithFields(log.Fields{"build": bs.BuildID, "error": err}).Warn("couldn't unmarshal the value")
+		return false
+	}
+	return true
+}
+
 // GetExtExtras gets the entire external state store as JSON
 func (bs *BuildState) GetExtExtras() ([]byte, error) {
 	bs.extraMux.RLock()
@@ -353,12 +380,16 @@ func (bs *BuildState) GetP(key string, out interface{}) bool {
 	}
 	tmpBytes, err := json.Marshal(tmp)
 	if err != nil {
-		log.WithFields(log.Fields{"build": bs.BuildID, "error": err}).Warn("couldn't marshal the value")
+		_, file, line, _ := runtime.Caller(1)
+		log.WithFields(log.Fields{"build": bs.BuildID,
+			"error": err, "file": file, "line": line}).Warn("couldn't marshal the value")
 		return false
 	}
 	err = json.Unmarshal(tmpBytes, out)
 	if err != nil {
-		log.WithFields(log.Fields{"build": bs.BuildID, "error": err}).Warn("couldn't unmarshal the value")
+		_, file, line, _ := runtime.Caller(1)
+		log.WithFields(log.Fields{"build": bs.BuildID,
+			"error": err, "file": file, "line": line}).Warn("couldn't unmarshal the value")
 		return false
 	}
 	return true
@@ -378,8 +409,7 @@ func (bs *BuildState) Write(file string, data string) error {
 	bs.files = append(bs.files, file)
 	bs.mutex.Unlock()
 	filepath := "/tmp/" + bs.BuildID + "/" + file
-	err := ioutil.WriteFile(filepath, []byte(data), 0664)
-	return err
+	return ioutil.WriteFile(filepath, []byte(data), 0664)
 }
 
 // Defer adds a function to be executed asynchronously after the build is completed.
@@ -427,6 +457,29 @@ func (bs *BuildState) IncrementBuildProgress() {
 	atomic.AddUint64(&bs.BuildProgress, 1)
 }
 
+// FinishMainBuild sets the main build as finished, and signals the start of the
+// side car build
+func (bs *BuildState) FinishMainBuild() {
+	atomic.StoreUint64(&bs.BuildProgress, atomic.LoadUint64(&bs.BuildTotal)-1)
+}
+
+// SetSidecarSteps sets the number of steps in the sidecar specific
+// build process. Must be equivalent to the number of times IncrementBuildProgress()
+// will be called.
+func (bs *BuildState) SetSidecarSteps(steps int) {
+	atomic.StoreUint64(&bs.SideCarTotal, uint64(steps))
+}
+
+// SetSidecars sets the number of sidecars
+func (bs *BuildState) SetSidecars(sidecars int) {
+	atomic.StoreUint64(&bs.SideCars, uint64(sidecars))
+}
+
+// IncrementSideCarProgress increments the sidecar build progress by one step.
+func (bs *BuildState) IncrementSideCarProgress() {
+	atomic.AddUint64(&bs.SideCarProgress, 1)
+}
+
 // GetProgress gets the progress as a percentage, within the range
 // 0.0% - 100.0%
 func (bs *BuildState) GetProgress() float64 {
@@ -434,6 +487,8 @@ func (bs *BuildState) GetProgress() float64 {
 	dt := atomic.LoadUint64(&bs.DeployTotal)
 	bp := atomic.LoadUint64(&bs.BuildProgress)
 	bt := atomic.LoadUint64(&bs.BuildTotal)
+	sp := atomic.LoadUint64(&bs.SideCarProgress)
+	st := atomic.LoadUint64(&bs.SideCarTotal)
 
 	var out float64
 	if dp == 0 || dt == 0 {
@@ -447,10 +502,28 @@ func (bs *BuildState) GetProgress() float64 {
 	if bt == 0 {
 		return out
 	}
-	out += (float64(bp) / float64(bt)) * 75.0
+	buildTotalPercentage := 75.0
+	if bs.SideCars > 5 {
+		buildTotalPercentage -= 25.0
+	} else {
+		buildTotalPercentage -= float64(bs.SideCars) * 5.0
+	}
+
+	out += (float64(bp) / float64(bt)) * buildTotalPercentage
+
+	if st == 0 || bs.SideCars == 0 {
+		if !bs.Done() && out >= 100.0 {
+			out = 99.99 //Out cannot be 100% unless the build is completed
+		}
+		return out
+	}
+
+	out += (float64(sp) / float64(st)) * (75.0 - buildTotalPercentage)
+
 	if !bs.Done() && out >= 100.0 {
 		out = 99.99 //Out cannot be 100% unless the build is completed
 	}
+
 	return out
 }
 

@@ -20,64 +20,35 @@ package manager
 
 import (
 	"fmt"
-	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
-	"github.com/whiteblock/genesis/status"
+	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 )
 
 // DelNodes simply attempts to remove the given number of nodes from the
 // network.
 func DelNodes(num int, testnetID string) error {
-	//buildState := state.GetBuildStateByServerId(details.Servers[0])
-	//defer buildState.DoneBuilding()
-
-	nodes, err := db.GetAllNodesByTestNet(testnetID)
+	tn, err := testnet.RestoreTestNet(testnetID)
 	if err != nil {
-		//buildState.ReportError(err)
 		return util.LogError(err)
 	}
-
-	if num >= len(nodes) {
-		err = fmt.Errorf("can't remove more than all the nodes in the network")
-		//buildState.ReportError(err)
-		return err
+	if num >= len(tn.Nodes) {
+		return fmt.Errorf("can't remove more than all the nodes in the network")
 	}
+	defer tn.FinishedBuilding()
 
-	servers, err := status.GetLatestServers(testnetID)
-	if err != nil {
-		//buildState.ReportError(err)
-		return util.LogError(err)
-	}
-
-	toRemove := num
-	for _, server := range servers {
-		client, err := status.GetClient(server.ID)
+	for i := len(tn.Nodes) - 1; i >= (len(tn.Nodes) - num); i-- {
+		node := tn.Nodes[i]
+		client := tn.Clients[node.GetServerID()]
+		err = docker.Kill(client, node.GetRelativeNumber())
 		if err != nil {
-			//buildState.ReportError(err)
 			return util.LogError(err)
 		}
-		for i := len(server.Ips); i > 0; i++ {
-			err = docker.Kill(client, i)
-			if err != nil {
-				//buildState.ReportError(err)
-				return util.LogError(err)
-			}
-
-			err = docker.NetworkDestroy(client, i)
-			if err != nil {
-				//buildState.ReportError(err)
-				return util.LogError(err)
-			}
-
-			toRemove--
-			if toRemove == 0 {
-				break
-			}
-		}
-		if toRemove == 0 {
-			break
+		err = docker.NetworkDestroy(client, node.GetRelativeNumber())
+		if err != nil {
+			return util.LogError(err)
 		}
 	}
+	tn.Nodes = tn.Nodes[:(len(tn.Nodes) - num)]
 	return nil
 }

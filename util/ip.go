@@ -3,24 +3,24 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package util
 
 import (
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net"
 )
 
@@ -52,7 +52,7 @@ func GetNodeIP(server int, network int, index int) (string, error) {
 	ip += uint32(server) << serverShift
 	//set cluster bits
 	cluster := uint32(network)
-	//fmt.Printf("CLUSTER IS %d\n",cluster)
+	log.WithFields(log.Fields{"cluster": cluster}).Trace("calculated the node cluster")
 	ip += cluster << clusterShift
 	//set the node bits
 
@@ -154,8 +154,7 @@ func Inc(ip net.IP) {
 func GetServiceNetwork() (string, string, error) {
 	ip, ipnet, err := net.ParseCIDR(conf.ServiceNetwork)
 	if err != nil {
-		log.Println(err)
-		return "", "", err
+		return "", "", LogError(err)
 	}
 	return ip.String(), ipnet.String(), nil
 }

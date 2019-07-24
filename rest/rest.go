@@ -75,7 +75,7 @@ func StartServer() {
 
 	router.HandleFunc("/nodes/{id}/{num}", delNodes).Methods("DELETE") //Completely remove x nodes
 
-	router.HandleFunc("/nodes/restart/{testnetID}/{num}", restartNode).Methods("POST")
+	router.HandleFunc("/nodes/restart/{id}/{num}", restartNode).Methods("POST")
 
 	router.HandleFunc("/nodes/raise/{testnetID}/{node}/{signal}", signalNode).Methods("POST")
 
@@ -120,7 +120,7 @@ func StartServer() {
 
 	router.HandleFunc("/blockchains", getAllSupportedBlockchains).Methods("GET")
 	log.WithFields(log.Fields{"socket": conf.Listen}).Info("listening for requests")
-	http.ListenAndServe(conf.Listen, removeTrailingSlash(router))
+	log.Fatal(http.ListenAndServe(conf.Listen, removeTrailingSlash(router)))
 }
 
 func removeTrailingSlash(next http.Handler) http.Handler {
@@ -219,12 +219,12 @@ func thawBuild(w http.ResponseWriter, r *http.Request) {
 func getPreviousBuild(w http.ResponseWriter, r *http.Request) {
 
 	jwt, err := util.ExtractJwt(r)
-	if err != nil {
+	if err != nil && conf.RequireAuth {
 		http.Error(w, util.LogError(err).Error(), 403)
 		return
 	}
 	kid, err := util.GetKidFromJwt(jwt)
-	if err != nil {
+	if err != nil && conf.RequireAuth {
 		http.Error(w, util.LogError(err).Error(), 403)
 	}
 	build, err := db.GetLastBuildByKid(kid)

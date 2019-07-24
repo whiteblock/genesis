@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<aion>
+        <mode>aion</mode>
+        <id>{{{peerID}}}</id>
+        <api>
+                <rpc active="true" ip="{{{ipAddr}}}" port="8545">
+                        <cors-enabled>{{{corsEnabled}}}</cors-enabled>
+                        <apis-enabled>web3,eth,net,personal,stratum</apis-enabled>
+                </rpc>
+                <java active="true" ip="0.0.0.0" port="8547">
+                        <secure-connect>{{{secureConnect}}}</secure-connect>
+                </java>
+                <nrg-recommendation>
+                        <default>{{{nrgDefault}}}</default>
+                        <max>{{{nrgMax}}}</max>
+                        <oracle-enabled>{{{oracleEnabled}}}</oracle-enabled>
+                </nrg-recommendation>
+        </api>
+        <net>
+                <nodes>
+                {{{nodes}}}
+                </nodes>
+                <p2p>
+                        <ip>{{{ipAddr}}}</ip>
+                        <port>30303</port>
+                        <discover>false</discover>
+                        <max-temp-nodes>128</max-temp-nodes>
+                        <max-active-nodes>128</max-active-nodes>
+                </p2p>
+        </net>
+        <sync>
+                <blocks-queue-max>{{{blocksQueueMax}}}</blocks-queue-max>
+                <show-status>{{{showStatus}}}</show-status>
+                <show-statistics>{{{showStatistics}}}</show-statistics>
+                <compact enabled="{{{compactEnabled}}}" slow-import="{{{slowImport}}}" frequency="{{{frequency}}}"></compact>
+        </sync>
+        <consensus>
+                <mining>{{{mining}}}</mining>
+
+                <miner-address>{{{minerAddress}}}</miner-address>
+
+                <cpu-mine-threads>{{{mineThreads}}}</cpu-mine-threads>
+                <extra-data>{{{extraData}}}</extra-data>
+                <nrg-strategy>
+                        <clamped-decay upper-bound="{{{clampedDecayUB}}}" lower-bound="{{{clampedDecayLB}}}"></clamped-decay>
+                </nrg-strategy>
+        </consensus>
+        <db>
+                <path>{{{database}}}</path>
+                <check_integrity>{{{checkIntegrity}}}</check_integrity>
+                <state-storage>{{{stateStorage}}}</state-storage>
+                <vendor>{{{vendor}}}</vendor>
+                <enable_db_compression>{{{dbCompression}}}</enable_db_compression>
+        </db>
+        <log>
+                <log-file>{{{logFile}}}</log-file>
+                <log-path>{{{logPath}}}</log-path>
+                <GEN>{{{genLogs}}}</GEN>
+                <VM>{{{vmLogs}}}</VM>
+                <API>{{{apiLogs}}}</API>
+                <SYNC>{{{syncLogs}}}</SYNC>
+                <DB>{{{dbLogs}}}</DB>
+                <CONS>{{{consLogs}}}</CONS>
+                <P2P>{{{p2pLogs}}}</P2P>
+        </log>
+        <tx>
+                <cacheMax>{{{cacheMax}}}</cacheMax>
+        </tx>
+</aion>

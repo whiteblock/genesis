@@ -50,7 +50,7 @@ func RemoveAllOutages(client ssh.Client) error {
 		wg.Add(1)
 		go func(cmd string) {
 			defer wg.Done()
-			_, err = client.Run(fmt.Sprintf("sudo iptables -D %s", cmd))
+			_, err := client.Run(fmt.Sprintf("sudo iptables -D %s", cmd))
 			if err != nil {
 				log.Error(err)
 			}
@@ -156,6 +156,7 @@ func GetCutConnections(client ssh.Client) ([]Connection, error) {
 			return nil, util.LogError(err)
 		}
 		out = append(out, Connection{To: toNode, From: fromNode})
+		log.WithFields(log.Fields{"to": toNode, "from": fromNode}).Debug("found a disconnection")
 	}
 	return out, nil
 }

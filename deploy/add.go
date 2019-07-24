@@ -69,7 +69,7 @@ func AddNodes(tn *testnet.TestNet) error {
 
 		node := tn.AddNode(db.Node{
 			ID: nodeID, TestNetID: tn.TestNetID, Server: serverID,
-			LocalID: tn.Servers[serverIndex].Nodes, IP: nodeIP})
+			LocalID: tn.Servers[serverIndex].Nodes, IP: nodeIP, Protocol: tn.LDD.Blockchain})
 
 		tn.Servers[serverIndex].Nodes++
 

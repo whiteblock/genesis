@@ -1,11 +1,20 @@
 {
-    "extraAccounts":0,
+    "extraAccounts":40,
     "networkId":15468,
     "difficulty":100000,
     "initBalance":"100000000000000000000",
     "maxPeers":1000,
     "gasLimit":4000000,
+    "extraData":"0x3535353535353535353535353535353535353535353535353535353535353535",
+    "consensus":"clique",
+    "blockPeriodSeconds":2,
+    "epoch":30000,
+    "validators":1,
     "homesteadBlock":0,
-    "eip155Block":10,
-    "eip158Block":10
+    "eip155Block":0,
+    "eip158Block":0,
+    "mode":"default",
+    "verbosity":3,
+    "unlock":true,
+    "exposedAccounts":-1
 }

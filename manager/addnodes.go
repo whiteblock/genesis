@@ -20,9 +20,9 @@ package manager
 
 import (
 	"fmt"
-	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/deploy"
+	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
@@ -61,7 +61,7 @@ func AddNodes(details *db.DeploymentDetails, testnetID string) error {
 		}
 	}
 
-	if details.Nodes > conf.MaxNodes {
+	if len(tn.Nodes)+details.Nodes > conf.MaxNodes {
 		buildState.ReportError(fmt.Errorf("too many nodes"))
 		return fmt.Errorf("too many nodes")
 	}

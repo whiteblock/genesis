@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 // Package db manages persistent state and keeps track of previous and current builds.
@@ -28,18 +28,19 @@ import (
 	"os"
 )
 
-//ServerTable contains name of the server table
-const ServerTable = "servers"
+const (
+	//ServerTable contains name of the server table
+	ServerTable = "servers"
+	//NodesTable contains name of the nodes table
+	NodesTable = "nodes"
+	//BuildsTable contains name of the builds table
+	BuildsTable = "builds"
+)
 
-//NodesTable contains name of the nodes table
-const NodesTable = "nodes"
-
-//BuildsTable contains name of the builds table
-const BuildsTable = "builds"
-
-var conf = util.GetConfig()
-
-var db *sql.DB
+var (
+	conf = util.GetConfig()
+	db   *sql.DB
+)
 
 func init() {
 	var err error
@@ -85,7 +86,7 @@ func dbInit(dataLoc string) error {
 		"max INTEGER",
 		"name TEXT")
 
-	nodesSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s);",
+	nodesSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s,%s,%s, %s);",
 		NodesTable,
 		"id TEXT",
 		"abs_num INTEGER",
@@ -93,7 +94,10 @@ func dbInit(dataLoc string) error {
 		"server INTEGER",
 		"local_id INTEGER",
 		"ip TEXT NOT NULL",
-		"label TEXT")
+		"label TEXT",
+		"image TEXT",
+		"protocol TEXT",
+		"port_mappings TEXT")
 
 	buildSchema := fmt.Sprintf("CREATE TABLE %s (%s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s,%s, %s);",
 		BuildsTable,
@@ -144,13 +148,13 @@ func dbInit(dataLoc string) error {
 //insertLocalServers adds the default server(s) to the servers database, allowing immediate use of the application
 //without having to register a server
 func insertLocalServers() error {
+	log.WithField("host", conf.SSHHost).Warn("Creating initial server")
 	_, err := InsertServer("cloud",
 		Server{
 			Addr:     conf.SSHHost,
 			Nodes:    0,
 			Max:      conf.MaxNodes,
 			SubnetID: 1,
-			ID:       -1,
-			Ips:      []string{}})
+			ID:       -1})
 	return util.LogError(err)
 }

@@ -20,9 +20,9 @@ package orion
 
 import (
 	"fmt"
-	"github.com/whiteblock/genesis/blockchains/helpers"
-	"github.com/whiteblock/genesis/blockchains/registrar"
 	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
@@ -37,6 +37,9 @@ func init() {
 	conf = util.GetConfig()
 	registrar.RegisterSideCar(sidecar, registrar.SideCar{
 		Image: "gcr.io/whiteblock/orion:dev",
+		BuildStepsCalc: func(nodes int, _ int) int {
+			return 4 * nodes
+		},
 	})
 	registrar.RegisterBuildSideCar(sidecar, build)
 	registrar.RegisterAddSideCar(sidecar, add)
@@ -45,11 +48,13 @@ func init() {
 func build(tn *testnet.Adjunct) error {
 
 	helpers.AllNodeExecConSC(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error { //ignore err
+		defer tn.BuildState.IncrementSideCarProgress()
 		_, err := client.DockerExec(node, "mkdir -p /orion/data")
 		return err
 	})
 
 	err := helpers.CreateConfigsSC(tn, "/orion/data/orion.conf", func(node ssh.Node) ([]byte, error) {
+		defer tn.BuildState.IncrementSideCarProgress()
 		return makeNodeConfig(node)
 	})
 	if err != nil {
@@ -57,6 +62,7 @@ func build(tn *testnet.Adjunct) error {
 	}
 
 	err = helpers.AllNodeExecConSC(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
+		defer tn.BuildState.IncrementSideCarProgress()
 		_, err := client.DockerExec(node, "bash -c 'cd /orion/data && echo \"\" | orion -g nodeKey'")
 		return err
 	})
@@ -70,6 +76,7 @@ func build(tn *testnet.Adjunct) error {
 	tn.BuildState.SetExt("orion", ips)
 
 	return helpers.AllNodeExecConSC(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
+		defer tn.BuildState.IncrementSideCarProgress()
 		return client.DockerExecdLog(node, "orion /orion/data/orion.conf")
 	})
 }

@@ -22,9 +22,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/blockchains/helpers"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
+	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
@@ -37,33 +37,76 @@ func distributeNibbler(tn *testnet.TestNet) {
 		return
 	}
 	tn.BuildState.Async(func() {
-		nibbler, err := util.HTTPRequest("GET", conf.NibblerEndPoint, "")
-		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Error("failed to download nibbler")
-			return
-		}
-		err = tn.BuildState.Write("nibbler", string(nibbler))
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		err = helpers.CopyToAllNewNodes(tn, "nibbler", "/usr/local/bin/nibbler")
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-			_, err := client.DockerExec(node, "chmod +x /usr/local/bin/nibbler")
-			return err
-		})
-		if err != nil {
-			log.Error(err)
+		var err error
+		for i := uint(0); i < conf.NibblerRetries; i++ {
+			var nibbler []byte
+			nibbler, err = util.HTTPRequest("GET", conf.NibblerEndPoint, "")
+			if err != nil {
+				log.WithFields(log.Fields{"error": err, "attempt": i}).Error("failed to download nibbler. retrying...")
+				continue
+			}
+			if nibbler == nil || len(nibbler) == 0 {
+				log.WithFields(log.Fields{"error": err, "attempt": i}).Error("downloaded an empty nibbler")
+				continue
+			}
+
+			err = tn.BuildState.Write("nibbler", string(nibbler))
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+
+			err = helpers.CopyToAllNewNodesDR(tn, "nibbler", "/usr/local/bin/nibbler")
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+
+			err = helpers.AllNewNodeExecConDR(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+				_, err := client.DockerExec(node, "chmod +x /usr/local/bin/nibbler")
+				return err
+			})
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			break
 		}
 	})
 }
 
-func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface{}) error {
+func dockerBuild(tn *testnet.TestNet, contextDir string) error {
+	tn.BuildState.SetBuildStage("Building your custom image")
+	tag, err := util.GetUUIDString()
+	if err != nil {
+		return util.LogError(err)
+	}
+	imageName := fmt.Sprintf("%s:%s", tn.LDD.Blockchain, tag)
+	wg := sync.WaitGroup{}
+	for _, client := range tn.Clients {
+		wg.Add(1)
+		go func(client ssh.Client) {
+			defer wg.Done()
 
+			_, err := client.Run(fmt.Sprintf("docker build %s -t %s", contextDir, imageName))
+			tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
+			if err != nil {
+				tn.BuildState.ReportError(err)
+				return
+			}
+
+		}(client)
+	}
+	wg.Wait()
+	tn.UpdateAllImages(imageName)
+	return util.LogError(tn.BuildState.GetError())
+}
+
+func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface{}) error {
+	if !conf.EnableImageBuilding {
+		log.Warn("got a request to build an image, when it is disabled")
+		return fmt.Errorf("image building is disabled")
+	}
 	_, hasDockerfile := prebuild["dockerfile"] //Must be base64
 	if !hasDockerfile {
 		return fmt.Errorf("cannot build without being given a dockerfile")
@@ -78,35 +121,77 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		return util.LogError(err)
 	}
 
-	err = helpers.CopyAllToServers(tn, "Dockerfile", "/tmp/Dockerfile")
+	dir, err := util.GetUUIDString()
 	if err != nil {
 		return util.LogError(err)
 	}
 
-	tag, err := util.GetUUIDString()
+	err = helpers.AllServerExecCon(tn, func(client ssh.Client, _ *db.Server) error {
+		tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("rm -rf /tmp/%s/", dir)) })
+		_, err := client.Run(fmt.Sprintf("mkdir -p /tmp/%s/", dir))
+		return err
+	})
+
 	if err != nil {
 		return util.LogError(err)
 	}
 
-	tn.BuildState.SetBuildStage("Building your custom image")
-	imageName := fmt.Sprintf("%s:%s", tn.LDD.Blockchain, tag)
-	wg := sync.WaitGroup{}
-	for _, client := range tn.Clients {
-		wg.Add(1)
-		go func(client ssh.Client) {
-			defer wg.Done()
-
-			_, err := client.Run(fmt.Sprintf("docker build /tmp/ -t %s", imageName))
-			tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
-			if err != nil {
-				tn.BuildState.ReportError(err)
-				return
-			}
-
-		}(client)
+	err = helpers.CopyAllToServers(tn, "Dockerfile", fmt.Sprintf("/tmp/%s/Dockerfile", dir))
+	if err != nil {
+		return util.LogError(err)
 	}
-	wg.Wait()
-	return util.LogError(tn.BuildState.GetError())
+	return dockerBuild(tn, "/tmp"+dir)
+}
+
+func handleRepoBuild(tn *testnet.TestNet, prebuild map[string]interface{}) error {
+	if !conf.EnableImageBuilding {
+		log.Warn("got a request to build an image, when it is disabled")
+		return fmt.Errorf("image building is disabled")
+	}
+
+	iRepo, hasRepo := prebuild["repo"]
+	if !hasRepo {
+		return fmt.Errorf("cannot build without being given a repo")
+	}
+	repo, ok := iRepo.(string)
+	if !ok {
+		return fmt.Errorf("repo is not of type string")
+	}
+
+	dir, err := util.GetUUIDString()
+	if err != nil {
+		return util.LogError(err)
+	}
+	dir = fmt.Sprintf("/tmp/%s/", dir)
+
+	err = helpers.AllServerExecCon(tn, func(client ssh.Client, _ *db.Server) error {
+		tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("rm -rf %s", dir)) })
+		_, err := client.Run(fmt.Sprintf("mkdir %s", dir))
+		return err
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	err = helpers.AllServerExecCon(tn, func(client ssh.Client, _ *db.Server) error {
+		_, err := client.Run(fmt.Sprintf("git clone %s %s", repo, dir))
+		return err
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
+
+	_, givenBranch := prebuild["branch"]
+	if givenBranch {
+		err = helpers.AllServerExecCon(tn, func(client ssh.Client, _ *db.Server) error {
+			_, err := client.Run(fmt.Sprintf("sh -c 'cd %s && git checkout %v'", dir, prebuild["branch"]))
+			return err
+		})
+		if err != nil {
+			return util.LogError(err)
+		}
+	}
+	return dockerBuild(tn, dir)
 }
 
 func handleDockerAuth(tn *testnet.TestNet, auth map[string]interface{}) error {
@@ -149,10 +234,19 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 	//Handle docker build
 	dockerBuild, ok := prebuild["build"] //bool to see if a manual build was requested.
 	if ok && dockerBuild.(bool) {
-		err := handleDockerBuildRequest(tn, prebuild)
-		if err != nil {
-			return util.LogError(err)
+		_, isFromRepo := prebuild["repo"]
+		if isFromRepo {
+			err := handleRepoBuild(tn, prebuild)
+			if err != nil {
+				return util.LogError(err)
+			}
+		} else {
+			err := handleDockerBuildRequest(tn, prebuild)
+			if err != nil {
+				return util.LogError(err)
+			}
 		}
+
 	}
 	//Force docker pull
 	dockerPull, ok := prebuild["pull"]

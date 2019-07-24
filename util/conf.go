@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package util
@@ -28,43 +28,52 @@ import (
 // Config groups all of the global configuration parameters into
 // a single struct
 type Config struct {
-	SSHUser                       string  `mapstructure:"sshUser"`
-	SSHKey                        string  `mapstructure:"sshKey"`
-	SSHHost                       string  `mapstructure:"sshHost"`
-	ServerBits                    uint32  `mapstructure:"serverBits"`
-	ClusterBits                   uint32  `mapstructure:"clusterBits"`
-	NodeBits                      uint32  `mapstructure:"nodeBits"`
-	IPPrefix                      uint32  `mapstructure:"ipPrefix"`
-	Listen                        string  `mapstructure:"listen"`
-	Verbosity                     string  `mapstructure:"verbosity"`
-	DockerOutputFile              string  `mapstructure:"dockerOutputFile"`
-	Influx                        string  `mapstructure:"influx"`
-	InfluxUser                    string  `mapstructure:"influxUser"`
-	InfluxPassword                string  `mapstructure:"influxPassword"`
-	ServiceNetwork                string  `mapstructure:"serviceNetwork"`
-	ServiceNetworkName            string  `mapstructure:"serviceNetworkName"`
-	NodePrefix                    string  `mapstructure:"nodePrefix"`
-	NodeNetworkPrefix             string  `mapstructure:"nodeNetworkPrefix"`
-	ServicePrefix                 string  `mapstructure:"servicePrefix"`
-	NodesPublicKey                string  `mapstructure:"nodesPublicKey"`
-	NodesPrivateKey               string  `mapstructure:"nodesPrivateKey"`
-	HandleNodeSSHKeys             bool    `mapstructure:"handleNodeSshKeys"`
-	MaxNodes                      int     `mapstructure:"maxNodes"`
-	MaxNodeMemory                 string  `mapstructure:"maxNodeMemory"`
-	MaxNodeCPU                    float64 `mapstructure:"maxNodeCpu"`
-	BridgePrefix                  string  `mapstructure:"bridgePrefix"`
-	APIEndpoint                   string  `mapstructure:"apiEndpoint"`
-	NibblerEndPoint               string  `mapstructure:"nibblerEndPoint"`
-	LogJSON                       bool    `mapstructure:"logJson"`
-	PrometheusConfig              string  `mapstructure:"prometheusConfig"`
-	PrometheusPort                int     `mapstructure:"prometheusPort"`
-	PrometheusInstrumentationPort int     `mapstructure:"prometheusInstrumentationPort"`
-	MaxRunAttempts                int     `mapstructure:"maxRunAttempts"`
-	MaxConnections                int     `mapstructure:"maxConnections"`
-	DataDirectory                 string  `mapstructure:"datadir"`
-	DisableNibbler                bool    `mapstructure:"disableNibbler"`
-	DisableTestnetReporting       bool    `mapstructure:"disableTestnetReporting"`
-	MaxCommandOutputLogSize       int     `mapstructure:"maxCommandOutputLogSize"`
+	SSHUser                 string  `mapstructure:"sshUser"`
+	SSHKey                  string  `mapstructure:"sshKey"`
+	SSHHost                 string  `mapstructure:"sshHost"`
+	ServerBits              uint32  `mapstructure:"serverBits"`
+	ClusterBits             uint32  `mapstructure:"clusterBits"`
+	NodeBits                uint32  `mapstructure:"nodeBits"`
+	IPPrefix                uint32  `mapstructure:"ipPrefix"`
+	Listen                  string  `mapstructure:"listen"`
+	Verbosity               string  `mapstructure:"verbosity"`
+	DockerOutputFile        string  `mapstructure:"dockerOutputFile"`
+	Influx                  string  `mapstructure:"influx"`         //No default
+	InfluxUser              string  `mapstructure:"influxUser"`     //No default
+	InfluxPassword          string  `mapstructure:"influxPassword"` //No default
+	ServiceNetwork          string  `mapstructure:"serviceNetwork"`
+	ServiceNetworkName      string  `mapstructure:"serviceNetworkName"`
+	NodePrefix              string  `mapstructure:"nodePrefix"`
+	NodeNetworkPrefix       string  `mapstructure:"nodeNetworkPrefix"`
+	ServicePrefix           string  `mapstructure:"servicePrefix"`
+	NodesPublicKey          string  `mapstructure:"nodesPublicKey"`  //No default
+	NodesPrivateKey         string  `mapstructure:"nodesPrivateKey"` //No default
+	HandleNodeSSHKeys       bool    `mapstructure:"handleNodeSshKeys"`
+	MaxNodes                int     `mapstructure:"maxNodes"`
+	MaxNodeMemory           string  `mapstructure:"maxNodeMemory"`
+	MaxNodeCPU              float64 `mapstructure:"maxNodeCpu"`
+	BridgePrefix            string  `mapstructure:"bridgePrefix"`
+	APIEndpoint             string  `mapstructure:"apiEndpoint"`
+	NibblerEndPoint         string  `mapstructure:"nibblerEndPoint"`
+	LogJSON                 bool    `mapstructure:"logJson"`
+	PrometheusConfig        string  `mapstructure:"prometheusConfig"`
+	PrometheusPort          int     `mapstructure:"prometheusPort"`
+	GanacheCLIOptions       string  `mapstructure:"ganacheCLIOptions"`
+	GanacheRPCPort          int     `mapstructure:"ganacheRPCPort"`
+	MaxRunAttempts          int     `mapstructure:"maxRunAttempts"`
+	MaxConnections          int     `mapstructure:"maxConnections"`
+	DataDirectory           string  `mapstructure:"datadir"`
+	DisableNibbler          bool    `mapstructure:"disableNibbler"`
+	DisableTestnetReporting bool    `mapstructure:"disableTestnetReporting"`
+	RequireAuth             bool    `mapstructure:"requireAuth"`
+	MaxCommandOutputLogSize int     `mapstructure:"maxCommandOutputLogSize"`
+	ResourceDir             string  `mapstructure:"resourceDir"`
+	RemoveNodesOnFailure    bool    `mapstructure:"removeNodesOnFailure"`
+	NibblerRetries          uint    `mapstructure:"nibblerRetries"`
+	KillRetries             uint    `mapstructure:"killRetries"`
+	EnablePortForwarding    bool    `mapstructure:"enablePortForwarding"`
+	EnableDockerVolumes     bool    `mapstructure:"enableDockerVolumes"`
+	EnableImageBuilding     bool    `mapstructure:"enableImageBuilding"`
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
@@ -100,41 +109,67 @@ func setViperEnvBindings() {
 	viper.BindEnv("apiEndpoint", "API_ENDPOINT")
 	viper.BindEnv("nibblerEndPoint", "NIBBLER_END_POINT")
 	viper.BindEnv("logJson", "LOG_JSON")
+	viper.BindEnv("prometheusConfig", "PROMETHEUS_CONFIG")
+	viper.BindEnv("prometheusPort", "PROMETHEUS_PORT")
+	viper.BindEnv("ganacheCLIOptions", "GANACHE_CLI_OPTIONS")
+	viper.BindEnv("ganacheRPCPort", "GANACHE_RPC_PORT")
 	viper.BindEnv("maxRunAttempts", "MAX_RUN_ATTEMPTS")
 	viper.BindEnv("maxConnections", "MAX_CONNECTIONS")
 	viper.BindEnv("datadir", "DATADIR")
 	viper.BindEnv("disableNibbler", "DISABLE_NIBBLER")
 	viper.BindEnv("disableTestnetReporting", "DISABLE_TESTNET_REPORTING")
+	viper.BindEnv("requireAuth", "REQUIRE_AUTH")
 	viper.BindEnv("maxCommandOutputLogSize", "MAX_COMMAND_OUTPUT_LOG_SIZE")
+	viper.BindEnv("resourceDir", "RESOURCE_DIR")
+	viper.BindEnv("removeNodesOnFailure", "REMOVE_NODES_ON_FAILURE")
+	viper.BindEnv("nibblerRetries", "NIBBLER_RETRIES")
+	viper.BindEnv("killRetries", "KILL_RETRIES")
+	viper.BindEnv("enablePortForwarding", "ENABLE_PORT_FORWARDING")
+	viper.BindEnv("enableDockerVolumes", "ENABLE_DOCKER_VOLUMES")
+	viper.BindEnv("enableImageBuilding", "ENABLE_IMAGE_BUILDING")
 }
 func setViperDefaults() {
 	viper.SetDefault("sshUser", os.Getenv("USER"))
-	viper.SetDefault("listen", "127.0.0.1:8000")
 	viper.SetDefault("sshKey", os.Getenv("HOME")+"/.ssh/id_rsa")
+	viper.SetDefault("sshHost", "127.0.0.1")
 	viper.SetDefault("serverBits", 8)
 	viper.SetDefault("clusterBits", 12)
 	viper.SetDefault("nodeBits", 4)
+	viper.SetDefault("ipPrefix", 10)
+	viper.SetDefault("listen", "127.0.0.1:8000")
+	viper.SetDefault("verbosity", "INFO")
 	viper.SetDefault("dockerOutputFile", "/output.log")
 	viper.SetDefault("serviceNetwork", "172.30.0.1/16")
 	viper.SetDefault("serviceNetworkName", "wb_builtin_services")
 	viper.SetDefault("nodePrefix", "whiteblock-node")
 	viper.SetDefault("nodeNetworkPrefix", "wb_vlan")
 	viper.SetDefault("servicePrefix", "wb_service")
-	viper.SetDefault("sshHost", "127.0.0.1")
-	viper.SetDefault("verbosity", "INFO")
 	viper.SetDefault("maxNodes", 200)
+	viper.SetDefault("maxNodeMemory", "")
+	viper.SetDefault("maxNodeCpu", -1)
 	viper.SetDefault("bridgePrefix", "wb_bridge")
 	viper.SetDefault("apiEndpoint", "https://api.whiteblock.io")
 	viper.SetDefault("nibblerEndPoint", "https://storage.googleapis.com/genesis-public/nibbler/master/bin/linux/amd64/nibbler")
+	viper.SetDefault("logJson", false)
 	viper.SetDefault("prometheusConfig", "/tmp/prometheus.yml")
-	viper.SetDefault("prometheusPort", 8088)
+	viper.SetDefault("prometheusPort", 9090)
 	viper.SetDefault("prometheusInstrumentationPort", 8008)
 	viper.SetDefault("maxRunAttempts", 30)
 	viper.SetDefault("maxConnections", 50)
 	viper.SetDefault("datadir", os.Getenv("HOME")+"/.config/whiteblock/")
 	viper.SetDefault("disableNibbler", false)
 	viper.SetDefault("disableTestnetReporting", false)
+	viper.SetDefault("requireAuth", false)
 	viper.SetDefault("maxCommandOutputLogSize", -1)
+	viper.SetDefault("resourceDir", "./resources")
+	viper.SetDefault("removeNodesOnFailure", true)
+	viper.SetDefault("nibblerRetries", 2)
+	viper.SetDefault("killRetries", 100)
+	viper.SetDefault("ganacheRPCPort", 8545)
+	viper.SetDefault("ganacheCLIOptions", "--gasLimit 4000000000000")
+	viper.SetDefault("enablePortForwarding", true)
+	viper.SetDefault("enableDockerVolumes", true)
+	viper.SetDefault("enableImageBuilding", true)
 }
 
 // GCPFormatter enables the ability to use genesis logging with Stackdriver
