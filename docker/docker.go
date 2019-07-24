@@ -142,10 +142,10 @@ func getFlagsFromResources(res util.Resources) (string, error) {
 	if res.BoundCPUs != nil {
 		out += " --cpuset-cpus "
 		for i, boundCPU := range res.BoundCPUs {
-			out += fmt.Sprint(boundCPU)
 			if i != 0 {
 				out += ","
 			}
+			out += fmt.Sprint(boundCPU)
 		}
 	}
 
