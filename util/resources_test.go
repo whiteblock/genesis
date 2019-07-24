@@ -25,26 +25,26 @@ import (
 
 func TestResources_GetMemory_Successful(t *testing.T) {
 	var tests = []struct {
-		res Resources
+		res      Resources
 		expected int64
 	}{
 		{res: Resources{
-			Cpus: "",
-			Memory: "45",
+			Cpus:    "",
+			Memory:  "45",
 			Volumes: []string{},
-			Ports: []string{},
+			Ports:   []string{},
 		}, expected: int64(45)},
 		{res: Resources{
-			Cpus: "",
-			Memory: "1",
+			Cpus:    "",
+			Memory:  "1",
 			Volumes: []string{},
-			Ports: []string{},
+			Ports:   []string{},
 		}, expected: int64(1)},
 		{res: Resources{
-			Cpus: "",
-			Memory: "92233720368547",
+			Cpus:    "",
+			Memory:  "92233720368547",
 			Volumes: []string{},
-			Ports: []string{},
+			Ports:   []string{},
 		}, expected: int64(92233720368547)},
 	}
 
@@ -64,22 +64,22 @@ func TestResources_GetMemory_Unsuccessful(t *testing.T) {
 		res Resources
 	}{
 		{res: Resources{
-			Cpus: "",
-			Memory: "45.46",
+			Cpus:    "",
+			Memory:  "45.46",
 			Volumes: []string{},
-			Ports: []string{},
+			Ports:   []string{},
 		}},
 		{res: Resources{
-			Cpus: "",
-			Memory: "35273409857203948572039458720349857",
+			Cpus:    "",
+			Memory:  "35273409857203948572039458720349857",
 			Volumes: []string{},
-			Ports: []string{},
+			Ports:   []string{},
 		}},
 		{res: Resources{
-			Cpus: "",
-			Memory: "s",
+			Cpus:    "",
+			Memory:  "s",
 			Volumes: []string{},
-			Ports: []string{},
+			Ports:   []string{},
 		}},
 	}
 
@@ -94,27 +94,68 @@ func TestResources_GetMemory_Unsuccessful(t *testing.T) {
 	}
 }
 
-func TestResources_Validate(t *testing.T) {
+func TestResources_Validate_Successful(t *testing.T) {
 	var tests = []struct {
 		res Resources
 	}{
 		{res: Resources{
-			Cpus: "",
-			Memory: "45.46",
+			Cpus:    "",
+			Memory:  "",
 			Volumes: []string{},
-			Ports: []string{},
+			Ports:   []string{},
 		}},
 		{res: Resources{
-			Cpus: "",
-			Memory: "35273409857203948572039458720349857",
+			Cpus:    "2",
+			Memory:  "39458720349857",
 			Volumes: []string{},
-			Ports: []string{},
+			Ports:   []string{},
 		}},
 		{res: Resources{
-			Cpus: "",
-			Memory: "s",
+			Cpus:    "7",
+			Memory:  "45",
 			Volumes: []string{},
-			Ports: []string{},
+			Ports:   []string{},
 		}},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if tt.res.Validate() != nil {
+				t.Error("return value of Validate does not match expected value")
+			}
+		})
+	}
+}
+
+func TestResources_Validate_Unsuccessful(t *testing.T) {
+	var tests = []struct {
+		res Resources
+	}{
+		{res: Resources{
+			Cpus:    "f",
+			Memory:  "sasdfa;",
+			Volumes: []string{},
+			Ports:   []string{},
+		}},
+		{res: Resources{
+			Cpus:    "2984572304958234",
+			Memory:  "-234875923485.8",
+			Volumes: []string{},
+			Ports:   []string{},
+		}},
+		{res: Resources{
+			Cpus:    "fifteen",
+			Memory:  "45",
+			Volumes: []string{},
+			Ports:   []string{},
+		}},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if tt.res.Validate() == nil {
+				t.Error("return value of Validate does not match expected value")
+			}
+		})
 	}
 }
