@@ -50,7 +50,7 @@ type AConf struct {
 	DBCompression  bool   `xml:"dbCompression"`
 	LogFile        bool   `xml:"logFile"`
 	LogPath        string `xml:"logPath"`
-	GenLogs        string `xml:"genLogs`
+	GenLogs        string `xml:"genLogs"`
 	VMLogs         string `xml:"vmLogs"`
 	APILogs        string `xml:"apiLogs"`
 	SyncLogs       string `xml:"syncLogs"`

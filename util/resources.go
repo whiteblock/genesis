@@ -40,6 +40,9 @@ type Resources struct {
 	Volumes []string `json:"volumes"`
 	// Ports to be opened for each node, each item associated with one node.
 	Ports []string `json:"ports"`
+
+	// BoundCpus are the cpus which the node will be set with an affinity for.
+	BoundCPUs []int `json:"boundCPUs,omitonempty"`
 }
 
 func memconv(mem string) (int64, error) {

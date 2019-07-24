@@ -246,7 +246,11 @@ func (bs *BuildState) Done() bool {
 
 // ReportError stores the given error to be passed onto any
 // who query the build status.
-func (bs *BuildState) ReportError(err error) {
+func (bs *BuildState) ReportError(err error) error {
+	if err == nil {
+		log.Trace("ignoring nil error")
+		return nil
+	}
 	bs.errMutex.Lock()
 	defer bs.errMutex.Unlock()
 	bs.BuildError = CustomError{What: err.Error(), err: err}
@@ -257,6 +261,7 @@ func (bs *BuildState) ReportError(err error) {
 		line = 0
 	}
 	log.WithFields(log.Fields{"build": bs.BuildID, "file": file, "line": line, "error": err}).Error("an error was reported")
+	return err
 }
 
 // Stop checks if the stop signal has been sent. If bs returns true,

@@ -114,35 +114,55 @@ func Pull(clients []ssh.Client, image string) error {
 	return nil
 }
 
-// dockerRunCmd makes a docker run command to start a node
-func dockerRunCmd(c Container) (string, error) {
-	command := "docker run -itd --entrypoint /bin/sh "
-	command += fmt.Sprintf("--network %s", c.GetNetworkName())
-
-	if !c.GetResources().NoCPULimits() {
-		command += fmt.Sprintf(" --cpus %s", c.GetResources().Cpus)
+func getFlagsFromResources(res util.Resources) (string, error) {
+	out := ""
+	if !res.NoCPULimits() {
+		out += fmt.Sprintf(" --cpus %s", res.Cpus)
 	}
 
-	if c.GetResources().Volumes != nil && conf.EnableDockerVolumes {
-		for _, volume := range c.GetResources().Volumes {
-			command += fmt.Sprintf(" -v %s", volume)
+	if res.Volumes != nil && conf.EnableDockerVolumes {
+		for _, volume := range res.Volumes {
+			out += fmt.Sprintf(" -v %s", volume)
 		}
 	}
 
 	if conf.EnablePortForwarding {
-		ports := c.GetPorts()
-		for _, port := range ports {
-			command += fmt.Sprintf(" -p %s", port)
+		for _, port := range res.Ports {
+			out += fmt.Sprintf(" -p %s", port)
 		}
 	}
 
-	if !c.GetResources().NoMemoryLimits() {
-		mem, err := c.GetResources().GetMemory()
+	if !res.NoMemoryLimits() {
+		mem, err := res.GetMemory()
 		if err != nil {
 			return "", fmt.Errorf("invalid value for memory")
 		}
-		command += fmt.Sprintf(" --memory %d", mem)
+		out += fmt.Sprintf(" --memory %d", mem)
 	}
+	if res.BoundCPUs != nil {
+		out += " --cpuset-cpus "
+		for i, boundCPU := range res.BoundCPUs {
+			out += fmt.Sprint(boundCPU)
+			if i != 0 {
+				out += ","
+			}
+		}
+	}
+
+	return out, nil
+}
+
+// dockerRunCmd makes a docker run command to start a node
+func dockerRunCmd(c Container) (string, error) {
+	command := "docker run -itd --entrypoint /bin/sh "
+	command += fmt.Sprintf("--network %s ", c.GetNetworkName())
+
+	flags, err := getFlagsFromResources(c.GetResources())
+	if err != nil {
+		return "", util.LogError(err)
+	}
+	command += flags
+
 	for key, value := range c.GetEnvironment() {
 		command += fmt.Sprintf(" -e \"%s=%s\"", key, value)
 	}
