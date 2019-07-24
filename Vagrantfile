@@ -18,9 +18,14 @@ Vagrant.configure("2") do |config|
 set -euox pipefail
 
 echo "=== bootstrap ==="
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable"
 
 apt-get update
-apt-get install -y docker.io curl make
+sudo apt-get install -y curl make docker-ce docker-ce-cli containerd.io
 systemctl start docker
 systemctl enable docker
 
@@ -30,13 +35,13 @@ cd /vagrant
 docker build . -t genesis
 
 [ -f /home/vagrant/.ssh/id_rsa ] || ssh-keygen -f /home/vagrant/.ssh/id_rsa -t rsa -N ''
+cp /home/vagrant/.ssh/id_rsa /home/vagrant/.ssh/authorized_keys
 
 echo "=== start genesis ==="
 docker run -d --name genesis \
-  -v /var/run/docker.sock:/var/run/docker.sock \
   -v /home/vagrant/.ssh/id_rsa:/root/.ssh/id_rsa \
   -v /home/vagrant/.ssh/id_rsa.pub:/root/.ssh/id_rsa.pub \
-  -v /home/vagrant/.ssh/id_rsa.pub:/root/.ssh/authorized_keys \
+  -v /home/vagrant/.ssh/authorized_keys:/root/.ssh/authorized_keys \
   -e SSH_USER='root' \
   -e SSH_KEY='/root/.ssh/id_rsa' \
   -e HANDLE_NODE_SSH_KEYS='0' \
