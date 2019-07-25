@@ -19,6 +19,7 @@
 package util
 
 import (
+	"reflect"
 	"strconv"
 	"testing"
 )
@@ -196,24 +197,33 @@ func TestResources_ValidateAndSetDefaults_Successful(t *testing.T) {
 func TestResources_GetParsedPortMappings(t *testing.T) {
 	var tests = []struct {
 		res Resources
+		out map[string]string
 	}{
 		{res: Resources{
 			Cpus:    "",
 			Memory:  "",
 			Volumes: []string{},
-			Ports:   []string{},
-		}},
+			Ports:   []string{"192.168.123.132:3333", "192.168.123.132:7937293847", "3333:4000", "192.168.123.132:300"},
+		}, out: map[string]string{"300": "192.168.123.132", "3333": "192.168.123.132", "4000": "3333", "7937293847": "192.168.123.132"}},
 		{res: Resources{
 			Cpus:    "",
 			Memory:  "",
 			Volumes: []string{},
-			Ports:   []string{},
-		}},
+			Ports:   []string{"333:333"},
+		}, out: map[string]string{"333": "333"}},
 		{res: Resources{
 			Cpus:    "",
 			Memory:  "",
 			Volumes: []string{},
-			Ports:   []string{},
-		}},
+			Ports:   []string{"blahblah:3000", "4000:7635", "6000", "3333"},
+		}, out: map[string]string{"3000": "blahblah", "7635": "4000"}},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(tt.res.GetParsedPortMappings(), tt.out) {
+				t.Error("return value of GetParsedPortMappings does not match expected value")
+			}
+		})
 	}
 }
