@@ -180,10 +180,10 @@ func Lsr(_dir string) ([]string, error) {
 	return out, nil
 }
 
-// TODO: delete this function if deprecated.. it has 4 usages throughout the code base
+
 // CombineConfig combines an Array with \n as the delimiter.
 // Useful for generating configuration files. DEPRECATED
-func CombineConfig(entries []string) string {
+func CombineConfig(entries []string) string { // TODO: delete this function if deprecated.. it has 4 usages throughout the code base
 	out := ""
 	for _, entry := range entries {
 		out += fmt.Sprintf("%s\n", entry)
