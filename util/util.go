@@ -180,9 +180,10 @@ func Lsr(_dir string) ([]string, error) {
 	return out, nil
 }
 
+
 // CombineConfig combines an Array with \n as the delimiter.
 // Useful for generating configuration files. DEPRECATED
-func CombineConfig(entries []string) string {
+func CombineConfig(entries []string) string { // TODO: delete this function if deprecated.. it has 4 usages throughout the code base
 	out := ""
 	for _, entry := range entries {
 		out += fmt.Sprintf("%s\n", entry)
@@ -278,7 +279,6 @@ func MergeStringMaps(m1 map[string]interface{}, m2 map[string]interface{}) map[s
 
 // ConvertToStringMap converts a map of string to interface to a map of string to json
 func ConvertToStringMap(data map[string]interface{}) map[string]string {
-
 	out := make(map[string]string)
 
 	for key, value := range data {
