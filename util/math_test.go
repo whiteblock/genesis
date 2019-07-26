@@ -65,30 +65,30 @@ func TestDistances(t *testing.T) {
 }
 
 //TODO: this test takes too long to run
-/**func TestDistribute(t *testing.T) {
-	var test = []struct {
-		nodes []string
-		dist []int
-		seed int64
-		expected [][]string
-	}{
-		{[]string{"1,", "2", "3"}, []int{0, 1, 2}, 123, [][]string{}},
-		{[]string{"7,", "6", "5", "9"}, []int{1, 2, 3, 4}, 12, [][]string{}},
-		{[]string{"15", "6", "1", "8", "1"}, []int{0, 4, 2, 1, 3}, 5, [][]string{}},
-
-	}
-
-	for i, tt := range test {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			out, _ := distribute(tt.nodes, tt.dist, tt.seed)
-			fmt.Println(out)
-			fmt.Println(tt.expected)
-		if !reflect.DeepEqual(out, tt.expected) {
-				t.Errorf("return value from Distribute does not match expected value")
-			}
-		})
-	}
-}**/
+//func TestDistribute(t *testing.T) {
+//	var test = []struct {
+//		nodes []string
+//		dist []int
+//		seed int64
+//		expected [][]string
+//	}{
+//		{[]string{"1,", "2", "3"}, []int{0, 1, 2}, 123, [][]string{}},
+//		{[]string{"7,", "6", "5", "9"}, []int{1, 2, 3, 4}, 12, [][]string{}},
+//		{[]string{"15", "6", "1", "8", "1"}, []int{0, 4, 2, 1, 3}, 5, [][]string{}},
+//
+//	}
+//
+//	for i, tt := range test {
+//		t.Run(strconv.Itoa(i), func(t *testing.T) {
+//			out, _ := Distribute(tt.nodes, tt.dist)
+//			fmt.Println(out)
+//			fmt.Println(tt.expected)
+//		if !reflect.DeepEqual(out, tt.expected) {
+//				t.Errorf("return value from Distribute does not match expected value")
+//			}
+//		})
+//	}
+//}
 
 func Test_generateWorstCaseNetwork(t *testing.T) {
 	var test = []struct {

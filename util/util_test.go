@@ -21,7 +21,6 @@ package util
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -120,7 +119,6 @@ func TestJwtHTTPRequest_Unsuccessful(t *testing.T) {
 	}
 }
 
-// TODO make sure these tests work
 func TestExtractJwt_Successful(t *testing.T) {
 	var test = []struct {
 		method string
@@ -233,24 +231,6 @@ func TestLsr(t *testing.T) {
 		if check[i] != file {
 			t.Errorf("return value of Lsr did not match expected value")
 		}
-	}
-}
-
-// TODO: I don't think this function does what it purports to.. is it deprecated?
-//  There is only one usage in the code base
-func TestGetPath(t *testing.T) {
-	var test = []struct {
-		path string
-	}{
-		{path: "var/test/testing/123"},
-		{path: "var/test"},
-		{path: "var/"},
-	}
-
-	for i, tt := range test {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			fmt.Println(GetPath(tt.path))
-		})
 	}
 }
 
