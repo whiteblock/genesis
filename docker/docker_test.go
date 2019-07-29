@@ -128,6 +128,7 @@ func Test_dockerNetworkCreateCmd(t *testing.T) {
 	}
 }
 
+// TODO fix
 func TestNetworkCreate(t *testing.T) {
 	client := CreateMockClient(new(testing.T))
 
@@ -141,4 +142,5 @@ func TestNetworkCreate(t *testing.T) {
 		t.Error("return value of NetworkCreate does not match expected value")
 	}
 }
+
 
