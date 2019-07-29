@@ -293,3 +293,198 @@ func BenchmarkContainerDetails_GetIP(b *testing.B) {
 		testContainer.GetIP()
 	}
 }
+
+func TestContainerDetails_GetName_Node(t *testing.T) {
+	testContainer := new(ContainerDetails)
+	testContainer.Node = 100
+
+	testContainer2 := new(ContainerDetails)
+	testContainer2.Node = 3
+
+	var tests = []struct {
+		cd       *ContainerDetails
+		expected string
+	}{
+		{
+			cd:       new(ContainerDetails),
+			expected: new(ContainerDetails).GetName(),
+		},
+		{
+			cd:       testContainer,
+			expected: "whiteblock-node100",
+		},
+		{
+			cd:       testContainer2,
+			expected: "whiteblock-node3",
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(tt.cd.GetName(), tt.expected) {
+				t.Error("return value of Get Name does not match expected value")
+			}
+		})
+	}
+}
+
+func TestContainerDetails_GetName_SideCar(t *testing.T) {
+	testContainer := new(ContainerDetails)
+	testContainer.Node = 100
+	testContainer.Type = ContainerType(1)
+
+	testContainer2 := new(ContainerDetails)
+	testContainer2.Node = 3
+	testContainer2.Type = ContainerType(1)
+
+	var tests = []struct {
+		cd       *ContainerDetails
+		expected string
+	}{
+		{
+			cd:       new(ContainerDetails),
+			expected: new(ContainerDetails).GetName(),
+		},
+		{
+			cd:       testContainer,
+			expected: "whiteblock-node100-0",
+		},
+		{
+			cd:       testContainer2,
+			expected: "whiteblock-node3-0",
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(tt.cd.GetName(), tt.expected) {
+				t.Error("return value of GetName does not match expected value")
+			}
+		})
+	}
+}
+
+func BenchmarkContainerDetails_GetName(b *testing.B) {
+	testContainer := new(ContainerDetails)
+
+	for n := 0; n < b.N; n++ {
+		testContainer.GetName()
+	}
+}
+
+func TestContainerDetails_GetPorts(t *testing.T) {
+	testContainer := new(ContainerDetails)
+	testContainer.Resources = util.Resources{
+		Ports: []string{"3333:10.1.48.48", "test"},
+	}
+
+	var tests = []struct {
+		cd       *ContainerDetails
+		expected []string
+	}{
+		{
+			cd:       new(ContainerDetails),
+			expected: new(ContainerDetails).GetPorts(),
+		},
+		{
+			cd:       testContainer,
+			expected: []string{"3333:10.1.48.48", "test"},
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(tt.cd.GetPorts(), tt.expected) {
+				t.Error("return value of GetPorts does not match expected value")
+			}
+		})
+	}
+}
+
+func BenchmarkContainerDetails_GetPorts(b *testing.B) {
+	testContainer := new(ContainerDetails)
+
+	for n := 0; n < b.N; n++ {
+		testContainer.GetPorts()
+	}
+}
+
+func TestContainerDetails_GetNetworkName(t *testing.T) {
+	testContainer := new(ContainerDetails)
+	testContainer.Node = 300
+
+	var tests = []struct {
+		cd       *ContainerDetails
+		expected string
+	}{
+		{
+			cd:       new(ContainerDetails),
+			expected: new(ContainerDetails).GetNetworkName(),
+		},
+		{
+			cd:       testContainer,
+			expected: "wb_vlan300",
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(tt.cd.GetNetworkName(), tt.expected) {
+				t.Error("return value of GetNetworkName does not match expected value")
+			}
+		})
+	}
+}
+
+func BenchmarkContainerDetails_GetNetworkName(b *testing.B) {
+	testContainer := new(ContainerDetails)
+
+	for n := 0; n < b.N; n++ {
+		testContainer.GetNetworkName()
+	}
+}
+
+func TestContainerDetails_GetResources(t *testing.T) {
+	testContainer := new(ContainerDetails)
+	testContainer.Resources = util.Resources{
+		Cpus:    "4",
+		Memory:  "5GB",
+		Volumes: []string{},
+		Ports:   []string{"3333:10.1.48.48", "test"},
+	}
+
+	var tests = []struct {
+		cd       *ContainerDetails
+		expected util.Resources
+	}{
+		{
+			cd:       new(ContainerDetails),
+			expected: new(ContainerDetails).GetResources(),
+		},
+		{
+			cd: testContainer,
+			expected: util.Resources{
+				Cpus:    "4",
+				Memory:  "5GB",
+				Volumes: []string{},
+				Ports:   []string{"3333:10.1.48.48", "test"},
+			},
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(tt.cd.GetResources(), tt.expected) {
+				t.Error("return value of GetResources does not match expected value")
+			}
+		})
+	}
+}
+
+func BenchmarkContainerDetails_GetResources(b *testing.B) {
+	testContainer := new(ContainerDetails)
+
+	for n := 0; n < b.N; n++ {
+		testContainer.GetResources()
+	}
+}
