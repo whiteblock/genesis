@@ -236,3 +236,60 @@ func TestContainerDetails_GetImage(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkContainerDetails_GetImage(b *testing.B) {
+	testContainer := new(ContainerDetails)
+
+	for n := 0; n < b.N; n++ {
+		testContainer.GetImage()
+	}
+}
+
+func TestContainerDetails_GetIP(t *testing.T) {
+	testContainer := new(ContainerDetails)
+	testContainer.SubnetID = 0
+	testContainer.Node = 0
+
+	testContainer2 := new(ContainerDetails)
+	testContainer2.SubnetID = 1
+	testContainer2.Node = 0
+
+	testContainer3 := new(ContainerDetails)
+	ip, _ := testContainer3.GetIP()
+
+	var tests = []struct {
+		cd       *ContainerDetails
+		expected string
+	}{
+		{
+			cd:       new(ContainerDetails),
+			expected: ip,
+		},
+		{
+			cd:       testContainer,
+			expected: "10.0.0.2",
+		},
+		{
+			cd:       testContainer2,
+			expected: "10.1.0.2",
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			ip, _ := tt.cd.GetIP()
+
+			if !reflect.DeepEqual(ip, tt.expected) {
+				t.Error("return value of GetImage does not match expected value")
+			}
+		})
+	}
+}
+
+func BenchmarkContainerDetails_GetIP(b *testing.B) {
+	testContainer := new(ContainerDetails)
+
+	for n := 0; n < b.N; n++ {
+		testContainer.GetIP()
+	}
+}
