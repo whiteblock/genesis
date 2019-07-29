@@ -82,7 +82,7 @@ func TestNewNodeContainer(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			if !reflect.DeepEqual(NewNodeContainer(tt.node, tt.env, tt.resources, tt.SubnetID), &tt.expected) {
-				t.Error("return value of New Node Container does not match expected value")
+				t.Error("return value of NewNodeContainer does not match expected value")
 			}
 		})
 	}
@@ -91,5 +91,72 @@ func TestNewNodeContainer(t *testing.T) {
 func BenchmarkNewNodeContainer(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		NewNodeContainer(new(db.Node), map[string]string{}, util.Resources{}, 4)
+	}
+}
+
+func TestNewSideCarContainer(t *testing.T) {
+	testSidecar := new(db.SideCar)
+
+	var tests = []struct {
+		sideCar   *db.SideCar
+		env       map[string]string
+		resources util.Resources
+		SubnetID  int
+		expected  ContainerDetails
+	}{
+		{
+			sideCar:   testSidecar,
+			env:       map[string]string{},
+			resources: util.Resources{},
+			SubnetID:  4,
+			expected: ContainerDetails{
+				Environment:  map[string]string{},
+				Image:        testSidecar.Image,
+				Node:         testSidecar.LocalID,
+				Resources:    util.Resources{},
+				SubnetID:     4,
+				NetworkIndex: testSidecar.NetworkIndex,
+				Type:         ContainerType(1),
+			},
+		},
+		{
+			sideCar: testSidecar,
+			env:     map[string]string{},
+			resources: util.Resources{
+				Cpus: "5",
+				Memory: "5GB",
+				Volumes: []string{},
+				Ports: []string{},
+			},
+			SubnetID: 16,
+			expected: ContainerDetails{
+				Environment: map[string]string{},
+				Image:       testSidecar.Image,
+				Node:        testSidecar.LocalID,
+				Resources: util.Resources{
+					Cpus: "5",
+					Memory: "5GB",
+					Volumes: []string{},
+					Ports: []string{},
+				},
+				SubnetID: 16,
+				NetworkIndex: testSidecar.NetworkIndex,
+				Type: ContainerType(1),
+			},
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(NewSideCarContainer(tt.sideCar, tt.env, tt.resources, tt.SubnetID), &tt.expected) {
+				t.Error("return value of NewSideCarContainer does not match expected value")
+			}
+		})
+	}
+}
+
+func BenchmarkNewSideCarContainerContainer(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		NewSideCarContainer(new(db.SideCar), map[string]string{}, util.Resources{}, 4)
 	}
 }

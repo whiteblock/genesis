@@ -33,13 +33,13 @@ import (
 
 var conf = util.GetConfig()
 
-// KillNode kills a single node by index on a server
+// KillNode kills a single sideCar by index on a server
 func KillNode(client ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker rm -f %s%d", conf.NodePrefix, node))
 	return err
 }
 
-//Kill kills a node and all of its sidecars
+//Kill kills a sideCar and all of its sidecars
 func Kill(client ssh.Client, node int) error {
 	_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s%d\")", conf.NodePrefix, node))
 	return err
@@ -52,7 +52,7 @@ func KillAll(client ssh.Client) error {
 }
 
 /*
-   Create the command to a docker network for a node
+   Create the command to a docker network for a sideCar
 */
 func dockerNetworkCreateCmd(subnet string, gateway string, network int, name string) string {
 	return fmt.Sprintf("docker network create --subnet %s --gateway %s -o \"com.docker.network.bridge.name=%s%d\" %s",
@@ -63,7 +63,7 @@ func dockerNetworkCreateCmd(subnet string, gateway string, network int, name str
 		name)
 }
 
-// NetworkCreate creates a docker network for a node
+// NetworkCreate creates a docker network for a sideCar
 func NetworkCreate(tn *testnet.TestNet, serverID int, subnetID int, node int) error {
 	command := dockerNetworkCreateCmd(
 		util.GetNetworkAddress(subnetID, node),
@@ -82,7 +82,7 @@ func NetworkDestroy(client ssh.Client, node int) error {
 	return err
 }
 
-// NetworkDestroyAll removes all whiteblock networks on a node
+// NetworkDestroyAll removes all whiteblock networks on a sideCar
 func NetworkDestroyAll(client ssh.Client) error {
 	_, err := client.Run(fmt.Sprintf(
 		"for net in $(docker network ls | grep %s | awk '{print $1}'); do docker network rm $net; done", conf.NodeNetworkPrefix))
@@ -152,7 +152,7 @@ func getFlagsFromResources(res util.Resources) (string, error) {
 	return out, nil
 }
 
-// dockerRunCmd makes a docker run command to start a node
+// dockerRunCmd makes a docker run command to start a sideCar
 func dockerRunCmd(c Container) (string, error) {
 	command := "docker run -itd --entrypoint /bin/sh "
 	command += fmt.Sprintf("--network %s ", c.GetNetworkName())
@@ -177,7 +177,7 @@ func dockerRunCmd(c Container) (string, error) {
 	return command, nil
 }
 
-// Run starts a node
+// Run starts a sideCar
 func Run(tn *testnet.TestNet, serverID int, container Container) error {
 	command, err := dockerRunCmd(container)
 	if err != nil {
