@@ -31,50 +31,50 @@ func TestNewNodeContainer(t *testing.T) {
 	testNode := new(db.Node)
 
 	var tests = []struct {
-		node *db.Node
-		env map[string]string
+		node      *db.Node
+		env       map[string]string
 		resources util.Resources
-		SubnetID int
-		expected ContainerDetails
+		SubnetID  int
+		expected  ContainerDetails
 	}{
 		{
-			node: testNode,
-			env: map[string]string{},
+			node:      testNode,
+			env:       map[string]string{},
 			resources: util.Resources{},
-			SubnetID: 4,
+			SubnetID:  4,
 			expected: ContainerDetails{
-				Environment: map[string]string{},
-				Image: testNode.Image,
-				Node: testNode.LocalID,
-				Resources: util.Resources{},
-				SubnetID: 4,
+				Environment:  map[string]string{},
+				Image:        testNode.Image,
+				Node:         testNode.LocalID,
+				Resources:    util.Resources{},
+				SubnetID:     4,
 				NetworkIndex: 0,
-				Type: ContainerType(0),
+				Type:         ContainerType(0),
 			},
 		},
 		{
 			node: testNode,
-			env: map[string]string{},
+			env:  map[string]string{},
 			resources: util.Resources{
-				Cpus: "5",
-				Memory: "5GB",
+				Cpus:    "5",
+				Memory:  "5GB",
 				Volumes: []string{},
-				Ports: []string{},
+				Ports:   []string{},
 			},
 			SubnetID: 16,
 			expected: ContainerDetails{
 				Environment: map[string]string{},
-				Image: testNode.Image,
-				Node: testNode.LocalID,
+				Image:       testNode.Image,
+				Node:        testNode.LocalID,
 				Resources: util.Resources{
-					Cpus: "5",
-					Memory: "5GB",
+					Cpus:    "5",
+					Memory:  "5GB",
 					Volumes: []string{},
-					Ports: []string{},
+					Ports:   []string{},
 				},
-				SubnetID: 16,
+				SubnetID:     16,
 				NetworkIndex: 0,
-				Type: ContainerType(0),
+				Type:         ContainerType(0),
 			},
 		},
 	}
@@ -123,10 +123,10 @@ func TestNewSideCarContainer(t *testing.T) {
 			sideCar: testSidecar,
 			env:     map[string]string{},
 			resources: util.Resources{
-				Cpus: "5",
-				Memory: "5GB",
+				Cpus:    "5",
+				Memory:  "5GB",
 				Volumes: []string{},
-				Ports: []string{},
+				Ports:   []string{},
 			},
 			SubnetID: 16,
 			expected: ContainerDetails{
@@ -134,14 +134,14 @@ func TestNewSideCarContainer(t *testing.T) {
 				Image:       testSidecar.Image,
 				Node:        testSidecar.LocalID,
 				Resources: util.Resources{
-					Cpus: "5",
-					Memory: "5GB",
+					Cpus:    "5",
+					Memory:  "5GB",
 					Volumes: []string{},
-					Ports: []string{},
+					Ports:   []string{},
 				},
-				SubnetID: 16,
+				SubnetID:     16,
 				NetworkIndex: testSidecar.NetworkIndex,
-				Type: ContainerType(1),
+				Type:         ContainerType(1),
 			},
 		},
 	}
@@ -158,5 +158,47 @@ func TestNewSideCarContainer(t *testing.T) {
 func BenchmarkNewSideCarContainerContainer(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		NewSideCarContainer(new(db.SideCar), map[string]string{}, util.Resources{}, 4)
+	}
+}
+
+func TestContainerDetails_GetEnvironment(t *testing.T) {
+	testContainer := new(ContainerDetails)
+	testContainer.Environment = map[string]string{"blah": "blah"}
+
+	testContainer2 := new(ContainerDetails)
+	testContainer2.Environment = map[string]string{"testing": "testingtesting", "test": "blah"}
+
+	var tests = []struct {
+		cd       *ContainerDetails
+		expected map[string]string
+	}{
+		{
+			cd:       new(ContainerDetails),
+			expected: new(ContainerDetails).GetEnvironment(),
+		},
+		{
+			cd:       testContainer,
+			expected: map[string]string{"blah": "blah"},
+		},
+		{
+			cd:       testContainer2,
+			expected: map[string]string{"testing": "testingtesting", "test": "blah"},
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(tt.cd.GetEnvironment(), tt.expected) {
+				t.Error("return value of GetEnvironment does not match expected value")
+			}
+		})
+	}
+}
+
+func BenchmarkContainerDetails_GetEnvironment(b *testing.B) {
+	testContainer := new(ContainerDetails)
+
+	for n := 0; n < b.N; n++ {
+		testContainer.GetEnvironment()
 	}
 }
