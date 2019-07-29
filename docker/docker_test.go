@@ -62,11 +62,23 @@ func TestKillAll(t *testing.T) {
 
 	client := mocks.NewMockClient(ctrl)
 
-	expectation := fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s\")", conf.NodePrefix)
+	expectation := fmt.Sprinttf("docker rm -f $(docker ps -aq -f name=\"%s\")", conf.NodePrefix)
 	client.EXPECT().Run(expectation)
 
 	err := KillAll(client)
 	if err != nil {
 		t.Error("return value of Kill does not match expected value")
+	}
+}
+
+func Test_dockerNetworkCreateCmd(t *testing.T) {
+	var tests = []struct {
+		subnet string
+		gateway string
+		network int
+		name string
+		expected string
+	}{
+
 	}
 }
