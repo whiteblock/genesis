@@ -28,11 +28,15 @@ import (
 	"github.com/whiteblock/genesis/ssh/mocks"
 )
 
-func TestKillNode(t *testing.T) {
+func CreateMockClient(t *testing.T) *mocks.MockClient {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	client := mocks.NewMockClient(ctrl)
+	return mocks.NewMockClient(ctrl)
+}
+
+func TestKillNode(t *testing.T) {
+	client := CreateMockClient(new(testing.T))
 
 	expectation := fmt.Sprintf("docker rm -f %s%d", conf.NodePrefix, 0)
 	client.EXPECT().Run(expectation)
@@ -44,10 +48,7 @@ func TestKillNode(t *testing.T) {
 }
 
 func TestKill(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
+	client := CreateMockClient(new(testing.T))
 
 	expectation := fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s%d\")", conf.NodePrefix, 0)
 	client.EXPECT().Run(expectation)
@@ -59,10 +60,7 @@ func TestKill(t *testing.T) {
 }
 
 func TestKillAll(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
+	client := CreateMockClient(new(testing.T))
 
 	expectation := fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s\")", conf.NodePrefix)
 	client.EXPECT().Run(expectation)
@@ -127,3 +125,18 @@ func Test_dockerNetworkCreateCmd(t *testing.T) {
 		})
 	}
 }
+
+//func TestNetworkCreate(t *testing.T) {
+//	client := CreateMockClient(new(testing.T))
+//
+//	command := "docker network create --subnet 10.10.0.0/28 --gateway 10.10.0.1 -o \"com.docker.network.bridge.name=wb_bridge0\" wb_vlan0"
+//	client.EXPECT().Run(command)
+//
+//	testNet := new(testnet.TestNet)
+//	testNet.Clients = map[int]ssh.Client{0: client}
+//
+//	if err := NetworkCreate(testNet, 0, 10, 0); err != nil {
+//		t.Error("return value of NetworkCreate does not match expected value")
+//	}
+//}
+
