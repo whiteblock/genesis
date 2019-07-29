@@ -36,5 +36,37 @@ func TestKillNode(t *testing.T) {
 	client.EXPECT().Run(expectation)
 
 	err := KillNode(client, 0)
-	fmt.Println(err)
+	if err != nil {
+		t.Error("return value of KillNode does not match expected value")
+	}
+}
+
+func TestKill(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mocks.NewMockClient(ctrl)
+
+	expectation := fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s%d\")", conf.NodePrefix, 0)
+	client.EXPECT().Run(expectation)
+
+	err := Kill(client, 0)
+	if err != nil {
+		t.Error("return value of Kill does not match expected value")
+	}
+}
+
+func TestKillAll(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mocks.NewMockClient(ctrl)
+
+	expectation := fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s\")", conf.NodePrefix)
+	client.EXPECT().Run(expectation)
+
+	err := KillAll(client)
+	if err != nil {
+		t.Error("return value of Kill does not match expected value")
+	}
 }
