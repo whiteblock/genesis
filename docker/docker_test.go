@@ -25,22 +25,16 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/ssh/mocks"
 	"github.com/whiteblock/genesis/testnet"
-	"github.com/whiteblock/genesis/util"
 )
 
-func CreateMockClient(t *testing.T) *mocks.MockClient {
+func TestKillNode(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	return mocks.NewMockClient(ctrl)
-}
-
-func TestKillNode(t *testing.T) {
-	client := CreateMockClient(new(testing.T))
+	client := mocks.NewMockClient(ctrl)
 
 	expectation := fmt.Sprintf("docker rm -f %s%d", conf.NodePrefix, 0)
 	client.EXPECT().Run(expectation)
@@ -52,7 +46,10 @@ func TestKillNode(t *testing.T) {
 }
 
 func TestKill(t *testing.T) {
-	client := CreateMockClient(new(testing.T))
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mocks.NewMockClient(ctrl)
 
 	expectation := fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s%d\")", conf.NodePrefix, 0)
 	client.EXPECT().Run(expectation)
@@ -64,7 +61,10 @@ func TestKill(t *testing.T) {
 }
 
 func TestKillAll(t *testing.T) {
-	client := CreateMockClient(new(testing.T))
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mocks.NewMockClient(ctrl)
 
 	expectation := fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s\")", conf.NodePrefix)
 	client.EXPECT().Run(expectation)
@@ -130,29 +130,16 @@ func Test_dockerNetworkCreateCmd(t *testing.T) {
 	}
 }
 
-// TODO fix
 func TestNetworkCreate(t *testing.T) {
-	client := CreateMockClient(new(testing.T))
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mocks.NewMockClient(ctrl)
 
 	command := "docker network create --subnet 10.10.0.0/28 --gateway 10.10.0.1 -o \"com.docker.network.bridge.name=wb_bridge0\" wb_vlan0"
-	client.EXPECT().Run(command)
+	client.EXPECT().KeepTryRun(command)
 
-	testNet, err := testnet.NewTestNet(db.DeploymentDetails{
-		ID: "10",
-		Servers: []int{0},
-		Blockchain: "geth",
-		Nodes: 1,
-		Images: []string{},
-		Params: map[string]interface{}{},
-		Resources: []util.Resources{},
-		Environments: []map[string]string{},
-		Files: []map[string]string{},
-		Logs: []map[string]string{},
-	}, "0")
-	if err != nil {
-		t.Error("error creating testnet")
-	}
-
+	testNet := new(testnet.TestNet)
 	testNet.Clients = map[int]ssh.Client{0: client}
 
 	if err := NetworkCreate(testNet, 0, 10, 0); err != nil {
