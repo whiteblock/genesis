@@ -20,6 +20,8 @@ package docker
 
 import (
 	"fmt"
+	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -62,7 +64,7 @@ func TestKillAll(t *testing.T) {
 
 	client := mocks.NewMockClient(ctrl)
 
-	expectation := fmt.Sprinttf("docker rm -f $(docker ps -aq -f name=\"%s\")", conf.NodePrefix)
+	expectation := fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s\")", conf.NodePrefix)
 	client.EXPECT().Run(expectation)
 
 	err := KillAll(client)
@@ -79,6 +81,49 @@ func Test_dockerNetworkCreateCmd(t *testing.T) {
 		name string
 		expected string
 	}{
+		{
+			subnet: "blah",
+			gateway: "blah",
+			network: 0,
+			name: "blah",
+			expected: fmt.Sprintf("docker network create --subnet %s --gateway %s -o \"com.docker.network.bridge.name=%s%d\" %s",
+				"blah",
+				"blah",
+				conf.BridgePrefix,
+				0,
+				"blah"),
+		},
+		{
+			subnet: "test",
+			gateway: "test",
+			network: 1000,
+			name: "test",
+			expected: fmt.Sprintf("docker network create --subnet %s --gateway %s -o \"com.docker.network.bridge.name=%s%d\" %s",
+				"test",
+				"test",
+				conf.BridgePrefix,
+				1000,
+				"test"),
+		},
+		{
+			subnet: "",
+			gateway: "",
+			network: 0,
+			name: "",
+			expected: fmt.Sprintf("docker network create --subnet %s --gateway %s -o \"com.docker.network.bridge.name=%s%d\" %s",
+				"",
+				"",
+				conf.BridgePrefix,
+				0,
+				""),
+		},
+	}
 
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(dockerNetworkCreateCmd(tt.subnet, tt.gateway, tt.network, tt.name), tt.expected) {
+				t.Error("return value of dockerNetworkCreateCmd does not match expected value")
+			}
+		})
 	}
 }
