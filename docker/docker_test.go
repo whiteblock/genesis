@@ -25,7 +25,9 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/ssh/mocks"
+	"github.com/whiteblock/genesis/testnet"
 )
 
 func CreateMockClient(t *testing.T) *mocks.MockClient {
@@ -126,17 +128,17 @@ func Test_dockerNetworkCreateCmd(t *testing.T) {
 	}
 }
 
-//func TestNetworkCreate(t *testing.T) {
-//	client := CreateMockClient(new(testing.T))
-//
-//	command := "docker network create --subnet 10.10.0.0/28 --gateway 10.10.0.1 -o \"com.docker.network.bridge.name=wb_bridge0\" wb_vlan0"
-//	client.EXPECT().Run(command)
-//
-//	testNet := new(testnet.TestNet)
-//	testNet.Clients = map[int]ssh.Client{0: client}
-//
-//	if err := NetworkCreate(testNet, 0, 10, 0); err != nil {
-//		t.Error("return value of NetworkCreate does not match expected value")
-//	}
-//}
+func TestNetworkCreate(t *testing.T) {
+	client := CreateMockClient(new(testing.T))
+
+	command := "docker network create --subnet 10.10.0.0/28 --gateway 10.10.0.1 -o \"com.docker.network.bridge.name=wb_bridge0\" wb_vlan0"
+	client.EXPECT().Run(command)
+
+	testNet := new(testnet.TestNet)
+	testNet.Clients = map[int]ssh.Client{0: client}
+
+	if err := NetworkCreate(testNet, 0, 10, 0); err != nil {
+		t.Error("return value of NetworkCreate does not match expected value")
+	}
+}
 
