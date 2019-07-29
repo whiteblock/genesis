@@ -303,7 +303,7 @@ func TestRun(t *testing.T) {
 	defer ctrl.Finish()
 
 	client := mocks.NewMockClient(ctrl)
-	
+
 	command := "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --cpus 4 --memory 5000000 --ip 10.10.0.2 --hostname whiteblock-node0 --name whiteblock-node0 "
 	client.EXPECT().Run(command).AnyTimes()
 
@@ -314,5 +314,65 @@ func TestRun(t *testing.T) {
 
 	if err := Run(testNet, 0, container); err != nil {
 		t.Error("return value of Run does not match expected value")
+	}
+}
+
+func Test_serviceDockerRunCmd(t *testing.T) {
+	var tests = []struct {
+		network  string
+		ip       string
+		name     string
+		env      map[string]string
+		volumes  []string
+		ports    []string
+		image    string
+		cmd      string
+		expected string
+	}{
+		{
+			network:  "10",
+			ip:       "10.128.13.14",
+			name:     "eos",
+			env:      map[string]string{},
+			volumes:  []string{},
+			ports:    []string{"3000"},
+			image:    "testImage",
+			cmd:      "test",
+			expected: "docker run -itd --network 10 --ip 10.128.13.14 --hostname eos --name eos -e \"BIND_ADDR=10.128.13.14\"  -p 3000  testImage test",
+		},
+		{
+			network:  "0",
+			ip:       "10.128.13.14",
+			name:     "geth",
+			env:      map[string]string{},
+			volumes:  []string{},
+			ports:    []string{},
+			image:    "testImage",
+			cmd:      "test",
+			expected: "docker run -itd --network 0 --ip 10.128.13.14 --hostname geth --name geth -e \"BIND_ADDR=10.128.13.14\"   testImage test",
+		},
+		{
+			network:  "10",
+			ip:       "10.128.01.01",
+			name:     "artemis",
+			env:      map[string]string{},
+			volumes:  []string{},
+			ports:    []string{"4444"},
+			image:    "testImage",
+			cmd:      "test",
+			expected: "docker run -itd --network 10 --ip 10.128.01.01 --hostname artemis --name artemis -e \"BIND_ADDR=10.128.01.01\"  -p 4444  testImage test",
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			out := serviceDockerRunCmd(tt.network, tt.ip, tt.name, tt.env, tt.volumes, tt.ports, tt.image, tt.cmd)
+			fmt.Println(out)
+
+			if out != tt.expected {
+				t.Error("return value of serviceDockerRunCmd does not match expected value")
+			}
+
+		})
 	}
 }

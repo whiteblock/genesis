@@ -190,6 +190,7 @@ func Run(tn *testnet.TestNet, serverID int, container Container) error {
 	return nil
 }
 
+//TODO fix this func so it isn't taking 8 args
 func serviceDockerRunCmd(network string, ip string, name string, env map[string]string, volumes []string, ports []string, image string, cmd string) string {
 	envFlags := ""
 	for k, v := range env {
