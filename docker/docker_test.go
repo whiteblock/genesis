@@ -147,4 +147,16 @@ func TestNetworkCreate(t *testing.T) {
 	}
 }
 
+func TestNetworkDestroy(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mocks.NewMockClient(ctrl)
+	client.EXPECT().Run("docker network rm wb_vlan1")
+
+	if err := NetworkDestroy(client, 1); err != nil {
+		t.Error("return value of NetworkDestroy does not match expected value")
+	}
+}
+
 
