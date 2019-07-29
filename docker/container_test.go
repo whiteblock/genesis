@@ -202,3 +202,37 @@ func BenchmarkContainerDetails_GetEnvironment(b *testing.B) {
 		testContainer.GetEnvironment()
 	}
 }
+
+func TestContainerDetails_GetImage(t *testing.T) {
+	testContainer := new(ContainerDetails)
+	testContainer.Image = "blahblahblah"
+
+	testContainer2 := new(ContainerDetails)
+	testContainer2.Image = "test/testing/testtesttest"
+
+	var tests = []struct {
+		cd       *ContainerDetails
+		expected string
+	}{
+		{
+			cd:       new(ContainerDetails),
+			expected: new(ContainerDetails).GetImage(),
+		},
+		{
+			cd:       testContainer,
+			expected: "blahblahblah",
+		},
+		{
+			cd:       testContainer2,
+			expected: "test/testing/testtesttest",
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(tt.cd.GetImage(), tt.expected) {
+				t.Error("return value of GetImage does not match expected value")
+			}
+		})
+	}
+}
