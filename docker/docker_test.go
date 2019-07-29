@@ -25,9 +25,11 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/ssh/mocks"
 	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 )
 
 func TestKillNode(t *testing.T) {
@@ -77,17 +79,17 @@ func TestKillAll(t *testing.T) {
 
 func Test_dockerNetworkCreateCmd(t *testing.T) {
 	var tests = []struct {
-		subnet string
-		gateway string
-		network int
-		name string
+		subnet   string
+		gateway  string
+		network  int
+		name     string
 		expected string
 	}{
 		{
-			subnet: "blah",
+			subnet:  "blah",
 			gateway: "blah",
 			network: 0,
-			name: "blah",
+			name:    "blah",
 			expected: fmt.Sprintf("docker network create --subnet %s --gateway %s -o \"com.docker.network.bridge.name=%s%d\" %s",
 				"blah",
 				"blah",
@@ -96,10 +98,10 @@ func Test_dockerNetworkCreateCmd(t *testing.T) {
 				"blah"),
 		},
 		{
-			subnet: "test",
+			subnet:  "test",
 			gateway: "test",
 			network: 1000,
-			name: "test",
+			name:    "test",
 			expected: fmt.Sprintf("docker network create --subnet %s --gateway %s -o \"com.docker.network.bridge.name=%s%d\" %s",
 				"test",
 				"test",
@@ -108,10 +110,10 @@ func Test_dockerNetworkCreateCmd(t *testing.T) {
 				"test"),
 		},
 		{
-			subnet: "",
+			subnet:  "",
 			gateway: "",
 			network: 0,
-			name: "",
+			name:    "",
 			expected: fmt.Sprintf("docker network create --subnet %s --gateway %s -o \"com.docker.network.bridge.name=%s%d\" %s",
 				"",
 				"",
@@ -159,4 +161,161 @@ func TestNetworkDestroy(t *testing.T) {
 	}
 }
 
+func TestNetworkDestroyAll(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
+	client := mocks.NewMockClient(ctrl)
+	client.EXPECT().Run(fmt.Sprintf(
+		"for net in $(docker network ls | grep %s | awk '{print $1}'); do docker network rm $net; done", conf.NodeNetworkPrefix))
+
+	if err := NetworkDestroyAll(client); err != nil {
+		t.Error("return value of NetworkDestroyAll does not match expected value")
+	}
+}
+
+func TestLogin(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mocks.NewMockClient(ctrl)
+	client.EXPECT().Run(fmt.Sprintf("docker login -u \"%s\" -p \"%s\"", "test", "test"))
+
+	if err := Login(client, "test", "test"); err != nil {
+		t.Error("return value of Login does not match expected value")
+	}
+}
+
+func TestLogout(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mocks.NewMockClient(ctrl)
+	client.EXPECT().Run("docker logout")
+
+	if err := Logout(client); err != nil {
+		t.Error("return value of Logout does not match expected value")
+	}
+}
+
+func TestPull(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mocks.NewMockClient(ctrl)
+	client.EXPECT().Run("docker pull " + "testImage")
+
+	if err := Pull([]ssh.Client{client}, "testImage"); err != nil {
+		t.Error("return value of Logout does not match expected value")
+	}
+}
+
+func Test_getFlagsFromResources(t *testing.T) {
+	var tests = []struct {
+		res      util.Resources
+		expected string
+	}{
+		{
+			res: util.Resources{
+				Cpus:    "4",
+				Memory:  "5GB",
+				Volumes: []string{},
+				Ports:   []string{},
+			},
+			expected: " --cpus 4 --memory 5000000000",
+		},
+		{
+			res: util.Resources{
+				Cpus:    "6",
+				Memory:  "5MB",
+				Volumes: []string{},
+				Ports:   []string{},
+			},
+			expected: " --cpus 6 --memory 5000000",
+		},
+		{
+			res: util.Resources{
+				Cpus:    "2",
+				Memory:  "10KB",
+				Volumes: []string{},
+				Ports:   []string{},
+			},
+			expected: " --cpus 2 --memory 10000",
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			out, err := getFlagsFromResources(tt.res)
+			if err != nil {
+				t.Error("error running getFlagsFromResources", err)
+			}
+
+			if !reflect.DeepEqual(out, tt.expected) {
+				t.Error("return value of getFlagsFromResources does not match expected value")
+			}
+		})
+	}
+}
+
+func Test_dockerRunCmd(t *testing.T) {
+	var tests = []struct {
+		container Container
+		expected  string
+	}{
+		{
+			container: new(ContainerDetails),
+			expected:  "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --ip 10.0.0.2 --hostname whiteblock-node0 --name whiteblock-node0 ",
+		},
+		{
+			container: &ContainerDetails{
+				Environment: map[string]string{},
+				Image:       "test",
+				Node:        0,
+				Resources: util.Resources{
+					Cpus:   "4",
+					Memory: "5GB",
+				},
+				SubnetID:     10,
+				NetworkIndex: 0,
+				Type:         ContainerType(0),
+			},
+			expected: "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --cpus 4 --memory 5000000000 --ip 10.10.0.2 --hostname whiteblock-node0 --name whiteblock-node0 test",
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			out, err := dockerRunCmd(tt.container)
+			if err != nil {
+				t.Error("error running dockerRunCmd", err)
+			}
+
+			if out != tt.expected {
+				t.Error("return value of dockerRunCmd does not match expected value")
+			}
+		})
+	}
+}
+
+func TestRun(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mocks.NewMockClient(ctrl)
+
+	command := "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --cpus 4 --memory 5000000 --ip 10.10.0.2 --hostname whiteblock-node0 --name whiteblock-node0"
+	client.EXPECT().Run(command)
+
+	testNet := new(testnet.TestNet)
+	testNet.Clients = map[int]ssh.Client{0: client}
+
+	container := NewNodeContainer(new(db.Node), map[string]string{}, util.Resources{Cpus: "4", Memory: "5MB"}, 10)
+
+	fmt.Println(command)
+	fmt.Println(dockerRunCmd(container))
+
+	if err := Run(testNet, 0, container); err != nil {
+		t.Error("return value of Run does not match expected value")
+	}
+}

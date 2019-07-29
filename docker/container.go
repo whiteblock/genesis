@@ -74,7 +74,7 @@ type ContainerDetails struct {
 	Type         ContainerType
 }
 
-// NewNodeContainer creates a representation of a container for a regular sideCar
+// NewNodeContainer creates a representation of a container for a regular sideCar or regular node
 func NewNodeContainer(node *db.Node, env map[string]string, resources util.Resources, SubnetID int) Container {
 	return &ContainerDetails{
 		Environment:  env,
