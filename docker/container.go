@@ -25,17 +25,17 @@ import (
 	"github.com/whiteblock/genesis/util"
 )
 
-//ContainerType represents the type of node the container is
+//ContainerType represents the type of sideCar the container is
 type ContainerType int
 
 const (
-	// Node is a standard node in the network
+	// Node is a standard sideCar in the network
 	Node ContainerType = 0
 
-	// SideCar is a sidecar for a node in the network
+	// SideCar is a sidecar for a sideCar in the network
 	SideCar ContainerType = 1
 
-	// Service is a service node
+	// Service is a service sideCar
 	Service ContainerType = 2
 )
 
@@ -56,10 +56,10 @@ type Container interface {
 	// GetNetworkName gets the name of the containers network
 	GetNetworkName() string
 
-	// GetPorts gets the ports to open for the node, if instructed.
+	// GetPorts gets the ports to open for the sideCar, if instructed.
 	GetPorts() []string
 
-	// GetResources gets the maximum resource allocation of the node
+	// GetResources gets the maximum resource allocation of the sideCar
 	GetResources() util.Resources
 }
 
@@ -74,7 +74,7 @@ type ContainerDetails struct {
 	Type         ContainerType
 }
 
-// NewNodeContainer creates a representation of a container for a regular node
+// NewNodeContainer creates a representation of a container for a regular sideCar or regular node
 func NewNodeContainer(node *db.Node, env map[string]string, resources util.Resources, SubnetID int) Container {
 	return &ContainerDetails{
 		Environment:  env,
@@ -87,7 +87,7 @@ func NewNodeContainer(node *db.Node, env map[string]string, resources util.Resou
 	}
 }
 
-// NewSideCarContainer creates a representation of a container for a side car node
+// NewSideCarContainer creates a representation of a container for a side car sideCar
 func NewSideCarContainer(sc *db.SideCar, env map[string]string, resources util.Resources, SubnetID int) Container {
 	return &ContainerDetails{
 		Environment:  env,
@@ -134,7 +134,7 @@ func (cd *ContainerDetails) GetName() string {
 	return ""
 }
 
-// GetPorts gets the ports to open for the node, if instructed.
+// GetPorts gets the ports to open for the sideCar, if instructed.
 func (cd *ContainerDetails) GetPorts() []string {
 	return cd.Resources.Ports
 }
@@ -144,7 +144,7 @@ func (cd *ContainerDetails) GetNetworkName() string {
 	return fmt.Sprintf("%s%d", conf.NodeNetworkPrefix, cd.Node)
 }
 
-// GetResources gets the maximum resource allocation of the node
+// GetResources gets the maximum resource allocation of the sideCar
 func (cd *ContainerDetails) GetResources() util.Resources {
 	return cd.Resources
 }
