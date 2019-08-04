@@ -76,7 +76,9 @@ sudo docker run --rm -d --name genesis \
   -v /home/vagrant/.ssh/authorized_keys:/root/.ssh/authorized_keys \
   -e SSH_USER='vagrant' \
   -e SSH_KEY='/root/.ssh/id_rsa' \
-  -e HANDLE_NODE_SSH_KEYS='0' \
+  -e HANDLE_NODE_SSH_KEYS='true' \
+  -e NODES_PUBLIC_KEY=/root/.ssh/id_rsa.pub \
+  -e NODES_PRIVATE_KEY=/root/.ssh/id_rsa \
   -e LISTEN='0.0.0.0:8000' \
   --net=host \
   genesis
