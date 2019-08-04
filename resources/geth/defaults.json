@@ -6,7 +6,7 @@
     "maxPeers":1000,
     "gasLimit":4000000,
     "extraData":"0x3535353535353535353535353535353535353535353535353535353535353535",
-    "consensus":"clique",
+    "consensus":"ethash",
     "blockPeriodSeconds":2,
     "epoch":30000,
     "validators":1,
