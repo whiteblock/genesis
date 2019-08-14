@@ -28,9 +28,6 @@ BOOTSTRAP
   $build = <<-BUILD
 #!/bin/bash
 set -euox pipefail
-echo "=== build genesis ==="
-cd /vagrant
-sudo docker build . -t genesis
 echo "=== end genesis ==="
 BUILD
   config.vm.provision "build", type: "shell",  inline: $build, privileged: false
@@ -58,7 +55,7 @@ sudo docker run --rm -d --name genesis \
   -e NODES_PRIVATE_KEY=/root/.ssh/id_rsa \
   -e LISTEN='0.0.0.0:8000' \
   --net=host \
-  genesis
+  gcr.io/wb-genesis/bitbucket.org/whiteblockio/genesis:dev
 echo "=== genesis started ==="
 RUN
   config.vm.provision "run", type: "shell", inline: $run, privileged: false
