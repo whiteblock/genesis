@@ -101,14 +101,14 @@ func dockerBuild(tn *testnet.TestNet, contextDir string, dockerPath string) erro
 				if err != nil {
 					tn.BuildState.ReportError(err)
 					return
-				} else {
-					_, err := client.Run(fmt.Sprintf("docker build %s -t %s", contextDir, imageName))
+				}
+			} else {
+				_, err := client.Run(fmt.Sprintf("docker build %s -t %s", contextDir, imageName))
 
-					tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
-					if err != nil {
-						tn.BuildState.ReportError(err)
-						return
-					}
+				tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
+				if err != nil {
+					tn.BuildState.ReportError(err)
+					return
 				}
 			}
 
@@ -127,14 +127,14 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		return fmt.Errorf("image building is disabled")
 	}
 
-	var dockerPath string
+	dockerPath := ""
 
 	path, hasDockerfile := prebuild["dockerfile"] //Must be base64
-	if !hasDockerfile {
-		dockerPath = ""
+	if hasDockerfile {
+		if _, ok := path.(string); !ok {
+			return fmt.Errorf("invalid type for dockerfile; expected string")
+		}
 
-		return fmt.Errorf("cannot build without being given a dockerfile")
-	} else {
 		dockerPath = path.(string)
 	}
 
