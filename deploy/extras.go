@@ -75,30 +75,49 @@ func distributeNibbler(tn *testnet.TestNet) {
 	})
 }
 
-func dockerBuild(tn *testnet.TestNet, contextDir string) error {
+func dockerBuild(tn *testnet.TestNet, contextDir string, dockerPath string) error {
 	tn.BuildState.SetBuildStage("Building your custom image")
+
 	tag, err := util.GetUUIDString()
 	if err != nil {
 		return util.LogError(err)
 	}
+
 	imageName := fmt.Sprintf("%s:%s", tn.LDD.Blockchain, tag)
+
 	wg := sync.WaitGroup{}
+
 	for _, client := range tn.Clients {
 		wg.Add(1)
 		go func(client ssh.Client) {
 			defer wg.Done()
 
-			_, err := client.Run(fmt.Sprintf("docker build %s -t %s", contextDir, imageName))
-			tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
-			if err != nil {
-				tn.BuildState.ReportError(err)
-				return
+			if dockerPath != "" {
+				path := contextDir + "/" + dockerPath
+
+				_, err := client.Run(fmt.Sprintf("docker build %s -t %s -f %s", contextDir, imageName, path))
+
+				tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
+				if err != nil {
+					tn.BuildState.ReportError(err)
+					return
+				}
+			} else {
+				_, err := client.Run(fmt.Sprintf("docker build %s -t %s", contextDir, imageName))
+
+				tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
+				if err != nil {
+					tn.BuildState.ReportError(err)
+					return
+				}
 			}
 
 		}(client)
 	}
+
 	wg.Wait()
 	tn.UpdateAllImages(imageName)
+
 	return util.LogError(tn.BuildState.GetError())
 }
 
@@ -107,9 +126,16 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		log.Warn("got a request to build an image, when it is disabled")
 		return fmt.Errorf("image building is disabled")
 	}
-	_, hasDockerfile := prebuild["dockerfile"] //Must be base64
-	if !hasDockerfile {
-		return fmt.Errorf("cannot build without being given a dockerfile")
+
+	dockerPath := ""
+
+	path, hasDockerfile := prebuild["dockerfile"] //Must be base64
+	if hasDockerfile {
+		if _, ok := path.(string); !ok {
+			return fmt.Errorf("invalid type for dockerfile; expected string")
+		}
+
+		dockerPath = path.(string)
 	}
 
 	dockerfile, err := base64.StdEncoding.DecodeString(prebuild["dockerfile"].(string))
@@ -140,7 +166,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 	if err != nil {
 		return util.LogError(err)
 	}
-	return dockerBuild(tn, "/tmp"+dir)
+	return dockerBuild(tn, "/tmp"+dir, dockerPath)
 }
 
 func handleRepoBuild(tn *testnet.TestNet, prebuild map[string]interface{}) error {
@@ -191,7 +217,7 @@ func handleRepoBuild(tn *testnet.TestNet, prebuild map[string]interface{}) error
 			return util.LogError(err)
 		}
 	}
-	return dockerBuild(tn, dir)
+	return dockerBuild(tn, dir, "")
 }
 
 func handleDockerAuth(tn *testnet.TestNet, auth map[string]interface{}) error {
