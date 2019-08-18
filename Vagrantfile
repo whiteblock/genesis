@@ -7,6 +7,7 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "pogosoftware/ubuntu-18.04-docker"
   config.vm.network "forwarded_port", guest: 8000, host: 8000
+  config.vm.network "forwarded_port", guest: 8545, host: 8545
   config.vm.network "public_network",
     use_dhcp_assigned_default_route: true
   config.vm.synced_folder ".", "/vagrant"
