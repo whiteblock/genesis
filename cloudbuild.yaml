@@ -44,6 +44,7 @@ steps:
       'build',
       '-t', '$_ALPINE_IMAGE:$BRANCH_NAME',
       '-t', '$_ALPINE_IMAGE:$COMMIT_SHA',
+      '-f', 'alpine.dockerfile',
       '--cache-from', '$_ALPINE_IMAGE:$BRANCH_NAME',
       '.'
     ]
@@ -116,17 +117,17 @@ steps:
 
   - id: copyBinAlpine
     name: 'gcr.io/cloud-builders/docker'
-    args: [ 'cp', 'outputAlpine:/$_PROJECT/$_BINARY', '$_BINARY.alpine' ]
+    args: [ 'cp', 'outputAlpine:/$_PROJECT/$_BINARY', '${_BINARY}-alpine' ]
     waitFor:
       - 'createContainer'
 
   # copy binary to public bucket
   - name: 'gcr.io/cloud-builders/gsutil'
-    args: [ 'cp', '$_BINARY.alpine', 'gs://genesis-public/$_PROJECT/$COMMIT_SHA/bin/alpine/amd64/$_BINARY' ]
+    args: [ 'cp', '${_BINARY}-alpine', 'gs://genesis-public/$_PROJECT/$COMMIT_SHA/bin/alpine/amd64/$_BINARY' ]
     waitFor:
       - 'copyBinAlpine'
   - name: 'gcr.io/cloud-builders/gsutil'
-    args: [ 'cp', '$_BINARY.alpine', 'gs://genesis-public/$_PROJECT/$BRANCH_NAME/bin/alpine/amd64/$_BINARY' ]
+    args: [ 'cp', '${_BINARY}-alpine', 'gs://genesis-public/$_PROJECT/$BRANCH_NAME/bin/alpine/amd64/$_BINARY' ]
     waitFor:
       - 'copyBinAlpine'
 
