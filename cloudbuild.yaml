@@ -108,7 +108,7 @@ steps:
       - 'buildAlpine'
 
   # create container based off image (but don't run)
-  - id: createContainer
+  - id: createContainerAlpine
     name: 'gcr.io/cloud-builders/docker'
     args: [ 'create', '--name', 'output', '$_ALPINE_IMAGE:$COMMIT_SHA' ]
     waitFor:
@@ -129,6 +129,9 @@ steps:
     args: [ 'cp', '$_BINARY', 'gs://genesis-public/$_PROJECT/$BRANCH_NAME/bin/alpine/amd64/$_BINARY' ]
     waitFor:
       - 'copyBinAlpine'
+
+options:
+  machineType: 'N1_HIGHCPU_8'
 
 images: 
   - '$_IMAGE:$COMMIT_SHA'
