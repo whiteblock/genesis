@@ -54,8 +54,6 @@ steps:
       'build',
       '-t', '$_ALPINE_IMAGE:$BRANCH_NAME',
       '-t', '$_ALPINE_IMAGE:$COMMIT_SHA',
-      '-t', '$_LEGACY_IMAGE:$BRANCH_NAME',
-      '-t', '$_LEGACY_IMAGE:$COMMIT_SHA',
       '--cache-from', '$_ALPINE_IMAGE:$BRANCH_NAME',
       '.'
     ]
@@ -64,10 +62,6 @@ steps:
     args: [ 'push', '$_ALPINE_IMAGE:$COMMIT_SHA' ]
   - name: 'gcr.io/cloud-builders/docker'
     args: [ 'push', '$_ALPINE_IMAGE:$BRANCH_NAME' ]
-  - name: 'gcr.io/cloud-builders/docker'
-    args: [ 'push', '$_LEGACY_IMAGE:$COMMIT_SHA' ]
-  - name: 'gcr.io/cloud-builders/docker'
-    args: [ 'push', '$_LEGACY_IMAGE:$BRANCH_NAME' ]
   # create container based off image (but don't run)
   - name: 'gcr.io/cloud-builders/docker'
     args: [ 'create', '--name', 'output', '$_ALPINE_IMAGE:$COMMIT_SHA' ]
