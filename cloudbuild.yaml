@@ -119,7 +119,7 @@ steps:
     name: 'gcr.io/cloud-builders/docker'
     args: [ 'cp', 'outputAlpine:/$_PROJECT/$_BINARY', '${_BINARY}-alpine' ]
     waitFor:
-      - 'createContainer'
+      - 'createContainerAlpine'
 
   # copy binary to public bucket
   - name: 'gcr.io/cloud-builders/gsutil'
