@@ -2,7 +2,7 @@ FROM golang:1.12.6-alpine as built
 
 ENV GO111MODULE on
 
-RUN apk add git
+RUN apk add git gcc libc-dev
 
 ADD . /go/src/github.com/whiteblock/genesis
 
