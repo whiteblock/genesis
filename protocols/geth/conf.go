@@ -76,12 +76,5 @@ func newConf(tn *testnet.TestNet) (*ethConf, error) {
 
 // GetServices returns the services which are used by artemis
 func GetServices() []services.Service {
-	return []services.Service{
-		services.SimpleService{
-			Name:    "ethNetStats",
-			Image:   "gcr.io/whiteblock/ethnetstats:dev",
-			Env:     nil,
-			Network: "host",
-		},
-	}
+	return []services.Service{}
 }
