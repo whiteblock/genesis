@@ -16,8 +16,6 @@ Vagrant.configure("2") do |config|
 #
   $bootstrap = <<-BOOTSTRAP
 #!/bin/bash
-apt-get update
-sudo apt-get install -y curl make
 usermod -aG docker vagrant
 systemctl start docker
 BOOTSTRAP
