@@ -5,7 +5,7 @@ substitutions:
   _PROJECT: genesis
   _LEGACY_IMAGE: 'gcr.io/wb-genesis/bitbucket.org/whiteblockio/genesis'
   _IMAGE: 'gcr.io/wb-genesis/genesis'
-  _ALPINE_IMAGE: 'gcr.io/wb-genesis/alpine/genesis'
+  #_IMAGE: 'gcr.io/wb-genesis/alpine/genesis'
 timeout: '45m'
 steps:
   # allow these steps to fail, they try to pull cache first
@@ -19,7 +19,7 @@ steps:
   - id: pullAlpine
     name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
-    args: ['-c', 'docker pull $_ALPINE_IMAGE:$BRANCH_NAME || true' ]
+    args: ['-c', 'docker pull $_IMAGE:$BRANCH_NAME-alpine || true' ]
     waitFor: ['-']
 
   # build final docker image
@@ -42,10 +42,10 @@ steps:
     name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
-      '-t', '$_ALPINE_IMAGE:$BRANCH_NAME',
-      '-t', '$_ALPINE_IMAGE:$COMMIT_SHA',
+      '-t', '$_IMAGE:$BRANCH_NAME-alpine',
+      '-t', '$_IMAGE:$COMMIT_SHA-alpine',
       '-f', 'alpine.dockerfile',
-      '--cache-from', '$_ALPINE_IMAGE:$BRANCH_NAME',
+      '--cache-from', '$_IMAGE:$BRANCH_NAME-alpine',
       '.'
     ]
     waitFor: 
@@ -99,19 +99,19 @@ steps:
  
   # push docker image tag(s) one branch, one immutable
   - name: 'gcr.io/cloud-builders/docker'
-    args: [ 'push', '$_ALPINE_IMAGE:$COMMIT_SHA' ]
+    args: [ 'push', '$_IMAGE:$COMMIT_SHA-alpine' ]
     waitFor:
       - 'buildAlpine'
 
   - name: 'gcr.io/cloud-builders/docker'
-    args: [ 'push', '$_ALPINE_IMAGE:$BRANCH_NAME' ]
+    args: [ 'push', '$_IMAGE:$BRANCH_NAME-alpine' ]
     waitFor:
       - 'buildAlpine'
 
   # create container based off image (but don't run)
   - id: createContainerAlpine
     name: 'gcr.io/cloud-builders/docker'
-    args: [ 'create', '--name', 'outputAlpine', '$_ALPINE_IMAGE:$COMMIT_SHA' ]
+    args: [ 'create', '--name', 'outputAlpine', '$_IMAGE:$COMMIT_SHA-alpine' ]
     waitFor:
       - 'buildAlpine'
 
@@ -137,7 +137,7 @@ options:
 images: 
   - '$_IMAGE:$COMMIT_SHA'
   - '$_IMAGE:$BRANCH_NAME'
-  - '$_ALPINE_IMAGE:$COMMIT_SHA'
-  - '$_ALPINE_IMAGE:$BRANCH_NAME'
+  - '$_IMAGE:$COMMIT_SHA-alpine'
+  - '$_IMAGE:$BRANCH_NAME-alpine'
   - '$_LEGACY_IMAGE:$BRANCH_NAME'
   - '$_LEGACY_IMAGE:$COMMIT_SHA' 
