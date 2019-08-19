@@ -6,7 +6,7 @@
 # you're doing.
 Vagrant.configure("2") do |config|
 #  config.vm.box = "pogosoftware/ubuntu-18.04-docker"
-  config.vm.box = "generic/ubunt1804"
+  config.vm.box = "generic/ubuntu1804"
   config.vm.network "forwarded_port", guest: 8000, host: 8000
   config.vm.network "forwarded_port", guest: 8545, host: 8545
   config.vm.network "public_network",
