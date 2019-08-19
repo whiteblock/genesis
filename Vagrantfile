@@ -67,6 +67,8 @@ sudo docker run --rm -d --name genesis \
   --net=host \
   gcr.io/whiteblock/genesis:dev-alpine
 echo "=== genesis started ==="
+dd if=/dev/zero of=/EMPTY bs=1M
+rm -f /EMPTY
 RUN
   config.vm.provision "run", type: "shell", inline: $run, privileged: false
 end
