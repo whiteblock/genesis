@@ -41,7 +41,7 @@ func init() {
 	conf = util.GetConfig()
 
 	registrar.RegisterSideCar(sidecar, registrar.SideCar{
-		Image: "gcr.io/whiteblock/geth:dev",
+		Image: "gcr.io/whiteblock/geth:light",
 		BuildStepsCalc: func(nodes int, _ int) int {
 			return 5 * nodes
 		},
