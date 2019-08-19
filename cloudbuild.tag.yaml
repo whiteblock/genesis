@@ -5,14 +5,20 @@ substitutions:
   _PROJECT: genesis
   _LEGACY_IMAGE: 'gcr.io/wb-genesis/bitbucket.org/whiteblockio/genesis'
   _IMAGE: 'gcr.io/wb-genesis/genesis'
-timeout: '300s'
+timeout: '15m'
 steps:
+  ########DEBIAN########
+
   # allow these steps to fail, they try to pull cache first
-  - name: 'gcr.io/cloud-builders/docker'
+  - id: pull
+    name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
     args: ['-c', 'docker pull $_IMAGE:$BRANCH_NAME || true' ]
+    waitFor: ['-']
+
   # build final docker image
-  - name: 'gcr.io/cloud-builders/docker'
+  - id: build
+    name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
       '-t', '$_IMAGE:$TAG_NAME',
@@ -20,18 +26,84 @@ steps:
       '--cache-from', '$_IMAGE:$BRANCH_NAME',
       '.'
     ]
+    waitFor:
+      - 'pull'
   # push docker image tag(s) one branch, one immutable
   - name: 'gcr.io/cloud-builders/docker'
     args: [ 'push', '$_IMAGE:$TAG_NAME' ]
+    waitFor:
+      - 'build'
+
   - name: 'gcr.io/cloud-builders/docker'
     args: [ 'push', '$_LEGACY_IMAGE:$TAG_NAME' ]
+    waitFor:
+      - 'build'
+
   # create container based off image (but don't run)
-  - name: 'gcr.io/cloud-builders/docker'
+  - id: createContainer
+    name: 'gcr.io/cloud-builders/docker'
     args: [ 'create', '--name', 'output', '$_IMAGE:$TAG_NAME' ]
-  - name: 'gcr.io/cloud-builders/docker'
+    waitFor:
+      - 'build'
+
+  - id: copyBin
+    name: 'gcr.io/cloud-builders/docker'
     args: [ 'cp', 'output:/$_PROJECT/$_BINARY', '$_BINARY' ]
+    waitFor:
+      - 'createContainer'
+
   # copy binary to public bucket
   - name: 'gcr.io/cloud-builders/gsutil'
     args: [ 'cp', '$_BINARY', 'gs://genesis-public/$_PROJECT/$TAG_NAME/bin/linux/amd64/$_BINARY' ]
+    waitFor:
+      - 'copyBin'
 
-images: [ '$_IMAGE:$TAG_NAME', '$_LEGACY_IMAGE:$TAG_NAME' ]
+  ########ALPINE########
+
+  # allow these steps to fail, they try to pull cache first
+  - id: alpinePull
+    name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args: ['-c', 'docker pull $_IMAGE:$BRANCH_NAME-alpine || true' ]
+    waitFor: ['-']
+
+  # build final docker image
+  - id: alpineBuild
+    name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', '$_IMAGE:$TAG_NAME-alpine',
+      '--cache-from', '$_IMAGE:$BRANCH_NAME-alpine',
+      '.'
+    ]
+    waitFor:
+      - 'alpinePull'
+  # push docker image tag(s) one branch, one immutable
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', '$_IMAGE:$TAG_NAME-alpine' ]
+    waitFor:
+      - 'alpineBuild'
+
+  # create container based off image (but don't run)
+  - id: alpineCreateContainer
+    name: 'gcr.io/cloud-builders/docker'
+    args: [ 'create', '--name', 'outputAlpine', '$_IMAGE:$TAG_NAME-alpine' ]
+    waitFor:
+      - 'alpineBuild'
+
+  - id: alpineCopyBin
+    name: 'gcr.io/cloud-builders/docker'
+    args: [ 'cp', 'outputAlpine:/$_PROJECT/$_BINARY', '$_BINARY-alpine' ]
+    waitFor:
+      - 'alpineCreateContainer'
+
+  # copy binary to public bucket
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: [ 'cp', '$_BINARY-alpine', 'gs://genesis-public/$_PROJECT/$TAG_NAME/bin/alpine/amd64/$_BINARY' ]
+    waitFor: 
+      - 'alpineCopyBin'
+
+images:
+  - '$_IMAGE:$TAG_NAME'
+  - '$_IMAGE:$TAG_NAME-alpine'
+  - '$_LEGACY_IMAGE:$TAG_NAME'
