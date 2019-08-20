@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Package multigeth handles geth specific functionality
+//Package multigeth handles multigeth specific functionality
 package multigeth
 
 import (
@@ -37,7 +37,10 @@ import (
 var conf = util.GetConfig()
 
 const (
-	blockchain = "multigeth"
+	blockchain     = "multigeth"
+	peeringRetries = 10
+	password       = "password"
+	passwordFile   = "/geth/passwd"
 )
 
 func init() {
