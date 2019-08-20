@@ -29,8 +29,12 @@ import (
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/mustache"
+	"regexp"
+	//"strings"
 	"sync"
+	"time"
 )
 
 var conf = util.GetConfig()
@@ -45,14 +49,14 @@ const (
 func init() {
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
-	registrar.RegisterServices(blockchain, GetServices)
+	registrar.RegisterServices(blockchain, func() []services.Service { return nil })
 	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }
 
 func build(tn *testnet.TestNet) error {
 	mux := sync.Mutex{}
-	etcconf, err := newConf(tn.LDD.Params)
+	etcconf, err := newConf(tn)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -74,8 +78,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-
-	err = generatePasswordFile(tn, accounts, password, passwordFile)
+	err = ethereum.CreateNPasswordFile(tn, len(accounts), password, passwordFile)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -155,14 +158,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Starting geth")
 
-	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		//Load the CustomGenesis file
-		mux.Lock()
-		_, err := client.DockerExec(node, fmt.Sprintf("mv /geth/mainnet/keystore/ /geth/%s/", etcconf.Identity))
-		if err != nil {
-			return util.LogError(err)
-		}
-		mux.Unlock()
+	/*err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("adding accounts to right directory")
 
 		cont, err := client.DockerExec(node,
@@ -175,7 +171,7 @@ func build(tn *testnet.TestNet) error {
 
 		tn.BuildState.IncrementBuildProgress()
 		return nil
-	})
+	})*/
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		tn.BuildState.IncrementBuildProgress()
@@ -222,4 +218,107 @@ func build(tn *testnet.TestNet) error {
 
 func add(tn *testnet.TestNet) error {
 	return nil
+}
+
+
+/**
+ * Create the custom genesis file for Ethereum
+ * @param  *etcconf etcconf     The chain configuration
+ * @param  []string wallets     The wallets to be allocated a balance
+ */
+
+func createGenesisfile(etcconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) error {
+
+	alloc := map[string]map[string]string{}
+	for _, account := range accounts {
+		alloc[account.HexAddress()[2:]] = map[string]string{
+			"balance": etcconf.InitBalance,
+		}
+	}
+
+	consensusParams := map[string]interface{}{}
+	switch etcconf.Consensus {
+	case "clique":
+		consensusParams["period"] = etcconf.BlockPeriodSeconds
+		consensusParams["epoch"] = etcconf.Epoch
+	case "ethash":
+		consensusParams["difficulty"] = etcconf.Difficulty
+	}
+
+	genesis := map[string]interface{}{
+		"network":         etcconf.NetworkID,
+		"chainId":         etcconf.NetworkID,
+		"difficulty":      fmt.Sprintf("0x0%x", etcconf.Difficulty),
+		"mixhash":         etcconf.Mixhash,
+		"gasLimit":        fmt.Sprintf("0x%x", etcconf.GasLimit),
+		"extraData":       etcconf.ExtraData,
+		"consensus":       etcconf.Consensus,
+		"homesteadBlock":  etcconf.HomesteadBlock,
+		"eip150Block":     etcconf.EIP150Block,
+		"daoHFBlock":      etcconf.DAOHFBlock,
+		"eip155_160Block": etcconf.EIP155_160Block,
+		"ecip1010Length":  etcconf.ECIP1010Length,
+		"ecip1017Block":   etcconf.ECIP1017Block,
+		"ecip1017Era":     etcconf.ECIP1017Era,
+	}
+
+	switch etcconf.Consensus {
+	case "clique":
+		extraData := "0x0000000000000000000000000000000000000000000000000000000000000000"
+		//it does not work when there are multiple signers put into this extraData field
+		/*
+			for i := 0; i < len(accounts) && i < tn.LDD.Nodes; i++ {
+				extraData += accounts[i].HexAddress()[2:]
+			}
+		*/
+		extraData += accounts[0].HexAddress()[2:]
+		extraData += "000000000000000000000000000000000000000000000000000000000000000000" +
+			"0000000000000000000000000000000000000000000000000000000000000000"
+		genesis["extraData"] = extraData
+	}
+
+	genesis["alloc"] = alloc
+	genesis["consensusParams"] = consensusParams
+	tn.BuildState.Set("alloc", alloc)
+	tn.BuildState.Set("etcconf", etcconf)
+
+	return helpers.CreateConfigs(tn, "/geth/chain.json", func(node ssh.Node) ([]byte, error) {
+		template, err := helpers.GetBlockchainConfig(blockchain, node.GetAbsoluteNumber(), "chain.json", tn.LDD)
+		if err != nil {
+			return nil, util.LogError(err)
+		}
+
+		data, err := mustache.Render(string(template), util.ConvertToStringMap(genesis))
+		if err != nil {
+			return nil, util.LogError(err)
+		}
+		return []byte(data), nil
+	})
+}
+
+func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
+	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		for i, enode := range enodes {
+			if i == node.GetAbsoluteNumber() {
+				continue
+			}
+			var err error
+			for i := 0; i < peeringRetries; i++ { //give it some extra tries
+				_, err = client.KeepTryRun(
+					fmt.Sprintf(
+						`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
+							`'{ "method": "admin_addPeer", "params": ["%s"], "id": 1, "jsonrpc": "2.0" }'`,
+						node.GetIP(), enode))
+				if err == nil {
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
+			tn.BuildState.IncrementBuildProgress()
+			if err != nil {
+				return util.LogError(err)
+			}
+		}
+		return nil
+	})
 }

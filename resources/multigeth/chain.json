@@ -1,0 +1,32 @@
+{
+  "config": {
+    "networkId": {{{networkId}}},
+    "chainId": {{{chainId}}},
+    "homesteadBlock": {{{homesteadBlock}}},
+    "eip7FBlock": null,
+    "eip150Block": {{{eip150Block}}},
+    "eip150Hash": "0x5ab4c85f58bf99e8562745cfd8900bd8b41dcbf46879aa90421152021f5d9420",
+    "eip155Block": {{{eip155Block}}},
+    "eip158Block": {{{eip158Block}}},
+    "byzantiumBlock": {{{byzantiumBlock}}},
+    "disposalBlock": {{{disposalBlock}}},
+    "constantinopleBlock": null,
+    "ECIP1017EraRounds": {{{ecip1017EraRounds}}},
+    "eip160FBlock": {{{eip160FBlock}}},
+    "ecip1010PauseBlock": {{{ecip1010PauseBlock}}},
+    "ecip1010Length": {{{ecip1010Length}}},
+    "ethash": {},
+    "trustedCheckpoint": null
+  },
+  "nonce": "0x0000000000000539",
+  "timestamp": "0x42",
+  "extraData": "0xdeadbeefcafe1447",
+  "gasLimit": {{{gasLimit}}},
+  "difficulty": {{{difficulty}}},
+  "mixHash": {{{mixHash}}},
+  "coinbase": "0x0000000000000000000000000000000000000000",
+  "alloc": {{{alloc}}},
+  "number": "0x0",
+  "gasUsed": "0x0",
+  "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
+}

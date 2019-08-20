@@ -25,10 +25,10 @@ import (
 	"github.com/whiteblock/genesis/testnet"
 )
 
-type mgethConf struct {
+type ethConf struct {
 	NetworkID           int64  `json:"networkId"`
-	ChainID             int64  `json:chainId`
-	HomesteadBlock      int64  `json: homesteadBlock`
+	ChainID				int64  `json:"chainId"`
+	HomesteadBlock      int64  `json:"homesteadBlock"`
 	Difficulty          int64  `json:"difficulty"`
 	InitBalance         string `json:"initBalance"`
 	MaxPeers            int64  `json:"maxPeers"`
@@ -36,21 +36,22 @@ type mgethConf struct {
 	Consensus           string `json:"consensus"`
 	BlockPeriodSeconds  int64  `json:"blockPeriodSeconds"`
 	Epoch               int64  `json:"epoch"`
-	Eip150Block         int64  `json:"eip150Block`
+	Eip150Block         int64  `json:"eip150Block"`
 	Eip155Block         int64  `json:"eip155Block"`
 	Eip158Block         int64  `json:"eip158Block"`
 	ByzantiumBlock      int64  `json:"byzantiumBlock"`
 	DisposalBlock       int64  `json:"disposalBlock"`
-	ConstantinopleBlock int64  `json:"constantinopleBlock"`
+//	ConstantinopleBlock int64  `json:"constantinopleBlock"`
 	ECIP1017EraRounds   int64  `json:"ecip1017EraRounds"`
 	Eip160FBlock        int64  `json:"eip160FBlock"`
 	Ecip1010PauseBlock  int64  `json:"ecip1010PauseBlock"`
 	Ecip1010Length      int64  `json:"ecip1010Length"`
-	TrustedCheckpoint   int64  `json:"trustedCheckpoint"`
-	Mode                string `json:"mode"`
+//	TrustedCheckpoint   int64  `json:"trustedCheckpoint"`
 	Verbosity           int64  `json:"verbosity"`
 	Unlock              bool   `json:"unlock"`
 	ExposedAccounts     int64  `json:"exposedAccounts"`
+	ExtraAccounts		int64  `json:"extraAccounts"`
+	MixHash				string `json:"mixHash"`
 }
 
 /**

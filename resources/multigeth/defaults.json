@@ -1,3 +1,25 @@
 {
-	
+	"networkId": 88,
+    "chainId": 1447,
+    "homesteadBlock":0,
+    "difficulty":131072,
+    "gasLimit":3141592,
+    "initBalance":"100000000000000000000",
+   	"consensus":"ethash",
+   	"blockPeriodSeconds":2,
+   	"epoch":30000,
+   	"eip150Block":0,
+   	"eip155Block":0,
+   	"eip158Block":0,
+   	"byzantiumBlock":0,
+   	"disposalBlock":0,
+   	"ecip1017EraRounds": 2000000,
+   	"eip160FBlock":0,
+   	"ecip1010PauseBlock":0,
+   	"ecip1010Length":2000000,
+   	"verbosity"
+   	"unlock"
+   	"exposedAccounts"
+   	"extraAccounts"
+   	"mixHash":"0x00000000000000000000000000000000000000647572616c65787365646c6578"
 }
