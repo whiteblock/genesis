@@ -15,5 +15,69 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-
 package multigeth
+
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/testnet"
+)
+
+type mgethConf struct {
+	NetworkID           int64  `json:"networkId"`
+	ChainID             int64  `json:chainId`
+	HomesteadBlock      int64  `json: homesteadBlock`
+	Difficulty          int64  `json:"difficulty"`
+	InitBalance         string `json:"initBalance"`
+	MaxPeers            int64  `json:"maxPeers"`
+	GasLimit            int64  `json:"gasLimit"`
+	Consensus           string `json:"consensus"`
+	BlockPeriodSeconds  int64  `json:"blockPeriodSeconds"`
+	Epoch               int64  `json:"epoch"`
+	Eip150Block         int64  `json:"eip150Block`
+	Eip155Block         int64  `json:"eip155Block"`
+	Eip158Block         int64  `json:"eip158Block"`
+	ByzantiumBlock      int64  `json:"byzantiumBlock"`
+	DisposalBlock       int64  `json:"disposalBlock"`
+	ConstantinopleBlock int64  `json:"constantinopleBlock"`
+	ECIP1017EraRounds   int64  `json:"ecip1017EraRounds"`
+	Eip160FBlock        int64  `json:"eip160FBlock"`
+	Ecip1010PauseBlock  int64  `json:"ecip1010PauseBlock"`
+	Ecip1010Length      int64  `json:"ecip1010Length"`
+	TrustedCheckpoint   int64  `json:"trustedCheckpoint"`
+	Mode                string `json:"mode"`
+	Verbosity           int64  `json:"verbosity"`
+	Unlock              bool   `json:"unlock"`
+	ExposedAccounts     int64  `json:"exposedAccounts"`
+}
+
+/**
+ * Fills in the defaults for missing parts,
+ */
+func newConf(tn *testnet.TestNet) (*ethConf, error) {
+	data := tn.LDD.Params
+	out := new(ethConf)
+	err := helpers.HandleBlockchainConfig(blockchain, data, out)
+	if err != nil || data == nil {
+		return out, err
+	}
+
+	initBalance, exists := data["initBalance"]
+	if exists && initBalance != nil {
+		switch initBalance.(type) {
+		case json.Number:
+			out.InitBalance = initBalance.(json.Number).String()
+		case string:
+			out.InitBalance = initBalance.(string)
+		default:
+			return nil, fmt.Errorf("incorrect type for initBalance given")
+		}
+	}
+	if out.ExposedAccounts != -1 && out.ExposedAccounts > out.ExtraAccounts+int64(tn.LDD.Nodes) {
+		out.ExtraAccounts = out.ExposedAccounts - int64(tn.LDD.Nodes)
+	}
+
+	return out, nil
+}
