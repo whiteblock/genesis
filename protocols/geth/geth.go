@@ -241,7 +241,7 @@ func add(tn *testnet.TestNet) error {
 		account := accounts[node.GetAbsoluteNumber()]
 		gethCmd := fmt.Sprintf(
 			`geth --datadir /geth/ %s --rpc --nodiscover --rpcaddr 0.0.0.0`+
-				` --miner.gasprice=1 --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine`+
+				` --miner.gasprice=1 --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "*" --mine`+
 				` --txpool.nolocals --port %d console  2>&1 | tee %s`,
 			getExtraFlags(ethconf, account, validFlags[node.GetAbsoluteNumber()]), ethereum.P2PPort, conf.DockerOutputFile)
 
