@@ -60,6 +60,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+	validFlags := checkFlagsExist(tn)
 
 	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes) + (tn.LDD.Nodes * (tn.LDD.Nodes - 1)))
 
@@ -135,8 +136,8 @@ func build(tn *testnet.TestNet) error {
 		// log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
 
 		gethResults, err := client.DockerExec(node,
-			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
-				"geth --rpc --datadir=/geth/ --network-id=%d --chain=/geth/chain.json console'", etcconf.NetworkID))
+			"bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
+				"geth --rpc --datadir=/geth/ console'")
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -177,12 +178,11 @@ func build(tn *testnet.TestNet) error {
 		tn.BuildState.IncrementBuildProgress()
 
 		gethCmd := fmt.Sprintf(
-			`geth --datadir=/geth/ --maxpeers=%d --chain=/geth/chain.json --rpc --nodiscover --rpcaddr=%s`+
-				` --rpcapi="admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain="0.0.0.0" --mine --unlock="%s"`+
-				` --password=/geth/passwd --etherbase=%s console  2>&1 | tee %s`,
-			etcconf.MaxPeers,
+			`geth --datadir=/geth/ %s --rpc --nodiscover --rpcaddr=%s`+
+				` --rpcapi="admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain="0.0.0.0" --mine`+
+				` --etherbase=%s --nousb console  2>&1 | tee %s`,
+			getExtraFlags(etcconf, accounts[node.GetAbsoluteNumber()], validFlags[node.GetAbsoluteNumber()]),
 			node.GetIP(),
-			unlock,
 			accounts[node.GetAbsoluteNumber()].HexAddress(),
 			conf.DockerOutputFile)
 
@@ -293,6 +293,44 @@ func createGenesisfile(etcconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		}
 		return []byte(data), nil
 	})
+}
+
+func getExtraFlags(ethconf *ethConf, account *ethereum.Account, validFlags map[string]bool) string {
+	out := fmt.Sprintf("--maxpeers %d --nodekeyhex %s",
+		ethconf.MaxPeers, account.HexPrivateKey())
+
+	if ethconf.Consensus == "ethash" {
+		out += fmt.Sprintf(" --miner.gaslimit %d", ethconf.GasLimit)
+		out += fmt.Sprintf(" --miner.gastarget %d", ethconf.GasLimit)
+		out += fmt.Sprintf(" --miner.etherbase %s", account.HexAddress())
+	}
+	if validFlags["--allow-insecure-unlock"] {
+		out += " --allow-insecure-unlock"
+	}
+	out += fmt.Sprintf(`--unlock="%s" --password /geth/passwd`, account.HexAddress())
+
+	return out
+}
+
+func checkFlagsExist(tn *testnet.TestNet) []map[string]bool {
+	flagsToCheck := []string{"--allow-insecure-unlock"}
+
+	out := make([]map[string]bool, len(tn.Nodes))
+	for i := range tn.Nodes {
+		out[i] = map[string]bool{}
+	}
+	mux := sync.Mutex{}
+
+	helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		for _, flag := range flagsToCheck {
+			_, err := client.DockerExec(node, fmt.Sprintf("geth --help | grep -- '%s'", flag))
+			mux.Lock()
+			out[node.GetAbsoluteNumber()][flag] = (err == nil)
+			mux.Unlock()
+		}
+		return nil
+	})
+	return out
 }
 
 func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
