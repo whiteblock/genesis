@@ -17,8 +17,6 @@
    	["ecip1010PauseBlock",],
    	["ecip1010Length",],
    	["trustedCheckpoint",],
-   	["verbosity",],
-   	["unlock",],
    	["exposedAccounts",],
    	["extraAccounts",],
    	["mixHash",],

@@ -17,9 +17,7 @@
    	"eip160FBlock":0,
    	"ecip1010PauseBlock":0,
    	"ecip1010Length":2000000,
-   	"verbosity"
-   	"unlock"
-   	"exposedAccounts"
-   	"extraAccounts"
+   	"exposedAccounts": -1,
+   	"extraAccounts":5,
    	"mixHash":"0x00000000000000000000000000000000000000647572616c65787365646c6578"
 }

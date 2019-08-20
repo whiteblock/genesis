@@ -26,32 +26,30 @@ import (
 )
 
 type ethConf struct {
-	NetworkID           int64  `json:"networkId"`
-	ChainID				int64  `json:"chainId"`
-	HomesteadBlock      int64  `json:"homesteadBlock"`
-	Difficulty          int64  `json:"difficulty"`
-	InitBalance         string `json:"initBalance"`
-	MaxPeers            int64  `json:"maxPeers"`
-	GasLimit            int64  `json:"gasLimit"`
-	Consensus           string `json:"consensus"`
-	BlockPeriodSeconds  int64  `json:"blockPeriodSeconds"`
-	Epoch               int64  `json:"epoch"`
-	Eip150Block         int64  `json:"eip150Block"`
-	Eip155Block         int64  `json:"eip155Block"`
-	Eip158Block         int64  `json:"eip158Block"`
-	ByzantiumBlock      int64  `json:"byzantiumBlock"`
-	DisposalBlock       int64  `json:"disposalBlock"`
-//	ConstantinopleBlock int64  `json:"constantinopleBlock"`
-	ECIP1017EraRounds   int64  `json:"ecip1017EraRounds"`
-	Eip160FBlock        int64  `json:"eip160FBlock"`
-	Ecip1010PauseBlock  int64  `json:"ecip1010PauseBlock"`
-	Ecip1010Length      int64  `json:"ecip1010Length"`
-//	TrustedCheckpoint   int64  `json:"trustedCheckpoint"`
-	Verbosity           int64  `json:"verbosity"`
-	Unlock              bool   `json:"unlock"`
-	ExposedAccounts     int64  `json:"exposedAccounts"`
-	ExtraAccounts		int64  `json:"extraAccounts"`
-	MixHash				string `json:"mixHash"`
+	NetworkID          int64  `json:"networkId"`
+	ChainID            int64  `json:"chainId"`
+	HomesteadBlock     int64  `json:"homesteadBlock"`
+	Difficulty         int64  `json:"difficulty"`
+	InitBalance        string `json:"initBalance"`
+	MaxPeers           int64  `json:"maxPeers"`
+	GasLimit           int64  `json:"gasLimit"`
+	Consensus          string `json:"consensus"`
+	BlockPeriodSeconds int64  `json:"blockPeriodSeconds"`
+	Epoch              int64  `json:"epoch"`
+	EIP150Block        int64  `json:"eip150Block"`
+	EIP155Block        int64  `json:"eip155Block"`
+	EIP158Block        int64  `json:"eip158Block"`
+	ByzantiumBlock     int64  `json:"byzantiumBlock"`
+	DisposalBlock      int64  `json:"disposalBlock"`
+	//	ConstantinopleBlock int64  `json:"constantinopleBlock"`
+	ECIP1017EraRounds  int64 `json:"ecip1017EraRounds"`
+	EIP160FBlock       int64 `json:"eip160FBlock"`
+	ECIP1010PauseBlock int64 `json:"ecip1010PauseBlock"`
+	ECIP1010Length     int64 `json:"ecip1010Length"`
+	//	TrustedCheckpoint   int64  `json:"trustedCheckpoint"`
+	ExposedAccounts int64  `json:"exposedAccounts"`
+	ExtraAccounts   int64  `json:"extraAccounts"`
+	MixHash         string `json:"mixHash"`
 }
 
 /**

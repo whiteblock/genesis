@@ -26,10 +26,10 @@ import (
 	"github.com/whiteblock/genesis/protocols/ethereum"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/mustache"
 	"regexp"
 	//"strings"
@@ -220,7 +220,6 @@ func add(tn *testnet.TestNet) error {
 	return nil
 }
 
-
 /**
  * Create the custom genesis file for Ethereum
  * @param  *etcconf etcconf     The chain configuration
@@ -246,20 +245,20 @@ func createGenesisfile(etcconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 	}
 
 	genesis := map[string]interface{}{
-		"network":         etcconf.NetworkID,
-		"chainId":         etcconf.NetworkID,
-		"difficulty":      fmt.Sprintf("0x0%x", etcconf.Difficulty),
-		"mixhash":         etcconf.Mixhash,
-		"gasLimit":        fmt.Sprintf("0x%x", etcconf.GasLimit),
-		"extraData":       etcconf.ExtraData,
-		"consensus":       etcconf.Consensus,
-		"homesteadBlock":  etcconf.HomesteadBlock,
-		"eip150Block":     etcconf.EIP150Block,
-		"daoHFBlock":      etcconf.DAOHFBlock,
-		"eip155_160Block": etcconf.EIP155_160Block,
-		"ecip1010Length":  etcconf.ECIP1010Length,
-		"ecip1017Block":   etcconf.ECIP1017Block,
-		"ecip1017Era":     etcconf.ECIP1017Era,
+		"network":            etcconf.NetworkID,
+		"chainId":            etcconf.ChainID,
+		"homesteadBlock":     etcconf.HomesteadBlock,
+		"eip150Block":        etcconf.EIP150Block,
+		"eip155Block":        etcconf.EIP155Block,
+		"byzantiumBlock":     etcconf.ByzantiumBlock,
+		"disposalBlock":      etcconf.DisposalBlock,
+		"ecip1017EraRounds":  etcconf.ECIP1017EraRounds,
+		"eip160FBlock":       etcconf.EIP160FBlock,
+		"ecip1010PauseBlock": etcconf.ECIP1010PauseBlock,
+		"ecip1010Length":     etcconf.ECIP1010Length,
+		"gasLimit":           fmt.Sprintf("0x%x", etcconf.GasLimit),
+		"difficulty":         fmt.Sprintf("0x0%x", etcconf.Difficulty),
+		"mixhash":            etcconf.MixHash,
 	}
 
 	switch etcconf.Consensus {
