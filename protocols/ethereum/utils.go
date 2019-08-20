@@ -20,7 +20,9 @@ package ethereum
 
 import (
 	"fmt"
+	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 )
@@ -66,4 +68,21 @@ func ExposeAccounts(tn *testnet.TestNet, accounts []*Account) {
 func ExposeEnodes(tn *testnet.TestNet, enodes []string) {
 	tn.BuildState.SetExt(EnodeKey, enodes)
 	tn.BuildState.Set(EnodeKey, enodes)
+}
+
+func UnlockAllAccounts(tn *testnet.TestNet, accounts []*Account, password string) error {
+	return helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		tn.BuildState.Defer(func() { //Can happen eventually
+			for _, account := range accounts {
+
+				client.Run( //Doesn't really need to succeed, it is a nice to have, but not required.
+					fmt.Sprintf(
+						`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
+							`'{ "method": "personal_unlockAccount", "params": ["%s","%s",0], "id": 3, "jsonrpc": "2.0" }'`,
+						node.GetIP(), account.HexAddress(), password))
+
+			}
+		})
+		return nil
+	})
 }

@@ -20,7 +20,6 @@
 package multigeth
 
 import (
-	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
@@ -217,10 +216,10 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	unlockAllAccounts(tn, accounts)
+	return ethereum.UnlockAllAccounts(tn, accounts, password)
 
 }
 
 func add(tn *testnet.TestNet) error {
-
+	return nil
 }

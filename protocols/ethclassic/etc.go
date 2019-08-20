@@ -261,20 +261,7 @@ func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 }
 
 func unlockAllAccounts(tn *testnet.TestNet, accounts []*ethereum.Account) error {
-	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		tn.BuildState.Defer(func() { //Can happen eventually
-			for _, account := range accounts {
-
-				client.Run( //Doesn't really need to succeed, it is a nice to have, but not required.
-					fmt.Sprintf(
-						`curl -sS -X POST http://%s:8545 -H "Content-Type: application/json"  -d `+
-							`'{ "method": "personal_unlockAccount", "params": ["%s","%s",0], "id": 3, "jsonrpc": "2.0" }'`,
-						node.GetIP(), account.HexAddress(), password))
-
-			}
-		})
-		return nil
-	})
+	return ethereum.UnlockAllAccounts(tn, accounts, password)
 }
 
 /**
@@ -358,9 +345,5 @@ func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethere
 
 //CreatePasswordFile turns the process of creating a password file into a single function call
 func generatePasswordFile(tn *testnet.TestNet, accounts []*ethereum.Account, password string, dest string) error {
-	var data string
-	for i := 1; i <= len(accounts); i++ {
-		data += fmt.Sprintf("%s\n", password)
-	}
-	return util.LogError(helpers.CopyBytesToAllNewNodes(tn, data, dest))
+	return ethereum.CreateNPasswordFile(tn, len(accounts), password, dest)
 }
