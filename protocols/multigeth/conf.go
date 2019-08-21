@@ -50,6 +50,7 @@ type ethConf struct {
 	ExposedAccounts int64  `json:"exposedAccounts"`
 	ExtraAccounts   int64  `json:"extraAccounts"`
 	MixHash         string `json:"mixHash"`
+	Verbosity       int    `json:"verbosity"`
 }
 
 /**

@@ -19,5 +19,7 @@
 	["trustedCheckpoint","int"],
 	["exposedAccounts","int"],
 	["extraAccounts","int"],
-	["mixHash","string"]
+	["mixHash","string"],
+	["verbosity","int"],
+	["maxPeers","int"]
 ]

@@ -20,6 +20,7 @@ package ethereum
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/ssh"
@@ -85,4 +86,19 @@ func UnlockAllAccounts(tn *testnet.TestNet, accounts []*Account, password string
 		})
 		return nil
 	})
+}
+
+func GetEnodes(tn *testnet.TestNet, accounts []*Account) []string {
+	var enodes []string
+	tn.BuildState.GetP(EnodeKey, &enodes)
+
+	for i, node := range tn.Nodes {
+		if len(enodes) > i {
+			log.WithFields(log.Fields{"num": node.GetAbsoluteNumber()}).Debug(
+				"skipping node because already have it's node id")
+			continue
+		}
+		enodes = append(enodes, fmt.Sprintf("enode://%s@%s:%d", accounts[i].HexPublicKey(), node.IP, P2PPort))
+	}
+	return enodes
 }

@@ -31,7 +31,6 @@ import (
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
-	"regexp"
 	//"strings"
 	"sync"
 	"time"
@@ -56,7 +55,6 @@ func init() {
 }
 
 func build(tn *testnet.TestNet) error {
-	mux := sync.Mutex{}
 	etcconf, err := newConf(tn)
 	if err != nil {
 		return util.LogError(err)
@@ -127,7 +125,7 @@ func build(tn *testnet.TestNet) error {
 
 		//Load the CustomGenesis file
 		_, err := client.DockerExec(node,
-			fmt.Sprintf("geth --datadir /geth/  init %s", genesisFileLoc))
+			fmt.Sprintf("geth --datadir /geth/ --nousb init %s", genesisFileLoc))
 		return util.LogError(err)
 	})
 	if err != nil {
@@ -137,32 +135,9 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Bootstrapping network")
 
-	staticNodes := make([]string, tn.LDD.Nodes)
+	staticNodes := ethereum.GetEnodes(tn, accounts)
 
 	tn.BuildState.SetBuildStage("Initializing geth")
-
-	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-
-		gethResults, err := client.DockerExec(node,
-			"bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
-				"geth --rpc --datadir=/geth/ console'")
-		if err != nil {
-			return util.LogError(err)
-		}
-		log.WithFields(log.Fields{"raw": gethResults}).Trace("grabbed raw enode info")
-		enodePattern := regexp.MustCompile(`enode:\/\/[A-z|0-9]+@(\[\:\:\]|([0-9]|\.)+)\:[0-9]+`)
-		enode := enodePattern.FindAllString(gethResults, 1)[0]
-		log.WithFields(log.Fields{"enode": enode, "node": node.GetIP()}).Trace("parsed the enode")
-		enodeAddressPattern := regexp.MustCompile(`\[\:\:\]|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})`)
-		enode = enodeAddressPattern.ReplaceAllString(enode, node.GetIP())
-
-		mux.Lock()
-		staticNodes[node.GetAbsoluteNumber()] = enode
-		mux.Unlock()
-
-		tn.BuildState.IncrementBuildProgress()
-		return nil
-	})
 
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Starting geth")
@@ -187,7 +162,7 @@ func build(tn *testnet.TestNet) error {
 
 		gethCmd := fmt.Sprintf(
 			`geth --datadir=/geth/ %s --rpc --nodiscover --rpcaddr=%s`+
-				` --rpcapi="admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain="0.0.0.0" --mine`+
+				` --rpcapi="admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain="*" --mine`+
 				` --etherbase=%s --nousb console  2>&1 | tee %s`,
 			getExtraFlags(etcconf, accounts[node.GetAbsoluteNumber()], validFlags[node.GetAbsoluteNumber()]),
 			node.GetIP(),
@@ -305,9 +280,11 @@ func createGenesisfile(etcconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 }
 
 func getExtraFlags(ethconf *ethConf, account *ethereum.Account, validFlags map[string]bool) string {
-	out := fmt.Sprintf("--maxpeers %d --nodekeyhex %s",
-		ethconf.MaxPeers, account.HexPrivateKey())
-
+	out := fmt.Sprintf("--nodekeyhex %s", account.HexPrivateKey())
+	if ethconf.MaxPeers != -1 {
+		out += fmt.Sprintf("--maxpeers %d", ethconf.MaxPeers)
+	}
+	out += fmt.Sprintf(" --verbosity %d", ethconf.Verbosity)
 	if ethconf.Consensus == "ethash" {
 		out += fmt.Sprintf(" --miner.gaslimit %d", ethconf.GasLimit)
 		out += fmt.Sprintf(" --miner.gastarget %d", ethconf.GasLimit)

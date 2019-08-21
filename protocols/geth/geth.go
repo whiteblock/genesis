@@ -516,16 +516,5 @@ func checkFlagsExist(tn *testnet.TestNet) []map[string]bool {
 }
 
 func getEnodes(tn *testnet.TestNet, accounts []*ethereum.Account) []string {
-	var enodes []string
-	tn.BuildState.GetP(ethereum.EnodeKey, &enodes)
-
-	for i, node := range tn.Nodes {
-		if len(enodes) > i {
-			log.WithFields(log.Fields{"num": node.GetAbsoluteNumber()}).Debug(
-				"skipping node because already have its node id")
-			continue
-		}
-		enodes = append(enodes, fmt.Sprintf("enode://%s@%s:%d", accounts[i].HexPublicKey(), node.IP, ethereum.P2PPort))
-	}
-	return enodes
+	return ethereum.GetEnodes(tn, accounts)
 }
