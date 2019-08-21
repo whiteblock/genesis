@@ -31,7 +31,6 @@ import (
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
-	//"strings"
 	"sync"
 	"time"
 )
@@ -90,7 +89,8 @@ func build(tn *testnet.TestNet) error {
 				return util.LogError(err)
 			}
 			_, err = client.DockerExec(node,
-				fmt.Sprintf("geth --datadir /geth/ --nousb --password /geth/passwd account import /geth/pk%d", i))
+				fmt.Sprintf("geth --datadir /geth/ --nousb --password %s account import /geth/pk%d",
+					passwordFile, i))
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -137,25 +137,7 @@ func build(tn *testnet.TestNet) error {
 
 	staticNodes := ethereum.GetEnodes(tn, accounts)
 
-	tn.BuildState.SetBuildStage("Initializing geth")
-
-	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Starting geth")
-
-	/*err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("adding accounts to right directory")
-
-		cont, err := client.DockerExec(node,
-			fmt.Sprintf("bash -c 'cd /geth/%s/keystore && cat $(ls | sed -n %dp)'", etcconf.Identity, node.GetAbsoluteNumber()+1))
-		if err != nil {
-			return util.LogError(err)
-		}
-		cont = strings.Replace(cont, "\"", "\\\"", -1)
-		tn.BuildState.Set(fmt.Sprintf("node%dKey", node.GetAbsoluteNumber()), cont)
-
-		tn.BuildState.IncrementBuildProgress()
-		return nil
-	})*/
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		tn.BuildState.IncrementBuildProgress()
@@ -293,7 +275,7 @@ func getExtraFlags(ethconf *ethConf, account *ethereum.Account, validFlags map[s
 	if validFlags["--allow-insecure-unlock"] {
 		out += " --allow-insecure-unlock"
 	}
-	out += fmt.Sprintf(` --unlock="%s" --password /geth/passwd`, account.HexAddress())
+	out += fmt.Sprintf(` --unlock="%s" --password %s`, passwordFile, account.HexAddress())
 
 	return out
 }

@@ -37,6 +37,23 @@ const (
 	EnodeKey = "enodes"
 )
 
+//KEYS
+
+const (
+	//NetworkIDKey is the key for the network id
+	NetworkIDKey = "networkId"
+	//ChainIDKey is the key for chain id
+	ChainIDKey = "chainId"
+	//HomesteadBlockKey relates to the homestead block
+	HomesteadBlockKey = "homesteadBlock"
+	//EIP150BlockKey maps to the eip 150 block
+	EIP150BlockKey = "eip150Block"
+	//EIP155BlockKey maps to the eip 155 block
+	EIP155BlockKey = "eip155Block"
+	//EIP158BlockKey maps to the eip 158 block
+	EIP158BlockKey = "eip158Block"
+)
+
 //CreatePasswordFile turns the process of creating a password file into a single function call
 func CreatePasswordFile(tn *testnet.TestNet, password string, dest string) error {
 	return CreateNPasswordFile(tn, tn.LDD.Nodes, password, dest)
@@ -71,6 +88,7 @@ func ExposeEnodes(tn *testnet.TestNet, enodes []string) {
 	tn.BuildState.Set(EnodeKey, enodes)
 }
 
+//UnlockAllAccounts calls personal_unlockAccount for each account on every node, using the given password
 func UnlockAllAccounts(tn *testnet.TestNet, accounts []*Account, password string) error {
 	return helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		tn.BuildState.Defer(func() { //Can happen eventually
@@ -88,6 +106,8 @@ func UnlockAllAccounts(tn *testnet.TestNet, accounts []*Account, password string
 	})
 }
 
+//GetEnodes returns the enode addresses based on the nodes in the given testnet and the
+//given accounts
 func GetEnodes(tn *testnet.TestNet, accounts []*Account) []string {
 	var enodes []string
 	tn.BuildState.GetP(EnodeKey, &enodes)
