@@ -44,6 +44,7 @@ const (
 	peeringRetries = 10
 	password       = "password"
 	passwordFile   = "/geth/passwd"
+	genesisFileLoc = "/geth/chain.json"
 )
 
 func init() {
@@ -120,6 +121,18 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		defer tn.BuildState.IncrementBuildProgress()
+		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
+
+		//Load the CustomGenesis file
+		_, err := client.DockerExec(node,
+			fmt.Sprintf("geth --datadir /geth/  init %s", genesisFileLoc))
+		return util.LogError(err)
+	})
+	if err != nil {
+		return util.LogError(err)
+	}
 
 	tn.BuildState.IncrementBuildProgress()
 	tn.BuildState.SetBuildStage("Bootstrapping network")
@@ -129,11 +142,6 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Initializing geth")
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		//Load the CustomGenesis file
-		// _, err := client.DockerExec(node,
-		// 	fmt.Sprintf("geth --datadir=/geth/ --network-id=%d --chain=/geth/chain.json", etcconf.NetworkID))
-
-		// log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
 
 		gethResults, err := client.DockerExec(node,
 			"bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
@@ -245,11 +253,12 @@ func createGenesisfile(etcconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 	}
 
 	genesis := map[string]interface{}{
-		"network":            etcconf.NetworkID,
+		"networkId":          etcconf.NetworkID,
 		"chainId":            etcconf.ChainID,
 		"homesteadBlock":     etcconf.HomesteadBlock,
 		"eip150Block":        etcconf.EIP150Block,
 		"eip155Block":        etcconf.EIP155Block,
+		"eip158Block":        etcconf.EIP158Block,
 		"byzantiumBlock":     etcconf.ByzantiumBlock,
 		"disposalBlock":      etcconf.DisposalBlock,
 		"ecip1017EraRounds":  etcconf.ECIP1017EraRounds,
@@ -281,7 +290,7 @@ func createGenesisfile(etcconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 	tn.BuildState.Set("alloc", alloc)
 	tn.BuildState.Set("etcconf", etcconf)
 
-	return helpers.CreateConfigs(tn, "/geth/chain.json", func(node ssh.Node) ([]byte, error) {
+	return helpers.CreateConfigs(tn, genesisFileLoc, func(node ssh.Node) ([]byte, error) {
 		template, err := helpers.GetBlockchainConfig(blockchain, node.GetAbsoluteNumber(), "chain.json", tn.LDD)
 		if err != nil {
 			return nil, util.LogError(err)
