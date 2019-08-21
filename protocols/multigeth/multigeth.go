@@ -267,7 +267,7 @@ func createGenesisfile(etcconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		"ecip1010Length":     etcconf.ECIP1010Length,
 		"gasLimit":           fmt.Sprintf("0x%x", etcconf.GasLimit),
 		"difficulty":         fmt.Sprintf("0x0%x", etcconf.Difficulty),
-		"mixhash":            etcconf.MixHash,
+		"mixHash":            etcconf.MixHash,
 	}
 
 	switch etcconf.Consensus {
