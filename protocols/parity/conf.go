@@ -22,23 +22,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/protocols/ethereum"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/mustache"
 )
 
+//EIP150Block    int64  `json:"eip150Block"`
+//ECIP1010Length int64  `json:"ecip1010Length"`
+
 type parityConf struct {
+	ethereum.EthereumBaseConfig
 	Name                      string `json:"name"`
 	DataDir                   string `json:"dataDir"`
 	BlockReward               int64  `json:"blockReward"`
-	Nonce                     int64  `json:"nonce"`
-	Mixhash                   string `json:"mixhash"`
-	Timestamp                 int64  `json:"timestamp"`
 	ExtraData                 string `json:"extraData"`
 	ChainID                   int64  `json:"chainId"`
-	Consensus                 string `json:"consensus"` //TODO
-	Difficulty                int64  `json:"difficulty"`
 	DifficultyBoundDivisor    int64  `json:"difficultyBoundDivisor"`
 	DontMine                  bool   `json:"dontMine"`
 	DurationLimit             int64  `json:"durationLimit"`
@@ -54,20 +54,14 @@ type parityConf struct {
 	EIP214Transition          int64  `json:"eip214Transition"`
 	EIP658Transition          int64  `json:"eip658Transition"`
 	EnableIPFS                bool   `json:"enableIPFS"`
-	ExtraAccounts             int64  `json:"extraAccounts"`
 	ForceSealing              bool   `json:"forceSealing"`
 	GasCap                    string `json:"gasCap"`
 	GasFloorTarget            string `json:"gasFloorTarget"`
-	GasLimit                  int64  `json:"gasLimit"`
 	GasLimitBoundDivisor      int64  `json:"gasLimitBoundDivisor"`
-	HomesteadBlock            int64  `json:"homesteadBlock"`
-	InitBalance               string `json:"initBalance"`
 	MaximumExtraDataSize      int64  `json:"maximumExtraDataSize"`
-	MaxPeers                  int64  `json:"maxPeers"`
 	MinGasLimit               int64  `json:"minGasLimit"`
 	MinimumDifficulty         int64  `json:"minimumDifficulty"`
 	NetworkDiscovery          bool   `json:"networkDiscovery"`
-	NetworkID                 int64  `json:"networkId"`
 	PriceUpdatePeriod         string `json:"priceUpdatePeriod"`
 	RefuseServiceTransactions bool   `json:"refuseServiceTransactions"`
 	RelaySet                  string `json:"relaySet"`
@@ -153,8 +147,8 @@ func buildSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []strin
 		"difficultyBoundDivisor": fmt.Sprintf("0x%x", pconf.DifficultyBoundDivisor),
 		"durationLimit":          fmt.Sprintf("0x%x", pconf.DurationLimit),
 		"blockReward":            fmt.Sprintf("0x%x", pconf.BlockReward),
-		"nonce":                  fmt.Sprintf("0x%.16x", pconf.Nonce),
-		"mixhash":                pconf.Mixhash,
+		"nonce":                  pconf.Nonce,
+		"mixHash":                pconf.MixHash,
 		"timestamp":              fmt.Sprintf("0x%x", pconf.Timestamp),
 		"extraData":              pconf.ExtraData,
 		"difficulty":             fmt.Sprintf("0x%x", pconf.Difficulty),

@@ -234,7 +234,7 @@ func add(tn *testnet.TestNet) error {
 	parityConf.ChainID = etcGenesisFile.NetworkID
 	parityConf.MinimumDifficulty = etcGenesisFile.Difficulty
 	parityConf.Difficulty = etcGenesisFile.Difficulty
-	parityConf.Mixhash = etcGenesisFile.Mixhash
+	parityConf.MixHash = etcGenesisFile.MixHash
 	parityConf.Nonce = etcGenesisFile.Nonce
 	parityConf.Timestamp = etcGenesisFile.Timestamp
 	parityConf.ExtraData = etcGenesisFile.ExtraData

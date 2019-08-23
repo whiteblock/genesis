@@ -20,6 +20,8 @@ package ethereum
 
 import (
 	"encoding/json"
+	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"reflect"
@@ -81,7 +83,7 @@ func StoreConfigParameters(tn *testnet.TestNet, confObj interface{}) error {
 		return fmt.Errorf("given a nil configuration")
 	}
 	if reflect.ValueOf(confObj).Type().Kind() == reflect.Ptr {
-		return StoreParameters(tn, *confObj)
+		return StoreConfigParameters(tn, *(confObj).(*interface{}))
 	}
 	tmp, err := json.Marshal(confObj)
 	if err != nil {
@@ -92,7 +94,7 @@ func StoreConfigParameters(tn *testnet.TestNet, confObj interface{}) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	for _, paramName := range sharedConfigParamters {
+	for _, paramName := range sharedConfigParameters {
 		if _, ok := conf[paramName]; !ok {
 			return fmt.Errorf("missing the required parameter \"%s\"", paramName)
 		}
@@ -113,12 +115,12 @@ func StoreConfigParameters(tn *testnet.TestNet, confObj interface{}) error {
 //FetchConfigParameters merges the already stored config into your config object
 //It must be given a pointer and will only fill in a limited set of fields
 func FetchConfigParameters(tn *testnet.TestNet, outConf interface{}) error {
-	if reflect.ValueOf(confObj).Type().Kind() != reflect.Ptr {
+	if reflect.ValueOf(outConf).Type().Kind() != reflect.Ptr {
 		return fmt.Errorf("FetchParameters expects a pointer to the output")
 	}
 
 	confToMerge := map[string]interface{}{}
-	for _, paramName := range sharedConfigParamters {
+	for _, paramName := range sharedConfigParameters {
 		var exists bool = false
 		confToMerge[paramName], exists = tn.BuildState.Get(configPrefix + paramName)
 		if !exists {

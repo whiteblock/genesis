@@ -222,7 +222,8 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	unlockAllAccounts(tn, accounts)
-	return nil
+
+	return ethereum.StoreConfigParameters(tn, etcconf)
 }
 
 /***************************************************************************************************************************/
@@ -294,7 +295,7 @@ func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethere
 		"network":         etcconf.NetworkID,
 		"chainId":         etcconf.NetworkID,
 		"difficulty":      fmt.Sprintf("0x0%x", etcconf.Difficulty),
-		"mixhash":         etcconf.Mixhash,
+		"mixhash":         etcconf.MixHash,
 		"gasLimit":        fmt.Sprintf("0x%x", etcconf.GasLimit),
 		"nonce":           etcconf.Nonce,
 		"timestamp":       fmt.Sprintf("0x%x", etcconf.Timestamp),

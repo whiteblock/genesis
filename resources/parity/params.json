@@ -3,7 +3,7 @@
     ["dataDir","string"],
     ["blockReward","int"],
     ["nonce","string"],
-    ["mixhash","string"],
+    ["mixHash","string"],
     ["timestamp","string"],
     ["extraData","string"],
     ["chainId","int"],

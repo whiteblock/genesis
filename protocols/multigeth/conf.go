@@ -24,6 +24,7 @@ import (
 	"github.com/whiteblock/genesis/protocols/ethereum"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/util"
 )
 
 type ethConf struct {
@@ -50,7 +51,7 @@ func newConf(tn *testnet.TestNet) (*ethConf, error) {
 	out := new(ethConf)
 	err := helpers.HandleBlockchainConfig(blockchain, data, out)
 	if err != nil || data == nil {
-		return out, err
+		return out, util.LogError(err)
 	}
 
 	initBalance, exists := data["initBalance"]
@@ -69,4 +70,12 @@ func newConf(tn *testnet.TestNet) (*ethConf, error) {
 	}
 
 	return out, nil
+}
+
+func restoreConf(tn *testnet.TestNet) (*ethConf, error) {
+	out, err := newConf(tn)
+	if err != nil {
+		return nil, util.LogError(err)
+	}
+	return out, ethereum.FetchConfigParameters(tn, out)
 }
