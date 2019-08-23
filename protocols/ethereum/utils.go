@@ -90,8 +90,15 @@ func GetExistingAccounts(tn *testnet.TestNet) []*Account {
 
 // ExposeEnodes provides a simple way to expose the enode addresses of the current nodes.
 func ExposeEnodes(tn *testnet.TestNet, enodes []string) {
-	tn.BuildState.SetExt(EnodeKey, enodes)
-	tn.BuildState.Set(EnodeKey, enodes)
+	enodesToStore := enodes
+	if len(tn.Details) > 1 {
+		var old []string
+		tn.BuildState.GetP(EnodeKey,&old)
+		enodesToStore = append(enodesToStore,old...)
+	}
+	log.WithFields(log.Fields{"enodes": enodesToStore}).Debug("updating the enodes in the store")
+	tn.BuildState.SetExt(EnodeKey, enodesToStore)
+	tn.BuildState.Set(EnodeKey, enodesToStore)	
 }
 
 //UnlockAllAccounts calls personal_unlockAccount for each account on every node, using the given password
@@ -114,6 +121,26 @@ func UnlockAllAccounts(tn *testnet.TestNet, accounts []*Account, password string
 
 //GetEnodes returns the enode addresses based on the nodes in the given testnet and the
 //given accounts
+func GetPeers(tn *testnet.TestNet, accounts []*Account) [][]string {
+	var enodes []string
+	tn.BuildState.GetP(EnodeKey, &enodes)
+	out := [][]string{}
+	for i, node := range tn.Nodes {
+		for j,_ := range tn.Nodes {
+
+			if i == j {
+				log.WithFields(log.Fields{"num": node.GetAbsoluteNumber()}).Debug(
+					"skipping node because already have it's node id")
+				continue
+			}
+			out[i] = append(out[i],fmt.Sprintf("enode://%s@%s:%d", accounts[j].HexPublicKey(), node.IP, P2PPort))
+		}
+	}
+	return out
+}
+
+//GetEnodes returns the enode addresses based on the nodes in the given testnet and the
+//given accounts
 func GetEnodes(tn *testnet.TestNet, accounts []*Account) []string {
 	var enodes []string
 	tn.BuildState.GetP(EnodeKey, &enodes)
@@ -121,10 +148,20 @@ func GetEnodes(tn *testnet.TestNet, accounts []*Account) []string {
 	for i, node := range tn.Nodes {
 		if len(enodes) > i {
 			log.WithFields(log.Fields{"num": node.GetAbsoluteNumber()}).Debug(
-				"skipping node because already have it's node id")
+				"skipping node because already have it's enode id")
 			continue
 		}
 		enodes = append(enodes, fmt.Sprintf("enode://%s@%s:%d", accounts[i].HexPublicKey(), node.IP, P2PPort))
 	}
+	log.WithFields(log.Fields{"nodes":len(tn.Nodes),"builds":len(tn.Details)}).Debug("fetched the enodes")
+	return enodes
+}
+
+
+//GetEnodes returns the enode addresses based on the nodes in the given testnet and the
+//given accounts
+func GetPreviousEnodes(tn *testnet.TestNet) []string {
+	var enodes []string
+	tn.BuildState.GetP(EnodeKey, &enodes)
 	return enodes
 }

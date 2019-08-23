@@ -136,10 +136,19 @@ func deploy(tn *testnet.TestNet, etcconf *ethConf, isAppend bool) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetBuildStage("Creating the genesis block")
-	err = createGenesisfile(etcconf, tn, accounts)
-	if err != nil {
-		return util.LogError(err)
+	if isAppend {
+
+		err = createGenesisfile(etcconf, tn, ethereum.GetExistingAccounts(tn))
+		if err != nil {
+			return util.LogError(err)
+		}
+	} else {
+		err = createGenesisfile(etcconf, tn, accounts)
+		if err != nil {
+			return util.LogError(err)
+		}
 	}
+
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
 		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
@@ -189,7 +198,7 @@ func deploy(tn *testnet.TestNet, etcconf *ethConf, isAppend bool) error {
 		tn.BuildState.SetExt("port", ethereum.RPCPort)
 		tn.BuildState.SetExt("namespace", "eth")
 		tn.BuildState.SetExt("password", password)
-		tn.BuildState.Set("staticNodes", staticNodes)
+		//tn.BuildState.Set("staticNodes", staticNodes)
 		tn.BuildState.SetBuildStage("peering the nodes")
 		ethereum.ExposeAccounts(tn, accounts)
 	}
@@ -210,11 +219,15 @@ func deploy(tn *testnet.TestNet, etcconf *ethConf, isAppend bool) error {
  */
 
 func createGenesisfile(etcconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) error {
-
+	isAppend := len(tn.Details) > 1
 	alloc := map[string]map[string]string{}
-	for _, account := range accounts {
-		alloc[account.HexAddress()[2:]] = map[string]string{
-			"balance": etcconf.InitBalance,
+	if isAppend {
+		tn.BuildState.GetP("alloc", &alloc)
+	} else {
+		for _, account := range accounts {
+			alloc[account.HexAddress()[2:]] = map[string]string{
+				"balance": etcconf.InitBalance,
+			}
 		}
 	}
 

@@ -165,7 +165,7 @@ func build(tn *testnet.TestNet) error {
 	time.Sleep(time.Duration(5 * time.Second))
 	//Get the enode addresses
 	enodes := make([]string, tn.LDD.Nodes)
-	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
+	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		enode := ""
 		for len(enode) == 0 {
 			res, err := client.KeepTryRun(
@@ -354,11 +354,9 @@ func add(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-
-	var snodes []string
-	tn.BuildState.GetP("staticNodes", &snodes)
-	log.WithFields(log.Fields{"enodes": snodes}).Debug("Fetched the enodes from the previous build")
-	fmt.Println(fmt.Sprintf("enode address : %+v", snodes))
+	 
+	snodes := ethereum.GetPreviousEnodes(tn)
+	log.WithFields(log.Fields{"enodes": snodes}).Debug("fetched the enodes")
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -438,7 +436,10 @@ func storeParameters(tn *testnet.TestNet, pconf *parityConf, wallets []string, e
 	tn.BuildState.Set("networkID", pconf.NetworkID)
 	tn.BuildState.SetExt("networkID", pconf.NetworkID)
 	tn.BuildState.SetExt("port", ethereum.RPCPort)
-	ethereum.ExposeAccounts(tn, accounts)
+	if len(tn.Details) == 1 {
+		ethereum.ExposeAccounts(tn, accounts)
+	}
+	
 	ethereum.ExposeEnodes(tn, enodes)
 
 	switch pconf.Consensus {
