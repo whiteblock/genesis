@@ -20,7 +20,7 @@
   },
   "nonce": {{{nonce}}},
   "timestamp": {{{timestamp}}},
-  "extraData": "0xdeadbeefcafe1447",
+  "extraData": {{{extraData}}},
   "gasLimit": {{{gasLimit}}},
   "difficulty": {{{difficulty}}},
   "mixHash": {{{mixHash}}},

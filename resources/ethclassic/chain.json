@@ -11,7 +11,7 @@
         "gasLimit":{{{gasLimit}}},
         "difficulty":{{{difficulty}}},
         "mixhash":{{{mixhash}}},
-        "coinbase":"",
+        "coinbase":"0x0000000000000000000000000000000000000000",
         "alloc": {{{alloc}}},
         "alloc_file":""
     },

@@ -32,6 +32,7 @@ type EthereumBaseConfig struct {
 	Consensus      string `json:"consensus"`
 	EIP150Block    int64  `json:"eip150Block"`
 	ExtraAccounts  int64  `json:"extraAccounts"`
+	ExtraData      string `json:"extraData"`
 	GasLimit       int64  `json:"gasLimit"`
 	HomesteadBlock int64  `json:"homesteadBlock"`
 	MaxPeers       int64  `json:"maxPeers"`
@@ -54,6 +55,7 @@ var sharedConfigParameters = []string{
 	"consensus",
 	"eip150Block",
 	"extraAccounts",
+	"extraData",
 	"gasLimit",
 	"homesteadBlock",
 	"maxPeers",
@@ -82,9 +84,9 @@ func StoreConfigParameters(tn *testnet.TestNet, confObj interface{}) error {
 	if confObj == nil {
 		return fmt.Errorf("given a nil configuration")
 	}
-	if reflect.ValueOf(confObj).Type().Kind() == reflect.Ptr {
+	/*if reflect.ValueOf(confObj).Type().Kind() == reflect.Ptr {
 		return StoreConfigParameters(tn, *(confObj).(*interface{}))
-	}
+	}*/
 	tmp, err := json.Marshal(confObj)
 	if err != nil {
 		return util.LogError(err)

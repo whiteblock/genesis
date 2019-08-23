@@ -30,7 +30,6 @@ type EtcConf struct {
 	ethereum.EthereumBaseConfig
 	Identity        string `json:"identity"`
 	Name            string `json:"name"`
-	ExtraData       string `json:"extraData"`
 	DAOHFBlock      int64  `json:"daoHFBlock"`
 	EIP155_160Block int64  `json:"eip155_160Block"`
 	ECIP1017Block   int64  `json:"ecip1017Block"`

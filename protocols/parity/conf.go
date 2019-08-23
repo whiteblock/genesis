@@ -37,7 +37,6 @@ type parityConf struct {
 	Name                      string `json:"name"`
 	DataDir                   string `json:"dataDir"`
 	BlockReward               int64  `json:"blockReward"`
-	ExtraData                 string `json:"extraData"`
 	ChainID                   int64  `json:"chainId"`
 	DifficultyBoundDivisor    int64  `json:"difficultyBoundDivisor"`
 	DontMine                  bool   `json:"dontMine"`

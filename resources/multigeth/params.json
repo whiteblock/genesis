@@ -23,5 +23,6 @@
 	["verbosity","int"],
 	["maxPeers","int"],
 	["nonce","string"],
-	["timestamp","int"]
+	["timestamp","int"],
+	["extraData","string"]
 ]

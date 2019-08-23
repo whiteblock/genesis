@@ -229,7 +229,7 @@ func createGenesisfile(etcconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 
 	genesis := map[string]interface{}{
 		"networkId":          etcconf.NetworkID,
-		"chainId":            etcconf.ChainID,
+		"chainId":            etcconf.NetworkID, //etcconf.ChainID,
 		"homesteadBlock":     etcconf.HomesteadBlock,
 		"eip150Block":        etcconf.EIP150Block,
 		"eip155Block":        etcconf.EIP155Block,
@@ -245,6 +245,7 @@ func createGenesisfile(etcconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		"mixHash":            etcconf.MixHash,
 		"nonce":              etcconf.Nonce,
 		"timestamp":          fmt.Sprintf("0x0%x", etcconf.Timestamp),
+		"extraData":          etcconf.ExtraData,
 	}
 
 	switch etcconf.Consensus {
@@ -267,7 +268,7 @@ func createGenesisfile(etcconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 	tn.BuildState.Set("alloc", alloc)
 	tn.BuildState.Set("etcconf", etcconf)
 
-	return helpers.CreateConfigs(tn, genesisFileLoc, func(node ssh.Node) ([]byte, error) {
+	return helpers.CreateConfigsNewNodes(tn, genesisFileLoc, func(node ssh.Node) ([]byte, error) {
 		template, err := helpers.GetBlockchainConfig(blockchain, node.GetAbsoluteNumber(), "chain.json", tn.LDD)
 		if err != nil {
 			return nil, util.LogError(err)
@@ -284,7 +285,7 @@ func createGenesisfile(etcconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 func getExtraFlags(ethconf *ethConf, account *ethereum.Account, validFlags map[string]bool) string {
 	out := fmt.Sprintf("--nodekeyhex %s", account.HexPrivateKey())
 	if ethconf.MaxPeers != -1 {
-		out += fmt.Sprintf("--maxpeers %d", ethconf.MaxPeers)
+		out += fmt.Sprintf(" --maxpeers %d", ethconf.MaxPeers)
 	}
 	out += fmt.Sprintf(" --verbosity %d", ethconf.Verbosity)
 	if ethconf.Consensus == "ethash" {
@@ -295,7 +296,7 @@ func getExtraFlags(ethconf *ethConf, account *ethereum.Account, validFlags map[s
 	if validFlags["--allow-insecure-unlock"] {
 		out += " --allow-insecure-unlock"
 	}
-	out += fmt.Sprintf(` --unlock="%s" --password %s`, passwordFile, account.HexAddress())
+	out += fmt.Sprintf(` --unlock="%s" --password %s`, account.HexAddress(), passwordFile)
 
 	return out
 }
