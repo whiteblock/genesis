@@ -354,7 +354,7 @@ func add(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	 
+
 	snodes := ethereum.GetPreviousEnodes(tn)
 	log.WithFields(log.Fields{"enodes": snodes}).Debug("fetched the enodes")
 	if err != nil {
@@ -439,7 +439,7 @@ func storeParameters(tn *testnet.TestNet, pconf *parityConf, wallets []string, e
 	if len(tn.Details) == 1 {
 		ethereum.ExposeAccounts(tn, accounts)
 	}
-	
+
 	ethereum.ExposeEnodes(tn, enodes)
 
 	switch pconf.Consensus {

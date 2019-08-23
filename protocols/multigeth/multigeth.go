@@ -155,7 +155,7 @@ func deploy(tn *testnet.TestNet, etcconf *ethConf, isAppend bool) error {
 
 		//Load the CustomGenesis file
 		_, err := client.DockerExec(node,
-			fmt.Sprintf("geth --datadir /geth/ --nousb init %s", genesisFileLoc))
+			fmt.Sprintf("geth --datadir /geth/ --networkid %d --nousb init %s", etcconf.NetworkID, genesisFileLoc))
 		return util.LogError(err)
 	})
 	if err != nil {
@@ -300,6 +300,7 @@ func getExtraFlags(ethconf *ethConf, account *ethereum.Account, validFlags map[s
 	if ethconf.MaxPeers != -1 {
 		out += fmt.Sprintf(" --maxpeers %d", ethconf.MaxPeers)
 	}
+	out += fmt.Sprintf(" --networkid %d", ethconf.NetworkID)
 	out += fmt.Sprintf(" --verbosity %d", ethconf.Verbosity)
 	if ethconf.Consensus == "ethash" {
 		out += fmt.Sprintf(" --miner.gaslimit %d", ethconf.GasLimit)

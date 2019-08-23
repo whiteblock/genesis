@@ -93,12 +93,12 @@ func ExposeEnodes(tn *testnet.TestNet, enodes []string) {
 	enodesToStore := enodes
 	if len(tn.Details) > 1 {
 		var old []string
-		tn.BuildState.GetP(EnodeKey,&old)
-		enodesToStore = append(enodesToStore,old...)
+		tn.BuildState.GetP(EnodeKey, &old)
+		enodesToStore = append(old, enodesToStore...)
 	}
 	log.WithFields(log.Fields{"enodes": enodesToStore}).Debug("updating the enodes in the store")
 	tn.BuildState.SetExt(EnodeKey, enodesToStore)
-	tn.BuildState.Set(EnodeKey, enodesToStore)	
+	tn.BuildState.Set(EnodeKey, enodesToStore)
 }
 
 //UnlockAllAccounts calls personal_unlockAccount for each account on every node, using the given password
@@ -126,14 +126,14 @@ func GetPeers(tn *testnet.TestNet, accounts []*Account) [][]string {
 	tn.BuildState.GetP(EnodeKey, &enodes)
 	out := [][]string{}
 	for i, node := range tn.Nodes {
-		for j,_ := range tn.Nodes {
+		for j, _ := range tn.Nodes {
 
 			if i == j {
 				log.WithFields(log.Fields{"num": node.GetAbsoluteNumber()}).Debug(
 					"skipping node because already have it's node id")
 				continue
 			}
-			out[i] = append(out[i],fmt.Sprintf("enode://%s@%s:%d", accounts[j].HexPublicKey(), node.IP, P2PPort))
+			out[i] = append(out[i], fmt.Sprintf("enode://%s@%s:%d", accounts[j].HexPublicKey(), node.IP, P2PPort))
 		}
 	}
 	return out
@@ -153,10 +153,9 @@ func GetEnodes(tn *testnet.TestNet, accounts []*Account) []string {
 		}
 		enodes = append(enodes, fmt.Sprintf("enode://%s@%s:%d", accounts[i].HexPublicKey(), node.IP, P2PPort))
 	}
-	log.WithFields(log.Fields{"nodes":len(tn.Nodes),"builds":len(tn.Details)}).Debug("fetched the enodes")
+	log.WithFields(log.Fields{"nodes": len(tn.Nodes), "builds": len(tn.Details)}).Debug("fetched the enodes")
 	return enodes
 }
-
 
 //GetEnodes returns the enode addresses based on the nodes in the given testnet and the
 //given accounts

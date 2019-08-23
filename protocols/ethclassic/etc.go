@@ -213,7 +213,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetExt("port", ethereum.RPCPort)
 	tn.BuildState.SetExt("namespace", "eth")
 	tn.BuildState.SetExt("password", password)
-	tn.BuildState.Set("staticNodes", staticNodes)
+	ethereum.ExposeEnodes(tn, staticNodes)
 	tn.BuildState.SetBuildStage("peering the nodes")
 	time.Sleep(3 * time.Second)
 	log.WithFields(log.Fields{"staticNodes": staticNodes}).Debug("peering")
