@@ -82,6 +82,12 @@ func ExposeAccounts(tn *testnet.TestNet, accounts []*Account) {
 	}
 }
 
+func GetExistingAccounts(tn *testnet.TestNet) []*Account {
+	var out []*Account
+	tn.BuildState.GetP("accounts", &out)
+	return out
+}
+
 // ExposeEnodes provides a simple way to expose the enode addresses of the current nodes.
 func ExposeEnodes(tn *testnet.TestNet, enodes []string) {
 	tn.BuildState.SetExt(EnodeKey, enodes)

@@ -58,6 +58,20 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+	return util.LogError(deploy(tn, etcconf, false))
+}
+
+func add(tn *testnet.TestNet) error {
+	etcconf, err := restoreConf(tn)
+	if err != nil {
+		return util.LogError(err)
+	}
+	return util.LogError(deploy(tn, etcconf, true))
+
+}
+
+func deploy(tn *testnet.TestNet, etcconf *ethConf, isAppend bool) error {
+
 	validFlags := checkFlagsExist(tn)
 
 	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes) + (tn.LDD.Nodes * (tn.LDD.Nodes - 1)))
@@ -66,18 +80,25 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildStage("Distributing secrets")
 
-	helpers.MkdirAllNodes(tn, "/geth")
+	helpers.MkdirAllNewNodes(tn, "/geth")
 
 	tn.BuildState.IncrementBuildProgress()
 
 	/**Create the wallets**/
 	tn.BuildState.SetBuildStage("Creating the wallets")
 
-	accounts, err := ethereum.GenerateAccounts(tn.LDD.Nodes + int(etcconf.ExtraAccounts))
-	if err != nil {
-		return util.LogError(err)
+	accounts := ethereum.GetExistingAccounts(tn)
+
+	if len(accounts) < tn.LDD.Nodes+int(etcconf.ExtraAccounts) {
+		additionalAccounts, err := ethereum.GenerateAccounts((tn.LDD.Nodes + int(etcconf.ExtraAccounts)) - len(accounts))
+		if err != nil {
+			return util.LogError(err)
+		}
+		accounts = append(accounts, additionalAccounts...)
+
 	}
-	err = ethereum.CreateNPasswordFile(tn, len(accounts), password, passwordFile)
+
+	err := ethereum.CreateNPasswordFile(tn, len(accounts), password, passwordFile)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -163,14 +184,16 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
+	if !isAppend {
+		tn.BuildState.SetExt("networkID", etcconf.NetworkID)
+		tn.BuildState.SetExt("port", ethereum.RPCPort)
+		tn.BuildState.SetExt("namespace", "eth")
+		tn.BuildState.SetExt("password", password)
+		tn.BuildState.Set("staticNodes", staticNodes)
+		tn.BuildState.SetBuildStage("peering the nodes")
+		ethereum.ExposeAccounts(tn, accounts)
+	}
 
-	tn.BuildState.SetExt("networkID", etcconf.NetworkID)
-	ethereum.ExposeAccounts(tn, accounts)
-	tn.BuildState.SetExt("port", ethereum.RPCPort)
-	tn.BuildState.SetExt("namespace", "eth")
-	tn.BuildState.SetExt("password", password)
-	tn.BuildState.Set("staticNodes", staticNodes)
-	tn.BuildState.SetBuildStage("peering the nodes")
 	time.Sleep(3 * time.Second)
 	log.WithFields(log.Fields{"staticNodes": staticNodes}).Debug("peering")
 	err = peerAllNodes(tn, staticNodes)
@@ -178,11 +201,6 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	return ethereum.UnlockAllAccounts(tn, accounts, password)
-
-}
-
-func add(tn *testnet.TestNet) error {
-	return nil
 }
 
 /**
