@@ -103,7 +103,7 @@ func deploy(tn *testnet.TestNet, etcconf *ethConf, isAppend bool) error {
 		return util.LogError(err)
 	}
 
-	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, account := range accounts {
 			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
 			if err != nil {
@@ -160,7 +160,7 @@ func deploy(tn *testnet.TestNet, etcconf *ethConf, isAppend bool) error {
 
 	tn.BuildState.SetBuildStage("Starting geth")
 
-	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		tn.BuildState.IncrementBuildProgress()
 
 		gethCmd := fmt.Sprintf(
@@ -322,7 +322,7 @@ func checkFlagsExist(tn *testnet.TestNet) []map[string]bool {
 }
 
 func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
-	return helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+	return helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, enode := range enodes {
 			if i == node.GetAbsoluteNumber() {
 				continue
