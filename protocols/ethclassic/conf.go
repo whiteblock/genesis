@@ -21,33 +21,20 @@ package ethclassic
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/whiteblock/genesis/protocols/ethereum"
 	"github.com/whiteblock/genesis/protocols/helpers"
 )
 
 // EtcConf represents the settings for the etc build
 type EtcConf struct {
-	Identity           string `json:"identity"`
-	Name               string `json:"name"`
-	NetworkID          int64  `json:"networkId"`
-	Consensus          string `json:"consensus"`
-	Nonce              string `json:"nonce"`
-	Timestamp          int64  `json:"timestamp"`
-	ExtraData          string `json:"extraData"`
-	GasLimit           int64  `json:"gasLimit"`
-	Difficulty         int64  `json:"difficulty"`
-	Mixhash            string `json:"mixhash"`
-	ExtraAccounts      int64  `json:"extraAccounts"`
-	InitBalance        string `json:"initBalance"`
-	MaxPeers           int64  `json:"maxPeers"`
-	BlockPeriodSeconds int64  `json:"blockPeriodSeconds"`
-	Epoch              int64  `json:"epoch"`
-	HomesteadBlock     int64  `json:"homesteadBlock"`
-	EIP150Block        int64  `json:"eip150Block"`
-	DAOHFBlock         int64  `json:"daoHFBlock"`
-	EIP155_160Block    int64  `json:"eip155_160Block"`
-	ECIP1010Length     int64  `json:"ecip1010Length"`
-	ECIP1017Block      int64  `json:"ecip1017Block"`
-	ECIP1017Era        int64  `json:"ecip1017Era"`
+	ethereum.EthereumBaseConfig
+	Identity        string `json:"identity"`
+	Name            string `json:"name"`
+	ExtraData       string `json:"extraData"`
+	DAOHFBlock      int64  `json:"daoHFBlock"`
+	EIP155_160Block int64  `json:"eip155_160Block"`
+	ECIP1017Block   int64  `json:"ecip1017Block"`
+	ECIP1017Era     int64  `json:"ecip1017Era"`
 }
 
 /**

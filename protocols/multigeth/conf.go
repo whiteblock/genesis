@@ -21,38 +21,25 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/whiteblock/genesis/protocols/ethereum"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/testnet"
 )
 
 type ethConf struct {
-	NetworkID          int64  `json:"networkId"`
-	ChainID            int64  `json:"chainId"`
-	HomesteadBlock     int64  `json:"homesteadBlock"`
-	Difficulty         int64  `json:"difficulty"`
-	InitBalance        string `json:"initBalance"`
-	MaxPeers           int64  `json:"maxPeers"`
-	GasLimit           int64  `json:"gasLimit"`
-	Consensus          string `json:"consensus"`
-	BlockPeriodSeconds int64  `json:"blockPeriodSeconds"`
-	Epoch              int64  `json:"epoch"`
-	EIP150Block        int64  `json:"eip150Block"`
-	EIP155Block        int64  `json:"eip155Block"`
-	EIP158Block        int64  `json:"eip158Block"`
-	ByzantiumBlock     int64  `json:"byzantiumBlock"`
-	DisposalBlock      int64  `json:"disposalBlock"`
+	ethereum.EthereumBaseConfig
+	ChainID        int64 `json:"chainId"`
+	EIP155Block    int64 `json:"eip155Block"`
+	EIP158Block    int64 `json:"eip158Block"`
+	ByzantiumBlock int64 `json:"byzantiumBlock"`
+	DisposalBlock  int64 `json:"disposalBlock"`
 	//	ConstantinopleBlock int64  `json:"constantinopleBlock"`
 	ECIP1017EraRounds  int64 `json:"ecip1017EraRounds"`
 	EIP160FBlock       int64 `json:"eip160FBlock"`
 	ECIP1010PauseBlock int64 `json:"ecip1010PauseBlock"`
-	ECIP1010Length     int64 `json:"ecip1010Length"`
 	//	TrustedCheckpoint   int64  `json:"trustedCheckpoint"`
-	ExposedAccounts int64  `json:"exposedAccounts"`
-	ExtraAccounts   int64  `json:"extraAccounts"`
-	MixHash         string `json:"mixHash"`
-	Verbosity       int    `json:"verbosity"`
-	Nonce           string `json:"nonce"`
-	Timestamp       int64  `json:"timestamp"`
+	ExposedAccounts int64 `json:"exposedAccounts"`
+	Verbosity       int   `json:"verbosity"`
 }
 
 /**
@@ -81,14 +68,5 @@ func newConf(tn *testnet.TestNet) (*ethConf, error) {
 		out.ExtraAccounts = out.ExposedAccounts - int64(tn.LDD.Nodes)
 	}
 
-	return out, nil
-}
-
-func newConfFromStore(tn *testnet.TestNet) (*ethConf, error) {
-	out, err := newConf(tn)
-	if err != nil {
-		return nil, util.LogError()
-	}
-	tn.BuildState.GetP("etcconf", out)
 	return out, nil
 }

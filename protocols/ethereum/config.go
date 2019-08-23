@@ -35,6 +35,7 @@ type EthereumBaseConfig struct {
 	MaxPeers       int64  `json:"maxPeers"`
 	NetworkID      int64  `json:"networkId"`
 	Nonce          string `json:"nonce"`
+	Timestamp      int64  `json:"timestamp"`
 
 	Difficulty int64 `json:"difficulty"`
 
@@ -56,6 +57,7 @@ var sharedConfigParameters = []string{
 	"maxPeers",
 	"networkId",
 	"nonce",
+	"timestamp",
 
 	//ethereum pow
 	"difficulty",
@@ -139,11 +141,8 @@ func FetchConfigParameters(tn *testnet.TestNet, outConf interface{}) error {
 //etc
 	Identity           string `json:"identity"`
 	Name               string `json:"name"`
-	Nonce              int64  `json:"nonce"`
-	Timestamp          int64  `json:"timestamp"`
 	ExtraData          string `json:"extraData"`
 
-	Mixhash            string `json:"mixhash"`
 	DAOHFBlock         int64  `json:"daoHFBlock"`
 	EIP155_160Block    int64  `json:"eip155_160Block"`
 	ECIP1017Block      int64  `json:"ecip1017Block"`
