@@ -18,8 +18,8 @@
     "ethash": {},
     "trustedCheckpoint": null
   },
-  "nonce": "0x0000000000000539",
-  "timestamp": "0x42",
+  "nonce": {{{nonce}}},
+  "timestamp": {{{timestamp}}},
   "extraData": "0xdeadbeefcafe1447",
   "gasLimit": {{{gasLimit}}},
   "difficulty": {{{difficulty}}},

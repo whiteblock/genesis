@@ -8,7 +8,7 @@
     ["initBalance","string"],
     ["maxPeers","int"],
     ["gasLimit","int"],
-    ["nonce","int"],
+    ["nonce","string"],
     ["timestamp","int"],
     ["extraData","string"],
     ["consensus","string"],

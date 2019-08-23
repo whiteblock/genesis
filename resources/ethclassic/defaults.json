@@ -8,7 +8,7 @@
     "initBalance":"100000000000000000000",
     "maxPeers":1000,
     "gasLimit":4000000,
-    "nonce":1337,
+    "nonce":"0x0000000000000539",
     "timestamp":66,
     "extraData":"0xdeadbeefcafe1337",
     "consensus":"ethash",

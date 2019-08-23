@@ -15,7 +15,6 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-
 package multigeth
 
 import (
@@ -52,6 +51,8 @@ type ethConf struct {
 	ExtraAccounts   int64  `json:"extraAccounts"`
 	MixHash         string `json:"mixHash"`
 	Verbosity       int    `json:"verbosity"`
+	Nonce           string `json:"nonce"`
+	Timestamp       int64  `json:"timestamp"`
 }
 
 /**
@@ -80,5 +81,14 @@ func newConf(tn *testnet.TestNet) (*ethConf, error) {
 		out.ExtraAccounts = out.ExposedAccounts - int64(tn.LDD.Nodes)
 	}
 
+	return out, nil
+}
+
+func newConfFromStore(tn *testnet.TestNet) (*ethConf, error) {
+	out, err := newConf(tn)
+	if err != nil {
+		return nil, util.LogError()
+	}
+	tn.BuildState.GetP("etcconf", out)
 	return out, nil
 }

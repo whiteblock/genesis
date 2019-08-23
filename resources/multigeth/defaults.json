@@ -21,5 +21,7 @@
    	"extraAccounts":5,
    	"mixHash":"0x00000000000000000000000000000000000000647572616c65787365646c6578",
     "verbosity":4,
-    "maxPeers":-1
+    "maxPeers":-1,
+    "nonce":"0x0000000000000539",
+    "timestamp":66
 }
