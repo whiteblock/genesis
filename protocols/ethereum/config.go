@@ -153,22 +153,18 @@ func FetchConfigParameters(tn *testnet.TestNet, outConf interface{}) error {
 //etc
 	Identity           string `json:"identity"`
 	Name               string `json:"name"`
-	ExtraData          string `json:"extraData"`
 
 	DAOHFBlock         int64  `json:"daoHFBlock"`
-	EIP155_160Block    int64  `json:"eip155_160Block"`
 	ECIP1017Block      int64  `json:"ecip1017Block"`
 	ECIP1017Era        int64  `json:"ecip1017Era"`
 
 //multigeth
 	ChainID            int64  `json:"chainId"`
-	EIP155Block        int64  `json:"eip155Block"`
 	EIP158Block        int64  `json:"eip158Block"`
 	ByzantiumBlock     int64  `json:"byzantiumBlock"`
 	DisposalBlock      int64  `json:"disposalBlock"`
 	//  ConstantinopleBlock int64  `json:"constantinopleBlock"`
 	ECIP1017EraRounds  int64 `json:"ecip1017EraRounds"`
-	EIP160FBlock       int64 `json:"eip160FBlock"`
 	ECIP1010PauseBlock int64 `json:"ecip1010PauseBlock"`
 
 	//  TrustedCheckpoint   int64  `json:"trustedCheckpoint"`
