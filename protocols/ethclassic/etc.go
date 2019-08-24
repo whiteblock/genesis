@@ -79,8 +79,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-
-	err = generatePasswordFile(tn, accounts, password, passwordFile)
+	err = ethereum.CreateNPasswordFile(tn, len(accounts), password, passwordFile)
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -215,7 +214,7 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	unlockAllAccounts(tn, accounts)
+	ethereum.UnlockAllAccounts(tn, accounts, password)
 
 	return ethereum.StoreConfigParameters(tn, etcconf)
 }
@@ -253,10 +252,6 @@ func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 		}
 		return nil
 	})
-}
-
-func unlockAllAccounts(tn *testnet.TestNet, accounts []*ethereum.Account) error {
-	return ethereum.UnlockAllAccounts(tn, accounts, password)
 }
 
 /**
@@ -337,9 +332,4 @@ func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethere
 		}
 		return []byte(data), nil
 	})
-}
-
-//CreatePasswordFile turns the process of creating a password file into a single function call
-func generatePasswordFile(tn *testnet.TestNet, accounts []*ethereum.Account, password string, dest string) error {
-	return ethereum.CreateNPasswordFile(tn, len(accounts), password, dest)
 }
