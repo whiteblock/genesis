@@ -82,6 +82,8 @@ func ExposeAccounts(tn *testnet.TestNet, accounts []*Account) {
 	}
 }
 
+//GetExistingAccounts gets the accounts stored in the testnet, without
+//generating any new ones
 func GetExistingAccounts(tn *testnet.TestNet) []*Account {
 	var out []*Account
 	tn.BuildState.GetP("accounts", &out)
@@ -119,14 +121,14 @@ func UnlockAllAccounts(tn *testnet.TestNet, accounts []*Account, password string
 	})
 }
 
-//GetEnodes returns the enode addresses based on the nodes in the given testnet and the
-//given accounts
+//GetPeers is a convience function to get the enode addresses for each node that it should be peer with
+//being exclusive of itself
 func GetPeers(tn *testnet.TestNet, accounts []*Account) [][]string {
 	var enodes []string
 	tn.BuildState.GetP(EnodeKey, &enodes)
 	out := [][]string{}
 	for i, node := range tn.Nodes {
-		for j, _ := range tn.Nodes {
+		for j := range tn.Nodes {
 
 			if i == j {
 				log.WithFields(log.Fields{"num": node.GetAbsoluteNumber()}).Debug(
@@ -157,7 +159,7 @@ func GetEnodes(tn *testnet.TestNet, accounts []*Account) []string {
 	return enodes
 }
 
-//GetEnodes returns the enode addresses based on the nodes in the given testnet and the
+//GetPreviousEnodes returns the enode addresses based on the nodes in the given testnet and the
 //given accounts
 func GetPreviousEnodes(tn *testnet.TestNet) []string {
 	var enodes []string

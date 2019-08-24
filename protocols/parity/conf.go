@@ -33,7 +33,7 @@ import (
 //ECIP1010Length int64  `json:"ecip1010Length"`
 
 type parityConf struct {
-	ethereum.EthereumBaseConfig
+	ethereum.BaseConfig
 	Name                      string `json:"name"`
 	DataDir                   string `json:"dataDir"`
 	BlockReward               int64  `json:"blockReward"`

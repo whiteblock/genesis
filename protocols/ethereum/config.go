@@ -27,8 +27,8 @@ import (
 	"reflect"
 )
 
-//EthereumBaseConfig contains the parameters which should be shared amongst clients
-type EthereumBaseConfig struct {
+//BaseConfig contains the parameters which should be shared amongst clients
+type BaseConfig struct {
 	Consensus      string `json:"consensus"`
 	EIP150Block    int64  `json:"eip150Block"`
 	ExtraAccounts  int64  `json:"extraAccounts"`
@@ -80,6 +80,8 @@ var optionalSharedConfigParameters = []string{
 
 const configPrefix = "config_"
 
+//StoreConfigParameters stores the known shared ethereum parameters from your config. Allowing
+//another compatible client to use it if needed.
 func StoreConfigParameters(tn *testnet.TestNet, confObj interface{}) error {
 	if confObj == nil {
 		return fmt.Errorf("given a nil configuration")
@@ -123,7 +125,7 @@ func FetchConfigParameters(tn *testnet.TestNet, outConf interface{}) error {
 
 	confToMerge := map[string]interface{}{}
 	for _, paramName := range sharedConfigParameters {
-		var exists bool = false
+		exists := false
 		confToMerge[paramName], exists = tn.BuildState.Get(configPrefix + paramName)
 		if !exists {
 			return fmt.Errorf("missing the required parameter \"%s\"", paramName)

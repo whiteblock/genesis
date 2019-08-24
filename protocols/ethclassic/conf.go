@@ -27,7 +27,7 @@ import (
 
 // EtcConf represents the settings for the etc build
 type EtcConf struct {
-	ethereum.EthereumBaseConfig
+	ethereum.BaseConfig
 	Identity        string `json:"identity"`
 	Name            string `json:"name"`
 	DAOHFBlock      int64  `json:"daoHFBlock"`

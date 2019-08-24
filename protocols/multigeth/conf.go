@@ -15,6 +15,7 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+
 package multigeth
 
 import (
@@ -28,7 +29,7 @@ import (
 )
 
 type ethConf struct {
-	ethereum.EthereumBaseConfig
+	ethereum.BaseConfig
 	ChainID        int64 `json:"chainId"`
 	EIP155Block    int64 `json:"eip155Block"`
 	EIP158Block    int64 `json:"eip158Block"`
