@@ -31,13 +31,11 @@ import (
 type ethConf struct {
 	ethereum.BaseConfig
 	ChainID        int64 `json:"chainId"`
-	EIP155Block    int64 `json:"eip155Block"`
 	EIP158Block    int64 `json:"eip158Block"`
 	ByzantiumBlock int64 `json:"byzantiumBlock"`
 	DisposalBlock  int64 `json:"disposalBlock"`
 	//	ConstantinopleBlock int64  `json:"constantinopleBlock"`
 	ECIP1017EraRounds  int64 `json:"ecip1017EraRounds"`
-	EIP160FBlock       int64 `json:"eip160FBlock"`
 	ECIP1010PauseBlock int64 `json:"ecip1010PauseBlock"`
 	//	TrustedCheckpoint   int64  `json:"trustedCheckpoint"`
 	ExposedAccounts int64 `json:"exposedAccounts"`

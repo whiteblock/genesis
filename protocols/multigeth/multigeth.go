@@ -249,7 +249,7 @@ func createGenesisfile(etcconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 		"byzantiumBlock":     etcconf.ByzantiumBlock,
 		"disposalBlock":      etcconf.DisposalBlock,
 		"ecip1017EraRounds":  etcconf.ECIP1017EraRounds,
-		"eip160FBlock":       etcconf.EIP160FBlock,
+		"eip160Block":        etcconf.EIP160Block,
 		"ecip1010PauseBlock": etcconf.ECIP1010PauseBlock,
 		"ecip1010Length":     etcconf.ECIP1010Length,
 		"gasLimit":           fmt.Sprintf("0x%x", etcconf.GasLimit),

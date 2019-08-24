@@ -11,7 +11,7 @@
     "disposalBlock": {{{disposalBlock}}},
     "constantinopleBlock": null,
     "ECIP1017EraRounds": {{{ecip1017EraRounds}}},
-    "eip160FBlock": {{{eip160FBlock}}},
+    "eip160FBlock": {{{eip160Block}}},
     "ecip1010PauseBlock": {{{ecip1010PauseBlock}}},
     "ecip1010Length": {{{ecip1010Length}}},
     "ethash": {},

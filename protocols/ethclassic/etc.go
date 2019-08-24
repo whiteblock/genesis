@@ -130,12 +130,6 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Initializing geth")
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		//Load the CustomGenesis file
-		// _, err := client.DockerExec(node,
-		// 	fmt.Sprintf("geth --datadir=/geth/ --network-id=%d --chain=/geth/chain.json", etcconf.NetworkID))
-
-		// log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("creating block directory")
-
 		gethResults, err := client.DockerExec(node,
 			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
 				"geth --rpc --datadir=/geth/ --network-id=%d --chain=/geth/chain.json console'", etcconf.NetworkID))
@@ -290,24 +284,25 @@ func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethere
 	}
 
 	genesis := map[string]interface{}{
-		"identity":        etcconf.Identity,
-		"name":            etcconf.Name,
-		"network":         etcconf.NetworkID,
-		"chainId":         etcconf.NetworkID,
-		"difficulty":      fmt.Sprintf("0x0%x", etcconf.Difficulty),
-		"mixhash":         etcconf.MixHash,
-		"gasLimit":        fmt.Sprintf("0x%x", etcconf.GasLimit),
-		"nonce":           etcconf.Nonce,
-		"timestamp":       fmt.Sprintf("0x%x", etcconf.Timestamp),
-		"extraData":       etcconf.ExtraData,
-		"consensus":       etcconf.Consensus,
-		"homesteadBlock":  etcconf.HomesteadBlock,
-		"eip150Block":     etcconf.EIP150Block,
-		"daoHFBlock":      etcconf.DAOHFBlock,
-		"eip155_160Block": etcconf.EIP155_160Block,
-		"ecip1010Length":  etcconf.ECIP1010Length,
-		"ecip1017Block":   etcconf.ECIP1017Block,
-		"ecip1017Era":     etcconf.ECIP1017Era,
+		"identity":       etcconf.Identity,
+		"name":           etcconf.Name,
+		"network":        etcconf.NetworkID,
+		"chainId":        etcconf.NetworkID,
+		"difficulty":     fmt.Sprintf("0x0%x", etcconf.Difficulty),
+		"mixhash":        etcconf.MixHash,
+		"gasLimit":       fmt.Sprintf("0x%x", etcconf.GasLimit),
+		"nonce":          etcconf.Nonce,
+		"timestamp":      fmt.Sprintf("0x%x", etcconf.Timestamp),
+		"extraData":      etcconf.ExtraData,
+		"consensus":      etcconf.Consensus,
+		"homesteadBlock": etcconf.HomesteadBlock,
+		"eip150Block":    etcconf.EIP150Block,
+		"daoHFBlock":     etcconf.DAOHFBlock,
+		"eip155Block":    etcconf.EIP155Block,
+		"eip160Block":    etcconf.EIP160Block,
+		"ecip1010Length": etcconf.ECIP1010Length,
+		"ecip1017Block":  etcconf.ECIP1017Block,
+		"ecip1017Era":    etcconf.ECIP1017Era,
 	}
 
 	switch etcconf.Consensus {

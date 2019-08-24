@@ -30,7 +30,6 @@ import (
 //BaseConfig contains the parameters which should be shared amongst clients
 type BaseConfig struct {
 	Consensus      string `json:"consensus"`
-	EIP150Block    int64  `json:"eip150Block"`
 	ExtraAccounts  int64  `json:"extraAccounts"`
 	ExtraData      string `json:"extraData"`
 	GasLimit       int64  `json:"gasLimit"`
@@ -39,6 +38,10 @@ type BaseConfig struct {
 	NetworkID      int64  `json:"networkId"`
 	Nonce          string `json:"nonce"`
 	Timestamp      int64  `json:"timestamp"`
+
+	EIP150Block int64 `json:"eip150Block"`
+	EIP155Block int64 `json:"eip155Block"`
+	EIP160Block int64 `json:"eip160Block"`
 
 	Difficulty int64 `json:"difficulty"`
 
@@ -53,7 +56,6 @@ type BaseConfig struct {
 var sharedConfigParameters = []string{
 	//standard ethereum
 	"consensus",
-	"eip150Block",
 	"extraAccounts",
 	"extraData",
 	"gasLimit",
@@ -63,6 +65,10 @@ var sharedConfigParameters = []string{
 	"nonce",
 	"timestamp",
 
+	//ethereum forks
+	"eip150Block",
+	"eip155Block",
+	"eip160Block",
 	//ethereum pow
 	"difficulty",
 
