@@ -198,7 +198,6 @@ func deploy(tn *testnet.TestNet, etcconf *ethConf, isAppend bool) error {
 		tn.BuildState.SetExt("port", ethereum.RPCPort)
 		tn.BuildState.SetExt("namespace", "eth")
 		tn.BuildState.SetExt("password", password)
-		//tn.BuildState.Set("staticNodes", staticNodes)
 		tn.BuildState.SetBuildStage("peering the nodes")
 		ethereum.ExposeAccounts(tn, accounts)
 	}
