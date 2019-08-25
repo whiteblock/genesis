@@ -37,12 +37,11 @@ type parityConf struct {
 	Name                      string `json:"name"`
 	DataDir                   string `json:"dataDir"`
 	BlockReward               int64  `json:"blockReward"`
-	ChainID                   int64  `json:"chainId"`
 	DifficultyBoundDivisor    int64  `json:"difficultyBoundDivisor"`
 	DontMine                  bool   `json:"dontMine"`
 	DurationLimit             int64  `json:"durationLimit"`
-	Eip155Block               int64  `json:"eip155Block"`
 	Eip158Block               int64  `json:"eip158Block"`
+	EIP100bTransition         int64  `json:"eip100bTransition"`
 	EIP140Transition          int64  `json:"eip140Transition"`
 	EIP150Transition          int64  `json:"eip150Transition"`
 	EIP155Transition          int64  `json:"eip155Transition"`
@@ -157,6 +156,7 @@ func buildSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []strin
 		"maximumExtraDataSize":   fmt.Sprintf("0x%x", pconf.MaximumExtraDataSize),
 		"minGasLimit":            fmt.Sprintf("0x%x", pconf.MinGasLimit),
 		"gasLimitBoundDivisor":   fmt.Sprintf("0x%x", pconf.GasLimitBoundDivisor),
+		"eip100bTransition":      pconf.EIP100bTransition,
 		"eip140Transition":       pconf.EIP140Transition,
 		"eip150Transition":       pconf.EIP150Transition,
 		"eip155Transition":       pconf.EIP155Transition,

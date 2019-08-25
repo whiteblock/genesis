@@ -282,7 +282,7 @@ func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethere
 		"identity":       etcconf.Identity,
 		"name":           etcconf.Name,
 		"network":        etcconf.NetworkID,
-		"chainId":        etcconf.NetworkID,
+		"chainId":        etcconf.ChainID,
 		"difficulty":     fmt.Sprintf("0x0%x", etcconf.Difficulty),
 		"mixhash":        etcconf.MixHash,
 		"gasLimit":       fmt.Sprintf("0x%x", etcconf.GasLimit),
@@ -321,7 +321,11 @@ func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethere
 	tn.BuildState.Set("etcconf", etcconf)
 
 	return helpers.CreateConfigs(tn, "/geth/chain.json", func(node ssh.Node) ([]byte, error) {
-		template, err := helpers.GetBlockchainConfig(blockchain, node.GetAbsoluteNumber(), "chain.json", tn.LDD)
+		templateFile := "chain.json"
+		if etcconf.Name == "nazgul" { //TODO: Merge these two specs
+			templateFile = "nazgul_chain.json"
+		}
+		template, err := helpers.GetBlockchainConfig(blockchain, node.GetAbsoluteNumber(), templateFile, tn.LDD)
 		if err != nil {
 			return nil, util.LogError(err)
 		}

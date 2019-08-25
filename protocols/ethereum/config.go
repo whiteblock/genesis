@@ -29,6 +29,7 @@ import (
 
 //BaseConfig contains the parameters which should be shared amongst clients
 type BaseConfig struct {
+	ChainID        int64  `json:"chainId"`
 	Consensus      string `json:"consensus"`
 	ExtraAccounts  int64  `json:"extraAccounts"`
 	ExtraData      string `json:"extraData"`
@@ -55,6 +56,7 @@ type BaseConfig struct {
 
 var sharedConfigParameters = []string{
 	//standard ethereum
+	"chainId",
 	"consensus",
 	"extraAccounts",
 	"extraData",
@@ -159,7 +161,6 @@ func FetchConfigParameters(tn *testnet.TestNet, outConf interface{}) error {
 	ECIP1017Era        int64  `json:"ecip1017Era"`
 
 //multigeth
-	ChainID            int64  `json:"chainId"`
 	EIP158Block        int64  `json:"eip158Block"`
 	ByzantiumBlock     int64  `json:"byzantiumBlock"`
 	DisposalBlock      int64  `json:"disposalBlock"`

@@ -1,18 +1,19 @@
+
 {
     "identity":{{{identity}}},
     "name":{{{name}}},
     "network":{{{network}}},
     "consensus":{{{consensus}}},
     "genesis":{
-        "nonce": {{{nonce}}},
+        "nonce":{{{nonce}}},
         "timestamp":{{{timestamp}}},
         "parentHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "extraData":{{{extraData}}},
         "gasLimit":{{{gasLimit}}},
         "difficulty":{{{difficulty}}},
         "mixhash":{{{mixhash}}},
-        "coinbase":"0x0000000000000000000000000000000000000000",
-        "alloc": {{{alloc}}},
+        "coinbase":"",
+        "alloc":{{{alloc}}},
         "alloc_file":""
     },
     "chainConfig":{
@@ -20,6 +21,7 @@
             {
                 "name":"Homestead",
                 "block":{{{homesteadBlock}}},
+                "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
                 "features":[
                     {
                         "id":"difficulty",
@@ -38,6 +40,7 @@
             {
                 "name":"GasReprice",
                 "block":{{{eip150Block}}},
+                "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
                 "features":[
                     {
                         "id":"gastable",
@@ -50,11 +53,15 @@
             {
                 "name":"The DAO Hard Fork",
                 "block":{{{daoHFBlock}}},
-                "features":[]
+                "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
+                "features":[
+
+                ]
             },
             {
                 "name":"Diehard",
                 "block":{{{eip155Block}}},
+                "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
                 "features":[
                     {
                         "id":"eip155",
@@ -63,23 +70,16 @@
                         }
                     },
                     {
-                        "id":"difficulty",
-                        "options":{
-                            "length":{{{ecip1010Length}}},
-                            "type":"ecip1010"
-                        }
-                    }
-                ]
-            },
-            {
-                "name":"Diehardp2",
-                "block":{{{eip160Block}}},
-                "features":[
-
-                    {
                         "id":"gastable",
                         "options":{
                             "type":"eip160"
+                        }
+                    },
+                    {
+                        "id":"difficulty",
+                        "options":{
+                            "length":2000000,
+                            "type":"ecip1010"
                         }
                     }
                 ]
@@ -87,12 +87,26 @@
             {
                 "name":"Gotham",
                 "block":{{{ecip1017Block}}},
+                "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
                 "features":[
                     {
                         "id":"reward",
                         "options":{
                             "era":{{{ecip1017Era}}},
                             "type":"ecip1017"
+                        }
+                    }
+                ]
+            },
+            {
+                "name":"Defuse Difficulty Bomb",
+                "block":0,
+                "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
+                "features":[
+                    {
+                        "id":"difficulty",
+                        "options":{
+                            "type":"defused"
                         }
                     }
                 ]
@@ -110,7 +124,11 @@
                 ]
             }
         ],
-        "badHashes":[]
+        "badHashes":[
+
+        ]
     },
+    "bootstrap":[
+    ],
     "include":null
 }

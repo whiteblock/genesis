@@ -2,6 +2,7 @@
     "identity":"kensington",
     "name":"Kensington Testnet",
     "networkId":15468,
+    "chainId":15468,
     "extraAccounts":5,
     "difficulty":131072,
     "mixhash":"0x00000000000000000000000000000000000000647572616c65787365646c6578",

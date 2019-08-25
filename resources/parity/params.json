@@ -15,6 +15,7 @@
     ["durationLimit","int"],
     ["eip155Block","int"],
     ["eip158Block","int"],
+    ["eip100bTransition","int"],
     ["eip140Transition","int"],
     ["eip155Transition","int"],
     ["eip160Transition","int"],

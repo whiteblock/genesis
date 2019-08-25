@@ -2,6 +2,7 @@
     ["identity","string"],
     ["name","string"],
     ["networkId","int"],
+    ["chainId","int"],
     ["extraAccounts","int"],
     ["difficulty","int"],
     ["mixhash","string"],

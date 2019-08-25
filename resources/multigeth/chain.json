@@ -5,6 +5,7 @@
     "homesteadBlock": {{{homesteadBlock}}},
     "eip7FBlock": null,
     "eip150Block": {{{eip150Block}}},
+    "eip150Hash": "0x5ab4c85f58bf99e8562745cfd8900bd8b41dcbf46879aa90421152021f5d9420",
     "eip155Block": {{{eip155Block}}},
     "eip158Block": {{{eip158Block}}},
     "byzantiumBlock": {{{byzantiumBlock}}},

@@ -227,23 +227,16 @@ func add(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
+	err = ethereum.FetchConfigParameters(tn, parityConf)
+	if err != nil {
+		return util.LogError(err)
+	}
 
 	parityConf.Name = etcGenesisFile.Name
 	parityConf.DataDir = etcGenesisFile.Identity
-	parityConf.NetworkID = etcGenesisFile.NetworkID
-	parityConf.ChainID = etcGenesisFile.NetworkID
 	parityConf.MinimumDifficulty = etcGenesisFile.Difficulty
-	parityConf.Difficulty = etcGenesisFile.Difficulty
-	parityConf.MixHash = etcGenesisFile.MixHash
-	parityConf.Nonce = etcGenesisFile.Nonce
-	parityConf.Timestamp = etcGenesisFile.Timestamp
-	parityConf.ExtraData = etcGenesisFile.ExtraData
-	parityConf.GasLimit = etcGenesisFile.GasLimit
 
-	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		_, err := client.DockerExec(node, fmt.Sprintf("mkdir -p /parity"))
-		return err
-	})
+	err = helpers.MkdirAllNewNodes(tn, "/parity")
 	if err != nil {
 		return util.LogError(err)
 	}
