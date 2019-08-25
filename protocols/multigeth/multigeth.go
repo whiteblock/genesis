@@ -241,7 +241,7 @@ func createGenesisfile(etcconf *ethConf, tn *testnet.TestNet, accounts []*ethere
 
 	genesis := map[string]interface{}{
 		"networkId":          etcconf.NetworkID,
-		"chainId":            etcconf.NetworkID, //etcconf.ChainID,
+		"chainId":            etcconf.ChainID, //etcconf.ChainID,
 		"homesteadBlock":     etcconf.HomesteadBlock,
 		"eip150Block":        etcconf.EIP150Block,
 		"eip155Block":        etcconf.EIP155Block,
