@@ -219,7 +219,32 @@ func deploy(tn *testnet.TestNet, etcconf *ethConf, isAppend bool) error {
 
 func createGenesisfile(etcconf *ethConf, tn *testnet.TestNet, accounts []*ethereum.Account) error {
 	isAppend := len(tn.Details) > 1
-	alloc := map[string]map[string]string{}
+	alloc := map[string]map[string]string{
+		"0000000000000000000000000000000000000001": map[string]string{
+			"balance": "0x1",
+		},
+		"0000000000000000000000000000000000000002": map[string]string{
+			"balance": "0x1",
+		},
+		"0000000000000000000000000000000000000003": map[string]string{
+			"balance": "0x1",
+		},
+		"0000000000000000000000000000000000000004": map[string]string{
+			"balance": "0x1",
+		},
+		"0000000000000000000000000000000000000005": map[string]string{
+			"balance": "0x1",
+		},
+		"0000000000000000000000000000000000000006": map[string]string{
+			"balance": "0x1",
+		},
+		"0000000000000000000000000000000000000007": map[string]string{
+			"balance": "0x1",
+		},
+		"0000000000000000000000000000000000000008": map[string]string{
+			"balance": "0x1",
+		},
+	}
 	if isAppend {
 		tn.BuildState.GetP("alloc", &alloc)
 	} else {

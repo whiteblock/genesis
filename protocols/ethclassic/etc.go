@@ -262,7 +262,32 @@ func peerAllNodes(tn *testnet.TestNet, enodes []string) error {
 
 func createGenesisfile(etcconf *EtcConf, tn *testnet.TestNet, accounts []*ethereum.Account) error {
 
-	alloc := map[string]map[string]string{}
+	alloc := map[string]map[string]string{
+		"0000000000000000000000000000000000000001": map[string]string{
+			"balance": "1",
+		},
+		"0000000000000000000000000000000000000002": map[string]string{
+			"balance": "1",
+		},
+		"0000000000000000000000000000000000000003": map[string]string{
+			"balance": "1",
+		},
+		"0000000000000000000000000000000000000004": map[string]string{
+			"balance": "1",
+		},
+		"0000000000000000000000000000000000000005": map[string]string{
+			"balance": "1",
+		},
+		"0000000000000000000000000000000000000006": map[string]string{
+			"balance": "1",
+		},
+		"0000000000000000000000000000000000000007": map[string]string{
+			"balance": "1",
+		},
+		"0000000000000000000000000000000000000008": map[string]string{
+			"balance": "1",
+		},
+	}
 	for _, account := range accounts {
 		alloc[account.HexAddress()[2:]] = map[string]string{
 			"balance": etcconf.InitBalance,

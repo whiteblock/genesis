@@ -130,9 +130,115 @@ func buildConfig(pconf *parityConf, details *db.DeploymentDetails, wallets []str
 }
 
 func buildSpec(pconf *parityConf, details *db.DeploymentDetails, wallets []string) (string, error) {
-
-	accounts := make(map[string]interface{})
+	accounts := map[string]interface{}{}
+	if pconf.NetworkID == 88 {
+		accounts = map[string]interface{}{
+			"0x0000000000000000000000000000000000000001": map[string]interface{}{
+				"balance": "1",
+				"builtin": map[string]interface{}{
+					"name": "ecrecover",
+					"pricing": map[string]interface{}{
+						"linear": map[string]interface{}{
+							"base": 3000,
+							"word": 0,
+						},
+					},
+				},
+			},
+			"0x0000000000000000000000000000000000000002": map[string]interface{}{
+				"balance": "1",
+				"builtin": map[string]interface{}{
+					"name": "sha256",
+					"pricing": map[string]interface{}{
+						"linear": map[string]interface{}{
+							"base": 60,
+							"word": 12,
+						},
+					},
+				},
+			},
+			"0x0000000000000000000000000000000000000003": map[string]interface{}{
+				"balance": "1",
+				"builtin": map[string]interface{}{
+					"name": "ripemd160",
+					"pricing": map[string]interface{}{
+						"linear": map[string]interface{}{
+							"base": 600,
+							"word": 120,
+						},
+					},
+				},
+			},
+			"0x0000000000000000000000000000000000000004": map[string]interface{}{
+				"balance": "1",
+				"builtin": map[string]interface{}{
+					"name": "identity",
+					"pricing": map[string]interface{}{
+						"linear": map[string]interface{}{
+							"base": 15,
+							"word": 3,
+						},
+					},
+				},
+			},
+			"0x0000000000000000000000000000000000000005": map[string]interface{}{
+				"builtin": map[string]interface{}{
+					"name":        "modexp",
+					"activate_at": 0,
+					"pricing": map[string]interface{}{
+						"modexp": map[string]interface{}{
+							"divisor": 20,
+						},
+					},
+				},
+				"balance": "1",
+			},
+			"0x0000000000000000000000000000000000000006": map[string]interface{}{
+				"builtin": map[string]interface{}{
+					"name":        "alt_bn128_add",
+					"activate_at": 0,
+					"pricing": map[string]interface{}{
+						"linear": map[string]interface{}{
+							"base": 500,
+							"word": 0,
+						},
+					},
+				},
+				"balance": "1",
+			},
+			"0x0000000000000000000000000000000000000007": map[string]interface{}{
+				"builtin": map[string]interface{}{
+					"name":        "alt_bn128_mul",
+					"activate_at": 0,
+					"pricing": map[string]interface{}{
+						"linear": map[string]interface{}{
+							"base": 40000,
+							"word": 0,
+						},
+					},
+				},
+				"balance": "1",
+			},
+			"0x0000000000000000000000000000000000000008": map[string]interface{}{
+				"builtin": map[string]interface{}{
+					"name":        "alt_bn128_pairing",
+					"activate_at": 0,
+					"pricing": map[string]interface{}{
+						"alt_bn128_pairing": map[string]interface{}{
+							"base": 100000,
+							"pair": 80000,
+						},
+					},
+				},
+				"balance": "1",
+			},
+		}
+	}
 	for _, wallet := range wallets {
+		_, ok := accounts[wallet]
+		if ok {
+			continue
+		}
 		accounts[wallet] = map[string]interface{}{
 			"balance": pconf.InitBalance,
 		}
