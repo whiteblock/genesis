@@ -116,7 +116,7 @@ func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 			return util.LogError(err)
 		}
 
-		_, err = client.DockerExecd(node, "service ssh start")
+		_, err = client.DockerExecd(node, "/etc/init.d/sshd start")
 		return err
 	}
 

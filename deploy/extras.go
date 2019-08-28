@@ -83,6 +83,10 @@ func dockerBuild(tn *testnet.TestNet, contextDir string, dockerPath string) erro
 		return util.LogError(err)
 	}
 
+	if contextDir == "/tmp/test" {
+		tag = "test"
+	}
+
 	imageName := fmt.Sprintf("%s:%s", tn.LDD.Blockchain, tag)
 
 	wg := sync.WaitGroup{}
@@ -121,6 +125,17 @@ func dockerBuild(tn *testnet.TestNet, contextDir string, dockerPath string) erro
 	return util.LogError(tn.BuildState.GetError())
 }
 
+// testHandleDockerBuildRequest calls handleDockerBuildRequest with an element within prebuild
+// that creates an expected dir name. For test purposes only.
+func testHandleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface{}) error {
+	err := handleDockerBuildRequest(tn, prebuild)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface{}) error {
 	if !conf.EnableImageBuilding {
 		log.Warn("got a request to build an image, when it is disabled")
@@ -152,6 +167,11 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 		return util.LogError(err)
 	}
 
+	// For test purposes
+	if _, ok := prebuild["testTestTest"]; ok {
+		dir = "test"
+	}
+
 	err = helpers.AllServerExecCon(tn, func(client ssh.Client, _ *db.Server) error {
 		tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("rm -rf /tmp/%s/", dir)) })
 		_, err := client.Run(fmt.Sprintf("mkdir -p /tmp/%s/", dir))
@@ -166,7 +186,7 @@ func handleDockerBuildRequest(tn *testnet.TestNet, prebuild map[string]interface
 	if err != nil {
 		return util.LogError(err)
 	}
-	return dockerBuild(tn, "/tmp"+dir, dockerPath)
+	return dockerBuild(tn, "/tmp/"+dir, dockerPath) // TODO: I added a / after tmp because otherwise it doesn't make snese?
 }
 
 func handleRepoBuild(tn *testnet.TestNet, prebuild map[string]interface{}) error {

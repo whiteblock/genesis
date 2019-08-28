@@ -6,7 +6,7 @@
 # you're doing.
 Vagrant.configure("2") do |config|
 #  config.vm.box = "pogosoftware/ubuntu-18.04-docker"
-  config.vm.box = "generic/ubuntu1804"
+  config.vm.box = "generic/ubunt1804"
   config.vm.network "forwarded_port", guest: 8000, host: 8000
   config.vm.network "forwarded_port", guest: 8545, host: 8545
   config.vm.network "public_network",
@@ -17,7 +17,6 @@ Vagrant.configure("2") do |config|
 #
   $bootstrap = <<-BOOTSTRAP
 #!/bin/bash
-
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 sudo add-apt-repository \
    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
@@ -26,7 +25,6 @@ sudo add-apt-repository \
 apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 sudo apt-get clean
-
 usermod -aG docker vagrant
 systemctl start docker
 BOOTSTRAP
@@ -67,6 +65,8 @@ sudo docker run --rm -d --name genesis \
   --net=host \
   gcr.io/whiteblock/genesis:dev-alpine
 echo "=== genesis started ==="
+dd if=/dev/zero of=/EMPTY bs=1M
+rm -f /EMPTY
 RUN
   config.vm.provision "run", type: "shell", inline: $run, privileged: false
 end
