@@ -150,7 +150,7 @@ func build(tn *testnet.TestNet) error {
 
 		for i := 1; i <= numValidators; i++ {
 			_, err = client.DockerExecd(node,
-				fmt.Sprintf("bash -c \"/prysm/bazel-bin/validator/linux_amd64_pure_stripped/validator"+
+				fmt.Sprintf("sh -c \"/prysm/bazel-bin/validator/linux_amd64_pure_stripped/validator"+
 					" --password %s --keystore-path %s/key%d-%d --monitoring-port 10%d%d 2>&1 | tee /output.log\"",
 					validatorsPassword, logFolder, node.GetRelativeNumber(), i, node.GetRelativeNumber(), i))
 			if err != nil {

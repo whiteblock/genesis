@@ -272,7 +272,7 @@ func getIBFTExtraData(tn *testnet.TestNet, panconf *panConf, accounts []*ethereu
 	}
 
 	_, err = tn.Clients[tn.Nodes[0].Server].DockerExec(tn.Nodes[0],
-		fmt.Sprintf("bash -c 'echo %s > /pantheon/rlpValidators.json'", string(vaJSON)))
+		fmt.Sprintf("sh -c 'echo %s > /pantheon/rlpValidators.json'", string(vaJSON)))
 	if err != nil {
 		return "", util.LogError(err)
 	}

@@ -101,7 +101,7 @@ func build(tn *testnet.TestNet) error {
 	}
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, account := range accounts[:tn.LDD.Nodes] {
-			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" > /geth/pk%d'", account.HexPrivateKey(), i))
+			_, err := client.DockerExec(node, fmt.Sprintf("sh -c 'echo \"%s\" > /geth/pk%d'", account.HexPrivateKey(), i))
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -150,7 +150,7 @@ func build(tn *testnet.TestNet) error {
 				` --txpool.nolocals --port %d console  2>&1 | tee %s`,
 			getExtraFlags(ethconf, account, validFlags[node.GetAbsoluteNumber()]), ethereum.P2PPort, conf.DockerOutputFile)
 
-		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
+		_, err := client.DockerExecdit(node, fmt.Sprintf("sh -ic '%s'", gethCmd))
 		tn.BuildState.IncrementBuildProgress()
 		return util.LogError(err)
 	})
@@ -223,7 +223,7 @@ func add(tn *testnet.TestNet) error {
 
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, account := range accounts[:len(tn.Nodes)] {
-			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" > /geth/pk%d'", account.HexPrivateKey(), i))
+			_, err := client.DockerExec(node, fmt.Sprintf("sh -c 'echo \"%s\" > /geth/pk%d'", account.HexPrivateKey(), i))
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -245,7 +245,7 @@ func add(tn *testnet.TestNet) error {
 				` --txpool.nolocals --port %d console  2>&1 | tee %s`,
 			getExtraFlags(ethconf, account, validFlags[node.GetAbsoluteNumber()]), ethereum.P2PPort, conf.DockerOutputFile)
 
-		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
+		_, err := client.DockerExecdit(node, fmt.Sprintf("sh -ic '%s'", gethCmd))
 		tn.BuildState.IncrementBuildProgress()
 		return util.LogError(err)
 	})

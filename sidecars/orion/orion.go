@@ -63,7 +63,7 @@ func build(tn *testnet.Adjunct) error {
 
 	err = helpers.AllNodeExecConSC(tn, func(client ssh.Client, server *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementSideCarProgress()
-		_, err := client.DockerExec(node, "bash -c 'cd /orion/data && echo \"\" | orion -g nodeKey'")
+		_, err := client.DockerExec(node, "sh -c 'cd /orion/data && echo \"\" | orion -g nodeKey'")
 		return err
 	})
 	if err != nil {

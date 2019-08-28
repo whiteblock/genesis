@@ -104,7 +104,7 @@ func build(tn *testnet.TestNet) error {
 		wallets[node.GetAbsoluteNumber()] = res[:len(res)-1]
 		mux.Unlock()
 
-		res, err = client.DockerExec(node, "bash -c 'cat /parity/keys/ethereum/*'")
+		res, err = client.DockerExec(node, "sh -c 'cat /parity/keys/ethereum/*'")
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -135,7 +135,7 @@ func build(tn *testnet.TestNet) error {
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, rawWallet := range rawWallets {
-			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\">/parity/account%d'", rawWallet, i))
+			_, err := client.DockerExec(node, fmt.Sprintf("sh -c 'echo \"%s\">/parity/account%d'", rawWallet, i))
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -264,7 +264,7 @@ func add(tn *testnet.TestNet) error {
 		wallets = append(wallets, res[:len(res)-1])
 		mux.Unlock()
 
-		res, err = client.DockerExec(node, "bash -c 'cat /parity/keys/ethereum/*'")
+		res, err = client.DockerExec(node, "sh -c 'cat /parity/keys/ethereum/*'")
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -283,7 +283,7 @@ func add(tn *testnet.TestNet) error {
 		for i := 0; i < node.GetAbsoluteNumber(); i++ {
 			var nodeKeyStores string
 			tn.BuildState.GetP(fmt.Sprintf("node%dKey", i), &nodeKeyStores)
-			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /parity/account%d'", nodeKeyStores, i+1))
+			_, err := client.DockerExec(node, fmt.Sprintf("sh -c 'echo \"%s\" >> /parity/account%d'", nodeKeyStores, i+1))
 			if err != nil {
 				return err
 			}
@@ -318,7 +318,7 @@ func add(tn *testnet.TestNet) error {
 
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, rawWallet := range rawWallets {
-			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\">/parity/account%d'", rawWallet, i))
+			_, err := client.DockerExec(node, fmt.Sprintf("sh -c 'echo \"%s\">/parity/account%d'", rawWallet, i))
 			if err != nil {
 				return util.LogError(err)
 			}

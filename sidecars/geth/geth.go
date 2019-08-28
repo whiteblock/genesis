@@ -123,7 +123,7 @@ func Build(tn *testnet.Adjunct) error {
 			go func(account *ethereum.Account, i int) {
 				defer wg.Done()
 
-				_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
+				_, err := client.DockerExec(node, fmt.Sprintf("sh -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
 				if err != nil {
 					tn.BuildState.ReportError(err)
 					return
@@ -152,7 +152,7 @@ func Build(tn *testnet.Adjunct) error {
 			flags += fmt.Sprintf(" --etherbase %s", accounts[node.GetAbsoluteNumber()%len(accounts)].HexAddress())
 		}
 
-		_, err := client.DockerExecdit(node, fmt.Sprintf(` bash -ic 'geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
+		_, err := client.DockerExecdit(node, fmt.Sprintf(` sh -ic 'geth --datadir /geth/ --rpc --rpcaddr 0.0.0.0`+
 			` --rpcapi "admin,web3,miner,db,eth,net,personal,debug,txpool" --rpccorsdomain "0.0.0.0"%s --nodiscover --unlock="%s"`+
 			` --password /geth/passwd --networkid %d --verbosity 5 console 2>&1 >> /output.log'`, flags, unlock, networkID))
 		tn.BuildState.IncrementSideCarProgress()

@@ -105,7 +105,7 @@ func deploy(tn *testnet.TestNet, etcconf *ethConf, isAppend bool) error {
 
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, account := range accounts {
-			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
+			_, err := client.DockerExec(node, fmt.Sprintf("sh -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -181,7 +181,7 @@ func deploy(tn *testnet.TestNet, etcconf *ethConf, isAppend bool) error {
 			accounts[node.GetAbsoluteNumber()].HexAddress(),
 			conf.DockerOutputFile)
 
-		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
+		_, err := client.DockerExecdit(node, fmt.Sprintf("sh -ic '%s'", gethCmd))
 		if err != nil {
 			return util.LogError(err)
 		}
