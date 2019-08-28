@@ -309,7 +309,7 @@ func (sshClient *client) DockerRunMainDaemon(node Node, command string) error {
 // DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs.
 // Should only be used for the blockchain process.
 func (sshClient *client) DockerExecdLog(node Node, command string) error {
-	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s bash -c '%s 2>&1 > %s'", node.GetNodeName(),
+	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s sh -c '%s 2>&1 > %s'", node.GetNodeName(),
 		command, conf.DockerOutputFile))
 	return util.LogError(err)
 }
@@ -317,7 +317,7 @@ func (sshClient *client) DockerExecdLog(node Node, command string) error {
 // DockerExecdLogAppend will cause the stdout and stderr of the command to be stored in the logs.
 // Should only be used for the blockchain process. Will append to existing logs.
 func (sshClient *client) DockerExecdLogAppend(node Node, command string) error {
-	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s bash -c '%s 2>&1 >> %s'", node.GetNodeName(),
+	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s sh -c '%s 2>&1 >> %s'", node.GetNodeName(),
 		command, conf.DockerOutputFile))
 	return util.LogError(err)
 }

@@ -127,7 +127,7 @@ func build(tn *testnet.TestNet) error {
 		if testConf.PayloadSize > 0 {
 			cmd += fmt.Sprintf(" --payload-size %d", testConf.PayloadSize)
 		}
-		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s 2>&1 | tee %s'", cmd, conf.DockerOutputFile))
+		_, err := client.DockerExecdit(node, fmt.Sprintf("sh -ic '%s 2>&1 | tee %s'", cmd, conf.DockerOutputFile))
 		return err
 	})
 

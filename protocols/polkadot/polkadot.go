@@ -79,7 +79,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Initializing polkadot")
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		client.DockerExecd(node, fmt.Sprintf("bash -c 'polkadot --chain=local 2>&1 | tee %s'", conf.DockerOutputFile))
+		client.DockerExecd(node, fmt.Sprintf("sh -c 'polkadot --chain=local 2>&1 | tee %s'", conf.DockerOutputFile))
 		return nil
 	})
 	if err != nil {
@@ -135,7 +135,7 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		client.DockerExecd(node, fmt.Sprintf("bash -c 'polkadot --chain=local %s --reserved-nodes %s 2>&1 | tee %s'", vmode, nid, conf.DockerOutputFile))
+		client.DockerExecd(node, fmt.Sprintf("sh -c 'polkadot --chain=local %s --reserved-nodes %s 2>&1 | tee %s'", vmode, nid, conf.DockerOutputFile))
 		if err != nil {
 			return util.LogError(err)
 		}

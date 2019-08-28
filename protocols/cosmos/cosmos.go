@@ -57,7 +57,7 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 	tn.BuildState.IncrementBuildProgress()
-	_, err = helpers.FirstNodeExec(tn, "bash -c 'echo \"password\\n\" | gaiacli keys add validator -ojson'")
+	_, err = helpers.FirstNodeExec(tn, "sh -c 'echo \"password\\n\" | gaiacli keys add validator -ojson'")
 	if err != nil {
 		return util.LogError(err)
 	}
@@ -73,7 +73,7 @@ func build(tn *testnet.TestNet) error {
 		return util.LogError(err)
 	}
 
-	_, err = helpers.FirstNodeExec(tn, "bash -c 'echo \"password\\n\" | gaiad gentx --name validator'")
+	_, err = helpers.FirstNodeExec(tn, "sh -c 'echo \"password\\n\" | gaiad gentx --name validator'")
 	if err != nil {
 		return util.LogError(err)
 	}

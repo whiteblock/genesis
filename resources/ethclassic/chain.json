@@ -97,6 +97,19 @@
                     }
                 ]
             },
+             {
+                "name":"Defuse Difficulty Bomb",
+                "block":0,
+                "requiredHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
+                "features":[
+                    {
+                        "id":"difficulty",
+                        "options":{
+                            "type":"defused"
+                        }
+                    }
+                ]
+            },
             {
                 "name":"Atlantis",
                 "block":0,

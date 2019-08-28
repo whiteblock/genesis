@@ -86,7 +86,7 @@ func build(tn *testnet.TestNet) error {
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		for i, account := range accounts {
-			_, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
+			_, err := client.DockerExec(node, fmt.Sprintf("sh -c 'echo \"%s\" >> /geth/pk%d'", account.HexPrivateKey(), i))
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -130,7 +130,7 @@ func build(tn *testnet.TestNet) error {
 
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		gethResults, err := client.DockerExec(node,
-			fmt.Sprintf("bash -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
+			fmt.Sprintf("sh -c 'echo -e \"admin.nodeInfo.enode\\nexit\\n\" | "+
 				"geth --rpc --datadir=/geth/ --network-id=%d --chain=/geth/chain.json console'", etcconf.NetworkID))
 		if err != nil {
 			return util.LogError(err)
@@ -164,7 +164,7 @@ func build(tn *testnet.TestNet) error {
 		log.WithFields(log.Fields{"node": node.GetAbsoluteNumber()}).Trace("adding accounts to right directory")
 
 		cont, err := client.DockerExec(node,
-			fmt.Sprintf("bash -c 'cd /geth/%s/keystore && cat $(ls | sed -n %dp)'", etcconf.Identity, node.GetAbsoluteNumber()+1))
+			fmt.Sprintf("sh -c 'cd /geth/%s/keystore && cat $(ls | sed -n %dp)'", etcconf.Identity, node.GetAbsoluteNumber()+1))
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -188,7 +188,7 @@ func build(tn *testnet.TestNet) error {
 			accounts[node.GetAbsoluteNumber()].HexAddress(),
 			conf.DockerOutputFile)
 
-		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '%s'", gethCmd))
+		_, err := client.DockerExecdit(node, fmt.Sprintf("sh -ic '%s'", gethCmd))
 		if err != nil {
 			return util.LogError(err)
 		}

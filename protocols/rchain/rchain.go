@@ -75,7 +75,7 @@ func build(tn *testnet.TestNet) error {
 	}
 	/**Check to make sure the rnode command is valid**/
 	err = helpers.AllNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		_, err := client.DockerExec(node, fmt.Sprintf("bash -c '%s --help'", rConf.Command))
+		_, err := client.DockerExec(node, fmt.Sprintf("sh -c '%s --help'", rConf.Command))
 		if err != nil {
 			return fmt.Errorf("could not find command \"%s\"", rConf.Command)
 		}
