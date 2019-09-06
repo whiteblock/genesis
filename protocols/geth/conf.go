@@ -43,6 +43,7 @@ type ethConf struct {
 	Verbosity          int64  `json:"verbosity"`
 	Unlock             bool   `json:"unlock"`
 	ExposedAccounts    int64  `json:"exposedAccounts"`
+	Flags 			   string `json:"flags"`
 }
 
 /**

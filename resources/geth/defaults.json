@@ -16,5 +16,6 @@
     "mode":"default",
     "verbosity":3,
     "unlock":true,
-    "exposedAccounts":-1
+    "exposedAccounts":-1,
+    "flags":""
 }

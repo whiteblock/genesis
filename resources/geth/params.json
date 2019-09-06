@@ -14,5 +14,6 @@
     ["mode","string"],
     ["verbosity","int"],
     ["unlock","bool"],
-    ["exposedAccounts","int"]
+    ["exposedAccounts","int"],
+    ["flags","string"]
 ]
