@@ -147,7 +147,7 @@ func build(tn *testnet.TestNet) error {
 		gethCmd := fmt.Sprintf(
 			`geth --datadir /geth/ %s --rpc --nodiscover --rpcaddr 0.0.0.0`+
 				` --miner.gasprice=1 --rpcapi "admin,web3,db,eth,net,personal,miner,txpool" --rpccorsdomain "0.0.0.0" --mine`+
-				` --txpool.nolocals --port %d console  2>&1 | tee %s`,
+				` --txpool.nolocals --rpcvhosts=* --port %d console  2>&1 | tee %s`,
 			getExtraFlags(ethconf, account, validFlags[node.GetAbsoluteNumber()]), ethereum.P2PPort, conf.DockerOutputFile)
 
 		_, err := client.DockerExecdit(node, fmt.Sprintf("sh -ic '%s'", gethCmd))
