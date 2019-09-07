@@ -19,6 +19,8 @@
 package generic
 
 import (
+	"fmt"
+
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
@@ -27,8 +29,6 @@ import (
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 )
-
-var conf = util.GetConfig()
 
 const (
 	blockchain     = "generic"
@@ -44,15 +44,11 @@ func init() {
 
 // build builds out a fresh new ethereum test network using geth
 func build(tn *testnet.TestNet) error {
-	tn.BuildState.SetBuildSteps(8 + (5 * tn.LDD.Nodes) + (tn.LDD.Nodes * (tn.LDD.Nodes - 1)))
+	tn.BuildState.SetBuildSteps(3 + tn.LDD.Nodes)
 
 	tn.BuildState.IncrementBuildProgress()
-
-	tn.BuildState.SetBuildStage("Distributing secrets")
 
 	// TODO do we need to place files
-
-	tn.BuildState.IncrementBuildProgress()
 
 	tn.BuildState.SetBuildStage("Creating the genesis block")
 
@@ -68,13 +64,26 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.IncrementBuildProgress()
 
 	err := helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		_, err := client.DockerExec(node, "sh /start.sh")
+		var params string
+
+		for key, param := range tn.LDD.Params {
+			params += fmt.Sprintf(" --%s %v", key, param)
+		}
+
+		params += "--peers"
+		for _, peer := range staticNodes {
+			params += fmt.Sprintf(" %v", peer)
+		}
+
+		_, err := client.DockerExec(node, fmt.Sprintf("sh /start.sh %s", params))
 		if err != nil {
 			return util.LogError(err)
 		}
 
+		tn.BuildState.IncrementBuildProgress()
 		return nil
 	})
+
 	return err
 }
 
