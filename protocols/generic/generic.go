@@ -88,5 +88,7 @@ func build(tn *testnet.TestNet) error {
 }
 
 func add(tn *testnet.TestNet) error {
-	return nil
+	err := build(tn)
+
+	return err
 }
