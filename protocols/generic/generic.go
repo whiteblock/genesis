@@ -48,8 +48,6 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.IncrementBuildProgress()
 
-	// TODO do we need to place files
-
 	tn.BuildState.SetBuildStage("Creating the genesis block")
 
 	tn.BuildState.IncrementBuildProgress()
