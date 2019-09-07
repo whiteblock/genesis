@@ -44,14 +44,11 @@ func init() {
 
 // build builds out a fresh new ethereum test network using geth
 func build(tn *testnet.TestNet) error {
-	tn.BuildState.SetBuildSteps(3 + tn.LDD.Nodes)
+	tn.BuildState.SetBuildSteps(2 + tn.LDD.Nodes)
 
 	tn.BuildState.IncrementBuildProgress()
 
-	tn.BuildState.SetBuildStage("Creating the genesis block")
-
-	tn.BuildState.IncrementBuildProgress()
-	tn.BuildState.SetBuildStage("Bootstrapping network")
+	tn.BuildState.SetBuildStage("Provisioning nodes")
 
 	staticNodes := make([]string, tn.LDD.Nodes)
 
