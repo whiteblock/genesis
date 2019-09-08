@@ -20,12 +20,13 @@ package generic
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-core/peer"
 	log "github.com/sirupsen/logrus"
 	"path/filepath"
 
-	"github.com/libp2p/go-libp2p-crypto"
+	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
@@ -49,7 +50,6 @@ func init() {
 
 // build builds out a fresh new ethereum test network using geth
 func build(tn *testnet.TestNet) error {
-	libp2p := tn.LDD.Params["libp2p"] == "true"
 	tn.BuildState.SetBuildSteps(3 + tn.LDD.Nodes)
 
 	tn.BuildState.SetBuildStage("Copying files inside the Docker containers")
@@ -67,24 +67,36 @@ func build(tn *testnet.TestNet) error {
 	}
 
 	tn.BuildState.IncrementBuildProgress()
+
 	var params string
 
 	var startArguments map[string]interface{}
-	startArguments = tn.LDD.Params["args"].(map[string]interface{})
-	for key, param := range startArguments {
-		params += fmt.Sprintf(" --%s %v", key, param)
+
+	if args, ok := tn.LDD.Params["args"].(map[string]interface{}); ok {
+		startArguments = args
+		for key, param := range startArguments {
+			params += fmt.Sprintf(" --%s %v", key, param)
+		}
+	} else {
+		return util.LogError(errors.New("tn.LDD.Params['args'] is not a map[string]interface{}"))
 	}
 
 	params += fmt.Sprintf(" --port %d", p2pPort)
 
+	libp2p := tn.LDD.Params["libp2p"] == "true"
+
 	err := helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		files := tn.LDD.Params["files"].([]string)
-		for _, fileToCopy := range files {
-			err := client.Scp(fileToCopy, fmt.Sprintf("/launch/%s", filepath.Base(fileToCopy)))
-			if err != nil {
-				return util.LogError(err)
+		if files, ok := tn.LDD.Params["files"].([]string); ok {
+			for _, fileToCopy := range files {
+				err := client.Scp(fileToCopy, fmt.Sprintf("/launch/%s", filepath.Base(fileToCopy)))
+				if err != nil {
+					return util.LogError(err)
+				}
 			}
+		} else {
+			return util.LogError(errors.New("tn.LDD.Params['files'] is not a []string"))
 		}
+
 		thisNodeParams := params + " --peers "
 
 		for _, peerNode := range tn.Nodes {
@@ -97,6 +109,7 @@ func build(tn *testnet.TestNet) error {
 			} else {
 				thisNodeParams += fmt.Sprintf(" %s", peerNode.IP)
 			}
+
 			tn.BuildState.IncrementBuildProgress()
 		}
 
