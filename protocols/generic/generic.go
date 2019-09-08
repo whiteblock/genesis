@@ -104,7 +104,7 @@ func build(tn *testnet.TestNet) error {
 			thisNodeParams += fmt.Sprintf(" --identity %s", nodeKeyPairs[node.GetID()])
 		}
 
-		log.WithField("args", thisNodeParams).Infof("Starting node %d", node.GetID())
+		log.WithField("args", thisNodeParams).Infof("Starting node %s", node.GetID())
 
 		_, err := client.DockerExec(node, fmt.Sprintf("sh /launch/start.sh %s", thisNodeParams))
 		if err != nil {
