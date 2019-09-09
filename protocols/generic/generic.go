@@ -22,11 +22,10 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/libp2p/go-libp2p-core/peer"
-	log "github.com/sirupsen/logrus"
-	"path/filepath"
 
 	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p-core/peer"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
@@ -68,27 +67,14 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.IncrementBuildProgress()
 
-	var params string
-
-	var startArguments map[string]interface{}
-
-	if args, ok := tn.LDD.Params["args"].(map[string]interface{}); ok {
-		startArguments = args
-		for key, param := range startArguments {
-			params += fmt.Sprintf(" --%s %v", key, param)
-		}
-	} else {
-		return util.LogError(errors.New("tn.LDD.Params['args'] is not a map[string]interface{}"))
-	}
-
-	params += fmt.Sprintf(" --port %d", p2pPort)
-
 	libp2p := tn.LDD.Params["libp2p"] == "true"
 
 	err := helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		if files, ok := tn.LDD.Params["files"].([]string); ok {
-			for _, fileToCopy := range files {
-				err := client.Scp(fileToCopy, fmt.Sprintf("/launch/%s", filepath.Base(fileToCopy)))
+		if files, ok := tn.LDD.Params["files"].([]map[string]string); ok {
+			filesToCopy := files[node.GetRelativeNumber()]
+
+			for src, target := range filesToCopy {
+				err := client.Scp(src, target)
 				if err != nil {
 					return util.LogError(err)
 				}
@@ -97,7 +83,21 @@ func build(tn *testnet.TestNet) error {
 			return util.LogError(errors.New("tn.LDD.Params['files'] is not a []string"))
 		}
 
-		thisNodeParams := params + " --peers "
+		var params string
+
+		if args, ok := tn.LDD.Params["args"].([]map[string]string); ok {
+			startArguments := args[node.GetRelativeNumber()]
+
+			for key, param := range startArguments {
+				params += fmt.Sprintf(" --%s %v", key, param)
+			}
+		} else {
+			return util.LogError(errors.New("tn.LDD.Params['args'] is not a map[string]interface{}"))
+		}
+
+		params += fmt.Sprintf(" --port %d", p2pPort)
+
+		params += " --peers "
 
 		for _, peerNode := range tn.Nodes {
 			if node.GetID() == peerNode.GetID() {
@@ -105,21 +105,21 @@ func build(tn *testnet.TestNet) error {
 			}
 
 			if libp2p {
-				thisNodeParams += fmt.Sprintf(" /ip4/%s/tcp/%d/p2p/%s:%d", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]), p2pPort)
+				params += fmt.Sprintf(" /ip4/%s/tcp/%d/p2p/%s:%d", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]), p2pPort)
 			} else {
-				thisNodeParams += fmt.Sprintf(" %s", peerNode.IP)
+				params += fmt.Sprintf(" %s", peerNode.IP)
 			}
 
 			tn.BuildState.IncrementBuildProgress()
 		}
 
 		if libp2p {
-			thisNodeParams += fmt.Sprintf(" --identity %s", nodeKeyPairs[node.GetID()])
+			params += fmt.Sprintf(" --identity %s", nodeKeyPairs[node.GetID()])
 		}
 
-		log.WithField("args", thisNodeParams).Infof("Starting node %s", node.GetID())
+		log.WithField("args", params).Infof("Starting node %s", node.GetID())
 
-		_, err := client.DockerExec(node, fmt.Sprintf("sh /launch/start.sh %s", thisNodeParams))
+		_, err := client.DockerExec(node, fmt.Sprintf("sh /launch/start.sh %s", params))
 		if err != nil {
 			return util.LogError(err)
 		}
