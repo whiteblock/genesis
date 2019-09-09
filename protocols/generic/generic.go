@@ -22,7 +22,6 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"path/filepath"
 
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -74,8 +73,8 @@ func build(tn *testnet.TestNet) error {
 		if files, ok := tn.LDD.Params["files"].([]map[string]string); ok {
 			filesToCopy := files[node.GetRelativeNumber()]
 
-			for _, file := range filesToCopy {
-				err := client.Scp(file, fmt.Sprintf("/launch/%s", filepath.Base(file)))
+			for src, target := range filesToCopy {
+				err := client.Scp(src, target)
 				if err != nil {
 					return util.LogError(err)
 				}
