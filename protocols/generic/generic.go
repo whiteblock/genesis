@@ -22,6 +22,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -80,7 +81,8 @@ func build(tn *testnet.TestNet) error {
 				}
 			}
 		} else {
-			return util.LogError(errors.New("tn.LDD.Params['files'] is not a []string"))
+			err := errors.New(fmt.Sprintf("tn.LDD.Params['files'] is not a map[string]string, it is a %v", reflect.TypeOf(tn.LDD.Params["files"]).String()))
+			return util.LogError(err)
 		}
 
 		var params string
@@ -92,7 +94,8 @@ func build(tn *testnet.TestNet) error {
 				params += fmt.Sprintf(" --%s %v", key, param)
 			}
 		} else {
-			return util.LogError(errors.New("tn.LDD.Params['args'] is not a map[string]interface{}"))
+			err := errors.New(fmt.Sprintf("tn.LDD.Params['args'] is not a map[string]string, it is a %v", reflect.TypeOf(tn.LDD.Params["args"]).String()))
+			return util.LogError(err)
 		}
 
 		params += fmt.Sprintf(" --port %d", p2pPort)
