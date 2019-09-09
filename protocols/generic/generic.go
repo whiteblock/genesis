@@ -71,14 +71,19 @@ func build(tn *testnet.TestNet) error {
 	libp2p := tn.LDD.Params["libp2p"] == "true"
 
 	err := helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		if files, ok := tn.LDD.Params["files"].([]map[string]string); ok {
+		if files, ok := tn.LDD.Params["files"].([]interface{}); ok {
 			filesToCopy := files[node.GetRelativeNumber()]
 
-			for src, target := range filesToCopy {
-				err := client.Scp(src, target)
-				if err != nil {
-					return util.LogError(err)
+			if fileMap, ok := filesToCopy.(map[string]string); ok {
+				for src, target := range fileMap {
+					err := client.Scp(src, target)
+					if err != nil {
+						return util.LogError(err)
+					}
 				}
+			} else {
+				err := errors.New(fmt.Sprintf("filesToCopy is a %v", reflect.TypeOf(filesToCopy).String()))
+				return util.LogError(err)
 			}
 		} else {
 			err := errors.New(fmt.Sprintf("tn.LDD.Params['files'] is not a map[string]string, it is a %v", reflect.TypeOf(tn.LDD.Params["files"]).String()))
@@ -87,11 +92,16 @@ func build(tn *testnet.TestNet) error {
 
 		var params string
 
-		if args, ok := tn.LDD.Params["args"].([]map[string]string); ok {
+		if args, ok := tn.LDD.Params["args"].([]interface{}); ok {
 			startArguments := args[node.GetRelativeNumber()]
 
-			for key, param := range startArguments {
-				params += fmt.Sprintf(" --%s %v", key, param)
+			if argMap, ok := startArguments.(map[string]string); ok {
+				for key, param := range argMap {
+					params += fmt.Sprintf(" --%s %v", key, param)
+				}
+			} else {
+				err := errors.New(fmt.Sprintf("startArguments is a %v", reflect.TypeOf(startArguments).String()))
+				return util.LogError(err)
 			}
 		} else {
 			err := errors.New(fmt.Sprintf("tn.LDD.Params['args'] is not a map[string]string, it is a %v", reflect.TypeOf(tn.LDD.Params["args"]).String()))
