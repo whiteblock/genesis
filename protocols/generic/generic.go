@@ -127,7 +127,7 @@ func build(tn *testnet.TestNet) error {
 		}
 
 		if libp2p {
-			params += fmt.Sprintf(" --identity %s", nodeKeyPairs[node.GetID()])
+			params += fmt.Sprintf(" --identity %s", idString(nodeKeyPairs[node.GetID()]))
 		}
 
 		log.WithField("args", params).Infof("Starting node %s", node.GetID())
