@@ -74,9 +74,9 @@ func build(tn *testnet.TestNet) error {
 		if files, ok := tn.LDD.Params["files"].([]interface{}); ok {
 			filesToCopy := files[node.GetRelativeNumber()]
 
-			if fileMap, ok := filesToCopy.(map[string]string); ok {
+			if fileMap, ok := filesToCopy.(map[string]interface{}); ok {
 				for src, target := range fileMap {
-					err := client.Scp(src, target)
+					err := client.Scp(src, fmt.Sprintf("%v", target))
 					if err != nil {
 						return util.LogError(err)
 					}
@@ -95,7 +95,7 @@ func build(tn *testnet.TestNet) error {
 		if args, ok := tn.LDD.Params["args"].([]interface{}); ok {
 			startArguments := args[node.GetRelativeNumber()]
 
-			if argMap, ok := startArguments.(map[string]string); ok {
+			if argMap, ok := startArguments.(map[string]interface{}); ok {
 				for key, param := range argMap {
 					params += fmt.Sprintf(" --%s %v", key, param)
 				}
