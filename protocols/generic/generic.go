@@ -76,7 +76,7 @@ func build(tn *testnet.TestNet) error {
 
 			if fileMap, ok := filesToCopy.(map[string]interface{}); ok {
 				for src, target := range fileMap {
-					err := client.Scp(src, fmt.Sprintf("%v", target))
+					err := client.DockerCp(node, src, fmt.Sprintf("%v", target))
 					if err != nil {
 						return util.LogError(err)
 					}
