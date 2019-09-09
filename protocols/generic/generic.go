@@ -97,7 +97,7 @@ func build(tn *testnet.TestNet) error {
 
 			if argMap, ok := startArguments.(map[string]interface{}); ok {
 				for key, param := range argMap {
-					params += fmt.Sprintf(" --%s %v", key, param)
+					params += fmt.Sprintf(" --%s=%v", key, param)
 				}
 			} else {
 				err := errors.New(fmt.Sprintf("startArguments is a %v", reflect.TypeOf(startArguments).String()))
@@ -108,9 +108,7 @@ func build(tn *testnet.TestNet) error {
 			return util.LogError(err)
 		}
 
-		params += fmt.Sprintf(" --port %d", p2pPort)
-
-		params += " --peers "
+		params += fmt.Sprintf(" --port=%d", p2pPort)
 
 		for _, peerNode := range tn.Nodes {
 			if node.GetID() == peerNode.GetID() {
@@ -118,16 +116,16 @@ func build(tn *testnet.TestNet) error {
 			}
 
 			if libp2p {
-				params += fmt.Sprintf(" /ip4/%s/tcp/%d/p2p/%s:%d", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]), p2pPort)
+				params += fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s:%d", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]), p2pPort)
 			} else {
-				params += fmt.Sprintf(" %s", peerNode.IP)
+				params += fmt.Sprintf(" --peers=%s", peerNode.IP)
 			}
 
 			tn.BuildState.IncrementBuildProgress()
 		}
 
 		if libp2p {
-			params += fmt.Sprintf(" --identity %s", idString(nodeKeyPairs[node.GetID()]))
+			params += fmt.Sprintf(" --identity=%s", idString(nodeKeyPairs[node.GetID()]))
 		}
 
 		log.WithField("args", params).Infof("Starting node %s", node.GetID())
