@@ -19,7 +19,6 @@
 package generic
 
 import (
-	"fmt"
 	"strconv"
 	"testing"
 )
@@ -29,51 +28,61 @@ func TestCreatingNetworkTopology(t *testing.T) {
 		currentNodeIndex int
 		peerIds map[int]string
 		networkTopology topology
+		expected string
 	}{
 		{
 			currentNodeIndex: 0,
 			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
 			networkTopology: all,
+			expected: "bc",
 		},
 		{
 			currentNodeIndex: 2,
 			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
 			networkTopology: all,
+			expected: "ab",
 		},
 		{
 			currentNodeIndex: 1,
 			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
 			networkTopology: all,
+			expected: "ca",
 		},
 		{
 			currentNodeIndex: 0,
 			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
 			networkTopology: sequence,
+			expected: "b",
 		},
 		{
 			currentNodeIndex: 2,
 			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
 			networkTopology: sequence,
+			expected: "",
 		},
 		{
 			currentNodeIndex: 1,
 			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
 			networkTopology: sequence,
+			expected: "c",
 		},
 		{
 			currentNodeIndex: 0,
 			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
 			networkTopology: randomTwo,
+			expected: "",
 		},
 		{
 			currentNodeIndex: 2,
 			peerIds: map[int]string{0:"a", 1:"b", 2:"c"}, // TODO this one is peering to itself. Bad boi? I just fixed it tho.
 			networkTopology: randomTwo,
+			expected: "ba",
 		},
 		{
 			currentNodeIndex: 1,
 			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
 			networkTopology: randomTwo,
+			expected: "",
 		},
 	}
 
@@ -84,7 +93,9 @@ func TestCreatingNetworkTopology(t *testing.T) {
 				t.Errorf("could not create peers")
 			}
 
-			fmt.Println(params)
+			if params != tt.expected {
+				t.Errorf("return value of createPeers does not match expected value")
+			}
 		})
 	}
 }
