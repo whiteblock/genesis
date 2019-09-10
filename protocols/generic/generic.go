@@ -181,7 +181,7 @@ func createPeers(currentNodeIndex int, peerIds map[int]string, networkTopology t
 			return "", nil
 		}
 
-		for i := currentNodeIndex; i >= currentNodeIndex-2; i-- {
+		for i := currentNodeIndex-1; i >= currentNodeIndex-2; i-- {
 			peerStr := peerIds[i]
 			out += peerStr
 		}
