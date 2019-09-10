@@ -122,6 +122,7 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 			}
 
 		}
+
 		peers, err := createPeers(node.GetRelativeNumber(), peerIds, networkTopology)
 
 		if err != nil {
@@ -160,11 +161,12 @@ func createPeers(currentNodeIndex int, peerIds map[int]string, networkTopology t
 
 	switch networkTopology {
 	case all:
-		for nodeIndex, peerStr := range peerIds {
-			if currentNodeIndex == nodeIndex {
+		for i := 0; i < len(peerIds); i++ {
+			if i == currentNodeIndex {
 				continue
 			}
-			out += peerStr
+			
+			out += peerIds[i]
 		}
 
 		return out, nil
@@ -182,8 +184,7 @@ func createPeers(currentNodeIndex int, peerIds map[int]string, networkTopology t
 		}
 
 		for i := currentNodeIndex-1; i >= currentNodeIndex-2; i-- {
-			peerStr := peerIds[i]
-			out += peerStr
+			out += peerIds[i]
 		}
 
 		return out, nil

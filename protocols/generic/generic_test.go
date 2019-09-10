@@ -19,6 +19,7 @@
 package generic
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 )
@@ -46,7 +47,7 @@ func TestCreatingNetworkTopology(t *testing.T) {
 			currentNodeIndex: 1,
 			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
 			networkTopology: all,
-			expected: "ca",
+			expected: "ac",
 		},
 		{
 			currentNodeIndex: 0,
@@ -92,6 +93,9 @@ func TestCreatingNetworkTopology(t *testing.T) {
 			if err != nil {
 				t.Errorf("could not create peers")
 			}
+
+			fmt.Println(params)
+			fmt.Println(tt.expected)
 
 			if params != tt.expected {
 				t.Errorf("return value of createPeers does not match expected value")
