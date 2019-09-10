@@ -20,7 +20,6 @@ package generic
 
 import (
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -56,8 +55,6 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.IncrementBuildProgress()
 
-	p2pPort := 9000
-
 	tn.BuildState.SetBuildStage("Generating key pairs")
 
 	nodeKeyPairs := map[string]crypto.PrivKey{}
@@ -68,69 +65,39 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.IncrementBuildProgress()
 
-	libp2p := tn.LDD.Params["libp2p"] == "true"
-
 	err := helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		if files, ok := tn.LDD.Params["files"].([]interface{}); ok {
-			filesToCopy := files[node.GetRelativeNumber()]
-
-			if fileMap, ok := filesToCopy.(map[string]interface{}); ok {
-				for src, target := range fileMap {
-					err := client.DockerCp(node, src, fmt.Sprintf("%v", target))
-					if err != nil {
-						return util.LogError(err)
-					}
-				}
-			} else {
-				err := errors.New(fmt.Sprintf("filesToCopy is a %v", reflect.TypeOf(filesToCopy).String()))
-				return util.LogError(err)
-			}
-		} else {
-			err := errors.New(fmt.Sprintf("tn.LDD.Params['files'] is not a map[string]string, it is a %v", reflect.TypeOf(tn.LDD.Params["files"]).String()))
+		files, ok := tn.LDD.Params["files"].([]interface{})
+		if !ok {
+			err := fmt.Errorf("tn.LDD.Params['files'] is not a map[string]string, it is a %v", reflect.TypeOf(tn.LDD.Params["files"]).String())
 			return util.LogError(err)
 		}
 
-		var params string
+		filesToCopy := files[node.GetRelativeNumber()]
 
-		if args, ok := tn.LDD.Params["args"].([]interface{}); ok {
-			startArguments := args[node.GetRelativeNumber()]
-
-			if argMap, ok := startArguments.(map[string]interface{}); ok {
-				for key, param := range argMap {
-					params += fmt.Sprintf(" --%s=%v", key, param)
-				}
-			} else {
-				err := errors.New(fmt.Sprintf("startArguments is a %v", reflect.TypeOf(startArguments).String()))
-				return util.LogError(err)
-			}
-		} else {
-			err := errors.New(fmt.Sprintf("tn.LDD.Params['args'] is not a map[string]string, it is a %v", reflect.TypeOf(tn.LDD.Params["args"]).String()))
+		fileMap, ok := filesToCopy.(map[string]interface{})
+		if !ok {
+			err := fmt.Errorf("filesToCopy is a %v", reflect.TypeOf(filesToCopy).String())
 			return util.LogError(err)
 		}
 
-		params += fmt.Sprintf(" --port=%d", p2pPort)
-
-		for _, peerNode := range tn.Nodes {
-			if node.GetID() == peerNode.GetID() {
-				continue
+		for src, target := range fileMap {
+			err := client.DockerCp(node, src, fmt.Sprintf("%v", target))
+			if err != nil {
+				return util.LogError(err)
 			}
-
-			if libp2p {
-				params += fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s:%d", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]), p2pPort)
-			} else {
-				params += fmt.Sprintf(" --peers=%s", peerNode.IP)
-			}
-
-			tn.BuildState.IncrementBuildProgress()
 		}
 
-		if libp2p {
-			params += fmt.Sprintf(" --identity=%s", idString(nodeKeyPairs[node.GetID()]))
+		params, err := createParams(tn, node, nodeKeyPairs)
+
+		launchScript, ok := tn.LDD.Params["launch-script"].([]interface{})
+		if !ok {
+			err := fmt.Errorf("tn.LDD.Params['launch-script'] is not a []interface{}, it is a %v", reflect.TypeOf(tn.LDD.Params["launch-script"]))
+			return util.LogError(err)
 		}
 
-		log.WithField("args", params).Infof("Starting node %s", node.GetID())
+		script := launchScript[node.GetRelativeNumber()]
 
-		_, err := client.DockerExec(node, fmt.Sprintf("sh /launch/start.sh %s", params))
+		_, err = client.DockerExec(node, fmt.Sprintf("%v %s", script, params))
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -154,4 +121,53 @@ func add(tn *testnet.TestNet) error {
 	err := build(tn)
 
 	return err
+}
+
+func createParams(tn *testnet.TestNet, node ssh.Node, nodeKeyPairs map[string]crypto.PrivKey) (string, error) {
+	p2pPort := 9000
+	libp2p := tn.LDD.Params["libp2p"] == "true"
+
+	var params string
+
+	args, ok := tn.LDD.Params["args"].([]interface{})
+	if !ok {
+		err := fmt.Errorf("tn.LDD.Params['args'] is not a map[string]string, it is a %v", reflect.TypeOf(tn.LDD.Params["args"]).String())
+		return "", util.LogError(err)
+	}
+
+	startArguments := args[node.GetRelativeNumber()]
+
+	argMap, ok := startArguments.(map[string]interface{})
+	if !ok {
+		err := fmt.Errorf("startArguments is a %v", reflect.TypeOf(startArguments).String())
+		return "", util.LogError(err)
+	}
+
+	for key, param := range argMap {
+		params += fmt.Sprintf(" --%s=%v", key, param)
+	}
+
+	params += fmt.Sprintf(" --port=%d", p2pPort)
+
+	for _, peerNode := range tn.Nodes {
+		if node.GetID() == peerNode.GetID() {
+			continue
+		}
+
+		if libp2p {
+			params += fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s:%d", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]), p2pPort)
+		} else {
+			params += fmt.Sprintf(" --peers=%s", peerNode.IP)
+		}
+
+		tn.BuildState.IncrementBuildProgress()
+	}
+
+	if libp2p {
+		params += fmt.Sprintf(" --identity=%s", idString(nodeKeyPairs[node.GetID()]))
+	}
+
+	log.WithField("args", params).Infof("Starting node %s", node.GetID())
+
+	return params, nil
 }
