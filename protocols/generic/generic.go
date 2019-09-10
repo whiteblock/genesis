@@ -59,11 +59,8 @@ func init() {
 // build builds out a fresh new ethereum test network using geth
 func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildSteps(3 + tn.LDD.Nodes)
-
 	tn.BuildState.SetBuildStage("Copying files inside the Docker containers")
-
 	tn.BuildState.IncrementBuildProgress()
-
 	tn.BuildState.SetBuildStage("Generating key pairs")
 
 	nodeKeyPairs := map[string]crypto.PrivKey{}
@@ -85,7 +82,7 @@ func build(tn *testnet.TestNet) error {
 func idString(k crypto.PrivKey) string {
 	pid, err := peer.IDFromPrivateKey(k)
 	if err != nil {
-		panic(err)
+		panic(err) //TODO why tf panic
 	}
 	return pid.Pretty()
 }
@@ -101,7 +98,7 @@ func getTopology(tn *testnet.TestNet) (topology, error) {
 	case "randomTwo":
 		return randomTwo, nil
 	default:
-	return all, util.LogError(fmt.Errorf("unsupported network topology, %v", networkTopology))
+		return all, util.LogError(fmt.Errorf("unsupported network topology, %v", networkTopology))
 	}
 }
 
@@ -114,9 +111,9 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 
 		params, err := createDefaultParams(tn, node)
 
-		peers := createPeers(tn, node, nodeKeyPairs, networkTopology)
-		if peers == "error" {
-			return util.LogError(fmt.Errorf("peers could not be created"))
+		peers, err := createPeers(tn, node, nodeKeyPairs, networkTopology)
+		if err != nil {
+			return util.LogError(err)
 		}
 
 		params += peers
@@ -142,7 +139,7 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 	})
 }
 
-func createPeers(tn *testnet.TestNet, node ssh.Node, nodeKeyPairs map[string]crypto.PrivKey, networkTopology topology) string {
+func createPeers(tn *testnet.TestNet, node ssh.Node, nodeKeyPairs map[string]crypto.PrivKey, networkTopology topology) (string, error) {
 	libp2p := tn.LDD.Params["libp2p"] == "true"
 
 	var out string
@@ -167,7 +164,7 @@ func createPeers(tn *testnet.TestNet, node ssh.Node, nodeKeyPairs map[string]cry
 			out += fmt.Sprintf(" --identity=%s", idString(nodeKeyPairs[node.GetID()]))
 		}
 
-		return out
+		return out, nil
 	case sequence:
 		var peerNode db.Node
 
@@ -184,11 +181,31 @@ func createPeers(tn *testnet.TestNet, node ssh.Node, nodeKeyPairs map[string]cry
 			out += fmt.Sprintf(" --peers=%s", peerNode.IP)
 		}
 
-		return out
+		return out, nil
 	case randomTwo:
-		return " " // TODO
+		var peerNode db.Node
+
+		if node.GetRelativeNumber() < 2 {
+			return "", nil
+		}
+
+		for i := node.GetRelativeNumber(); i >= node.GetRelativeNumber()-2; i-- {
+			peerNode = tn.Nodes[i]
+
+			if libp2p {
+				out += fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s:%d", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]), p2pPort)
+			} else {
+				out += fmt.Sprintf(" --peers=%s", peerNode.IP)
+			}
+		}
+
+		if libp2p {
+			out += fmt.Sprintf(" --identity=%s", idString(nodeKeyPairs[node.GetID()]))
+		}
+
+		return out, nil
 	default:
-		return "error"
+		return "", fmt.Errorf("peers could not be created")
 	}
 }
 
@@ -215,7 +232,7 @@ func copyFiles(tn *testnet.TestNet, client ssh.Client, node ssh.Node) error {
 	}
 
 	return nil
-}j
+}
 
 func createDefaultParams(tn *testnet.TestNet, node ssh.Node) (string, error) {
 	var params string
@@ -230,8 +247,7 @@ func createDefaultParams(tn *testnet.TestNet, node ssh.Node) (string, error) {
 
 	argMap, ok := startArguments.(map[string]interface{})
 	if !ok {
-		err := fmt.Errorf("startArguments is a %v", reflect.TypeOf(startArguments).String())
-		return "", util.LogError(err)
+		return "", util.LogErrorf("startArguments is a %v", reflect.TypeOf(startArguments).String())
 	}
 
 	for key, param := range argMap {
