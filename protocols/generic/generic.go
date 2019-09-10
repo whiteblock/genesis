@@ -111,12 +111,28 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 
 		params, err := createDefaultParams(tn, node)
 
-		peers, err := createPeers(tn, node, nodeKeyPairs, networkTopology)
+		libp2p := tn.LDD.Params["libp2p"] == "true"
+
+		peerIds := map[int]string{}
+		for _, peerNode := range tn.Nodes {
+			if libp2p {
+				peerIds[peerNode.GetRelativeNumber()] = fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s:%d", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]), p2pPort)
+			} else {
+				peerIds[peerNode.GetRelativeNumber()] = fmt.Sprintf(" --peers=%s", peerNode.IP)
+			}
+
+		}
+		peers, err := createPeers(node.GetRelativeNumber(), peerIds, networkTopology)
+
 		if err != nil {
 			return util.LogError(err)
 		}
 
 		params += peers
+
+		if libp2p {
+			params += fmt.Sprintf(" --identity=%s", idString(nodeKeyPairs[node.GetID()]))
+		}
 
 		log.WithField("args", params).Infof("Starting node %s", node.GetID())
 
@@ -139,68 +155,35 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 	})
 }
 
-func createPeers(tn *testnet.TestNet, node ssh.Node, nodeKeyPairs map[string]crypto.PrivKey, networkTopology topology) (string, error) {
-	libp2p := tn.LDD.Params["libp2p"] == "true"
-
+func createPeers(currentNodeIndex int, peerIds map[int]string, networkTopology topology) (string, error) {
 	var out string
 
 	switch networkTopology {
 	case all:
-		for _, peerNode := range tn.Nodes {
-			if node.GetID() == peerNode.GetID() {
+		for nodeIndex, peerStr := range peerIds {
+			if currentNodeIndex == nodeIndex {
 				continue
 			}
-
-			if libp2p {
-				out += fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s:%d", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]), p2pPort)
-			} else {
-				out += fmt.Sprintf(" --peers=%s", peerNode.IP)
-			}
-
-			tn.BuildState.IncrementBuildProgress()
-		}
-
-		if libp2p {
-			out += fmt.Sprintf(" --identity=%s", idString(nodeKeyPairs[node.GetID()]))
+			out += peerStr
 		}
 
 		return out, nil
 	case sequence:
-		var peerNode db.Node
-
-		if node.GetRelativeNumber()+1 >= len(tn.Nodes) {
-			peerNode = tn.Nodes[0]
+		if currentNodeIndex+1 >= len(peerIds) {
+			return "", nil
 		} else {
-			peerNode = tn.Nodes[node.GetRelativeNumber()+1]
-		}
-
-		if libp2p {
-			out += fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s:%d", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]), p2pPort)
-			out += fmt.Sprintf(" --identity=%s", idString(nodeKeyPairs[node.GetID()]))
-		} else {
-			out += fmt.Sprintf(" --peers=%s", peerNode.IP)
+			out += peerIds[currentNodeIndex+1]
 		}
 
 		return out, nil
 	case randomTwo:
-		var peerNode db.Node
-
-		if node.GetRelativeNumber() < 2 {
+		if currentNodeIndex < 2 {
 			return "", nil
 		}
 
-		for i := node.GetRelativeNumber(); i >= node.GetRelativeNumber()-2; i-- {
-			peerNode = tn.Nodes[i]
-
-			if libp2p {
-				out += fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s:%d", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]), p2pPort)
-			} else {
-				out += fmt.Sprintf(" --peers=%s", peerNode.IP)
-			}
-		}
-
-		if libp2p {
-			out += fmt.Sprintf(" --identity=%s", idString(nodeKeyPairs[node.GetID()]))
+		for i := currentNodeIndex; i >= currentNodeIndex-2; i-- {
+			peerStr := peerIds[i]
+			out += peerStr
 		}
 
 		return out, nil
