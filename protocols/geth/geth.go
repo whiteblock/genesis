@@ -491,7 +491,7 @@ func getExtraFlags(ethconf *ethConf, account *ethereum.Account, validFlags map[s
 		}
 	}
 	if len(ethconf.Flags) > 0 {
-		out += fmt.Sprintf(" %s",ethconf.Flags)
+		out += fmt.Sprintf(" %s", ethconf.Flags)
 	}
 
 	return out

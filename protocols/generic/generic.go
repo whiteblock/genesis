@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	blockchain     = "generic"
+	blockchain = "generic"
 )
 
 func init() {
