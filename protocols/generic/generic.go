@@ -20,7 +20,6 @@ package generic
 
 import (
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -77,7 +76,7 @@ func build(tn *testnet.TestNet) error {
 
 		fileMap, ok := filesToCopy.(map[string]interface{})
 		if !ok {
-			err := errors.New(fmt.Sprintf("filesToCopy is a %v", reflect.TypeOf(filesToCopy).String()))
+			err := fmt.Errorf("filesToCopy is a %v", reflect.TypeOf(filesToCopy).String())
 			return util.LogError(err)
 		}
 
