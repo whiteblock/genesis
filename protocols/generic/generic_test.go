@@ -24,7 +24,7 @@ import (
 	"testing"
 )
 
-func TestCreatingNetworkTopologyAll(t *testing.T) {
+func TestCreatingNetworkTopology(t *testing.T) {
 	var tests = []struct {
 		currentNodeIndex int
 		peerIds map[int]string
@@ -87,13 +87,4 @@ func TestCreatingNetworkTopologyAll(t *testing.T) {
 			fmt.Println(params)
 		})
 	}
-}
-
-func TestCreatingNetworkTopologySequence(t *testing.T) {
-	//str, err := createPeers(1, map[int]string{0:"a", 1:"b", 2:"c"}, all)
-
-}
-
-func TestCreatingNetworkTopologyRandom(t *testing.T) {
-	//str, err := createPeers(1, map[int]string{0:"a", 1:"b", 2:"c"}, all)
 }
