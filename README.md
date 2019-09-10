@@ -11,6 +11,7 @@ https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/6874
 )](https://godoc.org/github.com/whiteblock/genesis)
 [![Gitter](https://badges.gitter.im/whiteblock-io/community.svg)](https://gitter.im/whiteblock-io/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![Docker](https://img.shields.io/badge/Docker%20Image-gcr.io%2Fwhiteblock%2Fgenesis%3Adev-brightgreen)](https://gcr.io/whiteblock/genesis:dev)
+![Jenkins](https://jenkins-dev.whiteblock.io/buildStatus/icon?job=genesis)
 
 # Overview
 The Whiteblock platform allows users to provision multiple fully-functioning nodes over which they have complete control within a private test network 
