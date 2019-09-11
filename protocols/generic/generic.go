@@ -173,9 +173,8 @@ func createPeers(currentNodeIndex int, peerIds map[int]string, networkTopology t
 	case sequence:
 		if currentNodeIndex+1 >= len(peerIds) {
 			return "", nil
-		} else {
-			out += peerIds[currentNodeIndex+1]
 		}
+		out += peerIds[currentNodeIndex+1]
 
 		return out, nil
 	case randomTwo:
