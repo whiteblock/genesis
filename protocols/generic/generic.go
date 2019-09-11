@@ -109,7 +109,7 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 		peerIds := map[int]string{}
 		for _, peerNode := range tn.Nodes {
 			if libp2p {
-				id, err := pubIDString(nodeKeyPairs[peerNode.GetID()])
+				id, err := publicKeyToBase58(nodeKeyPairs[peerNode.GetID()])
 				if err != nil {
 					return util.LogError(err)
 				}
@@ -129,7 +129,7 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 		params += peers
 
 		if libp2p {
-			id, err := idString(nodeKeyPairs[node.GetID()])
+			id, err := privateKeyToHexString(nodeKeyPairs[node.GetID()])
 			if err != nil {
 				return util.LogError(err)
 			}
@@ -193,21 +193,20 @@ func createPeers(currentNodeIndex int, peerIds map[int]string, networkTopology t
 	}
 }
 
-func idString(k crypto.PrivKey) (string, error) {
-	pid, err := peer.IDFromPrivateKey(k)
-	if err != nil {
-		return "", err
-	}
-	return peer.IDHexEncode(pid), nil
-}
-
-func pubIDString(k crypto.PrivKey) (string, error) {
-	pubKey := k.GetPublic()
-	bytes, err := pubKey.Bytes()
+func privateKeyToHexString(k crypto.PrivKey) (string, error) {
+	bytes, err := k.Bytes()
 	if err != nil {
 		return "", err
 	}
 	return hex.EncodeToString(bytes), nil
+}
+
+func publicKeyToBase58(k crypto.PrivKey) (string, error) {
+	pid, err := peer.IDFromPrivateKey(k)
+	if err != nil {
+		return "", err
+	}
+	return pid.Pretty(), nil
 }
 
 func copyFiles(tn *testnet.TestNet, client ssh.Client, node ssh.Node) error {
