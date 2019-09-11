@@ -66,7 +66,7 @@ func RegisterBuildSideCar(sideCarName string, fn func(*testnet.Adjunct) error) {
 	sideCarBuildFuncs[sideCarName] = fn
 }
 
-// GetBlockchainSideCars associates a blockchain name with a
+// GetBlockchainSideCars associates a blockchain name with sidecars
 func GetBlockchainSideCars(tn *testnet.TestNet) ([]string, error) {
 	mux.RLock()
 	defer mux.RUnlock()

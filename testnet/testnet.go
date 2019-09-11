@@ -28,6 +28,7 @@ import (
 	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/status"
 	"github.com/whiteblock/genesis/util"
+	"path/filepath"
 	"sync"
 )
 
@@ -415,5 +416,11 @@ func (tn *TestNet) GetNodeResources(absoluteNum int) (resource util.Resources) {
 	}
 
 	log.WithFields(log.Fields{"res": resource}).Debug("got the resources")
+	resource.Volumes = append(resource.Volumes,
+		fmt.Sprintf("%s:%s", tn.GetNodeStoreDir(tn.Nodes[absoluteNum]), conf.NodeSharedVolMntDir))
 	return
+}
+
+func (tn *TestNet) GetNodeStoreDir(node ssh.Node) string {
+	return filepath.Join(conf.LogDir, tn.TestNetID, node.GetID())
 }

@@ -66,7 +66,9 @@ func buildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 			Type:            sidecar,
 		}
 		tn.AddSideCar(scNode, i)
-		err = docker.Run(tn, server.ID, docker.NewSideCarContainer(&scNode, nil, util.Resources{}, server.SubnetID))
+		err = docker.Run(tn, server.ID, docker.NewSideCarContainer(&scNode, nil, util.Resources{
+			Volumes: []string{fmt.Sprintf("%s:%s", tn.GetNodeStoreDir(node), conf.NodeSharedVolMntDir)},
+		}, server.SubnetID))
 		if err != nil {
 			tn.BuildState.ReportError(err)
 			return
