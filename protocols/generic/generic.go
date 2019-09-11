@@ -194,7 +194,7 @@ func createPeers(currentNodeIndex int, peerIds map[int]string, networkTopology t
 }
 
 func privateKeyToHexString(k crypto.PrivKey) (string, error) {
-	bytes, err := k.Bytes()
+	bytes, err := k.Raw()
 	if err != nil {
 		return "", err
 	}
