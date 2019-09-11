@@ -108,11 +108,11 @@ func TestCreatingNetworkTopology(t *testing.T) {
 
 func TestPubKeyHex(t *testing.T) {
 	prvKey, _, _ := crypto.GenerateKeyPairWithReader(crypto.Secp256k1, 2048, rand.Reader)
-	_, err := idString(prvKey)
+	_, err := privateKeyToHexString(prvKey)
 	if err != nil {
 		t.Errorf("Could not generate the hex value of private key")
 	}
-	_, err = pubIDString(prvKey)
+	_, err = publicKeyToBase58(prvKey)
 	if err != nil {
 		t.Errorf("Could not generate the hex value of public key")
 	}
