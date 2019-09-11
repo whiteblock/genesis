@@ -603,7 +603,7 @@ func (bs *BuildState) Destroy() error {
 	if err != nil {
 		return utils.LogError(err)
 	}
-	for _, fn := range onDestroyFuncs {
+	for _, fn := range bs.onDestroyFuncs {
 		go fn() //run eventually
 	}
 	bs.onDestroyFuncs = []func(){} //only once execution

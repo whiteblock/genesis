@@ -307,10 +307,10 @@ func createNodeDirectories(tn *testnet.TestNet) error {
 	dirs := []string{"/logs"}
 	for _, node := range tn.NewlyBuiltNodes {
 		for _, subdir := range dirs {
-			dir := tn.GetNodeStoreDir(node) + "/logs"
+			dir := tn.GetNodeStoreDir(node) + subdir
 			_, err := tn.Clients[node.GetServerID()].Run(fmt.Sprintf("mkdir -p %s", dir))
 			if err != nil {
-				return util.LogError(error)
+				return util.LogError(err)
 			}
 		}
 

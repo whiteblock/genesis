@@ -32,6 +32,8 @@ import (
 	"sync"
 )
 
+var conf = util.GetConfig()
+
 // TestNet represents a testnet and some state on that testnet. Should also contain the details needed to
 // rebuild tn testnet.
 type TestNet struct {
