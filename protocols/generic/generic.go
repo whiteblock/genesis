@@ -36,8 +36,8 @@ import (
 )
 
 const (
-	blockchain		= "generic"
-	p2pPort			= 9000
+	blockchain = "generic"
+	p2pPort    = 9000
 )
 
 type topology string
@@ -182,7 +182,7 @@ func createPeers(currentNodeIndex int, peerIds map[int]string, networkTopology t
 			return "", nil
 		}
 
-		for i := currentNodeIndex-1; i >= currentNodeIndex-2; i-- {
+		for i := currentNodeIndex - 1; i >= currentNodeIndex-2; i-- {
 			out += peerIds[i]
 		}
 
