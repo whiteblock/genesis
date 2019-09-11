@@ -109,7 +109,7 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 		peerIds := map[int]string{}
 		for _, peerNode := range tn.Nodes {
 			if libp2p {
-				id, err := pubIdString(nodeKeyPairs[peerNode.GetID()])
+				id, err := pubIDString(nodeKeyPairs[peerNode.GetID()])
 				if err != nil {
 					return util.LogError(err)
 				}
@@ -201,7 +201,7 @@ func idString(k crypto.PrivKey) (string, error) {
 	return peer.IDHexEncode(pid), nil
 }
 
-func pubIdString(k crypto.PrivKey) (string, error) {
+func pubIDString(k crypto.PrivKey) (string, error) {
 	pid, err := peer.IDFromPrivateKey(k)
 	if err != nil {
 		return "", err
