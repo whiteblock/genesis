@@ -27,63 +27,63 @@ import (
 func TestCreatingNetworkTopology(t *testing.T) {
 	var tests = []struct {
 		currentNodeIndex int
-		peerIds map[int]string
-		networkTopology topology
-		expected string
+		peerIds          map[int]string
+		networkTopology  topology
+		expected         string
 	}{
 		{
 			currentNodeIndex: 0,
-			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
-			networkTopology: all,
-			expected: "bc",
+			peerIds:          map[int]string{0: "a", 1: "b", 2: "c"},
+			networkTopology:  all,
+			expected:         "bc",
 		},
 		{
 			currentNodeIndex: 2,
-			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
-			networkTopology: all,
-			expected: "ab",
+			peerIds:          map[int]string{0: "a", 1: "b", 2: "c"},
+			networkTopology:  all,
+			expected:         "ab",
 		},
 		{
 			currentNodeIndex: 1,
-			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
-			networkTopology: all,
-			expected: "ac",
+			peerIds:          map[int]string{0: "a", 1: "b", 2: "c"},
+			networkTopology:  all,
+			expected:         "ac",
 		},
 		{
 			currentNodeIndex: 0,
-			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
-			networkTopology: sequence,
-			expected: "b",
+			peerIds:          map[int]string{0: "a", 1: "b", 2: "c"},
+			networkTopology:  sequence,
+			expected:         "b",
 		},
 		{
 			currentNodeIndex: 2,
-			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
-			networkTopology: sequence,
-			expected: "",
+			peerIds:          map[int]string{0: "a", 1: "b", 2: "c"},
+			networkTopology:  sequence,
+			expected:         "",
 		},
 		{
 			currentNodeIndex: 1,
-			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
-			networkTopology: sequence,
-			expected: "c",
+			peerIds:          map[int]string{0: "a", 1: "b", 2: "c"},
+			networkTopology:  sequence,
+			expected:         "c",
 		},
 		{
 			currentNodeIndex: 0,
-			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
-			networkTopology: randomTwo,
-			expected: "",
+			peerIds:          map[int]string{0: "a", 1: "b", 2: "c"},
+			networkTopology:  randomTwo,
+			expected:         "",
 		},
 		{
 			currentNodeIndex: 2,
-			peerIds: map[int]string{0:"a", 1:"b", 2:"c"}, // TODO this one is peering to itself. Bad boi? I just fixed it tho.
-			networkTopology: randomTwo,
-			expected: "ba",
+			peerIds:          map[int]string{0: "a", 1: "b", 2: "c"}, // TODO this one is peering to itself. Bad boi? I just fixed it tho.
+			networkTopology:  randomTwo,
+			expected:         "ba",
 		},
 		{
 			currentNodeIndex: 1,
-			peerIds: map[int]string{0:"a", 1:"b", 2:"c"},
-			networkTopology: randomTwo,
-			expected: "",
+			peerIds:          map[int]string{0: "a", 1: "b", 2: "c"},
+			networkTopology:  randomTwo,
+			expected:         "",
 		},
 	}
 
