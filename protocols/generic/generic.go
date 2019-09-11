@@ -66,7 +66,7 @@ func build(tn *testnet.TestNet) error {
 
 	nodeKeyPairs := map[string]crypto.PrivKey{}
 	for _, node := range tn.Nodes {
-		prvKey, _, _ := crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, rand.Reader)
+		prvKey, _, _ := crypto.GenerateKeyPairWithReader(crypto.Secp256k1, 2048, rand.Reader)
 		nodeKeyPairs[node.ID] = prvKey
 	}
 
@@ -202,14 +202,7 @@ func idString(k crypto.PrivKey) (string, error) {
 }
 
 func pubIDString(k crypto.PrivKey) (string, error) {
-	pid, err := peer.IDFromPrivateKey(k)
-	if err != nil {
-		return "", err
-	}
-	pubKey, err := pid.ExtractPublicKey()
-	if err != nil {
-		return "", err
-	}
+	pubKey := k.GetPublic()
 	bytes, err := pubKey.Bytes()
 	if err != nil {
 		return "", err
