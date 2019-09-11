@@ -20,6 +20,7 @@ package generic
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"reflect"
 
@@ -79,14 +80,6 @@ func build(tn *testnet.TestNet) error {
 	return buildNetwork(tn, nodeKeyPairs, topology)
 }
 
-func idString(k crypto.PrivKey) string {
-	pid, err := peer.IDFromPrivateKey(k)
-	if err != nil {
-		panic(err) //TODO why tf panic
-	}
-	return pid.Pretty()
-}
-
 func getTopology(tn *testnet.TestNet) (topology, error) {
 	networkTopology := fmt.Sprintf("%v", tn.LDD.Params["network-topology"])
 
@@ -116,7 +109,11 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 		peerIds := map[int]string{}
 		for _, peerNode := range tn.Nodes {
 			if libp2p {
-				peerIds[peerNode.GetRelativeNumber()] = fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]))
+				id, err := pubIdString(nodeKeyPairs[peerNode.GetID()])
+				if err != nil {
+					return util.LogError(err)
+				}
+				peerIds[peerNode.GetRelativeNumber()] = fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s", peerNode.IP, p2pPort, id)
 			} else {
 				peerIds[peerNode.GetRelativeNumber()] = fmt.Sprintf(" --peers=%s", peerNode.IP)
 			}
@@ -132,7 +129,11 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 		params += peers
 
 		if libp2p {
-			params += fmt.Sprintf(" --identity=%s", idString(nodeKeyPairs[node.GetID()]))
+			id, err := idString(nodeKeyPairs[node.GetID()])
+			if err != nil {
+				return util.LogError(err)
+			}
+			params += fmt.Sprintf(" --identity=%s", id)
 		}
 
 		log.WithField("args", params).Infof("Starting node %s", node.GetID())
@@ -190,6 +191,30 @@ func createPeers(currentNodeIndex int, peerIds map[int]string, networkTopology t
 	default:
 		return "", fmt.Errorf("peers could not be created")
 	}
+}
+
+func idString(k crypto.PrivKey) (string, error) {
+	pid, err := peer.IDFromPrivateKey(k)
+	if err != nil {
+		return "", err
+	}
+	return peer.IDHexEncode(pid), nil
+}
+
+func pubIdString(k crypto.PrivKey) (string, error) {
+	pid, err := peer.IDFromPrivateKey(k)
+	if err != nil {
+		return "", err
+	}
+	pubKey, err := pid.ExtractPublicKey()
+	if err != nil {
+		return "", err
+	}
+	bytes, err := pubKey.Bytes()
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
 }
 
 func copyFiles(tn *testnet.TestNet, client ssh.Client, node ssh.Node) error {
