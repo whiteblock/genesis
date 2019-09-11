@@ -19,7 +19,9 @@
 package generic
 
 import (
+	"crypto/rand"
 	"fmt"
+	"github.com/libp2p/go-libp2p-core/crypto"
 	"strconv"
 	"testing"
 )
@@ -101,5 +103,17 @@ func TestCreatingNetworkTopology(t *testing.T) {
 				t.Errorf("return value of createPeers does not match expected value")
 			}
 		})
+	}
+}
+
+func TestPubKeyHex(t *testing.T) {
+	prvKey, _, _ := crypto.GenerateKeyPairWithReader(crypto.Secp256k1, 2048, rand.Reader)
+	_, err := idString(prvKey)
+	if err != nil {
+		t.Errorf("Could not generate the hex value of private key")
+	}
+	_, err = pubIDString(prvKey)
+	if err != nil {
+		t.Errorf("Could not generate the hex value of public key")
 	}
 }
