@@ -77,7 +77,7 @@ func TestCreatingNetworkTopology(t *testing.T) {
 		},
 		{
 			currentNodeIndex: 2,
-			peerIds:          map[int]string{0: "a", 1: "b", 2: "c"}, // TODO this one is peering to itself. Bad boi? I just fixed it tho.
+			peerIds:          map[int]string{0: "a", 1: "b", 2: "c"},
 			networkTopology:  randomTwo,
 			expected:         "ba",
 		},
