@@ -26,13 +26,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/go.uuid"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"runtime"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/whiteblock/go.uuid"
 )
 
 // HTTPRequest Sends a HTTP request and returns the body. Gives an error if the http request failed
@@ -317,4 +318,11 @@ func LogError(err error) error {
 	}
 
 	return err
+}
+
+// LogErrorf formats an error message, logs that error and returns that error.
+// Used to help reduce code clutter and unify the error handling in the code.
+// Has no effect if err == nil
+func LogErrorf(format string, a ...interface{}) error {
+	return LogError(fmt.Errorf(format, a...))
 }
