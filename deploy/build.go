@@ -95,7 +95,7 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 	}
 	tn.BuildState.IncrementDeployProgress()
 
-	resource := tn.GetNodeResources(node.AbsoluteNum)
+	resource := tn.GetNodeResources(node)
 	var env map[string]string
 	if tn.LDD.Environments != nil && len(tn.LDD.Environments) > node.AbsoluteNum && tn.LDD.Environments[node.AbsoluteNum] != nil {
 		env = tn.LDD.Environments[node.AbsoluteNum]

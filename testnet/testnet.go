@@ -145,8 +145,9 @@ func (tn *TestNet) AddNode(node db.Node) *db.Node {
 	} else {
 		node.Image = tn.LDD.Images[0]
 	}
-	node.PortMappings = tn.GetNodeResources(node.AbsoluteNum).GetParsedPortMappings()
 	log.WithFields(log.Fields{"node": node}).Debug("adding a node")
+	node.PortMappings = tn.GetNodeResources(node).GetParsedPortMappings()
+	log.WithFields(log.Fields{"node": node.PortMappings}).Debug("parsed the port mappings")
 	tn.NewlyBuiltNodes = append(tn.NewlyBuiltNodes, node)
 	tn.Nodes = append(tn.Nodes, node)
 	return &tn.NewlyBuiltNodes[len(tn.NewlyBuiltNodes)-1]
@@ -222,7 +223,7 @@ func (tn *TestNet) AddDetails(dd db.DeploymentDetails) error {
 		}
 	}
 	for i := len(tn.CombinedDetails.Resources); i < oldCD.Nodes; i++ {
-		tn.CombinedDetails.Resources = append(tn.CombinedDetails.Resources, tn.GetNodeResources(i))
+		tn.CombinedDetails.Resources = append(tn.CombinedDetails.Resources, tn.GetNodeResources(tn.Nodes[i]))
 	}
 
 	tn.CombinedDetails.Resources = append(tn.CombinedDetails.Resources, dd.Resources...)
@@ -404,7 +405,8 @@ func (tn *TestNet) GetNodesSideCar(node ssh.Node, name string) (*db.SideCar, err
 }
 
 // GetNodeResources gets the resources specified for the given node
-func (tn *TestNet) GetNodeResources(absoluteNum int) (resource util.Resources) {
+func (tn *TestNet) GetNodeResources(node ssh.Node) (resource util.Resources) {
+	absoluteNum := node.GetAbsoluteNumber()
 	if len(tn.CombinedDetails.Resources) == 0 {
 		resource = util.Resources{Cpus: "", Memory: ""}
 		log.WithFields(log.Fields{"resource": resource, "node": absoluteNum}).Trace("using default resources")
@@ -419,7 +421,7 @@ func (tn *TestNet) GetNodeResources(absoluteNum int) (resource util.Resources) {
 
 	log.WithFields(log.Fields{"res": resource}).Debug("got the resources")
 	resource.Volumes = append(resource.Volumes,
-		fmt.Sprintf("%s:%s", tn.GetNodeStoreDir(tn.Nodes[absoluteNum]), conf.NodeSharedVolMntDir))
+		fmt.Sprintf("%s:%s", tn.GetNodeStoreDir(node), conf.NodeSharedVolMntDir))
 	return
 }
 
