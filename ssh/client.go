@@ -30,6 +30,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/semaphore"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -308,9 +309,15 @@ func (sshClient *client) DockerRunMainDaemon(node Node, command string) error {
 
 // DockerExecdLog will cause the stdout and stderr of the command to be stored in the logs.
 // Should only be used for the blockchain process.
-func (sshClient *client) DockerExecdLog(node Node, command string) error {
-	_, err := sshClient.Run(fmt.Sprintf("docker exec -d %s sh -c '%s 2>&1 > %s'", node.GetNodeName(),
-		command, conf.DockerOutputFile))
+func (sshClient *client) DockerExecdLog(node Node, command string) (err error) {
+	if conf.EnableDockerLogging {
+		_, err = sshClient.Run(fmt.Sprintf("docker exec -d %s sh -c '%s 2>&1 > %s'", node.GetNodeName(),
+			command, conf.DockerOutputFile))
+	} else {
+		_, err = sshClient.Run(fmt.Sprintf("docker exec -d %s sh -c '%s 2>&1 > %s'", node.GetNodeName(),
+			command, filepath.Join(conf.NodeSharedVolMntDir, "logs", conf.DockerOutputFile)))
+	}
+
 	return util.LogError(err)
 }
 
