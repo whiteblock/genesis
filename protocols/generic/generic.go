@@ -155,7 +155,7 @@ func createParams(tn *testnet.TestNet, node ssh.Node, nodeKeyPairs map[string]cr
 		}
 
 		if libp2p {
-			params += fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s:%d", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]), p2pPort)
+			params += fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s", peerNode.IP, p2pPort, idString(nodeKeyPairs[peerNode.GetID()]))
 		} else {
 			params += fmt.Sprintf(" --peers=%s", peerNode.IP)
 		}
