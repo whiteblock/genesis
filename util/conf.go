@@ -20,6 +20,7 @@ package util
 
 import (
 	"os"
+	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -77,6 +78,14 @@ type Config struct {
 	EnableDockerLogging     bool    `mapstructure:"enableDockerLogging"`
 	LogDir                  string  `mapstructure:"logDir"`
 	NodeSharedVolMntDir     string  `mapstructure:"nodeSharedVolMntDir"`
+}
+
+//GetLogsOutputFile returns the path to the file where the nodes should output their logs
+func (c Config) GetLogsOutputFile() string {
+	if c.EnableDockerLogging {
+		return filepath.Join(c.NodeSharedVolMntDir, "logs", c.DockerOutputFile)
+	}
+	return c.DockerOutputFile
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster

@@ -217,7 +217,10 @@ func Build(tn *testnet.TestNet, services []services.Service) error {
 	distributeNibbler(tn)
 	//Acquire all of the resources here, then release and destroy
 	wg.Wait()
-
+	err = createNodeDirectories(tn)
+	if err != nil {
+		return util.LogError(err)
+	}
 	//Check if we should freeze
 	if tn.LDD.Extras != nil {
 		shouldFreezeI, ok := tn.LDD.Extras["freezeAfterInfrastructure"]

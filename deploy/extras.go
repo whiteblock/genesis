@@ -242,11 +242,6 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 		return nil //Nothing to do
 	}
 
-	err := createNodeDirectories(tn)
-	if err != nil {
-		return util.LogError(err)
-	}
-
 	_, exists := tn.LDD.Extras["prebuild"]
 	if !exists {
 		return nil //Nothing to do
@@ -304,16 +299,11 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 }
 
 func createNodeDirectories(tn *testnet.TestNet) error {
-	dirs := []string{"/logs"}
 	for _, node := range tn.NewlyBuiltNodes {
-		for _, subdir := range dirs {
-			dir := tn.GetNodeStoreDir(node) + subdir
-			_, err := tn.Clients[node.GetServerID()].Run(fmt.Sprintf("mkdir -p %s", dir))
-			if err != nil {
-				return util.LogError(err)
-			}
+		_, err := tn.Clients[node.GetServerID()].Run(fmt.Sprintf("mkdir -p %s", tn.GetNodeStoreDir(node)))
+		if err != nil {
+			return util.LogError(err)
 		}
-
 		tn.BuildState.OnDestroy(func() {
 			_, err := tn.Clients[node.GetServerID()].Run(fmt.Sprintf("rm -rf %s", tn.GetNodeStoreDir(node)))
 			if err != nil {
@@ -323,7 +313,6 @@ func createNodeDirectories(tn *testnet.TestNet) error {
 				}).Error("unable to remove the node's directory")
 			}
 		})
-
 	}
 	return nil
 }
