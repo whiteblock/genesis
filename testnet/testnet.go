@@ -425,6 +425,7 @@ func (tn *TestNet) GetNodeResources(node ssh.Node) (resource util.Resources) {
 	return
 }
 
+//GetNodeStoreDir gets the directory where the node store is located on the host machine.
 func (tn *TestNet) GetNodeStoreDir(node ssh.Node) string {
 	return filepath.Join(conf.LogDir, tn.TestNetID, node.GetID())
 }

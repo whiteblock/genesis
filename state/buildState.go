@@ -435,6 +435,8 @@ func (bs *BuildState) OnError(fn func()) {
 	bs.errorCleanupFuncs = append(bs.errorCleanupFuncs, fn)
 }
 
+//OnDestroy registers a function to be called when this build state is terminated,
+//such as when the testnet is destroyed. No ordering guarentees beyond this
 func (bs *BuildState) OnDestroy(fn func()) {
 	bs.mutex.Lock()
 	defer bs.mutex.Unlock()
