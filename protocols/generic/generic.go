@@ -147,7 +147,7 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 		script := launchScript[node.GetRelativeNumber()]
 		buildParams := fmt.Sprintf("%v %s", script, params)
 
-		_, err = client.DockerExec(node, buildParams)
+		_, err = client.DockerExecd(node, buildParams)
 		if err != nil {
 			return util.LogError(err)
 		}
