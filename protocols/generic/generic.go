@@ -52,7 +52,7 @@ const (
 func init() {
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
-	registrar.RegisterServices(blockchain, func() []services.Service {return []services.Service{services.RegisterPrometheus(),}})
+	registrar.RegisterServices(blockchain, func() []services.Service { return []services.Service{services.RegisterPrometheus()} })
 	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }

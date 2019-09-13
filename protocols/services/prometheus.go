@@ -52,7 +52,7 @@ func (p PrometheusService) Prepare(client ssh.Client, tn *testnet.TestNet) error
 					prometheusInstrumentationPort = someObj.(string)
 				}
 			}
-		} 
+		}
 		if prometheusInstrumentationPort == "" {
 			prometheusInstrumentationPort = "8008"
 		}
