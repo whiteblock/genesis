@@ -175,7 +175,7 @@ func dockerRunCmd(c Container) (string, error) {
 	command += fmt.Sprintf(" --name %s", c.GetName())
 	command += " " + c.GetImage()
 	args := c.GetArgs()
-	if args != nil {
+	if args != nil && len(args) > 0 {
 		command += " " + strings.Join(args, " ")
 	}
 	return command, nil

@@ -121,6 +121,8 @@ func TestNewSideCarContainer(t *testing.T) {
 				SubnetID:     4,
 				NetworkIndex: testSidecar.NetworkIndex,
 				Type:         ContainerType(1),
+				EntryPoint:   "/bin/sh",
+				Args:         []string{},
 			},
 		},
 		{
