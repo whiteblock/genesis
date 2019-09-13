@@ -34,11 +34,57 @@ import (
 
 var conf = util.GetConfig()
 
+func buildLoggers(tn *testnet.TestNet, server *db.Server, node *db.Node) {
+	if !conf.EnableDockerLogging {
+		return //this feature is disabled
+	}
+	sidecars, _ := registrar.GetBlockchainSideCars(tn)
+	logs := []string{conf.GetLogsOutputFile()}
+	extraLogs := registrar.GetAdditionalLogs(tn.LDD.Blockchain)
+
+	for _, log := range extraLogs {
+		logs = append(logs, log)
+	}
+
+	for i, log := range logs {
+		index := len(sidecars) + i
+		sidecarIP, err := util.GetNodeIP(server.SubnetID, node.LocalID, index+1)
+		if err != nil {
+			tn.BuildState.ReportError(err)
+			return
+		}
+		scNode := db.SideCar{
+			NodeID:          node.ID,
+			AbsoluteNodeNum: node.AbsoluteNum,
+			TestnetID:       node.TestNetID,
+			Server:          node.Server,
+			LocalID:         node.LocalID,
+			NetworkIndex:    index + 1,
+			IP:              sidecarIP,
+			Image:           "alpine",
+			Type:            "logger",
+		}
+		tn.AddSideCar(scNode, index)
+		sidecarContainer := docker.NewSideCarContainer(&scNode, nil, util.Resources{
+			Volumes: []string{fmt.Sprintf("%s:%s", tn.GetNodeStoreDir(node), conf.NodeSharedVolMntDir)},
+		}, server.SubnetID)
+
+		sidecarContainer.SetEntryPoint("tail")
+		sidecarContainer.SetArgs([]string{"-F", log})
+		err = docker.Run(tn, server.ID, sidecarContainer)
+		if err != nil {
+			tn.BuildState.ReportError(err)
+			return
+		}
+	}
+}
+
 func buildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 
 	sidecars, err := registrar.GetBlockchainSideCars(tn)
 	if err != nil {
-		//do not report
+		log.WithFields(log.Fields{"protocol": tn.LDD.Blockchain,
+			"error": err}).Debug("could not get the sidecars")
 		return
 	}
 
@@ -87,7 +133,12 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 			docker.NetworkDestroy(tn.Clients[server.ID], node.LocalID)
 		})
 	}
-	defer buildSideCars(tn, server, node) //Needs to be handled better
+
+	defer func() {
+		buildSideCars(tn, server, node) //Needs to be handled better
+		buildLoggers(tn, server, node)
+	}()
+
 	err := docker.NetworkCreate(tn, server.ID, server.SubnetID, node.LocalID)
 	if err != nil {
 		tn.BuildState.ReportError(err)
