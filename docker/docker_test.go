@@ -264,10 +264,6 @@ func Test_dockerRunCmd(t *testing.T) {
 		expected  string
 	}{
 		{
-			container: new(ContainerDetails),
-			expected:  "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --ip 10.0.0.2 --hostname whiteblock-node0 --name whiteblock-node0 ",
-		},
-		{
 			container: &ContainerDetails{
 				Environment: map[string]string{},
 				Image:       "test",
