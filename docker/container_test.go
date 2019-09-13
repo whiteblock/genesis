@@ -50,6 +50,8 @@ func TestNewNodeContainer(t *testing.T) {
 				SubnetID:     4,
 				NetworkIndex: 0,
 				Type:         ContainerType(0),
+				EntryPoint:   "/bin/sh",
+				Args:         []string{},
 			},
 		},
 		{
@@ -75,6 +77,8 @@ func TestNewNodeContainer(t *testing.T) {
 				SubnetID:     16,
 				NetworkIndex: 0,
 				Type:         ContainerType(0),
+				EntryPoint:   "/bin/sh",
+				Args:         []string{},
 			},
 		},
 	}
@@ -142,6 +146,8 @@ func TestNewSideCarContainer(t *testing.T) {
 				SubnetID:     16,
 				NetworkIndex: testSidecar.NetworkIndex,
 				Type:         ContainerType(1),
+				EntryPoint:   "/bin/sh",
+				Args:         []string{},
 			},
 		},
 	}
