@@ -279,6 +279,8 @@ func Test_dockerRunCmd(t *testing.T) {
 				SubnetID:     10,
 				NetworkIndex: 0,
 				Type:         ContainerType(0),
+				EntryPoint:   "/bin/sh",
+				Args:         []string{},
 			},
 			expected: "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --cpus 4 --memory 5000000000 --ip 10.10.0.2 --hostname whiteblock-node0 --name whiteblock-node0 test",
 		},
