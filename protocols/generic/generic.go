@@ -52,7 +52,7 @@ const (
 func init() {
 	registrar.RegisterBuild(blockchain, build)
 	registrar.RegisterAddNodes(blockchain, add)
-	registrar.RegisterServices(blockchain, func() []services.Service { return nil })
+	registrar.RegisterServices(blockchain, func() []services.Service {return []services.Service{services.RegisterPrometheus(),}})
 	registrar.RegisterDefaults(blockchain, helpers.DefaultGetDefaultsFn(blockchain))
 	registrar.RegisterParams(blockchain, helpers.DefaultGetParamsFn(blockchain))
 }
@@ -147,7 +147,9 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 		script := launchScript[node.GetRelativeNumber()]
 		buildParams := fmt.Sprintf("%v %s", script, params)
 
-		_, err = client.DockerExec(node, buildParams)
+		log.Infof("%s", buildParams)
+
+		_, err = client.DockerExecd(node, buildParams)
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -194,7 +196,7 @@ func createPeers(currentNodeIndex int, peerIds map[int]string, networkTopology t
 }
 
 func privateKeyToHexString(k crypto.PrivKey) (string, error) {
-	bytes, err := k.Bytes()
+	bytes, err := k.Raw()
 	if err != nil {
 		return "", err
 	}
