@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"path/filepath"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -74,14 +73,6 @@ func alwaysRunFinalize(tn *testnet.TestNet) {
 				log.WithFields(log.Fields{"node": node.AbsoluteNum}).Error(err)
 			}
 		}
-	})
-	helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		_, err := client.DockerExec(node, fmt.Sprintf("mkdir -p %s", filepath.Dir(conf.GetLogsOutputFile())))
-		if err != nil {
-			return util.LogError(err)
-		}
-		_, err = client.DockerExec(node, fmt.Sprintf("touch %s", conf.GetLogsOutputFile()))
-		return util.LogError(err)
 	})
 	newNodes := make([]db.Node, len(tn.NewlyBuiltNodes))
 	copy(newNodes, tn.NewlyBuiltNodes)

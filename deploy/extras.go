@@ -25,9 +25,11 @@ import (
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
 	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
+	"path/filepath"
 	"sync"
 )
 
@@ -299,13 +301,13 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 }
 
 func createNodeDirectories(tn *testnet.TestNet) error {
-	for _, node := range tn.NewlyBuiltNodes {
-		_, err := tn.Clients[node.GetServerID()].Run(fmt.Sprintf("mkdir -p %s", tn.GetNodeStoreDir(node)))
+	return helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		_, err := client.Run(fmt.Sprintf("mkdir -p %s", tn.GetNodeStoreDir(node)))
 		if err != nil {
 			return util.LogError(err)
 		}
 		tn.BuildState.OnDestroy(func() {
-			_, err := tn.Clients[node.GetServerID()].Run(fmt.Sprintf("rm -rf %s", tn.GetNodeStoreDir(node)))
+			_, err := client.Run(fmt.Sprintf("rm -rf %s", tn.GetNodeStoreDir(node)))
 			if err != nil {
 				log.WithFields(log.Fields{
 					"server": node.GetServerID(),
@@ -313,6 +315,21 @@ func createNodeDirectories(tn *testnet.TestNet) error {
 				}).Error("unable to remove the node's directory")
 			}
 		})
-	}
-	return nil
+
+		_, err = client.Run(fmt.Sprintf("touch %s", filepath.Join(tn.GetNodeStoreDir(node), "0.log")))
+		if err != nil {
+			return util.LogError(err)
+		}
+		i := 1
+
+		logs := registrar.GetAdditionalLogs(tn.LDD.Blockchain)
+		for _ = range logs {
+			_, err = client.Run(fmt.Sprintf("touch %s", filepath.Join(tn.GetNodeStoreDir(node), fmt.Sprintf("%d.log", i))))
+			if err != nil {
+				return util.LogError(err)
+			}
+			i++
+		}
+		return nil
+	})
 }
