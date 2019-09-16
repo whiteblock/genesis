@@ -326,7 +326,7 @@ func createNodeDirectories(tn *testnet.TestNet) error {
 		i := 1
 
 		logs := registrar.GetAdditionalLogs(tn.LDD.Blockchain)
-		for _ = range logs {
+		for range logs {
 			_, err = client.Run(fmt.Sprintf("touch %s", filepath.Join(tn.GetNodeStoreDir(node), fmt.Sprintf("%d.log", i))))
 			if err != nil {
 				return util.LogError(err)

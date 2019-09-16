@@ -236,7 +236,7 @@ func (bs *BuildState) DoneBuilding() {
 	bs.errorCleanupFuncs = []func(){}
 	atomic.StoreInt32(&bs.building, 0)
 	atomic.StoreInt32(&bs.stopping, 0)
-	
+
 	log.WithFields(log.Fields{"build": bs.BuildID}).Debug("running the defered functions")
 	for _, fn := range bs.defers {
 		go fn() //No need to wait to confirm completion
