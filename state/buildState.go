@@ -236,7 +236,7 @@ func (bs *BuildState) DoneBuilding() {
 	bs.errorCleanupFuncs = []func(){}
 	atomic.StoreInt32(&bs.building, 0)
 	atomic.StoreInt32(&bs.stopping, 0)
-	os.RemoveAll("/tmp/" + bs.BuildID)
+	
 	log.WithFields(log.Fields{"build": bs.BuildID}).Debug("running the defered functions")
 	for _, fn := range bs.defers {
 		go fn() //No need to wait to confirm completion
@@ -601,6 +601,7 @@ func (bs *BuildState) Store() error {
 func (bs *BuildState) Destroy() error {
 	bs.mutex.Lock()
 	defer bs.mutex.Unlock()
+	os.RemoveAll("/tmp/" + bs.BuildID)
 	err := db.DeleteMeta(bs.BuildID)
 	if err != nil {
 		return utils.LogError(err)

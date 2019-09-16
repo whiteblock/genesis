@@ -69,7 +69,7 @@ func buildLoggers(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 		sidecarContainer := docker.NewSideCarContainer(&scNode, nil, util.Resources{}, server.SubnetID)
 		sidecarContainer.AddVolume(
 			fmt.Sprintf("%s:%s",
-				filepath.Join(tn.GetNodeStoreDir(node), fmt.Sprintf("%d.log", i+1)),
+				filepath.Join(tn.GetNodeStoreDir(node), fmt.Sprintf("%d.log", i)),
 				conf.DockerOutputFile))
 
 		sidecarContainer.SetEntryPoint("tail")
