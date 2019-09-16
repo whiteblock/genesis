@@ -41,6 +41,10 @@ const (
 
 // Container represents the basic functionality needed to build a container
 type Container interface {
+
+	// AddVolume adds a volume to the container
+	AddVolume(vol string)
+
 	// GetEnvironment gives the environment variables for the container
 	GetEnvironment() map[string]string
 
@@ -67,6 +71,9 @@ type Container interface {
 
 	// GetArgs gets the arguments for the entrypoint
 	GetArgs() []string
+
+	// GetVolumes gets the container volumes
+	GetVolumes() []string
 
 	// SetEntryPoint sets the entrypoint
 	SetEntryPoint(ep string)
@@ -185,4 +192,14 @@ func (cd *ContainerDetails) SetEntryPoint(ep string) {
 // SetArgs sets the arguments for the entrypoint
 func (cd *ContainerDetails) SetArgs(args []string) {
 	cd.Args = args
+}
+
+// GetVolumes gets the container's volumes
+func (cd *ContainerDetails) GetVolumes() []string {
+	return cd.Resources.Volumes
+}
+
+// AddVolume adds a volume to the container
+func (cd *ContainerDetails) AddVolume(vol string) {
+	cd.Resources.Volumes = append(cd.Resources.Volumes, vol)
 }

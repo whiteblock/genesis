@@ -29,6 +29,7 @@ import (
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
+	"path/filepath"
 	"sync"
 )
 
@@ -42,11 +43,11 @@ func buildLoggers(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 	logs := []string{conf.GetLogsOutputFile()}
 	extraLogs := registrar.GetAdditionalLogs(tn.LDD.Blockchain)
 
-	for _, log := range extraLogs {
-		logs = append(logs, log)
+	for _, logFile := range extraLogs {
+		logs = append(logs, logFile)
 	}
 
-	for i, log := range logs {
+	for i := range logs {
 		index := len(sidecars) + i
 		sidecarIP, err := util.GetNodeIP(server.SubnetID, node.LocalID, index+1)
 		if err != nil {
@@ -65,12 +66,14 @@ func buildLoggers(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 			Type:            "logger",
 		}
 		tn.AddSideCar(scNode, index)
-		sidecarContainer := docker.NewSideCarContainer(&scNode, nil, util.Resources{
-			Volumes: []string{fmt.Sprintf("%s:%s", tn.GetNodeStoreDir(node), conf.NodeSharedVolMntDir)},
-		}, server.SubnetID)
+		sidecarContainer := docker.NewSideCarContainer(&scNode, nil, util.Resources{}, server.SubnetID)
+		sidecarContainer.AddVolume(
+			fmt.Sprintf("%s:%s",
+				filepath.Join(tn.GetNodeStoreDir(node), fmt.Sprintf("%d.log", i+1)),
+				conf.DockerOutputFile))
 
 		sidecarContainer.SetEntryPoint("tail")
-		sidecarContainer.SetArgs([]string{"-F", log})
+		sidecarContainer.SetArgs([]string{"-F", conf.DockerOutputFile})
 		err = docker.Run(tn, server.ID, sidecarContainer)
 		if err != nil {
 			tn.BuildState.ReportError(err)
@@ -112,9 +115,7 @@ func buildSideCars(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 			Type:            sidecar,
 		}
 		tn.AddSideCar(scNode, i)
-		err = docker.Run(tn, server.ID, docker.NewSideCarContainer(&scNode, nil, util.Resources{
-			Volumes: []string{fmt.Sprintf("%s:%s", tn.GetNodeStoreDir(node), conf.NodeSharedVolMntDir)},
-		}, server.SubnetID))
+		err = docker.Run(tn, server.ID, docker.NewSideCarContainer(&scNode, nil, util.Resources{}, server.SubnetID))
 		if err != nil {
 			tn.BuildState.ReportError(err)
 			return
@@ -134,12 +135,18 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 		})
 	}
 
+	err := createNodeDirectories(tn)
+	if err != nil {
+		tn.BuildState.ReportError(err)
+		return
+	}
+
 	defer func() {
 		buildSideCars(tn, server, node) //Needs to be handled better
 		buildLoggers(tn, server, node)
 	}()
 
-	err := docker.NetworkCreate(tn, server.ID, server.SubnetID, node.LocalID)
+	err = docker.NetworkCreate(tn, server.ID, server.SubnetID, node.LocalID)
 	if err != nil {
 		tn.BuildState.ReportError(err)
 		return
@@ -152,7 +159,22 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 		env = tn.LDD.Environments[node.AbsoluteNum]
 		log.WithFields(log.Fields{"env": env, "node": node.AbsoluteNum}).Trace("using custom env vars")
 	}
-	err = docker.Run(tn, server.ID, docker.NewNodeContainer(node, env, resource, server.SubnetID))
+	container := docker.NewNodeContainer(node, env, resource, server.SubnetID)
+
+	logs := []string{conf.GetLogsOutputFile()}
+	extraLogs := registrar.GetAdditionalLogs(tn.LDD.Blockchain)
+
+	for _, logFile := range extraLogs {
+		logs = append(logs, logFile)
+	}
+	for i, logFile := range logs {
+		container.AddVolume(
+			fmt.Sprintf("%s:%s",
+				filepath.Join(tn.GetNodeStoreDir(node), fmt.Sprintf("%d.log", i)),
+				logFile))
+	}
+
+	err = docker.Run(tn, server.ID, container)
 	if err != nil {
 		tn.BuildState.ReportError(err)
 		return
@@ -268,10 +290,6 @@ func Build(tn *testnet.TestNet, services []services.Service) error {
 	distributeNibbler(tn)
 	//Acquire all of the resources here, then release and destroy
 	wg.Wait()
-	err = createNodeDirectories(tn)
-	if err != nil {
-		return util.LogError(err)
-	}
 	//Check if we should freeze
 	if tn.LDD.Extras != nil {
 		shouldFreezeI, ok := tn.LDD.Extras["freezeAfterInfrastructure"]

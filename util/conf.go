@@ -20,7 +20,6 @@ package util
 
 import (
 	"os"
-	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -76,15 +75,11 @@ type Config struct {
 	EnableDockerVolumes     bool    `mapstructure:"enableDockerVolumes"`
 	EnableImageBuilding     bool    `mapstructure:"enableImageBuilding"`
 	EnableDockerLogging     bool    `mapstructure:"enableDockerLogging"`
-	LogDir                  string  `mapstructure:"logDir"`
-	NodeSharedVolMntDir     string  `mapstructure:"nodeSharedVolMntDir"`
+	TmpStoreDir             string  `mapstructure:"tmpStoreDir"`
 }
 
 //GetLogsOutputFile returns the path to the file where the nodes should output their logs
 func (c Config) GetLogsOutputFile() string {
-	if c.EnableDockerLogging {
-		return filepath.Join(c.NodeSharedVolMntDir, "logs", c.DockerOutputFile)
-	}
 	return c.DockerOutputFile
 }
 
@@ -140,8 +135,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("enableDockerVolumes", "ENABLE_DOCKER_VOLUMES")
 	viper.BindEnv("enableImageBuilding", "ENABLE_IMAGE_BUILDING")
 	viper.BindEnv("enableDockerLogging", "ENABLE_DOCKER_LOGGING")
-	viper.BindEnv("logDir", "LOG_DIR")
-	viper.BindEnv("nodeSharedVolMntDir", "NODE_SHARED_VOL_MNT_DIR")
+	viper.BindEnv("tmpStoreDir", "TMP_STORE_DIR")
 }
 func setViperDefaults() {
 	viper.SetDefault("sshUser", os.Getenv("USER"))
@@ -186,8 +180,7 @@ func setViperDefaults() {
 	viper.SetDefault("enableDockerVolumes", true)
 	viper.SetDefault("enableImageBuilding", true)
 	viper.SetDefault("enableDockerLogging", false)
-	viper.SetDefault("logDir", "/tmp")
-	viper.SetDefault("nodeSharedVolMntDir", "/store")
+	viper.SetDefault("tmpStoreDir", "/tmp")
 }
 
 // GCPFormatter enables the ability to use genesis logging with Stackdriver

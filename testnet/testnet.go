@@ -416,16 +416,13 @@ func (tn *TestNet) GetNodeResources(node ssh.Node) (resource util.Resources) {
 	} else {
 		resource = tn.CombinedDetails.Resources[0]
 		resource.Ports = []string{}
-		resource.Volumes = []string{}
 	}
 
 	log.WithFields(log.Fields{"res": resource}).Debug("got the resources")
-	resource.Volumes = append(resource.Volumes,
-		fmt.Sprintf("%s:%s", tn.GetNodeStoreDir(node), conf.NodeSharedVolMntDir))
 	return
 }
 
 //GetNodeStoreDir gets the directory where the node store is located on the host machine.
 func (tn *TestNet) GetNodeStoreDir(node ssh.Node) string {
-	return filepath.Join(conf.LogDir, tn.TestNetID, node.GetID())
+	return filepath.Join(conf.TmpStoreDir, tn.TestNetID, node.GetID())
 }

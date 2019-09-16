@@ -301,6 +301,9 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 }
 
 func createNodeDirectories(tn *testnet.TestNet) error {
+	if !conf.EnableDockerLogging {
+		return nil
+	}
 	return helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		_, err := client.Run(fmt.Sprintf("mkdir -p %s", tn.GetNodeStoreDir(node)))
 		if err != nil {
