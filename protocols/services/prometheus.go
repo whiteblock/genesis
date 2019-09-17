@@ -2,15 +2,17 @@ package services
 
 import (
 	"bytes"
+	"fmt"
+	"html/template"
+	"reflect"
+	"strconv"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	"html/template"
-	"reflect"
-	"strconv"
 )
 
 // PrometheusService represents the Prometheus service
@@ -40,22 +42,7 @@ func (p PrometheusService) Prepare(client ssh.Client, tn *testnet.TestNet) error
 			return util.LogError(err)
 		}
 
-		var prometheusInstrumentationPort string
-		obj := tn.CombinedDetails.Params["prometheusInstrumentationPort"]
-		if obj != nil {
-			_, ok := tn.CombinedDetails.Params["prometheusInstrumentationPort"].([]interface{})
-			if reflect.TypeOf(obj).Kind() == reflect.String {
-				prometheusInstrumentationPort = obj.(string)
-			} else if ok {
-				someObj := obj.([]interface{})[nodeIndex]
-				if reflect.TypeOf(someObj).Kind() == reflect.String {
-					prometheusInstrumentationPort = someObj.(string)
-				}
-			}
-		} 
-		if prometheusInstrumentationPort == "" {
-			prometheusInstrumentationPort = "8008"
-		}
+		prometheusInstrumentationPort := port(tn.CombinedDetails.Params, nodeIndex)
 
 		var tpl bytes.Buffer
 		if err = tmpl.Execute(&tpl, struct {
@@ -78,15 +65,32 @@ func (p PrometheusService) Prepare(client ssh.Client, tn *testnet.TestNet) error
 		return util.LogError(err)
 	}
 
+	if _, exists := tn.CombinedDetails.Params["isThisATest?"]; exists {
+		tmpFilename = "test"
+	}
+
 	err = tn.BuildState.Write(tmpFilename, configTxt)
 	if err != nil {
 		return util.LogError(err)
 	}
 
-	if err != nil {
-		return util.LogError(err)
-	}
 	return helpers.CopyAllToServers(tn, tmpFilename, conf.PrometheusConfig)
+}
+
+func port(params map[string]interface{}, nodeIndex int) string {
+	prometheusInstrumentationPort := "8008"
+
+	obj := params["prometheusInstrumentationPort"]
+	if obj != nil {
+		promPorts, ok := obj.([]interface{})
+		if ok {
+			prometheusInstrumentationPort = fmt.Sprintf("%v", promPorts[nodeIndex])
+		} else if reflect.TypeOf(obj).Kind() == reflect.String {
+			prometheusInstrumentationPort = obj.(string)
+		}
+	}
+
+	return prometheusInstrumentationPort
 }
 
 // RegisterPrometheus exposes a Prometheus service on the testnet.
