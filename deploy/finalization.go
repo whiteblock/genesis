@@ -116,17 +116,13 @@ func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 			return util.LogError(err)
 		}
 
-		_, err = client.DockerExecd(node, "apk update && apk add openssh || true")
+		_, err = client.DockerExecd(node, "apk update && apk add openssh /etc/init.d/sshd start || true")
 		if err != nil {
 			log.Warn(err)
-		}
-		_, err = client.DockerExecd(node, "apt-get update && apt-get install openssh || true")
-		if err != nil {
-			log.Warn(err)
-		}
-		_, err = client.DockerExecd(node, "service ssh start || /etc/init.d/sshd start || true")
-		if err != nil {
-			log.Warn(err)
+			_, err = client.DockerExecd(node, "apt-get update && apt-get install openssh-server || service ssh start || true")
+			if err != nil {
+				log.Warn(err)
+			}
 		}
 		return nil
 	}
