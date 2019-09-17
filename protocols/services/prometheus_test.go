@@ -50,7 +50,7 @@ func TestPrometheusService_Prepare(t *testing.T) {
 
 	err := promServ.Prepare(client, &tn)
 	if err != nil {
-		t.Error("fucked")
+		t.Error("return value of Prepare does not match expected value")
 	}
 }
 
