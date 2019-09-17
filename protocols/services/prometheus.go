@@ -65,6 +65,10 @@ func (p PrometheusService) Prepare(client ssh.Client, tn *testnet.TestNet) error
 		return util.LogError(err)
 	}
 
+	if _, exists := tn.CombinedDetails.Params["isThisATest?"]; exists {
+		tmpFilename = "test"
+	}
+
 	err = tn.BuildState.Write(tmpFilename, configTxt)
 	if err != nil {
 		return util.LogError(err)
