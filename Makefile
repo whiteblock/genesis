@@ -17,6 +17,9 @@ test_race:
 lint:
 	golint $(go list ./... | grep -v mocks)
 
+format:
+	go fmt
+
 vet:
 	go vet $(go list ./... | grep -v mocks)
 
