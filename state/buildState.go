@@ -24,6 +24,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/utility/utils"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -57,7 +58,10 @@ type BuildState struct {
 	files             []string
 	defers            []func() //Array of functions to run at the end of the build
 	errorCleanupFuncs []func()
-	asyncWaiter       *sync.WaitGroup
+	//functions which will be called when the build state is destroyed.
+	//No timing guarentees beyond the functions happening at some point after Destroy is called.
+	onDestroyFuncs []func()
+	asyncWaiter    *sync.WaitGroup
 
 	Servers []int
 	BuildID string
@@ -232,7 +236,7 @@ func (bs *BuildState) DoneBuilding() {
 	bs.errorCleanupFuncs = []func(){}
 	atomic.StoreInt32(&bs.building, 0)
 	atomic.StoreInt32(&bs.stopping, 0)
-	os.RemoveAll("/tmp/" + bs.BuildID)
+
 	log.WithFields(log.Fields{"build": bs.BuildID}).Debug("running the defered functions")
 	for _, fn := range bs.defers {
 		go fn() //No need to wait to confirm completion
@@ -422,7 +426,6 @@ func (bs *BuildState) Defer(fn func()) {
 	bs.extraMux.Lock()
 	defer bs.extraMux.Unlock()
 	bs.defers = append(bs.defers, fn)
-
 }
 
 // OnError adds a function to be executed upon a build finishing in the error state
@@ -430,6 +433,14 @@ func (bs *BuildState) OnError(fn func()) {
 	bs.extraMux.Lock()
 	defer bs.extraMux.Unlock()
 	bs.errorCleanupFuncs = append(bs.errorCleanupFuncs, fn)
+}
+
+//OnDestroy registers a function to be called when this build state is terminated,
+//such as when the testnet is destroyed. No ordering guarentees beyond this
+func (bs *BuildState) OnDestroy(fn func()) {
+	bs.mutex.Lock()
+	defer bs.mutex.Unlock()
+	bs.onDestroyFuncs = append(bs.onDestroyFuncs, fn)
 }
 
 // SetDeploySteps sets the number of steps in the deployment process.
@@ -588,5 +599,16 @@ func (bs *BuildState) Store() error {
 
 //Destroy deletes all storage of the BuildState
 func (bs *BuildState) Destroy() error {
-	return db.DeleteMeta(bs.BuildID)
+	bs.mutex.Lock()
+	defer bs.mutex.Unlock()
+	os.RemoveAll("/tmp/" + bs.BuildID)
+	err := db.DeleteMeta(bs.BuildID)
+	if err != nil {
+		return utils.LogError(err)
+	}
+	for _, fn := range bs.onDestroyFuncs {
+		go fn() //run eventually
+	}
+	bs.onDestroyFuncs = []func(){} //only once execution
+	return nil
 }

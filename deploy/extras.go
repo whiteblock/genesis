@@ -25,9 +25,11 @@ import (
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/docker"
 	"github.com/whiteblock/genesis/protocols/helpers"
+	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
+	"path/filepath"
 	"sync"
 )
 
@@ -241,6 +243,7 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 	if tn.LDD.Extras == nil {
 		return nil //Nothing to do
 	}
+
 	_, exists := tn.LDD.Extras["prebuild"]
 	if !exists {
 		return nil //Nothing to do
@@ -295,4 +298,41 @@ func handlePreBuildExtras(tn *testnet.TestNet) error {
 	}
 
 	return tn.BuildState.GetError()
+}
+
+func createNodeDirectories(tn *testnet.TestNet) error {
+	if !conf.EnableDockerLogging {
+		return nil
+	}
+	return helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
+		_, err := client.Run(fmt.Sprintf("mkdir -p %s", tn.GetNodeStoreDir(node)))
+		if err != nil {
+			return util.LogError(err)
+		}
+		tn.BuildState.OnDestroy(func() {
+			_, err := client.Run(fmt.Sprintf("rm -rf %s", tn.GetNodeStoreDir(node)))
+			if err != nil {
+				log.WithFields(log.Fields{
+					"server": node.GetServerID(),
+					"node":   node.GetAbsoluteNumber(),
+				}).Error("unable to remove the node's directory")
+			}
+		})
+
+		_, err = client.Run(fmt.Sprintf("touch %s", filepath.Join(tn.GetNodeStoreDir(node), "0.log")))
+		if err != nil {
+			return util.LogError(err)
+		}
+		i := 1
+
+		logs := registrar.GetAdditionalLogs(tn.LDD.Blockchain)
+		for range logs {
+			_, err = client.Run(fmt.Sprintf("touch %s", filepath.Join(tn.GetNodeStoreDir(node), fmt.Sprintf("%d.log", i))))
+			if err != nil {
+				return util.LogError(err)
+			}
+			i++
+		}
+		return nil
+	})
 }

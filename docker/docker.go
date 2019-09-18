@@ -154,7 +154,7 @@ func getFlagsFromResources(res util.Resources) (string, error) {
 
 // dockerRunCmd makes a docker run command to start a sideCar
 func dockerRunCmd(c Container) (string, error) {
-	command := "docker run -itd --entrypoint /bin/sh "
+	command := fmt.Sprintf("docker run -itd --entrypoint %s ", c.GetEntryPoint())
 	command += fmt.Sprintf("--network %s ", c.GetNetworkName())
 
 	flags, err := getFlagsFromResources(c.GetResources())
@@ -174,6 +174,10 @@ func dockerRunCmd(c Container) (string, error) {
 	command += fmt.Sprintf(" --hostname %s", c.GetName())
 	command += fmt.Sprintf(" --name %s", c.GetName())
 	command += " " + c.GetImage()
+	args := c.GetArgs()
+	if args != nil && len(args) > 0 {
+		command += " " + strings.Join(args, " ")
+	}
 	return command, nil
 }
 

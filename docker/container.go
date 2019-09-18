@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package docker
@@ -41,6 +41,10 @@ const (
 
 // Container represents the basic functionality needed to build a container
 type Container interface {
+
+	// AddVolume adds a volume to the container
+	AddVolume(vol string)
+
 	// GetEnvironment gives the environment variables for the container
 	GetEnvironment() map[string]string
 
@@ -61,6 +65,21 @@ type Container interface {
 
 	// GetResources gets the maximum resource allocation of the sideCar
 	GetResources() util.Resources
+
+	// GetEntryPoint gets the entrypoint for the container
+	GetEntryPoint() string
+
+	// GetArgs gets the arguments for the entrypoint
+	GetArgs() []string
+
+	// GetVolumes gets the container volumes
+	GetVolumes() []string
+
+	// SetEntryPoint sets the entrypoint
+	SetEntryPoint(ep string)
+
+	// SetArgs sets the arguments for the entrypoint
+	SetArgs(args []string)
 }
 
 // ContainerDetails represents a docker containers details
@@ -72,6 +91,8 @@ type ContainerDetails struct {
 	SubnetID     int
 	NetworkIndex int
 	Type         ContainerType
+	EntryPoint   string
+	Args         []string
 }
 
 // NewNodeContainer creates a representation of a container for a regular sideCar or regular node
@@ -84,6 +105,8 @@ func NewNodeContainer(node *db.Node, env map[string]string, resources util.Resou
 		SubnetID:     SubnetID,
 		NetworkIndex: 0,
 		Type:         Node,
+		EntryPoint:   "/bin/sh",
+		Args:         []string{},
 	}
 }
 
@@ -97,6 +120,8 @@ func NewSideCarContainer(sc *db.SideCar, env map[string]string, resources util.R
 		SubnetID:     SubnetID,
 		NetworkIndex: sc.NetworkIndex,
 		Type:         SideCar,
+		EntryPoint:   "/bin/sh",
+		Args:         []string{},
 	}
 }
 
@@ -147,4 +172,34 @@ func (cd *ContainerDetails) GetNetworkName() string {
 // GetResources gets the maximum resource allocation of the sideCar
 func (cd *ContainerDetails) GetResources() util.Resources {
 	return cd.Resources
+}
+
+// GetEntryPoint gets the entrypoint for the container
+func (cd *ContainerDetails) GetEntryPoint() string {
+	return cd.EntryPoint
+}
+
+// GetArgs gets the arguments for the entrypoint
+func (cd *ContainerDetails) GetArgs() []string {
+	return cd.Args
+}
+
+// SetEntryPoint sets the entrypoint
+func (cd *ContainerDetails) SetEntryPoint(ep string) {
+	cd.EntryPoint = ep
+}
+
+// SetArgs sets the arguments for the entrypoint
+func (cd *ContainerDetails) SetArgs(args []string) {
+	cd.Args = args
+}
+
+// GetVolumes gets the container's volumes
+func (cd *ContainerDetails) GetVolumes() []string {
+	return cd.Resources.Volumes
+}
+
+// AddVolume adds a volume to the container
+func (cd *ContainerDetails) AddVolume(vol string) {
+	cd.Resources.Volumes = append(cd.Resources.Volumes, vol)
 }
