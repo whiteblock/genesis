@@ -64,6 +64,7 @@ Configuration options are located in `config.json` in the same directory as the 
 | __maxNodes__| Set a maximum number of nodes that a client can build |
 | __maxNode-memory__| Set the max memory per node that a client can use |
 | __maxNodeCpu__| Set the max cpus per node that a client can use |
+| __enableDockerLogging__ | Have the logs read by sidecars into docker logs
       
 
 ## Config Environment Overrides
@@ -94,6 +95,7 @@ only ENV variables
 * `MAX_NODES`
 * `MAX_NODE_MEMORY`
 * `MAX_NODE_CPU`
+* `ENABLE_DOCKER_LOGGING`
 
 ## Additional Information
 * Config order of priority ENV -> config file -> defaults
