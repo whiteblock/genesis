@@ -116,7 +116,7 @@ func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 			return util.LogError(err)
 		}
 
-		_, err = client.DockerExecd(node, "sh -c '/sbin/apk update && /sbin/apk add --no-cache openrc openssh && /sbin/rc-update add sshd || true'")
+		_, err = client.DockerExecd(node, "sh -c '/sbin/apk update && /sbin/apk add --no-cache openrc openssh && ssh-keygen -A && /usr/sbin/sshd || true'")
 		if err != nil {
 			log.Warn(err)
 			_, err = client.DockerExecd(node, "sh -c 'apt-get update && apt-get install openssh-server && service ssh start || true'")
