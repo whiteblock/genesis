@@ -14,10 +14,10 @@ before_install:
   - make install-mock
   - make mocks
   - go get -u golang.org/x/lint/golint
+  - test -z $(gofmt -l $GO_FILES)
 
 script:
   - golint -set_exit_status $(go list ./... | grep -v mocks)
-  - test -z $(gofmt -s -l $GO_FILES)
   - make vet
   - make test
   - go get ./...
