@@ -227,10 +227,10 @@ func copyFiles(tn *testnet.TestNet, client ssh.Client, node ssh.Node) error {
 	}
 
 	for src, target := range fileMap {
-		err := client.DockerCp(node, src, fmt.Sprintf("%v", target))
-		if err != nil {
-			return util.LogError(err)
-		}
+			err := client.DockerCp(node, src, fmt.Sprintf("%v", target))
+			if err != nil {
+				return util.LogError(err)
+			}
 	}
 
 	return nil
