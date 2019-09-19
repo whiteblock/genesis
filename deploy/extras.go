@@ -96,24 +96,19 @@ func dockerBuild(tn *testnet.TestNet, contextDir string, dockerPath string) erro
 
 			if dockerPath != "" {
 				path := contextDir + "/" + dockerPath
-
 				_, err := client.Run(fmt.Sprintf("docker build %s -t %s -f %s", contextDir, imageName, path))
-
-				tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
 				if err != nil {
 					tn.BuildState.ReportError(err)
 					return
 				}
 			} else {
 				_, err := client.Run(fmt.Sprintf("docker build %s -t %s", contextDir, imageName))
-
-				tn.BuildState.Defer(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
 				if err != nil {
 					tn.BuildState.ReportError(err)
 					return
 				}
 			}
-
+			tn.BuildState.OnDestroy(func() { client.Run(fmt.Sprintf("docker rmi %s", imageName)) })
 		}(client)
 	}
 
