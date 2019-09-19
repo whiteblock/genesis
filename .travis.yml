@@ -17,7 +17,7 @@ before_install:
 
 script:
   - golint -set_exit_status $(go list ./... | grep -v mocks)
-  - if [[ gofmt -l . ]]; then >&2 echo exit 1
+  - test -z $(gofmt -s -l $GO_FILES)
   - make vet
   - make test
   - go get ./...
