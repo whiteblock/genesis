@@ -14,11 +14,10 @@ before_install:
   - make install-mock
   - make mocks
   - go get -u golang.org/x/lint/golint
-  - invalidFiles=$(gofmt -l ./... 2>&1)
-  - if [ "$invalidFiles" ]; then exit 1
 
 script:
   - golint -set_exit_status $(go list ./... | grep -v mocks)
+  - gofmt -l .
   - make vet
   - make test
   - go get ./...
