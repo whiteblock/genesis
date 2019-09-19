@@ -32,17 +32,17 @@ func TestPrometheusService_Prepare(t *testing.T) {
 		Extras:       map[string]interface{}{},
 	}
 	tn := testnet.TestNet{
-		TestNetID: "10",
-		Servers: []db.Server{},
-		Nodes: []db.Node{},
-		NewlyBuiltNodes: []db.Node{},
-		SideCars: [][]db.SideCar{},
+		TestNetID:          "10",
+		Servers:            []db.Server{},
+		Nodes:              []db.Node{},
+		NewlyBuiltNodes:    []db.Node{},
+		SideCars:           [][]db.SideCar{},
 		NewlyBuiltSideCars: [][]db.SideCar{},
-		Clients: map[int]ssh.Client{0: client},
-		BuildState: state.NewBuildState([]int{}, "0"),
-		Details: []db.DeploymentDetails{details},
-		CombinedDetails: details,
-		LDD: &details,
+		Clients:            map[int]ssh.Client{0: client},
+		BuildState:         state.NewBuildState([]int{}, "0"),
+		Details:            []db.DeploymentDetails{details},
+		CombinedDetails:    details,
+		LDD:                &details,
 	}
 	promServ := PrometheusService{}
 
@@ -56,29 +56,29 @@ func TestPrometheusService_Prepare(t *testing.T) {
 
 func Test_port(t *testing.T) {
 	var tests = []struct {
-		params map[string]interface{}
+		params    map[string]interface{}
 		nodeIndex int
-		expected string
+		expected  string
 	}{
 		{
-			params: map[string]interface{}{"prometheusInstrumentationPort": []interface{}{"4000"}},
+			params:    map[string]interface{}{"prometheusInstrumentationPort": []interface{}{"4000"}},
 			nodeIndex: 0,
-			expected: "4000",
+			expected:  "4000",
 		},
 		{
-			params: map[string]interface{}{"prometheusInstrumentationPort": "3000"},
+			params:    map[string]interface{}{"prometheusInstrumentationPort": "3000"},
 			nodeIndex: 0,
-			expected: "3000",
+			expected:  "3000",
 		},
 		{
-			params: map[string]interface{}{"prometheusInstrumentationPort": []interface{}{"4000", "2000", "8888"}},
+			params:    map[string]interface{}{"prometheusInstrumentationPort": []interface{}{"4000", "2000", "8888"}},
 			nodeIndex: 1,
-			expected: "2000",
+			expected:  "2000",
 		},
 		{
-			params: map[string]interface{}{},
+			params:    map[string]interface{}{},
 			nodeIndex: 0,
-			expected: "8008",
+			expected:  "8008",
 		},
 	}
 

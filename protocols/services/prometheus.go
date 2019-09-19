@@ -42,7 +42,6 @@ func (p PrometheusService) Prepare(client ssh.Client, tn *testnet.TestNet) error
 			return util.LogError(err)
 		}
 
-
 		prometheusInstrumentationPort := port(tn.CombinedDetails.Params, nodeIndex)
 
 		var tpl bytes.Buffer
