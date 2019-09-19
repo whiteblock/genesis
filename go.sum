@@ -111,6 +111,8 @@ github.com/multiformats/go-base32 v0.0.3/go.mod h1:pLiuGC8y0QR3Ue4Zug5UzK9LjgbkL
 github.com/multiformats/go-multiaddr v0.0.2 h1:RBysRCv5rv3FWlhKWKoXv8tnsCUpEpIZpCmqAGZos2s=
 github.com/multiformats/go-multiaddr v0.0.2/go.mod h1:xKVEak1K9cS1VdmPZW3LSIb6lgmoS58qz/pzqmAxV44=
 github.com/multiformats/go-multibase v0.0.1/go.mod h1:bja2MqRZ3ggyXtZSEDKpl0uO/gviWFaSteVbWT51qgs=
+github.com/multiformats/go-multihash v0.0.1 h1:HHwN1K12I+XllBCrqKnhX949Orn4oawPkegHMu2vDqQ=
+github.com/multiformats/go-multihash v0.0.1/go.mod h1:w/5tugSrLEbWqlcgJabL3oHFKTwfvkofsjW2Qa1ct4U=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
@@ -163,6 +165,8 @@ github.com/whiteblock/mustache v1.0.1 h1:bQO8cVeLjeRKh2QMSbR8XKgJ0nhoAnSWAlr1zwh
 github.com/whiteblock/mustache v1.0.1/go.mod h1:bjVUIB8ltmU2nsrbcs1RUv4VplHODtINZiyiBqlMWxA=
 github.com/whiteblock/scp v0.0.0-20190401151346-3a0c9dc7020d h1:AgpMrbp5L9VagzSdD/ESzDErWyZ8DeRv85x3oeMeq+w=
 github.com/whiteblock/scp v0.0.0-20190401151346-3a0c9dc7020d/go.mod h1:2hp7LBY3eE44mPbHexCfIvnNdj3ZjS/RaL0PkcOq3FQ=
+github.com/whiteblock/utility v0.0.0-20190913200306-ce843367a0a2 h1:dFjwsHVUBCR7L0iBd9POovXKDIOYAmto4J3w9kV+uhw=
+github.com/whiteblock/utility v0.0.0-20190913200306-ce843367a0a2/go.mod h1:zuVaVFjxMCVwMqyTqctE2h9xtUiipF1LvbLnGGnUJow=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=

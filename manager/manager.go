@@ -37,7 +37,6 @@ import (
 	_ "github.com/whiteblock/genesis/protocols/artemis"
 	_ "github.com/whiteblock/genesis/protocols/beam"
 	_ "github.com/whiteblock/genesis/protocols/cosmos"
-	_ "github.com/whiteblock/genesis/protocols/eos"
 	_ "github.com/whiteblock/genesis/protocols/ethclassic"
 	_ "github.com/whiteblock/genesis/protocols/generic"
 	_ "github.com/whiteblock/genesis/protocols/geth"
