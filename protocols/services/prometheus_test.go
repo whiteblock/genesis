@@ -1,14 +1,12 @@
 package services
 
 import (
-
-	"github.com/golang/mock/gomock"
-	"github.com/whiteblock/genesis/db"
-	"github.com/whiteblock/genesis/ssh"
-
 	"strconv"
 	"testing"
 	
+	"github.com/golang/mock/gomock"
+	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/ssh/mocks"
 	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/testnet"
