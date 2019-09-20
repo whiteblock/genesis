@@ -14,9 +14,9 @@ before_install:
   - make install-mock
   - make mocks
   - go get -u golang.org/x/lint/golint
-  - gofmt -l .
 
 script:
+  - gofmt -l .
   - golint -set_exit_status $(go list ./... | grep -v mocks)
   - make vet
   - make test
