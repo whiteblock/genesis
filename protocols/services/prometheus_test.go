@@ -33,6 +33,7 @@ func TestPrometheusService_Prepare(t *testing.T) {
 	}
 	tn := testnet.TestNet{
 		TestNetID:          "10",
+		// adding a comment here to test gofmt in travis
 		Servers:            []db.Server{},
 		Nodes:              []db.Node{},
 		NewlyBuiltNodes:    []db.Node{},
