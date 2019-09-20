@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/golang/mock/gomock"g
+	"github.com/golang/mock/gomock"
 	"github.com/whiteblock/genesis/db"
 
 	"strconv"
