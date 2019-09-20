@@ -16,7 +16,7 @@ before_install:
   - go get -u golang.org/x/lint/golint
 
 script:
-  - gsh .travis.gofmt.sh
+  - sh .travis.gofmt.sh
   - golint -set_exit_status $(go list ./... | grep -v mocks)
   - make vet
   - make test
