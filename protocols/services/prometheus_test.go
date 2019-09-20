@@ -13,6 +13,8 @@ import (
 	"github.com/whiteblock/genesis/util"
 )
 
+// adding a random comment in the middle of nowhere
+
 func TestPrometheusService_Prepare(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -33,7 +35,6 @@ func TestPrometheusService_Prepare(t *testing.T) {
 	}
 	tn := testnet.TestNet{
 		TestNetID:          "10",
-		// adding a comment here to test gofmt in travis
 		Servers:            []db.Server{},
 		Nodes:              []db.Node{},
 		NewlyBuiltNodes:    []db.Node{},
