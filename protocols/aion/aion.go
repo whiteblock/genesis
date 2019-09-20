@@ -124,7 +124,7 @@ func build(tn *testnet.TestNet) error {
 	accounts := []aionAcc{}
 
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-		pubkeyOut, err := client.DockerExec(node, "sh -c '/aion/./aion.sh -a list -n custom'")
+		pubkeyOut, err := client.DockerExec(node, "bash -c '/aion/./aion.sh -a list -n custom'")
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -137,7 +137,7 @@ func build(tn *testnet.TestNet) error {
 			wg.Add(1)
 			go func(publicKey string) {
 				defer wg.Done()
-				privatekeyOut, err := client.DockerExec(node, fmt.Sprintf("sh -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh -a export %s -n custom'", publicKey))
+				privatekeyOut, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh -a export %s -n custom'", publicKey))
 				if err != nil {
 					tn.BuildState.ReportError(err)
 					return
@@ -174,7 +174,7 @@ func build(tn *testnet.TestNet) error {
 			go func(account aionAcc) {
 				defer wg.Done()
 				client.DockerExec(node,
-					fmt.Sprintf("sh -c 'echo -e $(cat /aion/passwd) | "+
+					fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | "+
 						"/aion/./aion.sh -a import %s -n custom'", account.PrivateKey))
 			}(acc)
 		}
@@ -246,7 +246,7 @@ func build(tn *testnet.TestNet) error {
 	tn.BuildState.SetBuildStage("Starting network")
 	err = helpers.AllNewNodeExecCon(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
 		defer tn.BuildState.IncrementBuildProgress()
-		_, err := client.DockerExecdit(node, fmt.Sprintf("sh -ic '/aion/aion.sh -n custom 2>&1 | tee %s'", conf.DockerOutputFile))
+		_, err := client.DockerExecdit(node, fmt.Sprintf("bash -ic '/aion/aion.sh -n custom 2>&1 | tee %s'", conf.DockerOutputFile))
 		return util.LogError(err)
 	})
 	if err != nil {
@@ -389,7 +389,7 @@ func buildConfig(aionconf *AConf, tn *testnet.TestNet, wallet string, node ssh.N
 }
 
 func createAccount(client ssh.Client, node ssh.Node) (string, error) {
-	output, err := client.DockerExec(node, fmt.Sprintf("sh -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh ac -n custom'"))
+	output, err := client.DockerExec(node, fmt.Sprintf("bash -c 'echo -e $(cat /aion/passwd) | /aion/./aion.sh ac -n custom'"))
 	if err != nil {
 		return "", util.LogError(err)
 	}
