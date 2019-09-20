@@ -4,5 +4,5 @@ if [ -n "$(gofmt -l .)" ]; then
     gofmt -d .
     exit 1
 else
- echo "Go code is well formatted ;)"
+ echo "Go code is well formatted"
 fi
