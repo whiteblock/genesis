@@ -13,8 +13,6 @@ import (
 	"github.com/whiteblock/genesis/util"
 )
 
-// adding a random comment in the middle of nowhere
-
 func TestPrometheusService_Prepare(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
