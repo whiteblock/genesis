@@ -66,6 +66,12 @@ type Container interface {
 	// GetResources gets the maximum resource allocation of the sideCar
 	GetResources() util.Resources
 
+	// GetTestNetID gets the testnet ID for the given container
+	GetTestNetID() string
+
+	// GetOrgID gets the organization ID for the given container
+	GetOrgID() string
+
 	// GetEntryPoint gets the entrypoint for the container
 	GetEntryPoint() string
 
@@ -82,13 +88,13 @@ type Container interface {
 	SetArgs(args []string)
 }
 
-// ContainerDetails represents a docker containers details
+// ContainerDetails represents a docker container's details
 type ContainerDetails struct {
 	Environment  map[string]string
 	Image        string
 	Node         int
 	Resources    util.Resources
-	Labels		 ContainerLabels
+	Labels       ContainerLabels
 	SubnetID     int
 	NetworkIndex int
 	Type         ContainerType
@@ -96,6 +102,7 @@ type ContainerDetails struct {
 	Args         []string
 }
 
+// ContainerLabels represents a docker container's labels
 type ContainerLabels struct {
 	TestNetID string
 	OrgID     string
@@ -104,13 +111,13 @@ type ContainerLabels struct {
 // NewNodeContainer creates a representation of a container for a regular sideCar or regular node
 func NewNodeContainer(node *db.Node, env map[string]string, resources util.Resources, SubnetID int) Container {
 	return &ContainerDetails{
-		Environment:  env,
-		Image:        node.Image,
-		Node:         node.LocalID,
-		Resources:    resources,
-		Labels: 	  ContainerLabels{
+		Environment: env,
+		Image:       node.Image,
+		Node:        node.LocalID,
+		Resources:   resources,
+		Labels: ContainerLabels{
 			TestNetID: node.TestNetID,
-			OrgID: "", // TODO
+			OrgID:     "", // TODO
 		},
 		SubnetID:     SubnetID,
 		NetworkIndex: 0,
@@ -184,10 +191,12 @@ func (cd *ContainerDetails) GetResources() util.Resources {
 	return cd.Resources
 }
 
-func (cd *ContainerDetails) GetTestnetID() string {
+// GetTestNetID gets the testnet ID for the given container
+func (cd *ContainerDetails) GetTestNetID() string {
 	return cd.Labels.TestNetID
 }
 
+// GetOrgID gets the organization ID for the given container
 func (cd *ContainerDetails) GetOrgID() string {
 	return cd.Labels.OrgID
 }
