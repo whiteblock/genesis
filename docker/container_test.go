@@ -47,6 +47,7 @@ func TestNewNodeContainer(t *testing.T) {
 				Image:        testNode.Image,
 				Node:         testNode.LocalID,
 				Resources:    util.Resources{},
+				Labels:       map[string]string{"testnetID": testNode.TestNetID},
 				SubnetID:     4,
 				NetworkIndex: 0,
 				Type:         ContainerType(0),
@@ -74,6 +75,7 @@ func TestNewNodeContainer(t *testing.T) {
 					Volumes: []string{},
 					Ports:   []string{},
 				},
+				Labels:       map[string]string{"testnetID": testNode.TestNetID},
 				SubnetID:     16,
 				NetworkIndex: 0,
 				Type:         ContainerType(0),
@@ -118,6 +120,7 @@ func TestNewSideCarContainer(t *testing.T) {
 				Image:        testSidecar.Image,
 				Node:         testSidecar.LocalID,
 				Resources:    util.Resources{},
+				Labels:       map[string]string{"testnetID": testSidecar.TestnetID},
 				SubnetID:     4,
 				NetworkIndex: testSidecar.NetworkIndex,
 				Type:         ContainerType(1),
@@ -145,6 +148,7 @@ func TestNewSideCarContainer(t *testing.T) {
 					Volumes: []string{},
 					Ports:   []string{},
 				},
+				Labels:       map[string]string{"testnetID": testSidecar.TestnetID},
 				SubnetID:     16,
 				NetworkIndex: testSidecar.NetworkIndex,
 				Type:         ContainerType(1),
@@ -494,5 +498,43 @@ func BenchmarkContainerDetails_GetResources(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 		testContainer.GetResources()
+	}
+}
+
+func TestContainerDetails_GetLabels(t *testing.T) {
+	sc := new(db.SideCar)
+
+	testContainer := NewSideCarContainer(sc, map[string]string{}, util.Resources{}, 0)
+
+	var tests = []struct {
+		cd       Container
+		expected map[string]string
+	}{
+		{
+			cd:       new(ContainerDetails),
+			expected: new(ContainerDetails).GetLabels(),
+		},
+		{
+			cd: testContainer,
+			expected: map[string]string{
+				"testnetID": sc.TestnetID,
+			},
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if !reflect.DeepEqual(tt.cd.GetLabels(), tt.expected) {
+				t.Error("return value of GetLabels does not match expected value")
+			}
+		})
+	}
+}
+
+func BenchmarkContainerDetails_GetLabels(b *testing.B) {
+	testContainer := new(ContainerDetails)
+
+	for n := 0; n < b.N; n++ {
+		testContainer.GetLabels()
 	}
 }
