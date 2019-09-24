@@ -117,7 +117,7 @@ func NewNodeContainer(node *db.Node, env map[string]string, resources util.Resou
 		Resources:   resources,
 		Labels: ContainerLabels{
 			TestNetID: node.TestNetID,
-			OrgID:     "", // TODO
+			OrgID:     "", // TODO where do I get the Org ID? 
 		},
 		SubnetID:     SubnetID,
 		NetworkIndex: 0,
