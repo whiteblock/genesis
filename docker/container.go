@@ -20,6 +20,7 @@ package docker
 
 import (
 	"fmt"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/util"
@@ -41,7 +42,6 @@ const (
 
 // Container represents the basic functionality needed to build a container
 type Container interface {
-
 	// AddVolume adds a volume to the container
 	AddVolume(vol string)
 
@@ -88,11 +88,17 @@ type ContainerDetails struct {
 	Image        string
 	Node         int
 	Resources    util.Resources
+	Labels		 ContainerLabels
 	SubnetID     int
 	NetworkIndex int
 	Type         ContainerType
 	EntryPoint   string
 	Args         []string
+}
+
+type ContainerLabels struct {
+	TestNetID string
+	OrgID     string
 }
 
 // NewNodeContainer creates a representation of a container for a regular sideCar or regular node
@@ -102,6 +108,10 @@ func NewNodeContainer(node *db.Node, env map[string]string, resources util.Resou
 		Image:        node.Image,
 		Node:         node.LocalID,
 		Resources:    resources,
+		Labels: 	  ContainerLabels{
+			TestNetID: node.TestNetID,
+			OrgID: "", // TODO
+		},
 		SubnetID:     SubnetID,
 		NetworkIndex: 0,
 		Type:         Node,
@@ -172,6 +182,14 @@ func (cd *ContainerDetails) GetNetworkName() string {
 // GetResources gets the maximum resource allocation of the sideCar
 func (cd *ContainerDetails) GetResources() util.Resources {
 	return cd.Resources
+}
+
+func (cd *ContainerDetails) GetTestnetID() string {
+	return cd.Labels.TestNetID
+}
+
+func (cd *ContainerDetails) GetOrgID() string {
+	return cd.Labels.OrgID
 }
 
 // GetEntryPoint gets the entrypoint for the container
