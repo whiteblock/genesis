@@ -66,11 +66,8 @@ type Container interface {
 	// GetResources gets the maximum resource allocation of the sideCar
 	GetResources() util.Resources
 
-	// GetTestNetID gets the testnet ID for the given container
-	GetTestNetID() string
-
-	// GetOrgID gets the organization ID for the given container
-	GetOrgID() string
+	// GetLabels gets the testnet ID for the given container
+	GetLabels() map[string]string
 
 	// GetEntryPoint gets the entrypoint for the container
 	GetEntryPoint() string
@@ -94,18 +91,12 @@ type ContainerDetails struct {
 	Image        string
 	Node         int
 	Resources    util.Resources
-	Labels       ContainerLabels
+	Labels       map[string]string
 	SubnetID     int
 	NetworkIndex int
 	Type         ContainerType
 	EntryPoint   string
 	Args         []string
-}
-
-// ContainerLabels represents a docker container's labels
-type ContainerLabels struct {
-	TestNetID string
-	OrgID     string
 }
 
 // NewNodeContainer creates a representation of a container for a regular sideCar or regular node
@@ -115,9 +106,8 @@ func NewNodeContainer(node *db.Node, env map[string]string, resources util.Resou
 		Image:       node.Image,
 		Node:        node.LocalID,
 		Resources:   resources,
-		Labels: ContainerLabels{
-			TestNetID: node.TestNetID,
-			OrgID:     "", // TODO where do I get the Org ID? 
+		Labels: map[string]string{
+			"testnetID": node.TestNetID, // TODO temp solution
 		},
 		SubnetID:     SubnetID,
 		NetworkIndex: 0,
@@ -130,10 +120,13 @@ func NewNodeContainer(node *db.Node, env map[string]string, resources util.Resou
 // NewSideCarContainer creates a representation of a container for a side car sideCar
 func NewSideCarContainer(sc *db.SideCar, env map[string]string, resources util.Resources, SubnetID int) Container {
 	return &ContainerDetails{
-		Environment:  env,
-		Image:        sc.Image,
-		Node:         sc.LocalID,
-		Resources:    resources,
+		Environment: env,
+		Image:       sc.Image,
+		Node:        sc.LocalID,
+		Resources:   resources,
+		Labels: map[string]string{
+			"testnetID": sc.TestnetID, // TODO temp solution
+		},
 		SubnetID:     SubnetID,
 		NetworkIndex: sc.NetworkIndex,
 		Type:         SideCar,
@@ -191,14 +184,9 @@ func (cd *ContainerDetails) GetResources() util.Resources {
 	return cd.Resources
 }
 
-// GetTestNetID gets the testnet ID for the given container
-func (cd *ContainerDetails) GetTestNetID() string {
-	return cd.Labels.TestNetID
-}
-
-// GetOrgID gets the organization ID for the given container
-func (cd *ContainerDetails) GetOrgID() string {
-	return cd.Labels.OrgID
+// GetLabels gets the labels for the given container
+func (cd *ContainerDetails) GetLabels() map[string]string {
+	return cd.Labels
 }
 
 // GetEntryPoint gets the entrypoint for the container
