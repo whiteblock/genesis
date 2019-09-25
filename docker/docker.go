@@ -187,8 +187,6 @@ func dockerRunCmd(c Container) (string, error) {
 		command += fmt.Sprintf(" -l %s=%s", label, val)
 	}
 
-	fmt.Println(command) // TODO remove
-
 	return command, nil
 }
 
