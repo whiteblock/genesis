@@ -174,16 +174,17 @@ func dockerRunCmd(c Container) (string, error) {
 
 	command += fmt.Sprintf(" --hostname %s", c.GetName())
 	command += fmt.Sprintf(" --name %s", c.GetName())
+
+	labels := c.GetLabels()
+	for label, val := range labels {
+		command += fmt.Sprintf(" -l %s=%s", label, val)
+	}
+
 	command += " " + c.GetImage()
 
 	args := c.GetArgs()
 	if args != nil && len(args) > 0 {
 		command += " " + strings.Join(args, " ")
-	}
-
-	labels := c.GetLabels()
-	for label, val := range labels {
-		command += fmt.Sprintf("-l %s=%s ", label, val)
 	}
 
 	return command, nil
