@@ -21,6 +21,7 @@ package db
 import (
 	"encoding/json"
 	"fmt"
+
 	_ "github.com/mattn/go-sqlite3" //Bring db in
 	"github.com/whiteblock/genesis/util"
 )
@@ -162,7 +163,6 @@ func QueryBuilds(query string) ([]DeploymentDetails, error) {
 func GetAllBuilds() ([]DeploymentDetails, error) {
 	return QueryBuilds(fmt.Sprintf("SELECT testnet,servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid FROM %s", BuildsTable))
 }
-
 
 //GetBuildByTestnet gets the build parameters based off testnet id
 func GetBuildByTestnet(id string) (DeploymentDetails, error) {
