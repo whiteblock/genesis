@@ -47,6 +47,7 @@ const (
 	all       = topology("all")
 	sequence  = topology("sequence")
 	randomTwo = topology("randomTwo")
+	none      = topology("none")
 )
 
 func init() {
@@ -90,6 +91,8 @@ func getTopology(tn *testnet.TestNet) (topology, error) {
 		return sequence, nil
 	case "randomTwo":
 		return randomTwo, nil
+	case "none":
+		return none, nil
 	default:
 		return all, util.LogError(fmt.Errorf("unsupported network topology, %v", networkTopology))
 	}
@@ -106,34 +109,39 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 
 		libp2p := tn.LDD.Params["libp2p"] == "true"
 
-		peerIds := map[int]string{}
-		for _, peerNode := range tn.Nodes {
-			if libp2p {
-				id, err := publicKeyToBase58(nodeKeyPairs[peerNode.GetID()])
-				if err != nil {
-					return util.LogError(err)
+		if networkTopology != none {
+
+			params += fmt.Sprintf(" --port=%d", p2pPort)
+
+			peerIds := map[int]string{}
+			for _, peerNode := range tn.Nodes {
+				if libp2p {
+					id, err := publicKeyToBase58(nodeKeyPairs[peerNode.GetID()])
+					if err != nil {
+						return util.LogError(err)
+					}
+					peerIds[peerNode.GetRelativeNumber()] = fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s", peerNode.IP, p2pPort, id)
+				} else {
+					peerIds[peerNode.GetRelativeNumber()] = fmt.Sprintf(" --peers=%s", peerNode.IP)
 				}
-				peerIds[peerNode.GetRelativeNumber()] = fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s", peerNode.IP, p2pPort, id)
-			} else {
-				peerIds[peerNode.GetRelativeNumber()] = fmt.Sprintf(" --peers=%s", peerNode.IP)
+
 			}
 
-		}
+			peers, err := createPeers(node.GetRelativeNumber(), peerIds, networkTopology)
 
-		peers, err := createPeers(node.GetRelativeNumber(), peerIds, networkTopology)
-
-		if err != nil {
-			return util.LogError(err)
-		}
-
-		params += peers
-
-		if libp2p {
-			id, err := privateKeyToHexString(nodeKeyPairs[node.GetID()])
 			if err != nil {
 				return util.LogError(err)
 			}
-			params += fmt.Sprintf(" --identity=%s", id)
+
+			params += peers
+
+			if libp2p {
+				id, err := privateKeyToHexString(nodeKeyPairs[node.GetID()])
+				if err != nil {
+					return util.LogError(err)
+				}
+				params += fmt.Sprintf(" --identity=%s", id)
+			}
 		}
 
 		log.WithField("args", params).Infof("Starting node %s", node.GetID())
@@ -255,8 +263,6 @@ func createDefaultParams(tn *testnet.TestNet, node ssh.Node) (string, error) {
 	for key, param := range argMap {
 		params += fmt.Sprintf(" --%s=%v", key, param)
 	}
-
-	params += fmt.Sprintf(" --port=%d", p2pPort)
 
 	return params, nil
 }
