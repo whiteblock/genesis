@@ -316,10 +316,6 @@ func TestRun(t *testing.T) {
 	command := "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --cpus 4 --memory 5000000 --ip 10.10.0.2 --hostname whiteblock-node0 --name whiteblock-node0 prysm:latest -l testnetID=10 -l orgID=10"
 	client.EXPECT().Run(command).AnyTimes()
 
-	fmt.Print("expected")
-	fmt.Println(command)
-	fmt.Println()
-
 	container := NewNodeContainer(node, map[string]string{}, util.Resources{Cpus: "4", Memory: "5MB"}, 10, ldd)
 
 	if err := Run(testNet, 0, container); err != nil {
