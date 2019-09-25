@@ -66,7 +66,7 @@ func buildLoggers(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 			Type:            "logger",
 		}
 		tn.AddSideCar(scNode, index)
-		sidecarContainer := docker.NewSideCarContainer(&scNode, nil, util.Resources{}, server.SubnetID)
+		sidecarContainer := docker.NewSideCarContainer(&scNode, nil, util.Resources{}, server.SubnetID, tn.LDD)
 		sidecarContainer.AddVolume(
 			fmt.Sprintf("%s:%s",
 				filepath.Join(tn.GetNodeStoreDir(node), fmt.Sprintf("%d.log", i)),
@@ -159,7 +159,8 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 		env = tn.LDD.Environments[node.AbsoluteNum]
 		log.WithFields(log.Fields{"env": env, "node": node.AbsoluteNum}).Trace("using custom env vars")
 	}
-	container := docker.NewNodeContainer(node, env, resource, server.SubnetID)
+
+	container := docker.NewNodeContainer(node, env, resource, server.SubnetID, tn.LDD)
 
 	logs := []string{conf.GetLogsOutputFile()}
 	extraLogs := registrar.GetAdditionalLogs(tn.LDD.Blockchain)

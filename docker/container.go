@@ -100,14 +100,15 @@ type ContainerDetails struct {
 }
 
 // NewNodeContainer creates a representation of a container for a regular sideCar or regular node
-func NewNodeContainer(node *db.Node, env map[string]string, resources util.Resources, SubnetID int) Container {
+func NewNodeContainer(node *db.Node, env map[string]string, resources util.Resources, SubnetID int, deployDetails *db.DeploymentDetails) Container {
 	return &ContainerDetails{
 		Environment: env,
 		Image:       node.Image,
 		Node:        node.LocalID,
 		Resources:   resources,
 		Labels: map[string]string{
-			"testnetID": node.TestNetID, // TODO temp solution
+			"testnetID": deployDetails.TestNetID,
+			"orgID":     deployDetails.OrgID,
 		},
 		SubnetID:     SubnetID,
 		NetworkIndex: 0,
@@ -118,14 +119,15 @@ func NewNodeContainer(node *db.Node, env map[string]string, resources util.Resou
 }
 
 // NewSideCarContainer creates a representation of a container for a side car sideCar
-func NewSideCarContainer(sc *db.SideCar, env map[string]string, resources util.Resources, SubnetID int) Container {
+func NewSideCarContainer(sc *db.SideCar, env map[string]string, resources util.Resources, SubnetID int, deployDetails *db.DeploymentDetails) Container {
 	return &ContainerDetails{
 		Environment: env,
 		Image:       sc.Image,
 		Node:        sc.LocalID,
 		Resources:   resources,
 		Labels: map[string]string{
-			"testnetID": sc.TestnetID, // TODO temp solution
+			"testnetID": deployDetails.TestNetID,
+			"orgID":     deployDetails.OrgID,
 		},
 		SubnetID:     SubnetID,
 		NetworkIndex: sc.NetworkIndex,
