@@ -21,58 +21,51 @@ package db
 import (
 	"encoding/json"
 	"fmt"
+
 	_ "github.com/mattn/go-sqlite3" //Bring db in
 	"github.com/whiteblock/genesis/util"
 )
 
-/*
-DeploymentDetails represents the data for the construction of a testnet.
-*/
+// DeploymentDetails represents the data for the construction of a testnet.
 type DeploymentDetails struct {
 	// ID will be included when it is queried from the database.
 	ID string `json:"id,omitempty"`
 
-	/*
-	   Servers: The ids of the servers to build on
-	*/
+	// TestNetID: The id of the provisioned testnet
+	TestNetID string `json:"testnetID"`
+
+	// OrgID: The id of the organization
+	OrgID string `json:"orgID"`
+
+	// Servers: The ids of the servers to build on
 	Servers []int `json:"servers"`
-	/*
-	   Blockchain: The blockchain to build.
-	*/
+
+	// Blockchain: The blockchain to build.
 	Blockchain string `json:"blockchain"`
-	/*
-	   Nodes:  The number of nodes to build
-	*/
+
+	// Nodes:  The number of nodes to build
 	Nodes int `json:"nodes"`
-	/*
-	   Image: The docker image to build off of
-	*/
+
+	// Image: The docker image to build off of
 	Images []string `json:"images"`
-	/*
-	   Params: The blockchain specific parameters
-	*/
+
+	// Params: The blockchain specific parameters
 	Params map[string]interface{} `json:"params"`
-	/*
-	   Resources: The resources per node
-	*/
+
+	// Resources: The resources per node
 	Resources []util.Resources `json:"resources"`
-	/*
-		Environments is the environment variables to be passed to each node.
-		If it doesn't exist for a node, it defaults first to index 0.
-	*/
+
+	// Environments is the environment variables to be passed to each node.
+	// If it doesn't exist for a node, it defaults first to index 0.
 	Environments []map[string]string `json:"environments"`
-	/*
-		Custom files for each node
-	*/
+
+	// Custom files for each node
 	Files []map[string]string `json:"files"`
-	/*
-		Logs to keep track of for each node
-	*/
+
+	// Logs to keep track of for each node
 	Logs []map[string]string `json:"logs"`
 
-	/*
-		Fairly Arbitrary extras for when additional customizations are added.
-	*/
+	// Fairly Arbitrary extras for when additional customizations are added.
 	Extras map[string]interface{} `json:"extras"`
 	jwt    string
 	kid    string
@@ -166,16 +159,12 @@ func QueryBuilds(query string) ([]DeploymentDetails, error) {
 	return builds, nil
 }
 
-/*
-GetAllBuilds gets all of the builds done by a user
-*/
+// GetAllBuilds gets all of the builds done by a user
 func GetAllBuilds() ([]DeploymentDetails, error) {
 	return QueryBuilds(fmt.Sprintf("SELECT testnet,servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid FROM %s", BuildsTable))
 }
 
-/*
-GetBuildByTestnet gets the build parameters based off testnet id
-*/
+//GetBuildByTestnet gets the build parameters based off testnet id
 func GetBuildByTestnet(id string) (DeploymentDetails, error) {
 
 	details, err := QueryBuilds(fmt.Sprintf("SELECT testnet,servers,blockchain,nodes,image,params,resources,files,environment,logs,extras,kid FROM %s WHERE testnet = \"%s\"", BuildsTable, id))

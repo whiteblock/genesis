@@ -24,11 +24,16 @@ import (
 	"testing"
 
 	"github.com/whiteblock/genesis/db"
+	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 )
 
 func TestNewNodeContainer(t *testing.T) {
 	testNode := new(db.Node)
+
+	ldd := new(db.DeploymentDetails)
+	ldd.TestNetID = "10"
+	ldd.OrgID = "10"
 
 	var tests = []struct {
 		node      *db.Node
@@ -43,11 +48,14 @@ func TestNewNodeContainer(t *testing.T) {
 			resources: util.Resources{},
 			SubnetID:  4,
 			expected: ContainerDetails{
-				Environment:  map[string]string{},
-				Image:        testNode.Image,
-				Node:         testNode.LocalID,
-				Resources:    util.Resources{},
-				Labels:       map[string]string{"testnetID": testNode.TestNetID},
+				Environment: map[string]string{},
+				Image:       testNode.Image,
+				Node:        testNode.LocalID,
+				Resources:   util.Resources{},
+				Labels: map[string]string{
+					"testnetID": ldd.TestNetID,
+					"orgID":     ldd.OrgID,
+				},
 				SubnetID:     4,
 				NetworkIndex: 0,
 				Type:         ContainerType(0),
@@ -75,7 +83,10 @@ func TestNewNodeContainer(t *testing.T) {
 					Volumes: []string{},
 					Ports:   []string{},
 				},
-				Labels:       map[string]string{"testnetID": testNode.TestNetID},
+				Labels: map[string]string{
+					"testnetID": ldd.TestNetID,
+					"orgID":     ldd.OrgID,
+				},
 				SubnetID:     16,
 				NetworkIndex: 0,
 				Type:         ContainerType(0),
@@ -87,7 +98,7 @@ func TestNewNodeContainer(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			if !reflect.DeepEqual(NewNodeContainer(tt.node, tt.env, tt.resources, tt.SubnetID), &tt.expected) {
+			if !reflect.DeepEqual(NewNodeContainer(tt.node, tt.env, tt.resources, tt.SubnetID, ldd), &tt.expected) {
 				t.Error("return value of NewNodeContainer does not match expected value")
 			}
 		})
@@ -95,13 +106,20 @@ func TestNewNodeContainer(t *testing.T) {
 }
 
 func BenchmarkNewNodeContainer(b *testing.B) {
+	tn := testnet.TestNet{}
+	tn.LDD = new(db.DeploymentDetails)
+
 	for n := 0; n < b.N; n++ {
-		NewNodeContainer(new(db.Node), map[string]string{}, util.Resources{}, 4)
+		NewNodeContainer(new(db.Node), map[string]string{}, util.Resources{}, 4, tn.LDD)
 	}
 }
 
 func TestNewSideCarContainer(t *testing.T) {
 	testSidecar := new(db.SideCar)
+
+	ldd := new(db.DeploymentDetails)
+	ldd.TestNetID = "10"
+	ldd.OrgID = "10"
 
 	var tests = []struct {
 		sideCar   *db.SideCar
@@ -116,11 +134,14 @@ func TestNewSideCarContainer(t *testing.T) {
 			resources: util.Resources{},
 			SubnetID:  4,
 			expected: ContainerDetails{
-				Environment:  map[string]string{},
-				Image:        testSidecar.Image,
-				Node:         testSidecar.LocalID,
-				Resources:    util.Resources{},
-				Labels:       map[string]string{"testnetID": testSidecar.TestnetID},
+				Environment: map[string]string{},
+				Image:       testSidecar.Image,
+				Node:        testSidecar.LocalID,
+				Resources:   util.Resources{},
+				Labels: map[string]string{
+					"testnetID": ldd.TestNetID,
+					"orgID":     ldd.OrgID,
+				},
 				SubnetID:     4,
 				NetworkIndex: testSidecar.NetworkIndex,
 				Type:         ContainerType(1),
@@ -148,7 +169,10 @@ func TestNewSideCarContainer(t *testing.T) {
 					Volumes: []string{},
 					Ports:   []string{},
 				},
-				Labels:       map[string]string{"testnetID": testSidecar.TestnetID},
+				Labels: map[string]string{
+					"testnetID": ldd.TestNetID,
+					"orgID":     ldd.OrgID,
+				},
 				SubnetID:     16,
 				NetworkIndex: testSidecar.NetworkIndex,
 				Type:         ContainerType(1),
@@ -160,7 +184,7 @@ func TestNewSideCarContainer(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			if !reflect.DeepEqual(NewSideCarContainer(tt.sideCar, tt.env, tt.resources, tt.SubnetID), &tt.expected) {
+			if !reflect.DeepEqual(NewSideCarContainer(tt.sideCar, tt.env, tt.resources, tt.SubnetID, ldd), &tt.expected) {
 				t.Error("return value of NewSideCarContainer does not match expected value")
 			}
 		})
@@ -168,8 +192,11 @@ func TestNewSideCarContainer(t *testing.T) {
 }
 
 func BenchmarkNewSideCarContainerContainer(b *testing.B) {
+	tn := testnet.TestNet{}
+	tn.LDD = new(db.DeploymentDetails)
+
 	for n := 0; n < b.N; n++ {
-		NewSideCarContainer(new(db.SideCar), map[string]string{}, util.Resources{}, 4)
+		NewSideCarContainer(new(db.SideCar), map[string]string{}, util.Resources{}, 4, tn.LDD)
 	}
 }
 
@@ -504,7 +531,11 @@ func BenchmarkContainerDetails_GetResources(b *testing.B) {
 func TestContainerDetails_GetLabels(t *testing.T) {
 	sc := new(db.SideCar)
 
-	testContainer := NewSideCarContainer(sc, map[string]string{}, util.Resources{}, 0)
+	ldd := new(db.DeploymentDetails)
+	ldd.TestNetID = "10"
+	ldd.OrgID = "10"
+
+	testContainer := NewSideCarContainer(sc, map[string]string{}, util.Resources{}, 0, ldd)
 
 	var tests = []struct {
 		cd       Container
@@ -517,7 +548,8 @@ func TestContainerDetails_GetLabels(t *testing.T) {
 		{
 			cd: testContainer,
 			expected: map[string]string{
-				"testnetID": sc.TestnetID,
+				"testnetID": ldd.TestNetID,
+				"orgID":     ldd.OrgID,
 			},
 		},
 	}
