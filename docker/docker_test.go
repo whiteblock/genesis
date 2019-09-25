@@ -309,10 +309,18 @@ func TestRun(t *testing.T) {
 	node.TestNetID = "10"
 	node.Image = "prysm:latest"
 
-	command := "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --cpus 4 --memory 5000000 --ip 10.10.0.2 --hostname whiteblock-node0 --name whiteblock-node0 prysm:latest -l testnetID=10"
+	ldd := new(db.DeploymentDetails)
+	ldd.TestNetID = "10"
+	ldd.OrgID = "10"
+
+	command := "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --cpus 4 --memory 5000000 --ip 10.10.0.2 --hostname whiteblock-node0 --name whiteblock-node0 prysm:latest -l testnetID=10 -l orgID=10"
 	client.EXPECT().Run(command).AnyTimes()
 
-	container := NewNodeContainer(node, map[string]string{}, util.Resources{Cpus: "4", Memory: "5MB"}, 10)
+	fmt.Print("expected")
+	fmt.Println(command)
+	fmt.Println()
+
+	container := NewNodeContainer(node, map[string]string{}, util.Resources{Cpus: "4", Memory: "5MB"}, 10, ldd)
 
 	if err := Run(testNet, 0, container); err != nil {
 		t.Error("return value of Run does not match expected value")
