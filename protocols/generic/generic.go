@@ -22,6 +22,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"path/filepath"
 	"reflect"
 
 	"github.com/libp2p/go-libp2p-core/crypto"
@@ -235,7 +236,13 @@ func copyFiles(tn *testnet.TestNet, client ssh.Client, node ssh.Node) error {
 	}
 
 	for src, target := range fileMap {
-		err := client.DockerCp(node, src, fmt.Sprintf("%v", target))
+		targetFile := fmt.Sprintf("%v", target)
+		output, err := client.DockerExecd(node, fmt.Sprintf("mkdir -p %s", filepath.Dir(targetFile)))
+		if err != nil {
+			log.Warnf("Creating directory failed with this output: %s", output)
+			return util.LogError(err)
+		}
+		err = client.DockerCp(node, src, targetFile)
 		if err != nil {
 			return util.LogError(err)
 		}
