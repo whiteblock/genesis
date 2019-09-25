@@ -302,13 +302,17 @@ func TestRun(t *testing.T) {
 
 	client := mocks.NewMockClient(ctrl)
 
-	command := "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --cpus 4 --memory 5000000 --ip 10.10.0.2 --hostname whiteblock-node0 --name whiteblock-node0 "
-	client.EXPECT().Run(command).AnyTimes()
-
 	testNet := new(testnet.TestNet)
 	testNet.Clients = map[int]ssh.Client{0: client}
 
-	container := NewNodeContainer(new(db.Node), map[string]string{}, util.Resources{Cpus: "4", Memory: "5MB"}, 10)
+	node := new(db.Node)
+	node.TestNetID = "10"
+	node.Image = "prysm:latest"
+
+	command := "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --cpus 4 --memory 5000000 --ip 10.10.0.2 --hostname whiteblock-node0 --name whiteblock-node0 prysm:latest -l testnetID=10"
+	client.EXPECT().Run(command).AnyTimes()
+
+	container := NewNodeContainer(node, map[string]string{}, util.Resources{Cpus: "4", Memory: "5MB"}, 10)
 
 	if err := Run(testNet, 0, container); err != nil {
 		t.Error("return value of Run does not match expected value")

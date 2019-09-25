@@ -20,6 +20,7 @@ package docker
 
 import (
 	"fmt"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/util"
@@ -41,7 +42,6 @@ const (
 
 // Container represents the basic functionality needed to build a container
 type Container interface {
-
 	// AddVolume adds a volume to the container
 	AddVolume(vol string)
 
@@ -66,6 +66,9 @@ type Container interface {
 	// GetResources gets the maximum resource allocation of the sideCar
 	GetResources() util.Resources
 
+	// GetLabels gets the testnet ID for the given container
+	GetLabels() map[string]string
+
 	// GetEntryPoint gets the entrypoint for the container
 	GetEntryPoint() string
 
@@ -82,12 +85,13 @@ type Container interface {
 	SetArgs(args []string)
 }
 
-// ContainerDetails represents a docker containers details
+// ContainerDetails represents a docker container's details
 type ContainerDetails struct {
 	Environment  map[string]string
 	Image        string
 	Node         int
 	Resources    util.Resources
+	Labels       map[string]string
 	SubnetID     int
 	NetworkIndex int
 	Type         ContainerType
@@ -98,10 +102,13 @@ type ContainerDetails struct {
 // NewNodeContainer creates a representation of a container for a regular sideCar or regular node
 func NewNodeContainer(node *db.Node, env map[string]string, resources util.Resources, SubnetID int) Container {
 	return &ContainerDetails{
-		Environment:  env,
-		Image:        node.Image,
-		Node:         node.LocalID,
-		Resources:    resources,
+		Environment: env,
+		Image:       node.Image,
+		Node:        node.LocalID,
+		Resources:   resources,
+		Labels: map[string]string{
+			"testnetID": node.TestNetID, // TODO temp solution
+		},
 		SubnetID:     SubnetID,
 		NetworkIndex: 0,
 		Type:         Node,
@@ -113,10 +120,13 @@ func NewNodeContainer(node *db.Node, env map[string]string, resources util.Resou
 // NewSideCarContainer creates a representation of a container for a side car sideCar
 func NewSideCarContainer(sc *db.SideCar, env map[string]string, resources util.Resources, SubnetID int) Container {
 	return &ContainerDetails{
-		Environment:  env,
-		Image:        sc.Image,
-		Node:         sc.LocalID,
-		Resources:    resources,
+		Environment: env,
+		Image:       sc.Image,
+		Node:        sc.LocalID,
+		Resources:   resources,
+		Labels: map[string]string{
+			"testnetID": sc.TestnetID, // TODO temp solution
+		},
 		SubnetID:     SubnetID,
 		NetworkIndex: sc.NetworkIndex,
 		Type:         SideCar,
@@ -172,6 +182,11 @@ func (cd *ContainerDetails) GetNetworkName() string {
 // GetResources gets the maximum resource allocation of the sideCar
 func (cd *ContainerDetails) GetResources() util.Resources {
 	return cd.Resources
+}
+
+// GetLabels gets the labels for the given container
+func (cd *ContainerDetails) GetLabels() map[string]string {
+	return cd.Labels
 }
 
 // GetEntryPoint gets the entrypoint for the container
