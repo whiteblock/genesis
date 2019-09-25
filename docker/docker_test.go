@@ -314,7 +314,7 @@ func TestRun(t *testing.T) {
 	ldd.OrgID = "10"
 
 	command := "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --cpus 4 --memory 5000000 --ip 10.10.0.2 --hostname whiteblock-node0 --name whiteblock-node0 prysm:latest -l testnetID=10 -l orgID=10"
-	client.EXPECT().Run(command).AnyTimes()
+	client.EXPECT().Run(command).Times(1)
 
 	container := NewNodeContainer(node, map[string]string{}, util.Resources{Cpus: "4", Memory: "5MB"}, 10, ldd)
 
@@ -373,7 +373,6 @@ func Test_serviceDockerRunCmd(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			out := serviceDockerRunCmd(tt.network, tt.ip, tt.name, tt.env, tt.volumes, tt.ports, tt.image, tt.cmd)
-			fmt.Println(out)
 
 			if out != tt.expected {
 				t.Error("return value of serviceDockerRunCmd does not match expected value")
