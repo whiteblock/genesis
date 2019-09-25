@@ -48,13 +48,13 @@ func TestNewNodeContainer(t *testing.T) {
 			resources: util.Resources{},
 			SubnetID:  4,
 			expected: ContainerDetails{
-				Environment:  map[string]string{},
-				Image:        testNode.Image,
-				Node:         testNode.LocalID,
-				Resources:    util.Resources{},
-				Labels:       map[string]string{
+				Environment: map[string]string{},
+				Image:       testNode.Image,
+				Node:        testNode.LocalID,
+				Resources:   util.Resources{},
+				Labels: map[string]string{
 					"testnetID": ldd.TestNetID,
-					"orgID": ldd.OrgID,
+					"orgID":     ldd.OrgID,
 				},
 				SubnetID:     4,
 				NetworkIndex: 0,
@@ -83,9 +83,9 @@ func TestNewNodeContainer(t *testing.T) {
 					Volumes: []string{},
 					Ports:   []string{},
 				},
-				Labels:       map[string]string{
+				Labels: map[string]string{
 					"testnetID": ldd.TestNetID,
-					"orgID": ldd.OrgID,
+					"orgID":     ldd.OrgID,
 				},
 				SubnetID:     16,
 				NetworkIndex: 0,
@@ -134,13 +134,13 @@ func TestNewSideCarContainer(t *testing.T) {
 			resources: util.Resources{},
 			SubnetID:  4,
 			expected: ContainerDetails{
-				Environment:  map[string]string{},
-				Image:        testSidecar.Image,
-				Node:         testSidecar.LocalID,
-				Resources:    util.Resources{},
-				Labels:       map[string]string{
+				Environment: map[string]string{},
+				Image:       testSidecar.Image,
+				Node:        testSidecar.LocalID,
+				Resources:   util.Resources{},
+				Labels: map[string]string{
 					"testnetID": ldd.TestNetID,
-					"orgID": ldd.OrgID,
+					"orgID":     ldd.OrgID,
 				},
 				SubnetID:     4,
 				NetworkIndex: testSidecar.NetworkIndex,
@@ -169,9 +169,9 @@ func TestNewSideCarContainer(t *testing.T) {
 					Volumes: []string{},
 					Ports:   []string{},
 				},
-				Labels:       map[string]string{
+				Labels: map[string]string{
 					"testnetID": ldd.TestNetID,
-					"orgID": ldd.OrgID,
+					"orgID":     ldd.OrgID,
 				},
 				SubnetID:     16,
 				NetworkIndex: testSidecar.NetworkIndex,
@@ -196,7 +196,7 @@ func BenchmarkNewSideCarContainerContainer(b *testing.B) {
 	tn.LDD = new(db.DeploymentDetails)
 
 	for n := 0; n < b.N; n++ {
-	NewSideCarContainer(new(db.SideCar), map[string]string{}, util.Resources{}, 4, tn.LDD)
+		NewSideCarContainer(new(db.SideCar), map[string]string{}, util.Resources{}, 4, tn.LDD)
 	}
 }
 
@@ -549,7 +549,7 @@ func TestContainerDetails_GetLabels(t *testing.T) {
 			cd: testContainer,
 			expected: map[string]string{
 				"testnetID": ldd.TestNetID,
-				"orgID": ldd.OrgID,
+				"orgID":     ldd.OrgID,
 			},
 		},
 	}
