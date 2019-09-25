@@ -120,14 +120,14 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 					if err != nil {
 						return util.LogError(err)
 					}
-					peerIds[peerNode.GetRelativeNumber()] = fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s", peerNode.IP, p2pPort, id)
+					peerIds[peerNode.GetAbsoluteNumber()] = fmt.Sprintf(" --peers=/ip4/%s/tcp/%d/p2p/%s", peerNode.IP, p2pPort, id)
 				} else {
-					peerIds[peerNode.GetRelativeNumber()] = fmt.Sprintf(" --peers=%s", peerNode.IP)
+					peerIds[peerNode.GetAbsoluteNumber()] = fmt.Sprintf(" --peers=%s", peerNode.IP)
 				}
 
 			}
 
-			peers, err := createPeers(node.GetRelativeNumber(), peerIds, networkTopology)
+			peers, err := createPeers(node.GetAbsoluteNumber(), peerIds, networkTopology)
 
 			if err != nil {
 				return util.LogError(err)
@@ -152,7 +152,7 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 			return util.LogError(err)
 		}
 
-		script := launchScript[node.GetRelativeNumber()]
+		script := launchScript[node.GetAbsoluteNumber()]
 		buildParams := fmt.Sprintf("%v %s", script, params)
 
 		log.Infof("%s", buildParams)
@@ -226,7 +226,7 @@ func copyFiles(tn *testnet.TestNet, client ssh.Client, node ssh.Node) error {
 		return util.LogError(err)
 	}
 
-	filesToCopy := files[node.GetRelativeNumber()]
+	filesToCopy := files[node.GetAbsoluteNumber()]
 
 	fileMap, ok := filesToCopy.(map[string]interface{})
 	if !ok {
@@ -253,7 +253,7 @@ func createDefaultParams(tn *testnet.TestNet, node ssh.Node) (string, error) {
 		return "", util.LogError(err)
 	}
 
-	startArguments := args[node.GetRelativeNumber()]
+	startArguments := args[node.GetAbsoluteNumber()]
 
 	argMap, ok := startArguments.(map[string]interface{})
 	if !ok {
