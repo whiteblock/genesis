@@ -21,8 +21,8 @@ package db
 import (
 	"encoding/json"
 	"fmt"
-
 	_ "github.com/mattn/go-sqlite3" //Bring db in
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/util"
 )
 
@@ -69,6 +69,8 @@ type DeploymentDetails struct {
 	Extras map[string]interface{} `json:"extras"`
 	jwt    string
 	kid    string
+
+	Services []services.SimpleService `json:"services"`
 }
 
 //SetJwt stores the callers jwt
