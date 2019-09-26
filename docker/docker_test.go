@@ -303,37 +303,28 @@ func TestRun(t *testing.T) {
 
 	client := mocks.NewMockClient(ctrl)
 
-	testNet := new(testnet.TestNet)
-	testNet.Clients = map[int]ssh.Client{0: client}
-
-	node := new(db.Node)
-	node.Image = "prysm:latest"
-
 	ldd := new(db.DeploymentDetails)
 	ldd.TestNetID = "10"
 	ldd.OrgID = "10"
 
-	containerDetails := ContainerDetails{
-		Labels: map[string]string{
-			"testnetID":"10",
-			"orgID":"10",
-		},
-	}
-	//command := "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --cpus 4 --memory 5000000 --ip 10.10.0.2 --hostname whiteblock-node0 --name whiteblock-node0 prysm:latest -l testnetID=10 -l orgID=10"
+	testNet := testnet.TestNet{}
+	testNet.Clients = map[int]ssh.Client{0: client}
+	testNet.LDD = ldd
 
-	client.EXPECT().Run(gomock.Any()).Return(nil).Do(func(command string) {
-		oldCmd := "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --cpus 4 --memory 5000000 --ip 10.10.0.2 --hostname whiteblock-node0 --name whiteblock-node0 prysm:latest"
+	node := new(db.Node)
+	node.Image = "prysm:latest"
 
-		newCmd := strings.Replace(command, oldCmd, "",  1)
+	containerDetails := NewNodeContainer(node, map[string]string{}, util.Resources{}, 10, ldd)
 
-		for label, val := range containerDetails.Labels {
-			if contains := strings.Contains(newCmd, fmt.Sprintf("%s=%s", label, val)); !contains {
+	client.EXPECT().Run(gomock.Any()).Return("", nil).Do(func(command string) {
+		for label, val := range containerDetails.GetLabels() {
+			if count := strings.Count(command, fmt.Sprintf("%s=%s", label, val)); count != 1{
 				t.Error("return value of Run does not match expected value")
 			}
 		}
 	})
 
-	Run(testNet, 10, &containerDetails)
+	_ = Run(&testNet, 0, containerDetails)
 }
 
 func Test_serviceDockerRunCmd(t *testing.T) {
