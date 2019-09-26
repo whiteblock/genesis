@@ -187,6 +187,8 @@ func dockerRunCmd(c Container) (string, error) {
 		command += " " + strings.Join(args, " ")
 	}
 
+	fmt.Println(command)
+
 	return command, nil
 }
 
