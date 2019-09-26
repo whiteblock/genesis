@@ -243,7 +243,7 @@ func copyFiles(tn *testnet.TestNet, client ssh.Client, node ssh.Node) error {
 	for _, fileParameterObj := range fileParameters {
 		fileParameter, ok := fileParameterObj.(fileParameter)
 		if !ok {
-			err := fmt.Errorf("filesToCopy is a %v", reflect.TypeOf(filesToCopy).String())
+			err := fmt.Errorf("fileParameter is a %v", reflect.TypeOf(fileParameter).String())
 			return util.LogError(err)
 		}
 		output, err := client.DockerExecd(node, fmt.Sprintf("mkdir -p %s", filepath.Dir(fileParameter.Target)))
