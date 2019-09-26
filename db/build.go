@@ -25,6 +25,7 @@ import (
 	"github.com/whiteblock/genesis/util"
 )
 
+// ServiceDetails represent the data of a testnet service.
 type ServiceDetails struct {
 	Name    string            `json:"name"`
 	Image   string            `json:"image"`
