@@ -42,7 +42,7 @@ const (
 	p2pPort    = 9000
 )
 
-type FileParameter struct {
+type fileParameter struct {
 	Source string `json:"source"`
 	Target string `json:"target"`
 }
@@ -241,7 +241,7 @@ func copyFiles(tn *testnet.TestNet, client ssh.Client, node ssh.Node) error {
 	}
 
 	for _, fileParameterObj := range fileParameters {
-		fileParameter, ok := fileParameterObj.(FileParameter)
+		fileParameter, ok := fileParameterObj.(fileParameter)
 		if !ok {
 			err := fmt.Errorf("filesToCopy is a %v", reflect.TypeOf(filesToCopy).String())
 			return util.LogError(err)
