@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -306,21 +307,33 @@ func TestRun(t *testing.T) {
 	testNet.Clients = map[int]ssh.Client{0: client}
 
 	node := new(db.Node)
-	node.TestNetID = "10"
 	node.Image = "prysm:latest"
 
 	ldd := new(db.DeploymentDetails)
 	ldd.TestNetID = "10"
 	ldd.OrgID = "10"
 
-	command := "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --cpus 4 --memory 5000000 --ip 10.10.0.2 --hostname whiteblock-node0 --name whiteblock-node0 prysm:latest -l testnetID=10 -l orgID=10"
-	client.EXPECT().Run(command).Times(1)
-
-	container := NewNodeContainer(node, map[string]string{}, util.Resources{Cpus: "4", Memory: "5MB"}, 10, ldd)
-
-	if err := Run(testNet, 0, container); err != nil {
-		t.Error("return value of Run does not match expected value")
+	containerDetails := ContainerDetails{
+		Labels: map[string]string{
+			"testnetID":"10",
+			"orgID":"10",
+		},
 	}
+	//command := "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --cpus 4 --memory 5000000 --ip 10.10.0.2 --hostname whiteblock-node0 --name whiteblock-node0 prysm:latest -l testnetID=10 -l orgID=10"
+
+	client.EXPECT().Run(gomock.Any()).Return(nil).Do(func(command string) {
+		oldCmd := "docker run -itd --entrypoint /bin/sh --network wb_vlan0  --cpus 4 --memory 5000000 --ip 10.10.0.2 --hostname whiteblock-node0 --name whiteblock-node0 prysm:latest"
+
+		newCmd := strings.Replace(command, oldCmd, "",  1)
+
+		for label, val := range containerDetails.Labels {
+			if contains := strings.Contains(newCmd, fmt.Sprintf("%s=%s", label, val)); !contains {
+				t.Error("return value of Run does not match expected value")
+			}
+		}
+	})
+
+	Run(testNet, 10, &containerDetails)
 }
 
 func Test_serviceDockerRunCmd(t *testing.T) {
