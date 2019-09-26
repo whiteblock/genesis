@@ -21,10 +21,19 @@ package db
 import (
 	"encoding/json"
 	"fmt"
-
 	_ "github.com/mattn/go-sqlite3" //Bring db in
 	"github.com/whiteblock/genesis/util"
 )
+
+// ServiceDetails represent the data of a testnet service.
+type ServiceDetails struct {
+	Name    string            `json:"name"`
+	Image   string            `json:"image"`
+	Env     map[string]string `json:"env"`
+	Network string            `json:"network"`
+	Ports   []string          `json:"ports"`
+	Volumes []string          `json:"volumes"`
+}
 
 // DeploymentDetails represents the data for the construction of a testnet.
 type DeploymentDetails struct {
@@ -69,6 +78,8 @@ type DeploymentDetails struct {
 	Extras map[string]interface{} `json:"extras"`
 	jwt    string
 	kid    string
+
+	Services []ServiceDetails `json:"services"`
 }
 
 //SetJwt stores the callers jwt
