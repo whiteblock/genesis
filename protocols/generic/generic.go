@@ -42,12 +42,6 @@ const (
 	p2pPort    = 9000
 )
 
-// File parameter for testnet
-type FileParameter struct {
-	Source string `json:"source"`
-	Target string `json:"target"`
-}
-
 type topology string
 
 const (
@@ -242,17 +236,17 @@ func copyFiles(tn *testnet.TestNet, client ssh.Client, node ssh.Node) error {
 	}
 
 	for _, fileParameterObj := range fileParameters {
-		fileParameter, ok := fileParameterObj.(FileParameter)
+		fileParameter, ok := fileParameterObj.(map[string]interface{})
 		if !ok {
 			err := fmt.Errorf("fileParameter is a %v", reflect.TypeOf(fileParameter).String())
 			return util.LogError(err)
 		}
-		output, err := client.DockerExecd(node, fmt.Sprintf("mkdir -p %s", filepath.Dir(fileParameter.Target)))
+		output, err := client.DockerExecd(node, fmt.Sprintf("mkdir -p %s", filepath.Dir(fmt.Sprintf("%v", fileParameter["target"]))))
 		if err != nil {
 			log.Warnf("Creating directory failed with this output: %s", output)
 			return util.LogError(err)
 		}
-		err = client.DockerCp(node, fileParameter.Source, fileParameter.Target)
+		err = client.DockerCp(node, fmt.Sprintf("%v", fileParameter["source"]), fmt.Sprintf("%v", fileParameter["target"]))
 		if err != nil {
 			return util.LogError(err)
 		}
