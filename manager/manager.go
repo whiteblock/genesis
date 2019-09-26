@@ -99,6 +99,12 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 		return err
 	}
 	services := servicesFn()
+
+	//STEP 3.1: GET THE SERVICES OF THE TESTNET
+
+	for _, s := range details.Services {
+		services = append(services, &s)
+	}
 	//STEP 4: BUILD OUT THE DOCKER CONTAINERS AND THE NETWORK
 
 	err = deploy.Build(tn, services)
