@@ -42,6 +42,11 @@ const (
 	p2pPort    = 9000
 )
 
+type FileParameter struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
+}
+
 type topology string
 
 const (
@@ -223,26 +228,30 @@ func publicKeyToBase58(k crypto.PrivKey) (string, error) {
 func copyFiles(tn *testnet.TestNet, client ssh.Client, node ssh.Node) error {
 	files, ok := tn.LDD.Params["files"].([]interface{})
 	if !ok {
-		err := fmt.Errorf("tn.LDD.Params['files'] is not a map[string]string, it is a %v", reflect.TypeOf(tn.LDD.Params["files"]).String())
+		err := fmt.Errorf("tn.LDD.Params['files'] is not a []interface{}, it is a %v", reflect.TypeOf(tn.LDD.Params["files"]).String())
 		return util.LogError(err)
 	}
 
 	filesToCopy := files[node.GetRelativeNumber()]
 
-	fileMap, ok := filesToCopy.(map[string]interface{})
+	fileParameters, ok := filesToCopy.([]interface{})
 	if !ok {
 		err := fmt.Errorf("filesToCopy is a %v", reflect.TypeOf(filesToCopy).String())
 		return util.LogError(err)
 	}
 
-	for src, target := range fileMap {
-		targetFile := fmt.Sprintf("%v", target)
-		output, err := client.DockerExecd(node, fmt.Sprintf("mkdir -p %s", filepath.Dir(targetFile)))
+	for _, fileParameterObj := range fileParameters {
+		fileParameter, ok := fileParameterObj.(FileParameter)
+		if !ok {
+			err := fmt.Errorf("filesToCopy is a %v", reflect.TypeOf(filesToCopy).String())
+			return util.LogError(err)
+		}
+		output, err := client.DockerExecd(node, fmt.Sprintf("mkdir -p %s", filepath.Dir(fileParameter.Target)))
 		if err != nil {
 			log.Warnf("Creating directory failed with this output: %s", output)
 			return util.LogError(err)
 		}
-		err = client.DockerCp(node, src, targetFile)
+		err = client.DockerCp(node, fileParameter.Source, fileParameter.Target)
 		if err != nil {
 			return util.LogError(err)
 		}
