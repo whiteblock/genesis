@@ -185,7 +185,7 @@ func dockerRunCmd(c Container) (string, error) {
 	args := c.GetArgs()
 	if args != nil && len(args) > 0 {
 		command += " " + strings.Join(args, " ")
-	}g
+	}
 
 	return command, nil
 }
