@@ -29,6 +29,7 @@ import (
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/testnet"
+	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/util"
 	"sync"
 	//Put the relative path to your blockchain/sidecar library below this line, otherwise it won't be compiled
@@ -98,16 +99,23 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 		tn.BuildState.ReportError(err)
 		return err
 	}
-	services := servicesFn()
+	testnetServices := servicesFn()
 
 	//STEP 3.1: GET THE SERVICES OF THE TESTNET
 
 	for _, s := range details.Services {
-		services = append(services, &s)
+		testnetServices = append(testnetServices, services.SimpleService{
+			Name:    s.Name,
+			Image:   s.Image,
+			Env:     s.Env,
+			Network: s.Network,
+			Ports:   s.Ports,
+			Volumes: s.Volumes,
+		})
 	}
 	//STEP 4: BUILD OUT THE DOCKER CONTAINERS AND THE NETWORK
 
-	err = deploy.Build(tn, services)
+	err = deploy.Build(tn, testnetServices)
 	if err != nil {
 		tn.BuildState.ReportError(err)
 		return err
