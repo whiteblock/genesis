@@ -318,7 +318,7 @@ func TestRun(t *testing.T) {
 
 	client.EXPECT().Run(gomock.Any()).Return("", nil).Do(func(command string) {
 		for label, val := range containerDetails.GetLabels() {
-			if count := strings.Count(command, fmt.Sprintf("%s=%s", label, val)); count != 1{
+			if count := strings.Count(command, fmt.Sprintf("%s=%s", label, val)); count != 1 {
 				t.Error("return value of Run does not match expected value")
 			}
 		}
