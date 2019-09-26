@@ -28,8 +28,8 @@ import (
 	"github.com/whiteblock/genesis/deploy"
 	"github.com/whiteblock/genesis/protocols/helpers"
 	"github.com/whiteblock/genesis/protocols/registrar"
-	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/protocols/services"
+	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"sync"
 	//Put the relative path to your blockchain/sidecar library below this line, otherwise it won't be compiled
