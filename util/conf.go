@@ -179,7 +179,7 @@ func setViperDefaults() {
 	viper.SetDefault("enablePortForwarding", true)
 	viper.SetDefault("enableDockerVolumes", true)
 	viper.SetDefault("enableImageBuilding", true)
-	viper.SetDefault("enableDockerLogging", false)
+	viper.SetDefault("enableDockerLogging", true)
 	viper.SetDefault("tmpStoreDir", "/tmp")
 }
 
