@@ -88,10 +88,6 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 		return err
 	}
 
-	//tn.BuildState.Async(func() {
-	//	declareTestnet(testnetID, details)
-	//})
-
 	//STEP 3: GET THE SERVICES
 	servicesFn, err := registrar.GetServiceFunc(details.Blockchain)
 	if err != nil {
