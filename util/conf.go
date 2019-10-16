@@ -53,7 +53,6 @@ type Config struct {
 	MaxNodeMemory           string  `mapstructure:"maxNodeMemory"`
 	MaxNodeCPU              float64 `mapstructure:"maxNodeCpu"`
 	BridgePrefix            string  `mapstructure:"bridgePrefix"`
-	APIEndpoint             string  `mapstructure:"apiEndpoint"`
 	NibblerEndPoint         string  `mapstructure:"nibblerEndPoint"`
 	LogJSON                 bool    `mapstructure:"logJson"`
 	PrometheusConfig        string  `mapstructure:"prometheusConfig"`
@@ -113,7 +112,6 @@ func setViperEnvBindings() {
 	viper.BindEnv("maxNodeMemory", "MAX_NODE_MEMORY")
 	viper.BindEnv("maxNodeCPU", "MAX_NODE_CPU")
 	viper.BindEnv("bridgePrefix", "BRIDGE_PREFIX")
-	viper.BindEnv("apiEndpoint", "API_ENDPOINT")
 	viper.BindEnv("nibblerEndPoint", "NIBBLER_END_POINT")
 	viper.BindEnv("logJson", "LOG_JSON")
 	viper.BindEnv("prometheusConfig", "PROMETHEUS_CONFIG")
@@ -157,7 +155,6 @@ func setViperDefaults() {
 	viper.SetDefault("maxNodeMemory", "")
 	viper.SetDefault("maxNodeCpu", -1)
 	viper.SetDefault("bridgePrefix", "wb_bridge")
-	viper.SetDefault("apiEndpoint", "https://api.whiteblock.io")
 	viper.SetDefault("nibblerEndPoint", "https://storage.googleapis.com/genesis-public/nibbler/master/bin/linux/amd64/nibbler")
 	viper.SetDefault("logJson", false)
 	viper.SetDefault("prometheusConfig", "/tmp/prometheus.yml")

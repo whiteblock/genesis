@@ -19,7 +19,6 @@
 package deploy
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -65,15 +64,6 @@ func finalizeNewNodes(tn *testnet.TestNet) error {
 }
 
 func alwaysRunFinalize(tn *testnet.TestNet) {
-
-	tn.BuildState.Async(func() {
-		for _, node := range tn.NewlyBuiltNodes {
-			err := declareNode(&node, tn)
-			if err != nil {
-				log.WithFields(log.Fields{"node": node.AbsoluteNum}).Error(err)
-			}
-		}
-	})
 	newNodes := make([]db.Node, len(tn.NewlyBuiltNodes))
 	copy(newNodes, tn.NewlyBuiltNodes)
 	tn.BuildState.Defer(func() {
@@ -141,36 +131,6 @@ func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 	return helpers.CopyBytesToAllNodes(tn, string(privKey), "/root/.ssh/id_rsa")
 }
 
-func declareNode(node *db.Node, tn *testnet.TestNet) error {
-	if conf.DisableTestnetReporting {
-		log.Info("skipping node declaration since testnet reporting is disabled")
-		return nil
-	}
-	if len(tn.LDD.GetJwt()) == 0 { //If there isn't a JWT, return immediately
-		return nil
-	}
-	image := tn.LDD.Images[0]
-
-	if len(tn.LDD.Images) > node.AbsoluteNum {
-		image = tn.LDD.Images[node.AbsoluteNum]
-	}
-
-	data := map[string]interface{}{
-		"id":         node.ID,
-		"ip_address": node.IP,
-		"image":      image,
-		"kind":       tn.LDD.Blockchain,
-		"version":    "unknown",
-	}
-	rawData, err := json.Marshal(data)
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	_, err = util.JwtHTTPRequest("POST", conf.APIEndpoint+"/testnets/"+node.TestNetID+"/nodes", tn.LDD.GetJwt(), string(rawData))
-	return err
-}
-
 func finalizeNode(node db.Node, details *db.DeploymentDetails, absNum int) error {
 	if conf.DisableNibbler {
 		log.Info("skipping nibbler setup as it is disabled")
@@ -198,7 +158,7 @@ func finalizeNode(node db.Node, details *db.DeploymentDetails, absNum int) error
 	}
 
 	_, err = client.DockerExecd(node,
-		fmt.Sprintf("sh -c 'nibbler --node-type %s --api %s --jwt %s --testnet %s --node %s %s 2>&1 >> /nibbler.log'",
-			details.Blockchain, conf.APIEndpoint, details.GetJwt(), node.TestNetID, node.ID, files))
+		fmt.Sprintf("sh -c 'nibbler --node-type %s --jwt %s --testnet %s --node %s %s 2>&1 >> /nibbler.log'",
+			details.Blockchain, details.GetJwt(), node.TestNetID, node.ID, files))
 	return util.LogError(err)
 }
