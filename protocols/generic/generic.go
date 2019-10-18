@@ -158,7 +158,7 @@ func buildNetwork(tn *testnet.TestNet, nodeKeyPairs map[string]crypto.PrivKey, n
 
 		log.Infof("%s", buildParams)
 
-		_, err = client.DockerExec(node, buildParams)
+		_, err = client.DockerExecd(node, buildParams)
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -241,7 +241,7 @@ func copyFiles(tn *testnet.TestNet, client ssh.Client, node ssh.Node) error {
 			err := fmt.Errorf("fileParameter is a %v", reflect.TypeOf(fileParameter).String())
 			return util.LogError(err)
 		}
-		output, err := client.DockerExec(node, fmt.Sprintf("mkdir -p %s", filepath.Dir(fmt.Sprintf("%v", fileParameter["target"]))))
+		output, err := client.DockerExecd(node, fmt.Sprintf("mkdir -p %s", filepath.Dir(fmt.Sprintf("%v", fileParameter["target"]))))
 		if err != nil {
 			log.Warnf("Creating directory failed with this output: %s", output)
 			return util.LogError(err)
