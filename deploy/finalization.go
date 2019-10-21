@@ -26,9 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/protocols/helpers"
-	"github.com/whiteblock/genesis/protocols/registrar"
 	"github.com/whiteblock/genesis/ssh"
-	"github.com/whiteblock/genesis/status"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 )
@@ -43,7 +41,7 @@ func finalize(tn *testnet.TestNet) error {
 			return util.LogError(err)
 		}
 	}
-	alwaysRunFinalize(tn)
+
 	handlePostBuild(tn)
 	return nil
 }
@@ -58,22 +56,9 @@ func finalizeNewNodes(tn *testnet.TestNet) error {
 			return util.LogError(err)
 		}
 	}
-	alwaysRunFinalize(tn)
+
 	handlePostBuild(tn)
 	return nil
-}
-
-func alwaysRunFinalize(tn *testnet.TestNet) {
-	newNodes := make([]db.Node, len(tn.NewlyBuiltNodes))
-	copy(newNodes, tn.NewlyBuiltNodes)
-	tn.BuildState.Defer(func() {
-		for i, node := range newNodes {
-			err := finalizeNode(node, tn.LDD, i)
-			if err != nil {
-				tn.BuildState.ReportError(err)
-			}
-		}
-	})
 }
 
 /*
@@ -129,36 +114,4 @@ func copyOverSSHKeys(tn *testnet.TestNet, newOnly bool) error {
 		return helpers.CopyBytesToAllNewNodes(tn, string(privKey), "/root/.ssh/id_rsa")
 	}
 	return helpers.CopyBytesToAllNodes(tn, string(privKey), "/root/.ssh/id_rsa")
-}
-
-func finalizeNode(node db.Node, details *db.DeploymentDetails, absNum int) error {
-	if conf.DisableNibbler {
-		log.Info("skipping nibbler setup as it is disabled")
-		return nil
-	}
-	client, err := status.GetClient(node.Server)
-	if err != nil {
-		return util.LogError(err)
-	}
-	files := details.Blockchain + " " + conf.DockerOutputFile
-	if details.Logs != nil && len(details.Logs) > 0 {
-		var logFiles map[string]string
-		if len(details.Logs) == 1 || len(details.Logs) <= absNum {
-			logFiles = details.Logs[0]
-		} else {
-			logFiles = details.Logs[absNum]
-		}
-		for name, file := range logFiles { //Eventually may need to handle the names as well
-			files += " " + name + " " + file
-		}
-	}
-	logFiles := registrar.GetAdditionalLogs(details.Blockchain)
-	for name, logFile := range logFiles {
-		files += " " + name + " " + logFile
-	}
-
-	_, err = client.DockerExecd(node,
-		fmt.Sprintf("sh -c 'nibbler --node-type %s --jwt %s --testnet %s --node %s %s 2>&1 >> /nibbler.log'",
-			details.Blockchain, details.GetJwt(), node.TestNetID, node.ID, files))
-	return util.LogError(err)
 }

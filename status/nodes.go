@@ -70,7 +70,7 @@ func FindNodeIndex(status []NodeStatus, name string, serverID int) int {
 
 // SumResUsage gets the cpu usage of a node
 func SumResUsage(c ssh.Client, name string) (Comp, error) {
-	res, err := c.Run(fmt.Sprintf("docker exec %s ps aux --no-headers | grep -v nibbler | awk '{print $3,$5,$6}'", name))
+	res, err := c.Run(fmt.Sprintf("docker exec %s ps aux --no-headers | awk '{print $3,$5,$6}'", name))
 	if err != nil {
 		return Comp{-1, -1, -1}, util.LogError(err)
 	}
