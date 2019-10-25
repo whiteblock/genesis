@@ -33,50 +33,6 @@ import (
 	"sync"
 )
 
-func distributeNibbler(tn *testnet.TestNet) {
-	if conf.DisableNibbler {
-		log.Info("nibbler is disabled")
-		return
-	}
-	tn.BuildState.Async(func() {
-		var err error
-		for i := uint(0); i < conf.NibblerRetries; i++ {
-			var nibbler []byte
-			nibbler, err = util.HTTPRequest("GET", conf.NibblerEndPoint, "")
-			if err != nil {
-				log.WithFields(log.Fields{"error": err, "attempt": i}).Error("failed to download nibbler. retrying...")
-				continue
-			}
-			if nibbler == nil || len(nibbler) == 0 {
-				log.WithFields(log.Fields{"error": err, "attempt": i}).Error("downloaded an empty nibbler")
-				continue
-			}
-
-			err = tn.BuildState.Write("nibbler", string(nibbler))
-			if err != nil {
-				log.Error(err)
-				continue
-			}
-
-			err = helpers.CopyToAllNewNodesDR(tn, "nibbler", "/usr/local/bin/nibbler")
-			if err != nil {
-				log.Error(err)
-				continue
-			}
-
-			err = helpers.AllNewNodeExecConDR(tn, func(client ssh.Client, _ *db.Server, node ssh.Node) error {
-				_, err := client.DockerExec(node, "chmod +x /usr/local/bin/nibbler")
-				return err
-			})
-			if err != nil {
-				log.Error(err)
-				continue
-			}
-			break
-		}
-	})
-}
-
 func dockerBuild(tn *testnet.TestNet, contextDir string, dockerPath string) error {
 	tn.BuildState.SetBuildStage("Building your custom image")
 

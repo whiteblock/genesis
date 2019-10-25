@@ -163,7 +163,7 @@ func getNodePids(tn *testnet.TestNet, n ssh.Node, node string) ([]string, error)
 	out := []string{}
 	for _, cmd := range cmdsToTry {
 		pid, err := tn.Clients[n.GetServerID()].DockerExec(n, fmt.Sprintf(
-			"ps aux | grep '%s' | grep -v grep | grep -v nibbler |  awk '{print $2}'", cmd))
+			"ps aux | grep '%s' | grep -v grep | awk '{print $2}'", cmd))
 		if err == nil {
 			out = append(out, strings.Split(pid, "\n")...)
 		}
@@ -218,7 +218,7 @@ func restartNode(w http.ResponseWriter, r *http.Request) {
 	killedSuccessfully := false
 	for i := uint(0); i < conf.KillRetries; i++ {
 		_, err = client.DockerExec(node,
-			fmt.Sprintf("ps aux | grep '%s' | grep -v grep | grep -v nibbler", strings.Split(cmd.Cmdline, " ")[0]))
+			fmt.Sprintf("ps aux | grep '%s' | grep -v grep", strings.Split(cmd.Cmdline, " ")[0]))
 		if err != nil {
 			killedSuccessfully = true
 			break
@@ -324,7 +324,7 @@ func killNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for {
-		_, err = client.DockerExec(node, fmt.Sprintf("ps aux | grep '%s' | grep -v grep | grep -v nibbler", strings.Split(cmd.Cmdline, " ")[0]))
+		_, err = client.DockerExec(node, fmt.Sprintf("ps aux | grep '%s' | grep -v grep", strings.Split(cmd.Cmdline, " ")[0]))
 		if err != nil {
 			break
 		}

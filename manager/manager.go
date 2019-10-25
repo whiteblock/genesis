@@ -21,7 +21,6 @@
 package manager
 
 import (
-	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/db"
@@ -88,10 +87,6 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 		tn.BuildState.ReportError(err)
 		return err
 	}
-
-	tn.BuildState.Async(func() {
-		declareTestnet(testnetID, details)
-	})
 
 	//STEP 3: GET THE SERVICES
 	servicesFn, err := registrar.GetServiceFunc(details.Blockchain)
@@ -209,24 +204,6 @@ func handleSideCars(tn *testnet.TestNet, append bool) error {
 	}
 	wg.Wait()
 	return nil
-}
-
-func declareTestnet(testnetID string, details *db.DeploymentDetails) error {
-	if len(details.GetJwt()) == 0 || conf.DisableTestnetReporting {
-		return nil
-	}
-	data := map[string]interface{}{
-		"id":        testnetID,
-		"kind":      details.Blockchain,
-		"num_nodes": details.Nodes,
-		"image":     details.Images[0],
-	}
-	rawData, err := json.Marshal(data)
-	if err != nil {
-		return util.LogError(err)
-	}
-	_, err = util.JwtHTTPRequest("POST", conf.APIEndpoint+"/testnets", details.GetJwt(), string(rawData))
-	return err
 }
 
 // DeleteTestNet destroys all of the nodes of a testnet

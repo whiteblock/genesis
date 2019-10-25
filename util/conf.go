@@ -53,8 +53,6 @@ type Config struct {
 	MaxNodeMemory           string  `mapstructure:"maxNodeMemory"`
 	MaxNodeCPU              float64 `mapstructure:"maxNodeCpu"`
 	BridgePrefix            string  `mapstructure:"bridgePrefix"`
-	APIEndpoint             string  `mapstructure:"apiEndpoint"`
-	NibblerEndPoint         string  `mapstructure:"nibblerEndPoint"`
 	LogJSON                 bool    `mapstructure:"logJson"`
 	PrometheusConfig        string  `mapstructure:"prometheusConfig"`
 	PrometheusPort          int     `mapstructure:"prometheusPort"`
@@ -63,13 +61,11 @@ type Config struct {
 	MaxRunAttempts          int     `mapstructure:"maxRunAttempts"`
 	MaxConnections          int     `mapstructure:"maxConnections"`
 	DataDirectory           string  `mapstructure:"datadir"`
-	DisableNibbler          bool    `mapstructure:"disableNibbler"`
 	DisableTestnetReporting bool    `mapstructure:"disableTestnetReporting"`
 	RequireAuth             bool    `mapstructure:"requireAuth"`
 	MaxCommandOutputLogSize int     `mapstructure:"maxCommandOutputLogSize"`
 	ResourceDir             string  `mapstructure:"resourceDir"`
 	RemoveNodesOnFailure    bool    `mapstructure:"removeNodesOnFailure"`
-	NibblerRetries          uint    `mapstructure:"nibblerRetries"`
 	KillRetries             uint    `mapstructure:"killRetries"`
 	EnablePortForwarding    bool    `mapstructure:"enablePortForwarding"`
 	EnableDockerVolumes     bool    `mapstructure:"enableDockerVolumes"`
@@ -113,8 +109,6 @@ func setViperEnvBindings() {
 	viper.BindEnv("maxNodeMemory", "MAX_NODE_MEMORY")
 	viper.BindEnv("maxNodeCPU", "MAX_NODE_CPU")
 	viper.BindEnv("bridgePrefix", "BRIDGE_PREFIX")
-	viper.BindEnv("apiEndpoint", "API_ENDPOINT")
-	viper.BindEnv("nibblerEndPoint", "NIBBLER_END_POINT")
 	viper.BindEnv("logJson", "LOG_JSON")
 	viper.BindEnv("prometheusConfig", "PROMETHEUS_CONFIG")
 	viper.BindEnv("prometheusPort", "PROMETHEUS_PORT")
@@ -123,13 +117,11 @@ func setViperEnvBindings() {
 	viper.BindEnv("maxRunAttempts", "MAX_RUN_ATTEMPTS")
 	viper.BindEnv("maxConnections", "MAX_CONNECTIONS")
 	viper.BindEnv("datadir", "DATADIR")
-	viper.BindEnv("disableNibbler", "DISABLE_NIBBLER")
 	viper.BindEnv("disableTestnetReporting", "DISABLE_TESTNET_REPORTING")
 	viper.BindEnv("requireAuth", "REQUIRE_AUTH")
 	viper.BindEnv("maxCommandOutputLogSize", "MAX_COMMAND_OUTPUT_LOG_SIZE")
 	viper.BindEnv("resourceDir", "RESOURCE_DIR")
 	viper.BindEnv("removeNodesOnFailure", "REMOVE_NODES_ON_FAILURE")
-	viper.BindEnv("nibblerRetries", "NIBBLER_RETRIES")
 	viper.BindEnv("killRetries", "KILL_RETRIES")
 	viper.BindEnv("enablePortForwarding", "ENABLE_PORT_FORWARDING")
 	viper.BindEnv("enableDockerVolumes", "ENABLE_DOCKER_VOLUMES")
@@ -157,8 +149,6 @@ func setViperDefaults() {
 	viper.SetDefault("maxNodeMemory", "")
 	viper.SetDefault("maxNodeCpu", -1)
 	viper.SetDefault("bridgePrefix", "wb_bridge")
-	viper.SetDefault("apiEndpoint", "https://api.whiteblock.io")
-	viper.SetDefault("nibblerEndPoint", "https://storage.googleapis.com/genesis-public/nibbler/master/bin/linux/amd64/nibbler")
 	viper.SetDefault("logJson", false)
 	viper.SetDefault("prometheusConfig", "/tmp/prometheus.yml")
 	viper.SetDefault("prometheusPort", 9090)
@@ -166,13 +156,11 @@ func setViperDefaults() {
 	viper.SetDefault("maxRunAttempts", 30)
 	viper.SetDefault("maxConnections", 50)
 	viper.SetDefault("datadir", os.Getenv("HOME")+"/.config/whiteblock/")
-	viper.SetDefault("disableNibbler", false)
 	viper.SetDefault("disableTestnetReporting", false)
 	viper.SetDefault("requireAuth", false)
 	viper.SetDefault("maxCommandOutputLogSize", -1)
 	viper.SetDefault("resourceDir", "./resources")
 	viper.SetDefault("removeNodesOnFailure", true)
-	viper.SetDefault("nibblerRetries", 2)
 	viper.SetDefault("killRetries", 100)
 	viper.SetDefault("ganacheRPCPort", 8545)
 	viper.SetDefault("ganacheCLIOptions", "--gasLimit 4000000000000")

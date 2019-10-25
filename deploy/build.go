@@ -288,7 +288,7 @@ func Build(tn *testnet.TestNet, services []services.Service) error {
 		}(client)
 
 	}
-	distributeNibbler(tn)
+
 	//Acquire all of the resources here, then release and destroy
 	wg.Wait()
 	//Check if we should freeze
