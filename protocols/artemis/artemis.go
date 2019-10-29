@@ -57,12 +57,9 @@ func build(tn *testnet.TestNet) error {
 	peers := "["
 	var peer string
 	for i, node := range tn.Nodes {
-		peer = fmt.Sprintf("%s://whiteblock-node%d@%s:%d",
-			aconf["networkMode"],
-			node.LocalID,
+		peer = fmt.Sprintf("/ip4/%s/tcp/%d/p2p",
 			node.IP,
-			port,
-		)
+			port)
 		if i != len(tn.Nodes)-1 {
 			peers = peers + "\"" + peer + "\"" + ","
 		} else {
@@ -133,12 +130,9 @@ func add(tn *testnet.TestNet) error {
 	peers := "["
 	var peer string
 	for i, node := range tn.NewlyBuiltNodes {
-		peer = fmt.Sprintf("%s://whiteblock-node%d@%s:%d",
-			aconf["networkMode"],
-			node.LocalID,
+		peer = fmt.Sprintf("/ip4/%s/tcp/%d/p2p",
 			node.IP,
-			artemisPort,
-		)
+			artemisPort)
 		if i != len(tn.NewlyBuiltNodes)-1 {
 			peers = peers + "\"" + peer + "\"" + ","
 		} else {
@@ -153,12 +147,9 @@ func add(tn *testnet.TestNet) error {
 	}
 
 	for j, nodeIP := range prysymIPList {
-		peer = fmt.Sprintf("%s://whiteblock-node%d@%s:%d",
-			aconf["networkMode"],
-			j,
+		peer = fmt.Sprintf("/ip4/%s/tcp/%d/p2p",
 			nodeIP,
-			prysmP2PPort,
-		)
+			prysmP2PPort)
 		if j != len(prysymIPList)-1 {
 			peers = peers + "\"" + peer + "\"" + ","
 		} else {
