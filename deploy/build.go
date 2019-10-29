@@ -161,17 +161,19 @@ func BuildNode(tn *testnet.TestNet, server *db.Server, node *db.Node) {
 	}
 	container := docker.NewNodeContainer(node, env, resource, server.SubnetID)
 
-	logs := []string{conf.GetLogsOutputFile()}
-	extraLogs := registrar.GetAdditionalLogs(tn.LDD.Blockchain)
+	if conf.EnableDockerLogging {
+		logs := []string{conf.GetLogsOutputFile()}
+		extraLogs := registrar.GetAdditionalLogs(tn.LDD.Blockchain)
 
-	for _, logFile := range extraLogs {
-		logs = append(logs, logFile)
-	}
-	for i, logFile := range logs {
-		container.AddVolume(
-			fmt.Sprintf("%s:%s",
-				filepath.Join(tn.GetNodeStoreDir(node), fmt.Sprintf("%d.log", i)),
-				logFile))
+		for _, logFile := range extraLogs {
+			logs = append(logs, logFile)
+		}
+		for i, logFile := range logs {
+			container.AddVolume(
+				fmt.Sprintf("%s:%s",
+					filepath.Join(tn.GetNodeStoreDir(node), fmt.Sprintf("%d.log", i)),
+					logFile))
+		}
 	}
 
 	err = docker.Run(tn, server.ID, container)
