@@ -1,15 +1,30 @@
 [node]
-networkMode={{{networkMode}}}
-identity={{{identity}}}
+# networkMode options:
+# "mock": use MockP2PNetwork
+# "jvmlibp2p" : use JvmLibP2PNetwork
+networkMode ={{{networkMode}}}
+identity ={{{identity}}}
 timer="QuartzTimer"
-networkInterface="0.0.0.0"
-port=9000
-advertisedPort=9000
-peers={{{peers}}}
+networkInterface = "0.0.0.0"
+port = 9000
+discovery = "static"
+bootnodes = {{{peers}}}
+isBootnode = true
+advertisedPort = 9000
+naughtinessPercentage = 0
+constants = "minimal"
 
 [interop]
-active = false
-inputFile = "interopDepositsAndKeys.json"
+# when genesis time is set to 0, artemis takes genesis time as currentTime + 5 seconds.
+genesisTime = 0
+ownedValidatorStartIndex = 0
+ownedValidatorCount = 64
+startState = ""
+#this.privKey.bytes().toHexString() who's corresponding sha2(publicKey) == 16Uiu2HAm8cQB9DcwMtaSVuHNiJEPSq9mXM6FHho7c55M6XN2P3EQ
+privateKey = "0x08021221008166B8EF20C11F3A18F8774BF834173B07F64BAEDA981766896B4A8F53B52EDF"
+
+[validator]
+#validatorsKeyFile = "keys.yaml"
 
 [deposit]
 # normal, test, simulation
@@ -17,11 +32,11 @@ inputFile = "interopDepositsAndKeys.json"
 # "simulation" to run a simulation of deposits with ganache-cli, if a inputFile is included the file will replay the deposits
 # "normal" production, must include contractAddr and nodeUrl
 mode = "test"
-inputFile = "validator_test_data.json"
-numValidators = 16
+inputFile = "" #"validator_test_data.json"
+numValidators = 64
 numNodes = 1
 contractAddr = "0x77f7bED277449F51505a4C54550B074030d989bC"
-nodeUrl = "http://localhost:7545"
+nodeUrl = "http://localhost:8545"
 
 [output]
 logPath = "."
@@ -31,11 +46,11 @@ providerType = "{{{providerType}}}"
 events = [ "TimeSeriesRecord", "Eth2Genesis", "Deposit" ]
 formatted = false
 
-[output.fields]
-TimeSeriesRecord = ["date", "index", "slot", "epoch", "block_root", "block_body", "lastFinalizedBlockRoot", "lastFinalizedStateRoot", "block_parent_root", "validators_size", "validators", "lastJustifiedBlockRoot", "lastJustifiedStateRoot"]
-Eth2Genesis = ["deposit_root", "deposit_count"]
-Deposit = ["pubkey", "withdrawal_credentials", "proof_of_possession", "amount", "merkle_tree_index"]
-DepositSimulation = ["secp", "bls", "deposit_data", "events"]
+[metrics]
+enabled = false
+port = 8008
+metricsNetworkInterface = "127.0.0.1"
+#metricsCategories = [ "BEACONCHAIN", "JVM", "PROCESS" ]
 
-{{{constants}}}
-
+[database]
+startFromDisk = false

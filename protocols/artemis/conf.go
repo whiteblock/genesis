@@ -60,7 +60,7 @@ func GetServices() []services.Service {
 	}
 }
 
-func makeNodeConfig(aconf artemisConf, identity string, peers string, node int, details *db.DeploymentDetails, constantsRaw string) (string, error) {
+func makeNodeConfig(aconf artemisConf, identity string, peers string, node int, details *db.DeploymentDetails) (string, error) {
 
 	artConf, err := util.CopyMap(aconf)
 	if err != nil {
@@ -98,7 +98,6 @@ func makeNodeConfig(aconf artemisConf, identity string, peers string, node int, 
 
 	filler["providerType"] = providerType
 	filler["metricsPort"] = prometheusInstrumentationPort
-	filler["constants"] = constantsRaw
 
 	var validators int64
 	err = util.GetJSONInt64(aconf, "validators", &validators) //Check provided validators

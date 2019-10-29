@@ -28,8 +28,6 @@ import (
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
-	// "reflect"
-	"strings"
 )
 
 var conf = util.GetConfig()
@@ -53,18 +51,6 @@ func build(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	fetchedConfChan := make(chan string)
-
-	go func(aconf artemisConf) {
-		res, err := util.HTTPRequest("GET", aconf["constantsSource"].(string), "")
-		if err != nil {
-			tn.BuildState.ReportError(err)
-			return
-		}
-		fetchedConfChan <- string(res)
-
-	}(aconf)
-
 	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
 
 	port := 9000
@@ -90,17 +76,11 @@ func build(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildStage("Creating node configuration files")
 	/**Create node config files**/
-	fetchedConf := <-fetchedConfChan
 
-	constantsIndex := strings.Index(fetchedConf, "[constants]")
-	if constantsIndex == -1 {
-		return util.LogError(fmt.Errorf("couldn't find \"[constants]\" in file fetched from given source"))
-	}
-	rawConstants := fetchedConf[constantsIndex:]
 	err = helpers.CreateConfigs(tn, "/artemis/config/config.toml", func(node ssh.Node) ([]byte, error) {
 		defer tn.BuildState.IncrementBuildProgress()
 		identity := fmt.Sprintf("0x%.8x", node.GetAbsoluteNumber())
-		artemisNodeConfig, err := makeNodeConfig(aconf, identity, peers, node.GetAbsoluteNumber(), tn.LDD, rawConstants)
+		artemisNodeConfig, err := makeNodeConfig(aconf, identity, peers, node.GetAbsoluteNumber(), tn.LDD)
 		return []byte(artemisNodeConfig), err
 	})
 	if err != nil {
@@ -146,17 +126,6 @@ func add(tn *testnet.TestNet) error {
 	if err != nil {
 		return util.LogError(err)
 	}
-	fetchedConfChan := make(chan string)
-
-	go func(aconf artemisConf) {
-		res, err := util.HTTPRequest("GET", aconf["constantsSource"].(string), "")
-		if err != nil {
-			tn.BuildState.ReportError(err)
-			return
-		}
-		fetchedConfChan <- string(res)
-
-	}(aconf)
 
 	tn.BuildState.SetBuildSteps(0 + (tn.LDD.Nodes * 4))
 
@@ -202,17 +171,11 @@ func add(tn *testnet.TestNet) error {
 
 	tn.BuildState.SetBuildStage("Creating node configuration files")
 	/**Create node config files**/
-	fetchedConf := <-fetchedConfChan
 
-	constantsIndex := strings.Index(fetchedConf, "[constants]")
-	if constantsIndex == -1 {
-		return util.LogError(fmt.Errorf("couldn't find \"[constants]\" in file fetched from given source"))
-	}
-	rawConstants := fetchedConf[constantsIndex:]
 	err = helpers.CreateConfigsNewNodes(tn, "/artemis/config/config.toml", func(node ssh.Node) ([]byte, error) {
 		defer tn.BuildState.IncrementBuildProgress()
 		identity := fmt.Sprintf("0x%.8x", node.GetAbsoluteNumber())
-		artemisNodeConfig, err := makeNodeConfig(aconf, identity, peers, node.GetAbsoluteNumber(), tn.LDD, rawConstants)
+		artemisNodeConfig, err := makeNodeConfig(aconf, identity, peers, node.GetAbsoluteNumber(), tn.LDD)
 		return []byte(artemisNodeConfig), err
 	})
 	if err != nil {
