@@ -22,6 +22,7 @@ import (
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/util"
+	"io/ioutil"
 	"sync"
 )
 
@@ -42,7 +43,11 @@ func GetClient(id int) (ssh.Client, error) {
 		if err != nil {
 			return nil, util.LogError(err)
 		}
-		cli, err = ssh.NewClient(server.Addr, id)
+		key, err := ioutil.ReadFile(conf.SSHKey)
+		if err != nil {
+			return nil, util.LogError(err)
+		}
+		cli, err = ssh.NewClient(server.Addr, key, id)
 		if err != nil {
 			return nil, util.LogError(err)
 		}
