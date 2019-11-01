@@ -24,7 +24,6 @@ import (
 	"context"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/scp"
 	"golang.org/x/crypto/ssh"
@@ -240,11 +239,7 @@ func (sshClient *client) Run(command string) (string, error) {
 	}
 	log.WithFields(log.Fields{"host": sshClient.host, "command": command}).Trace("executing command")
 
-	bs := state.GetBuildStateByServerID(sshClient.serverID)
 	defer session.Close()
-	if bs.Stop() {
-		return "", bs.GetError()
-	}
 
 	out, err := session.Get().CombinedOutput(command)
 	if conf.MaxCommandOutputLogSize == -1 || len(out) <= conf.MaxCommandOutputLogSize {
@@ -264,10 +259,6 @@ func (sshClient *client) Run(command string) (string, error) {
 func (sshClient *client) KeepTryRun(command string) (string, error) {
 	var res string
 	var err error
-	bs := state.GetBuildStateByServerID(sshClient.serverID)
-	if bs.Stop() {
-		return "", bs.GetError()
-	}
 	for i := 0; i < conf.MaxRunAttempts; i++ {
 		res, err = sshClient.Run(command)
 		if err == nil {
@@ -322,17 +313,8 @@ func (sshClient *client) DockerExecdit(node Node, command string) (string, error
 	return sshClient.Run(fmt.Sprintf("docker exec -itd %s %s", node.GetNodeName(), command))
 }
 
-func (sshClient *client) logSanitizeAndStore(node Node, command string) {
-	if strings.Count(command, "'") != strings.Count(command, "\\'") {
-		log.Panic("DockerExecdLog commands cannot contain unescaped ' characters")
-	}
-	bs := state.GetBuildStateByServerID(sshClient.serverID)
-	bs.Set(fmt.Sprintf("%d", node.GetAbsoluteNumber()), util.Command{Cmdline: command, ServerID: sshClient.serverID, Node: node.GetRelativeNumber()})
-}
-
 // DockerRunMainDaemon should be used to start the main daemon process
 func (sshClient *client) DockerRunMainDaemon(node Node, command string) error {
-	sshClient.logSanitizeAndStore(node, command)
 	return sshClient.DockerExecdLog(node, command)
 }
 
@@ -393,11 +375,6 @@ func (sshClient *client) KTDockerMultiExec(node Node, commands []string) (string
 // a file over to a remote machine.
 func (sshClient *client) Scp(src string, dest string) error {
 	log.WithFields(log.Fields{"src": src, "dst": dest}).Info("remote copying file")
-
-	if !strings.HasPrefix(src, "./") && src[0] != '/' {
-		bs := state.GetBuildStateByServerID(sshClient.serverID)
-		src = "/tmp/" + bs.BuildID + "/" + src
-	}
 
 	session, err := sshClient.getSession()
 	if err != nil {

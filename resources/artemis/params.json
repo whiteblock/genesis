@@ -1,5 +1,0 @@
-[
-    ["validators","int"],
-    ["networkMode","string"],
-    ["constantsSource","string"]
-]

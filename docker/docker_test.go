@@ -29,7 +29,6 @@ import (
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/ssh/mocks"
-	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 )
 
@@ -295,36 +294,6 @@ func Test_dockerRunCmd(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestRun(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
-
-	ldd := new(db.DeploymentDetails)
-	ldd.TestNetID = "10"
-	ldd.OrgID = "10"
-
-	testNet := testnet.TestNet{}
-	testNet.Clients = map[int]ssh.Client{0: client}
-	testNet.LDD = ldd
-
-	node := new(db.Node)
-	node.Image = "prysm:latest"
-
-	containerDetails := NewNodeContainer(node, map[string]string{}, util.Resources{}, 10, ldd)
-
-	client.EXPECT().Run(gomock.Any()).Return("", nil).Do(func(command string) {
-		for label, val := range containerDetails.GetLabels() {
-			if strings.Count(command, fmt.Sprintf("%s=%s", label, val)) != 1 {
-				t.Error("return value of Run does not match expected value")
-			}
-		}
-	})
-
-	_ = Run(&testNet, 0, containerDetails)
 }
 
 func Test_serviceDockerRunCmd(t *testing.T) {

@@ -120,25 +120,6 @@ func Apply(client ssh.Client, netconf Netconf, serverID int) error {
 	return nil
 }
 
-//ApplyAll applies all of the given netconfs
-func ApplyAll(netconfs []Netconf, nodes []db.Node) error {
-	for _, netconf := range netconfs {
-		node, err := db.GetNodeByLocalID(nodes, netconf.Node)
-		if err != nil {
-			return util.LogError(err)
-		}
-		client, err := status.GetClient(node.Server)
-		if err != nil {
-			return util.LogError(err)
-		}
-		err = Apply(client, netconf, node.Server)
-		if err != nil {
-			return util.LogError(err)
-		}
-	}
-	return nil
-}
-
 //ApplyToAll applies the given netconf to `nodes` nodes in the network on the given server
 func ApplyToAll(netconf Netconf, nodes []db.Node) error {
 	for _, node := range nodes {

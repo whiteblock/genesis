@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/whiteblock/genesis/db"
-	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 )
 
@@ -105,15 +104,6 @@ func TestNewNodeContainer(t *testing.T) {
 	}
 }
 
-func BenchmarkNewNodeContainer(b *testing.B) {
-	tn := testnet.TestNet{}
-	tn.LDD = new(db.DeploymentDetails)
-
-	for n := 0; n < b.N; n++ {
-		NewNodeContainer(new(db.Node), map[string]string{}, util.Resources{}, 4, tn.LDD)
-	}
-}
-
 func TestNewSideCarContainer(t *testing.T) {
 	testSidecar := new(db.SideCar)
 
@@ -188,15 +178,6 @@ func TestNewSideCarContainer(t *testing.T) {
 				t.Error("return value of NewSideCarContainer does not match expected value")
 			}
 		})
-	}
-}
-
-func BenchmarkNewSideCarContainerContainer(b *testing.B) {
-	tn := testnet.TestNet{}
-	tn.LDD = new(db.DeploymentDetails)
-
-	for n := 0; n < b.N; n++ {
-		NewSideCarContainer(new(db.SideCar), map[string]string{}, util.Resources{}, 4, tn.LDD)
 	}
 }
 

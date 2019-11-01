@@ -21,12 +21,7 @@ package docker
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/db"
-	"github.com/whiteblock/genesis/protocols/helpers"
-	"github.com/whiteblock/genesis/protocols/services"
 	"github.com/whiteblock/genesis/ssh"
-	"github.com/whiteblock/genesis/testnet"
 	"github.com/whiteblock/genesis/util"
 	"strings"
 )
@@ -61,19 +56,6 @@ func dockerNetworkCreateCmd(subnet string, gateway string, network int, name str
 		conf.BridgePrefix,
 		network,
 		name)
-}
-
-// NetworkCreate creates a docker network for a sideCar
-func NetworkCreate(tn *testnet.TestNet, serverID int, subnetID int, node int) error {
-	command := dockerNetworkCreateCmd(
-		util.GetNetworkAddress(subnetID, node),
-		util.GetGateway(subnetID, node),
-		node,
-		fmt.Sprintf("%s%d", conf.NodeNetworkPrefix, node))
-
-	_, err := tn.Clients[serverID].KeepTryRun(command)
-
-	return err
 }
 
 // NetworkDestroy tears down a single docker network
@@ -190,18 +172,6 @@ func dockerRunCmd(c Container) (string, error) {
 	return command, nil
 }
 
-// Run starts a sideCar
-func Run(tn *testnet.TestNet, serverID int, container Container) error {
-	command, err := dockerRunCmd(container)
-	if err != nil {
-		return util.LogError(err)
-	}
-	_, err = tn.Clients[serverID].Run(command)
-	if err != nil {
-		return util.LogError(err)
-	}
-	return nil
-}
 
 //TODO fix this func so it isn't taking 8 args
 func serviceDockerRunCmd(network string, ip string, name string, env map[string]string, volumes []string, ports []string, image string, cmd string) string {
@@ -238,63 +208,4 @@ func serviceDockerRunCmd(network string, ip string, name string, env map[string]
 		portstr,
 		image,
 		cmd)
-}
-
-// StopServices stops all services and remove the service network from a server
-func StopServices(tn *testnet.TestNet) error {
-	return helpers.AllServerExecCon(tn, func(client ssh.Client, _ *db.Server) error {
-		_, err := client.Run(fmt.Sprintf("docker rm -f $(docker ps -aq -f name=%s)", conf.ServicePrefix))
-		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Info("no service containers to remove")
-		}
-
-		_, err = client.Run("docker network rm " + conf.ServiceNetworkName)
-		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Info("no service network to remove")
-		}
-
-		return nil
-	})
-}
-
-// StartServices creates the service network and starts all the services on a server
-func StartServices(tn *testnet.TestNet, servs []services.Service) error {
-	gateway, subnet, err := util.GetServiceNetwork()
-	if err != nil {
-		return util.LogError(err)
-	}
-	client := tn.GetFlatClients()[0] //TODO make this nice
-	_, err = client.KeepTryRun(dockerNetworkCreateCmd(subnet, gateway, -1, conf.ServiceNetworkName))
-	if err != nil {
-		return util.LogError(err)
-	}
-	ips, err := services.GetServiceIps(servs)
-	if err != nil {
-		return util.LogError(err)
-	}
-
-	for i, service := range servs {
-		net := conf.ServiceNetworkName
-		ip := ips[service.GetName()]
-		if len(service.GetNetwork()) != 0 {
-			net = service.GetNetwork()
-			ip = ""
-		}
-		err = service.Prepare(client, tn)
-		if err != nil {
-			return util.LogError(err)
-		}
-		_, err = client.KeepTryRun(serviceDockerRunCmd(net, ip,
-			fmt.Sprintf("%s%d", conf.ServicePrefix, i),
-			service.GetEnv(),
-			service.GetVolumes(),
-			service.GetPorts(),
-			service.GetImage(),
-			service.GetCommand()))
-		if err != nil {
-			return util.LogError(err)
-		}
-		tn.BuildState.IncrementDeployProgress()
-	}
-	return nil
 }

@@ -21,13 +21,10 @@ package status
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/util"
 	"strconv"
 	"strings"
-	"sync"
-	"time"
 )
 
 var conf *util.Config
@@ -102,72 +99,5 @@ func SumResUsage(c ssh.Client, name string) (Comp, error) {
 		out.RSS += rss
 
 	}
-	return out, nil
-}
-
-// CheckNodeStatus checks the status of the nodes in the current testnet
-func CheckNodeStatus(nodes []db.Node) ([]NodeStatus, error) {
-
-	serverIDs := db.GetUniqueServerIDs(nodes)
-	out := make([]NodeStatus, len(nodes))
-
-	for _, node := range nodes {
-		log.WithFields(log.Fields{"node": node.AbsoluteNum, "id": node.ID, "server": node.Server}).Trace("adding node to be check")
-		out[node.AbsoluteNum] = NodeStatus{
-			Name:         fmt.Sprintf("%s%d", conf.NodePrefix, node.LocalID),
-			IP:           node.IP,
-			Server:       node.Server,
-			Up:           false,
-			ID:           node.ID,
-			Protocol:     node.Protocol,
-			Image:        node.Image,
-			PortMappings: node.PortMappings,
-			Resources:    Comp{-1, -1, -1},
-		}
-	}
-	servers, err := db.GetServers(serverIDs)
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	mux := sync.Mutex{}
-	wg := sync.WaitGroup{}
-
-	for _, server := range servers {
-		client, err := GetClient(server.ID)
-		if err != nil {
-			return nil, util.LogError(err)
-		}
-		res, err := client.Run(
-			fmt.Sprintf("docker ps | egrep -o '%s[0-9]*' | sort", conf.NodePrefix))
-		if err != nil {
-			return nil, util.LogError(err)
-		}
-		names := strings.Split(res, "\n")
-		for _, name := range names {
-			if len(name) == 0 {
-				continue
-			}
-
-			index := FindNodeIndex(out, name, server.ID)
-			if index == -1 {
-				log.WithFields(log.Fields{"name": name, "server": server.ID}).Warn("unable to find a node")
-				continue
-			}
-			wg.Add(1)
-			go func(client ssh.Client, name string, index int) {
-				defer wg.Done()
-				resUsage, err := SumResUsage(client, name)
-				if err != nil {
-					log.Error(err)
-				}
-				mux.Lock()
-				out[index].Up = true
-				out[index].Resources = resUsage
-				out[index].Timestamp = time.Now().Unix()
-				mux.Unlock()
-			}(client, name, index)
-		}
-	}
-	wg.Wait()
 	return out, nil
 }
