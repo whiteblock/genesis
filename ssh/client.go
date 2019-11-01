@@ -29,7 +29,6 @@ import (
 	"github.com/whiteblock/scp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/semaphore"
-	"io/ioutil"
 	"strings"
 	"sync"
 	"time"
@@ -115,24 +114,55 @@ type client struct {
 	serverID int
 	mux      *sync.RWMutex
 	sem      *semaphore.Weighted
+	key      []byte
 }
 
 // NewClient creates an instance of Client, with a connection to the
 // host server given.
-func NewClient(host string, serverID int) (Client, error) {
+func NewClient(host string, key []byte, serverID int) (Client, error) {
 	out := new(client)
+
+	out.host = host
+	out.key = key
+	out.serverID = serverID
+	out.mux = &sync.RWMutex{}
+	out.sem = semaphore.NewWeighted(int64(conf.MaxConnections))
 	for i := conf.MaxConnections; i > 0; i -= 5 {
-		c, err := sshConnect(host)
+		c, err := out.open()
 		if err != nil {
 			return nil, util.LogError(err)
 		}
 		out.clients = append(out.clients, c)
 	}
-	out.host = host
-	out.serverID = serverID
-	out.mux = &sync.RWMutex{}
-	out.sem = semaphore.NewWeighted(int64(conf.MaxConnections))
 	return out, nil
+}
+
+func (sshClient *client) open() (*ssh.Client, error) {
+
+	signer, err := ssh.ParsePrivateKey(sshClient.key)
+	if err != nil {
+		return nil, util.LogError(err)
+	}
+	sshConfig := &ssh.ClientConfig{
+		User: conf.SSHUser,
+		Auth: []ssh.AuthMethod{
+			// Use the PublicKeys method for remote authentication.
+			ssh.PublicKeys(signer),
+		},
+	}
+	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", sshClient.host), sshConfig)
+	i := 0
+	for err != nil && i < 10 {
+		client, err = ssh.Dial("tcp", fmt.Sprintf("%s:22", sshClient.host), sshConfig)
+		i++
+	}
+	if err != nil {
+		log.WithFields(log.Fields{"host": sshClient.host, "user": sshConfig.User}).Error("unable to establish an ssh connection")
+		return nil, util.LogError(err)
+	}
+
+	return client, nil
 }
 
 func (sshClient *client) getSession() (*Session, error) {
@@ -149,11 +179,11 @@ func (sshClient *client) getSession() (*Session, error) {
 	}
 	sshClient.mux.RUnlock()
 
-	client, err := sshConnect(sshClient.host)
+	client, err := sshClient.open()
 	for err != nil && (strings.Contains(err.Error(), "connection reset by peer") || strings.Contains(err.Error(), "EOF")) {
 		log.WithFields(log.Fields{"error": err}).Error("error connecting to remote host,retrying once")
 		time.Sleep(50 * time.Millisecond)
-		client, err = sshConnect(sshClient.host)
+		client, err = sshClient.open()
 	}
 	if client == nil {
 		sshClient.sem.Release(1)
@@ -412,37 +442,4 @@ func (sshClient *client) Close() {
 		}
 		client.Close()
 	}
-}
-
-func sshConnect(host string) (*ssh.Client, error) {
-
-	key, err := ioutil.ReadFile(conf.SSHKey)
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	signer, err := ssh.ParsePrivateKey(key)
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	sshConfig := &ssh.ClientConfig{
-		User: conf.SSHUser,
-		Auth: []ssh.AuthMethod{
-			// Use the PublicKeys method for remote authentication.
-			ssh.PublicKeys(signer),
-		},
-	}
-	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
-	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", host), sshConfig)
-	i := 0
-	for err != nil && i < 10 {
-		client, err = ssh.Dial("tcp", fmt.Sprintf("%s:22", host), sshConfig)
-		i++
-	}
-	if err != nil {
-		log.WithFields(log.Fields{"host": host, "user": sshConfig.User,
-			"keyLoc": conf.SSHKey}).Error("unable to establish an ssh connection")
-		return nil, util.LogError(err)
-	}
-
-	return client, nil
 }
