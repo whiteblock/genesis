@@ -21,10 +21,7 @@ package netconf
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
-	"github.com/whiteblock/genesis/status"
 	"github.com/whiteblock/genesis/util"
 	"regexp"
 	"strconv"
@@ -115,46 +112,6 @@ func Apply(client ssh.Client, netconf Netconf, serverID int) error {
 		}
 		if err != nil {
 			return util.LogError(err)
-		}
-	}
-	return nil
-}
-
-//ApplyToAll applies the given netconf to `nodes` nodes in the network on the given server
-func ApplyToAll(netconf Netconf, nodes []db.Node) error {
-	for _, node := range nodes {
-		netconf.Node = node.LocalID
-		cmds := CreateCommands(netconf, node.Server)
-		for i, cmd := range cmds {
-			client, err := status.GetClient(node.Server)
-			if err != nil {
-				log.WithFields(log.Fields{"i": i, "cmd": cmd, "error": err}).Error("error running netem command")
-				return util.LogError(err)
-			}
-			_, err = client.Run(cmd)
-			if i == 0 {
-				//Don't check the success of the first command which clears
-				continue
-			}
-			if err != nil {
-				return util.LogError(err)
-			}
-		}
-	}
-	return nil
-}
-
-//RemoveAll removes network conditions from the given nodes
-func RemoveAll(nodes []db.Node) error {
-	for _, node := range nodes {
-		client, err := status.GetClient(node.Server)
-		if err != nil {
-			return util.LogError(err)
-		}
-		_, err = client.Run(
-			fmt.Sprintf("sudo -n tc qdisc del dev %s%d root", conf.BridgePrefix, node.LocalID))
-		if err != nil {
-			log.Error(err)
 		}
 	}
 	return nil

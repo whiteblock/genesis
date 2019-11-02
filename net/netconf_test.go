@@ -19,13 +19,9 @@
 package netconf
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"testing"
-
-	"github.com/golang/mock/gomock"
-	"github.com/whiteblock/genesis/ssh/mocks"
 )
 
 func TestCreateCommands(t *testing.T) {
@@ -66,69 +62,6 @@ func TestCreateCommands(t *testing.T) {
 	}
 }
 
-func TestApply(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	netconf := Netconf{Node: 3}
-	serverID := 1
-	client := mocks.NewMockClient(ctrl)
-
-	expectations := []string{
-		"sudo -n tc qdisc del dev wb_bridge3 root",
-		"sudo -n tc qdisc add dev wb_bridge3 root handle 1: prio",
-		"sudo -n tc qdisc add dev wb_bridge3 parent 1:1 handle 2: netem",
-		"sudo -n tc filter add dev wb_bridge3 parent 1:0 protocol ip pref 55 handle 6 fw flowid 2:1",
-		"sudo -n iptables -t mangle -A PREROUTING  ! -d 10.1.0.49 -j MARK --set-mark 6",
-	}
-
-	var previous *gomock.Call
-	for _, expectation := range expectations {
-		call := client.EXPECT().Run(expectation)
-		if previous != nil {
-			call = call.After(previous)
-		}
-
-		previous = call
-	}
-
-	Apply(client, netconf, serverID)
-}
-
-func TestRemoveAllOnServer(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
-	nodes := 3
-
-	for i := 0; i < nodes; i++ {
-		client.EXPECT().Run(fmt.Sprintf("sudo tc qdisc del dev wb_bridge%d root", i))
-	}
-
-	RemoveAllOutagesExpectations(client)
-
-	RemoveAllOnServer(client, nodes)
-}
-
-func RemoveAllOutagesExpectations(client *mocks.MockClient) {
-	client.
-		EXPECT().
-		Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD || true").
-		Return("sudo blah -A test test\nsudo this is a test\nsudo this is another test for the loop\nsudo test\n\n", nil)
-
-	expectations := []string{
-		"sudo iptables -D sudo blah test test",
-		"sudo iptables -D sudo this is a test",
-		"sudo iptables -D sudo this is another test for the loop",
-		"sudo iptables -D sudo test",
-	}
-
-	for _, expectation := range expectations {
-		client.EXPECT().Run(expectation)
-	}
-}
-
 func Test_parseItems(t *testing.T) {
 	var test = []struct {
 		items    []string
@@ -158,62 +91,3 @@ func Test_parseItems(t *testing.T) {
 	}
 }
 
-func TestGetConfigOnServer_Successful(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
-	out := []Netconf{
-		{Node: 3, Limit: 2, Loss: 0.5, Delay: 0, Rate: "", Duplication: 0, Corrupt: 0, Reorder: 0},
-		{Node: 4, Limit: 2, Loss: 1.3, Delay: 415900000, Rate: "1", Duplication: 0, Corrupt: 0.4, Reorder: 0.7},
-	}
-
-	client.
-		EXPECT().
-		Run("sudo -n tc qdisc show | grep wb_bridge | grep netem || true").
-		Return("some random words testing wb_bridge3 test test limit 2 loss 0.5%\nsome random words testing wb_bridge4 test test limit 2 delay 415.9s loss 1.3% corrupt 0.4% rate 1 reorder 0.7% duplication 0", nil)
-
-	netconf, _ := GetConfigOnServer(client)
-
-	if !reflect.DeepEqual(netconf, out) {
-		t.Errorf("return value of GetConfigOnServer does not match expected value")
-	}
-}
-
-func TestGetConfigOnServer_Unsuccessful1(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
-	out := []Netconf{
-		{Node: 3, Limit: 0, Loss: 0, Delay: 0, Rate: "", Duplication: 0, Corrupt: 0, Reorder: 0},
-	}
-
-	client.
-		EXPECT().
-		Run("sudo -n tc qdisc show | grep wb_bridge | grep netem || true").
-		Return("some random words testing wb_bridge3\nsome words random test\n", nil)
-
-	netconf, _ := GetConfigOnServer(client)
-	if !reflect.DeepEqual(netconf, out) {
-		t.Errorf("return value of GetConfigOnServer does not match expected value")
-	}
-}
-
-func TestGetConfigOnServer_Unsuccessful2(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
-	out := []Netconf{}
-
-	client.
-		EXPECT().
-		Run("sudo -n tc qdisc show | grep wb_bridge | grep netem || true").
-		Return("", nil)
-
-	netconf, _ := GetConfigOnServer(client)
-	if !reflect.DeepEqual(netconf, out) {
-		t.Errorf("return value of GetConfigOnServer does not match expected value")
-	}
-}

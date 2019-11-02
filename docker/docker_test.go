@@ -22,60 +22,11 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"strings"
 	"testing"
 
-	"github.com/golang/mock/gomock"
-	"github.com/whiteblock/genesis/db"
-	"github.com/whiteblock/genesis/ssh"
-	"github.com/whiteblock/genesis/ssh/mocks"
 	"github.com/whiteblock/genesis/util"
 )
 
-func TestKillNode(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
-
-	expectation := fmt.Sprintf("docker rm -f %s%d", conf.NodePrefix, 0)
-	client.EXPECT().Run(expectation)
-
-	err := KillNode(client, 0)
-	if err != nil {
-		t.Error("return value of KillNode does not match expected value")
-	}
-}
-
-func TestKill(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
-
-	expectation := fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s%d\")", conf.NodePrefix, 0)
-	client.EXPECT().Run(expectation)
-
-	err := Kill(client, 0)
-	if err != nil {
-		t.Error("return value of Kill does not match expected value")
-	}
-}
-
-func TestKillAll(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
-
-	expectation := fmt.Sprintf("docker rm -f $(docker ps -aq -f name=\"%s\")", conf.NodePrefix)
-	client.EXPECT().Run(expectation)
-
-	err := KillAll(client)
-	if err != nil {
-		t.Error("return value of Kill does not match expected value")
-	}
-}
 
 func Test_dockerNetworkCreateCmd(t *testing.T) {
 	var tests = []struct {
@@ -129,84 +80,6 @@ func Test_dockerNetworkCreateCmd(t *testing.T) {
 				t.Error("return value of dockerNetworkCreateCmd does not match expected value")
 			}
 		})
-	}
-}
-
-func TestNetworkCreate(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
-
-	command := "docker network create --subnet 10.10.0.0/28 --gateway 10.10.0.1 -o \"com.docker.network.bridge.name=wb_bridge0\" wb_vlan0"
-	client.EXPECT().KeepTryRun(command)
-
-	testNet := new(testnet.TestNet)
-	testNet.Clients = map[int]ssh.Client{0: client}
-
-	if err := NetworkCreate(testNet, 0, 10, 0); err != nil {
-		t.Error("return value of NetworkCreate does not match expected value")
-	}
-}
-
-func TestNetworkDestroy(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
-	client.EXPECT().Run("docker network rm wb_vlan1")
-
-	if err := NetworkDestroy(client, 1); err != nil {
-		t.Error("return value of NetworkDestroy does not match expected value")
-	}
-}
-
-func TestNetworkDestroyAll(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
-	client.EXPECT().Run(fmt.Sprintf(
-		"for net in $(docker network ls | grep %s | awk '{print $1}'); do docker network rm $net; done", conf.NodeNetworkPrefix))
-
-	if err := NetworkDestroyAll(client); err != nil {
-		t.Error("return value of NetworkDestroyAll does not match expected value")
-	}
-}
-
-func TestLogin(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
-	client.EXPECT().Run(fmt.Sprintf("docker login -u \"%s\" -p \"%s\"", "test", "test"))
-
-	if err := Login(client, "test", "test"); err != nil {
-		t.Error("return value of Login does not match expected value")
-	}
-}
-
-func TestLogout(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
-	client.EXPECT().Run("docker logout")
-
-	if err := Logout(client); err != nil {
-		t.Error("return value of Logout does not match expected value")
-	}
-}
-
-func TestPull(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mocks.NewMockClient(ctrl)
-	client.EXPECT().Run("docker pull " + "testImage")
-
-	if err := Pull([]ssh.Client{client}, "testImage"); err != nil {
-		t.Error("return value of Logout does not match expected value")
 	}
 }
 
