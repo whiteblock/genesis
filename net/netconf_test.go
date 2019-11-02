@@ -61,32 +61,3 @@ func TestCreateCommands(t *testing.T) {
 		})
 	}
 }
-
-func Test_parseItems(t *testing.T) {
-	var test = []struct {
-		items    []string
-		nconf    *Netconf
-		expected *Netconf
-	}{
-		{
-			items:    []string{"limit", "3", "test2", "test3"},
-			nconf:    &Netconf{Node: 2, Limit: 0, Loss: 0, Delay: 0, Rate: "0", Duplication: 0, Corrupt: 0, Reorder: 0},
-			expected: &Netconf{Node: 2, Limit: 3, Loss: 0, Delay: 0, Rate: "0", Duplication: 0, Corrupt: 0, Reorder: 0},
-		},
-		{
-			items:    []string{"limit", "2", "loss", "0.5%", "delay", "415.9s", "rate", "2", "duplicate", "1.7%", "corrupt", "0.5%", "reorder", "0.07%"},
-			nconf:    &Netconf{Node: 3, Limit: 0, Loss: 0, Delay: 0, Rate: "0", Duplication: 0, Corrupt: 0, Reorder: 0},
-			expected: &Netconf{Node: 3, Limit: 2, Loss: 0.5, Delay: 415900000, Rate: "2", Duplication: 1.7, Corrupt: 0.5, Reorder: 0.07},
-		},
-	}
-
-	for i, tt := range test {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			parseItems(tt.items, tt.nconf)
-
-			if !reflect.DeepEqual(&tt.nconf, &tt.expected) {
-				t.Errorf("parseItems did not successfully change the contents of nconf")
-			}
-		})
-	}
-}

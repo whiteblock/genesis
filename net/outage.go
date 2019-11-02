@@ -24,7 +24,6 @@ import (
 	"github.com/whiteblock/genesis/db"
 	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/util"
-	"strconv"
 	"strings"
 	"sync"
 )
@@ -65,42 +64,4 @@ func makeOutageCommands(node1 db.Node, node2 db.Node) []string {
 		fmt.Sprintf("FORWARD -i %s%d -d %s -j DROP", conf.BridgePrefix, node1.AbsoluteNum, node2.IP),
 		fmt.Sprintf("FORWARD -i %s%d -d %s -j DROP", conf.BridgePrefix, node2.AbsoluteNum, node1.IP),
 	}
-}
-
-//GetCutConnections fetches the cut connections on a server
-//TODO: Naive Implementation, does not yet take multiple servers into account
-func GetCutConnections(client ssh.Client) ([]Connection, error) {
-	res, err := client.Run("sudo iptables --list-rules | grep wb_bridge | grep DROP | grep FORWARD | awk '{print $4,$6}' | sed -e 's/\\/32//g' || true")
-	if err != nil {
-		return nil, util.LogError(err)
-	}
-	out := []Connection{}
-	if len(res) == 0 { //No cut connections on this server
-		return out, nil
-	}
-
-	cuts := strings.Split(res, "\n")
-
-	for _, cut := range cuts {
-		if len(cut) == 0 {
-			continue
-		}
-		cutPair := strings.Split(cut, " ")
-		if len(cutPair) != 2 {
-			return nil, fmt.Errorf("unexpected result \"%s\" for cut pair", cut)
-		}
-		_, toNode, _ := util.GetInfoFromIP(cutPair[0])
-
-		if len(cutPair[1]) <= len(conf.BridgePrefix) {
-			return nil, fmt.Errorf("unexpected source interface, found \"%s\"", cutPair[1])
-		}
-
-		fromNode, err := strconv.Atoi(cutPair[1][len(conf.BridgePrefix):])
-		if err != nil {
-			return nil, util.LogError(err)
-		}
-		out = append(out, Connection{To: toNode, From: fromNode})
-		log.WithFields(log.Fields{"to": toNode, "from": fromNode}).Debug("found a disconnection")
-	}
-	return out, nil
 }
