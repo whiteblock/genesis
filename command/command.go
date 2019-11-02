@@ -18,20 +18,23 @@
 
 package command
 
+// Order to be executed by genesis
 type Order struct {
 	Type    string      `json:"type"`
 	Payload interface{} `json:"payload"`
 }
 
-type CommandTarget struct {
+// Target sets the target of a command - which testnet, instance to hit
+type Target struct {
 	Testnet string `json:"testnet"`
 }
 
+// Command is the command sent to Genesis.
 type Command struct {
-	Id           string        `json:"id"`
-	Timestamp    int64         `json:"timestamp"`
-	Retry        uint8         `json:"retry"`
-	Target       CommandTarget `json:"target"`
-	Dependencies []string      `json:"dependencies"`
-	Order        Order         `json:"order"`
+	ID           string   `json:"id"`
+	Timestamp    int64    `json:"timestamp"`
+	Retry        uint8    `json:"retry"`
+	Target       Target   `json:"target"`
+	Dependencies []string `json:"dependencies"`
+	Order        Order    `json:"order"`
 }

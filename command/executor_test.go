@@ -25,13 +25,13 @@ import (
 
 func TestOneCommand(t *testing.T) {
 
-	executor := CommandExecutor{func(order Order) bool { return true },
+	executor := Executor{func(order Order) bool { return true },
 		func(command Command) {},
 		func(id string) bool { return true },
 		func() int64 { return time.Now().Unix() },
 	}
 
-	executed := executor.Execute(Command{"1", 123, 0, CommandTarget{"testnetId"}, []string{}, Order{"status", "something"}})
+	executed := executor.Execute(Command{"1", 123, 0, Target{"testnetId"}, []string{}, Order{"status", "something"}})
 
 	if !executed {
 		t.Fatal("Should have run the command")
@@ -40,13 +40,13 @@ func TestOneCommand(t *testing.T) {
 
 func TestOneCommandForLater(t *testing.T) {
 
-	executor := CommandExecutor{func(order Order) bool { return true },
+	executor := Executor{func(order Order) bool { return true },
 		func(command Command) {},
 		func(id string) bool { return true },
 		func() int64 { return 122 },
 	}
 
-	executed := executor.Execute(Command{"1", 123, 0, CommandTarget{"testnetId"}, []string{}, Order{"status", "something"}})
+	executed := executor.Execute(Command{"1", 123, 0, Target{"testnetId"}, []string{}, Order{"status", "something"}})
 
 	if executed {
 		t.Fatal("Should not have run the command")
@@ -55,13 +55,13 @@ func TestOneCommandForLater(t *testing.T) {
 
 func TestDependenciesCheck(t *testing.T) {
 
-	executor := CommandExecutor{func(order Order) bool { return true },
+	executor := Executor{func(order Order) bool { return true },
 		func(command Command) {},
 		func(id string) bool { return false },
 		func() int64 { return time.Now().Unix() },
 	}
 
-	executed := executor.Execute(Command{"1", 123, 0, CommandTarget{"testnetId"}, []string{"someDependency"}, Order{"status", "something"}})
+	executed := executor.Execute(Command{"1", 123, 0, Target{"testnetId"}, []string{"someDependency"}, Order{"status", "something"}})
 
 	if executed {
 		t.Fatal("Should not have run the command")
@@ -70,19 +70,19 @@ func TestDependenciesCheck(t *testing.T) {
 
 func TestDependenciesSelection(t *testing.T) {
 
-	executor := CommandExecutor{func(order Order) bool { return true },
+	executor := Executor{func(order Order) bool { return true },
 		func(command Command) {},
 		func(id string) bool { return id == "someOtherDependency" },
 		func() int64 { return time.Now().Unix() },
 	}
 
-	executed := executor.Execute(Command{"1", 123, 0, CommandTarget{"testnetId"}, []string{"someDependency"}, Order{"status", "something"}})
+	executed := executor.Execute(Command{"1", 123, 0, Target{"testnetId"}, []string{"someDependency"}, Order{"status", "something"}})
 
 	if executed {
 		t.Fatal("Should not have run the command")
 	}
 
-	executed = executor.Execute(Command{"1", 123, 0, CommandTarget{"testnetId"}, []string{"someOtherDependency"}, Order{"status", "something"}})
+	executed = executor.Execute(Command{"1", 123, 0, Target{"testnetId"}, []string{"someOtherDependency"}, Order{"status", "something"}})
 
 	if !executed {
 		t.Fatal("Should have run the command")
@@ -91,13 +91,13 @@ func TestDependenciesSelection(t *testing.T) {
 
 func TestRescheduleOnFailure(t *testing.T) {
 	var rescheduled Command
-	executor := CommandExecutor{func(order Order) bool { return false },
+	executor := Executor{func(order Order) bool { return false },
 		func(command Command) { rescheduled = command },
 		func(id string) bool { return false },
 		func() int64 { return 122 },
 	}
 
-	executed := executor.Execute(Command{"1", 121, 0, CommandTarget{"testnetId"}, []string{}, Order{"status", "something"}})
+	executed := executor.Execute(Command{"1", 121, 0, Target{"testnetId"}, []string{}, Order{"status", "something"}})
 
 	if !executed {
 		t.Fatal("Should have run the command")
@@ -114,13 +114,13 @@ func TestRescheduleOnFailure(t *testing.T) {
 
 func TestTooManyFailures(t *testing.T) {
 	var rescheduled *Command
-	executor := CommandExecutor{func(order Order) bool { return false },
+	executor := Executor{func(order Order) bool { return false },
 		func(command Command) { rescheduled = &command },
 		func(id string) bool { return false },
 		func() int64 { return 122 },
 	}
 
-	executed := executor.Execute(Command{"1", 121, 4, CommandTarget{"testnetId"}, []string{}, Order{"status", "something"}})
+	executed := executor.Execute(Command{"1", 121, 4, Target{"testnetId"}, []string{}, Order{"status", "something"}})
 
 	if !executed {
 		t.Fatal("Should have run the command")

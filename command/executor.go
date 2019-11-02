@@ -33,8 +33,8 @@ const (
 	waitBeforeRetry = 10
 )
 
-// Executes commands according to their schedule and their dependencies
-type CommandExecutor struct {
+// Executor executes commands according to their schedule and their dependencies
+type Executor struct {
 	// Runs the order of a command
 	Runner func(order Order) bool
 	// Schedules a command to be executed
@@ -45,8 +45,8 @@ type CommandExecutor struct {
 	TimeSupplier func() int64
 }
 
-// Executes a command. If it returns true, the command is considered executed and should be consumed. If it returns false, the transaction should be rolled back.
-func (c *CommandExecutor) Execute(command Command) bool {
+// Execute runs a command. If it returns true, the command is considered executed and should be consumed. If it returns false, the transaction should be rolled back.
+func (c *Executor) Execute(command Command) bool {
 	log.WithField("command", command).Trace("Running command")
 	status := c.executeCommand(command)
 	log.WithField("command", command).WithField("status", status).Info("Ran command")
@@ -55,7 +55,7 @@ func (c *CommandExecutor) Execute(command Command) bool {
 	}
 	if status == failure {
 		if command.Retry < numberOfRetries {
-			retryCommand := Command{command.Id, c.TimeSupplier() + waitBeforeRetry, command.Retry + 1, command.Target, command.Dependencies, command.Order}
+			retryCommand := Command{command.ID, c.TimeSupplier() + waitBeforeRetry, command.Retry + 1, command.Target, command.Dependencies, command.Order}
 			log.WithField("retryCommand", retryCommand).Warn("Command failed, rescheduling")
 			c.Scheduler(retryCommand)
 		} else {
@@ -65,7 +65,7 @@ func (c *CommandExecutor) Execute(command Command) bool {
 	return true
 }
 
-func (c *CommandExecutor) executeCommand(command Command) commandstatus {
+func (c *Executor) executeCommand(command Command) commandstatus {
 
 	if c.TimeSupplier() < command.Timestamp {
 		return later
@@ -78,7 +78,6 @@ func (c *CommandExecutor) executeCommand(command Command) commandstatus {
 
 	if c.Runner(command.Order) {
 		return success
-	} else {
-		return failure
 	}
+	return failure
 }
