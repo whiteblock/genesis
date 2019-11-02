@@ -27,7 +27,6 @@ import (
 	"github.com/whiteblock/genesis/util"
 )
 
-
 func Test_dockerNetworkCreateCmd(t *testing.T) {
 	var tests = []struct {
 		subnet   string

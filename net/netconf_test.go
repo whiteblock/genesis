@@ -90,4 +90,3 @@ func Test_parseItems(t *testing.T) {
 		})
 	}
 }
-
