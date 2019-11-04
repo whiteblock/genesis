@@ -22,12 +22,21 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type commandstatus string
+type Status string
 
+func (res Status) IsSuccess() bool {
+	return res == success
+}
+
+func (res Status) IsFatal() bool {
+	return res == fatal
+}
+ 
 const (
-	success = commandstatus("success")
-	failure = commandstatus("failure")
-	later   = commandstatus("later")
+	success = Status("success")
+	fatal = Status("fatal")
+	failure = Status("failure")
+	later   = Status("later")
 
 	numberOfRetries = 4
 	waitBeforeRetry = 10
@@ -45,20 +54,23 @@ type Executor struct {
 	TimeSupplier func() int64
 }
 
-func (c Executor) RunAsync(command Command, callback func(command Command, success bool)) {
+func (c Executor) RunAsync(command Command, callback func(command Command, stat Status)) {
 	go func() {
 		callback(command, c.Run(command))
 	}()
 }
 
 // Run runs a command. If it returns true, the command is considered executed and should be consumed. If it returns false, the transaction should be rolled back.
-func (c Executor) Run(command Command) bool {
+func (c Executor) Run(command Command) Status {
+	stat,ok := c.checkSanity(command)
+	if !ok {
+		return stat
+	}
+
 	log.WithField("command", command).Trace("Running command")
 	status := c.execute(command)
 	log.WithField("command", command).WithField("status", status).Info("Ran command")
-	if status == later {
-		return false
-	}
+
 	if status == failure {
 		if command.Retry < numberOfRetries {
 			retryCommand := command.GetRetryCommand(c.TimeSupplier())
@@ -71,17 +83,23 @@ func (c Executor) Run(command Command) bool {
 	return true
 }
 
-func (c Executor) execute(command Command) commandstatus {
-
+func (c Executor) checkSanity(command Command) (stat Status,ok bool) {
+	ok = true
 	if c.TimeSupplier() < command.Timestamp {
-		return later
+		ok = false
+		stat = later
+		return
 	}
 	for _, dep := range command.Dependencies {
 		if !c.CommandExecuted(dep) {
-			return later
+			ok = false
+			stat = later
+			return
 		}
 	}
+}
 
+func (c Executor) execute(command Command) Result {
 	if c.Runner(command.Order) {
 		return success
 	}

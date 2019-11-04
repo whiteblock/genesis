@@ -16,9 +16,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package command
+package state
 
 import (
+	"github.com/Whiteblock/genesis/command"
 	"github.com/golang-collections/go-datastructures/queue"
 	"sync"
 	"time"
@@ -49,9 +50,9 @@ func (s *State) AddCommands(commands ...Command) {
 	for _, command := range commands {
 		s.pending.Put(command)
 	}
-
 }
 
+//Start starts the states inner consume loop
 func (s *State) Start() {
 	s.once.Do(func() {
 		s.loop()
@@ -65,8 +66,8 @@ func (s *State) loop() {
 			panic(err)
 		}
 		cmd := cmds[0].(Command)
-		s.executor.RunAsync(cmd, func(command Command, success bool) {
-			if !success {
+		s.executor.RunAsync(cmd, func(command Command, stat Status) {
+			if !stat.IsSuccess() {
 				s.AddCommands(command)
 			} else {
 				s.mu.Lock()
