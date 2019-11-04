@@ -19,24 +19,24 @@
 package state
 
 import (
-	"github.com/Whiteblock/genesis/command"
 	"github.com/golang-collections/go-datastructures/queue"
+	"github.com/whiteblock/genesis/command"
 	"sync"
 	"time"
 )
 
 // State represents the local state of Genesis.
 type State struct {
-	ExecutedCommands map[string]Command
+	ExecutedCommands map[string]command.Command
 	pending          *queue.Queue
-	executor         Executor
+	executor         command.Executor
 	mu               sync.Mutex
 	once             *sync.Once
 }
 
 func NewState(exec Executor) *State {
 	return &State{
-		ExecutedCommands: map[string]Command{},
+		ExecutedCommands: map[string]command.Command{},
 		pending:          queue.New(20),
 		executor:         exec,
 		once:             &sync.Once{},
@@ -45,9 +45,9 @@ func NewState(exec Executor) *State {
 
 var commandState *State
 
-// AddCommands adds one more commands to the commands to be executed
-func (s *State) AddCommands(commands ...Command) {
-	for _, command := range commands {
+// Addcommand.Commands adds one more commands to the commands to be executed
+func (s *State) AddCommands(commands ...command.Command) {
+	for _, cmd := range commands {
 		s.pending.Put(command)
 	}
 }
@@ -65,14 +65,14 @@ func (s *State) loop() {
 		if err != nil {
 			panic(err)
 		}
-		cmd := cmds[0].(Command)
-		s.executor.RunAsync(cmd, func(command Command, stat Status) {
+		cmd := cmds[0].(command.Command)
+		s.executor.RunAsync(cmd, func(cmd command.Command, stat Status) {
 			if !stat.IsSuccess() {
-				s.AddCommands(command)
+				s.Addcommand.Commands(command)
 			} else {
 				s.mu.Lock()
 				defer s.mu.Lock()
-				s.ExecutedCommands[cmd.ID] = cmd
+				s.Executedcommand.Commands[cmd.ID] = cmd
 			}
 		})
 	}
@@ -84,11 +84,11 @@ func init() {
 			//TODO
 			return true
 		},
-		func(command Command) {
+		func(cmd command.Command) {
 			commandState.AddCommands(command)
 		},
 		func(id string) bool {
-			if _, ok := commandState.ExecutedCommands[id]; ok {
+			if _, ok := commandState.Executedcommand.Commands[id]; ok {
 				return true
 			}
 			return false
@@ -99,7 +99,7 @@ func init() {
 	go commandState.Start()
 }
 
-// GetCommandState returns the singleton local state of Genesis.
+// Getcommand.CommandState returns the singleton local state of Genesis.
 func GetCommandState() *State {
 	return commandState
 }

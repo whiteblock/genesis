@@ -19,33 +19,46 @@
 package command
 
 import (
+	"context"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 )
 
-type Status string
+type Result interface {
+	GetStatus() Status
+	IsSuccess() bool
+}
+
+type Status struct {
+	Error error
+	Type  string
+}
 
 func (res Status) IsSuccess() bool {
-	return res == success
+	return res.Error == nil
 }
 
 func (res Status) IsFatal() bool {
-	return res == fatal
+	return res.Error != nil && res.Type == FatalType
 }
- 
+
 const (
-	success = Status("success")
-	fatal = Status("fatal")
-	failure = Status("failure")
-	later   = Status("later")
+	TooSoonType = "TooSoon"
+	FatalType   = "Fatal"
 
 	numberOfRetries = 4
 	waitBeforeRetry = 10
 )
 
+var (
+	statusSuccess = Status{Error: nil}
+	statusTooSoon = Status{Type: TooSoonType, Error: fmt.Errorf("command ran too soon")}
+)
+
 // Executor executes commands according to their schedule and their dependencies
 type Executor struct {
 	// Runs the order of a command
-	Runner func(order Order) bool
+	Runner func(ctx context.Context, order Order) Result
 	// Schedules a command to be executed
 	Scheduler func(command Command)
 	// Checks whether a command executed
@@ -62,16 +75,15 @@ func (c Executor) RunAsync(command Command, callback func(command Command, stat 
 
 // Run runs a command. If it returns true, the command is considered executed and should be consumed. If it returns false, the transaction should be rolled back.
 func (c Executor) Run(command Command) Status {
-	stat,ok := c.checkSanity(command)
+	stat, ok := c.checkSanity(command)
 	if !ok {
 		return stat
 	}
-
 	log.WithField("command", command).Trace("Running command")
-	status := c.execute(command)
-	log.WithField("command", command).WithField("status", status).Info("Ran command")
+	res := c.execute(command)
+	log.WithField("command", command).WithField("Result", res).Info("Ran command")
 
-	if status == failure {
+	if !res.IsSuccess() {
 		if command.Retry < numberOfRetries {
 			retryCommand := command.GetRetryCommand(c.TimeSupplier())
 			log.WithField("retryCommand", retryCommand).Warn("Command failed, rescheduling")
@@ -80,28 +92,31 @@ func (c Executor) Run(command Command) Status {
 			log.WithField("command", command).Error("Command failed too many times")
 		}
 	}
-	return true
+	return res.GetStatus()
 }
 
-func (c Executor) checkSanity(command Command) (stat Status,ok bool) {
+func (c Executor) checkSanity(command Command) (stat Status, ok bool) {
 	ok = true
 	if c.TimeSupplier() < command.Timestamp {
 		ok = false
-		stat = later
+		stat = statusTooSoon
 		return
 	}
 	for _, dep := range command.Dependencies {
 		if !c.CommandExecuted(dep) {
 			ok = false
-			stat = later
+			stat = statusTooSoon
 			return
 		}
 	}
+	return
 }
 
 func (c Executor) execute(command Command) Result {
-	if c.Runner(command.Order) {
-		return success
+	if command.Timeout == 0 {
+		return c.Runner(context.Background(), command.Order)
 	}
-	return failure
+	ctx, cancelFn := context.WithTimeout(context.Background(), command.Timeout)
+	defer cancelFn()
+	return c.Runner(ctx, command.Order)
 }
