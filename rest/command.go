@@ -16,36 +16,24 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-// Package rest implements the REST interface which is used to communicate with this module
 package rest
 
 import (
-	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
+	"encoding/json"
+	"github.com/whiteblock/genesis/command"
 	"github.com/whiteblock/genesis/util"
 	"net/http"
-	"strings"
 )
 
-var conf *util.Config
+func addCommand(w http.ResponseWriter, r *http.Request) {
+	var commands []command.Command
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&commands)
+	if err != nil {
+		http.Error(w, util.LogError(err).Error(), 400)
+		return
+	}
+	go command.GetCommandState().AddCommands(commands)
 
-func init() {
-	conf = util.GetConfig()
-}
-
-// StartServer starts the rest server, blocking the calling thread from returning
-func StartServer() {
-	router := mux.NewRouter()
-
-	router.HandleFunc("/command", addCommand).Methods("POST")
-
-	log.WithFields(log.Fields{"socket": conf.Listen}).Info("listening for requests")
-	log.Fatal(http.ListenAndServe(conf.Listen, removeTrailingSlash(router)))
-}
-
-func removeTrailingSlash(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.URL.Path = strings.TrimSuffix(r.URL.Path, "/")
-		next.ServeHTTP(w, r)
-	})
+	w.Write([]byte("Success"))
 }

@@ -113,4 +113,3 @@ func Apply(client ssh.Client, netconf Netconf, serverID int) error {
 	}
 	return nil
 }
-
