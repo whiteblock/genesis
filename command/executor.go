@@ -26,7 +26,6 @@ import (
 
 type Result interface {
 	GetStatus() Status
-	IsSuccess() bool
 }
 
 type Status struct {
@@ -74,22 +73,24 @@ func (c Executor) RunAsync(command Command, callback func(command Command, stat 
 }
 
 // Run runs a command. If it returns true, the command is considered executed and should be consumed. If it returns false, the transaction should be rolled back.
-func (c Executor) Run(command Command) Status {
+func (c Executor) Run(command Command) (stat Status) {
 	stat, ok := c.checkSanity(command)
 	if !ok {
-		return stat
+		return
 	}
 	log.WithField("command", command).Trace("Running command")
 	res := c.execute(command)
 	log.WithField("command", command).WithField("Result", res).Info("Ran command")
-
-	if !res.IsSuccess() {
-		if command.Retry < numberOfRetries {
+	stat = res.GetStatus()
+	if !stat.IsSuccess() {
+		if command.Retry < numberOfRetries && !stat.IsFatal() {
 			retryCommand := command.GetRetryCommand(c.TimeSupplier())
-			log.WithField("retryCommand", retryCommand).Warn("Command failed, rescheduling")
+			log.WithField("retryCommand", retryCommand).Warn("command failed, rescheduling")
 			c.Scheduler(retryCommand)
+		} else if stat.IsFatal() {
+			log.WithField("command", command).Error("command resulted in a non-recoverable error")
 		} else {
-			log.WithField("command", command).Error("Command failed too many times")
+			log.WithField("command", command).Error("command failed too many times")
 		}
 	}
 	return res.GetStatus()

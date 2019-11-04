@@ -19,6 +19,7 @@
 package state
 
 import (
+	"context"
 	"github.com/golang-collections/go-datastructures/queue"
 	"github.com/whiteblock/genesis/command"
 	"sync"
@@ -34,7 +35,7 @@ type State struct {
 	once             *sync.Once
 }
 
-func NewState(exec Executor) *State {
+func NewState(exec command.Executor) *State {
 	return &State{
 		ExecutedCommands: map[string]command.Command{},
 		pending:          queue.New(20),
@@ -48,7 +49,7 @@ var commandState *State
 // Addcommand.Commands adds one more commands to the commands to be executed
 func (s *State) AddCommands(commands ...command.Command) {
 	for _, cmd := range commands {
-		s.pending.Put(command)
+		s.pending.Put(cmd)
 	}
 }
 
@@ -66,29 +67,29 @@ func (s *State) loop() {
 			panic(err)
 		}
 		cmd := cmds[0].(command.Command)
-		s.executor.RunAsync(cmd, func(cmd command.Command, stat Status) {
+		s.executor.RunAsync(cmd, func(cmd command.Command, stat command.Status) {
 			if !stat.IsSuccess() {
-				s.Addcommand.Commands(command)
+				s.AddCommands(cmd)
 			} else {
 				s.mu.Lock()
 				defer s.mu.Lock()
-				s.Executedcommand.Commands[cmd.ID] = cmd
+				s.ExecutedCommands[cmd.ID] = cmd
 			}
 		})
 	}
 }
 
 func init() {
-	commandState = NewState(Executor{
-		func(order Order) bool {
+	commandState = NewState(command.Executor{
+		func(ctx context.Context, order command.Order) command.Result {
 			//TODO
-			return true
+			return nil
 		},
 		func(cmd command.Command) {
-			commandState.AddCommands(command)
+			commandState.AddCommands(cmd)
 		},
 		func(id string) bool {
-			if _, ok := commandState.Executedcommand.Commands[id]; ok {
+			if _, ok := commandState.ExecutedCommands[id]; ok {
 				return true
 			}
 			return false
