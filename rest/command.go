@@ -33,7 +33,7 @@ func addCommand(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, util.LogError(err).Error(), 400)
 		return
 	}
-	go command.GetCommandState().AddCommands(commands)
+	go command.GetCommandState().AddCommands(commands...)
 
 	w.Write([]byte("Success"))
 }

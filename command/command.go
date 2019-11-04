@@ -18,23 +18,34 @@
 
 package command
 
+import (
+	"time"
+)
+
 // Order to be executed by genesis
 type Order struct {
-	Type    string      `json:"type"`
-	Payload interface{} `json:"payload"`
+	Type    string                 `json:"type"`
+	Payload map[string]interface{} `json:"payload"`
 }
 
 // Target sets the target of a command - which testnet, instance to hit
 type Target struct {
-	Testnet string `json:"testnet"`
+	IP string `json:"ip"`
 }
 
 // Command is the command sent to Genesis.
 type Command struct {
-	ID           string   `json:"id"`
-	Timestamp    int64    `json:"timestamp"`
-	Retry        uint8    `json:"retry"`
-	Target       Target   `json:"target"`
-	Dependencies []string `json:"dependencies"`
-	Order        Order    `json:"order"`
+	ID           string        `json:"id"`
+	Timestamp    int64         `json:"timestamp"`
+	Timeout      time.Duration `json:"timeout"`
+	Retry        uint8         `json:"retry"`
+	Target       Target        `json:"target"`
+	Dependencies []string      `json:"dependencies"`
+	Order        Order         `json:"order"`
+}
+
+func (cmd Command) GetRetryCommand(timestamp int64) Command {
+	cmd.Timestamp = timestamp + waitBeforeRetry
+	cmd.Retry += 1
+	return cmd
 }

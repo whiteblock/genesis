@@ -3,6 +3,7 @@ module github.com/whiteblock/genesis
 go 1.12
 
 require (
+	github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259
 	github.com/golang/mock v1.1.1
 	github.com/gorilla/mux v1.7.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect

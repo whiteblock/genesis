@@ -19,6 +19,7 @@
 package command
 
 import (
+	"github.com/golang-collections/go-datastructures/queue"
 	"sync"
 	"time"
 )
@@ -26,37 +27,64 @@ import (
 // State represents the local state of Genesis.
 type State struct {
 	ExecutedCommands map[string]Command
-	PendingCommands  []Command
+	pending          *queue.Queue
 	executor         Executor
 	mu               sync.Mutex
+	once             *sync.Once
 }
 
-var commandState State
-
-// AddCommand adds a command to the commands to be executed
-func (s *State) AddCommand(command Command) {
-	s.mu.Lock()
-	s.PendingCommands = append(s.PendingCommands, command)
-	s.mu.Unlock()
+func NewState(exec Executor) *State {
+	return &State{
+		ExecutedCommands: map[string]Command{},
+		pending:          queue.New(20),
+		executor:         exec,
+		once:             &sync.Once{},
+	}
 }
+
+var commandState *State
 
 // AddCommands adds one more commands to the commands to be executed
-func (s *State) AddCommands(commands []Command) {
-	s.mu.Lock()
+func (s *State) AddCommands(commands ...Command) {
 	for _, command := range commands {
-		s.PendingCommands = append(s.PendingCommands, command)
+		s.pending.Put(command)
 	}
-	s.mu.Unlock()
+
+}
+
+func (s *State) Start() {
+	s.once.Do(func() {
+		s.loop()
+	})
+}
+
+func (s *State) loop() {
+	for {
+		cmds, err := s.pending.Get(1) //waits for new commands
+		if err != nil {
+			panic(err)
+		}
+		cmd := cmds[0].(Command)
+		s.executor.RunAsync(cmd, func(command Command, success bool) {
+			if !success {
+				s.AddCommands(command)
+			} else {
+				s.mu.Lock()
+				defer s.mu.Lock()
+				s.ExecutedCommands[cmd.ID] = cmd
+			}
+		})
+	}
 }
 
 func init() {
-	commandState = State{map[string]Command{}, []Command{}, Executor{
+	commandState = NewState(Executor{
 		func(order Order) bool {
 			//TODO
 			return true
 		},
 		func(command Command) {
-			commandState.AddCommand(command)
+			commandState.AddCommands(command)
 		},
 		func(id string) bool {
 			if _, ok := commandState.ExecutedCommands[id]; ok {
@@ -65,35 +93,12 @@ func init() {
 			return false
 		},
 		func() int64 { return time.Now().Unix() },
-	},
-		sync.Mutex{},
-	}
+	})
 
-	go executeLoop()
-}
-
-func executeLoop() {
-	for {
-		executed := false
-		commandState.mu.Lock()
-		for i, cmd := range commandState.PendingCommands {
-			if commandState.executor.Execute(cmd) {
-
-				commandState.ExecutedCommands[cmd.ID] = cmd
-				commandState.PendingCommands = append(commandState.PendingCommands[:i], commandState.PendingCommands[i+1:]...)
-
-				executed = true
-			}
-		}
-		commandState.mu.Unlock()
-
-		if !executed {
-			time.Sleep(1 * time.Second)
-		}
-	}
+	go commandState.Start()
 }
 
 // GetCommandState returns the singleton local state of Genesis.
 func GetCommandState() *State {
-	return &commandState
+	return commandState
 }

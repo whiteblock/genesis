@@ -45,17 +45,23 @@ type Executor struct {
 	TimeSupplier func() int64
 }
 
-// Execute runs a command. If it returns true, the command is considered executed and should be consumed. If it returns false, the transaction should be rolled back.
-func (c *Executor) Execute(command Command) bool {
+func (c Executor) RunAsync(command Command, callback func(command Command, success bool)) {
+	go func() {
+		callback(command, c.Run(command))
+	}()
+}
+
+// Run runs a command. If it returns true, the command is considered executed and should be consumed. If it returns false, the transaction should be rolled back.
+func (c Executor) Run(command Command) bool {
 	log.WithField("command", command).Trace("Running command")
-	status := c.executeCommand(command)
+	status := c.execute(command)
 	log.WithField("command", command).WithField("status", status).Info("Ran command")
 	if status == later {
 		return false
 	}
 	if status == failure {
 		if command.Retry < numberOfRetries {
-			retryCommand := Command{command.ID, c.TimeSupplier() + waitBeforeRetry, command.Retry + 1, command.Target, command.Dependencies, command.Order}
+			retryCommand := command.GetRetryCommand(c.TimeSupplier())
 			log.WithField("retryCommand", retryCommand).Warn("Command failed, rescheduling")
 			c.Scheduler(retryCommand)
 		} else {
@@ -65,7 +71,7 @@ func (c *Executor) Execute(command Command) bool {
 	return true
 }
 
-func (c *Executor) executeCommand(command Command) commandstatus {
+func (c Executor) execute(command Command) commandstatus {
 
 	if c.TimeSupplier() < command.Timestamp {
 		return later
