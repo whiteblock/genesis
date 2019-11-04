@@ -22,6 +22,7 @@ package state
 import (
 	"context"
 	"github.com/golang-collections/go-datastructures/queue"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/command"
 	"sync"
 	"time"
@@ -62,13 +63,23 @@ func (s *State) Start() {
 	})
 }
 
+//HasExecuted checks if there is a command with the given id in this objects map of executed commands
+func (s *State) HasExecuted(id string) (ok bool) {
+	s.mu.Lock()
+	defer s.mu.Lock()
+	_, ok = commandState.ExecutedCommands[id]
+	return
+}
+
 func (s *State) loop() {
 	for {
 		cmds, err := s.pending.Get(1) //waits for new commands
 		if err != nil {
 			panic(err)
 		}
+
 		cmd := cmds[0].(command.Command)
+		log.WithFields(log.Fields{"command": cmd}).Trace("attempting to run a command")
 		s.executor.RunAsync(cmd, func(cmd command.Command, stat command.Result) {
 			if !stat.IsSuccess() {
 				s.AddCommands(cmd)
@@ -81,20 +92,18 @@ func (s *State) loop() {
 	}
 }
 
-func init() {
+//Start causes the default command state to run its main loop, processing commands given to it.
+func Start() {
 	commandState = NewState(command.Executor{
 		func(ctx context.Context, order command.Order) command.Result {
 			//TODO
-			return command.Result{Error: nil}
+			return command.Result{Type: command.SuccessType, Error: nil}
 		},
 		func(cmd command.Command) {
 			commandState.AddCommands(cmd)
 		},
 		func(id string) bool {
-			if _, ok := commandState.ExecutedCommands[id]; ok {
-				return true
-			}
-			return false
+			return commandState.HasExecuted(id)
 		},
 		func() int64 { return time.Now().Unix() },
 	})
