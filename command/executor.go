@@ -24,34 +24,38 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Result interface {
-	GetStatus() Status
-}
-
-type Status struct {
+//Result is the last known status of the command, contains a type and possibly an error
+type Result struct {
 	Error error
 	Type  string
 }
 
-func (res Status) IsSuccess() bool {
+//IsSuccess returns whether or not the result indicates success
+func (res Result) IsSuccess() bool {
 	return res.Error == nil
 }
 
-func (res Status) IsFatal() bool {
+//IsFatal returns true if there is an errr and it is marked as a fatal error,
+//meaning it should not be reattempted
+func (res Result) IsFatal() bool {
 	return res.Error != nil && res.Type == FatalType
 }
 
 const (
+	//SuccessType is the type of a successful result
+	SuccessType = "Success"
+	//TooSoonType is the type of a result from a command which tried to execute too soon
 	TooSoonType = "TooSoon"
-	FatalType   = "Fatal"
+	//FatalType is the type of a result which indicates a fatal error
+	FatalType = "Fatal"
 
 	numberOfRetries = 4
 	waitBeforeRetry = 10
 )
 
 var (
-	statusSuccess = Status{Error: nil}
-	statusTooSoon = Status{Type: TooSoonType, Error: fmt.Errorf("command ran too soon")}
+	statusSuccess = Result{Error: nil}
+	statusTooSoon = Result{Type: TooSoonType, Error: fmt.Errorf("command ran too soon")}
 )
 
 // Executor executes commands according to their schedule and their dependencies
@@ -66,22 +70,22 @@ type Executor struct {
 	TimeSupplier func() int64
 }
 
-func (c Executor) RunAsync(command Command, callback func(command Command, stat Status)) {
+//RunAsync runs a command asynchronously and calls the given callback on completion
+func (c Executor) RunAsync(command Command, callback func(command Command, stat Result)) {
 	go func() {
 		callback(command, c.Run(command))
 	}()
 }
 
 // Run runs a command. If it returns true, the command is considered executed and should be consumed. If it returns false, the transaction should be rolled back.
-func (c Executor) Run(command Command) (stat Status) {
+func (c Executor) Run(command Command) (stat Result) {
 	stat, ok := c.checkSanity(command)
 	if !ok {
 		return
 	}
 	log.WithField("command", command).Trace("Running command")
-	res := c.execute(command)
-	log.WithField("command", command).WithField("Result", res).Info("Ran command")
-	stat = res.GetStatus()
+	stat = c.execute(command)
+	log.WithField("command", command).WithField("Result", stat).Info("Ran command")
 	if !stat.IsSuccess() {
 		if command.Retry < numberOfRetries && !stat.IsFatal() {
 			retryCommand := command.GetRetryCommand(c.TimeSupplier())
@@ -93,10 +97,10 @@ func (c Executor) Run(command Command) (stat Status) {
 			log.WithField("command", command).Error("command failed too many times")
 		}
 	}
-	return res.GetStatus()
+	return
 }
 
-func (c Executor) checkSanity(command Command) (stat Status, ok bool) {
+func (c Executor) checkSanity(command Command) (stat Result, ok bool) {
 	ok = true
 	if c.TimeSupplier() < command.Timestamp {
 		ok = false

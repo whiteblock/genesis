@@ -44,8 +44,9 @@ type Command struct {
 	Order        Order         `json:"order"`
 }
 
+//GetRetryCommand creates a copy of this command which has been modified to be requeued after an error
 func (cmd Command) GetRetryCommand(timestamp int64) Command {
 	cmd.Timestamp = timestamp + waitBeforeRetry
-	cmd.Retry += 1
+	cmd.Retry++
 	return cmd
 }

@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+//Package state contains functionality for use by programs which wish to use Genesis in standalone mode.
 package state
 
 import (
@@ -35,6 +36,7 @@ type State struct {
 	once             *sync.Once
 }
 
+//NewState creates a new state object and initializes the values
 func NewState(exec command.Executor) *State {
 	return &State{
 		ExecutedCommands: map[string]command.Command{},
@@ -46,7 +48,7 @@ func NewState(exec command.Executor) *State {
 
 var commandState *State
 
-// Addcommand.Commands adds one more commands to the commands to be executed
+// AddCommands adds one or more commands to be executed
 func (s *State) AddCommands(commands ...command.Command) {
 	for _, cmd := range commands {
 		s.pending.Put(cmd)
@@ -67,7 +69,7 @@ func (s *State) loop() {
 			panic(err)
 		}
 		cmd := cmds[0].(command.Command)
-		s.executor.RunAsync(cmd, func(cmd command.Command, stat command.Status) {
+		s.executor.RunAsync(cmd, func(cmd command.Command, stat command.Result) {
 			if !stat.IsSuccess() {
 				s.AddCommands(cmd)
 			} else {
@@ -83,7 +85,7 @@ func init() {
 	commandState = NewState(command.Executor{
 		func(ctx context.Context, order command.Order) command.Result {
 			//TODO
-			return nil
+			return command.Result{Error: nil}
 		},
 		func(cmd command.Command) {
 			commandState.AddCommands(cmd)
@@ -100,7 +102,7 @@ func init() {
 	go commandState.Start()
 }
 
-// Getcommand.CommandState returns the singleton local state of Genesis.
+// GetCommandState returns the singleton local state of Genesis.
 func GetCommandState() *State {
 	return commandState
 }
