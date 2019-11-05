@@ -66,7 +66,7 @@ func (s *State) Start() {
 //HasExecuted checks if there is a command with the given id in this objects map of executed commands
 func (s *State) HasExecuted(id string) (ok bool) {
 	s.mu.Lock()
-	defer s.mu.Lock()
+	defer s.mu.Unlock()
 	_, ok = commandState.ExecutedCommands[id]
 	return
 }
@@ -85,7 +85,7 @@ func (s *State) loop() {
 				s.AddCommands(cmd)
 			} else {
 				s.mu.Lock()
-				defer s.mu.Lock()
+				defer s.mu.Unlock()
 				s.ExecutedCommands[cmd.ID] = cmd
 			}
 		})
