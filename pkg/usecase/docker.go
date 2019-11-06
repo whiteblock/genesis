@@ -31,14 +31,15 @@ type DockerUseCase interface{
 
 type dockerUseCase struct {
 	conf entity.DockerConfig
+	service service.DockerService
 }
 
-func NewDockerUseCase(conf entity.DockerConfig) (DockerUseCase, error) {
-	return dockerUseCase{conf:conf},nil
+func NewDockerUseCase(conf entity.DockerConfig, service service.DockerService) (DockerUseCase, error) {
+	return dockerUseCase{conf:conf, service: service},nil
 }
 
-func (duck dockerUseCase) Execute(ctx context.Context,cmd command.Command) entity.Result {
-	cli,err := NewClientWithOpts(
+func (duck dockerUseCase) Execute(ctx context.Context, cmd command.Command) entity.Result {
+	cli, err := NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
 		client.WithHost(cmd.Target.IP),
 		client.WithTLSClientConfig(duck.conf.CACertPath,duck.conf.CertPath,duck.conf.KeyPath)
@@ -46,5 +47,6 @@ func (duck dockerUseCase) Execute(ctx context.Context,cmd command.Command) entit
 	if err != nil {
 		return entity.Result{Error:err}
 	}
+	//TODO: route it to the right function call in service
 }
 
