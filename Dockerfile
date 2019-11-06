@@ -12,7 +12,7 @@ ENV DEBIAN_FRONTEND noninteractive
 
 RUN mkdir -p /genesis &&\
 	apt-get update &&\
-	apt-get install --no-install-recommends -y openssh-client ca-certificates &&\
+	apt-get install --no-install-recommends -y ca-certificates &&\
 	apt-get clean &&\
 	rm -rf /var/lib/apt/lists/* &&\
 	mkdir -p /etc/whiteblock

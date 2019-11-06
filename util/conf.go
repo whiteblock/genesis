@@ -28,9 +28,6 @@ import (
 // Config groups all of the global configuration parameters into
 // a single struct
 type Config struct {
-	SSHUser                 string  `mapstructure:"sshUser"`
-	SSHKey                  string  `mapstructure:"sshKey"`
-	SSHHost                 string  `mapstructure:"sshHost"`
 	ServerBits              uint32  `mapstructure:"serverBits"`
 	ClusterBits             uint32  `mapstructure:"clusterBits"`
 	NodeBits                uint32  `mapstructure:"nodeBits"`
@@ -84,9 +81,7 @@ var NodesPerCluster uint32
 var conf = new(Config)
 
 func setViperEnvBindings() {
-	viper.BindEnv("sshUser", "SSH_USER")
 	viper.BindEnv("listen", "LISTEN")
-	viper.BindEnv("sshKey", "SSH_KEY")
 	viper.BindEnv("verbosity", "VERBOSITY")
 	viper.BindEnv("serverBits", "SERVER_BITS")
 	viper.BindEnv("clusterBits", "CLUSTER_BITS")
@@ -128,9 +123,6 @@ func setViperEnvBindings() {
 	viper.BindEnv("tmpStoreDir", "TMP_STORE_DIR")
 }
 func setViperDefaults() {
-	viper.SetDefault("sshUser", os.Getenv("USER"))
-	viper.SetDefault("sshKey", os.Getenv("HOME")+"/.ssh/id_rsa")
-	viper.SetDefault("sshHost", "127.0.0.1")
 	viper.SetDefault("serverBits", 8)
 	viper.SetDefault("clusterBits", 12)
 	viper.SetDefault("nodeBits", 4)

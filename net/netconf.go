@@ -21,7 +21,6 @@ package netconf
 
 import (
 	"fmt"
-	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/util"
 )
 
@@ -99,7 +98,7 @@ func CreateCommands(netconf Netconf, serverID int) []string {
 }
 
 //Apply applies the given network config.
-func Apply(client ssh.Client, netconf Netconf, serverID int) error {
+/*func Apply(client .Client, netconf Netconf, serverID int) error {
 	cmds := CreateCommands(netconf, serverID)
 	for i, cmd := range cmds {
 		_, err := client.Run(cmd)
@@ -113,3 +112,4 @@ func Apply(client ssh.Client, netconf Netconf, serverID int) error {
 	}
 	return nil
 }
+*/

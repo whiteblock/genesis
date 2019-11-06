@@ -44,25 +44,12 @@ BUILD
 #
 # run script
 # (re)start genesis docker container
-#
   $run = <<-RUN
 #!/bin/bash
 set -euox pipefail
-echo "=== setup ssh key ==="
-[ -f /home/vagrant/.ssh/id_rsa ] || ssh-keygen -f /home/vagrant/.ssh/id_rsa -t rsa -N ''
-PUB_KEY=`cat /home/vagrant/.ssh/id_rsa.pub`
-grep -q -F \"$PUB_KEY\" /home/vagrant/.ssh/authorized_keys || echo \"$PUB_KEY\" >> /home/vagrant/.ssh/authorized_keys
 echo "=== start genesis ==="
 sudo docker stop genesis || true
 sudo docker run --rm -d --name genesis \
-  -v /home/vagrant/.ssh/id_rsa:/root/.ssh/id_rsa \
-  -v /home/vagrant/.ssh/id_rsa.pub:/root/.ssh/id_rsa.pub \
-  -v /home/vagrant/.ssh/authorized_keys:/root/.ssh/authorized_keys \
-  -e SSH_USER='vagrant' \
-  -e SSH_KEY='/root/.ssh/id_rsa' \
-  -e HANDLE_NODE_SSH_KEYS='true' \
-  -e NODES_PUBLIC_KEY=/root/.ssh/id_rsa.pub \
-  -e NODES_PRIVATE_KEY=/root/.ssh/id_rsa \
   -e LISTEN='0.0.0.0:8000' \
   --net=host \
   gcr.io/whiteblock/genesis:dev-alpine

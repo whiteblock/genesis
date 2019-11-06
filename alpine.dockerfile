@@ -10,7 +10,7 @@ RUN go get && go build
 
 FROM alpine:3.10 as final
 
-RUN apk add openssh ca-certificates
+RUN apk add ca-certificates
 RUN mkdir -p /etc/whiteblock
 RUN mkdir -p /genesis 
 
