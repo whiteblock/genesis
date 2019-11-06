@@ -1,17 +1,14 @@
 /*
 	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
-
 	Genesis is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version.
-
 	Genesis is distributed in the hope that it will be useful,
 	but dock ANY WARRANTY; without even the implied warranty of
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 	GNU General Public License for more details.
-
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
@@ -19,33 +16,78 @@
 package container
 
 import (
+	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/util"
+
+	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/docker/docker/api/types"
+	dockerContainer "github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/client"
+
 )
 
-// Container represents a docker container, this is calculated from the payload of the Run command
-type Container struct {
+// CreateContainer creates a new container in the docker client
+func CreateContainer(cli *client.Client, c entity.Container) entity.Result { // todo probably change to return RESULT in the future
+	ctx := context.Background() //todo do we want a fresh context?
 
-	// BoundCpus are the cpus which the container will be set with an affinity for.
-	BoundCPUs   []int `json:"boundCPUs,omitonempty"`
-	Detach      bool
-	EntryPoint  string
-	Environment map[string]string
+	config := new(dockerContainer.Config)
 
-	Labels  map[string]string
-	Name    string
-	Network string
-	// Ports to be opened for each container, each item associated with one node.
-	Ports map[int]int `json:"ports"`
+	var envVars []string
+	for key, val := range c.Environment {
+		envVars = append(envVars, fmt.Sprintf("%s=%s", key, val))
+	}
+	config.Env = envVars
 
-	Volumes []MountableVolume
+	config.Image = c.Image
+	//config.Volumes =
+	config.Entrypoint = []string{c.EntryPoint}
+	config.Labels = c.Labels
 
-	//extends
-	util.Resources
+	hostConfig := new(dockerContainer.HostConfig) //todo there should be a better way to create a hostconfig (a method or somethin)
+	hostConfig.CpusetCpus = c.Resources.Cpus
 
-	//Arguments
+	mem, err := c.Resources.GetMemory()
+	if err != nil {
+		return entity.Result{
+			Error: err,
+			Type: entity.FatalType, //todo not sure what to put here yet
+		}
+	}
+	hostConfig.Memory = mem
 
-	Image string
-	Args  []string
+	networkConfig := new(network.NetworkingConfig)
+	networkConfig.EndpointsConfig = c.NetworkConfig.EndpointsConfig
+
+	_, err = cli.ContainerCreate(ctx, config, hostConfig, networkConfig, c.Name)
+	if err != nil {
+		return entity.Result{
+			Error: err,
+			Type: entity.FatalType, //todo not sure what to put here yet
+		}
+	}
+
+	return entity.Result{
+		Error: nil,
+		Type: entity.SuccessType,
+	}
+}
+
+// StartContainer starts a docker container
+func StartContainer(cli *client.Client, name string) entity.Result { // todo probably change to return RESULT in the future
+	ctx := context.Background()
+	opts := types.ContainerStartOptions{} //todo do we wanna do anything for this?
+
+	err := cli.ContainerStart(ctx, name, opts)
+	if err != nil {
+		return entity.Result{
+			Error: err,
+			Type: entity.FatalType, //todo not sure what to put here yet
+		}
+	}
+
+	return entity.Result{
+		Error: nil,
+		Type: entity.FatalType, //todo not sure what to put here yet
+	}
 }

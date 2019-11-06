@@ -18,6 +18,15 @@
 
 package docker
 
+import (
+	"github.com/docker/docker/api/types/network"
+)
+
 // Network represents a docker network
 type Network struct {
+}
+
+// NetworkConfig represents a docker network configuration
+type NetworkConfig struct {
+	EndpointsConfig map[string]*network.EndpointSettings
 }

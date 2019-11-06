@@ -18,28 +18,31 @@
 
 package entity
 
+import (
+	"github.com/whiteblock/genesis/docker/volume"
+	network "github.com/whiteblock/genesis/docker/network"
+)
+
 // Container represents a docker container, this is calculated from the payload of the Run command
 type Container struct {
-
 	// BoundCpus are the cpus which the container will be set with an affinity for.
 	BoundCPUs   []int `json:"boundCPUs,omitonempty"`
-	Detach      bool
+	Detach      bool //todo: what does `detach` mean?
 	EntryPoint  string
 	Environment map[string]string
 
-	Labels  map[string]string
-	Name    string
-	Network string
-	// Ports to be opened for each container, each item associated with one node.
-	Ports map[int]int `json:"ports"`
+	Labels        map[string]string
+	Name          string
+	Network       string
+	NetworkConfig network.NetworkConfig
 
-	Volumes []MountableVolume
+	// Ports to be opened for each container, each port associated with one node.
+	Ports map[int]int `json:"ports"` // todo: how would we know which exposed port correlates to which node from client.ContainerInspect()?
 
-	//extends
-	Resources
+	Volumes map[string]volume.MountableVolume
 
-	//Arguments
-
-	Image string
-	Args  []string
+	//extends <-- todo: what?
+	Resources Resources
+	Image     string
+	Args      []string
 }

@@ -43,7 +43,7 @@ func (res Result) IsRequeue() bool {
 const (
 	//SuccessType is the type of a successful result
 	SuccessType = "Success"
-	//TooSoonType is the type of a result from a cmdwhich tried to execute too soon
+	//TooSoonType is the type of a result from a cmd which tried to execute too soon
 	TooSoonType = "TooSoon"
 	//FatalType is the type of a result which indicates a fatal error
 	FatalType = "Fatal"
