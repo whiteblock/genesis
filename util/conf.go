@@ -56,7 +56,6 @@ type Config struct {
 	LogJSON                 bool    `mapstructure:"logJson"`
 	PrometheusConfig        string  `mapstructure:"prometheusConfig"`
 	PrometheusPort          int     `mapstructure:"prometheusPort"`
-	GanacheCLIOptions       string  `mapstructure:"ganacheCLIOptions"`
 	GanacheRPCPort          int     `mapstructure:"ganacheRPCPort"`
 	MaxRunAttempts          int     `mapstructure:"maxRunAttempts"`
 	MaxConnections          int     `mapstructure:"maxConnections"`
@@ -112,7 +111,6 @@ func setViperEnvBindings() {
 	viper.BindEnv("logJson", "LOG_JSON")
 	viper.BindEnv("prometheusConfig", "PROMETHEUS_CONFIG")
 	viper.BindEnv("prometheusPort", "PROMETHEUS_PORT")
-	viper.BindEnv("ganacheCLIOptions", "GANACHE_CLI_OPTIONS")
 	viper.BindEnv("ganacheRPCPort", "GANACHE_RPC_PORT")
 	viper.BindEnv("maxRunAttempts", "MAX_RUN_ATTEMPTS")
 	viper.BindEnv("maxConnections", "MAX_CONNECTIONS")
@@ -163,7 +161,6 @@ func setViperDefaults() {
 	viper.SetDefault("removeNodesOnFailure", true)
 	viper.SetDefault("killRetries", 100)
 	viper.SetDefault("ganacheRPCPort", 8545)
-	viper.SetDefault("ganacheCLIOptions", "--gasLimit 4000000000000")
 	viper.SetDefault("enablePortForwarding", true)
 	viper.SetDefault("enableDockerVolumes", true)
 	viper.SetDefault("enableImageBuilding", true)
@@ -208,7 +205,7 @@ func init() {
 		log.Warn(err)
 	}
 	log.SetLevel(lvl)
-	NodesPerCluster = (1 << conf.NodeBits) - ReservedIps
+	NodesPerCluster = (1 << conf.NodeBits) - 3
 
 	if conf.LogJSON {
 		log.SetFormatter(&GCPFormatter{

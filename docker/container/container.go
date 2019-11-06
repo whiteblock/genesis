@@ -21,22 +21,22 @@ package container
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/util"
 	"github.com/whiteblock/genesis/docker"
+	"github.com/whiteblock/genesis/util"
 )
 
 // Container represents a docker container, this is calculated from the payload of the Run command
 type Container struct {
-	
+
 	// BoundCpus are the cpus which the container will be set with an affinity for.
 	BoundCPUs   []int `json:"boundCPUs,omitonempty"`
-	Detach 		bool
+	Detach      bool
 	EntryPoint  string
 	Environment map[string]string
-	
-	Labels      map[string]string
-	Name        string
-	Network		string
+
+	Labels  map[string]string
+	Name    string
+	Network string
 	// Ports to be opened for each container, each item associated with one node.
 	Ports map[int]int `json:"ports"`
 
@@ -45,9 +45,8 @@ type Container struct {
 	//extends
 	util.Resources
 
-
 	//Arguments
 
-	Image       string
-	Args []string
+	Image string
+	Args  []string
 }
