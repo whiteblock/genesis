@@ -23,7 +23,7 @@ import (
 	"context"
 	"github.com/golang-collections/go-datastructures/queue"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/command"
+	"github.com/whiteblock/genesis/pkg/command"
 	"sync"
 	"time"
 )

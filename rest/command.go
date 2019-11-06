@@ -20,7 +20,7 @@ package rest
 
 import (
 	"encoding/json"
-	"github.com/whiteblock/genesis/command"
+	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/util"
 	"net/http"
