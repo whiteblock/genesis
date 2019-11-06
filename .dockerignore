@@ -1,0 +1,9 @@
+.git
+Dockerfile
+alpine.dockerfile
+cloudbuild*
+.github
+.gitignore
+Vagrantfile
+Makefile
+Jenkinsfile
