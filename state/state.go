@@ -24,6 +24,7 @@ import (
 	"github.com/golang-collections/go-datastructures/queue"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/executor"
 	"sync"
 	"time"
 )
@@ -32,13 +33,13 @@ import (
 type State struct {
 	ExecutedCommands map[string]command.Command
 	pending          *queue.Queue
-	executor         command.Executor
+	executor         executor.Executor
 	mu               sync.Mutex
 	once             *sync.Once
 }
 
 //NewState creates a new state object and initializes the values
-func NewState(exec command.Executor) *State {
+func NewState(exec executor.Executor) *State {
 	return &State{
 		ExecutedCommands: map[string]command.Command{},
 		pending:          queue.New(20),
@@ -80,7 +81,7 @@ func (s *State) loop() {
 
 		cmd := cmds[0].(command.Command)
 		log.WithFields(log.Fields{"command": cmd}).Trace("attempting to run a command")
-		s.executor.RunAsync(cmd, func(cmd command.Command, stat command.Result) {
+		s.executor.RunAsync(cmd, func(cmd command.Command, stat executor.Result) {
 			if !stat.IsSuccess() {
 				s.AddCommands(cmd)
 			} else {
@@ -94,10 +95,10 @@ func (s *State) loop() {
 
 //Start causes the default command state to run its main loop, processing commands given to it.
 func Start() {
-	commandState = NewState(command.Executor{
-		func(ctx context.Context, order command.Order) command.Result {
+	commandState = NewState(executor.Executor{
+		func(ctx context.Context, order command.Order) executor.Result {
 			//TODO
-			return command.Result{Type: command.SuccessType, Error: nil}
+			return executor.Result{Type: executor.SuccessType, Error: nil}
 		},
 		func(cmd command.Command) {
 			commandState.AddCommands(cmd)

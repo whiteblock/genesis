@@ -45,8 +45,8 @@ type Command struct {
 }
 
 //GetRetryCommand creates a copy of this command which has been modified to be requeued after an error
-func (cmd Command) GetRetryCommand(timestamp int64) Command {
-	cmd.Timestamp = timestamp + waitBeforeRetry
+func (cmd Command) GetRetryCommand(newTimestamp int64) Command {
+	cmd.Timestamp = newTimestamp
 	cmd.Retry++
 	return cmd
 }

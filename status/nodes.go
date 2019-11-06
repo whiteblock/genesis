@@ -21,17 +21,12 @@ package status
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/ssh"
 	"github.com/whiteblock/genesis/util"
 	"strconv"
 	"strings"
 )
 
-var conf *util.Config
-
-func init() {
-	conf = util.GetConfig()
-}
+var conf = util.GetConfig()
 
 // Comp represents the compuational resources currently in use
 // by a node
@@ -66,7 +61,7 @@ func FindNodeIndex(status []NodeStatus, name string, serverID int) int {
 }
 
 // SumResUsage gets the cpu usage of a node
-func SumResUsage(c ssh.Client, name string) (Comp, error) {
+/*func SumResUsage(c ssh.Client, name string) (Comp, error) {
 	res, err := c.Run(fmt.Sprintf("docker exec %s ps aux --no-headers | awk '{print $3,$5,$6}'", name))
 	if err != nil {
 		return Comp{-1, -1, -1}, util.LogError(err)
@@ -101,3 +96,4 @@ func SumResUsage(c ssh.Client, name string) (Comp, error) {
 	}
 	return out, nil
 }
+*/
