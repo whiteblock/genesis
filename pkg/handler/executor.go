@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package executor
+package handler
 
 import (
 	"context"
@@ -25,31 +25,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/command"
 )
 
-//Result is the last known status of the command, contains a type and possibly an error
-type Result struct {
-	Error error
-	Type  string
-}
-
-//IsSuccess returns whether or not the result indicates success
-func (res Result) IsSuccess() bool {
-	return res.Error == nil
-}
-
-//IsFatal returns true if there is an errr and it is marked as a fatal error,
-//meaning it should not be reattempted
-func (res Result) IsFatal() bool {
-	return res.Error != nil && res.Type == FatalType
-}
-
 const (
-	//SuccessType is the type of a successful result
-	SuccessType = "Success"
-	//TooSoonType is the type of a result from a cmdwhich tried to execute too soon
-	TooSoonType = "TooSoon"
-	//FatalType is the type of a result which indicates a fatal error
-	FatalType = "Fatal"
-
 	numberOfRetries = 4
 	waitBeforeRetry = 10
 )
