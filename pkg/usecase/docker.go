@@ -20,7 +20,7 @@ package usecase
 
 import (
 	"context"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
