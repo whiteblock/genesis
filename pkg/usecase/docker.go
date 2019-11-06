@@ -20,7 +20,8 @@ package usecase
 
 import (
 	"context"
-	client "github.com/docker/docker/client"
+	"github.com/docker/docker/client"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service"
@@ -48,6 +49,7 @@ func (duck dockerUseCase) Execute(ctx context.Context, cmd command.Command) enti
 	if err != nil {
 		return entity.Result{Error: err}
 	}
+	log.WithField("client", cli).Debug("created a client")
 	//TODO: route it to the right function call in service
 	return entity.Result{Error: nil}
 }

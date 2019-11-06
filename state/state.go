@@ -20,13 +20,11 @@
 package state
 
 import (
-	"context"
 	"github.com/golang-collections/go-datastructures/queue"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/usecase"
 	"sync"
-	"time"
 )
 
 // State represents the local state of Genesis.
@@ -39,11 +37,11 @@ type State struct {
 }
 
 //NewState creates a new state object and initializes the values
-func NewState(exec executor.Executor) *State {
+func NewState(uc usecase.CommandUseCase) *State {
 	return &State{
 		ExecutedCommands: map[string]command.Command{},
 		pending:          queue.New(20),
-		executor:         exec,
+		uc:               uc,
 		once:             &sync.Once{},
 	}
 }
@@ -92,25 +90,14 @@ func (s *State) loop() {
 
 		cmd := cmds[0].(command.Command)
 		log.WithFields(log.Fields{"command": cmd}).Trace("attempting to run a command")
-		go s.runCommand()
+		go s.runCommand(cmd)
 	}
 }
 
 //Start causes the default command state to run its main loop, processing commands given to it.
 func Start() {
-	commandState = NewState(executor.Executor{
-		func(ctx context.Context, order command.Order) executor.Result {
-			//TODO
-			return executor.Result{Type: executor.SuccessType, Error: nil}
-		},
-		func(cmd command.Command) {
-			commandState.AddCommands(cmd)
-		},
-		func(id string) bool {
-			return commandState.HasExecuted(id)
-		},
-		func() int64 { return time.Now().Unix() },
-	})
+	//TODO
+	commandState = NewState(nil)
 
 	go commandState.Start()
 }

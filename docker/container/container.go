@@ -21,7 +21,6 @@ package container
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/docker"
 	"github.com/whiteblock/genesis/util"
 )
 

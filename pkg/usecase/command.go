@@ -48,6 +48,10 @@ type commandUseCase struct {
 	dockerUseCase DockerUseCase
 }
 
+func NewCommandUseCase(service service.CommandService, dockerUseCase DockerUseCase) (CommandUseCase, error) {
+	return &commandUseCase{service: service, dockerUseCase: dockerUseCase}, nil
+}
+
 func (c commandUseCase) TimeSupplier() int64 {
 	return time.Now().Unix()
 }
