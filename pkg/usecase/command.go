@@ -19,6 +19,9 @@
 package usecase
 
 import (
+	"context"
+	"fmt"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service"
@@ -76,9 +79,9 @@ func (c commandUseCase) checkSanity(cmd command.Command) (stat entity.Result, ok
 
 func (c commandUseCase) execute(cmd command.Command) entity.Result {
 	if cmd.Timeout == 0 {
-		return c.dockerUseCase.Execute(context.Background(), cmd.Order)
+		return c.dockerUseCase.Execute(context.Background(), cmd)
 	}
 	ctx, cancelFn := context.WithTimeout(context.Background(), cmd.Timeout)
 	defer cancelFn()
-	return c.dockerUseCase.Runner(ctx, cmd.Order)
+	return c.dockerUseCase.Execute(ctx, cmd)
 }

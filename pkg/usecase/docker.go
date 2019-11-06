@@ -20,7 +20,8 @@ package usecase
 
 import (
 	"context"
-	"github.com/docker/docker/client"
+	client "github.com/docker/docker/client"
+	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service"
 )
@@ -39,7 +40,7 @@ func NewDockerUseCase(conf entity.DockerConfig, service service.DockerService) (
 }
 
 func (duck dockerUseCase) Execute(ctx context.Context, cmd command.Command) entity.Result {
-	cli, err := NewClientWithOpts(
+	cli, err := client.NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
 		client.WithHost(cmd.Target.IP),
 		client.WithTLSClientConfig(duck.conf.CACertPath, duck.conf.CertPath, duck.conf.KeyPath),
@@ -48,4 +49,5 @@ func (duck dockerUseCase) Execute(ctx context.Context, cmd command.Command) enti
 		return entity.Result{Error: err}
 	}
 	//TODO: route it to the right function call in service
+	return entity.Result{Error: nil}
 }
