@@ -22,8 +22,8 @@ import (
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
-	"github.com/whiteblock/genesis/pkg/usecase"
 	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/usecase"
 	"time"
 )
 
@@ -36,20 +36,20 @@ type deliveryHandler struct {
 	usecase usecase.CommandUseCase
 }
 
-func NewDeliveryHandler(usecase usecase.CommandUseCase) (DeliveryHandler,error) {
-	return deliveryHandler{usecase:usecase},nil
+func NewDeliveryHandler(usecase usecase.CommandUseCase) (DeliveryHandler, error) {
+	return deliveryHandler{usecase: usecase}, nil
 }
 
 func (dh deliveryHandler) ProcessMessage(msg amqp.Delivery) entity.Result {
 	var cmd Command
-	err := json.Unmarshal(msg.Body,&cmd)
+	err := json.Unmarshal(msg.Body, &cmd)
 	if err != nil {
-		return entity.Result{Error:err}
+		return entity.Result{Error: err}
 	}
 	return usecase.Run(cmd)
 }
 
-func (dh deliveryHandler) GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing,error) {
+func (dh deliveryHandler) GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing, error) {
 	pub := amqp.Publishing{
 		Headers: msg.Headers,
 		// Properties
@@ -66,16 +66,16 @@ func (dh deliveryHandler) GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing
 	}
 
 	var cmd Command
-	err := json.Unmarshal(msg.Body,&cmd)
+	err := json.Unmarshal(msg.Body, &cmd)
 	if err != nil {
-		return pub,err
+		return pub, err
 	}
 	cmd = cmd.GetRetryCommand(time.Now().Unix())
 
-	body,err := json.Marshal(cmd)
+	body, err := json.Marshal(cmd)
 	if err != nil {
-		return pub,err
+		return pub, err
 	}
 	pub.Body = body
-	return pub,nil
+	return pub, nil
 }

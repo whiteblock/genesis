@@ -20,6 +20,6 @@ package entity
 
 type DockerConfig struct {
 	CACertPath string
-	CertPath string
-	KeyPath string
+	CertPath   string
+	KeyPath    string
 }

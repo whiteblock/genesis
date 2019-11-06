@@ -18,11 +18,10 @@
 
 package service
 
-import(
-	"github.com/whiteblock/registrar/pkg/command"
+import (
+	"github.com/whiteblock/genesis/pkg/command"
 )
 
 type CommandService interface {
 	CheckDependenciesExecuted(cmd command.Command) bool
 }
-

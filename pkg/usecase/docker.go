@@ -18,35 +18,34 @@
 
 package usecase
 
-import(
+import (
 	"context"
 	"github.com/docker/docker/client"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service"
 )
 
-type DockerUseCase interface{
-	Execute(ctx context.Context,cmd command.Command) entity.Result
+type DockerUseCase interface {
+	Execute(ctx context.Context, cmd command.Command) entity.Result
 }
 
 type dockerUseCase struct {
-	conf entity.DockerConfig
+	conf    entity.DockerConfig
 	service service.DockerService
 }
 
 func NewDockerUseCase(conf entity.DockerConfig, service service.DockerService) (DockerUseCase, error) {
-	return dockerUseCase{conf:conf, service: service},nil
+	return dockerUseCase{conf: conf, service: service}, nil
 }
 
 func (duck dockerUseCase) Execute(ctx context.Context, cmd command.Command) entity.Result {
 	cli, err := NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
 		client.WithHost(cmd.Target.IP),
-		client.WithTLSClientConfig(duck.conf.CACertPath,duck.conf.CertPath,duck.conf.KeyPath)
+		client.WithTLSClientConfig(duck.conf.CACertPath, duck.conf.CertPath, duck.conf.KeyPath),
 	)
 	if err != nil {
-		return entity.Result{Error:err}
+		return entity.Result{Error: err}
 	}
 	//TODO: route it to the right function call in service
 }
-

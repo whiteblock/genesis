@@ -18,10 +18,6 @@
 
 package repository
 
-import(
-	"github.com/whiteblock/registrar/pkg/command"
-)
-
 type CommandRepository interface {
 	CommandExecuted(id string) bool
 }

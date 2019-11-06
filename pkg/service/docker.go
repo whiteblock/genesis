@@ -18,7 +18,7 @@
 
 package service
 
-import(
+import (
 	"github.com/docker/docker/client"
 	"github.com/whiteblock/genesis/pkg/entity"
 )
@@ -39,6 +39,6 @@ type DockerService interface {
 type dockerService struct {
 }
 
-func NewDockerService() ( DockerService, error) {
-	return dockerService{},nil
+func NewDockerService() (DockerService, error) {
+	return dockerService{}, nil
 }

@@ -16,13 +16,13 @@
 	along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-package handler
+package usecase
 
 import (
-	"github.com/whiteblock/registrar/pkg/command"
-	"github.com/whiteblock/registrar/pkg/entity"
-	"github.com/whiteblock/registrar/pkg/usecase"
-	"github.com/whiteblock/registrar/pkg/service"
+	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/service"
+	"time"
 )
 
 const (
@@ -37,43 +37,26 @@ var (
 
 type CommandUseCase interface {
 	Run(cmd command.Command) entity.Result
-	RunAsync(cmd command.Command, callback func(cmd command.Command, stat entity.Result))
 	TimeSupplier() int64
 }
 
-
 type commandUseCase struct {
-	service service.CommandService
+	service       service.CommandService
 	dockerUseCase DockerUseCase
 }
 
-//RunAsync runs a cmdasynchronously and calls the given callback on completion
-func (c commandUseCase) RunAsync(cmd command.Command, callback func(cmd command.Command, stat entity.Result)) {
-	go func() {
-		callback(cmd, c.Run(cmd))
-	}()
+func (c commandUseCase) TimeSupplier() int64 {
+	return time.Now().Unix()
 }
 
 // Run runs a command. If it returns true, the cmdis considered executed and should be consumed. If it returns false, the transaction should be rolled back.
-func (c commandUseCase) Run(cmd command.Command) (stat entity.Result) {
+func (c commandUseCase) Run(cmd command.Command) entity.Result {
 	stat, ok := c.checkSanity(cmd)
 	if !ok {
-		return
+		return stat
 	}
-	log.WithField("command", cmd).Trace("Running command")
-	stat = c.execute(cmd)
-	log.WithField("command", cmd).WithField("Result", stat).Info("Ran command")
-	if !stat.IsSuccess() {
-		if cmd.Retry < numberOfRetries && !stat.IsFatal() {
-			retryCommand := cmd.GetRetryCommand(c.TimeSupplier() + waitBeforeRetry)
-			log.WithField("retryCommand", retryCommand).Warn("cmdfailed, rescheduling")
-		} else if stat.IsFatal() {
-			log.WithField("command", cmd).Error("command resulted in a non-recoverable error")
-		} else {
-			log.WithField("command", cmd).Error("command failed too many times")
-		}
-	}
-	return
+	log.WithField("command", cmd).Trace("running command")
+	return c.execute(cmd)
 }
 
 func (c commandUseCase) checkSanity(cmd command.Command) (stat entity.Result, ok bool) {
@@ -86,16 +69,16 @@ func (c commandUseCase) checkSanity(cmd command.Command) (stat entity.Result, ok
 	if !c.service.CheckDependenciesExecuted(cmd) {
 		ok = false
 		stat = statusTooSoon
-		return 
+		return
 	}
 	return
 }
 
 func (c commandUseCase) execute(cmd command.Command) entity.Result {
 	if cmd.Timeout == 0 {
-		return c.dockerUseCase.Execute(context.Background(),cmd.Order)
+		return c.dockerUseCase.Execute(context.Background(), cmd.Order)
 	}
 	ctx, cancelFn := context.WithTimeout(context.Background(), cmd.Timeout)
 	defer cancelFn()
-	return  c.dockerUseCase.Runner(ctx, cmd.Order)
+	return c.dockerUseCase.Runner(ctx, cmd.Order)
 }

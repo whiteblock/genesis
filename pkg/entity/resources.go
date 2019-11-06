@@ -16,11 +16,9 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package util
+package entity
 
 import (
-	"fmt"
-	log "github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 )
@@ -65,75 +63,6 @@ func memconv(mem string) (int64, error) {
 // GetMemory gets the memory value as an integer.
 func (res Resources) GetMemory() (int64, error) {
 	return memconv(res.Memory)
-}
-
-// Validate ensures that the given resource object is valid, and
-// allowable.
-func (res Resources) Validate() error {
-	if res.NoLimits() {
-		return nil
-	}
-
-	err := ValidateCommandLine(res.Memory)
-	if err != nil {
-		return err
-	}
-
-	err = ValidateCommandLine(res.Cpus)
-	if err != nil {
-		return err
-	}
-
-	if !res.NoMemoryLimits() {
-
-		m2, err := res.GetMemory()
-
-		if err != nil {
-			return err
-		}
-		if len(conf.MaxNodeMemory) != 0 {
-			m1, err := memconv(conf.MaxNodeMemory)
-			if err != nil {
-				log.WithFields(log.Fields{"error": err,
-					"memLimit": conf.MaxNodeMemory}).Panic("error parsing memory limit. check config file.")
-			}
-			log.WithFields(log.Fields{"maxMemory": m1, "givenMemory": m2}).Trace("checking memory")
-			if m2 > m1 {
-				return fmt.Errorf("assigning too much RAM: max is %s", conf.MaxNodeMemory)
-			}
-		}
-
-	}
-
-	if !res.NoCPULimits() {
-		c1 := conf.MaxNodeCPU
-		c2, err := strconv.ParseFloat(res.Cpus, 64)
-		if err != nil {
-			return err
-		}
-
-		if c1 > 0 && c2 > c1 {
-			return fmt.Errorf("assigning too much CPU: max is %f", conf.MaxNodeCPU)
-		}
-	}
-
-	return nil
-}
-
-// ValidateAndSetDefaults calls Validate, and if it is valid, fills any missing
-// information. Helps to ensure that the Maximum limits are enforced.
-func (res Resources) ValidateAndSetDefaults() error {
-	err := res.Validate()
-	if err != nil {
-		return err
-	}
-	if res.NoCPULimits() {
-		res.Cpus = fmt.Sprintf("%f", conf.MaxNodeCPU)
-	}
-	if res.NoMemoryLimits() {
-		res.Memory = conf.MaxNodeMemory
-	}
-	return nil
 }
 
 // NoLimits checks if the resources object doesn't specify any limits

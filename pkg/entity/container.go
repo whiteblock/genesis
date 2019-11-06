@@ -18,13 +18,6 @@
 
 package entity
 
-import (
-	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/docker"
-	"github.com/whiteblock/genesis/util"
-)
-
 // Container represents a docker container, this is calculated from the payload of the Run command
 type Container struct {
 
@@ -43,7 +36,7 @@ type Container struct {
 	Volumes []MountableVolume
 
 	//extends
-	util.Resources
+	Resources
 
 	//Arguments
 

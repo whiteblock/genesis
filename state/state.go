@@ -3,17 +3,17 @@
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    Genesis is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	Genesis is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 //Package state contains functionality for use by programs which wish to use Genesis in standalone mode.
@@ -24,7 +24,7 @@ import (
 	"github.com/golang-collections/go-datastructures/queue"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/command"
-	"github.com/whiteblock/genesis/pkg/executor"
+	"github.com/whiteblock/genesis/pkg/usecase"
 	"sync"
 	"time"
 )
@@ -33,7 +33,7 @@ import (
 type State struct {
 	ExecutedCommands map[string]command.Command
 	pending          *queue.Queue
-	executor         executor.Executor
+	uc               usecase.CommandUseCase
 	mu               sync.Mutex
 	once             *sync.Once
 }
@@ -72,6 +72,17 @@ func (s *State) HasExecuted(id string) (ok bool) {
 	return
 }
 
+func (s *State) runCommand(cmd command.Command) {
+	stat := s.uc.Run(cmd)
+	if !stat.IsSuccess() {
+		s.AddCommands(cmd)
+	} else {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		s.ExecutedCommands[cmd.ID] = cmd
+	}
+}
+
 func (s *State) loop() {
 	for {
 		cmds, err := s.pending.Get(1) //waits for new commands
@@ -81,15 +92,7 @@ func (s *State) loop() {
 
 		cmd := cmds[0].(command.Command)
 		log.WithFields(log.Fields{"command": cmd}).Trace("attempting to run a command")
-		s.executor.RunAsync(cmd, func(cmd command.Command, stat executor.Result) {
-			if !stat.IsSuccess() {
-				s.AddCommands(cmd)
-			} else {
-				s.mu.Lock()
-				defer s.mu.Unlock()
-				s.ExecutedCommands[cmd.ID] = cmd
-			}
-		})
+		go s.runCommand()
 	}
 }
 

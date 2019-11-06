@@ -21,3 +21,8 @@ package entity
 type Volume struct {
 	Name string
 }
+
+type MountableVolume struct {
+	Name  string
+	Mount string
+}

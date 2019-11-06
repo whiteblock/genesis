@@ -36,6 +36,10 @@ func (res Result) IsFatal() bool {
 	return res.Error != nil && res.Type == FatalType
 }
 
+func (res Result) IsRequeue() bool {
+	return !res.IsSuccess() && !res.IsFatal()
+}
+
 const (
 	//SuccessType is the type of a successful result
 	SuccessType = "Success"
