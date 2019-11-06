@@ -191,27 +191,6 @@ func CombineConfig(entries []string) string { // TODO: delete this function if d
 	return out
 }
 
-/*
-   BashExec executes _cmd in bash then return the result
-*/
-/*func BashExec(_cmd string) (string, error) {
-	cmd := exec.Command("bash", "-c", _cmd)
-
-	var resultsRaw bytes.Buffer
-
-	cmd.Stdout = &resultsRaw
-	err := cmd.Start()
-	if err != nil {
-		return "", LogError(err)
-	}
-	err = cmd.Wait()
-	if err != nil {
-		return "", LogError(err)
-	}
-
-	return resultsRaw.String(), nil
-}*/
-
 // GetPath extracts the base path of the given path
 func GetPath(path string) string {
 	index := strings.LastIndex(path, "/")

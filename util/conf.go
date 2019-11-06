@@ -205,7 +205,7 @@ func init() {
 		log.Warn(err)
 	}
 	log.SetLevel(lvl)
-	NodesPerCluster = (1 << conf.NodeBits) - ReservedIps
+	NodesPerCluster = (1 << conf.NodeBits) - 3
 
 	if conf.LogJSON {
 		log.SetFormatter(&GCPFormatter{
