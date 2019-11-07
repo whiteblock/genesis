@@ -19,6 +19,7 @@
 package main
 
 import (
+	_ "github.com/whiteblock/genesis/bus"
 	"github.com/whiteblock/genesis/rest"
 	"github.com/whiteblock/genesis/util"
 	"log"

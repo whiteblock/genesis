@@ -24,6 +24,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 	"github.com/whiteblock/genesis/pkg/handler"
+	"github.com/whiteblock/utility/utils"
 	"golang.org/x/sync/semaphore"
 	"sync"
 )
@@ -48,7 +49,6 @@ func (c *Consumer) Init() error {
 	if c.MaxRetries < 1 {
 		return fmt.Errorf("MaxRetries must be atleast 1")
 	}
-	c.callback = callback
 	return c.init()
 }
 
@@ -79,6 +79,7 @@ func (c *Consumer) Run() {
 }
 
 func (c *Consumer) kickBackMessage(msg amqp.Delivery) {
+	log.WithFields(log.Fields{"msg": msg}).Info("kicking back message")
 	pub, err := c.Handle.GetKickbackMessage(msg)
 	if err != nil {
 		utils.LogError(err)
@@ -98,13 +99,13 @@ func (c *Consumer) kickBackMessage(msg amqp.Delivery) {
 
 	err = ch.Publish(msg.Exchange, msg.RoutingKey, false, false, pub)
 	if err != nil {
-		tx.Rollback()
+		ch.TxRollback()
 		utils.LogError(err)
 		return
 	}
 	err = msg.Reject(false)
 	if err != nil {
-		tx.Rollback()
+		ch.TxRollback()
 		utils.LogError(err)
 		return
 	}
@@ -113,9 +114,9 @@ func (c *Consumer) kickBackMessage(msg amqp.Delivery) {
 
 func (c *Consumer) handleMessage(msg amqp.Delivery) {
 	defer c.sem.Release(1)
-	res := c.ProcessMessage(msg)
+	res := c.Handle.ProcessMessage(msg)
 	if res.IsRequeue() {
-		utils.LogError(err)
+		utils.LogError(res.Error)
 		go c.kickBackMessage(msg)
 		return
 	} else if res.IsSuccess() {
