@@ -41,8 +41,7 @@ type Container struct {
 
 	Volumes map[string]volume.MountableVolume `json:"volumes"`
 
-	//extends <--
-	Resources Resources
-	Image     string
-	Args      []string
+	Resources
+	Image string
+	Args  []string
 }

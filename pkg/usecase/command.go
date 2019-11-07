@@ -58,7 +58,7 @@ func (c commandUseCase) TimeSupplier() int64 {
 
 // Run runs a command. If it returns true, the cmdis considered executed and should be consumed. If it returns false, the transaction should be rolled back.
 func (c commandUseCase) Run(cmd command.Command) entity.Result {
-	stat, ok := c.checkSanity(cmd)
+	stat, ok := c.dependencyCheck(cmd)
 	if !ok {
 		return stat
 	}
@@ -66,7 +66,7 @@ func (c commandUseCase) Run(cmd command.Command) entity.Result {
 	return c.execute(cmd)
 }
 
-func (c commandUseCase) checkSanity(cmd command.Command) (stat entity.Result, ok bool) {
+func (c commandUseCase) dependencyCheck(cmd command.Command) (stat entity.Result, ok bool) {
 	ok = true
 	if c.TimeSupplier() < cmd.Timestamp {
 		ok = false

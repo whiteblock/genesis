@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 whiteblock Inc.
+	Copyright 2019 whiteblock Incontainer.
 	This file is a part of the genesis.
 	Genesis is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@ package container
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/docker/docker/api/types"
 	dockerContainer "github.com/docker/docker/api/types/container"
@@ -27,42 +28,41 @@ import (
 )
 
 // CreateContainer creates a new container in the docker client
-func CreateContainer(ctx context.Context, cli *client.Client, c entity.Container) entity.Result { // todo probably change to return RESULT in the future
-
-	config := new(dockerContainer.Config)
+func CreateContainer(ctx context.Context, cli *client.Client, container entity.Container) entity.Result { //TODO push to service
 
 	var envVars []string
-	for key, val := range c.Environment {
+	for key, val := range container.Environment {
 		envVars = append(envVars, fmt.Sprintf("%s=%s", key, val))
 	}
-	config.Env = envVars
 
-	config.Image = c.Image
-	//config.Volumes =
-	config.Entrypoint = []string{c.EntryPoint}
-	config.Labels = c.Labels
-
-	hostConfig := new(dockerContainer.HostConfig) //todo there should be a better way to create a hostconfig (a method or somethin)
-	hostConfig.CpusetCpus = c.Resources.Cpus
-
-	mem, err := c.Resources.GetMemory()
-	if err != nil {
-		return entity.Result{
-			Error: err,
-			Type:  entity.FatalType, //todo not sure what to put here yet
-		}
+	config := &dockerContainer.Config{
+		Env:        envVars,
+		Image:      container.Image,
+		Entrypoint: []string{container.EntryPoint},
+		Labels:     container.Labels,
 	}
+
+	mem, err := container.GetMemory()
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+
+	cpus, err := strconv.ParseFloat(container.Cpus, 64)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+
+	hostConfig := &dockerContainer.HostConfig{}
+	hostConfig.NanoCPUs = int64(1000000000 * cpus)
 	hostConfig.Memory = mem
 
-	networkConfig := new(network.NetworkingConfig)
-	networkConfig.EndpointsConfig = c.NetworkConfig.EndpointsConfig
+	networkConfig := &network.NetworkingConfig{
+		EndpointsConfig: container.NetworkConfig.EndpointsConfig,
+	}
 
-	_, err = cli.ContainerCreate(ctx, config, hostConfig, networkConfig, c.Name)
+	_, err = cli.ContainerCreate(ctx, config, hostConfig, networkConfig, container.Name) //Wrap/Put into repo
 	if err != nil {
-		return entity.Result{
-			Error: err,
-			Type:  entity.FatalType, //todo not sure what to put here yet
-		}
+		return entity.NewFatalResult(err)
 	}
 
 	return entity.Result{

@@ -30,11 +30,12 @@ import (
 	"github.com/whiteblock/genesis/util"
 )
 
-type DockerUseCase interface {
+type DockerUseCase interface { //move to service
+	//Execute executes the command with the given context
 	Execute(ctx context.Context, cmd command.Command) entity.Result
 }
 
-type dockerUseCase struct {
+type dockerUseCase struct { //TODO: move to service
 	conf    entity.DockerConfig
 	service service.DockerService
 }
@@ -43,6 +44,7 @@ func NewDockerUseCase(conf entity.DockerConfig, service service.DockerService) (
 	return dockerUseCase{conf: conf, service: service}, nil
 }
 
+//Execute executes the command with the given context
 func (duck dockerUseCase) Execute(ctx context.Context, cmd command.Command) entity.Result {
 	cli, err := duck.service.CreateClient(duck.conf, cmd.Target.IP)
 	if err != nil {
@@ -51,7 +53,7 @@ func (duck dockerUseCase) Execute(ctx context.Context, cmd command.Command) enti
 	log.WithField("client", cli).Debug("created a client")
 	switch cmd.Order.Type {
 	case "createContainer":
-		return duck.createContainerShim(ctx, cli, cmd)
+		return duck.createContainerShim(ctx, cli, cmd) //TODO: Move shims to service
 	case "startContainer":
 		return duck.startContainerShim(ctx, cli, cmd)
 	case "removeContainer":
