@@ -32,20 +32,14 @@ func TestResources_GetMemory_Successful(t *testing.T) {
 		{res: Resources{
 			Cpus:    "",
 			Memory:  "45",
-			Volumes: []string{},
-			Ports:   []string{},
 		}, expected: int64(45)},
 		{res: Resources{
 			Cpus:    "",
 			Memory:  "1",
-			Volumes: []string{},
-			Ports:   []string{},
 		}, expected: int64(1)},
 		{res: Resources{
 			Cpus:    "",
 			Memory:  "92233720368547",
-			Volumes: []string{},
-			Ports:   []string{},
 		}, expected: int64(92233720368547)},
 	}
 

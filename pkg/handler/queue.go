@@ -29,7 +29,7 @@ import (
 
 type DeliveryHandler interface {
 	ProcessMessage(msg amqp.Delivery) entity.Result
-	GetKickbackMessage(msg amqp.Delivery) amqp.Publishing
+	GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing,error)
 }
 
 type deliveryHandler struct {
