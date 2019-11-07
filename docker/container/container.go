@@ -27,8 +27,7 @@ import (
 )
 
 // CreateContainer creates a new container in the docker client
-func CreateContainer(cli *client.Client, c entity.Container) entity.Result { // todo probably change to return RESULT in the future
-	ctx := context.Background() //todo do we want a fresh context?
+func CreateContainer(ctx context.Context, cli *client.Client, c entity.Container) entity.Result { // todo probably change to return RESULT in the future
 
 	config := new(dockerContainer.Config)
 
@@ -73,8 +72,7 @@ func CreateContainer(cli *client.Client, c entity.Container) entity.Result { // 
 }
 
 // StartContainer starts a docker container
-func StartContainer(cli *client.Client, name string) entity.Result { // todo probably change to return RESULT in the future
-	ctx := context.Background()
+func StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result { // todo probably change to return RESULT in the future
 	opts := types.ContainerStartOptions{} //todo do we wanna do anything for this?
 
 	err := cli.ContainerStart(ctx, name, opts)

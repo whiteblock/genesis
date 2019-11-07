@@ -21,6 +21,7 @@ package service
 import (
 	"context"
 	"github.com/moby/moby/client"
+	"github.com/whiteblock/genesis/docker/container"
 	"github.com/whiteblock/genesis/pkg/entity"
 )
 
@@ -44,14 +45,14 @@ func NewDockerService() (DockerService, error) {
 	return dockerService{}, nil
 }
 
-func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, container entity.Container) entity.Result {
+func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, c entity.Container) entity.Result {
 	//TODO
-	return entity.Result{}
+	return container.CreateContainer(ctx, cli, c)
 }
 
 func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
 	//TODO
-	return entity.Result{}
+	return container.StartContainer(ctx, cli, name)
 }
 
 func (ds dockerService) RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
@@ -64,7 +65,7 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, n
 	return entity.Result{}
 }
 
-func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, network string, container string) entity.Result {
+func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, network string, containerName string) entity.Result {
 	//TODO
 	return entity.Result{}
 }
