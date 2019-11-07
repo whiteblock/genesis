@@ -147,15 +147,17 @@ pipeline {
     failure {
       sh "docker network prune --force"
       sh "docker volume prune --force"
-      if (env.BRANCH_NAME == DEFAULT_BRANCH) {
-        withCredentials([
-            [$class: 'StringBinding', credentialsId: "${SLACK_CREDENTIALS_ID}", variable: 'SLACK_TOKEN']
-        ]) {
-            slackSend teamDomain: "${SLACK_TEAM_DOMAIN}",
-                channel: "${SLACK_CHANNEL}",
-                token: "${SLACK_TOKEN}",
-                color: 'danger',
-                message: "@here ALARM! \n *FAILED*: Job *${env.JOB_NAME}*. \n <${env.RUN_DISPLAY_URL}|*Build Log [${env.BUILD_NUMBER}]*>"
+      script {
+        if (env.BRANCH_NAME == DEFAULT_BRANCH) {
+          withCredentials([
+              [$class: 'StringBinding', credentialsId: "${SLACK_CREDENTIALS_ID}", variable: 'SLACK_TOKEN']
+          ]) {
+              slackSend teamDomain: "${SLACK_TEAM_DOMAIN}",
+                  channel: "${SLACK_CHANNEL}",
+                  token: "${SLACK_TOKEN}",
+                  color: 'danger',
+                  message: "@here ALARM! \n *FAILED*: Job *${env.JOB_NAME}*. \n <${env.RUN_DISPLAY_URL}|*Build Log [${env.BUILD_NUMBER}]*>"
+          }
         }
       }
     }
