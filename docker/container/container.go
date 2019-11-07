@@ -43,7 +43,7 @@ func CreateContainer(ctx context.Context, cli *client.Client, c entity.Container
 	//config.Volumes =
 	config.Entrypoint = []string{c.EntryPoint}
 	config.Labels = c.Labels
-	config.Cmd = createCommands(c)
+	config.Cmd = createContainerCommands(c)
 
 	hostConfig := new(dockerContainer.HostConfig) //todo there should be a better way to create a hostconfig (a method or somethin)
 	hostConfig.CpusetCpus = c.Resources.Cpus
@@ -95,7 +95,7 @@ func StartContainer(ctx context.Context, cli *client.Client, name string) entity
 }
 
 // createCommands is intended to aggregate all necessary commands (including arguments) to run when starting the container
-func createCommands(c entity.Container) []string {
+func createContainerCommands(c entity.Container) []string {
 	var command []string
 	for _, arg := range c.Args{
 		command = append(command, arg)
