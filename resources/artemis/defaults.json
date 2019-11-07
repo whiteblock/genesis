@@ -1,4 +1,4 @@
 {
     "validators": 16,
-    "networkMode": "jvmlibp2p"
+    "networkMode": "mock"
 }
