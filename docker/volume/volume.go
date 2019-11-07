@@ -18,11 +18,32 @@
 
 package volume
 
-type Volume struct {
-	Name string
-}
+import (
+	"context"
 
-type MountableVolume struct {
-	Name  string
-	Mount string
+	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/docker/docker/client"
+	dockerVolume "github.com/docker/docker/api/types/volume"
+)
+
+func CreateVolume(ctx context.Context, cli *client.Client, volume entity.Volume) entity.Result {
+	volConfig := dockerVolume.VolumeCreateBody{
+		Driver: volume.Mount.Driver,
+		DriverOpts: volume.Mount.DriverOpts,
+		Labels: volume.Mount.Labels,
+		Name: volume.Name,
+	}
+
+	_, err := cli.VolumeCreate(ctx, volConfig)
+	if err != nil {
+		return entity.Result{
+			Error: err,
+			Type: entity.TooSoonType, //todo is TooSoonType ok?
+		}
+	}
+
+	return entity.Result{
+		Error: nil,
+		Type: entity.SuccessType,
+	}
 }

@@ -20,9 +20,13 @@ package entity
 
 type Volume struct {
 	Name string
+	Mount MountableVolume
 }
 
 type MountableVolume struct {
 	Name  string
 	Mount string
+	Labels map[string]string
+	Driver string
+	DriverOpts map[string]string
 }

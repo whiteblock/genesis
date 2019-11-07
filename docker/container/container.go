@@ -21,6 +21,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	dockerContainer "github.com/docker/docker/api/types/container"
+	dockerVolume "github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/whiteblock/genesis/pkg/entity"
@@ -28,7 +29,6 @@ import (
 
 // CreateContainer creates a new container in the docker client
 func CreateContainer(ctx context.Context, cli *client.Client, c entity.Container) entity.Result { // todo probably change to return RESULT in the future
-
 	config := new(dockerContainer.Config)
 
 	var envVars []string
@@ -38,7 +38,6 @@ func CreateContainer(ctx context.Context, cli *client.Client, c entity.Container
 	config.Env = envVars
 
 	config.Image = c.Image
-	//config.Volumes =
 	config.Entrypoint = []string{c.EntryPoint}
 	config.Labels = c.Labels
 
