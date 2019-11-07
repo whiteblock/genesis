@@ -19,12 +19,21 @@
 package docker
 
 import (
+	"fmt"
+
 	"github.com/whiteblock/genesis/pkg/entity"
 )
 
-func dockerRunCmdArgs(c entity.Container) (string, error) {
+type SafeDockerCmdValues struct {
+	Args map[string]bool
+}
+
+func dockerRunCmdArgs(c entity.Container) string {
 	var arguments string
-	for _, arg := range c.Args {
-		//todo checks for whether argument is safe (either against a map or string array) -- If safe, then
+	for _, arg := range c.Args { //todo would you have to check that the arguments are safe against some sort of map or slice?
+									//todo: If so, where would I place that list of SafeArgs?
+		arguments += fmt.Sprintf(" --%s", arg)
 	}
+
+	return arguments
 }
