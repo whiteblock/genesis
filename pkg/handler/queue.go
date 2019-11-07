@@ -23,13 +23,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/usecase"
 	"time"
 )
 
 type DeliveryHandler interface {
 	ProcessMessage(msg amqp.Delivery) entity.Result
-	GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing,error)
+	GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing, error)
 }
 
 type deliveryHandler struct {
@@ -41,12 +42,13 @@ func NewDeliveryHandler(usecase usecase.CommandUseCase) (DeliveryHandler, error)
 }
 
 func (dh deliveryHandler) ProcessMessage(msg amqp.Delivery) entity.Result {
-	var cmd Command
+	var cmd command.Command
 	err := json.Unmarshal(msg.Body, &cmd)
 	if err != nil {
 		return entity.Result{Error: err}
 	}
-	return usecase.Run(cmd)
+	log.WithFields(log.Fields{"cmd": cmd}).Trace("finished processing a command from amqp")
+	return dh.usecase.Run(cmd)
 }
 
 func (dh deliveryHandler) GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing, error) {
@@ -65,7 +67,7 @@ func (dh deliveryHandler) GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing
 		Type:            msg.Type,
 	}
 
-	var cmd Command
+	var cmd command.Command
 	err := json.Unmarshal(msg.Body, &cmd)
 	if err != nil {
 		return pub, err

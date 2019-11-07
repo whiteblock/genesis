@@ -19,7 +19,6 @@
 package entity
 
 import (
-	"reflect"
 	"strconv"
 	"testing"
 )
@@ -30,16 +29,16 @@ func TestResources_GetMemory_Successful(t *testing.T) {
 		expected int64
 	}{
 		{res: Resources{
-			Cpus:    "",
-			Memory:  "45",
+			Cpus:   "",
+			Memory: "45",
 		}, expected: int64(45)},
 		{res: Resources{
-			Cpus:    "",
-			Memory:  "1",
+			Cpus:   "",
+			Memory: "1",
 		}, expected: int64(1)},
 		{res: Resources{
-			Cpus:    "",
-			Memory:  "92233720368547",
+			Cpus:   "",
+			Memory: "92233720368547",
 		}, expected: int64(92233720368547)},
 	}
 
@@ -59,22 +58,16 @@ func TestResources_GetMemory_Unsuccessful(t *testing.T) {
 		res Resources
 	}{
 		{res: Resources{
-			Cpus:    "",
-			Memory:  "45.46",
-			Volumes: []string{},
-			Ports:   []string{},
+			Cpus:   "",
+			Memory: "45.46",
 		}},
 		{res: Resources{
-			Cpus:    "",
-			Memory:  "35273409857203948572039458720349857",
-			Volumes: []string{},
-			Ports:   []string{},
+			Cpus:   "",
+			Memory: "35273409857203948572039458720349857",
 		}},
 		{res: Resources{
-			Cpus:    "",
-			Memory:  "s",
-			Volumes: []string{},
-			Ports:   []string{},
+			Cpus:   "",
+			Memory: "s",
 		}},
 	}
 
@@ -84,139 +77,6 @@ func TestResources_GetMemory_Unsuccessful(t *testing.T) {
 
 			if err == nil {
 				t.Error("return error of GetMemory does not match expected error")
-			}
-		})
-	}
-}
-
-func TestResources_Validate_Successful(t *testing.T) {
-	var tests = []struct {
-		res Resources
-	}{
-		{res: Resources{
-			Cpus:    "",
-			Memory:  "",
-			Volumes: []string{},
-			Ports:   []string{},
-		}},
-		{res: Resources{
-			Cpus:    "2",
-			Memory:  "39458720349857",
-			Volumes: []string{},
-			Ports:   []string{},
-		}},
-		{res: Resources{
-			Cpus:    "7",
-			Memory:  "45",
-			Volumes: []string{},
-			Ports:   []string{},
-		}},
-	}
-
-	for i, tt := range tests {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			if tt.res.Validate() != nil {
-				t.Error("return value of Validate does not match expected value")
-			}
-		})
-	}
-}
-
-func TestResources_Validate_Unsuccessful(t *testing.T) {
-	var tests = []struct {
-		res Resources
-	}{
-		{res: Resources{
-			Cpus:    "f",
-			Memory:  "sasdfa;",
-			Volumes: []string{},
-			Ports:   []string{},
-		}},
-		{res: Resources{
-			Cpus:    "2984572304958234",
-			Memory:  "-234875923485.8",
-			Volumes: []string{},
-			Ports:   []string{},
-		}},
-		{res: Resources{
-			Cpus:    "fifteen",
-			Memory:  "45",
-			Volumes: []string{},
-			Ports:   []string{},
-		}},
-	}
-
-	for i, tt := range tests {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			if tt.res.Validate() == nil {
-				t.Error("return value of Validate does not match expected value")
-			}
-		})
-	}
-}
-
-func TestResources_ValidateAndSetDefaults_Successful(t *testing.T) {
-	var tests = []struct {
-		res Resources
-	}{
-		{res: Resources{
-			Cpus:    "4",
-			Memory:  "4",
-			Volumes: []string{},
-			Ports:   []string{},
-		}},
-		{res: Resources{
-			Cpus:    "6",
-			Memory:  "49824",
-			Volumes: []string{},
-			Ports:   []string{},
-		}},
-		{res: Resources{
-			Cpus:    "",
-			Memory:  "",
-			Volumes: []string{},
-			Ports:   []string{},
-		}},
-	}
-
-	for i, tt := range tests {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			if tt.res.ValidateAndSetDefaults() != nil {
-				t.Error("return value does not match expected value")
-			}
-		})
-	}
-}
-
-func TestResources_GetParsedPortMappings(t *testing.T) {
-	var tests = []struct {
-		res Resources
-		out map[string]string
-	}{
-		{res: Resources{
-			Cpus:    "",
-			Memory:  "",
-			Volumes: []string{},
-			Ports:   []string{"192.168.123.132:3333", "192.168.123.132:7937293847", "3333:4000", "192.168.123.132:300"},
-		}, out: map[string]string{"300": "192.168.123.132", "3333": "192.168.123.132", "4000": "3333", "7937293847": "192.168.123.132"}},
-		{res: Resources{
-			Cpus:    "",
-			Memory:  "",
-			Volumes: []string{},
-			Ports:   []string{"333:333"},
-		}, out: map[string]string{"333": "333"}},
-		{res: Resources{
-			Cpus:    "",
-			Memory:  "",
-			Volumes: []string{},
-			Ports:   []string{"blahblah:3000", "4000:7635", "6000", "3333"},
-		}, out: map[string]string{"3000": "blahblah", "7635": "4000"}},
-	}
-
-	for i, tt := range tests {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			if !reflect.DeepEqual(tt.res.GetParsedPortMappings(), tt.out) {
-				t.Error("return value of GetParsedPortMappings does not match expected value")
 			}
 		})
 	}
