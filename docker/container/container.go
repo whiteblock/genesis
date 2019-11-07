@@ -21,17 +21,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/docker/docker/api/types"
 	dockerContainer "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
-
+	"github.com/whiteblock/genesis/pkg/entity"
 )
 
 // CreateContainer creates a new container in the docker client
-func CreateContainer(cli *client.Client, c entity.Container) entity.Result { // todo probably change to return RESULT in the future
-	ctx := context.Background() //todo do we want a fresh context?
+func CreateContainer(ctx context.Context, cli *client.Client, c entity.Container) entity.Result { // todo probably change to return RESULT in the future
 
 	config := new(dockerContainer.Config)
 
@@ -53,7 +51,7 @@ func CreateContainer(cli *client.Client, c entity.Container) entity.Result { // 
 	if err != nil {
 		return entity.Result{
 			Error: err,
-			Type: entity.FatalType, //todo not sure what to put here yet
+			Type:  entity.FatalType, //todo not sure what to put here yet
 		}
 	}
 	hostConfig.Memory = mem
@@ -65,31 +63,30 @@ func CreateContainer(cli *client.Client, c entity.Container) entity.Result { // 
 	if err != nil {
 		return entity.Result{
 			Error: err,
-			Type: entity.FatalType, //todo not sure what to put here yet
+			Type:  entity.FatalType, //todo not sure what to put here yet
 		}
 	}
 
 	return entity.Result{
 		Error: nil,
-		Type: entity.SuccessType,
+		Type:  entity.SuccessType,
 	}
 }
 
 // StartContainer starts a docker container
-func StartContainer(cli *client.Client, name string) entity.Result { // todo probably change to return RESULT in the future
-	ctx := context.Background()
+func StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result { // todo probably change to return RESULT in the future
 	opts := types.ContainerStartOptions{} //todo do we wanna do anything for this?
 
 	err := cli.ContainerStart(ctx, name, opts)
 	if err != nil {
 		return entity.Result{
 			Error: err,
-			Type: entity.FatalType, //todo not sure what to put here yet
+			Type:  entity.FatalType, //todo not sure what to put here yet
 		}
 	}
 
 	return entity.Result{
 		Error: nil,
-		Type: entity.FatalType, //todo not sure what to put here yet
+		Type:  entity.FatalType, //todo not sure what to put here yet
 	}
 }
