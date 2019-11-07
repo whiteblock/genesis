@@ -28,9 +28,6 @@ import (
 // Config groups all of the global configuration parameters into
 // a single struct
 type Config struct {
-	SSHUser                 string  `mapstructure:"sshUser"`
-	SSHKey                  string  `mapstructure:"sshKey"`
-	SSHHost                 string  `mapstructure:"sshHost"`
 	ServerBits              uint32  `mapstructure:"serverBits"`
 	ClusterBits             uint32  `mapstructure:"clusterBits"`
 	NodeBits                uint32  `mapstructure:"nodeBits"`
@@ -56,7 +53,6 @@ type Config struct {
 	LogJSON                 bool    `mapstructure:"logJson"`
 	PrometheusConfig        string  `mapstructure:"prometheusConfig"`
 	PrometheusPort          int     `mapstructure:"prometheusPort"`
-	GanacheCLIOptions       string  `mapstructure:"ganacheCLIOptions"`
 	GanacheRPCPort          int     `mapstructure:"ganacheRPCPort"`
 	MaxRunAttempts          int     `mapstructure:"maxRunAttempts"`
 	MaxConnections          int     `mapstructure:"maxConnections"`
@@ -85,9 +81,7 @@ var NodesPerCluster uint32
 var conf = new(Config)
 
 func setViperEnvBindings() {
-	viper.BindEnv("sshUser", "SSH_USER")
 	viper.BindEnv("listen", "LISTEN")
-	viper.BindEnv("sshKey", "SSH_KEY")
 	viper.BindEnv("verbosity", "VERBOSITY")
 	viper.BindEnv("serverBits", "SERVER_BITS")
 	viper.BindEnv("clusterBits", "CLUSTER_BITS")
@@ -112,7 +106,6 @@ func setViperEnvBindings() {
 	viper.BindEnv("logJson", "LOG_JSON")
 	viper.BindEnv("prometheusConfig", "PROMETHEUS_CONFIG")
 	viper.BindEnv("prometheusPort", "PROMETHEUS_PORT")
-	viper.BindEnv("ganacheCLIOptions", "GANACHE_CLI_OPTIONS")
 	viper.BindEnv("ganacheRPCPort", "GANACHE_RPC_PORT")
 	viper.BindEnv("maxRunAttempts", "MAX_RUN_ATTEMPTS")
 	viper.BindEnv("maxConnections", "MAX_CONNECTIONS")
@@ -130,9 +123,6 @@ func setViperEnvBindings() {
 	viper.BindEnv("tmpStoreDir", "TMP_STORE_DIR")
 }
 func setViperDefaults() {
-	viper.SetDefault("sshUser", os.Getenv("USER"))
-	viper.SetDefault("sshKey", os.Getenv("HOME")+"/.ssh/id_rsa")
-	viper.SetDefault("sshHost", "127.0.0.1")
 	viper.SetDefault("serverBits", 8)
 	viper.SetDefault("clusterBits", 12)
 	viper.SetDefault("nodeBits", 4)
@@ -163,7 +153,6 @@ func setViperDefaults() {
 	viper.SetDefault("removeNodesOnFailure", true)
 	viper.SetDefault("killRetries", 100)
 	viper.SetDefault("ganacheRPCPort", 8545)
-	viper.SetDefault("ganacheCLIOptions", "--gasLimit 4000000000000")
 	viper.SetDefault("enablePortForwarding", true)
 	viper.SetDefault("enableDockerVolumes", true)
 	viper.SetDefault("enableImageBuilding", true)

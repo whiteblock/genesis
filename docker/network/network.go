@@ -16,25 +16,17 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package rest
+package docker
 
 import (
-	"encoding/json"
-	"github.com/whiteblock/genesis/pkg/command"
-	"github.com/whiteblock/genesis/state"
-	"github.com/whiteblock/genesis/util"
-	"net/http"
+	"github.com/docker/docker/api/types/network"
 )
 
-func addCommand(w http.ResponseWriter, r *http.Request) {
-	var commands []command.Command
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&commands)
-	if err != nil {
-		http.Error(w, util.LogError(err).Error(), 400)
-		return
-	}
-	go state.GetCommandState().AddCommands(commands...)
+// Network represents a docker network
+type Network struct {
+}
 
-	w.Write([]byte("Success"))
+// NetworkConfig represents a docker network configuration
+type NetworkConfig struct {
+	EndpointsConfig map[string]*network.EndpointSettings
 }

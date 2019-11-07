@@ -22,11 +22,7 @@ Documentation for the REST API can be found [here](rest.md).
 # Installation
 
 ## Setup docker
-set environment variables to allow SSH commands:
-1. `ssh localhost docker`
-    * if error `bash: docker: command not found`, move to next step
-2. `echo "PATH=$PATH" >> ~/.ssh/environment`
-3. as root: `echo "PermitUserEnvironment yes" >> /etc/ssh/sshd_config`
+TODO update this
 
 ## Build Genesis
 * `go get github.com/whiteblock/genesis`
@@ -40,8 +36,6 @@ Configuration options are located in `config.json` in the same directory as the 
 
 | __Option__ |         __Description__   |
 | :---------------:|---------------------------- |  
-| __sshUser__ | The default username for ssh |
-| __sshKey__ | The location of the ssh private key |
 | __listen__ |The socket to listen on |
 | __verbose__ |Enable or disable verbose mode |
 |  __serverBits__ |The bits given to each server's number |
@@ -60,7 +54,6 @@ Configuration options are located in `config.json` in the same directory as the 
 | __servicePrefix__| The prefix for each service |
 | __nodesPublicKey__| Location of the public key for the nodes |
 | __nodesPrivateKey__| Location of the private key for the nodes |
-| __handleNodeSshKeys__| Should genesis handle the nodes ssh keys? |
 | __maxNodes__| Set a maximum number of nodes that a client can build |
 | __maxNode-memory__| Set the max memory per node that a client can use |
 | __maxNodeCpu__| Set the max cpus per node that a client can use |
@@ -71,8 +64,6 @@ Configuration options are located in `config.json` in the same directory as the 
 These will override what is set in the config.json file, and allow configuration via
 only ENV variables
 
-* `SSH_USER`
-* `SSH_KEY`
 * `LISTEN`
 * `VERBOSE` (only need to set it)
 * `SERVER_BITS`

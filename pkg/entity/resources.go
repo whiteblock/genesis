@@ -16,11 +16,9 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package util
+package entity
 
 import (
-	"fmt"
-	log "github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 )
@@ -36,13 +34,6 @@ type Resources struct {
 	// Memory supports values up to Terrabytes (tb). If the unit is omitted, then it
 	// is assumed to be bytes. This is not case sensitive.
 	Memory string `json:"memory"`
-	// Volumes to be used by each node.
-	Volumes []string `json:"volumes"`
-	// Ports to be opened for each node, each item associated with one node.
-	Ports []string `json:"ports"`
-
-	// BoundCpus are the cpus which the node will be set with an affinity for.
-	BoundCPUs []int `json:"boundCPUs,omitonempty"`
 }
 
 func memconv(mem string) (int64, error) {
@@ -74,75 +65,6 @@ func (res Resources) GetMemory() (int64, error) {
 	return memconv(res.Memory)
 }
 
-// Validate ensures that the given resource object is valid, and
-// allowable.
-func (res Resources) Validate() error {
-	if res.NoLimits() {
-		return nil
-	}
-
-	err := ValidateCommandLine(res.Memory)
-	if err != nil {
-		return err
-	}
-
-	err = ValidateCommandLine(res.Cpus)
-	if err != nil {
-		return err
-	}
-
-	if !res.NoMemoryLimits() {
-
-		m2, err := res.GetMemory()
-
-		if err != nil {
-			return err
-		}
-		if len(conf.MaxNodeMemory) != 0 {
-			m1, err := memconv(conf.MaxNodeMemory)
-			if err != nil {
-				log.WithFields(log.Fields{"error": err,
-					"memLimit": conf.MaxNodeMemory}).Panic("error parsing memory limit. check config file.")
-			}
-			log.WithFields(log.Fields{"maxMemory": m1, "givenMemory": m2}).Trace("checking memory")
-			if m2 > m1 {
-				return fmt.Errorf("assigning too much RAM: max is %s", conf.MaxNodeMemory)
-			}
-		}
-
-	}
-
-	if !res.NoCPULimits() {
-		c1 := conf.MaxNodeCPU
-		c2, err := strconv.ParseFloat(res.Cpus, 64)
-		if err != nil {
-			return err
-		}
-
-		if c1 > 0 && c2 > c1 {
-			return fmt.Errorf("assigning too much CPU: max is %f", conf.MaxNodeCPU)
-		}
-	}
-
-	return nil
-}
-
-// ValidateAndSetDefaults calls Validate, and if it is valid, fills any missing
-// information. Helps to ensure that the Maximum limits are enforced.
-func (res Resources) ValidateAndSetDefaults() error {
-	err := res.Validate()
-	if err != nil {
-		return err
-	}
-	if res.NoCPULimits() {
-		res.Cpus = fmt.Sprintf("%f", conf.MaxNodeCPU)
-	}
-	if res.NoMemoryLimits() {
-		res.Memory = conf.MaxNodeMemory
-	}
-	return nil
-}
-
 // NoLimits checks if the resources object doesn't specify any limits
 func (res Resources) NoLimits() bool {
 	return len(res.Memory) == 0 && len(res.Cpus) == 0
@@ -156,22 +78,4 @@ func (res Resources) NoCPULimits() bool {
 // NoMemoryLimits checks if the resources object doesn't specify any memory limits
 func (res Resources) NoMemoryLimits() bool {
 	return len(res.Memory) == 0
-}
-
-// GetParsedPortMappings fetches the port mappings in a form which is easy to use,
-// using the source port as the key
-func (res Resources) GetParsedPortMappings() map[string]string {
-	if res.Ports == nil || len(res.Ports) == 0 {
-		return nil
-	}
-	out := map[string]string{}
-	for _, rawMapping := range res.Ports {
-		mapping := strings.SplitN(rawMapping, ":", 2)
-		if len(mapping) != 2 {
-			log.WithFields(log.Fields{"raw": rawMapping}).Debug("invalid format for port mapping")
-			continue
-		}
-		out[mapping[1]] = mapping[0]
-	}
-	return out
 }

@@ -13,23 +13,15 @@
 	GNU General Public License for more details.
 
 	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-package main
+package service
 
 import (
-	_ "github.com/whiteblock/genesis/bus"
-	"github.com/whiteblock/genesis/rest"
-	"github.com/whiteblock/genesis/util"
-	"log"
+	"github.com/whiteblock/genesis/pkg/command"
 )
 
-var conf *util.Config
-
-func main() {
-	util.DisplayBanner()
-	conf = util.GetConfig()
-	log.SetFlags(log.LstdFlags | log.Llongfile)
-	rest.StartServer()
+type CommandService interface {
+	CheckDependenciesExecuted(cmd command.Command) bool
 }

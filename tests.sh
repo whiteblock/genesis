@@ -4,9 +4,8 @@ set -o errexit
 set -o xtrace
 set -o pipefail
 
-go get github.com/golang/mock/gomock
-go install github.com/golang/mock/mockgen
-mockgen -destination=./ssh/mocks/client_mock.go -source=./ssh/client.go -package=mocks
+#go get github.com/golang/mock/gomock
+#go install github.com/golang/mock/mockgen
 go get -u golang.org/x/lint/golint
 
 if [ -n "$(gofmt -l .)" ]; then
@@ -24,4 +23,3 @@ go get ./...
 go test ./... -coverprofile=coverage.txt -covermode=atomic
 
 chmod 777 coverage.txt 
-chmod 777 -R ssh

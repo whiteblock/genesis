@@ -11,8 +11,8 @@ sudo: required
 go: 1.12.x
 
 before_install:
-  - make install-mock
-  - make mocks
+#  - make install-mock
+#  - make mocks
   - go get -u golang.org/x/lint/golint
 
 script:

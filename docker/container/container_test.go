@@ -16,25 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package command
+package container
 
-// Order to be executed by genesis
-type Order struct {
-	Type    string      `json:"type"`
-	Payload interface{} `json:"payload"`
-}
+import ()
 
-// Target sets the target of a command - which testnet, instance to hit
-type Target struct {
-	Testnet string `json:"testnet"`
-}
-
-// Command is the command sent to Genesis.
-type Command struct {
-	ID           string   `json:"id"`
-	Timestamp    int64    `json:"timestamp"`
-	Retry        uint8    `json:"retry"`
-	Target       Target   `json:"target"`
-	Dependencies []string `json:"dependencies"`
-	Order        Order    `json:"order"`
-}
+//TODO

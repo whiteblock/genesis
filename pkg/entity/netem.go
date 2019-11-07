@@ -8,7 +8,7 @@
 	(at your option) any later version.
 
 	Genesis is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	but dock ANY WARRANTY; without even the implied warranty of
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 	GNU General Public License for more details.
 
@@ -16,20 +16,15 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package main
+package entity
 
-import (
-	_ "github.com/whiteblock/genesis/bus"
-	"github.com/whiteblock/genesis/rest"
-	"github.com/whiteblock/genesis/util"
-	"log"
-)
-
-var conf *util.Config
-
-func main() {
-	util.DisplayBanner()
-	conf = util.GetConfig()
-	log.SetFlags(log.LstdFlags | log.Llongfile)
-	rest.StartServer()
+type Netconf struct {
+	Node        int     `json:"node"`
+	Limit       int     `json:"limit"`
+	Loss        float64 `json:"loss"` //Loss % ie 100% = 100
+	Delay       int     `json:"delay"`
+	Rate        string  `json:"rate"`
+	Duplication float64 `json:"duplicate"`
+	Corrupt     float64 `json:"corrupt"`
+	Reorder     float64 `json:"reorder"`
 }
