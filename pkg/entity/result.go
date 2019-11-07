@@ -48,3 +48,7 @@ const (
 	//FatalType is the type of a result which indicates a fatal error
 	FatalType = "Fatal"
 )
+
+func NewFatalResult(err error) Result {
+	return Result{Type: FatalType, Error: err}
+}
