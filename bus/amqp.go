@@ -28,19 +28,18 @@ import (
 	"sync"
 )
 
-type Client struct {
+type Consumer struct {
 	Queue         string
 	QueueURL      string
 	MaxConcurreny int64
 	MaxRetries    int64
-	handle			handler. 	 
-	callback      func(msg amqp.Delivery) error
+	Handle        handler.DeliveryHandler
 	conn          *amqp.Connection
 	once          *sync.Once
 	sem           *semaphore.Weighted
 }
 
-func (c *Client) Init(callback func(msg amqp.Delivery) error) error {
+func (c *Consumer) Init() error {
 	c.once = &sync.Once{}
 	if c.MaxConcurreny < 1 {
 		return fmt.Errorf("MaxConcurreny must be atleast 1")
@@ -54,7 +53,7 @@ func (c *Client) Init(callback func(msg amqp.Delivery) error) error {
 }
 
 // CreateQueue creates the coresponding queue with the given parameters
-func (c *Client) CreateQueue(durable, autoDelete, exclusive, noWait bool, args amqp.Table) error {
+func (c *Consumer) CreateQueue(durable, autoDelete, exclusive, noWait bool, args amqp.Table) error {
 	ch, err := c.conn.Channel()
 	if err != nil {
 		return utils.LogError(err)
@@ -65,7 +64,7 @@ func (c *Client) CreateQueue(durable, autoDelete, exclusive, noWait bool, args a
 }
 
 // Close cleans up the connections and resources used by this client
-func (c *Client) Close() {
+func (c *Consumer) Close() {
 	if c == nil {
 		return
 	}
@@ -75,62 +74,59 @@ func (c *Client) Close() {
 }
 
 // Run starts the client. This function should be called only once and does not return
-func (c *Client) Run() {
+func (c *Consumer) Run() {
 	c.once.Do(func() { c.loop() })
 }
 
-func (c *Client) kickBackMessage(msg amqp.Delivery) {
-	pub := amqp.Publishing{
-		Headers: msg.Headers,
-		// Properties
-		ContentType:     msg.ContentType,
-		ContentEncoding: msg.ContentEncoding,
-		DeliveryMode:    msg.DeliveryMode,
-		Priority:        msg.Priority,
-		CorrelationId:   msg.CorrelationId,
-		ReplyTo:         msg.ReplyTo,
-		Expiration:      msg.Expiration,
-		MessageId:       msg.MessageId,
-		Timestamp:       msg.Timestamp,
-		Type:            msg.Type,
-		Body:            msg.Body,
-	}
-	_, exists := pub.Headers["retryCount"]
-	if !exists {
-		pub.Headers["retryCount"] = int64(0)
-	}
-	if pub.Headers["retryCount"].(int64) > c.MaxRetries {
-		log.WithFields(log.Fields{"retries": c.MaxRetries}).Debug("discarded message after too many retries")
+func (c *Consumer) kickBackMessage(msg amqp.Delivery) {
+	pub, err := c.Handle.GetKickbackMessage(msg)
+	if err != nil {
+		utils.LogError(err)
 		return
 	}
-	pub.Headers["retryCount"] = pub.Headers["retryCount"].(int64) + 1
 	ch, err := c.conn.Channel()
 	if err != nil {
 		utils.LogError(err)
 		return
 	}
 	defer ch.Close()
-	err = ch.Publish(msg.Exchange, msg.RoutingKey, false, false, pub)
+	err = ch.Tx()
 	if err != nil {
 		utils.LogError(err)
 		return
 	}
 
-	utils.LogError(msg.Reject(false))
+	err = ch.Publish(msg.Exchange, msg.RoutingKey, false, false, pub)
+	if err != nil {
+		tx.Rollback()
+		utils.LogError(err)
+		return
+	}
+	err = msg.Reject(false)
+	if err != nil {
+		tx.Rollback()
+		utils.LogError(err)
+		return
+	}
+	ch.TxCommit()
 }
 
-func (c *Client) handleMessage(msg amqp.Delivery) {
+func (c *Consumer) handleMessage(msg amqp.Delivery) {
 	defer c.sem.Release(1)
-	err := c.callback(msg)
-	if err != nil {
+	res := c.ProcessMessage(msg)
+	if res.IsRequeue() {
 		utils.LogError(err)
 		go c.kickBackMessage(msg)
 		return
+	} else if res.IsSuccess() {
+
+	} else {
+		utils.LogError(msg.Ack(false))
 	}
-	utils.LogError(msg.Ack(false))
+
 }
 
-func (c *Client) loop() {
+func (c *Consumer) loop() {
 	ch, err := c.conn.Channel()
 	if err != nil {
 		log.Fatal(err)
@@ -147,7 +143,7 @@ func (c *Client) loop() {
 	}
 }
 
-func (c *Client) init() (err error) {
+func (c *Consumer) init() (err error) {
 	c.conn, err = amqp.Dial(c.QueueURL)
 	return utils.LogError(err)
 }

@@ -19,15 +19,15 @@
 package entity
 
 import (
-	"github.com/whiteblock/genesis/docker/volume"
 	network "github.com/whiteblock/genesis/docker/network"
+	"github.com/whiteblock/genesis/docker/volume"
 )
 
 // Container represents a docker container, this is calculated from the payload of the Run command
 type Container struct {
 	// BoundCpus are the cpus which the container will be set with an affinity for.
 	BoundCPUs   []int `json:"boundCPUs,omitonempty"`
-	Detach      bool //todo: what does `detach` mean?
+	Detach      bool  //todo: what does `detach` mean?
 	EntryPoint  string
 	Environment map[string]string
 

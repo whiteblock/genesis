@@ -19,12 +19,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/docker/docker/api/types"
 	dockerContainer "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/client"
-
+	"github.com/moby/moby/client"
+	"github.com/whiteblock/genesis/pkg/entity"
 )
 
 // CreateContainer creates a new container in the docker client
@@ -51,7 +50,7 @@ func CreateContainer(cli *client.Client, c entity.Container) entity.Result { // 
 	if err != nil {
 		return entity.Result{
 			Error: err,
-			Type: entity.FatalType, //todo not sure what to put here yet
+			Type:  entity.FatalType, //todo not sure what to put here yet
 		}
 	}
 	hostConfig.Memory = mem
@@ -63,13 +62,13 @@ func CreateContainer(cli *client.Client, c entity.Container) entity.Result { // 
 	if err != nil {
 		return entity.Result{
 			Error: err,
-			Type: entity.FatalType, //todo not sure what to put here yet
+			Type:  entity.FatalType, //todo not sure what to put here yet
 		}
 	}
 
 	return entity.Result{
 		Error: nil,
-		Type: entity.SuccessType,
+		Type:  entity.SuccessType,
 	}
 }
 
@@ -82,12 +81,12 @@ func StartContainer(cli *client.Client, name string) entity.Result { // todo pro
 	if err != nil {
 		return entity.Result{
 			Error: err,
-			Type: entity.FatalType, //todo not sure what to put here yet
+			Type:  entity.FatalType, //todo not sure what to put here yet
 		}
 	}
 
 	return entity.Result{
 		Error: nil,
-		Type: entity.FatalType, //todo not sure what to put here yet
+		Type:  entity.FatalType, //todo not sure what to put here yet
 	}
 }
