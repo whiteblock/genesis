@@ -24,10 +24,6 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 )
 
-type SafeDockerCmdValues struct {
-	Args map[string]bool
-}
-
 func dockerRunCmdArgs(c entity.Container) string {
 	var arguments string
 	for _, arg := range c.Args { //todo would you have to check that the arguments are safe against some sort of map or slice?
