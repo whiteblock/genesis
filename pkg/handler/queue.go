@@ -42,7 +42,7 @@ func NewDeliveryHandler(usecase usecase.CommandUseCase) (DeliveryHandler, error)
 }
 
 func (dh deliveryHandler) ProcessMessage(msg amqp.Delivery) entity.Result {
-	var cmd command.Command
+	var cmd command.Command //TODO: add validation check
 	err := json.Unmarshal(msg.Body, &cmd)
 	if err != nil {
 		return entity.Result{Error: err}

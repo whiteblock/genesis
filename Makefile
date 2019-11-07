@@ -1,7 +1,12 @@
 GOC=go
 GO111MODULE=on
 
-.PHONY: build test test_race lint vet install-deps coverage mocks install-mock
+PKG_SOURCES=$(wildcard pkg/*/*.go)
+DIRECTORIES=$(wildcard pkg/*/)
+MOCKS=$(foreach x, $(DIRECTORIES), mocks/$(x))
+
+
+.PHONY: build test test_race lint vet install-deps coverage mocks clean-mocks
 
 all: genesis
 
@@ -23,6 +28,14 @@ vet:
 install-deps:
 	go get ./...
 
+clean-mocks:
+	rm -rf mocks
+
+mocks: $(MOCKS)
+	
+$(MOCKS): mocks/% : %
+	mockery -output=$@ -dir=$^ -all
+	
 #install-mock:
 #	go get github.com/golang/mock/gomock
 #	go install github.com/golang/mock/mockgen

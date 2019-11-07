@@ -26,6 +26,8 @@ import (
 )
 
 type DockerService interface {
+	CreateClient(conf entity.DockerConfig, host string) (*client.Client, error)
+
 	CreateContainer(ctx context.Context, cli *client.Client, container entity.Container) entity.Result
 	StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result
 	RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result
@@ -43,6 +45,14 @@ type dockerService struct {
 
 func NewDockerService() (DockerService, error) {
 	return dockerService{}, nil
+}
+
+func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*client.Client, error) {
+	return client.NewClientWithOpts(
+		client.WithAPIVersionNegotiation(),
+		client.WithHost(host),
+		client.WithTLSClientConfig(conf.CACertPath, conf.CertPath, conf.KeyPath),
+	)
 }
 
 func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, c entity.Container) entity.Result {

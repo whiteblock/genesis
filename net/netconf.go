@@ -19,10 +19,11 @@
 //Package netconf provides the basic functionality for the simulation of network conditions across nodes.
 package netconf
 
+/*
 import (
 	"fmt"
 	"github.com/whiteblock/genesis/util"
-)
+)*/
 
 /**
 [ limit PACKETS ]
@@ -37,7 +38,7 @@ import (
 [ reorder PRECENT [CORRELATION] [ gap DISTANCE ]]
 [ rate RATE [PACKETOVERHEAD] [CELLSIZE] [CELLOVERHEAD]]
 */
-
+/*
 var conf = util.GetConfig()
 
 //Netconf is a representation of the impairments applied to a node
@@ -96,7 +97,7 @@ func CreateCommands(netconf Netconf, serverID int) []string {
 
 	return out
 }
-
+*/
 //Apply applies the given network config.
 /*func Apply(client .Client, netconf Netconf, serverID int) error {
 	cmds := CreateCommands(netconf, serverID)
