@@ -44,11 +44,7 @@ func NewDockerUseCase(conf entity.DockerConfig, service service.DockerService) (
 }
 
 func (duck dockerUseCase) Execute(ctx context.Context, cmd command.Command) entity.Result {
-	cli, err := client.NewClientWithOpts(
-		client.WithAPIVersionNegotiation(),
-		client.WithHost(cmd.Target.IP),
-		client.WithTLSClientConfig(duck.conf.CACertPath, duck.conf.CertPath, duck.conf.KeyPath),
-	)
+	cli, err := duck.service.CreateClient(duck.conf, cmd.Target.IP)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}

@@ -27,7 +27,7 @@ import (
 type Container struct {
 	// BoundCpus are the cpus which the container will be set with an affinity for.
 	BoundCPUs   []int `json:"boundCPUs,omitonempty"`
-	Detach      bool  //todo: what does `detach` mean?
+	Detach      bool
 	EntryPoint  string
 	Environment map[string]string
 
@@ -36,12 +36,12 @@ type Container struct {
 	Network       string
 	NetworkConfig network.NetworkConfig
 
-	// Ports to be opened for each container, each port associated with one node.
-	Ports map[int]int `json:"ports"` // todo: how would we know which exposed port correlates to which node from client.ContainerInspect()?
+	// Ports to be opened for each container, each port associated.
+	Ports map[int]int `json:"ports"`
 
-	Volumes map[string]volume.MountableVolume
+	Volumes map[string]volume.MountableVolume `json:"volumes"`
 
-	//extends <-- todo: what?
+	//extends <--
 	Resources Resources
 	Image     string
 	Args      []string
