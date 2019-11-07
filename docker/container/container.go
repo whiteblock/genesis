@@ -22,7 +22,7 @@ import (
 	"github.com/docker/docker/api/types"
 	dockerContainer "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
-	"github.com/moby/moby/client"
+	"github.com/docker/docker/client"
 	"github.com/whiteblock/genesis/pkg/entity"
 )
 

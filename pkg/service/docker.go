@@ -20,7 +20,7 @@ package service
 
 import (
 	"context"
-	"github.com/moby/moby/client"
+	"github.com/docker/docker/client"
 	"github.com/whiteblock/genesis/docker/container"
 	"github.com/whiteblock/genesis/pkg/entity"
 )
