@@ -25,7 +25,7 @@ import (
 //AMQPRepository represents functions available via a connection to a AMQP provider
 type AMQPRepository interface {
 	//Consume immediately starts delivering queued messages.
-	Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args amqp.Table) (<-chan amqp.Delivery, *amqp.Channel, error)
+	Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args amqp.Table) (<-chan amqp.Delivery, error)
 	//Requeue rejects the oldMsg and queues the newMsg in a transaction
 	Requeue(mandatory bool, immediate bool, oldMsg amqp.Delivery, newMsg amqp.Publishing) error
 	//CreateQueue attempts to publish a queue
@@ -43,13 +43,13 @@ func NewAMQPRepository(conn *amqp.Connection) (AMQPRepository, error) {
 
 //Consume immediately starts delivering queued messages.
 func (ar amqpRepository) Consume(queue, consumer string, autoAck, exclusive,
-	noLocal, noWait bool, args amqp.Table) (<-chan amqp.Delivery, *amqp.Channel, error) {
+	noLocal, noWait bool, args amqp.Table) (<-chan amqp.Delivery, error) {
 	ch, err := ar.conn.Channel()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	msgs, err := ch.Consume(queue, consumer, autoAck, exclusive, noLocal, noWait, args)
-	return msgs, ch, err
+	return msgs, err
 }
 
 //Requeue rejects the oldMsg and queues the newMsg in a transaction

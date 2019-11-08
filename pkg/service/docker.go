@@ -24,6 +24,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/volume"
+
 	"github.com/docker/docker/client"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
@@ -136,9 +138,20 @@ func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, n
 	return entity.Result{}
 }
 
-func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, volume entity.Volume) entity.Result {
-	//TODO
-	return entity.Result{}
+func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, vol entity.Volume) entity.Result {
+	volConfig := volume.VolumeCreateBody{
+		Driver:     vol.Driver,
+		DriverOpts: vol.DriverOpts,
+		Labels:     vol.Labels,
+		Name:       vol.Name,
+	}
+
+	_, err := cli.VolumeCreate(ctx, volConfig)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+
+	return entity.NewSuccessResult()
 }
 
 func (ds dockerService) RemoveVolume(ctx context.Context, cli *client.Client, name string) entity.Result {
