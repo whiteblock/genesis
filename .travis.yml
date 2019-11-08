@@ -3,7 +3,7 @@ go_import_path: github.com/whiteblock/genesis
 sudo: true
 env:
    - GOPATH=/home/travis/gopath
-#  - GO111MODULE=on
+   - GO111MODULE=on
 
 os: linux
 dist: xenial
@@ -11,7 +11,7 @@ sudo: required
 go: 1.12.x
 
 before_install:
-  - go get github.com/vektra/mockery/.../
+  - go get github.com/vektra/mockery
   - make mocks
   - go get -u golang.org/x/lint/golint
 

@@ -27,7 +27,7 @@ pipeline {
     SLACK_CHANNEL         = '#alerts'
     SLACK_CREDENTIALS_ID  = 'jenkins-slack-integration-token'
     SLACK_TEAM_DOMAIN     = 'whiteblock'
-
+    GO111MODULE           = 'on'
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '10'))
