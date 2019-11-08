@@ -31,6 +31,6 @@ type Volume struct {
 	//Name is the name of the docker volume
 	Name string `json:"name"`
 	//Labels to be attached to the volume
-	Labels map[string]string
+	Labels map[string]string `json:"labels"`
 	VolumeConfig
 }
