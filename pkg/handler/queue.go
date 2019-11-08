@@ -20,12 +20,13 @@ package handler
 
 import (
 	"encoding/json"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/usecase"
-	"time"
 )
 
 //DeliveryHandler handles the initial processing of a amqp delivery
