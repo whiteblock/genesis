@@ -25,7 +25,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/whiteblock/genesis/mocks"
+	mockService "github.com/whiteblock/genesis/mocks/pkg/service"
 	mockUseCase "github.com/whiteblock/genesis/mocks/pkg/usecase"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
@@ -33,18 +33,18 @@ import (
 
 func TestDockerUseCase_TimeSupplier(t *testing.T) {
 	usecase := new(mockUseCase.DockerUseCase)
-	usecase.On("TimeSupplier").Return(5)
+	usecase.On("TimeSupplier").Return(int64(5))
 
-	assert.Equal(t, usecase.TimeSupplier(), 5)
+	assert.Equal(t, usecase.TimeSupplier(), int64(5))
 	assert.True(t, usecase.AssertNumberOfCalls(t, "TimeSupplier", 1))
 }
 
 func TestDockerUseCase_Run_CreateContainer(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("CreateContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	cmdService := new(mocks.CommandService)
+	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
 
 	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
@@ -64,11 +64,11 @@ func TestDockerUseCase_Run_CreateContainer(t *testing.T) {
 }
 
 func TestDockerUseCase_Run_StartContainer(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("StartContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	cmdService := new(mocks.CommandService)
+	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
 
 	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
@@ -88,11 +88,11 @@ func TestDockerUseCase_Run_StartContainer(t *testing.T) {
 }
 
 func TestDockerUseCase_Run_RemoveContainer(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("RemoveContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	cmdService := new(mocks.CommandService)
+	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
 
 	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
@@ -112,11 +112,11 @@ func TestDockerUseCase_Run_RemoveContainer(t *testing.T) {
 }
 
 func TestDockerUseCase_Run_CreateNetwork(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("CreateNetwork", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	cmdService := new(mocks.CommandService)
+	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
 
 	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
@@ -136,11 +136,11 @@ func TestDockerUseCase_Run_CreateNetwork(t *testing.T) {
 }
 
 func TestDockerUseCase_Run_AttachNetwork(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("AttachNetwork", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	cmdService := new(mocks.CommandService)
+	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
 
 	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
@@ -160,11 +160,11 @@ func TestDockerUseCase_Run_AttachNetwork(t *testing.T) {
 }
 
 func TestDockerUseCase_Run_CreateVolume(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("CreateVolume", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	cmdService := new(mocks.CommandService)
+	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
 
 	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
@@ -184,11 +184,11 @@ func TestDockerUseCase_Run_CreateVolume(t *testing.T) {
 }
 
 func TestDockerUseCase_Run_RemoveVolume(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("RemoveVolume", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	cmdService := new(mocks.CommandService)
+	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
 
 	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
@@ -208,11 +208,11 @@ func TestDockerUseCase_Run_RemoveVolume(t *testing.T) {
 }
 
 func TestDockerUseCase_Run_PutFile(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("PlaceFileInVolume", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	cmdService := new(mocks.CommandService)
+	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
 
 	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
@@ -232,11 +232,11 @@ func TestDockerUseCase_Run_PutFile(t *testing.T) {
 }
 
 func TestDockerUseCase_Run_PutFileInContainer(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("PlaceFileInContainer", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	cmdService := new(mocks.CommandService)
+	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
 
 	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
@@ -256,11 +256,11 @@ func TestDockerUseCase_Run_PutFileInContainer(t *testing.T) {
 }
 
 func TestDockerUseCase_Run_Emulation(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("Emulation", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	cmdService := new(mocks.CommandService)
+	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
 
 	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
@@ -287,7 +287,7 @@ func TestDockerUseCase_Run_Emulation(t *testing.T) {
 }
 
 func TestDockerUseCase_Execute_CreateContainer(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("CreateContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
@@ -308,7 +308,7 @@ func TestDockerUseCase_Execute_CreateContainer(t *testing.T) {
 }
 
 func TestDockerUseCase_Execute_StartContainer(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("StartContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
@@ -329,7 +329,7 @@ func TestDockerUseCase_Execute_StartContainer(t *testing.T) {
 }
 
 func TestDockerUseCase_Execute_RemoveContainer(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("RemoveContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
@@ -350,7 +350,7 @@ func TestDockerUseCase_Execute_RemoveContainer(t *testing.T) {
 }
 
 func TestDockerUseCase_Execute_CreateNetwork(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("CreateNetwork", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
@@ -371,7 +371,7 @@ func TestDockerUseCase_Execute_CreateNetwork(t *testing.T) {
 }
 
 func TestDockerUseCase_Execute_AttachNetwork(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("AttachNetwork", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
@@ -392,7 +392,7 @@ func TestDockerUseCase_Execute_AttachNetwork(t *testing.T) {
 }
 
 func TestDockerUseCase_Execute_CreateVolume(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("CreateVolume", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
@@ -413,7 +413,7 @@ func TestDockerUseCase_Execute_CreateVolume(t *testing.T) {
 }
 
 func TestDockerUseCase_Execute_RemoveVolume(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("RemoveVolume", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
@@ -434,7 +434,7 @@ func TestDockerUseCase_Execute_RemoveVolume(t *testing.T) {
 }
 
 func TestDockerUseCase_Execute_PutFile(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("PlaceFileInVolume", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
@@ -455,7 +455,7 @@ func TestDockerUseCase_Execute_PutFile(t *testing.T) {
 }
 
 func TestDockerUseCase_Execute_PutFileInContainer(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("PlaceFileInContainer", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
@@ -476,7 +476,7 @@ func TestDockerUseCase_Execute_PutFileInContainer(t *testing.T) {
 }
 
 func TestDockerUseCase_Execute_Emulation(t *testing.T) {
-	service := new(mocks.DockerService)
+	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("Emulation", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
