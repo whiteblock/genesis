@@ -21,12 +21,12 @@ package usecase
 import (
 	"context"
 
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	mocks "github.com/whiteblock/genesis/mocks/pkg/service"
-
-	"testing"
-	"time"
 
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
@@ -58,7 +58,7 @@ func TestDockerUseCase_Execute_StartContainer(t *testing.T) {
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("StartContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service)
+	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, nil)
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:        "TEST",
@@ -79,7 +79,7 @@ func TestDockerUseCase_Execute_RemoveContainer(t *testing.T) {
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("RemoveContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service)
+	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, nil)
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:        "TEST",
@@ -100,7 +100,7 @@ func TestDockerUseCase_Execute_CreateNetwork(t *testing.T) {
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("CreateNetwork", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service)
+	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, nil)
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:        "TEST",
@@ -121,7 +121,7 @@ func TestDockerUseCase_Execute_AttachNetwork(t *testing.T) {
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("AttachNetwork", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service)
+	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, nil)
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:        "TEST",
