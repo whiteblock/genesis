@@ -74,6 +74,8 @@ func (c *consumer) kickBackMessage(msg amqp.Delivery) error {
 	if err != nil {
 		return err
 	}
+
+	return nil
 }
 
 func (c *consumer) handleMessage(msg amqp.Delivery) {
