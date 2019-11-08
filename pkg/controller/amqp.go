@@ -70,10 +70,7 @@ func (c *consumer) kickBackMessage(msg amqp.Delivery) error {
 	if err != nil {
 		return err
 	}
-	err = c.serv.Requeue(msg, pub)
-	if err != nil {
-		return err
-	}
+	return c.serv.Requeue(msg, pub)
 }
 
 func (c *consumer) handleMessage(msg amqp.Delivery) {
@@ -93,11 +90,10 @@ func (c *consumer) handleMessage(msg amqp.Delivery) {
 }
 
 func (c *consumer) loop() {
-	msgs, ch, err := c.serv.Consume()
+	msgs, err := c.serv.Consume()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer ch.Close()
 	for msg := range msgs {
 		c.sem.Acquire(context.Background(), 1)
 		go c.handleMessage(msg)
