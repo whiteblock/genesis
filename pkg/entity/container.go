@@ -33,20 +33,20 @@ type Container struct {
 	// BoundCpus are the cpus which the container will be set with an affinity for.
 	BoundCPUs []int `json:"boundCPUs,omitonempty"`
 	// Detach indicates that we should wait for the containers entrypoint to finish execution
-	Detach bool `json;"detach"`
+	Detach bool
 	// EntryPoint overrides the docker containers entrypoint if non-empty
-	EntryPoint string `json:"entrypoint"`
+	EntryPoint string
 	// Environment represents the environment kv which will be provided to the container
-	Environment map[string]string `json:"environment"`
+	Environment map[string]string
 
 	// Labels are any identifier which are to be attached to the container
-	Labels map[string]string `json:"labels"`
+	Labels map[string]string
 	//Name is the unique name of the docker container
-	Name string `json:"name"`
+	Name string
 	//Network is the primary network for this container to be attached to
-	Network string `json:"network"`
+	Network string
 	//NetworkConfig: TODO remove from this struct
-	NetworkConfig NetworkConfig `json:"NetworkConfig"`
+	NetworkConfig NetworkConfig
 
 	// Ports to be opened for each container, each port associated.
 	Ports map[int]int `json:"ports"`

@@ -21,9 +21,9 @@ package entity
 //DockerConfig represents the configuration needed to communicate with docker daemons
 type DockerConfig struct {
 	//CACertPath is the filepath to the CA Certificate
-	CACertPath string `json:"CACertPath"`
+	CACertPath string `json:"caCertPath"`
 	//CertPath is the filepath to the Certificate for TLS
-	CertPath string `json:"CertPath"`
+	CertPath string `json:"certPath"`
 	//KeyPath is the filepath to the private key for TLS
-	KeyPath string `json:"KeyPath"`
+	KeyPath string `json:"keyPath"`
 }
