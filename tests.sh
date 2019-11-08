@@ -2,8 +2,6 @@
 
 set -o errexit
 set -o xtrace
-set -o pipefail
-
 
 if [ -n "$(gofmt -l .)" ]; then
   echo "Go code is not formatted:"
