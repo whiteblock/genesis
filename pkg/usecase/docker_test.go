@@ -20,7 +20,6 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -68,11 +67,72 @@ func TestDockerUseCase_Execute_StartContainer(t *testing.T) {
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    "startContainer",
-			Payload: map[string]interface{}{"name":"hi"},
+			Payload: map[string]interface{}{"name":"test"},
 		},
 	})
-
-	fmt.Println(res.Error)
 	assert.Equal(t, res.Error, nil)
 	assert.True(t, service.AssertNumberOfCalls(t, "StartContainer", 1))
+}
+
+func TestDockerUseCase_Execute_RemoveContainer(t *testing.T) {
+	service := new(mocks.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
+	service.On("RemoveContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+
+	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service)
+
+	res := usecase.Execute(context.TODO(), command.Command{
+		ID:        "TEST",
+		Timestamp: 1234567,
+		Timeout:   5 * time.Second,
+		Target:    command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type:    "removeContainer",
+			Payload: map[string]interface{}{},
+		},
+	})
+	assert.Equal(t, res.Error, nil)
+	assert.True(t, service.AssertNumberOfCalls(t, "RemoveContainer", 1))
+}
+
+func TestDockerUseCase_Execute_CreateNetwork(t *testing.T) {
+	service := new(mocks.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
+	service.On("CreateNetwork", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+
+	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service)
+
+	res := usecase.Execute(context.TODO(), command.Command{
+		ID:        "TEST",
+		Timestamp: 1234567,
+		Timeout:   5 * time.Second,
+		Target:    command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type:    "createNetwork",
+			Payload: map[string]interface{}{},
+		},
+	})
+	assert.Equal(t, res.Error, nil)
+	assert.True(t, service.AssertNumberOfCalls(t, "CreateNetwork", 1))
+}
+
+func TestDockerUseCase_Execute_AttachNetwork(t *testing.T) {
+	service := new(mocks.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
+	service.On("AttachNetwork", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+
+	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service)
+
+	res := usecase.Execute(context.TODO(), command.Command{
+		ID:        "TEST",
+		Timestamp: 1234567,
+		Timeout:   5 * time.Second,
+		Target:    command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type:    "attachNetwork",
+			Payload: map[string]interface{}{},
+		},
+	})
+	assert.Equal(t, res.Error, nil)
+	assert.True(t, service.AssertNumberOfCalls(t, "AttachNetwork", 1))
 }
