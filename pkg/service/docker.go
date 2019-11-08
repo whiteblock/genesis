@@ -20,9 +20,14 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
-	"github.com/whiteblock/genesis/docker/container"
 	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/repository"
+	"strconv"
 )
 
 type DockerService interface {
@@ -41,10 +46,11 @@ type DockerService interface {
 }
 
 type dockerService struct {
+	repo repository.DockerRepository
 }
 
-func NewDockerService() (DockerService, error) {
-	return dockerService{}, nil
+func NewDockerService(repo repository.DockerRepository) (DockerService, error) {
+	return dockerService{repo: repo}, nil
 }
 
 func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*client.Client, error) {
@@ -55,14 +61,54 @@ func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*cl
 	)
 }
 
-func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, c entity.Container) entity.Result {
-	//TODO
-	return container.CreateContainer(ctx, cli, c)
+func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, dContainer entity.Container) entity.Result {
+	var envVars []string
+	for key, val := range dContainer.Environment {
+		envVars = append(envVars, fmt.Sprintf("%s=%s", key, val))
+	}
+
+	config := &container.Config{
+		Cmd:        dContainer.Args,
+		Env:        envVars,
+		Image:      dContainer.Image,
+		Entrypoint: []string{dContainer.EntryPoint},
+		Labels:     dContainer.Labels,
+	}
+
+	mem, err := dContainer.GetMemory()
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+
+	cpus, err := strconv.ParseFloat(dContainer.Cpus, 64)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+
+	hostConfig := &container.HostConfig{}
+	hostConfig.NanoCPUs = int64(1000000000 * cpus)
+	hostConfig.Memory = mem
+
+	networkConfig := &network.NetworkingConfig{
+		EndpointsConfig: dContainer.NetworkConfig.EndpointsConfig,
+	}
+
+	_, err = ds.repo.ContainerCreate(cli, ctx, config, hostConfig, networkConfig, dContainer.Name)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+
+	return entity.NewSuccessResult()
 }
 
 func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
-	//TODO
-	return container.StartContainer(ctx, cli, name)
+	opts := types.ContainerStartOptions{}
+	err := ds.repo.ContainerStart(cli, ctx, name, opts)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+
+	return entity.NewSuccessResult()
 }
 
 func (ds dockerService) RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result {

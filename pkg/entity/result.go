@@ -47,8 +47,19 @@ const (
 	TooSoonType = "TooSoon"
 	//FatalType is the type of a result which indicates a fatal error
 	FatalType = "Fatal"
+	//ErrorType is the generic error type
+	ErrorType = "Error"
 )
 
+func NewSuccessResult() Result {
+	return Result{Type: SuccessType, Error: nil}
+}
+
+//NewFatalResult creates a fatal error result. Commands with fatal errors are not retried
 func NewFatalResult(err error) Result {
 	return Result{Type: FatalType, Error: err}
+}
+
+func NewErrorResult(err error) Result {
+	return Result{Type: ErrorType, Error: err}
 }

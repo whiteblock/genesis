@@ -16,7 +16,7 @@
 	along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-package rabbitmq
+package controller
 
 import (
 	"context"
@@ -52,7 +52,7 @@ func (c *Consumer) Init() error {
 	return c.init()
 }
 
-// CreateQueue creates the coresponding queue with the given parameters
+// DreateQueue creates the coresponding queue with the given parameters
 func (c *Consumer) CreateQueue(durable, autoDelete, exclusive, noWait bool, args amqp.Table) error {
 	ch, err := c.conn.Channel()
 	if err != nil {
