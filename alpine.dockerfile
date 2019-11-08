@@ -1,4 +1,4 @@
-FROM golang:1.12.6-alpine as build
+FROM golang:1.13.4-alpine as build
 
 ENV GO111MODULE on
 WORKDIR /go/src/github.com/whiteblock/genesis

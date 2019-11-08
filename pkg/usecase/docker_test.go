@@ -35,7 +35,7 @@ func TestDockerUseCase_Execute_CreateContainer(t *testing.T) {
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("CreateContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service)
+	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, nil)
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:        "TEST",

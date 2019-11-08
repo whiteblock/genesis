@@ -27,7 +27,7 @@ pipeline {
     SLACK_CHANNEL         = '#alerts'
     SLACK_CREDENTIALS_ID  = 'jenkins-slack-integration-token'
     SLACK_TEAM_DOMAIN     = 'whiteblock'
-
+    GO111MODULE           = 'on'
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '10'))
@@ -42,11 +42,14 @@ pipeline {
       }
       steps {
         script {
-          def goimage = docker.image('golang:1.12.6-alpine')
+          def goimage = docker.image('golang:1.13.4-stretch')
           goimage.pull()
           CI_ENV = sh(script: "curl -s https://codecov.io/env | bash", , returnStdout: true).trim()
           goimage.inside("${CI_ENV} -u root") {
-            sh "apk add git gcc libc-dev curl"
+            sh "apt-get update"
+            sh "apt-get install -y git gcc curl make"
+            sh "go get github.com/vektra/mockery/.../"
+            sh "go get -u golang.org/x/lint/golint"
             sh "sh tests.sh"
           }
         }

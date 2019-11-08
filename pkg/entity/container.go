@@ -19,29 +19,44 @@
 package entity
 
 import (
-	network "github.com/whiteblock/genesis/docker/network"
-	"github.com/whiteblock/genesis/docker/volume"
+	"github.com/docker/docker/api/types/network"
 )
+
+// NetworkConfig represents a docker network configuration
+type NetworkConfig struct {
+	//EndpointsConfig TODO: this will be removed
+	EndpointsConfig map[string]*network.EndpointSettings
+}
 
 // Container represents a docker container, this is calculated from the payload of the Run command
 type Container struct {
 	// BoundCpus are the cpus which the container will be set with an affinity for.
-	BoundCPUs   []int `json:"boundCPUs,omitonempty"`
-	Detach      bool
-	EntryPoint  string
+	BoundCPUs []int `json:"boundCPUs,omitonempty"`
+	// Detach indicates that we should wait for the containers entrypoint to finish execution
+	Detach bool
+	// EntryPoint overrides the docker containers entrypoint if non-empty
+	EntryPoint string
+	// Environment represents the environment kv which will be provided to the container
 	Environment map[string]string
 
-	Labels        map[string]string
-	Name          string
-	Network       string
-	NetworkConfig network.NetworkConfig
+	// Labels are any identifier which are to be attached to the container
+	Labels map[string]string
+	//Name is the unique name of the docker container
+	Name string
+	//Network is the primary network for this container to be attached to
+	Network string
+	//NetworkConfig: TODO remove from this struct
+	NetworkConfig NetworkConfig
 
 	// Ports to be opened for each container, each port associated.
 	Ports map[int]int `json:"ports"`
 
-	Volumes map[string]volume.MountableVolume `json:"volumes"`
+	// Volumes are the docker volumes to be mounted on this container
+	Volumes map[string]Volume `json:"volumes"`
 
 	Resources
+	//Image is the docker image
 	Image string
-	Args  []string
+	//Args are the arguments passed to the containers entrypoint
+	Args []string
 }

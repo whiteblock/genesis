@@ -18,11 +18,8 @@
 
 package entity
 
+//Volume represents a docker volume which may be shared among multiple containers
 type Volume struct {
+	//Name is the name of the docker volume
 	Name string
-}
-
-type MountableVolume struct {
-	Name  string
-	Mount string
 }

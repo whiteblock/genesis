@@ -24,7 +24,9 @@ import (
 
 // Order to be executed by genesis
 type Order struct {
-	Type    string                 `json:"type"`
+	//Type is the type of the order
+	Type string `json:"type"`
+	//Payload is the payload object of the order
 	Payload map[string]interface{} `json:"payload"`
 }
 
@@ -35,13 +37,20 @@ type Target struct {
 
 // Command is the command sent to Genesis.
 type Command struct {
-	ID           string        `json:"id"`
-	Timestamp    int64         `json:"timestamp"`
-	Timeout      time.Duration `json:"timeout"`
-	Retry        uint8         `json:"retry"`
-	Target       Target        `json:"target"`
-	Dependencies []string      `json:"dependencies"`
-	Order        Order         `json:"order"`
+	// ID is the unique id of this command
+	ID string `json:"id"`
+	// Timestamp is the earliest time the command can be executed
+	Timestamp int64 `json:"timestamp"`
+	// Timeout is the maximum amount of time a command can take before being aborted
+	Timeout time.Duration `json:"timeout"`
+	//Retry is the number of times this command has been retried
+	Retry uint8 `json:"retry"`
+	//Target represents the target of this command
+	Target Target `json:"target"`
+	//Dependencies is an array of ids of commands which must execute before this one
+	Dependencies []string `json:"dependencies"`
+	//Order is the action of the command, it represents what needs to be done
+	Order Order `json:"order"`
 }
 
 //GetRetryCommand creates a copy of this command which has been modified to be requeued after an error
