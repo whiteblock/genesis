@@ -1,4 +1,4 @@
-FROM golang:1.12.8-stretch as built
+FROM golang:1.13.4-stretch as built
 
 ENV GO111MODULE on
 

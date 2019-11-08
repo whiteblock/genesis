@@ -28,19 +28,26 @@ import (
 	"time"
 )
 
+//DeliveryHandler handles the initial processing of a amqp delivery
 type DeliveryHandler interface {
+	//ProcessMessage attempts to extract the command and execute it
 	ProcessMessage(msg amqp.Delivery) entity.Result
+	//GetKickbackMessage takes the delivery and creates a message from it
+	//for requeuing on non-fatal error
 	GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing, error)
 }
 
 type deliveryHandler struct {
-	usecase usecase.CommandUseCase
+	usecase usecase.DockerUseCase
 }
 
-func NewDeliveryHandler(usecase usecase.CommandUseCase) (DeliveryHandler, error) {
+//NewDeliveryHandler creates a new DeliveryHandler which uses the given usecase for
+//executing the extracted command
+func NewDeliveryHandler(usecase usecase.DockerUseCase) (DeliveryHandler, error) {
 	return deliveryHandler{usecase: usecase}, nil
 }
 
+//ProcessMessage attempts to extract the command and execute it
 func (dh deliveryHandler) ProcessMessage(msg amqp.Delivery) entity.Result {
 	var cmd command.Command //TODO: add validation check
 	err := json.Unmarshal(msg.Body, &cmd)
@@ -51,6 +58,8 @@ func (dh deliveryHandler) ProcessMessage(msg amqp.Delivery) entity.Result {
 	return dh.usecase.Run(cmd)
 }
 
+//GetKickbackMessage takes the delivery and creates a message from it
+//for requeuing on non-fatal error
 func (dh deliveryHandler) GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing, error) {
 	pub := amqp.Publishing{
 		Headers: msg.Headers,

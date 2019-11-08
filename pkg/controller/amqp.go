@@ -16,7 +16,7 @@
 	along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-package rabbitmq
+package controller
 
 import (
 	"context"
@@ -29,42 +29,53 @@ import (
 	"sync"
 )
 
-type Consumer struct {
-	Queue         string
-	QueueURL      string
-	MaxConcurreny int64
-	MaxRetries    int64
-	Handle        handler.DeliveryHandler
-	conn          *amqp.Connection
-	once          *sync.Once
-	sem           *semaphore.Weighted
+//AMQPController is a controller which brings in from an AMQP compatible provider
+type AMQPController interface {
+	// Start starts the client. This function should be called only once and does not return
+	Start()
+
+	// CreateQueue creates the coresponding queue with the given parameters
+	CreateQueue(durable, autoDelete, exclusive, noWait bool, args amqp.Table) error
+
+	// Close cleans up the connections and resources used by this client
+	Close()
 }
 
-func (c *Consumer) Init() error {
-	c.once = &sync.Once{}
-	if c.MaxConcurreny < 1 {
-		return fmt.Errorf("MaxConcurreny must be atleast 1")
+type consumer struct {
+	//queue is the name of the queue to consume from
+	queue string
+	//queueURL is the URL of the queue vhost
+	queueURL string
+	//handle handles the incoming deliveries
+	handle handler.DeliveryHandler
+	conn   *amqp.Connection
+	once   *sync.Once
+	sem    *semaphore.Weighted
+}
+
+//NewAMQPController creates a new AMQPController
+func NewAMQPController(queue string, queueURL string, maxConcurreny int64, handle handler.DeliveryHandler) (AMQPController, error) {
+	out := &consumer{
+		queue:    queue,
+		queueURL: queueURL,
+		handle:   handle,
 	}
-	c.sem = semaphore.NewWeighted(c.MaxConcurreny)
-	if c.MaxRetries < 1 {
-		return fmt.Errorf("MaxRetries must be atleast 1")
-	}
-	return c.init()
+	return out, out.init(maxConcurreny)
 }
 
 // CreateQueue creates the coresponding queue with the given parameters
-func (c *Consumer) CreateQueue(durable, autoDelete, exclusive, noWait bool, args amqp.Table) error {
+func (c *consumer) CreateQueue(durable, autoDelete, exclusive, noWait bool, args amqp.Table) error {
 	ch, err := c.conn.Channel()
 	if err != nil {
 		return utils.LogError(err)
 	}
 	defer ch.Close()
-	_, err = ch.QueueDeclare(c.Queue, durable, autoDelete, exclusive, noWait, args)
+	_, err = ch.QueueDeclare(c.queue, durable, autoDelete, exclusive, noWait, args)
 	return utils.LogError(err)
 }
 
 // Close cleans up the connections and resources used by this client
-func (c *Consumer) Close() {
+func (c *consumer) Close() {
 	if c == nil {
 		return
 	}
@@ -73,14 +84,14 @@ func (c *Consumer) Close() {
 	}
 }
 
-// Run starts the client. This function should be called only once and does not return
-func (c *Consumer) Run() {
+// Start starts the client. This function should be called only once and does not return
+func (c *consumer) Start() {
 	c.once.Do(func() { c.loop() })
 }
 
-func (c *Consumer) kickBackMessage(msg amqp.Delivery) {
+func (c *consumer) kickBackMessage(msg amqp.Delivery) {
 	log.WithFields(log.Fields{"msg": msg}).Info("kicking back message")
-	pub, err := c.Handle.GetKickbackMessage(msg)
+	pub, err := c.handle.GetKickbackMessage(msg)
 	if err != nil {
 		utils.LogError(err)
 		return
@@ -112,9 +123,9 @@ func (c *Consumer) kickBackMessage(msg amqp.Delivery) {
 	ch.TxCommit()
 }
 
-func (c *Consumer) handleMessage(msg amqp.Delivery) {
+func (c *consumer) handleMessage(msg amqp.Delivery) {
 	defer c.sem.Release(1)
-	res := c.Handle.ProcessMessage(msg)
+	res := c.handle.ProcessMessage(msg)
 	if res.IsRequeue() {
 		utils.LogError(res.Error)
 		go c.kickBackMessage(msg)
@@ -127,14 +138,14 @@ func (c *Consumer) handleMessage(msg amqp.Delivery) {
 
 }
 
-func (c *Consumer) loop() {
+func (c *consumer) loop() {
 	ch, err := c.conn.Channel()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer ch.Close()
 
-	msgs, err := ch.Consume(c.Queue, "", false, false, false, false, nil)
+	msgs, err := ch.Consume(c.queue, "", false, false, false, false, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -144,7 +155,12 @@ func (c *Consumer) loop() {
 	}
 }
 
-func (c *Consumer) init() (err error) {
-	c.conn, err = amqp.Dial(c.QueueURL)
+func (c *consumer) init(maxConcurreny int64) (err error) {
+	c.once = &sync.Once{}
+	if maxConcurreny < 1 {
+		return fmt.Errorf("maxConcurreny must be atleast 1")
+	}
+	c.sem = semaphore.NewWeighted(maxConcurreny)
+	c.conn, err = amqp.Dial(c.queueURL)
 	return utils.LogError(err)
 }
