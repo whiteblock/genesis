@@ -56,7 +56,7 @@ type Container struct {
 
 	Resources
 	//Image is the docker image
-	Image string
+	Image string `json:"image"`
 	//Args are the arguments passed to the containers entrypoint
-	Args []string
+	Args []string `json:"args"`
 }
