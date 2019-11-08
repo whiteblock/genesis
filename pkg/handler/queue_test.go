@@ -28,17 +28,24 @@ import (
 	"github.com/whiteblock/genesis/mocks"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/usecase"
 )
 
 func TestDeliveryHandler_ProcessMessage(t *testing.T) {
-	dh := new(mocks.DeliveryHandler)
-	dh.On("ProcessMessage", mock.Anything).Return(entity.Result{nil, entity.SuccessType})
-
-	usecase := new(mocks.DockerUseCase)
-	usecase.On("Run", mock.Anything).Return(entity.Result{Error: nil, Type: entity.SuccessType})
-
 	service := new(mocks.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("CreateContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+
+	cmdService := new(mocks.CommandService)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
+
+
+	duc, err := usecase.NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+
+	dh, err := NewDeliveryHandler(duc)
+	if err != nil {
+		t.Error(err)
+	}
 
 	cmd := new(command.Command)
 	cmd.Order.Type = "createContainer"
@@ -50,14 +57,13 @@ func TestDeliveryHandler_ProcessMessage(t *testing.T) {
 		t.Error(err)
 	}
 
-	res := dh.ProcessMessage(amqp.Delivery{
-		Body: body,
-	})
+	res := dh.ProcessMessage(amqp.Delivery{Body: body})
+	if res.Error != nil {
+		t.Error("expected return value of ProcessMessage does not match expected value: ", err)
+	}
 
 	assert.Equal(t, res.Error, nil)
-	assert.True(t, dh.AssertNumberOfCalls(t, "ProcessMessage", 1))
 	assert.True(t, service.AssertNumberOfCalls(t, "CreateContainer", 1))
-	assert.True(t, usecase.AssertNumberOfCalls(t, "Run", 1))
 }
 
 func TestDeliveryHandler_GetKickbackMessage(t *testing.T) {
