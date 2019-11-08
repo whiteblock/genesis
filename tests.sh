@@ -2,7 +2,7 @@
 
 set -o errexit
 set -o xtrace
-#set -o pipefail
+set -o pipefail
 
 
 if [ -n "$(gofmt -l .)" ]; then
@@ -13,10 +13,10 @@ else
   echo "Go code is well formatted"
 fi
 
-golint -set_exit_status ./...
-go vet ./...
+golint -set_exit_status $(go list ./... | grep -v mocks)
+
 make mocks
-go get ./...
+go vet $(go list ./... | grep -v mocks)
 go test ./...
 go test ./... -coverprofile=coverage.txt -covermode=atomic
 
