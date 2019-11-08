@@ -1,6 +1,6 @@
 language: go
 go_import_path: github.com/whiteblock/genesis
-sudo: false
+sudo: true
 env:
    - GOPATH=/home/travis/gopath
 #  - GO111MODULE=on
@@ -11,9 +11,10 @@ sudo: required
 go: 1.12.x
 
 before_install:
-#  - make install-mock
-#  - make mocks
-  - go get -u golang.org/x/lint/golint
+  - go get github.com/vektra/mockery/.../
+  - make mocks
+  - sudo apt update
+  - sudo apt install -y golint
 
 script:
   - sh .travis.gofmt.sh
