@@ -31,13 +31,13 @@ import (
 type State struct {
 	ExecutedCommands map[string]command.Command
 	pending          *queue.Queue
-	uc               usecase.CommandUseCase
+	uc               usecase.DockerUseCase
 	mu               sync.Mutex
 	once             *sync.Once
 }
 
 //NewState creates a new state object and initializes the values
-func NewState(uc usecase.CommandUseCase) *State {
+func NewState(uc usecase.DockerUseCase) *State {
 	return &State{
 		ExecutedCommands: map[string]command.Command{},
 		pending:          queue.New(20),

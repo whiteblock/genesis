@@ -20,13 +20,28 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/volume"
+
 	"github.com/docker/docker/client"
-	"github.com/whiteblock/genesis/docker/container"
 	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/repository"
+	"strconv"
 )
 
+//DockerService provides a intermediate interface between docker and the order from a command
 type DockerService interface {
+
+	//CreateClient creates a new client for connecting to the docker daemon
+	CreateClient(conf entity.DockerConfig, host string) (*client.Client, error)
+
+	//CreateContainer attempts to create a docker container
 	CreateContainer(ctx context.Context, cli *client.Client, container entity.Container) entity.Result
+
+	//StartContainer attempts to start an already created docker container
 	StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result
 	RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result
 	CreateNetwork(ctx context.Context, cli *client.Client, net entity.Network) entity.Result
@@ -39,20 +54,73 @@ type DockerService interface {
 }
 
 type dockerService struct {
+	repo repository.DockerRepository
 }
 
-func NewDockerService() (DockerService, error) {
-	return dockerService{}, nil
+//NewDockerService creates a new DockerService
+func NewDockerService(repo repository.DockerRepository) (DockerService, error) {
+	return dockerService{repo: repo}, nil
 }
 
-func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, c entity.Container) entity.Result {
-	//TODO
-	return container.CreateContainer(ctx, cli, c)
+//CreateClient creates a new client for connecting to the docker daemon
+func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*client.Client, error) {
+	return client.NewClientWithOpts(
+		client.WithAPIVersionNegotiation(),
+		client.WithHost(host),
+		client.WithTLSClientConfig(conf.CACertPath, conf.CertPath, conf.KeyPath),
+	)
 }
 
+//CreateContainer attempts to create a docker container
+func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, dContainer entity.Container) entity.Result {
+	var envVars []string
+	for key, val := range dContainer.Environment {
+		envVars = append(envVars, fmt.Sprintf("%s=%s", key, val))
+	}
+
+	config := &container.Config{
+		Cmd:        dContainer.Args,
+		Env:        envVars,
+		Image:      dContainer.Image,
+		Entrypoint: []string{dContainer.EntryPoint},
+		Labels:     dContainer.Labels,
+	}
+
+	mem, err := dContainer.GetMemory()
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+
+	cpus, err := strconv.ParseFloat(dContainer.Cpus, 64)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+
+	hostConfig := &container.HostConfig{}
+	hostConfig.NanoCPUs = int64(1000000000 * cpus)
+	hostConfig.Memory = mem
+
+	networkConfig := &network.NetworkingConfig{
+		EndpointsConfig: dContainer.NetworkConfig.EndpointsConfig,
+	}
+
+	_, err = ds.repo.ContainerCreate(ctx, cli, config, hostConfig, networkConfig, dContainer.Name)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+
+	return entity.NewSuccessResult()
+}
+
+//StartContainer attempts to start an already created docker container
 func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
-	//TODO
-	return container.StartContainer(ctx, cli, name)
+	opts := types.ContainerStartOptions{}
+	err := ds.repo.ContainerStart(ctx, cli, name, opts)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+
+	return entity.NewSuccessResult()
 }
 
 func (ds dockerService) RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
@@ -70,9 +138,20 @@ func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, n
 	return entity.Result{}
 }
 
-func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, volume entity.Volume) entity.Result {
-	//TODO
-	return entity.Result{}
+func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, vol entity.Volume) entity.Result {
+	volConfig := volume.VolumeCreateBody{
+		Driver: vol.Driver,
+		DriverOpts: vol.DriverOpts,
+		Labels: vol.Labels,
+		Name: vol.Name,
+	}
+
+	_, err := cli.VolumeCreate(ctx, volConfig)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+
+	return entity.NewSuccessResult()
 }
 
 func (ds dockerService) RemoveVolume(ctx context.Context, cli *client.Client, name string) entity.Result {
