@@ -25,32 +25,26 @@ import (
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	mocksHandler "github.com/whiteblock/genesis/mocks/pkg/handler"
-	mocksUseCase "github.com/whiteblock/genesis/mocks/pkg/usecase"
+	"github.com/whiteblock/genesis/mocks"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 )
 
-func TestNewDeliveryHandler(t *testing.T) {
-	usecase := new(mocksUseCase.DockerUseCase)
-
-	dh, err := NewDeliveryHandler(usecase)
-	if err != nil {
-		t.Error(err)
-	}
-
-	expectedDH := deliveryHandler{
-		usecase: usecase,
-	}
-
-	assert.Equal(t, dh, expectedDH)
-}
-
 func TestDeliveryHandler_ProcessMessage(t *testing.T) {
-	dh := new(mocksHandler.DeliveryHandler)
-	dh.On("ProcessMessage", mock.Anything).Return(entity.Result{Error: nil, Type: entity.SuccessType})
+	dh := new(mocks.DeliveryHandler)
+	dh.On("ProcessMessage", mock.Anything).Return(entity.Result{nil, entity.SuccessType})
+
+	usecase := new(mocks.DockerUseCase)
+	usecase.On("Run", mock.Anything).Return(entity.Result{Error: nil, Type: entity.SuccessType})
+
+	service := new(mocks.DockerService)
+	service.On("CreateContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
 	cmd := new(command.Command)
+	cmd.Order.Type = "createContainer"
+	cmd.Order.Payload = map[string]interface{}{}
+	cmd.Target.IP = "0.0.0.0"
+
 	body, err := json.Marshal(cmd)
 	if err != nil {
 		t.Error(err)
@@ -59,8 +53,11 @@ func TestDeliveryHandler_ProcessMessage(t *testing.T) {
 	res := dh.ProcessMessage(amqp.Delivery{
 		Body: body,
 	})
+
 	assert.Equal(t, res.Error, nil)
 	assert.True(t, dh.AssertNumberOfCalls(t, "ProcessMessage", 1))
+	assert.True(t, service.AssertNumberOfCalls(t, "CreateContainer", 1))
+	assert.True(t, usecase.AssertNumberOfCalls(t, "Run", 1))
 }
 
 func TestDeliveryHandler_GetKickbackMessage(t *testing.T) {
@@ -88,7 +85,7 @@ func TestDeliveryHandler_GetKickbackMessage(t *testing.T) {
 		Type:            msg.Type,
 	}
 
-	dh := new(mocksHandler.DeliveryHandler)
+	dh := new(mocks.DeliveryHandler)
 	dh.On("GetKickbackMessage", mock.Anything).Return(pub, nil)
 
 	res, err := dh.GetKickbackMessage(msg)
