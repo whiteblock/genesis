@@ -26,29 +26,33 @@ import (
 	"github.com/docker/docker/client"
 )
 
+//DockerRepository represents direct interacts with the docker daemon
 type DockerRepository interface {
 	//ContainerCreate creates a new container based in the given configuration. It can be associated with a name, but it's not mandatory.
-	ContainerCreate(cli *client.Client, ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
+	ContainerCreate(ctx context.Context, cli *client.Client, config *container.Config, hostConfig *container.HostConfig,
 		networkingConfig *network.NetworkingConfig, containerName string) (container.ContainerCreateCreatedBody, error)
 
 	//ContainerStart sends a request to the docker daemon to start a container.
-	ContainerStart(cli *client.Client, ctx context.Context, containerID string, options types.ContainerStartOptions) error
+	ContainerStart(ctx context.Context, cli *client.Client, containerID string, options types.ContainerStartOptions) error
 }
 
 type dockerRepository struct {
 }
 
+//NewDockerRepository creates a new DockerRepository
 func NewDockerRepository() DockerRepository {
 	return &dockerRepository{}
 }
 
-func (dr dockerRepository) ContainerCreate(cli *client.Client, ctx context.Context, config *container.Config,
+//ContainerCreate creates a new container based in the given configuration. It can be associated with a name, but it's not mandatory.
+func (dr dockerRepository) ContainerCreate(ctx context.Context, cli *client.Client, config *container.Config,
 	hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig,
 	containerName string) (container.ContainerCreateCreatedBody, error) {
 	return cli.ContainerCreate(ctx, config, hostConfig, networkingConfig, containerName)
 }
 
-func (dr dockerRepository) ContainerStart(cli *client.Client, ctx context.Context,
+//ContainerStart sends a request to the docker daemon to start a container.
+func (dr dockerRepository) ContainerStart(ctx context.Context, cli *client.Client,
 	containerID string, options types.ContainerStartOptions) error {
 	return cli.ContainerStart(ctx, containerID, options)
 }

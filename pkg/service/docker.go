@@ -30,10 +30,16 @@ import (
 	"strconv"
 )
 
+//DockerService provides a intermediate interface between docker and the order from a command
 type DockerService interface {
+
+	//CreateClient creates a new client for connecting to the docker daemon
 	CreateClient(conf entity.DockerConfig, host string) (*client.Client, error)
 
+	//CreateContainer attempts to create a docker container
 	CreateContainer(ctx context.Context, cli *client.Client, container entity.Container) entity.Result
+
+	//StartContainer attempts to start an already created docker container
 	StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result
 	RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result
 	CreateNetwork(ctx context.Context, cli *client.Client, net entity.Network) entity.Result
@@ -49,10 +55,12 @@ type dockerService struct {
 	repo repository.DockerRepository
 }
 
+//NewDockerService creates a new DockerService
 func NewDockerService(repo repository.DockerRepository) (DockerService, error) {
 	return dockerService{repo: repo}, nil
 }
 
+//CreateClient creates a new client for connecting to the docker daemon
 func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*client.Client, error) {
 	return client.NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
@@ -61,6 +69,7 @@ func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*cl
 	)
 }
 
+//CreateContainer attempts to create a docker container
 func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, dContainer entity.Container) entity.Result {
 	var envVars []string
 	for key, val := range dContainer.Environment {
@@ -93,17 +102,17 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 		EndpointsConfig: dContainer.NetworkConfig.EndpointsConfig,
 	}
 
-	_, err = ds.repo.ContainerCreate(cli, ctx, config, hostConfig, networkConfig, dContainer.Name)
+	_, err = ds.repo.ContainerCreate(ctx, cli, config, hostConfig, networkConfig, dContainer.Name)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
 
 	return entity.NewSuccessResult()
 }
-
+//StartContainer attempts to start an already created docker container
 func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
 	opts := types.ContainerStartOptions{}
-	err := ds.repo.ContainerStart(cli, ctx, name, opts)
+	err := ds.repo.ContainerStart(ctx, cli, name, opts)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}

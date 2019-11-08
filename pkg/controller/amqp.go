@@ -53,6 +53,7 @@ type consumer struct {
 	sem    *semaphore.Weighted
 }
 
+//NewAMQPController creates a new AMQPController
 func NewAMQPController(queue string, queueURL string, maxConcurreny int64, handle handler.DeliveryHandler) (AMQPController, error) {
 	out := &consumer{
 		queue:    queue,
