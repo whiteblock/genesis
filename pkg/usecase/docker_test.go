@@ -161,30 +161,29 @@ func TestDockerUseCase_Run_AttachNetwork(t *testing.T) {
 	assert.True(t, service.AssertNumberOfCalls(t, "AttachNetwork", 1))
 }
 
-//todo test not working
-//func TestDockerUseCase_Run_CreateVolume(t *testing.T) {
-//	service := new(mocks.DockerService)
-//	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-//	service.On("CreateVolume", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
-//
-//	cmdService := new(mocks.CommandService)
-//	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
-//
-//	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
-//
-//	res := usecase.Run(command.Command{
-//		ID:        "TEST",
-//		Timestamp: time.Now().Unix()-5,
-//		Timeout:   0,
-//		Target:    command.Target{IP: "0.0.0.0"},
-//		Order: command.Order{
-//			Type:    "createVolume",
-//			Payload: map[string]interface{}{"volume": map[string]string{"name":"test"}},
-//		},
-//	})
-//	assert.Equal(t, res.Error, nil)
-//	assert.True(t, service.AssertNumberOfCalls(t, "CreateVolume", 1))
-//}
+func TestDockerUseCase_Run_CreateVolume(t *testing.T) {
+	service := new(mocks.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
+	service.On("CreateVolume", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+
+	cmdService := new(mocks.CommandService)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
+
+	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+
+	res := usecase.Run(command.Command{
+		ID:        "TEST",
+		Timestamp: time.Now().Unix()-5,
+		Timeout:   0,
+		Target:    command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type:    "createVolume",
+			Payload: map[string]interface{}{"volume": map[string]string{"name":"test"}},
+		},
+	})
+	assert.Equal(t, res.Error, nil)
+	assert.True(t, service.AssertNumberOfCalls(t, "CreateVolume", 1))
+}
 
 func TestDockerUseCase_Run_RemoveVolume(t *testing.T) {
 	service := new(mocks.DockerService)
@@ -394,27 +393,26 @@ func TestDockerUseCase_Execute_AttachNetwork(t *testing.T) {
 	assert.True(t, service.AssertNumberOfCalls(t, "AttachNetwork", 1))
 }
 
-//TODO test not working
-//func TestDockerUseCase_Execute_CreateVolume(t *testing.T) {
-//	service := new(mocks.DockerService)
-//	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-//	service.On("CreateVolume", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
-//
-//	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, nil)
-//
-//	res := usecase.Execute(context.TODO(), command.Command{
-//		ID:        "TEST",
-//		Timestamp: 1234567,
-//		Timeout:   5 * time.Second,
-//		Target:    command.Target{IP: "0.0.0.0"},
-//		Order: command.Order{
-//			Type:    "createVolume",
-//			Payload: map[string]interface{}{},
-//		},
-//	})
-//	assert.Equal(t, res.Error, nil)
-//	assert.True(t, service.AssertNumberOfCalls(t, "CreateVolume", 1))
-//}
+func TestDockerUseCase_Execute_CreateVolume(t *testing.T) {
+	service := new(mocks.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
+	service.On("CreateVolume", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+
+	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, nil)
+
+	res := usecase.Execute(context.TODO(), command.Command{
+		ID:        "TEST",
+		Timestamp: 1234567,
+		Timeout:   5 * time.Second,
+		Target:    command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type:    "createVolume",
+			Payload: map[string]interface{}{},
+		},
+	})
+	assert.Equal(t, res.Error, nil)
+	assert.True(t, service.AssertNumberOfCalls(t, "CreateVolume", 1))
+}
 
 func TestDockerUseCase_Execute_RemoveVolume(t *testing.T) {
 	service := new(mocks.DockerService)
