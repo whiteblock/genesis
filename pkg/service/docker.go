@@ -140,10 +140,10 @@ func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, n
 
 func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, vol entity.Volume) entity.Result {
 	volConfig := volume.VolumeCreateBody{
-		Driver: vol.Driver,
+		Driver:     vol.Driver,
 		DriverOpts: vol.DriverOpts,
-		Labels: vol.Labels,
-		Name: vol.Name,
+		Labels:     vol.Labels,
+		Name:       vol.Name,
 	}
 
 	_, err := cli.VolumeCreate(ctx, volConfig)

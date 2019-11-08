@@ -29,7 +29,7 @@ type VolumeConfig struct {
 //Volume represents a docker volume which may be shared among multiple containers
 type Volume struct {
 	//Name is the name of the docker volume
-	Name  string `json:"name"`
+	Name string `json:"name"`
 	//Labels to be attached to the volume
 	Labels map[string]string
 	VolumeConfig
