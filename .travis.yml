@@ -13,8 +13,7 @@ go: 1.12.x
 before_install:
   - go get github.com/vektra/mockery/.../
   - make mocks
-  - sudo apt update
-  - sudo apt install -y golint
+  - go get -u golang.org/x/lint/golint
 
 script:
   - sh .travis.gofmt.sh
