@@ -21,6 +21,7 @@ package entity
 import (
 	"github.com/docker/docker/api/types/network"
 )
+
 // NetworkConfig represents a docker network configuration
 type NetworkConfig struct {
 	//EndpointsConfig TODO: this will be removed
@@ -30,20 +31,20 @@ type NetworkConfig struct {
 // Container represents a docker container, this is calculated from the payload of the Run command
 type Container struct {
 	// BoundCpus are the cpus which the container will be set with an affinity for.
-	BoundCPUs   []int `json:"boundCPUs,omitonempty"`
+	BoundCPUs []int `json:"boundCPUs,omitonempty"`
 	// Detach indicates that we should wait for the containers entrypoint to finish execution
-	Detach      bool
+	Detach bool
 	// EntryPoint overrides the docker containers entrypoint if non-empty
-	EntryPoint  string
+	EntryPoint string
 	// Environment represents the environment kv which will be provided to the container
 	Environment map[string]string
 
 	// Labels are any identifier which are to be attached to the container
-	Labels        map[string]string
+	Labels map[string]string
 	//Name is the unique name of the docker container
-	Name          string
+	Name string
 	//Network is the primary network for this container to be attached to
-	Network       string
+	Network string
 	//NetworkConfig: TODO remove from this struct
 	NetworkConfig NetworkConfig
 
@@ -57,5 +58,5 @@ type Container struct {
 	//Image is the docker image
 	Image string
 	//Args are the arguments passed to the containers entrypoint
-	Args  []string
+	Args []string
 }

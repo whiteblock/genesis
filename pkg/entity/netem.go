@@ -21,17 +21,17 @@ package entity
 //Netconf represents network impairments which are to be applied to a network
 type Netconf struct {
 	//Limit is the max number of packets to hold the in queue
-	Limit       int     `json:"limit"`
+	Limit int `json:"limit"`
 	//Loss represents packet loss % ie 100% = 100
-	Loss        float64 `json:"loss"`
+	Loss float64 `json:"loss"`
 	//Delay represents the latency to be applied in microseconds
-	Delay       int     `json:"delay"`
+	Delay int `json:"delay"`
 	//Rate represents the bandwidth constraint to be applied to the network
-	Rate        string  `json:"rate"`
+	Rate string `json:"rate"`
 	//Duplication represents the percentage of packets to duplicate
 	Duplication float64 `json:"duplicate"`
 	//Corrupt represents the percentage of packets to corrupt
-	Corrupt     float64 `json:"corrupt"`
+	Corrupt float64 `json:"corrupt"`
 	//Reorder represents the percentage of packets that get reordered
-	Reorder     float64 `json:"reorder"`
+	Reorder float64 `json:"reorder"`
 }

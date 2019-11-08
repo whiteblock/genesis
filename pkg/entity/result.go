@@ -16,7 +16,6 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-
 package entity
 
 //Result is the result of executing the command, contains a type and possibly an error
@@ -24,7 +23,7 @@ type Result struct {
 	//Error is where the error is stored if this result is not a successful result
 	Error error
 	//Type is the type of result
-	Type  string
+	Type string
 }
 
 //IsSuccess returns whether or not the result indicates success
