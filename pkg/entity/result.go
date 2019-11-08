@@ -16,12 +16,14 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//Result is the last known status of the command, contains a type and possibly an error
 
 package entity
 
+//Result is the result of executing the command, contains a type and possibly an error
 type Result struct {
+	//Error is where the error is stored if this result is not a successful result
 	Error error
+	//Type is the type of result
 	Type  string
 }
 
@@ -36,6 +38,8 @@ func (res Result) IsFatal() bool {
 	return res.Error != nil && res.Type == FatalType
 }
 
+//IsRequeue returns true if this result indicates that the command should be retried at a
+//later pint
 func (res Result) IsRequeue() bool {
 	return !res.IsSuccess() && !res.IsFatal()
 }
@@ -51,6 +55,7 @@ const (
 	ErrorType = "Error"
 )
 
+//NewSuccessResult indicates a successful result
 func NewSuccessResult() Result {
 	return Result{Type: SuccessType, Error: nil}
 }
@@ -60,6 +65,7 @@ func NewFatalResult(err error) Result {
 	return Result{Type: FatalType, Error: err}
 }
 
+//NewErrorResult creates a result which indicates a non-fatal error. Commands with this result should be requeued.
 func NewErrorResult(err error) Result {
 	return Result{Type: ErrorType, Error: err}
 }

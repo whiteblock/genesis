@@ -22,6 +22,23 @@ import (
 	"github.com/whiteblock/genesis/pkg/command"
 )
 
+//CommandService is an interface to where the commands are kept for querying
 type CommandService interface {
+	//CheckDependenciesExecuted returns true if all of the commands dependencies have executed
 	CheckDependenciesExecuted(cmd command.Command) bool
+}
+
+type commandService struct {
+	//TODO
+}
+
+//NewCommandService creates a new CommandService
+func NewCommandService() CommandService {
+	return &commandService{}
+}
+
+//CheckDependenciesExecuted returns true if all of the commands dependencies have executed
+func (cs commandService) CheckDependenciesExecuted(cmd command.Command) bool {
+	//TODO
+	return false
 }

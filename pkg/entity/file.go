@@ -18,7 +18,10 @@
 
 package entity
 
+// File represents a file which will be placed inside either a docker container or volume
 type File struct {
+	//Path is the mount point of the file
 	Path string
+	//Data is the contents of the file
 	Data []byte
 }

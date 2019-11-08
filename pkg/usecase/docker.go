@@ -40,10 +40,13 @@ var (
 	statusTooSoon = entity.Result{Type: entity.TooSoonType, Error: fmt.Errorf("command ran too soon")}
 )
 
+//DockerUseCase is the usecase for executing the commands in docker
 type DockerUseCase interface {
+	// Run is equivalent to Execute, except it generates context based on the given command
 	Run(cmd command.Command) entity.Result
+	// TimeSupplier supplies the time as a unix timestamp
 	TimeSupplier() int64
-	//Execute executes the command with the given context
+	// Execute executes the command with the given context
 	Execute(ctx context.Context, cmd command.Command) entity.Result
 }
 
@@ -53,70 +56,72 @@ type dockerUseCase struct { //TODO: move to service
 	cmdService service.CommandService
 }
 
+//NewDockerUseCase creates a DockerUseCase arguments given the proper dep injections
 func NewDockerUseCase(conf entity.DockerConfig, service service.DockerService,
 	cmdService service.CommandService) (DockerUseCase, error) {
 	return &dockerUseCase{conf: conf, service: service, cmdService: cmdService}, nil
 }
 
-func (duck dockerUseCase) TimeSupplier() int64 {
+// TimeSupplier supplies the time as a unix timestamp
+func (duc dockerUseCase) TimeSupplier() int64 {
 	return time.Now().Unix()
 }
 
-// Run runs a command. If it returns true, the cmdis considered executed and should be consumed. If it returns false, the transaction should be rolled back.
-func (duck dockerUseCase) Run(cmd command.Command) entity.Result {
-	stat, ok := duck.dependencyCheck(cmd)
+// Run is equivalent to Execute, except it generates context based on the given command
+func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
+	stat, ok := duc.dependencyCheck(cmd)
 	if !ok {
 		return stat
 	}
 	log.WithField("command", cmd).Trace("running command")
 	if cmd.Timeout == 0 {
-		return duck.Execute(context.Background(), cmd)
+		return duc.Execute(context.Background(), cmd)
 	}
 	ctx, cancelFn := context.WithTimeout(context.Background(), cmd.Timeout)
 	defer cancelFn()
-	return duck.Execute(ctx, cmd)
+	return duc.Execute(ctx, cmd)
 }
 
-//Execute executes the command with the given context
-func (duck dockerUseCase) Execute(ctx context.Context, cmd command.Command) entity.Result {
-	cli, err := duck.service.CreateClient(duck.conf, cmd.Target.IP)
+// Execute executes the command with the given context
+func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entity.Result {
+	cli, err := duc.service.CreateClient(duc.conf, cmd.Target.IP)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
 	log.WithField("client", cli).Debug("created a client")
 	switch cmd.Order.Type {
 	case "createContainer":
-		return duck.createContainerShim(ctx, cli, cmd) //TODO: Move shims to service
+		return duc.createContainerShim(ctx, cli, cmd) //TODO: Move shims to service
 	case "startContainer":
-		return duck.startContainerShim(ctx, cli, cmd)
+		return duc.startContainerShim(ctx, cli, cmd)
 	case "removeContainer":
-		return duck.removeContainerShim(ctx, cli, cmd)
+		return duc.removeContainerShim(ctx, cli, cmd)
 	case "createNetwork":
-		return duck.createNetworkShim(ctx, cli, cmd)
+		return duc.createNetworkShim(ctx, cli, cmd)
 	case "attachNetwork":
-		return duck.attachNetworkShim(ctx, cli, cmd)
+		return duc.attachNetworkShim(ctx, cli, cmd)
 	case "createVolume":
-		return duck.removeVolumeShim(ctx, cli, cmd)
+		return duc.removeVolumeShim(ctx, cli, cmd)
 	case "removeVolume":
-		return duck.removeVolumeShim(ctx, cli, cmd)
+		return duc.removeVolumeShim(ctx, cli, cmd)
 	case "putFile":
-		return duck.putFileShim(ctx, cli, cmd)
+		return duc.putFileShim(ctx, cli, cmd)
 	case "putFileInContainer":
-		return duck.putFileInContainerShim(ctx, cli, cmd)
+		return duc.putFileInContainerShim(ctx, cli, cmd)
 	case "emulation":
-		return duck.emulationShim(ctx, cli, cmd)
+		return duc.emulationShim(ctx, cli, cmd)
 	}
 	return entity.NewFatalResult(fmt.Errorf("unknown command type: %s", cmd.Order.Type))
 }
 
-func (duck dockerUseCase) dependencyCheck(cmd command.Command) (stat entity.Result, ok bool) {
+func (duc dockerUseCase) dependencyCheck(cmd command.Command) (stat entity.Result, ok bool) {
 	ok = true
-	if duck.TimeSupplier() < cmd.Timestamp {
+	if duc.TimeSupplier() < cmd.Timestamp {
 		ok = false
 		stat = statusTooSoon
 		return
 	}
-	if !duck.cmdService.CheckDependenciesExecuted(cmd) {
+	if !duc.cmdService.CheckDependenciesExecuted(cmd) {
 		ok = false
 		stat = statusTooSoon
 		return
