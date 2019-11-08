@@ -51,7 +51,7 @@ func TestDockerUseCase_Run_CreateContainer(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
-		Timestamp: time.Now().Unix()-5,
+		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
@@ -75,12 +75,12 @@ func TestDockerUseCase_Run_StartContainer(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
-		Timestamp: time.Now().Unix()-5,
+		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    "startContainer",
-			Payload: map[string]interface{}{"name":"test"},
+			Payload: map[string]interface{}{"name": "test"},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -99,7 +99,7 @@ func TestDockerUseCase_Run_RemoveContainer(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
-		Timestamp: time.Now().Unix()-5,
+		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
@@ -123,12 +123,12 @@ func TestDockerUseCase_Run_CreateNetwork(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
-		Timestamp: time.Now().Unix()-5,
+		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    "createNetwork",
-			Payload: map[string]interface{}{"name":"test"},
+			Payload: map[string]interface{}{"name": "test"},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -147,12 +147,12 @@ func TestDockerUseCase_Run_AttachNetwork(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
-		Timestamp: time.Now().Unix()-5,
+		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    "attachNetwork",
-			Payload: map[string]interface{}{"name":"test"},
+			Payload: map[string]interface{}{"name": "test"},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -171,12 +171,12 @@ func TestDockerUseCase_Run_CreateVolume(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
-		Timestamp: time.Now().Unix()-5,
+		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    "createVolume",
-			Payload: map[string]interface{}{"volume": map[string]string{"name":"test"}},
+			Payload: map[string]interface{}{"volume": map[string]string{"name": "test"}},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -195,12 +195,12 @@ func TestDockerUseCase_Run_RemoveVolume(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
-		Timestamp: time.Now().Unix()-5,
+		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    "removeVolume",
-			Payload: map[string]interface{}{"name":"test"},
+			Payload: map[string]interface{}{"name": "test"},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -219,12 +219,12 @@ func TestDockerUseCase_Run_PutFile(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
-		Timestamp: time.Now().Unix()-5,
+		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    "putFile",
-			Payload: map[string]interface{}{"file": map[string]interface{}{"path":"test/path/", "data": []byte("content")}},
+			Payload: map[string]interface{}{"file": map[string]interface{}{"path": "test/path/", "data": []byte("content")}},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -243,12 +243,12 @@ func TestDockerUseCase_Run_PutFileInContainer(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
-		Timestamp: time.Now().Unix()-5,
+		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    "putFileInContainer",
-			Payload: map[string]interface{}{"container": "test", "file": map[string]interface{}{"path":"test/path/", "data": []byte("content")}},
+			Payload: map[string]interface{}{"container": "test", "file": map[string]interface{}{"path": "test/path/", "data": []byte("content")}},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -267,11 +267,11 @@ func TestDockerUseCase_Run_Emulation(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
-		Timestamp: time.Now().Unix()-5,
+		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    "emulation",
+			Type: "emulation",
 			Payload: map[string]interface{}{
 				"limit":     4,
 				"loss":      float64(2),
@@ -321,7 +321,7 @@ func TestDockerUseCase_Execute_StartContainer(t *testing.T) {
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    "startContainer",
-			Payload: map[string]interface{}{"name":"test"},
+			Payload: map[string]interface{}{"name": "test"},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
