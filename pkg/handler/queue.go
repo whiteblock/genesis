@@ -34,10 +34,10 @@ type DeliveryHandler interface {
 }
 
 type deliveryHandler struct {
-	usecase usecase.CommandUseCase
+	usecase usecase.DockerUseCase
 }
 
-func NewDeliveryHandler(usecase usecase.CommandUseCase) (DeliveryHandler, error) {
+func NewDeliveryHandler(usecase usecase.DockerUseCase) (DeliveryHandler, error) {
 	return deliveryHandler{usecase: usecase}, nil
 }
 

@@ -19,9 +19,14 @@
 package entity
 
 import (
-	network "github.com/whiteblock/genesis/docker/network"
+	"github.com/docker/docker/api/types/network"
 	"github.com/whiteblock/genesis/docker/volume"
 )
+
+// NetworkConfig represents a docker network configuration
+type NetworkConfig struct {
+	EndpointsConfig map[string]*network.EndpointSettings
+}
 
 // Container represents a docker container, this is calculated from the payload of the Run command
 type Container struct {
@@ -34,7 +39,7 @@ type Container struct {
 	Labels        map[string]string
 	Name          string
 	Network       string
-	NetworkConfig network.NetworkConfig
+	NetworkConfig NetworkConfig
 
 	// Ports to be opened for each container, each port associated.
 	Ports map[int]int `json:"ports"`

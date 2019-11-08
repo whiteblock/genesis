@@ -28,20 +28,53 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/util"
+	"time"
 )
 
-type DockerUseCase interface { //move to service
+const (
+	numberOfRetries = 4
+	waitBeforeRetry = 10
+)
+
+var (
+	statusTooSoon = entity.Result{Type: entity.TooSoonType, Error: fmt.Errorf("command ran too soon")}
+)
+
+type DockerUseCase interface {
+	Run(cmd command.Command) entity.Result
+	TimeSupplier() int64
 	//Execute executes the command with the given context
 	Execute(ctx context.Context, cmd command.Command) entity.Result
 }
 
 type dockerUseCase struct { //TODO: move to service
-	conf    entity.DockerConfig
-	service service.DockerService
+	conf       entity.DockerConfig
+	service    service.DockerService
+	cmdService service.CommandService
 }
 
-func NewDockerUseCase(conf entity.DockerConfig, service service.DockerService) (DockerUseCase, error) {
-	return dockerUseCase{conf: conf, service: service}, nil
+func NewDockerUseCase(conf entity.DockerConfig, service service.DockerService,
+	cmdService service.CommandService) (DockerUseCase, error) {
+	return &dockerUseCase{conf: conf, service: service, cmdService: cmdService}, nil
+}
+
+func (duck dockerUseCase) TimeSupplier() int64 {
+	return time.Now().Unix()
+}
+
+// Run runs a command. If it returns true, the cmdis considered executed and should be consumed. If it returns false, the transaction should be rolled back.
+func (duck dockerUseCase) Run(cmd command.Command) entity.Result {
+	stat, ok := duck.dependencyCheck(cmd)
+	if !ok {
+		return stat
+	}
+	log.WithField("command", cmd).Trace("running command")
+	if cmd.Timeout == 0 {
+		return duck.Execute(context.Background(), cmd)
+	}
+	ctx, cancelFn := context.WithTimeout(context.Background(), cmd.Timeout)
+	defer cancelFn()
+	return duck.Execute(ctx, cmd)
 }
 
 //Execute executes the command with the given context
@@ -74,6 +107,21 @@ func (duck dockerUseCase) Execute(ctx context.Context, cmd command.Command) enti
 		return duck.emulationShim(ctx, cli, cmd)
 	}
 	return entity.NewFatalResult(fmt.Errorf("unknown command type: %s", cmd.Order.Type))
+}
+
+func (duck dockerUseCase) dependencyCheck(cmd command.Command) (stat entity.Result, ok bool) {
+	ok = true
+	if duck.TimeSupplier() < cmd.Timestamp {
+		ok = false
+		stat = statusTooSoon
+		return
+	}
+	if !duck.cmdService.CheckDependenciesExecuted(cmd) {
+		ok = false
+		stat = statusTooSoon
+		return
+	}
+	return
 }
 
 func (duc dockerUseCase) createContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
