@@ -25,10 +25,26 @@ import (
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	mocksHandler "github.com/whiteblock/genesis/mocks/pkg/handler"
+	mocksUseCase "github.com/whiteblock/genesis/mocks/pkg/usecase"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
-	mocksHandler "github.com/whiteblock/genesis/pkg/handler/mocks"
 )
+
+func TestNewDeliveryHandler(t *testing.T) {
+	usecase := new(mocksUseCase.DockerUseCase)
+
+	dh, err := NewDeliveryHandler(usecase)
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectedDH := deliveryHandler{
+		usecase: usecase,
+	}
+
+	assert.Equal(t, dh, expectedDH)
+}
 
 func TestDeliveryHandler_ProcessMessage(t *testing.T) {
 	dh := new(mocksHandler.DeliveryHandler)
@@ -44,8 +60,42 @@ func TestDeliveryHandler_ProcessMessage(t *testing.T) {
 		Body: body,
 	})
 	assert.Equal(t, res.Error, nil)
+	assert.True(t, dh.AssertNumberOfCalls(t, "ProcessMessage", 1))
 }
 
 func TestDeliveryHandler_GetKickbackMessage(t *testing.T) {
-	
+	cmd := new(command.Command)
+	body, err := json.Marshal(cmd)
+	if err != nil {
+		t.Error(err)
+	}
+
+	msg := amqp.Delivery{
+		Body: body,
+	}
+
+	pub := amqp.Publishing{
+		Headers:         msg.Headers,
+		ContentType:     msg.ContentType,
+		ContentEncoding: msg.ContentEncoding,
+		DeliveryMode:    msg.DeliveryMode,
+		Priority:        msg.Priority,
+		CorrelationId:   msg.CorrelationId,
+		ReplyTo:         msg.ReplyTo,
+		Expiration:      msg.Expiration,
+		MessageId:       msg.MessageId,
+		Timestamp:       msg.Timestamp,
+		Type:            msg.Type,
+	}
+
+	dh := new(mocksHandler.DeliveryHandler)
+	dh.On("GetKickbackMessage", mock.Anything).Return(pub, nil)
+
+	res, err := dh.GetKickbackMessage(msg)
+	if err != nil {
+		t.Error(err)
+	}
+
+	assert.Equal(t, res, pub)
+	assert.True(t, dh.AssertNumberOfCalls(t, "GetKickbackMessage", 1))
 }
