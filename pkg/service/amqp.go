@@ -27,7 +27,7 @@ import (
 //AMQPService acts as a simple interface to the command queue
 type AMQPService interface {
 	//Consume immediately starts delivering queued messages.
-	Consume() (<-chan amqp.Delivery, *amqp.Channel, error)
+	Consume() (<-chan amqp.Delivery, error)
 	//Requeue rejects the oldMsg and queues the newMsg in a transaction
 	Requeue(oldMsg amqp.Delivery, newMsg amqp.Publishing) error
 	//CreateQueue attempts to publish a queue
@@ -45,7 +45,7 @@ func NewAMQPService(conf entity.AMQPConfig, repo repository.AMQPRepository) (AMQ
 }
 
 //Consume immediately starts delivering queued messages.
-func (as amqpService) Consume() (<-chan amqp.Delivery, *amqp.Channel, error) {
+func (as amqpService) Consume() (<-chan amqp.Delivery, error) {
 	return as.repo.Consume(as.conf.QueueName, as.conf.Consume.Consumer, as.conf.Consume.AutoAck,
 		as.conf.Consume.Exclusive, as.conf.Consume.NoLocal, as.conf.Consume.NoWait,
 		as.conf.Consume.Args)
