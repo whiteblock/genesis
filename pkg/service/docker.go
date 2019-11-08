@@ -109,6 +109,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 
 	return entity.NewSuccessResult()
 }
+
 //StartContainer attempts to start an already created docker container
 func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
 	opts := types.ContainerStartOptions{}

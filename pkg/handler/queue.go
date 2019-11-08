@@ -41,7 +41,7 @@ type deliveryHandler struct {
 	usecase usecase.DockerUseCase
 }
 
-//NewDeliveryHandler creates a new DeliveryHandler which uses the given usecase for 
+//NewDeliveryHandler creates a new DeliveryHandler which uses the given usecase for
 //executing the extracted command
 func NewDeliveryHandler(usecase usecase.DockerUseCase) (DeliveryHandler, error) {
 	return deliveryHandler{usecase: usecase}, nil
