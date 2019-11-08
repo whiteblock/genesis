@@ -136,3 +136,67 @@ func TestDockerUseCase_Execute_AttachNetwork(t *testing.T) {
 	assert.Equal(t, res.Error, nil)
 	assert.True(t, service.AssertNumberOfCalls(t, "AttachNetwork", 1))
 }
+
+//TODO test not working
+func TestDockerUseCase_Execute_CreateVolume(t *testing.T) {
+	service := new(mocks.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
+	service.On("CreateVolume", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+
+	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, nil)
+
+	res := usecase.Execute(context.TODO(), command.Command{
+		ID:        "TEST",
+		Timestamp: 1234567,
+		Timeout:   5 * time.Second,
+		Target:    command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type:    "createVolume",
+			Payload: map[string]interface{}{},
+		},
+	})
+	assert.Equal(t, res.Error, nil)
+	assert.True(t, service.AssertNumberOfCalls(t, "CreateVolume", 1))
+}
+
+func TestDockerUseCase_Execute_RemoveVolume(t *testing.T) {
+	service := new(mocks.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
+	service.On("RemoveVolume", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+
+	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, nil)
+
+	res := usecase.Execute(context.TODO(), command.Command{
+		ID:        "TEST",
+		Timestamp: 1234567,
+		Timeout:   5 * time.Second,
+		Target:    command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type:    "removeVolume",
+			Payload: map[string]interface{}{"someVol": "/test/path"},
+		},
+	})
+	assert.Equal(t, res.Error, nil)
+	assert.True(t, service.AssertNumberOfCalls(t, "RemoveVolume", 1))
+}
+
+func TestDockerUseCase_Execute_PutFile(t *testing.T) {
+	service := new(mocks.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
+	service.On("PlaceFileInVolume", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+
+	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, nil)
+
+	res := usecase.Execute(context.TODO(), command.Command{
+		ID:        "TEST",
+		Timestamp: 1234567,
+		Timeout:   5 * time.Second,
+		Target:    command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type:    "putFile",
+			Payload: map[string]interface{}{"file": map[string]interface{}{"Path": "/test/path/", "Data": []byte("contents")}},
+		},
+	})
+	assert.Equal(t, res.Error, nil)
+	assert.True(t, service.AssertNumberOfCalls(t, "PlaceFileInVolume", 1))
+}
