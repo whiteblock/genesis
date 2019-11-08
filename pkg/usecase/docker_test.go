@@ -25,20 +25,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	mocks "github.com/whiteblock/genesis/mocks/pkg/service"
-
+	"github.com/whiteblock/genesis/mocks"
+	mockUseCase "github.com/whiteblock/genesis/mocks/pkg/usecase"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 )
 
 func TestDockerUseCase_TimeSupplier(t *testing.T) {
-	service := new(mocks.DockerService)
-	conf := new(entity.DockerConfig)
+	usecase := new(mockUseCase.DockerUseCase)
+	usecase.On("TimeSupplier").Return(time.Now().Unix())
 
-	usecase, _ := NewDockerUseCase(*conf, service, nil)
-	time := time.Now().Unix()
-
-	assert.Equal(t, usecase.TimeSupplier(), time)
+	assert.Equal(t, usecase.TimeSupplier(), time.Now().Unix())
+	assert.True(t, usecase.AssertNumberOfCalls(t, "TimeSupplier", 1))
 }
 
 func TestDockerUseCase_Run_CreateContainer(t *testing.T) {
