@@ -20,14 +20,17 @@ package usecase
 
 import (
 	"context"
+	"fmt"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	mocks "github.com/whiteblock/genesis/mocks/pkg/service"
 
-	"github.com/whiteblock/genesis/pkg/command"
-	"github.com/whiteblock/genesis/pkg/entity"
 	"testing"
 	"time"
+
+	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/entity"
 )
 
 func TestDockerUseCase_Execute_CreateContainer(t *testing.T) {
@@ -49,4 +52,27 @@ func TestDockerUseCase_Execute_CreateContainer(t *testing.T) {
 	})
 	assert.Equal(t, res.Error, nil)
 	assert.True(t, service.AssertNumberOfCalls(t, "CreateContainer", 1))
+}
+
+func TestDockerUseCase_Execute_StartContainer(t *testing.T) {
+	service := new(mocks.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
+	service.On("StartContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+
+	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service)
+
+	res := usecase.Execute(context.TODO(), command.Command{
+		ID:        "TEST",
+		Timestamp: 1234567,
+		Timeout:   5 * time.Second,
+		Target:    command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type:    "startContainer",
+			Payload: map[string]interface{}{"name":"hi"},
+		},
+	})
+
+	fmt.Println(res.Error)
+	assert.Equal(t, res.Error, nil)
+	assert.True(t, service.AssertNumberOfCalls(t, "StartContainer", 1))
 }
