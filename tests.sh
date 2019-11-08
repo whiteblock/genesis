@@ -2,7 +2,7 @@
 
 set -o errexit
 set -o xtrace
-set -o pipefail
+#set -o pipefail
 
 
 if [ -n "$(gofmt -l .)" ]; then
