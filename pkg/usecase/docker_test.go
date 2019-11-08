@@ -33,9 +33,9 @@ import (
 
 func TestDockerUseCase_TimeSupplier(t *testing.T) {
 	usecase := new(mockUseCase.DockerUseCase)
-	usecase.On("TimeSupplier").Return(time.Now().Unix())
+	usecase.On("TimeSupplier").Return(5)
 
-	assert.Equal(t, usecase.TimeSupplier(), time.Now().Unix())
+	assert.Equal(t, usecase.TimeSupplier(), 5)
 	assert.True(t, usecase.AssertNumberOfCalls(t, "TimeSupplier", 1))
 }
 
