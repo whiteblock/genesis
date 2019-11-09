@@ -67,7 +67,24 @@ func TestDeliveryHandler_ProcessMessage(t *testing.T) {
 }
 
 func TestDeliveryHandler_GetKickbackMessage(t *testing.T) {
+	service := new(mocks.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
+	service.On("CreateContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+
+	cmdService := new(mocks.CommandService)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
+
+
+	duc, err := usecase.NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+
+	dh, err := NewDeliveryHandler(duc)
+	if err != nil {
+		t.Error(err)
+	}
+
 	cmd := new(command.Command)
+	cmd.ID = "unit_test"
+
 	body, err := json.Marshal(cmd)
 	if err != nil {
 		t.Error(err)
@@ -77,28 +94,16 @@ func TestDeliveryHandler_GetKickbackMessage(t *testing.T) {
 		Body: body,
 	}
 
-	pub := amqp.Publishing{
-		Headers:         msg.Headers,
-		ContentType:     msg.ContentType,
-		ContentEncoding: msg.ContentEncoding,
-		DeliveryMode:    msg.DeliveryMode,
-		Priority:        msg.Priority,
-		CorrelationId:   msg.CorrelationId,
-		ReplyTo:         msg.ReplyTo,
-		Expiration:      msg.Expiration,
-		MessageId:       msg.MessageId,
-		Timestamp:       msg.Timestamp,
-		Type:            msg.Type,
-	}
-
-	dh := new(mocks.DeliveryHandler)
-	dh.On("GetKickbackMessage", mock.Anything).Return(pub, nil)
-
 	res, err := dh.GetKickbackMessage(msg)
 	if err != nil {
 		t.Error(err)
 	}
 
-	assert.Equal(t, res, pub)
-	assert.True(t, dh.AssertNumberOfCalls(t, "GetKickbackMessage", 1))
+	var resCmd command.Command
+	err = json.Unmarshal(res.Body, &resCmd)
+	if err != nil {
+		t.Error(err)
+	}
+
+	assert.Equal(t, resCmd.Timestamp, int64(5))
 }
