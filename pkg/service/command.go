@@ -20,25 +20,46 @@ package service
 
 import (
 	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/repository"
 )
 
 //CommandService is an interface to where the commands are kept for querying
 type CommandService interface {
 	//CheckDependenciesExecuted returns true if all of the commands dependencies have executed
-	CheckDependenciesExecuted(cmd command.Command) bool
+	CheckDependenciesExecuted(cmd command.Command) (bool, error)
 }
 
 type commandService struct {
-	//TODO
+	repo repository.CommandRepository
 }
 
 //NewCommandService creates a new CommandService
-func NewCommandService() CommandService {
-	return &commandService{}
+func NewCommandService(repo repository.CommandRepository) CommandService {
+	return &commandService{repo: repo}
+}
+
+type depCheckResult struct {
+	executed bool
+	err      error
 }
 
 //CheckDependenciesExecuted returns true if all of the commands dependencies have executed
-func (cs commandService) CheckDependenciesExecuted(cmd command.Command) bool {
-	//TODO
-	return false
+func (cs commandService) CheckDependenciesExecuted(cmd command.Command) (bool, error) {
+	resChan := make(chan depCheckResult, len(cmd.Dependencies))
+	for _, dep := range cmd.Dependencies {
+		go func(depID string) {
+			executed, err := cs.repo.CommandExecuted(depID)
+			resChan <- depCheckResult{executed: executed, err: err}
+		}(dep)
+	}
+	for range cmd.Dependencies {
+		result := <-resChan
+		if result.err != nil {
+			return false, result.err
+		}
+		if result.executed == false {
+			return false, nil
+		}
+	}
+	return true, nil
 }
