@@ -20,7 +20,6 @@ package handler
 
 import (
 	"encoding/json"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
@@ -86,7 +85,7 @@ func (dh deliveryHandler) GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing
 	if cmd.ID == "unit_test" {
 		cmd = cmd.GetRetryCommand(int64(5))
 	} else {
-		cmd = cmd.GetRetryCommand(time.Now().Unix())
+		cmd = cmd.GetRetryCommand(dh.usecase.TimeSupplier())
 	}
 
 	body, err := json.Marshal(cmd)
