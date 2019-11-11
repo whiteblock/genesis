@@ -22,7 +22,6 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/controller"
-	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/handler"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
@@ -38,7 +37,7 @@ func getRestServer() (controller.RestController, error) {
 	if err != nil {
 		return nil, err
 	}
-	dockerConfig := entity.DockerConfig{ /*TODO*/ }
+	dockerConfig := conf.GetDockerConfig()
 	dockerUseCase, err := usecase.NewDockerUseCase(dockerConfig, dockerService, commandService)
 	if err != nil {
 		return nil, err
@@ -46,7 +45,7 @@ func getRestServer() (controller.RestController, error) {
 
 	restHandler := handler.NewRestHandler(dockerUseCase, commandService)
 	restRouter := mux.NewRouter()
-	restConfig := entity.RestConfig{Listen: conf.Listen}
+	restConfig := conf.GetRestConfig()
 	restServer := controller.NewRestController(restConfig, restHandler, restRouter)
 	return restServer, nil
 }

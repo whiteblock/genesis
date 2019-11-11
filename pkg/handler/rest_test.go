@@ -16,15 +16,13 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package controller
+package handler
 
 import (
-    "github.com/stretchr/testify/assert"
-    "github.com/whiteblock/genesis/pkg/entity"
-    "testing"
+	//"github.com/stretchr/testify/assert"
+	"testing"
 )
 
-
 func TestRestController(t *testing.T) {
-    //TODO
+	//TODO
 }
