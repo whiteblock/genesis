@@ -45,3 +45,7 @@ func TestCommandService_CheckDependenciesExecuted(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, ready)
 }
+
+func TestCommandService_ReportCommandResult(t *testing.T) {
+	//TODO
+}
