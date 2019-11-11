@@ -22,6 +22,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/streadway/amqp"
 	"github.com/whiteblock/genesis/pkg/entity"
 )
 
@@ -32,11 +33,13 @@ type Config struct {
 	QueueAutoDelete   bool                                 `mapstructure:"queueAutoDelete"`
 	QueueExclusive    bool                                 `mapstructure:"queueExclusive"`
 	QueueNoWait       bool                                 `mapstructure:"queueNoWait"`
-	QueueArgs         bool                                 `mapstructure:"queueArgs"`
+	QueueArgs         amqp.Table                           `mapstructure:"queueArgs"`
 	Consumer          string                               `mapstructure:"consumer"`
 	ConsumerAutoAck   bool                                 `mapstructure:"consumerAutoAck"`
 	ConsumerExclusive bool                                 `mapstructure:"consumerExclusive"`
 	ConsumerNoLocal   bool                                 `mapstructure:"consumerNoLocal"`
+	ConsumerNoWait    bool                                 `mapstructure:"consumerNoWait"`
+	ConsumerArgs      amqp.Table                           `mapstructure:"consumerArgs"`
 	PublishMandatory  bool                                 `mapstructure:"publishMandatory"`
 	PublishImmediate  bool                                 `mapstructure:"publishImmediate"`
 	AMQPQueueName     string                               `mapstructure:"amqpQueueName"`
@@ -50,6 +53,64 @@ type Config struct {
 	VolumeDriver      string                               `mapstructure:"volumeDriver"`
 	VoluemDriverOpts  map[string]string                    `mapstructure:"volumeDriverOpts"`
 	//todo should we set a log level?
+}
+
+func (c Config) GetQueueConfig() entity.QueueConfig {
+	return entity.QueueConfig{
+		Durable:    c.QueueDurable,
+		AutoDelete: c.QueueAutoDelete,
+		Exclusive:  c.QueueExclusive,
+		NoWait:     c.QueueNoWait,
+		Args:       c.QueueArgs,
+	}
+}
+
+func (c Config) GetConsumeConfig() entity.ConsumeConfig {
+	return entity.ConsumeConfig{
+		Consumer:  c.Consumer,
+		AutoAck:   c.ConsumerAutoAck,
+		Exclusive: c.ConsumerExclusive,
+		NoLocal:   c.ConsumerNoLocal,
+		NoWait:    c.ConsumerNoWait,
+		Args:      c.ConsumerArgs,
+	}
+}
+
+func (c Config) GetPublishConfig() entity.PublishConfig {
+	return entity.PublishConfig{
+		Mandatory: c.PublishMandatory,
+		Immediate: c.PublishImmediate,
+	}
+}
+
+func (c Config) GetAMQPConfig() entity.AMQPConfig {
+	return entity.AMQPConfig{
+		QueueName: c.AMQPQueueName,
+		Queue:     c.AMQPQueue,
+		Consume:   c.AMQPConsume,
+		Publish:   c.AMQPPublish,
+	}
+}
+
+func (c Config) GetNetworkConfig() entity.NetworkConfig {
+	return entity.NetworkConfig{
+		EndpointsConfig: c.NetworkEndpoints,
+	}
+}
+
+func (c Config) GetDockerConfig() entity.DockerConfig {
+	return entity.DockerConfig{
+		CACertPath: c.DockerCACertPath,
+		CertPath:   c.DockerCertPath,
+		KeyPath:    c.DockerKeyPath,
+	}
+}
+
+func (c Config) GetVolumeConfig() entity.VolumeConfig {
+	return entity.VolumeConfig{
+		Driver:     c.VolumeDriver,
+		DriverOpts: c.VoluemDriverOpts,
+	}
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
