@@ -18,4 +18,5 @@ go vet $(go list ./... | grep -v mocks)
 go test ./...
 go test ./... -coverprofile=coverage.txt -covermode=atomic
 
-chmod 777 coverage.txt 
+chmod 777 coverage.txt
+chmod 777 -R mocks
