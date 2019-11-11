@@ -110,7 +110,7 @@ func (c Config) GetVolumeConfig() entity.VolumeConfig {
 }
 
 func (c Config) GetRestConfig() entity.RestConfig {
-	return entity.RestConfig{Listen: conf.Listen}
+	return entity.RestConfig{Listen: c.Listen}
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
