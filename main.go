@@ -32,22 +32,30 @@ import (
 
 var conf = util.GetConfig()
 
-func main() {
+func getRestServer() (controller.RestController, error) {
 	commandService := service.NewCommandService(repository.NewLocalCommandRepository())
 	dockerService, err := service.NewDockerService(repository.NewDockerRepository())
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	dockerConfig := entity.DockerConfig{ /*TODO*/ }
 	dockerUseCase, err := usecase.NewDockerUseCase(dockerConfig, dockerService, commandService)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	restHandler := handler.NewRestHandler(dockerUseCase, commandService)
 	restRouter := mux.NewRouter()
 	restConfig := entity.RestConfig{Listen: conf.Listen}
 	restServer := controller.NewRestController(restConfig, restHandler, restRouter)
+	return restServer, nil
+}
+
+func main() {
+	restServer, err := getRestServer()
+	if err != nil {
+		panic(err)
+	}
 	log.Info("starting the rest server")
 	restServer.Start()
 }
