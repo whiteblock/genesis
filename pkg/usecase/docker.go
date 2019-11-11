@@ -101,7 +101,7 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 	case "attachNetwork":
 		return duc.attachNetworkShim(ctx, cli, cmd)
 	case "createVolume":
-		return duc.removeVolumeShim(ctx, cli, cmd)
+		return duc.createVolumeShim(ctx, cli, cmd)
 	case "removeVolume":
 		return duc.removeVolumeShim(ctx, cli, cmd)
 	case "putFile":
