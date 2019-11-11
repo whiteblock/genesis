@@ -30,8 +30,8 @@ import (
 	"sync"
 )
 
-//AMQPController is a controller which brings in from an AMQP compatible provider
-type AMQPController interface {
+//CommandController is a controller which brings in from an AMQP compatible provider
+type CommandController interface {
 	// Start starts the client. This function should be called only once and does not return
 	Start()
 }
@@ -43,8 +43,8 @@ type consumer struct {
 	sem    *semaphore.Weighted
 }
 
-//NewAMQPController creates a new AMQPController
-func NewAMQPController(maxConcurreny int64, serv service.AMQPService, handle handler.DeliveryHandler) (AMQPController, error) {
+//NewCommandController creates a new CommandController
+func NewCommandController(maxConcurreny int64, serv service.AMQPService, handle handler.DeliveryHandler) (CommandController, error) {
 	if maxConcurreny < 1 {
 		return nil, fmt.Errorf("maxConcurreny must be atleast 1")
 	}

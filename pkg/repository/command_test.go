@@ -16,36 +16,32 @@
 	along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-package service
+package repository
 
 import (
 	"github.com/stretchr/testify/assert"
-	repository "github.com/whiteblock/genesis/mocks/pkg/repository"
-	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/entity"
 	"testing"
 )
 
-func TestCommandService_CheckDependenciesExecuted(t *testing.T) {
-	repo := new(repository.CommandRepository)
-	repo.On("HasCommandExecuted", "test1").Return(true, nil)
-	repo.On("HasCommandExecuted", "test2").Return(false, nil)
-
-	serv := NewCommandService(repo)
-
-	ready, err := serv.CheckDependenciesExecuted(command.Command{
-		ID:      "TEST",
-		Timeout: 0,
-		Target:  command.Target{IP: "0.0.0.0"},
-		Order: command.Order{
-			Type:    "createContainer",
-			Payload: map[string]interface{}{},
-		},
-		Dependencies: []string{"test1", "test2"},
-	})
+func TestCommandRepository_Local(t *testing.T) {
+	repo := NewLocalCommandRepository()
+	err := repo.ReportCommandFinished("test", entity.NewSuccessResult())
 	assert.NoError(t, err)
-	assert.False(t, ready)
-}
+	err = repo.ReportCommandFinished("test2", entity.NewSuccessResult())
+	assert.NoError(t, err)
+	err = repo.ReportCommandFinished("test3", entity.NewSuccessResult())
+	assert.NoError(t, err)
 
-func TestCommandService_ReportCommandResult(t *testing.T) {
-	//TODO
+	executed, err := repo.HasCommandExecuted("test")
+	assert.NoError(t, err)
+	assert.True(t, executed)
+
+	executed, err = repo.HasCommandExecuted("test3")
+	assert.NoError(t, err)
+	assert.True(t, executed)
+
+	executed, err = repo.HasCommandExecuted("test4")
+	assert.NoError(t, err)
+	assert.False(t, executed)
 }
