@@ -82,11 +82,7 @@ func (dh deliveryHandler) GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing
 		return pub, err
 	}
 
-	if cmd.ID == "unit_test" {
-		cmd = cmd.GetRetryCommand(int64(5))
-	} else {
-		cmd = cmd.GetRetryCommand(dh.usecase.TimeSupplier())
-	}
+	cmd = cmd.GetRetryCommand(dh.usecase.TimeSupplier())
 
 	body, err := json.Marshal(cmd)
 	if err != nil {
