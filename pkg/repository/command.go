@@ -21,5 +21,5 @@ package repository
 //CommandRepository presents access to whatever holds the commands
 type CommandRepository interface {
 	//CommandExecuted checks whether or not a command with the given id has executed
-	CommandExecuted(id string) bool
+	CommandExecuted(id string) (bool, error)
 }

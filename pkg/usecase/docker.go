@@ -115,17 +115,23 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 }
 
 func (duc dockerUseCase) dependencyCheck(cmd command.Command) (stat entity.Result, ok bool) {
-	ok = true
+	ok = false
 	if duc.TimeSupplier() < cmd.Timestamp {
-		ok = false
 		stat = statusTooSoon
 		return
 	}
-	if !duc.cmdService.CheckDependenciesExecuted(cmd) {
-		ok = false
+
+	ready, err := duc.cmdService.CheckDependenciesExecuted(cmd)
+	if err != nil {
+		stat = entity.NewErrorResult(fmt.Errorf("error checking dependencies"))
+		return
+	}
+
+	if !ready {
 		stat = statusTooSoon
 		return
 	}
+	ok = true
 	return
 }
 
