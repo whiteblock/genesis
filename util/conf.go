@@ -28,28 +28,30 @@ import (
 // Config groups all of the global configuration parameters into
 // a single struct
 type Config struct {
-	QueueDurable      bool                                 `mapstructure:"queueDurable"`
-	QueueAutoDelete   bool                                 `mapstructure:"queueAutoDelete"`
-	QueueExclusive    bool                                 `mapstructure:"queueExclusive"`
-	QueueNoWait       bool                                 `mapstructure:"queueNoWait"`
-	QueueArgs         amqp.Table                           `mapstructure:"queueArgs"`
-	Consumer          string                               `mapstructure:"consumer"`
-	ConsumerAutoAck   bool                                 `mapstructure:"consumerAutoAck"`
-	ConsumerExclusive bool                                 `mapstructure:"consumerExclusive"`
-	ConsumerNoLocal   bool                                 `mapstructure:"consumerNoLocal"`
-	ConsumerNoWait    bool                                 `mapstructure:"consumerNoWait"`
-	ConsumerArgs      amqp.Table                           `mapstructure:"consumerArgs"`
-	PublishMandatory  bool                                 `mapstructure:"publishMandatory"`
-	PublishImmediate  bool                                 `mapstructure:"publishImmediate"`
-	AMQPQueueName     string                               `mapstructure:"amqpQueueName"`
-	DockerCACertPath  string                               `mapstructure:"dockerCACertPath"`
-	DockerCertPath    string                               `mapstructure:"dockerCertPath"`
-	DockerKeyPath     string                               `mapstructure:"dockerKeyPath"`
-	VolumeDriver      string                               `mapstructure:"volumeDriver"`
-	VoluemDriverOpts  map[string]string                    `mapstructure:"volumeDriverOpts"`
-	Verbosity         string                               `mapstructure:"verbosity"`
+	QueueDurable      bool              `mapstructure:"queueDurable"`
+	QueueAutoDelete   bool              `mapstructure:"queueAutoDelete"`
+	QueueExclusive    bool              `mapstructure:"queueExclusive"`
+	QueueNoWait       bool              `mapstructure:"queueNoWait"`
+	QueueArgs         amqp.Table        `mapstructure:"queueArgs"`
+	Consumer          string            `mapstructure:"consumer"`
+	ConsumerAutoAck   bool              `mapstructure:"consumerAutoAck"`
+	ConsumerExclusive bool              `mapstructure:"consumerExclusive"`
+	ConsumerNoLocal   bool              `mapstructure:"consumerNoLocal"`
+	ConsumerNoWait    bool              `mapstructure:"consumerNoWait"`
+	ConsumerArgs      amqp.Table        `mapstructure:"consumerArgs"`
+	PublishMandatory  bool              `mapstructure:"publishMandatory"`
+	PublishImmediate  bool              `mapstructure:"publishImmediate"`
+	AMQPQueueName     string            `mapstructure:"amqpQueueName"`
+	DockerCACertPath  string            `mapstructure:"dockerCACertPath"`
+	DockerCertPath    string            `mapstructure:"dockerCertPath"`
+	DockerKeyPath     string            `mapstructure:"dockerKeyPath"`
+	VolumeDriver      string            `mapstructure:"volumeDriver"`
+	VoluemDriverOpts  map[string]string `mapstructure:"volumeDriverOpts"`
+	Verbosity         string            `mapstructure:"verbosity"`
+	Listen            string            `mapstructure:"listen"`
 }
 
+// GetQueueConfig extracts the fields of this object representing QueueConfig
 func (c Config) GetQueueConfig() entity.QueueConfig {
 	return entity.QueueConfig{
 		Durable:    c.QueueDurable,
@@ -60,6 +62,7 @@ func (c Config) GetQueueConfig() entity.QueueConfig {
 	}
 }
 
+// GetConsumeConfig  extracts the fields of this object representing ConsumeConfig
 func (c Config) GetConsumeConfig() entity.ConsumeConfig {
 	return entity.ConsumeConfig{
 		Consumer:  c.Consumer,
@@ -71,6 +74,7 @@ func (c Config) GetConsumeConfig() entity.ConsumeConfig {
 	}
 }
 
+// GetPublishConfig extracts the fields of this object representing PublishConfig
 func (c Config) GetPublishConfig() entity.PublishConfig {
 	return entity.PublishConfig{
 		Mandatory: c.PublishMandatory,
@@ -78,6 +82,7 @@ func (c Config) GetPublishConfig() entity.PublishConfig {
 	}
 }
 
+// GetAMQPConfig extracts the fields of this object representing AMQPConfig
 func (c Config) GetAMQPConfig() entity.AMQPConfig {
 	return entity.AMQPConfig{
 		QueueName: c.AMQPQueueName,
@@ -87,6 +92,7 @@ func (c Config) GetAMQPConfig() entity.AMQPConfig {
 	}
 }
 
+// GetDockerConfig extracts the fields of this object representing DockerConfig
 func (c Config) GetDockerConfig() entity.DockerConfig {
 	return entity.DockerConfig{
 		CACertPath: c.DockerCACertPath,
@@ -95,11 +101,16 @@ func (c Config) GetDockerConfig() entity.DockerConfig {
 	}
 }
 
+// GetVolumeConfig extracts the fields of this object representing VolumeConfig
 func (c Config) GetVolumeConfig() entity.VolumeConfig {
 	return entity.VolumeConfig{
 		Driver:     c.VolumeDriver,
 		DriverOpts: c.VoluemDriverOpts,
 	}
+}
+
+func (c Config) GetRestConfig() entity.RestConfig {
+	return entity.RestConfig{Listen: conf.Listen}
 }
 
 //NodesPerCluster represents the maximum number of nodes allowed in a cluster
@@ -128,6 +139,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("volumeDriver", "VOLUME_DRIVER")
 	viper.BindEnv("volumeDriverOpts", "VOLUME_DRIVER_OPTS")
 	viper.BindEnv("verbosity", "VERBOSITY")
+	viper.BindEnv("listen", "LISTEN")
 }
 
 func setViperDefaults() { //todo am i missing anything?
@@ -137,21 +149,7 @@ func setViperDefaults() { //todo am i missing anything?
 	viper.SetDefault("queueExclusive", false)
 	viper.SetDefault("consumerAutoAck", false)
 	viper.SetDefault("consumerExclusive", false)
-}
-
-// GCPFormatter enables the ability to use genesis logging with Stackdriver
-type GCPFormatter struct {
-	//todo: does this stay the same?
-	JSON           *log.JSONFormatter
-	ConstantFields log.Fields
-}
-
-// Format takes in the entry and processes it into the appropiate log entry
-func (gf GCPFormatter) Format(entry *log.Entry) ([]byte, error) {
-	for k, v := range gf.ConstantFields {
-		entry.Data[k] = v
-	}
-	return gf.JSON.Format(entry)
+	viper.SetDefault("listen", "0.0.0.0:8000")
 }
 
 func init() {
