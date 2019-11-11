@@ -52,7 +52,7 @@ type Config struct {
 	DockerKeyPath     string                               `mapstructure:"dockerKeyPath"`
 	VolumeDriver      string                               `mapstructure:"volumeDriver"`
 	VoluemDriverOpts  map[string]string                    `mapstructure:"volumeDriverOpts"`
-	//todo should we set a log level?
+	Verbosity         string                               `mapstructure:"verbosity"`
 }
 
 func (c Config) GetQueueConfig() entity.QueueConfig {
@@ -119,10 +119,34 @@ var NodesPerCluster uint32
 var conf = new(Config)
 
 func setViperEnvBindings() {
-	// todo?
+	viper.BindEnv("queueDurable", "QUEUE_DURABLE")
+	viper.BindEnv("queueAutoDelete", "QUEUE_AUTO_DELETE")
+	viper.BindEnv("queueExclusive", "QUEUE_EXCLUSIVE")
+	viper.BindEnv("queueNoWait", "QUEUE_NO_WAIT")
+	viper.BindEnv("queueArgs", "QUEUE_ARGS")
+	viper.BindEnv("consumer", "CONSUMER")
+	viper.BindEnv("consumerAutoAck", "CONSUMER_AUTO_ACK")
+	viper.BindEnv("consumerExclusive", "CONSUMER_EXCLUSIVE")
+	viper.BindEnv("consumerNoLocal", "CONSUMER_NO_LOCAL")
+	viper.BindEnv("consumerNoWait", "CONSUMER_NO_WAIT")
+	viper.BindEnv("consumerArgs", "CONSUMER_ARGS")
+	viper.BindEnv("publishMandatory", "PUBLISH_MANDATORY")
+	viper.BindEnv("publishImmediate", "PUBLISH_IMMEDIATE")
+	viper.BindEnv("amqpQueueName", "AMQP_QUEUE_NAME")
+	viper.BindEnv("amqpQueue", "AMQP_QUEUE")
+	viper.BindEnv("amqpConsume", "AMQP_CONSUME")
+	viper.BindEnv("amqpPublish", "AMQP_PUBLISH")
+	viper.BindEnv("networkEndpoints", "NETWORK_ENDPOINTS")
+	viper.BindEnv("dockerCACertPath", "DOCKER_CACERT_PATH")
+	viper.BindEnv("dockerCertPath", "DOCKER_CERT_PATH")
+	viper.BindEnv("dockerKeyPath", "DOCKER_KEY_PATH")
+	viper.BindEnv("volumeDriver", "VOLUME_DRIVER")
+	viper.BindEnv("volumeDriverOpts", "VOLUME_DRIVER_OPTS")
+	viper.BindEnv("verbosity", "VERBOSITY")
 }
+
 func setViperDefaults() {
-	// todo?
+	
 }
 
 // GCPFormatter enables the ability to use genesis logging with Stackdriver
