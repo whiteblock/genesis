@@ -43,10 +43,7 @@ type Config struct {
 	PublishMandatory  bool                                 `mapstructure:"publishMandatory"`
 	PublishImmediate  bool                                 `mapstructure:"publishImmediate"`
 	AMQPQueueName     string                               `mapstructure:"amqpQueueName"`
-	AMQPQueue         entity.QueueConfig                   `mapstructure:"amqpQueue"`
-	AMQPConsume       entity.ConsumeConfig                 `mapstructure:"amqpConsume"`
-	AMQPPublish       entity.PublishConfig                 `mapstructure:"amqpPublish"`
-	NetworkEndpoints  map[string]*network.EndpointSettings `mapstructure:"networkEndpoints"`
+	NetworkEndpoints  map[string]*network.EndpointSettings `mapstructure:"networkEndpoints"` // todo should this be changed to something dissectable?
 	DockerCACertPath  string                               `mapstructure:"dockerCACertPath"`
 	DockerCertPath    string                               `mapstructure:"dockerCertPath"`
 	DockerKeyPath     string                               `mapstructure:"dockerKeyPath"`
@@ -86,9 +83,9 @@ func (c Config) GetPublishConfig() entity.PublishConfig {
 func (c Config) GetAMQPConfig() entity.AMQPConfig {
 	return entity.AMQPConfig{
 		QueueName: c.AMQPQueueName,
-		Queue:     c.AMQPQueue,
-		Consume:   c.AMQPConsume,
-		Publish:   c.AMQPPublish,
+		Queue:     c.GetQueueConfig(),
+		Consume:   c.GetConsumeConfig(),
+		Publish:   c.GetPublishConfig(),
 	}
 }
 
@@ -133,9 +130,6 @@ func setViperEnvBindings() {
 	viper.BindEnv("publishMandatory", "PUBLISH_MANDATORY")
 	viper.BindEnv("publishImmediate", "PUBLISH_IMMEDIATE")
 	viper.BindEnv("amqpQueueName", "AMQP_QUEUE_NAME")
-	viper.BindEnv("amqpQueue", "AMQP_QUEUE")
-	viper.BindEnv("amqpConsume", "AMQP_CONSUME")
-	viper.BindEnv("amqpPublish", "AMQP_PUBLISH")
 	viper.BindEnv("networkEndpoints", "NETWORK_ENDPOINTS")
 	viper.BindEnv("dockerCACertPath", "DOCKER_CACERT_PATH")
 	viper.BindEnv("dockerCertPath", "DOCKER_CERT_PATH")
@@ -145,8 +139,13 @@ func setViperEnvBindings() {
 	viper.BindEnv("verbosity", "VERBOSITY")
 }
 
-func setViperDefaults() {
-	
+func setViperDefaults() { //todo am i missing anything?
+	viper.SetDefault("verbosity", "INFO")
+	viper.SetDefault("queueDurable", true)
+	viper.SetDefault("queueAutoDelete", false)
+	viper.SetDefault("queueExclusive", false)
+	viper.SetDefault("consumerAutoAck", false)
+	viper.SetDefault("consumerExclusive", false)
 }
 
 // GCPFormatter enables the ability to use genesis logging with Stackdriver
@@ -167,21 +166,28 @@ func (gf GCPFormatter) Format(entry *log.Entry) ([]byte, error) {
 func init() {
 	setViperDefaults()
 	setViperEnvBindings()
+
 	viper.AddConfigPath("/etc/whiteblock/")          // path to look for the config file in
 	viper.AddConfigPath("$HOME/.config/whiteblock/") // call multiple times to add many search paths
 	viper.SetConfigName("genesis")
 	viper.SetConfigType("yaml")
-	err := viper.ReadInConfig()
 
+	err := viper.ReadInConfig()
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Warn("could not find the config file")
 	}
+
 	err = viper.Unmarshal(&conf)
 	if err != nil {
 		log.Fatalf("unable to decode into struct, %v", err)
 	}
 
-	//todo what else?
+	lvl, err := log.ParseLevel(conf.Verbosity)
+	if err != nil {
+		log.SetLevel(log.InfoLevel)
+		log.Warn(err)
+	}
+	log.SetLevel(lvl)
 }
 
 // GetConfig gets a pointer to the global config object.
