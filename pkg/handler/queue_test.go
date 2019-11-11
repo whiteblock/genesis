@@ -25,24 +25,23 @@ import (
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/whiteblock/genesis/mocks"
+	usecaseMocks "github.com/whiteblock/genesis/mocks/pkg/usecase"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
-	"github.com/whiteblock/genesis/pkg/usecase"
 )
 
 func TestDeliveryHandler_ProcessMessage(t *testing.T) {
-	service := new(mocks.DockerService)
-	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-	service.On("CreateContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+	//service := new(mocks.DockerService)
+	//service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
+	//service.On("CreateContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	cmdService := new(mocks.CommandService)
-	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
+	uc := new(usecaseMocks.DockerUseCase)
+	uc.On("Run", mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+	uc.On("CreateContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+	//cmdService := new(mocks.CommandService)
+	//cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
 
-
-	duc, err := usecase.NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
-
-	dh, err := NewDeliveryHandler(duc)
+	dh, err := NewDeliveryHandler(uc)
 	if err != nil {
 		t.Error(err)
 	}
@@ -63,19 +62,12 @@ func TestDeliveryHandler_ProcessMessage(t *testing.T) {
 	}
 
 	assert.Equal(t, res.Error, nil)
-	assert.True(t, service.AssertNumberOfCalls(t, "CreateContainer", 1))
+	assert.True(t, uc.AssertNumberOfCalls(t, "Run", 1))
+	assert.True(t, uc.AssertNumberOfCalls(t, "CreateContainer", 1))
 }
 
 func TestDeliveryHandler_GetKickbackMessage(t *testing.T) {
-	service := new(mocks.DockerService)
-	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-	service.On("CreateContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
-
-	cmdService := new(mocks.CommandService)
-	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
-
-
-	duc, err := usecase.NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	duc := new(usecaseMocks.DockerUseCase)
 
 	dh, err := NewDeliveryHandler(duc)
 	if err != nil {
@@ -84,6 +76,7 @@ func TestDeliveryHandler_GetKickbackMessage(t *testing.T) {
 
 	cmd := new(command.Command)
 	cmd.ID = "unit_test"
+	cmd.Retry = uint8(1)
 
 	body, err := json.Marshal(cmd)
 	if err != nil {
@@ -105,5 +98,6 @@ func TestDeliveryHandler_GetKickbackMessage(t *testing.T) {
 		t.Error(err)
 	}
 
-	assert.Equal(t, resCmd.Timestamp, int64(5))
+	assert.Exactly(t, resCmd.Timestamp, int64(5))
+	assert.Exactly(t, resCmd.Retry, uint8(2))
 }
