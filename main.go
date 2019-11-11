@@ -19,16 +19,35 @@
 package main
 
 import (
-	"github.com/whiteblock/genesis/rest"
+	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
+	"github.com/whiteblock/genesis/pkg/controller"
+	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/handler"
+	"github.com/whiteblock/genesis/pkg/repository"
+	"github.com/whiteblock/genesis/pkg/service"
+	"github.com/whiteblock/genesis/pkg/usecase"
 	"github.com/whiteblock/genesis/util"
-	"log"
 )
 
-var conf *util.Config
+var conf = util.GetConfig()
 
 func main() {
-	util.DisplayBanner()
-	conf = util.GetConfig()
-	log.SetFlags(log.LstdFlags | log.Llongfile)
-	rest.StartServer()
+	commandService := service.NewCommandService(repository.NewLocalCommandRepository())
+	dockerService, err := service.NewDockerService(repository.NewDockerRepository())
+	if err != nil {
+		panic(err)
+	}
+	dockerConfig := entity.DockerConfig{ /*TODO*/ }
+	dockerUseCase, err := usecase.NewDockerUseCase(dockerConfig, dockerService, commandService)
+	if err != nil {
+		panic(err)
+	}
+
+	restHandler := handler.NewRestHandler(dockerUseCase, commandService)
+	restRouter := mux.NewRouter()
+	restConfig := entity.RestConfig{Listen: conf.Listen}
+	restServer := controller.NewRestController(restConfig, restHandler, restRouter)
+	log.Info("starting the rest server")
+	restServer.Start()
 }
