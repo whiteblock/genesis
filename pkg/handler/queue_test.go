@@ -100,4 +100,5 @@ func TestDeliveryHandler_GetKickbackMessage(t *testing.T) {
 
 	assert.Exactly(t, resCmd.Timestamp, int64(5))
 	assert.Exactly(t, resCmd.Retry, uint8(2))
+	assert.Exactly(t, resCmd.ID, "unit_test")
 }
