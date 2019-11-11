@@ -307,7 +307,7 @@ func TestConfig_GetRestConfig(t *testing.T) {
 				Listen: "129.9.9.0:3000",
 			},
 			expectedRestConf: entity.RestConfig{
-				Listen: "0.0.0.0:8000", //todo is this meant to happen?
+				Listen: "129.9.9.0:3000", //todo is this meant to happen?
 			},
 		},
 		{
