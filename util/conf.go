@@ -28,54 +28,27 @@ import (
 // Config groups all of the global configuration parameters into
 // a single struct
 type Config struct {
-	QueueDurable         bool                                 `mapstructure:"queueDurable"`
-	QueueAutoDelete      bool                                 `mapstructure:"queueAutoDelete"`
-	QueueExclusive       bool                                 `mapstructure:"queueExclusive"`
-	QueueNoWait          bool                                 `mapstructure:"queueNoWait"`
-	QueueArgs            bool                                 `mapstructure:"queueArgs"`
-	Consumer             string                               `mapstructure:"consumer"`
-	ConsumerAutoAck      bool                                 `mapstructure:"consumerAutoAck"`
-	ConsumerExclusive    bool                                 `mapstructure:"consumerExclusive"`
-	ConsumerNoLocal      bool                                 `mapstructure:"consumerNoLocal"`
-	PublishMandatory     bool                                 `mapstructure:"publishMandatory"`
-	PublishImmediate     bool                                 `mapstructure:"publishImmediate"`
-	AMQPQueueName        string                               `mapstructure:"amqpQueueName"`
-	AMQPQueue            entity.QueueConfig                   `mapstructure:"amqpQueue"`
-	AMQPConsume          entity.ConsumeConfig                 `mapstructure:"amqpConsume"`
-	AMQPPublish          entity.PublishConfig                 `mapstructure:"amqpPublish"`
-	NetworkEndpoints     map[string]*network.EndpointSettings `mapstructure:"networkEndpoints"`
-	BoundCPUs            []int                                `mapstructure:"boundCPUs"`
-	ContainerDetach      bool                                 `mapstructure:"containerDetach"`
-	ContainerEntryPoint  string                               `mapstructure:"containerEntryPoint"`
-	ContainerEnvironment map[string]string                    `mapstructure:"containerEnvironment"`
-	ContainerLabels      map[string]string                    `mapstructure:"containerLabels"`
-	ContainerName        string                               `mapstructure:"containerName"`
-	ContainerNetwork     string                               `mapstructure:"containerNetwork"`
-	ContainerNetworkConf entity.NetworkConfig                 `mapstructure:"containerNetworkConf"`
-	ContainerPorts       map[int]int                          `mapstructure:"containerPorts"`
-	ContainerVolumes     map[string]entity.Volume             `mapstructure:"containerVolume"`
-	ContainerResources   entity.Resources                     `mapstructure:"containerResources"`
-	ContainerImage       string                               `mapstructure:"containerImage"`
-	ContainerArgs        []string                             `mapstructure:"containerArgs"`
-	DockerCACertPath     string                               `mapstructure:"dockerCACertPath"`
-	DockerCertPath       string                               `mapstructure:"dockerCertPath"`
-	DockerKeyPath        string                               `mapstructure:"dockerKeyPath"`
-	FilePath             string                               `mapstructure:"filePath"`
-	FileData             string                               `mapstructure:"fileData"`
-	NetconfLimit         int                                  `mapstructure:"netconfLimit"`
-	NetconfLoss          float64                              `mapstructure:"netconfLoss"`
-	NetconfDelay         int                                  `mapstructure:"netconfDelay"`
-	NetconfRate				string	`mapstructure:"netconfRate"`
-	NetconfDuplication	float64	`mapstructure:"netconfDuplication"`
-	NetconfCorrupt	float64	`mapstructure:"netconfCorrupt"`
-	NetconfReorder	float64	`mapstructure:"netconfReorder"`
-	NetworkName	string	`mapstructure:"networkName"`
-	ResourcesCpus	string	`mapstructure:"resourcesCpus"`
-	ResourcesMemory	string	`mapstructure:"resourcesMemory"`
-	VolumeDriver	string	`mapstructure:"volumeDriver"`
-	VoluemDriverOpts	map[string]string	`mapstructure:"volumeDriverOpts"`
-	VolumeName		string	`mapstructure:"volumeName"`
-	VolumeLabels	map[string]string	`mapstructure:"volumeLabels"`
+	QueueDurable      bool                                 `mapstructure:"queueDurable"`
+	QueueAutoDelete   bool                                 `mapstructure:"queueAutoDelete"`
+	QueueExclusive    bool                                 `mapstructure:"queueExclusive"`
+	QueueNoWait       bool                                 `mapstructure:"queueNoWait"`
+	QueueArgs         bool                                 `mapstructure:"queueArgs"`
+	Consumer          string                               `mapstructure:"consumer"`
+	ConsumerAutoAck   bool                                 `mapstructure:"consumerAutoAck"`
+	ConsumerExclusive bool                                 `mapstructure:"consumerExclusive"`
+	ConsumerNoLocal   bool                                 `mapstructure:"consumerNoLocal"`
+	PublishMandatory  bool                                 `mapstructure:"publishMandatory"`
+	PublishImmediate  bool                                 `mapstructure:"publishImmediate"`
+	AMQPQueueName     string                               `mapstructure:"amqpQueueName"`
+	AMQPQueue         entity.QueueConfig                   `mapstructure:"amqpQueue"`
+	AMQPConsume       entity.ConsumeConfig                 `mapstructure:"amqpConsume"`
+	AMQPPublish       entity.PublishConfig                 `mapstructure:"amqpPublish"`
+	NetworkEndpoints  map[string]*network.EndpointSettings `mapstructure:"networkEndpoints"`
+	DockerCACertPath  string                               `mapstructure:"dockerCACertPath"`
+	DockerCertPath    string                               `mapstructure:"dockerCertPath"`
+	DockerKeyPath     string                               `mapstructure:"dockerKeyPath"`
+	VolumeDriver      string                               `mapstructure:"volumeDriver"`
+	VoluemDriverOpts  map[string]string                    `mapstructure:"volumeDriverOpts"`
 	//todo should we set a log level?
 }
 
@@ -92,7 +65,8 @@ func setViperDefaults() {
 }
 
 // GCPFormatter enables the ability to use genesis logging with Stackdriver
-type GCPFormatter struct { //todo: does this stay the same?
+type GCPFormatter struct {
+	//todo: does this stay the same?
 	JSON           *log.JSONFormatter
 	ConstantFields log.Fields
 }
