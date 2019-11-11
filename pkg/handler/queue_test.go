@@ -31,10 +31,10 @@ import (
 )
 
 func TestDeliveryHandler_ProcessMessage(t *testing.T) {
-	uc := new(usecaseMocks.DockerUseCase)
-	uc.On("Run", mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+	duc := new(usecaseMocks.DockerUseCase)
+	duc.On("Run", mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
-	dh, err := NewDeliveryHandler(uc)
+	dh, err := NewDeliveryHandler(duc)
 	if err != nil {
 		t.Error(err)
 	}
@@ -55,12 +55,13 @@ func TestDeliveryHandler_ProcessMessage(t *testing.T) {
 	}
 
 	assert.Equal(t, res.Error, nil)
-	assert.True(t, uc.AssertNumberOfCalls(t, "Run", 1))
-	assert.True(t, uc.AssertCalled(t, "Run", *cmd))
+	assert.True(t, duc.AssertNumberOfCalls(t, "Run", 1))
+	assert.True(t, duc.AssertCalled(t, "Run", *cmd))
 }
 
 func TestDeliveryHandler_GetKickbackMessage(t *testing.T) {
 	duc := new(usecaseMocks.DockerUseCase)
+	duc.On("TimeSupplier").Return(int64(5))
 
 	dh, err := NewDeliveryHandler(duc)
 	if err != nil {
