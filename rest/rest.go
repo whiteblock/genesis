@@ -38,7 +38,7 @@ func StartServer() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/command", addCommand).Methods("POST")
-	router.HandleFunc("/health", addCommand).Methods("GET")
+	router.HandleFunc("/health", healthCheck).Methods("GET")
 
 	log.WithFields(log.Fields{"socket": conf.Listen}).Info("listening for requests")
 	log.Fatal(http.ListenAndServe(conf.Listen, removeTrailingSlash(router)))
