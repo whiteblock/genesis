@@ -79,6 +79,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 	}
 
 	config := &container.Config{
+		Hostname:   dContainer.Name,
 		Cmd:        dContainer.Args,
 		Env:        envVars,
 		Image:      dContainer.Image,
