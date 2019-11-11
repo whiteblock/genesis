@@ -330,47 +330,31 @@ func TestConfig_GetRestConfig(t *testing.T) {
 }
 
 func TestGetConfig(t *testing.T) {
-	var tests = []struct {
-		expectedConf *Config
-	}{
-		{
-			expectedConf: new(Config),
-		},
-		{
-			expectedConf: &Config{
-				QueueDurable:      true,
-				QueueAutoDelete:   false,
-				QueueExclusive:    false,
-				QueueNoWait:       false,
-				QueueArgs:         *new(map[string]interface{}),
-				Consumer:          "",
-				ConsumerAutoAck:   false,
-				ConsumerExclusive: false,
-				ConsumerNoLocal:   false,
-				ConsumerNoWait:    false,
-				ConsumerArgs:      *new(map[string]interface{}),
-				PublishMandatory:  false,
-				PublishImmediate:  false,
-				AMQPQueueName:     "",
-				DockerCACertPath:  "",
-				DockerCertPath:    "",
-				DockerKeyPath:     "",
-				VolumeDriver:      "",
-				VoluemDriverOpts:  *new(map[string]string),
-				Verbosity:         "INFO",
-				Listen:            "0.0.0.0:8000",
-			},
-		},
+	expectedConf := &Config{
+		QueueDurable:      true,
+		QueueAutoDelete:   false,
+		QueueExclusive:    false,
+		QueueNoWait:       false,
+		QueueArgs:         *new(map[string]interface{}),
+		Consumer:          "",
+		ConsumerAutoAck:   false,
+		ConsumerExclusive: false,
+		ConsumerNoLocal:   false,
+		ConsumerNoWait:    false,
+		ConsumerArgs:      *new(map[string]interface{}),
+		PublishMandatory:  false,
+		PublishImmediate:  false,
+		AMQPQueueName:     "",
+		DockerCACertPath:  "",
+		DockerCertPath:    "",
+		DockerKeyPath:     "",
+		VolumeDriver:      "",
+		VoluemDriverOpts:  *new(map[string]string),
+		Verbosity:         "INFO",
+		Listen:            "0.0.0.0:8000",
 	}
 
-	for i, tt := range tests {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			if !reflect.DeepEqual(GetConfig(), tt.expectedConf) {
-				fmt.Println(GetConfig())
-				fmt.Println()
-				fmt.Println(tt.expectedConf)
-				t.Error("return value of GetConfig does not match expected value")
-			}
-		})
+	if !reflect.DeepEqual(GetConfig(), expectedConf) {
+		t.Error("return value of GetConfig does not match expected value")
 	}
 }
