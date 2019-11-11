@@ -11,6 +11,7 @@ pipeline {
     KUBEDOG_VERSION       = "0.3.2"
     REV_SHORT             = sh(script: "git log --pretty=format:'%h' -n 1", , returnStdout: true).trim()
     INFRA_REPO_URL        = credentials('INFRA_REPO_URL')
+    CODECOV_TOKEN         = credentials('CODECOV_TOKEN')
 
   // Dev
     DEV_GCP_PROJECT_ID    = credentials('DEV_GCP_PROJECT_ID')
@@ -42,12 +43,11 @@ pipeline {
       }
       steps {
         script {
-          def goimage = docker.image('golang:1.13.4-stretch')
+          def goimage = docker.image('golang:1.13.4-alpine')
           goimage.pull()
           CI_ENV = sh(script: "curl -s https://codecov.io/env | bash", , returnStdout: true).trim()
           goimage.inside("${CI_ENV} -u root") {
-            sh "apt-get update"
-            sh "apt-get install -y git gcc curl make"
+            sh "apk add git gcc libc-dev make"
             sh "go get github.com/vektra/mockery/.../"
             sh "go get -u golang.org/x/lint/golint"
             sh "sh tests.sh"
@@ -76,9 +76,9 @@ pipeline {
             """
             sh "docker pull ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest || true"
             docker.build("${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest",
-                        "--cache-from ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest --target build -f alpine.dockerfile .")
+                        "--cache-from ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest --target build .")
             docker.build("${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-${REV_SHORT}",
-                        "--cache-from ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest -f alpine.dockerfile .")
+                        "--cache-from ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest .")
             docker.image("${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-${REV_SHORT}").push()
             docker.image("${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest").push()
           }
