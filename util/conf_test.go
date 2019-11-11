@@ -29,33 +29,33 @@ import (
 
 func TestConfig_GetQueueConfig(t *testing.T) {
 	var tests = []struct {
-		conf 				Config
-		expectedQueueConf 	entity.QueueConfig
+		conf              Config
+		expectedQueueConf entity.QueueConfig
 	}{
 		{
 			conf: Config{
-				QueueDurable: false,
+				QueueDurable:    false,
 				QueueAutoDelete: true,
-				QueueExclusive: false,
-				QueueNoWait: false,
-				QueueArgs: map[string]interface{}{"test": true, "arguments": "test"},
+				QueueExclusive:  false,
+				QueueNoWait:     false,
+				QueueArgs:       map[string]interface{}{"test": true, "arguments": "test"},
 			},
 			expectedQueueConf: entity.QueueConfig{
-				Durable: false,
+				Durable:    false,
 				AutoDelete: true,
-				Exclusive: false,
-				NoWait: false,
-				Args: map[string]interface{}{"test": true, "arguments": "test"},
+				Exclusive:  false,
+				NoWait:     false,
+				Args:       map[string]interface{}{"test": true, "arguments": "test"},
 			},
 		},
 		{
 			conf: *GetConfig(),
 			expectedQueueConf: entity.QueueConfig{
-				Durable: true,
+				Durable:    true,
 				AutoDelete: false,
-				Exclusive: false,
-				NoWait: false,
-				Args: *new(map[string]interface{}),
+				Exclusive:  false,
+				NoWait:     false,
+				Args:       *new(map[string]interface{}),
 			},
 		},
 	}
@@ -76,31 +76,31 @@ func TestConfig_GetConsumeConfig(t *testing.T) {
 	}{
 		{
 			conf: Config{
-				Consumer: "test",
-				ConsumerAutoAck: false,
+				Consumer:          "test",
+				ConsumerAutoAck:   false,
 				ConsumerExclusive: true,
-				ConsumerNoLocal: false,
-				ConsumerNoWait: true,
-				ConsumerArgs: map[string]interface{}{"test": 4},
+				ConsumerNoLocal:   false,
+				ConsumerNoWait:    true,
+				ConsumerArgs:      map[string]interface{}{"test": 4},
 			},
 			expectedConsumeConf: entity.ConsumeConfig{
-				Consumer: "test",
-				AutoAck: false,
+				Consumer:  "test",
+				AutoAck:   false,
 				Exclusive: true,
-				NoLocal: false,
-				NoWait: true,
-				Args: map[string]interface{}{"test": 4},
+				NoLocal:   false,
+				NoWait:    true,
+				Args:      map[string]interface{}{"test": 4},
 			},
 		},
 		{
 			conf: *GetConfig(),
 			expectedConsumeConf: entity.ConsumeConfig{
-				Consumer: "",
-				AutoAck: false,
+				Consumer:  "",
+				AutoAck:   false,
 				Exclusive: false,
-				NoLocal: false,
-				NoWait: false,
-				Args: *new(map[string]interface{}),
+				NoLocal:   false,
+				NoWait:    false,
+				Args:      *new(map[string]interface{}),
 			},
 		},
 	}
@@ -149,42 +149,42 @@ func TestConfig_GetPublishConfig(t *testing.T) {
 
 func TestConfig_GetAMQPConfig(t *testing.T) {
 	var tests = []struct {
-		conf              Config
+		conf             Config
 		expectedAMQPConf entity.AMQPConfig
 	}{
 		{
 			conf: Config{
-				AMQPQueueName: "test",
-				QueueDurable: false,
-				QueueAutoDelete: true,
-				QueueExclusive: false,
-				QueueNoWait: false,
-				QueueArgs: map[string]interface{}{"test": true, "arguments": "test"},
-				Consumer: "test",
-				ConsumerAutoAck: false,
+				AMQPQueueName:     "test",
+				QueueDurable:      false,
+				QueueAutoDelete:   true,
+				QueueExclusive:    false,
+				QueueNoWait:       false,
+				QueueArgs:         map[string]interface{}{"test": true, "arguments": "test"},
+				Consumer:          "test",
+				ConsumerAutoAck:   false,
 				ConsumerExclusive: true,
-				ConsumerNoLocal: false,
-				ConsumerNoWait: true,
-				ConsumerArgs: map[string]interface{}{"test": 4},
-				PublishMandatory: true,
-				PublishImmediate: false,
+				ConsumerNoLocal:   false,
+				ConsumerNoWait:    true,
+				ConsumerArgs:      map[string]interface{}{"test": 4},
+				PublishMandatory:  true,
+				PublishImmediate:  false,
 			},
 			expectedAMQPConf: entity.AMQPConfig{
 				QueueName: "test",
 				Queue: entity.QueueConfig{
-					Durable: false,
+					Durable:    false,
 					AutoDelete: true,
-					Exclusive: false,
-					NoWait: false,
-					Args: map[string]interface{}{"test": true, "arguments": "test"},
+					Exclusive:  false,
+					NoWait:     false,
+					Args:       map[string]interface{}{"test": true, "arguments": "test"},
 				},
 				Consume: entity.ConsumeConfig{
-					Consumer: "test",
-					AutoAck: false,
+					Consumer:  "test",
+					AutoAck:   false,
 					Exclusive: true,
-					NoLocal: false,
-					NoWait: true,
-					Args: map[string]interface{}{"test": 4},
+					NoLocal:   false,
+					NoWait:    true,
+					Args:      map[string]interface{}{"test": 4},
 				},
 				Publish: entity.PublishConfig{
 					Mandatory: true,
@@ -197,19 +197,19 @@ func TestConfig_GetAMQPConfig(t *testing.T) {
 			expectedAMQPConf: entity.AMQPConfig{
 				QueueName: "",
 				Queue: entity.QueueConfig{
-					Durable: true,
+					Durable:    true,
 					AutoDelete: false,
-					Exclusive: false,
-					NoWait: false,
-					Args: *new(map[string]interface{}),
+					Exclusive:  false,
+					NoWait:     false,
+					Args:       *new(map[string]interface{}),
 				},
 				Consume: entity.ConsumeConfig{
-					Consumer: "",
-					AutoAck: false,
+					Consumer:  "",
+					AutoAck:   false,
 					Exclusive: false,
-					NoLocal: false,
-					NoWait: false,
-					Args: *new(map[string]interface{}),
+					NoLocal:   false,
+					NoWait:    false,
+					Args:      *new(map[string]interface{}),
 				},
 				Publish: entity.PublishConfig{
 					Mandatory: false,
@@ -230,27 +230,27 @@ func TestConfig_GetAMQPConfig(t *testing.T) {
 
 func TestConfig_GetDockerConfig(t *testing.T) {
 	var tests = []struct {
-		conf              Config
+		conf               Config
 		expectedDockerConf entity.DockerConfig
 	}{
 		{
 			conf: Config{
 				DockerCACertPath: "test",
-				DockerCertPath:"test",
-				DockerKeyPath: "test",
+				DockerCertPath:   "test",
+				DockerKeyPath:    "test",
 			},
 			expectedDockerConf: entity.DockerConfig{
 				CACertPath: "test",
-				CertPath: "test",
-				KeyPath: "test",
+				CertPath:   "test",
+				KeyPath:    "test",
 			},
 		},
 		{
 			conf: *GetConfig(),
 			expectedDockerConf: entity.DockerConfig{
 				CACertPath: "",
-				CertPath: "",
-				KeyPath: "",
+				CertPath:   "",
+				KeyPath:    "",
 			},
 		},
 	}
@@ -271,18 +271,18 @@ func TestConfig_GetVolumeConfig(t *testing.T) {
 	}{
 		{
 			conf: Config{
-				VolumeDriver: "test",
+				VolumeDriver:     "test",
 				VoluemDriverOpts: map[string]string{"test": "test"},
 			},
 			expectedVolumeConf: entity.VolumeConfig{
-				Driver: "test",
+				Driver:     "test",
 				DriverOpts: map[string]string{"test": "test"},
 			},
 		},
 		{
 			conf: *GetConfig(),
 			expectedVolumeConf: entity.VolumeConfig{
-				Driver: "",
+				Driver:     "",
 				DriverOpts: *new(map[string]string),
 			},
 		},
@@ -331,34 +331,34 @@ func TestConfig_GetRestConfig(t *testing.T) {
 
 func TestGetConfig(t *testing.T) {
 	var tests = []struct {
-		expectedConf	*Config
+		expectedConf *Config
 	}{
 		{
 			expectedConf: new(Config),
 		},
 		{
 			expectedConf: &Config{
-				QueueDurable: true,
-				QueueAutoDelete: false,
-				QueueExclusive: false,
-				QueueNoWait: false,
-				QueueArgs: *new(map[string]interface{}),
-				Consumer: "",
-				ConsumerAutoAck: false,
+				QueueDurable:      true,
+				QueueAutoDelete:   false,
+				QueueExclusive:    false,
+				QueueNoWait:       false,
+				QueueArgs:         *new(map[string]interface{}),
+				Consumer:          "",
+				ConsumerAutoAck:   false,
 				ConsumerExclusive: false,
-				ConsumerNoLocal: false,
-				ConsumerNoWait: false,
-				ConsumerArgs: *new(map[string]interface{}),
-				PublishMandatory: false,
-				PublishImmediate: false,
-				AMQPQueueName: "",
-				DockerCACertPath: "",
-				DockerCertPath: "",
-				DockerKeyPath: "",
-				VolumeDriver: "",
-				VoluemDriverOpts: *new(map[string]string),
-				Verbosity: "INFO",
-				Listen: "0.0.0.0:8000",
+				ConsumerNoLocal:   false,
+				ConsumerNoWait:    false,
+				ConsumerArgs:      *new(map[string]interface{}),
+				PublishMandatory:  false,
+				PublishImmediate:  false,
+				AMQPQueueName:     "",
+				DockerCACertPath:  "",
+				DockerCertPath:    "",
+				DockerKeyPath:     "",
+				VolumeDriver:      "",
+				VoluemDriverOpts:  *new(map[string]string),
+				Verbosity:         "INFO",
+				Listen:            "0.0.0.0:8000",
 			},
 		},
 	}
