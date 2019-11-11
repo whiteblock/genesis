@@ -31,15 +31,8 @@ import (
 )
 
 func TestDeliveryHandler_ProcessMessage(t *testing.T) {
-	//service := new(mocks.DockerService)
-	//service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-	//service.On("CreateContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
-
 	uc := new(usecaseMocks.DockerUseCase)
 	uc.On("Run", mock.Anything).Return(entity.Result{Type: entity.SuccessType})
-	uc.On("CreateContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
-	//cmdService := new(mocks.CommandService)
-	//cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true)
 
 	dh, err := NewDeliveryHandler(uc)
 	if err != nil {
@@ -63,7 +56,7 @@ func TestDeliveryHandler_ProcessMessage(t *testing.T) {
 
 	assert.Equal(t, res.Error, nil)
 	assert.True(t, uc.AssertNumberOfCalls(t, "Run", 1))
-	assert.True(t, uc.AssertNumberOfCalls(t, "CreateContainer", 1))
+	assert.True(t, uc.AssertCalled(t, "Run", *cmd))
 }
 
 func TestDeliveryHandler_GetKickbackMessage(t *testing.T) {
@@ -82,7 +75,6 @@ func TestDeliveryHandler_GetKickbackMessage(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
 	msg := amqp.Delivery{
 		Body: body,
 	}
