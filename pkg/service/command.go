@@ -20,6 +20,7 @@ package service
 
 import (
 	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
 )
 
@@ -27,6 +28,8 @@ import (
 type CommandService interface {
 	//CheckDependenciesExecuted returns true if all of the commands dependencies have executed
 	CheckDependenciesExecuted(cmd command.Command) (bool, error)
+	//ReportCommandResult reports that the command has finished execution, with the result of execution
+	ReportCommandResult(cmd command.Command, res entity.Result) error
 }
 
 type commandService struct {
@@ -48,7 +51,7 @@ func (cs commandService) CheckDependenciesExecuted(cmd command.Command) (bool, e
 	resChan := make(chan depCheckResult, len(cmd.Dependencies))
 	for _, dep := range cmd.Dependencies {
 		go func(depID string) {
-			executed, err := cs.repo.CommandExecuted(depID)
+			executed, err := cs.repo.HasCommandExecuted(depID)
 			resChan <- depCheckResult{executed: executed, err: err}
 		}(dep)
 	}
@@ -62,4 +65,9 @@ func (cs commandService) CheckDependenciesExecuted(cmd command.Command) (bool, e
 		}
 	}
 	return true, nil
+}
+
+// ReportCommandResult reports that the command has finished execution, with the result of execution
+func (cs commandService) ReportCommandResult(cmd command.Command, res entity.Result) error {
+	return cs.repo.ReportCommandFinished(cmd.ID, res)
 }

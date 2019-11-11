@@ -16,25 +16,17 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package rest
+package helper
 
 import (
-	"encoding/json"
-	"github.com/whiteblock/genesis/pkg/command"
-	"github.com/whiteblock/genesis/state"
-	"github.com/whiteblock/genesis/util"
+	"github.com/gorilla/mux"
 	"net/http"
 )
 
-func addCommand(w http.ResponseWriter, r *http.Request) {
-	var commands []command.Command
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&commands)
-	if err != nil {
-		http.Error(w, util.LogError(err).Error(), 400)
-		return
-	}
-	go state.GetCommandState().AddCommands(commands...)
-
-	w.Write([]byte("Success"))
+//Router represents the functionality needed by the REST router
+type Router interface {
+	//HandleFunc see github.com/gorilla/mux.Router.HandleFunc
+	HandleFunc(path string, f func(http.ResponseWriter, *http.Request)) *mux.Route
+	//ServeHTTP see github.com/gorilla/mux.Router.ServeHTTP
+	ServeHTTP(http.ResponseWriter, *http.Request)
 }
