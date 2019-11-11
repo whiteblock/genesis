@@ -80,25 +80,25 @@ func (rH *restHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 //start starts the states inner consume loop
-func (s *restHandler) start() {
-	s.once.Do(func() {
-		s.loop()
+func (rH *restHandler) start() {
+	rH.once.Do(func() {
+		rH.loop()
 	})
 }
 
-func (s *restHandler) runCommand(cmd command.Command) {
-	res := s.uc.Run(cmd)
+func (rH *restHandler) runCommand(cmd command.Command) {
+	res := rH.uc.Run(cmd)
 	if res.IsRequeue() {
-		s.cmdChan <- cmd
+		rH.cmdChan <- cmd
 	} else {
-		s.serv.ReportCommandResult(cmd, res)
+		rH.serv.ReportCommandResult(cmd, res)
 	}
 }
 
-func (s *restHandler) loop() {
+func (rH *restHandler) loop() {
 	for {
-		cmd := <-s.cmdChan
+		cmd := <-rH.cmdChan
 		log.WithFields(log.Fields{"command": cmd}).Trace("attempting to run a command")
-		go s.uc.Run(cmd)
+		go rH.uc.Run(cmd)
 	}
 }
