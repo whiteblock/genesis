@@ -26,6 +26,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/handler"
 	"github.com/whiteblock/genesis/pkg/service"
+	"github.com/whiteblock/genesis/pkg/usecase"
 	"github.com/whiteblock/utility/utils"
 	"golang.org/x/sync/semaphore"
 	"sync"
@@ -127,17 +128,17 @@ func (s *localCommandController) Start() {
 }
 
 func (s *localCommandController) runCommand(cmd command.Command) {
-	stat := s.uc.Run(cmd)
+	res := s.uc.Run(cmd)
 	if res.IsRequeue() {
 		s.cmdChan <- cmd
 	} else {
-		serv.ReportCommandResult(cmd.ID, stat)
+		s.serv.ReportCommandResult(cmd, res)
 	}
 }
 
 func (s *localCommandController) loop() {
 	for {
-		cmd := <-cmdChan
+		cmd := <-s.cmdChan
 		log.WithFields(log.Fields{"command": cmd}).Trace("attempting to run a command")
 		go s.uc.Run(cmd)
 	}
