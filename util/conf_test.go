@@ -19,7 +19,6 @@
 package util
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"testing"
@@ -321,8 +320,6 @@ func TestConfig_GetRestConfig(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			if !reflect.DeepEqual(tt.conf.GetRestConfig(), tt.expectedRestConf) {
-				fmt.Println(tt.conf.GetRestConfig())
-				fmt.Println(tt.expectedRestConf)
 				t.Error("return value of GetRestConfig does not match expected value")
 			}
 		})
