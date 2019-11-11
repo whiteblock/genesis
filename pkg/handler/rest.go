@@ -79,6 +79,8 @@ func (rH *restHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//TODO: move this logic out of the rest handler
+
 //start starts the states inner consume loop
 func (rH *restHandler) start() {
 	rH.once.Do(func() {
@@ -88,6 +90,7 @@ func (rH *restHandler) start() {
 
 func (rH *restHandler) runCommand(cmd command.Command) {
 	res := rH.uc.Run(cmd)
+	log.WithFields(log.Fields{"result": res}).Debug("got a result")
 	if res.IsRequeue() {
 		rH.cmdChan <- cmd
 	} else {
@@ -97,8 +100,11 @@ func (rH *restHandler) runCommand(cmd command.Command) {
 
 func (rH *restHandler) loop() {
 	for {
-		cmd := <-rH.cmdChan
+		cmd, closed := <-rH.cmdChan
+		if !closed {
+			return
+		}
 		log.WithFields(log.Fields{"command": cmd}).Trace("attempting to run a command")
-		go rH.uc.Run(cmd)
+		go rH.runCommand(cmd)
 	}
 }
