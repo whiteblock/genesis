@@ -46,13 +46,14 @@ type restHandler struct {
 
 //NewRestHandler creates a new rest handler
 func NewRestHandler(uc usecase.DockerUseCase, serv service.CommandService) RestHandler {
+	log.Debug("creating a new rest handler")
 	out := &restHandler{
 		cmdChan: make(chan command.Command),
 		serv:    serv,
 		uc:      uc,
 		once:    &sync.Once{},
 	}
-	out.start()
+	go out.start()
 	return out
 }
 
