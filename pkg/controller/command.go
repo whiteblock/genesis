@@ -23,10 +23,8 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
-	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/handler"
 	"github.com/whiteblock/genesis/pkg/service"
-	"github.com/whiteblock/genesis/pkg/usecase"
 	"github.com/whiteblock/utility/utils"
 	"golang.org/x/sync/semaphore"
 	"sync"
@@ -99,47 +97,5 @@ func (c *consumer) loop() {
 	for msg := range msgs {
 		c.sem.Acquire(context.Background(), 1)
 		go c.handleMessage(msg)
-	}
-}
-
-// localCommandController represents the local state of Genesis.
-type localCommandController struct {
-	cmdChan chan command.Command
-	serv    service.CommandService
-	uc      usecase.DockerUseCase
-	once    *sync.Once
-}
-
-//NewLocalCommandController creates a local command controller, useful for when
-func NewLocalCommandController(uc usecase.DockerUseCase, serv service.CommandService, cmdChan chan command.Command) CommandController {
-	return &localCommandController{
-		cmdChan: cmdChan,
-		serv:    serv,
-		uc:      uc,
-		once:    &sync.Once{},
-	}
-}
-
-//Start starts the states inner consume loop
-func (s *localCommandController) Start() {
-	s.once.Do(func() {
-		s.loop()
-	})
-}
-
-func (s *localCommandController) runCommand(cmd command.Command) {
-	res := s.uc.Run(cmd)
-	if res.IsRequeue() {
-		s.cmdChan <- cmd
-	} else {
-		s.serv.ReportCommandResult(cmd, res)
-	}
-}
-
-func (s *localCommandController) loop() {
-	for {
-		cmd := <-s.cmdChan
-		log.WithFields(log.Fields{"command": cmd}).Trace("attempting to run a command")
-		go s.uc.Run(cmd)
 	}
 }
