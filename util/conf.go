@@ -19,7 +19,6 @@
 package util
 
 import (
-	"github.com/docker/docker/api/types/network"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
@@ -43,7 +42,6 @@ type Config struct {
 	PublishMandatory  bool                                 `mapstructure:"publishMandatory"`
 	PublishImmediate  bool                                 `mapstructure:"publishImmediate"`
 	AMQPQueueName     string                               `mapstructure:"amqpQueueName"`
-	NetworkEndpoints  map[string]*network.EndpointSettings `mapstructure:"networkEndpoints"` // todo should this be changed to something dissectable?
 	DockerCACertPath  string                               `mapstructure:"dockerCACertPath"`
 	DockerCertPath    string                               `mapstructure:"dockerCertPath"`
 	DockerKeyPath     string                               `mapstructure:"dockerKeyPath"`
@@ -89,12 +87,6 @@ func (c Config) GetAMQPConfig() entity.AMQPConfig {
 	}
 }
 
-func (c Config) GetNetworkConfig() entity.NetworkConfig {
-	return entity.NetworkConfig{
-		EndpointsConfig: c.NetworkEndpoints,
-	}
-}
-
 func (c Config) GetDockerConfig() entity.DockerConfig {
 	return entity.DockerConfig{
 		CACertPath: c.DockerCACertPath,
@@ -130,7 +122,6 @@ func setViperEnvBindings() {
 	viper.BindEnv("publishMandatory", "PUBLISH_MANDATORY")
 	viper.BindEnv("publishImmediate", "PUBLISH_IMMEDIATE")
 	viper.BindEnv("amqpQueueName", "AMQP_QUEUE_NAME")
-	viper.BindEnv("networkEndpoints", "NETWORK_ENDPOINTS")
 	viper.BindEnv("dockerCACertPath", "DOCKER_CACERT_PATH")
 	viper.BindEnv("dockerCertPath", "DOCKER_CERT_PATH")
 	viper.BindEnv("dockerKeyPath", "DOCKER_KEY_PATH")
