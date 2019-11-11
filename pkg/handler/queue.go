@@ -20,12 +20,12 @@ package handler
 
 import (
 	"encoding/json"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/usecase"
-	"time"
 )
 
 //DeliveryHandler handles the initial processing of a amqp delivery
@@ -81,7 +81,8 @@ func (dh deliveryHandler) GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing
 	if err != nil {
 		return pub, err
 	}
-	cmd = cmd.GetRetryCommand(time.Now().Unix())
+
+	cmd = cmd.GetRetryCommand(dh.usecase.TimeSupplier())
 
 	body, err := json.Marshal(cmd)
 	if err != nil {
