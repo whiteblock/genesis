@@ -43,7 +43,7 @@ pipeline {
       }
       steps {
         script {
-          def goimage = docker.image('golang:1.13.4-stretch')
+          def goimage = docker.image('golang:1.13.4-alpine')
           goimage.pull()
           CI_ENV = sh(script: "curl -s https://codecov.io/env | bash", , returnStdout: true).trim()
           goimage.inside("${CI_ENV} -u root") {
