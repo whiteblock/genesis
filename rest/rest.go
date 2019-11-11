@@ -38,6 +38,7 @@ func StartServer() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/command", addCommand).Methods("POST")
+	router.HandleFunc("/health", addCommand).Methods("GET")
 
 	log.WithFields(log.Fields{"socket": conf.Listen}).Info("listening for requests")
 	log.Fatal(http.ListenAndServe(conf.Listen, removeTrailingSlash(router)))
@@ -48,4 +49,11 @@ func removeTrailingSlash(next http.Handler) http.Handler {
 		r.URL.Path = strings.TrimSuffix(r.URL.Path, "/")
 		next.ServeHTTP(w, r)
 	})
+}
+
+func healthCheck(w http.ResponseWriter, r *http.Request) {
+	_, err := w.Write([]byte("OK"))
+	if err != nil {
+		log.Fatal(err)
+	}
 }
