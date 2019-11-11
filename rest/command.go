@@ -21,7 +21,7 @@ package rest
 import (
 	"encoding/json"
 	"github.com/whiteblock/genesis/pkg/command"
-	"github.com/whiteblock/genesis/state"
+	//"github.com/whiteblock/genesis/state"
 	"github.com/whiteblock/genesis/util"
 	"net/http"
 )
@@ -34,7 +34,7 @@ func addCommand(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, util.LogError(err).Error(), 400)
 		return
 	}
-	go state.GetCommandState().AddCommands(commands...)
+	//go state.GetCommandState().AddCommands(commands...)
 
 	w.Write([]byte("Success"))
 }

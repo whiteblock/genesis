@@ -30,7 +30,7 @@ import (
 	"time"
 )
 
-func TestAMQPController_Consumption(t *testing.T) {
+func TestCommandController_Consumption(t *testing.T) {
 	items := 10
 
 	processedChan := make(chan bool, items)
@@ -44,7 +44,7 @@ func TestAMQPController_Consumption(t *testing.T) {
 		processedChan <- true
 	}).Return(entity.NewSuccessResult())
 
-	control, err := NewAMQPController(2, serv, hand)
+	control, err := NewCommandController(2, serv, hand)
 	assert.Equal(t, err, nil)
 	go control.Start()
 
@@ -65,7 +65,7 @@ func TestAMQPController_Consumption(t *testing.T) {
 	assert.True(t, serv.AssertNumberOfCalls(t, "CreateQueue", 1))
 }
 
-func TestAMQPController_Requeue(t *testing.T) {
+func TestCommandController_Requeue(t *testing.T) {
 	items := 10
 
 	processedChan := make(chan bool, items)
@@ -81,7 +81,7 @@ func TestAMQPController_Requeue(t *testing.T) {
 	hand.On("GetKickbackMessage", mock.Anything).Return(amqp.Publishing{}, nil)
 	hand.On("ProcessMessage", mock.Anything).Return(entity.NewErrorResult(fmt.Errorf("some non-fatal error")))
 
-	control, err := NewAMQPController(2, serv, hand)
+	control, err := NewCommandController(2, serv, hand)
 	assert.Equal(t, err, nil)
 	go control.Start()
 
