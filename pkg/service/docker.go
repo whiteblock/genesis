@@ -25,6 +25,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"strconv"
@@ -122,6 +123,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 
 //StartContainer attempts to start an already created docker container
 func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
+	log.WithFields(log.Fields{"name": name}).Trace("starting container")
 	opts := types.ContainerStartOptions{}
 	err := ds.repo.ContainerStart(ctx, cli, name, opts)
 	if err != nil {

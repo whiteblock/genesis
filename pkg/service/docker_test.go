@@ -21,14 +21,14 @@ package service
 import (
 	"testing"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	repository "github.com/whiteblock/genesis/mocks/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/entity"
-
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
 )
 
 func TestDockerService_CreateContainer(t *testing.T) {
@@ -103,7 +103,23 @@ func TestDockerService_CreateContainer(t *testing.T) {
 	assert.NoError(t, err)
 	res := ds.CreateContainer(nil, nil, testContainer)
 	assert.NoError(t, res.Error)
-	//ContainerCreate(ctx, cli, config, hostConfig, networkConfig, dContainer.Name)
 }
 
-//CreateContainer(ctx context.Context, cli *client.Client, container entity.Container) entity.Result
+func TestDockerService_StartContainer(t *testing.T) {
+	containerName := "TEST"
+	repo := new(repository.DockerRepository)
+	repo.On("ContainerStart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+
+			require.Len(t, args, 4)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+			assert.Equal(t, containerName, args.String(2))
+			assert.Equal(t, types.ContainerStartOptions{}, args.Get(3))
+		})
+
+	ds, err := NewDockerService(repo)
+	assert.NoError(t, err)
+	res := ds.StartContainer(nil, nil, containerName)
+	assert.NoError(t, res.Error)
+}

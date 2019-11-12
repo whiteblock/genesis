@@ -31,6 +31,27 @@ import (
 
 /*FUNCTIONALITY TESTS*/
 
+func mintCommand(i interface{}, orderType string) command.Command {
+	raw, err := json.Marshal(i)
+	if err != nil {
+		panic(err)
+	}
+	cmd := command.Command{
+		ID:        "TEST",
+		Timestamp: time.Now().Unix() - 5,
+		Timeout:   0,
+		Target:    command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type: orderType,
+		},
+	}
+	err = json.Unmarshal(raw, &cmd.Order.Payload)
+	if err != nil {
+		panic(err)
+	}
+	return cmd
+}
+
 func createContainer(dockerUseCase usecase.DockerUseCase) {
 	testContainer := entity.Container{
 		BoundCPUs:  nil, //TODO
@@ -42,7 +63,7 @@ func createContainer(dockerUseCase usecase.DockerUseCase) {
 		Labels: map[string]string{
 			"FOO": "BAR",
 		},
-		Name:    "test",
+		Name:    "tester",
 		Network: []string{"testnet"}, //TODO
 		Ports:   map[int]int{8888: 8889},
 		Volumes: map[string]entity.Volume{}, //TODO
@@ -51,27 +72,17 @@ func createContainer(dockerUseCase usecase.DockerUseCase) {
 	}
 	testContainer.Cpus = "2.5"
 	testContainer.Memory = "5gb"
-	raw, err := json.Marshal(testContainer)
-	if err != nil {
-		panic(err)
-	}
-	cmd := command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
-		Order: command.Order{
-			Type:    "createContainer",
-			Payload: map[string]interface{}{},
-		},
-	}
-	err = json.Unmarshal(raw, &cmd.Order.Payload)
-	if err != nil {
-		panic(err)
-	}
-
+	cmd := mintCommand(testContainer, "createContainer")
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("created a container")
+}
+
+func startContainer(dockerUseCase usecase.DockerUseCase) {
+	cmd := mintCommand(map[string]interface{}{
+		"name": "tester",
+	}, "startContainer")
+	res := dockerUseCase.Run(cmd)
+	log.WithFields(log.Fields{"res": res}).Info("started a container")
 }
 
 func dockerTest() {
@@ -86,4 +97,5 @@ func dockerTest() {
 		panic(err)
 	}
 	createContainer(dockerUseCase)
+	startContainer(dockerUseCase)
 }
