@@ -12,6 +12,7 @@ pipeline {
     REV_SHORT             = sh(script: "git log --pretty=format:'%h' -n 1", , returnStdout: true).trim()
     INFRA_REPO_URL        = credentials('INFRA_REPO_URL')
     CODECOV_TOKEN         = credentials('CODECOV_TOKEN')
+    CI_ENV                = sh(script: "curl -s https://codecov.io/env | bash", , returnStdout: true).trim()
 
   // Dev
     DEV_GCP_PROJECT_ID    = credentials('DEV_GCP_PROJECT_ID')
@@ -35,7 +36,14 @@ pipeline {
   }
   stages {
     stage('Run tests') {
+      agent {
+        docker { 
+          image "golang:1.13.4-alpine"
+          args  "-u root ${CI_ENV}"
+        }
+      }
       when {
+        beforeAgent true
         anyOf {
           changeRequest target: 'dev'
           changeRequest target: 'master'
@@ -43,22 +51,21 @@ pipeline {
       }
       steps {
         script {
-          def goimage = docker.image('golang:1.13.4-alpine')
-          goimage.pull()
-          CI_ENV = sh(script: "curl -s https://codecov.io/env | bash", , returnStdout: true).trim()
-          goimage.inside("${CI_ENV} -u root") {
-            sh "apk add git gcc libc-dev make"
-            sh "go get github.com/vektra/mockery/.../"
-            sh "go get -u golang.org/x/lint/golint"
-            sh "sh tests.sh"
-          }
+          sh "apk add git gcc libc-dev"
+          sh "go get github.com/vektra/mockery/.../"
+          sh "go get -u golang.org/x/lint/golint"
+          sh "sh tests.sh"
         }
       }
-    post {
-      success {
-        sh "curl -s https://codecov.io/bash | bash"
+      post {
+        success {
+          sh "apk add curl bash && curl -s https://codecov.io/bash | bash"
+        }
+        cleanup {
+          sh "chmod -R 777 coverage.txt mocks || true"
+          deleteDir()
+        }
       }
-    }
     }
     stage('Build docker image') {
       when {
