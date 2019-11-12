@@ -20,14 +20,14 @@ package main
 
 import (
 	"encoding/json"
+	"time"
+
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/config"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/usecase"
-	"time"
 )
 
 /*FUNCTIONALITY TESTS*/
@@ -129,8 +129,6 @@ func dockerTest() {
 	if err != nil {
 		panic(err)
 	}
-
-	conf := config.GetConfig()
 
 	dockerConfig := conf.GetDockerConfig()
 	dockerUseCase, err := usecase.NewDockerUseCase(dockerConfig, dockerService, commandService)
