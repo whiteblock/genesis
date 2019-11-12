@@ -47,7 +47,8 @@ func TestDockerUseCase_Run_CreateContainer(t *testing.T) {
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
 
-	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	usecase, err := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	assert.NoError(t, err)
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
@@ -71,7 +72,8 @@ func TestDockerUseCase_Run_StartContainer(t *testing.T) {
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
 
-	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	usecase, err := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	assert.NoError(t, err)
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
@@ -95,7 +97,8 @@ func TestDockerUseCase_Run_RemoveContainer(t *testing.T) {
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
 
-	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	usecase, err := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	assert.NoError(t, err)
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
@@ -119,7 +122,8 @@ func TestDockerUseCase_Run_CreateNetwork(t *testing.T) {
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
 
-	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	usecase, err := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	assert.NoError(t, err)
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
@@ -143,7 +147,8 @@ func TestDockerUseCase_Run_AttachNetwork(t *testing.T) {
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
 
-	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	usecase, err := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	assert.NoError(t, err)
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
@@ -167,7 +172,8 @@ func TestDockerUseCase_Run_CreateVolume(t *testing.T) {
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
 
-	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	usecase, err := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	assert.NoError(t, err)
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
@@ -191,7 +197,8 @@ func TestDockerUseCase_Run_RemoveVolume(t *testing.T) {
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
 
-	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	usecase, err := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	assert.NoError(t, err)
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
@@ -215,7 +222,8 @@ func TestDockerUseCase_Run_PutFile(t *testing.T) {
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
 
-	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	usecase, err := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	assert.NoError(t, err)
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
@@ -239,7 +247,8 @@ func TestDockerUseCase_Run_PutFileInContainer(t *testing.T) {
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
 
-	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	usecase, err := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	assert.NoError(t, err)
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
@@ -263,7 +272,8 @@ func TestDockerUseCase_Run_Emulation(t *testing.T) {
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
 
-	usecase, _ := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	usecase, err := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	assert.NoError(t, err)
 
 	res := usecase.Run(command.Command{
 		ID:        "TEST",
