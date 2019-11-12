@@ -43,8 +43,8 @@ func TestDockerService_CreateContainer(t *testing.T) {
 			"FOO": "BAR",
 		},
 		Name:    "TEST",
-		Network: []string{"Testnet"},        //TODO
-		Ports:   map[int]int{8888: 8889},    //TODO
+		Network: []string{"Testnet"}, //TODO
+		Ports:   map[int]int{8888: 8889},
 		Volumes: map[string]entity.Volume{}, //TODO
 		Image:   "alpine",
 		Args:    []string{"test"},
@@ -122,4 +122,124 @@ func TestDockerService_StartContainer(t *testing.T) {
 	assert.NoError(t, err)
 	res := ds.StartContainer(nil, nil, containerName)
 	assert.NoError(t, res.Error)
+}
+
+func TestDockerService_CreateNetwork(t *testing.T) {
+	testNetwork := entity.Network{
+		Name:   "testnet",
+		Global: true,
+		Labels: map[string]string{
+			"FOO": "BAR",
+		},
+		Gateway: "10.14.0.1",
+		Subnet:  "10.14.0.0/16",
+	}
+	repo := new(repository.DockerRepository)
+	repo.On("NetworkCreate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+		types.NetworkCreateResponse{}, nil).Run(func(args mock.Arguments) {
+
+		require.Len(t, args, 4)
+		assert.Nil(t, args.Get(0))
+		assert.Nil(t, args.Get(1))
+		assert.Equal(t, testNetwork.Name, args.String(2))
+
+		networkCreate, ok := args.Get(3).(types.NetworkCreate)
+		require.True(t, ok)
+		require.NotNil(t, networkCreate)
+		assert.True(t, networkCreate.CheckDuplicate)
+		assert.True(t, networkCreate.Attachable)
+		assert.False(t, networkCreate.Ingress)
+		assert.False(t, networkCreate.Internal)
+		assert.False(t, networkCreate.EnableIPv6)
+		assert.Equal(t, testNetwork.Labels, networkCreate.Labels)
+		assert.Nil(t, networkCreate.ConfigFrom)
+
+		require.NotNil(t, networkCreate.IPAM)
+		assert.Equal(t, "default", networkCreate.IPAM.Driver)
+		assert.Nil(t, networkCreate.IPAM.Options)
+		require.NotNil(t, networkCreate.IPAM.Config)
+		require.Len(t, networkCreate.IPAM.Config, 1)
+		assert.Equal(t, testNetwork.Subnet, networkCreate.IPAM.Config[0].Subnet)
+		assert.Equal(t, testNetwork.Gateway, networkCreate.IPAM.Config[0].Gateway)
+
+		if testNetwork.Global {
+			assert.Equal(t, "overlay", networkCreate.Driver)
+			assert.Equal(t, "swarm", networkCreate.Scope)
+		} else {
+			assert.Equal(t, "bridge", networkCreate.Driver)
+			assert.Equal(t, "local", networkCreate.Scope)
+			bridgeName, ok := networkCreate.Options["com.docker.network.bridge.name"]
+			assert.True(t, ok)
+			assert.Equal(t, testNetwork.Name, bridgeName)
+		}
+	})
+
+	ds, err := NewDockerService(repo)
+	assert.NoError(t, err)
+	res := ds.CreateNetwork(nil, nil, testNetwork)
+	assert.NoError(t, res.Error)
+	repo.AssertNumberOfCalls(t, "NetworkCreate", 1)
+}
+
+func TestDockerService_GetNetworkByName(t *testing.T) {
+	results := []types.NetworkResource{
+		types.NetworkResource{Name: "test1", ID: "id1"},
+		types.NetworkResource{Name: "test2", ID: "id2"},
+	}
+	repo := new(repository.DockerRepository)
+	repo.On("NetworkList", mock.Anything, mock.Anything, mock.Anything).Return(results, nil).Run(
+		func(args mock.Arguments) {
+
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+		})
+	ds, err := NewDockerService(repo)
+	assert.NoError(t, err)
+
+	for _, result := range results {
+		net, err := ds.GetNetworkByName(nil, nil, result.Name)
+		assert.NoError(t, err)
+		assert.Equal(t, result, net)
+	}
+
+	_, err = ds.GetNetworkByName(nil, nil, "DNE")
+	assert.Error(t, err)
+
+	repo.AssertNumberOfCalls(t, "NetworkList", len(results)+1)
+}
+
+func TestDockerService_RemoveNetwork(t *testing.T) {
+	repo := new(repository.DockerRepository)
+	networks := []types.NetworkResource{
+		types.NetworkResource{Name: "test1", ID: "id1"},
+		types.NetworkResource{Name: "test2", ID: "id2"},
+	}
+	repo.On("NetworkList", mock.Anything, mock.Anything, mock.Anything).Return(networks, nil).Run(
+		func(args mock.Arguments) {
+
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+		}).Times(len(networks))
+
+	for _, net := range networks {
+		repo.On("NetworkRemove", mock.Anything, mock.Anything, net.ID).Return(nil).Run(
+			func(args mock.Arguments) {
+
+				require.Len(t, args, 3)
+				assert.Nil(t, args.Get(0))
+				assert.Nil(t, args.Get(1))
+			}).Once()
+	}
+
+	ds, err := NewDockerService(repo)
+	assert.NoError(t, err)
+
+	for _, net := range networks {
+		res := ds.RemoveNetwork(nil, nil, net.Name)
+		assert.NoError(t, res.Error)
+	}
+
+	repo.AssertExpectations(t)
 }

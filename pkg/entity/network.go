@@ -21,5 +21,9 @@ package entity
 //Network represents a logic network on which containers exist
 type Network struct {
 	//Name is the name of the network
-	Name string `json:"name"`
+	Name    string            `json:"name"`
+	Subnet  string            `json:"subnet"`
+	Gateway string            `json:"gateway"`
+	Global  bool              `json:"global"`
+	Labels  map[string]string `json:"labels"`
 }
