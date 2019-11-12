@@ -152,7 +152,7 @@ func setViperDefaults() { //todo am i missing anything?
 	viper.SetDefault("consumerAutoAck", false)
 	viper.SetDefault("consumerExclusive", false)
 	viper.SetDefault("listen", "0.0.0.0:8000")
-	viper.SetDefault("localMode", false)
+	viper.SetDefault("localMode", true)
 }
 
 func init() {
