@@ -43,11 +43,11 @@ func TestDockerService_CreateContainer(t *testing.T) {
 			"FOO": "BAR",
 		},
 		Name:    "TEST",
-		Network: "Testnet",                  //TODO
+		Network: []string{"Testnet"},        //TODO
 		Ports:   map[int]int{8888: 8889},    //TODO
 		Volumes: map[string]entity.Volume{}, //TODO
 		Image:   "alpine",
-		Args:    []string{"Test"},
+		Args:    []string{"test"},
 	}
 	testContainer.Cpus = "2.5"
 	testContainer.Memory = "5gb"
@@ -62,10 +62,10 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		config, ok := args.Get(2).(*container.Config)
 		require.True(t, ok)
 		require.NotNil(t, config)
-		//require.Len(t, config.Entrypoint, 2)
+		require.Len(t, config.Entrypoint, 2)
 		assert.Contains(t, config.Env, "FOO=BAR")
 		assert.Equal(t, testContainer.EntryPoint, config.Entrypoint[0])
-		//assert.Equal(t, testContainer.Args[0], config.Entrypoint[1])
+		assert.Equal(t, testContainer.Args[0], config.Entrypoint[1])
 		assert.Equal(t, testContainer.Name, config.Hostname)
 		assert.Equal(t, testContainer.Labels, config.Labels)
 		assert.Equal(t, testContainer.Image, config.Image)
@@ -79,7 +79,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		require.NotNil(t, hostConfig)
 		assert.Equal(t, int64(2500000000), hostConfig.NanoCPUs)
 		assert.Equal(t, int64(5000000000), hostConfig.Memory)
-		{
+		{ //Port bindings
 			bindings, exists := hostConfig.PortBindings["8889/tcp"]
 			assert.True(t, exists)
 			require.NotNil(t, bindings)
@@ -87,7 +87,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 			assert.Equal(t, bindings[0].HostIP, "0.0.0.0")
 			assert.Equal(t, bindings[0].HostPort, "8888")
 		}
-
+		assert.True(t, hostConfig.AutoRemove)
 		networkingConfig, ok := args.Get(4).(*network.NetworkingConfig)
 		require.True(t, ok)
 		require.NotNil(t, networkingConfig)

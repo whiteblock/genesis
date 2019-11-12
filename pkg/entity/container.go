@@ -48,10 +48,8 @@ type Container struct {
 	Labels map[string]string
 	//Name is the unique name of the docker container
 	Name string
-	//Network is the primary network for this container to be attached to
-	Network string
-	//NetworkConfig: TODO remove from this struct
-	NetworkConfig NetworkConfig
+	//Network is the primary network(s) for this container to be attached to
+	Network strslice.StrSlice
 
 	// Ports to be opened for each container, each port associated.
 	Ports map[int]int `json:"ports"`

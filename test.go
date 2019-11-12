@@ -35,19 +35,19 @@ func createContainer(dockerUseCase usecase.DockerUseCase) {
 	testContainer := entity.Container{
 		BoundCPUs:  nil, //TODO
 		Detach:     false,
-		EntryPoint: "/bin/sh", //TODO
-		Environment: map[string]string{ //TODO
+		EntryPoint: "/bin/sh",
+		Environment: map[string]string{
 			"FOO": "BAR",
 		},
 		Labels: map[string]string{
 			"FOO": "BAR",
 		},
 		Name:    "test",
-		Network: "Testnet",                  //TODO
-		Ports:   map[int]int{8888: 8889},    //TODO
+		Network: []string{"testnet"}, //TODO
+		Ports:   map[int]int{8888: 8889},
 		Volumes: map[string]entity.Volume{}, //TODO
 		Image:   "alpine",
-		Args:    []string{},
+		Args:    []string{"test", "test2"},
 	}
 	testContainer.Cpus = "2.5"
 	testContainer.Memory = "5gb"

@@ -24,7 +24,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
-
 	"github.com/docker/docker/client"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
@@ -104,12 +103,13 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 
 	hostConfig := &container.HostConfig{
 		PortBindings: portMap,
+		AutoRemove:   true,
 	}
 	hostConfig.NanoCPUs = int64(1000000000 * cpus)
 	hostConfig.Memory = mem
 
 	networkConfig := &network.NetworkingConfig{
-		EndpointsConfig: dContainer.NetworkConfig.EndpointsConfig,
+		EndpointsConfig: nil, //TODO
 	}
 
 	_, err = ds.repo.ContainerCreate(ctx, cli, config, hostConfig, networkConfig, dContainer.Name)
