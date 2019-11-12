@@ -26,4 +26,7 @@ type DockerConfig struct {
 	CertPath string `json:"certPath"`
 	//KeyPath is the filepath to the private key for TLS
 	KeyPath string `json:"keyPath"`
+	//LocalMode causes the TLS parameters to be ignored and Genesis
+	//to assume that the docker daemon is on the local machine
+	LocalMode bool `json:"localMode"`
 }

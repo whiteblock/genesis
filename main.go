@@ -21,15 +21,15 @@ package main
 import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+	"github.com/whiteblock/genesis/config"
 	"github.com/whiteblock/genesis/pkg/controller"
 	"github.com/whiteblock/genesis/pkg/handler"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/usecase"
-	"github.com/whiteblock/genesis/util"
 )
 
-var conf = util.GetConfig()
+var conf = config.GetConfig()
 
 func getRestServer() (controller.RestController, error) {
 	commandService := service.NewCommandService(repository.NewLocalCommandRepository())

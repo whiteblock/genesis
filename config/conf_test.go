@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package util
+package config
 
 import (
 	"reflect"
@@ -237,19 +237,13 @@ func TestConfig_GetDockerConfig(t *testing.T) {
 				DockerCACertPath: "test",
 				DockerCertPath:   "test",
 				DockerKeyPath:    "test",
+				LocalMode:        false,
 			},
 			expectedDockerConf: entity.DockerConfig{
 				CACertPath: "test",
 				CertPath:   "test",
 				KeyPath:    "test",
-			},
-		},
-		{
-			conf: *GetConfig(),
-			expectedDockerConf: entity.DockerConfig{
-				CACertPath: "",
-				CertPath:   "",
-				KeyPath:    "",
+				LocalMode:  false,
 			},
 		},
 	}
