@@ -28,7 +28,7 @@ type Result struct {
 
 //IsSuccess returns whether or not the result indicates success
 func (res Result) IsSuccess() bool {
-	return res.Error == nil //todo shouldn't there be a check for res.Type == SuccessType ?
+	return res.Error == nil //todo shouldn't there be a check for c.Type == SuccessType ?
 }
 
 //IsFatal returns true if there is an errr and it is marked as a fatal error,
