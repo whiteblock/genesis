@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package util
+package config
 
 import (
 	log "github.com/sirupsen/logrus"
@@ -28,27 +28,29 @@ import (
 // Config groups all of the global configuration parameters into
 // a single struct
 type Config struct {
-	QueueDurable      bool              `mapstructure:"queueDurable"`
-	QueueAutoDelete   bool              `mapstructure:"queueAutoDelete"`
-	QueueExclusive    bool              `mapstructure:"queueExclusive"`
-	QueueNoWait       bool              `mapstructure:"queueNoWait"`
-	QueueArgs         amqp.Table        `mapstructure:"queueArgs"`
-	Consumer          string            `mapstructure:"consumer"`
-	ConsumerAutoAck   bool              `mapstructure:"consumerAutoAck"`
-	ConsumerExclusive bool              `mapstructure:"consumerExclusive"`
-	ConsumerNoLocal   bool              `mapstructure:"consumerNoLocal"`
-	ConsumerNoWait    bool              `mapstructure:"consumerNoWait"`
-	ConsumerArgs      amqp.Table        `mapstructure:"consumerArgs"`
-	PublishMandatory  bool              `mapstructure:"publishMandatory"`
-	PublishImmediate  bool              `mapstructure:"publishImmediate"`
-	AMQPQueueName     string            `mapstructure:"amqpQueueName"`
-	DockerCACertPath  string            `mapstructure:"dockerCACertPath"`
-	DockerCertPath    string            `mapstructure:"dockerCertPath"`
-	DockerKeyPath     string            `mapstructure:"dockerKeyPath"`
-	VolumeDriver      string            `mapstructure:"volumeDriver"`
-	VoluemDriverOpts  map[string]string `mapstructure:"volumeDriverOpts"`
-	Verbosity         string            `mapstructure:"verbosity"`
-	Listen            string            `mapstructure:"listen"`
+	QueueDurable      bool       `mapstructure:"queueDurable"`
+	QueueAutoDelete   bool       `mapstructure:"queueAutoDelete"`
+	QueueExclusive    bool       `mapstructure:"queueExclusive"`
+	QueueNoWait       bool       `mapstructure:"queueNoWait"`
+	QueueArgs         amqp.Table `mapstructure:"queueArgs"`
+	Consumer          string     `mapstructure:"consumer"`
+	ConsumerAutoAck   bool       `mapstructure:"consumerAutoAck"`
+	ConsumerExclusive bool       `mapstructure:"consumerExclusive"`
+	ConsumerNoLocal   bool       `mapstructure:"consumerNoLocal"`
+	ConsumerNoWait    bool       `mapstructure:"consumerNoWait"`
+	ConsumerArgs      amqp.Table `mapstructure:"consumerArgs"`
+	PublishMandatory  bool       `mapstructure:"publishMandatory"`
+	PublishImmediate  bool       `mapstructure:"publishImmediate"`
+	AMQPQueueName     string     `mapstructure:"amqpQueueName"`
+	DockerCACertPath  string     `mapstructure:"dockerCACertPath"`
+	DockerCertPath    string     `mapstructure:"dockerCertPath"`
+	DockerKeyPath     string     `mapstructure:"dockerKeyPath"`
+	//LocalMode indicates that Genesis is operating in standalone mode
+	LocalMode        bool              `mapstructure:"localMode"`
+	VolumeDriver     string            `mapstructure:"volumeDriver"`
+	VoluemDriverOpts map[string]string `mapstructure:"volumeDriverOpts"`
+	Verbosity        string            `mapstructure:"verbosity"`
+	Listen           string            `mapstructure:"listen"`
 }
 
 // GetQueueConfig extracts the fields of this object representing QueueConfig
@@ -98,6 +100,7 @@ func (c Config) GetDockerConfig() entity.DockerConfig {
 		CACertPath: c.DockerCACertPath,
 		CertPath:   c.DockerCertPath,
 		KeyPath:    c.DockerKeyPath,
+		LocalMode:  c.LocalMode,
 	}
 }
 
@@ -113,9 +116,6 @@ func (c Config) GetVolumeConfig() entity.VolumeConfig {
 func (c Config) GetRestConfig() entity.RestConfig {
 	return entity.RestConfig{Listen: c.Listen}
 }
-
-//NodesPerCluster represents the maximum number of nodes allowed in a cluster
-var NodesPerCluster uint32
 
 var conf = new(Config)
 
@@ -137,6 +137,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("dockerCACertPath", "DOCKER_CACERT_PATH")
 	viper.BindEnv("dockerCertPath", "DOCKER_CERT_PATH")
 	viper.BindEnv("dockerKeyPath", "DOCKER_KEY_PATH")
+	viper.BindEnv("localMode", "LOCAL_MODE")
 	viper.BindEnv("volumeDriver", "VOLUME_DRIVER")
 	viper.BindEnv("volumeDriverOpts", "VOLUME_DRIVER_OPTS")
 	viper.BindEnv("verbosity", "VERBOSITY")
@@ -151,6 +152,7 @@ func setViperDefaults() { //todo am i missing anything?
 	viper.SetDefault("consumerAutoAck", false)
 	viper.SetDefault("consumerExclusive", false)
 	viper.SetDefault("listen", "0.0.0.0:8000")
+	viper.SetDefault("localMode", false)
 }
 
 func init() {
