@@ -243,3 +243,27 @@ func TestDockerService_RemoveNetwork(t *testing.T) {
 
 	repo.AssertExpectations(t)
 }
+
+//func TestDockerService_CreateVolume(t *testing.T) {
+//	repo := new(repository.DockerRepository)
+//	repo.On("CreateVolume", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Error: nil}).Run(
+//		func(args mock.Arguments) {
+//			require.Len(t, args, 3)
+//			assert.Nil(t, args.Get(1))
+//		})
+//
+//	ds, err := NewDockerService(repo)
+//	assert.NoError(t, err)
+//
+//
+//	vol := entity.Volume{
+//		Name: "test",
+//		Labels: map[string]string{"test": "/path"},
+//	}
+//
+//	res := ds.CreateVolume(context.Background(), nil, vol)
+//	assert.NoError(t, res.Error)
+//
+//	repo.AssertNumberOfCalls(t, "CreateVolume", 1)
+//}
+

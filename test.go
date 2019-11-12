@@ -53,6 +53,19 @@ func mintCommand(i interface{}, orderType string) command.Command {
 	return cmd
 }
 
+func createVolume(dockerUseCase usecase.DockerUseCase) {
+	vol := entity.Volume{
+		Name: "test_volume",
+		Labels: map[string]string{
+			"FOO": "BAR",
+		},
+	}
+
+	cmd := mintCommand(vol, "createVolume")
+	res := dockerUseCase.Run(cmd)
+	log.WithFields(log.Fields{"res": res}).Info("created a volume")
+}
+
 func createNetwork(dockerUseCase usecase.DockerUseCase) {
 	testNetwork := entity.Network{
 		Name:   "testnet",
@@ -125,4 +138,5 @@ func dockerTest() {
 	createNetwork(dockerUseCase)
 	createContainer(dockerUseCase)
 	startContainer(dockerUseCase)
+	createVolume(dockerUseCase)
 }
