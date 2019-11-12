@@ -30,6 +30,7 @@ import (
 )
 
 /*FUNCTIONALITY TESTS*/
+/*NOTE: this should be replaced with an integration test*/
 
 func mintCommand(i interface{}, orderType string) command.Command {
 	raw, err := json.Marshal(i)
@@ -65,6 +66,13 @@ func createNetwork(dockerUseCase usecase.DockerUseCase) {
 	cmd := mintCommand(testNetwork, "createNetwork")
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("created a network")
+
+}
+
+func removeNetwork(dockerUseCase usecase.DockerUseCase) {
+	cmd := mintCommand(map[string]string{"name": "testnet"}, "removeNetwork")
+	res := dockerUseCase.Run(cmd)
+	log.WithFields(log.Fields{"res": res}).Info("removed a network")
 
 }
 
@@ -112,6 +120,8 @@ func dockerTest() {
 	if err != nil {
 		panic(err)
 	}
+	createNetwork(dockerUseCase)
+	removeNetwork(dockerUseCase)
 	createNetwork(dockerUseCase)
 	createContainer(dockerUseCase)
 	startContainer(dockerUseCase)

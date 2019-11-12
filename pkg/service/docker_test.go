@@ -43,8 +43,8 @@ func TestDockerService_CreateContainer(t *testing.T) {
 			"FOO": "BAR",
 		},
 		Name:    "TEST",
-		Network: []string{"Testnet"},        //TODO
-		Ports:   map[int]int{8888: 8889},    //TODO
+		Network: []string{"Testnet"}, //TODO
+		Ports:   map[int]int{8888: 8889},
 		Volumes: map[string]entity.Volume{}, //TODO
 		Image:   "alpine",
 		Args:    []string{"test"},
