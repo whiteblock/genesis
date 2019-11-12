@@ -105,16 +105,16 @@ func (c Container) GetEnv() (envVars []string) {
 }
 
 //GetPortBindings gets the port bindings in the proper docker container types
-func (c Container) GetPortBindings() (nat.PortSet, error) {
+func (c Container) GetPortBindings() (nat.PortSet, nat.PortMap, error) {
 	if c.Ports == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 	dockerPorts := []string{}
 	for hostPort, containerPort := range c.Ports {
 		dockerPorts = append(dockerPorts, fmt.Sprintf("0.0.0.0:%d:%d/tcp", hostPort, containerPort))
 	}
-	portSet, _, err := nat.ParsePortSpecs(dockerPorts)
-	return nat.PortSet(portSet), err
+	portSet, portMap, err := nat.ParsePortSpecs(dockerPorts)
+	return nat.PortSet(portSet), nat.PortMap(portMap), err
 }
 
 //GetEntryPoint returns the properly formatted entrypiont if this container has one,

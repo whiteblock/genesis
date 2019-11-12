@@ -77,7 +77,7 @@ func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*cl
 
 //CreateContainer attempts to create a docker container
 func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, dContainer entity.Container) entity.Result {
-	portBindings, err := dContainer.GetPortBindings()
+	portSet, portMap, err := dContainer.GetPortBindings()
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
@@ -85,7 +85,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 	config := &container.Config{
 		Hostname:     dContainer.Name,
 		Domainname:   dContainer.Name,
-		ExposedPorts: portBindings,
+		ExposedPorts: portSet,
 		Env:          dContainer.GetEnv(),
 		Image:        dContainer.Image,
 		Entrypoint:   dContainer.GetEntryPoint(),
@@ -102,7 +102,9 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 		return entity.NewFatalResult(err)
 	}
 
-	hostConfig := &container.HostConfig{}
+	hostConfig := &container.HostConfig{
+		PortBindings: portMap,
+	}
 	hostConfig.NanoCPUs = int64(1000000000 * cpus)
 	hostConfig.Memory = mem
 

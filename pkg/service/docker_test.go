@@ -35,8 +35,8 @@ func TestDockerService_CreateContainer(t *testing.T) {
 	testContainer := entity.Container{
 		BoundCPUs:  nil, //TODO
 		Detach:     false,
-		EntryPoint: "/bin/bash", //TODO
-		Environment: map[string]string{ //TODO
+		EntryPoint: "/bin/bash",
+		Environment: map[string]string{
 			"FOO": "BAR",
 		},
 		Labels: map[string]string{
@@ -62,17 +62,31 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		config, ok := args.Get(2).(*container.Config)
 		require.True(t, ok)
 		require.NotNil(t, config)
-		require.Len(t, config.Entrypoint, 2)
+		//require.Len(t, config.Entrypoint, 2)
+		assert.Contains(t, config.Env, "FOO=BAR")
 		assert.Equal(t, testContainer.EntryPoint, config.Entrypoint[0])
+		//assert.Equal(t, testContainer.Args[0], config.Entrypoint[1])
 		assert.Equal(t, testContainer.Name, config.Hostname)
 		assert.Equal(t, testContainer.Labels, config.Labels)
 		assert.Equal(t, testContainer.Image, config.Image)
+		{
+			_, exists := config.ExposedPorts["8889/tcp"]
+			assert.True(t, exists)
+		}
 
 		hostConfig, ok := args.Get(3).(*container.HostConfig)
 		require.True(t, ok)
 		require.NotNil(t, hostConfig)
 		assert.Equal(t, int64(2500000000), hostConfig.NanoCPUs)
 		assert.Equal(t, int64(5000000000), hostConfig.Memory)
+		{
+			bindings, exists := hostConfig.PortBindings["8889/tcp"]
+			assert.True(t, exists)
+			require.NotNil(t, bindings)
+			require.Len(t, bindings, 1)
+			assert.Equal(t, bindings[0].HostIP, "0.0.0.0")
+			assert.Equal(t, bindings[0].HostPort, "8888")
+		}
 
 		networkingConfig, ok := args.Get(4).(*network.NetworkingConfig)
 		require.True(t, ok)
