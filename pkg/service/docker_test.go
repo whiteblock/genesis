@@ -144,7 +144,7 @@ func TestDockerService_CreateNetwork(t *testing.T) {
 		networkCreate, ok := args.Get(3).(types.NetworkCreate)
 		require.True(t, ok)
 		require.NotNil(t, networkCreate)
-		assert.True(t, networkCreate, CheckDuplicate)
+		assert.True(t, networkCreate.CheckDuplicate)
 		assert.True(t, networkCreate.Attachable)
 		assert.False(t, networkCreate.Ingress)
 		assert.False(t, networkCreate.Internal)

@@ -150,8 +150,8 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, n
 			Options: nil,
 			Config: []network.IPAMConfig{
 				network.IPAMConfig{
-					Subnet:  network.Subnet.String(),
-					Gateway: network.Gateway.String(),
+					Subnet:  net.Subnet.String(),
+					Gateway: net.Gateway.String(),
 				},
 			},
 		},
