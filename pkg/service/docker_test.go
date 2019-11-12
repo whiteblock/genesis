@@ -210,14 +210,36 @@ func TestDockerService_GetNetworkByName(t *testing.T) {
 }
 
 func TestDockerService_RemoveNetwork(t *testing.T) {
-	/*repo := new(repository.DockerRepository)
-	repo.On("NetworkList",mock.Anything,mock.Anything,mock.Anything)
-	repo.On("NetworkRemove",mock.Anything,mock.Anything,mock.Anything)
+	repo := new(repository.DockerRepository)
+	networks := []types.NetworkResource{
+		types.NetworkResource{Name: "test1", ID: "id1"},
+		types.NetworkResource{Name: "test2", ID: "id2"},
+	}
+	repo.On("NetworkList", mock.Anything, mock.Anything, mock.Anything).Return(networks, nil).Run(
+		func(args mock.Arguments) {
 
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+		}).Times(len(networks))
 
+	for _, net := range networks {
+		repo.On("NetworkRemove", mock.Anything, mock.Anything, net.ID).Return(nil).Run(
+			func(args mock.Arguments) {
 
+				require.Len(t, args, 3)
+				assert.Nil(t, args.Get(0))
+				assert.Nil(t, args.Get(1))
+			}).Once()
+	}
 
+	ds, err := NewDockerService(repo)
+	assert.NoError(t, err)
 
-	repo.AssertNumberOfCalls(t,"NetworkList",1)
-	repo.AssertNumberOfCalls(t,"NetworkRemove",1)*/
+	for _, net := range networks {
+		res := ds.RemoveNetwork(nil, nil, net.Name)
+		assert.NoError(t, res.Error)
+	}
+
+	repo.AssertExpectations(t)
 }
