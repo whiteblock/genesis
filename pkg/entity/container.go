@@ -99,7 +99,7 @@ func (c Container) GetEnv() (envVars []string) {
 	for key, val := range c.Environment {
 		envVars = append(envVars, fmt.Sprintf("%s=%s", key, val))
 	}
-	return
+	return envVars
 }
 
 //GetPortBindings gets the port bindings in the proper docker container types

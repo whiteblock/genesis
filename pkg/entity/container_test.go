@@ -93,8 +93,7 @@ func TestContainer_GetMemory_Unsuccessful(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			_, err := tt.res.GetMemory()
-
-			assert.NotEqual(t, err, nil)
+			assert.Error(t, err)
 		})
 	}
 }
@@ -218,15 +217,15 @@ func TestContainer_GetEnv(t *testing.T) {
 		},
 		{
 			c: Container{
-				Environment: *new(map[string]string),
+				Environment: map[string]string{},
 			},
-			expected: *new([]string),
+			expected: []string{},
 		},
 	}
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			assert.Equal(t, tt.c.GetEnv(), tt.expected)
+			assert.ElementsMatch(t, tt.c.GetEnv(), tt.expected)
 		})
 	}
 }
