@@ -80,7 +80,7 @@ func TestDeliveryHandler_ProcessMessage_Unsuccessful(t *testing.T) {
 		t.Error(err)
 	}
 
-	body:= []byte("should be a failure")
+	body := []byte("should be a failure")
 
 	res := dh.ProcessMessage(amqp.Delivery{Body: body})
 	assert.Error(t, res.Error)
