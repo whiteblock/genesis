@@ -20,13 +20,12 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
-
 	"github.com/docker/docker/client"
+	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"strconv"
@@ -78,18 +77,19 @@ func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*cl
 
 //CreateContainer attempts to create a docker container
 func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, dContainer entity.Container) entity.Result {
-	var envVars []string
-	for key, val := range dContainer.Environment {
-		envVars = append(envVars, fmt.Sprintf("%s=%s", key, val))
+	portSet, portMap, err := dContainer.GetPortBindings()
+	if err != nil {
+		return entity.NewFatalResult(err)
 	}
 
 	config := &container.Config{
-		Hostname:   dContainer.Name,
-		Cmd:        dContainer.Args,
-		Env:        envVars,
-		Image:      dContainer.Image,
-		Entrypoint: []string{dContainer.EntryPoint},
-		Labels:     dContainer.Labels,
+		Hostname:     dContainer.Name,
+		Domainname:   dContainer.Name,
+		ExposedPorts: portSet,
+		Env:          dContainer.GetEnv(),
+		Image:        dContainer.Image,
+		Entrypoint:   dContainer.GetEntryPoint(),
+		Labels:       dContainer.Labels,
 	}
 
 	mem, err := dContainer.GetMemory()
@@ -102,12 +102,15 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 		return entity.NewFatalResult(err)
 	}
 
-	hostConfig := &container.HostConfig{}
+	hostConfig := &container.HostConfig{
+		PortBindings: portMap,
+		AutoRemove:   true,
+	}
 	hostConfig.NanoCPUs = int64(1000000000 * cpus)
 	hostConfig.Memory = mem
 
 	networkConfig := &network.NetworkingConfig{
-		EndpointsConfig: dContainer.NetworkConfig.EndpointsConfig,
+		EndpointsConfig: nil, //TODO
 	}
 
 	_, err = ds.repo.ContainerCreate(ctx, cli, config, hostConfig, networkConfig, dContainer.Name)
@@ -120,6 +123,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 
 //StartContainer attempts to start an already created docker container
 func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
+	log.WithFields(log.Fields{"name": name}).Trace("starting container")
 	opts := types.ContainerStartOptions{}
 	err := ds.repo.ContainerStart(ctx, cli, name, opts)
 	if err != nil {

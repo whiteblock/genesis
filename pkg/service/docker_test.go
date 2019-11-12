@@ -21,33 +21,33 @@ package service
 import (
 	"testing"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	repository "github.com/whiteblock/genesis/mocks/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/entity"
-
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
 )
 
 func TestDockerService_CreateContainer(t *testing.T) {
 	testContainer := entity.Container{
 		BoundCPUs:  nil, //TODO
 		Detach:     false,
-		EntryPoint: "/bin/bash", //TODO
-		Environment: map[string]string{ //TODO
+		EntryPoint: "/bin/bash",
+		Environment: map[string]string{
 			"FOO": "BAR",
 		},
 		Labels: map[string]string{
 			"FOO": "BAR",
 		},
 		Name:    "TEST",
-		Network: "Testnet",                  //TODO
+		Network: []string{"Testnet"},        //TODO
 		Ports:   map[int]int{8888: 8889},    //TODO
 		Volumes: map[string]entity.Volume{}, //TODO
 		Image:   "alpine",
-		Args:    []string{"Test"},
+		Args:    []string{"test"},
 	}
 	testContainer.Cpus = "2.5"
 	testContainer.Memory = "5gb"
@@ -62,18 +62,32 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		config, ok := args.Get(2).(*container.Config)
 		require.True(t, ok)
 		require.NotNil(t, config)
-		require.Len(t, config.Entrypoint, 1)
+		require.Len(t, config.Entrypoint, 2)
+		assert.Contains(t, config.Env, "FOO=BAR")
 		assert.Equal(t, testContainer.EntryPoint, config.Entrypoint[0])
+		assert.Equal(t, testContainer.Args[0], config.Entrypoint[1])
 		assert.Equal(t, testContainer.Name, config.Hostname)
 		assert.Equal(t, testContainer.Labels, config.Labels)
 		assert.Equal(t, testContainer.Image, config.Image)
+		{
+			_, exists := config.ExposedPorts["8889/tcp"]
+			assert.True(t, exists)
+		}
 
 		hostConfig, ok := args.Get(3).(*container.HostConfig)
 		require.True(t, ok)
 		require.NotNil(t, hostConfig)
 		assert.Equal(t, int64(2500000000), hostConfig.NanoCPUs)
 		assert.Equal(t, int64(5000000000), hostConfig.Memory)
-
+		{ //Port bindings
+			bindings, exists := hostConfig.PortBindings["8889/tcp"]
+			assert.True(t, exists)
+			require.NotNil(t, bindings)
+			require.Len(t, bindings, 1)
+			assert.Equal(t, bindings[0].HostIP, "0.0.0.0")
+			assert.Equal(t, bindings[0].HostPort, "8888")
+		}
+		assert.True(t, hostConfig.AutoRemove)
 		networkingConfig, ok := args.Get(4).(*network.NetworkingConfig)
 		require.True(t, ok)
 		require.NotNil(t, networkingConfig)
@@ -89,7 +103,23 @@ func TestDockerService_CreateContainer(t *testing.T) {
 	assert.NoError(t, err)
 	res := ds.CreateContainer(nil, nil, testContainer)
 	assert.NoError(t, res.Error)
-	//ContainerCreate(ctx, cli, config, hostConfig, networkConfig, dContainer.Name)
 }
 
-//CreateContainer(ctx context.Context, cli *client.Client, container entity.Container) entity.Result
+func TestDockerService_StartContainer(t *testing.T) {
+	containerName := "TEST"
+	repo := new(repository.DockerRepository)
+	repo.On("ContainerStart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+
+			require.Len(t, args, 4)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+			assert.Equal(t, containerName, args.String(2))
+			assert.Equal(t, types.ContainerStartOptions{}, args.Get(3))
+		})
+
+	ds, err := NewDockerService(repo)
+	assert.NoError(t, err)
+	res := ds.StartContainer(nil, nil, containerName)
+	assert.NoError(t, res.Error)
+}

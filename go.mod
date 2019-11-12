@@ -8,7 +8,7 @@ require (
 	github.com/containerd/containerd v1.3.0 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v1.4.2-0.20191106232431-31abc6c089eb
-	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259
 	github.com/gorilla/mux v1.7.3
