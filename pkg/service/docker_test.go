@@ -1,17 +1,14 @@
 /*
 	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
-
 	Genesis is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version.
-
 	Genesis is distributed in the hope that it will be useful,
 	but WITHOUT ANY WARRANTY; without even the implied warranty of
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 	GNU General Public License for more details.
-
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
@@ -24,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	repoMocks "github.com/whiteblock/genesis/mocks/pkg/repository"
+	repository "github.com/whiteblock/genesis/mocks/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/entity"
 
 	"github.com/docker/docker/api/types/container"
@@ -52,7 +49,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 	testContainer.Cpus = "2.5"
 	testContainer.Memory = "5gb"
 
-	repo := new(repoMocks.DockerRepository)
+	repo := new(repository.DockerRepository)
 	repo.On("ContainerCreate", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
 		container.ContainerCreateCreatedBody{}, nil).Run(func(args mock.Arguments) {
 		require.Len(t, args, 6)
@@ -81,12 +78,15 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		containerName, ok := args.Get(5).(string)
 		require.True(t, ok)
 		assert.Equal(t, testContainer.Name, containerName)
+
+		//network.NetworkingConfig
 	})
 
 	ds, err := NewDockerService(repo)
 	assert.NoError(t, err)
-
 	res := ds.CreateContainer(nil, nil, testContainer)
 	assert.NoError(t, res.Error)
+	//ContainerCreate(ctx, cli, config, hostConfig, networkConfig, dContainer.Name)
 }
 
+//CreateContainer(ctx context.Context, cli *client.Client, container entity.Container) entity.Result
