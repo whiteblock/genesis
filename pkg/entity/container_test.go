@@ -23,20 +23,20 @@ import (
 	"testing"
 )
 
-func TestResources_GetMemory_Successful(t *testing.T) {
+func TestContainer_GetMemory_Successful(t *testing.T) {
 	var tests = []struct {
-		res      Resources
+		res      Container
 		expected int64
 	}{
-		{res: Resources{
+		{res: Container{
 			Cpus:   "",
 			Memory: "45",
 		}, expected: int64(45)},
-		{res: Resources{
+		{res: Container{
 			Cpus:   "",
 			Memory: "1",
 		}, expected: int64(1)},
-		{res: Resources{
+		{res: Container{
 			Cpus:   "",
 			Memory: "92233720368547",
 		}, expected: int64(92233720368547)},
@@ -53,19 +53,19 @@ func TestResources_GetMemory_Successful(t *testing.T) {
 	}
 }
 
-func TestResources_GetMemory_Unsuccessful(t *testing.T) {
+func TestContainer_GetMemory_Unsuccessful(t *testing.T) {
 	var tests = []struct {
-		res Resources
+		res Container
 	}{
-		{res: Resources{
+		{res: Container{
 			Cpus:   "",
 			Memory: "45.46",
 		}},
-		{res: Resources{
+		{res: Container{
 			Cpus:   "",
 			Memory: "35273409857203948572039458720349857",
 		}},
-		{res: Resources{
+		{res: Container{
 			Cpus:   "",
 			Memory: "s",
 		}},

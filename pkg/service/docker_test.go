@@ -62,7 +62,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		config, ok := args.Get(2).(*container.Config)
 		require.True(t, ok)
 		require.NotNil(t, config)
-		require.Len(t, config.Entrypoint, 1)
+		require.Len(t, config.Entrypoint, 2)
 		assert.Equal(t, testContainer.EntryPoint, config.Entrypoint[0])
 		assert.Equal(t, testContainer.Name, config.Hostname)
 		assert.Equal(t, testContainer.Labels, config.Labels)

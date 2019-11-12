@@ -20,7 +20,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -78,18 +77,19 @@ func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*cl
 
 //CreateContainer attempts to create a docker container
 func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, dContainer entity.Container) entity.Result {
-	var envVars []string
-	for key, val := range dContainer.Environment {
-		envVars = append(envVars, fmt.Sprintf("%s=%s", key, val))
+	portBindings, err := dContainer.GetPortBindings()
+	if err != nil {
+		return entity.NewFatalResult(err)
 	}
 
 	config := &container.Config{
-		Hostname:   dContainer.Name,
-		Cmd:        dContainer.Args,
-		Env:        envVars,
-		Image:      dContainer.Image,
-		Entrypoint: []string{dContainer.EntryPoint},
-		Labels:     dContainer.Labels,
+		Hostname:     dContainer.Name,
+		Domainname:   dContainer.Name,
+		ExposedPorts: portBindings,
+		Env:          dContainer.GetEnv(),
+		Image:        dContainer.Image,
+		Entrypoint:   dContainer.GetEntryPoint(),
+		Labels:       dContainer.Labels,
 	}
 
 	mem, err := dContainer.GetMemory()
