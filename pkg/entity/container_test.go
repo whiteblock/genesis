@@ -67,7 +67,7 @@ func TestContainer_GetMemory_Successful(t *testing.T) {
 			num, err := tt.res.GetMemory()
 			assert.NoError(t, err)
 
-			assert.Equal(t, num, tt.expected)
+			assert.Equal(t, tt.expected, num)
 		})
 	}
 }
@@ -135,7 +135,7 @@ func TestContainer_NoLimits(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			assert.Equal(t, tt.res.NoLimits(), tt.expected)
+			assert.Equal(t, tt.expected, tt.res.NoLimits())
 		})
 	}
 }
@@ -167,7 +167,7 @@ func TestContainer_NoCPULimits(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			assert.Equal(t, tt.res.NoCPULimits(), tt.expected)
+			assert.Equal(t, tt.expected, tt.res.NoCPULimits())
 		})
 	}
 }
@@ -199,7 +199,7 @@ func TestContainer_NoMemoryLimits(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			assert.Equal(t, tt.res.NoMemoryLimits(), tt.expected)
+			assert.Equal(t, tt.expected, tt.res.NoMemoryLimits())
 		})
 	}
 }
@@ -225,7 +225,7 @@ func TestContainer_GetEnv(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			assert.ElementsMatch(t, tt.c.GetEnv(), tt.expected)
+			assert.ElementsMatch(t, tt.expected, tt.c.GetEnv())
 		})
 	}
 }
@@ -257,8 +257,8 @@ func TestContainer_GetPortBindings(t *testing.T) {
 			portSet, portMap, err := tt.c.GetPortBindings()
 			assert.NoError(t, err)
 
-			assert.Equal(t, portSet, tt.expectedPortSet)
-			assert.Equal(t, portMap, tt.expectedPortMap)
+			assert.Equal(t, tt.expectedPortSet, portSet)
+			assert.Equal(t, tt.expectedPortMap, portMap)
 		})
 	}
 }
@@ -285,7 +285,7 @@ func TestContainer_GetEntryPoint(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			assert.Equal(t, tt.c.GetEntryPoint(), tt.expected)
+			assert.Equal(t, tt.expected, tt.c.GetEntryPoint())
 		})
 	}
 }

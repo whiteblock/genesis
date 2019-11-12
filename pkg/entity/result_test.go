@@ -56,7 +56,7 @@ func TestResult_IsSuccess(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			assert.Equal(t, tt.res.IsSuccess(), tt.expected)
+			assert.Equal(t, tt.expected, tt.res.IsSuccess())
 		})
 	}
 }
@@ -91,7 +91,7 @@ func TestResult_IsFatal(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			assert.Equal(t, tt.res.IsFatal(), tt.expected)
+			assert.Equal(t, tt.expected, tt.res.IsFatal())
 		})
 	}
 }
@@ -126,7 +126,7 @@ func TestResult_IsRequeue(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			assert.Equal(t, tt.res.IsRequeue(), tt.expected)
+			assert.Equal(t, tt.expected, tt.res.IsRequeue())
 		})
 	}
 }
@@ -147,9 +147,9 @@ func TestNewSuccessResult(t *testing.T) {
 		Type:  SuccessType,
 	}
 
-	assert.Equal(t, NewSuccessResult(), expected)
-	assert.NotEqual(t, NewSuccessResult(), expectedUnsuccessful)
-	assert.NotEqual(t, NewSuccessResult(), expectedUnsuccessful2)
+	assert.Equal(t, expected, NewSuccessResult())
+	assert.NotEqual(t, expectedUnsuccessful, NewSuccessResult())
+	assert.NotEqual(t, expectedUnsuccessful2, NewSuccessResult())
 }
 
 func TestNewFatalResult(t *testing.T) {
@@ -173,10 +173,10 @@ func TestNewFatalResult(t *testing.T) {
 		Type:  SuccessType,
 	}
 
-	assert.Equal(t, NewFatalResult(expected.Error), expected)
-	assert.NotEqual(t, NewFatalResult(expectedUnsuccessful.Error), expectedUnsuccessful)
-	assert.NotEqual(t, NewFatalResult(expectedUnsuccessful2.Error), expectedUnsuccessful2)
-	assert.NotEqual(t, NewFatalResult(expectedUnsuccessful3.Error), expectedUnsuccessful3)
+	assert.Equal(t, expected, NewFatalResult(expected.Error))
+	assert.NotEqual(t, expectedUnsuccessful, NewFatalResult(expectedUnsuccessful.Error))
+	assert.NotEqual(t, expectedUnsuccessful2, NewFatalResult(expectedUnsuccessful2.Error))
+	assert.NotEqual(t, expectedUnsuccessful3, NewFatalResult(expectedUnsuccessful3.Error))
 }
 
 func TestNewErrorResult(t *testing.T) {
@@ -200,8 +200,8 @@ func TestNewErrorResult(t *testing.T) {
 		Type:  ErrorType,
 	}
 
-	assert.Equal(t, NewErrorResult(expected.Error), expected) //todo shouldn't this not pass?
-	assert.Equal(t, NewErrorResult(expectedUnsuccessful.Error), expectedUnsuccessful)
-	assert.Equal(t, NewErrorResult(expectedUnsuccessful2.Error), expectedUnsuccessful2)
-	assert.Equal(t, NewErrorResult(expectedUnsuccessful3.Error), expectedUnsuccessful3)
+	assert.Equal(t, expected, NewErrorResult(expected.Error)) //todo shouldn't this not pass?
+	assert.Equal(t, expectedUnsuccessful, NewErrorResult(expectedUnsuccessful.Error))
+	assert.Equal(t, expectedUnsuccessful2, NewErrorResult(expectedUnsuccessful2.Error))
+	assert.Equal(t, expectedUnsuccessful3, NewErrorResult(expectedUnsuccessful3.Error))
 }
