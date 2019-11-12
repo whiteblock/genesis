@@ -51,13 +51,10 @@ func getRestServer() (controller.RestController, error) {
 	return restServer, nil
 }
 
-func dockerTest() {
-
-}
-
 func main() {
 	if len(os.Args) == 2 && os.Args[1] == "test" { //Run some basic docker functionality tests
 		dockerTest()
+		os.Exit(0)
 	}
 
 	restServer, err := getRestServer()
