@@ -80,7 +80,7 @@ func (c Container) GetMemory() (int64, error) {
 
 // NoLimits checks if the resources object doesn't specify any limits
 func (c Container) NoLimits() bool {
-	return len(c.Memory) == 0 && len(c.Cpus) == 0
+	return c.NoCPULimits() && c.NoMemoryLimits()
 }
 
 // NoCPULimits checks if the resources object doesn't specify any cpu limits
@@ -99,7 +99,7 @@ func (c Container) GetEnv() (envVars []string) {
 	for key, val := range c.Environment {
 		envVars = append(envVars, fmt.Sprintf("%s=%s", key, val))
 	}
-	return
+	return envVars
 }
 
 //GetPortBindings gets the port bindings in the proper docker container types
