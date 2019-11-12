@@ -64,6 +64,11 @@ func NewDockerService(repo repository.DockerRepository) (DockerService, error) {
 
 //CreateClient creates a new client for connecting to the docker daemon
 func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*client.Client, error) {
+	if conf.LocalMode {
+		return client.NewClientWithOpts(
+			client.WithAPIVersionNegotiation(),
+		)
+	}
 	return client.NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
 		client.WithHost(host),

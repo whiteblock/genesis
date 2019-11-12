@@ -27,6 +27,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/usecase"
+	"os"
 )
 
 var conf = config.GetConfig()
@@ -50,7 +51,15 @@ func getRestServer() (controller.RestController, error) {
 	return restServer, nil
 }
 
+func dockerTest() {
+
+}
+
 func main() {
+	if len(os.Args) == 2 && os.Args[1] == "test" { //Run some basic docker functionality tests
+		dockerTest()
+	}
+
 	restServer, err := getRestServer()
 	if err != nil {
 		panic(err)
