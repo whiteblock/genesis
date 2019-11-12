@@ -28,6 +28,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/util"
+	"strings"
 	"time"
 )
 
@@ -89,24 +90,26 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 		return entity.NewFatalResult(err)
 	}
 	log.WithField("client", cli).Debug("created a client")
-	switch cmd.Order.Type {
-	case "createContainer":
-		return duc.createContainerShim(ctx, cli, cmd) //TODO: Move shims to service
-	case "startContainer":
+	switch strings.ToLower(cmd.Order.Type) {
+	case "createcontainer":
+		return duc.createContainerShim(ctx, cli, cmd)
+	case "startcontainer":
 		return duc.startContainerShim(ctx, cli, cmd)
-	case "removeContainer":
+	case "removecontainer":
 		return duc.removeContainerShim(ctx, cli, cmd)
-	case "createNetwork":
+	case "createnetwork":
 		return duc.createNetworkShim(ctx, cli, cmd)
-	case "attachNetwork":
+	case "attachnetwork":
 		return duc.attachNetworkShim(ctx, cli, cmd)
-	case "createVolume":
+	case "removenetwork":
+		return duc.removeNetworkShim(ctx, cli, cmd)
+	case "createvolume":
 		return duc.createVolumeShim(ctx, cli, cmd)
-	case "removeVolume":
+	case "removevolume":
 		return duc.removeVolumeShim(ctx, cli, cmd)
-	case "putFile":
+	case "putfile":
 		return duc.putFileShim(ctx, cli, cmd)
-	case "putFileInContainer":
+	case "putfileincontainer":
 		return duc.putFileInContainerShim(ctx, cli, cmd)
 	case "emulation":
 		return duc.emulationShim(ctx, cli, cmd)
@@ -196,6 +199,14 @@ func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli *client.Clie
 	return duc.service.AttachNetwork(ctx, cli, networkName, containerName)
 }
 
+func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
+	var name string
+	err := util.GetJSONString(cmd.Order.Payload, "name", &name)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	return duc.service.RemoveNetwork(ctx, cli, name)
+}
 func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	raw, err := json.Marshal(cmd.Order.Payload)
 	if err != nil {

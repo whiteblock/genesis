@@ -37,6 +37,12 @@ type DockerRepository interface {
 
 	//NetworkCreate sends a request to the docker daemon to create a network
 	NetworkCreate(ctx context.Context, cli *client.Client, name string, options types.NetworkCreate) (types.NetworkCreateResponse, error)
+
+	//NetworkRemove sends a request to the docker daemon to remove a network
+	NetworkRemove(ctx context.Context, cli *client.Client, networkID string) error
+
+	//NetworkList lists the networks known to the docker daemon
+	NetworkList(ctx context.Context, cli *client.Client, options types.NetworkListOptions) ([]types.NetworkResource, error)
 }
 
 type dockerRepository struct {
@@ -64,4 +70,15 @@ func (dr dockerRepository) ContainerStart(ctx context.Context, cli *client.Clien
 func (dr dockerRepository) NetworkCreate(ctx context.Context, cli *client.Client, name string,
 	options types.NetworkCreate) (types.NetworkCreateResponse, error) {
 	return cli.NetworkCreate(ctx, name, options)
+}
+
+//NetworkRemove sends a request to the docker daemon to remove a network
+func (dr dockerRepository) NetworkRemove(ctx context.Context, cli *client.Client, networkID string) error {
+	return cli.NetworkRemove(ctx, networkID)
+}
+
+//NetworkList lists the networks known to the docker daemon
+func (dr dockerRepository) NetworkList(ctx context.Context, cli *client.Client,
+	options types.NetworkListOptions) ([]types.NetworkResource, error) {
+	return cli.NetworkList(ctx, options)
 }

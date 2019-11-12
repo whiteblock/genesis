@@ -20,6 +20,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -34,22 +35,31 @@ import (
 //DockerService provides a intermediate interface between docker and the order from a command
 type DockerService interface {
 
-	//CreateClient creates a new client for connecting to the docker daemon
-	CreateClient(conf entity.DockerConfig, host string) (*client.Client, error)
-
 	//CreateContainer attempts to create a docker container
 	CreateContainer(ctx context.Context, cli *client.Client, container entity.Container) entity.Result
 
 	//StartContainer attempts to start an already created docker container
 	StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result
 	RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result
+
+	//CreateNetwork attempts to create a network
 	CreateNetwork(ctx context.Context, cli *client.Client, net entity.Network) entity.Result
+
+	//RemoveNetwork attempts to remove a network
+	RemoveNetwork(ctx context.Context, cli *client.Client, name string) entity.Result
 	AttachNetwork(ctx context.Context, cli *client.Client, network string, container string) entity.Result
 	CreateVolume(ctx context.Context, cli *client.Client, volume entity.Volume) entity.Result
 	RemoveVolume(ctx context.Context, cli *client.Client, name string) entity.Result
 	PlaceFileInContainer(ctx context.Context, cli *client.Client, containerName string, file entity.File) entity.Result
 	PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file entity.File) entity.Result
 	Emulation(ctx context.Context, cli *client.Client, netem entity.Netconf) entity.Result
+
+	/**Non command functions**/
+	//CreateClient creates a new client for connecting to the docker daemon
+	CreateClient(conf entity.DockerConfig, host string) (*client.Client, error)
+
+	//GetNetworkByName attempts to find a network with the given name and return information on it.
+	GetNetworkByName(ctx context.Context, cli *client.Client, networkName string) (types.NetworkResource, error)
 }
 
 type dockerService struct {
@@ -73,6 +83,21 @@ func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*cl
 		client.WithHost(host),
 		client.WithTLSClientConfig(conf.CACertPath, conf.CertPath, conf.KeyPath),
 	)
+}
+
+//GetNetworkByName attempts to find a network with the given name and return information on it.
+func (ds dockerService) GetNetworkByName(ctx context.Context, cli *client.Client,
+	networkName string) (types.NetworkResource, error) {
+	nets, err := ds.repo.NetworkList(ctx, cli, types.NetworkListOptions{})
+	if err != nil {
+		return types.NetworkResource{}, err
+	}
+	for _, net := range nets {
+		if net.Name == networkName {
+			return net, nil
+		}
+	}
+	return types.NetworkResource{}, fmt.Errorf("could not find the network \"%s\"", networkName)
 }
 
 //CreateContainer attempts to create a docker container
@@ -138,6 +163,7 @@ func (ds dockerService) RemoveContainer(ctx context.Context, cli *client.Client,
 	return entity.Result{}
 }
 
+//CreateNetwork attempts to create a network
 func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, net entity.Network) entity.Result {
 	networkCreate := types.NetworkCreate{
 		CheckDuplicate: true,
@@ -172,7 +198,21 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, n
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, network string, containerName string) entity.Result {
+//RemoveNetwork attempts to remove a network
+func (ds dockerService) RemoveNetwork(ctx context.Context, cli *client.Client, name string) entity.Result {
+	net, err := ds.GetNetworkByName(ctx, cli, name)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+	err = ds.repo.NetworkRemove(ctx, cli, net.ID)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+	return entity.NewSuccessResult()
+}
+
+func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, network string,
+	containerName string) entity.Result {
 	//TODO
 	return entity.Result{}
 }
