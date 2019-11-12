@@ -30,7 +30,20 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 )
 
-func TestDeliveryHandler_ProcessMessage(t *testing.T) {
+func TestNewDeliveryHandler(t *testing.T) {
+	duc := new(usecaseMocks.DockerUseCase)
+
+	expected := deliveryHandler{
+		usecase: duc,
+	}
+
+	dh, err := NewDeliveryHandler(duc)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expected, dh)
+}
+
+func TestDeliveryHandler_ProcessMessage_Successful(t *testing.T) {
 	duc := new(usecaseMocks.DockerUseCase)
 	duc.On("Run", mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
@@ -59,39 +72,62 @@ func TestDeliveryHandler_ProcessMessage(t *testing.T) {
 	assert.True(t, duc.AssertCalled(t, "Run", *cmd))
 }
 
-func TestDeliveryHandler_GetKickbackMessage(t *testing.T) {
+func TestDeliveryHandler_ProcessMessage_Unsuccessful(t *testing.T) {
 	duc := new(usecaseMocks.DockerUseCase)
-	duc.On("TimeSupplier").Return(int64(5))
 
 	dh, err := NewDeliveryHandler(duc)
 	if err != nil {
 		t.Error(err)
 	}
 
+	body:= []byte("should be a failure")
+
+	res := dh.ProcessMessage(amqp.Delivery{Body: body})
+	assert.Error(t, res.Error)
+}
+
+func TestDeliveryHandler_GetKickbackMessage_Successful(t *testing.T) {
+	duc := new(usecaseMocks.DockerUseCase)
+	duc.On("TimeSupplier").Return(int64(5))
+
+	dh, err := NewDeliveryHandler(duc)
+	assert.NoError(t, err)
+
 	cmd := new(command.Command)
 	cmd.ID = "unit_test"
 	cmd.Retry = uint8(1)
 
 	body, err := json.Marshal(cmd)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
+
 	msg := amqp.Delivery{
 		Body: body,
 	}
 
 	res, err := dh.GetKickbackMessage(msg)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
 
 	var resCmd command.Command
 	err = json.Unmarshal(res.Body, &resCmd)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
 
 	assert.Exactly(t, resCmd.Timestamp, int64(5))
 	assert.Exactly(t, resCmd.Retry, uint8(2))
 	assert.Exactly(t, resCmd.ID, "unit_test")
+}
+
+func TestDeliveryHandler_GetKickbackMessage_Unsuccessful(t *testing.T) {
+	duc := new(usecaseMocks.DockerUseCase)
+
+	dh, err := NewDeliveryHandler(duc)
+	assert.NoError(t, err)
+
+	body := []byte("supposed to fail")
+
+	msg := amqp.Delivery{
+		Body: body,
+	}
+
+	_, err = dh.GetKickbackMessage(msg)
+	assert.Error(t, err)
 }
