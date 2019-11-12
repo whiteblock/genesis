@@ -103,11 +103,11 @@ func TestAmqpService_CreateQueue(t *testing.T) {
 	conf := entity.AMQPConfig{
 		QueueName: "test queue",
 		Queue: entity.QueueConfig{
-			Durable: true,
+			Durable:    true,
 			AutoDelete: false,
-			Exclusive: false,
-			NoWait: false,
-			Args: map[string]interface{}{},
+			Exclusive:  false,
+			NoWait:     false,
+			Args:       map[string]interface{}{},
 		},
 	}
 

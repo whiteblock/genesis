@@ -18,6 +18,17 @@
 
 package service
 
+//import (
+//	//"testing"
+//	//
+//	//"github.com/whiteblock/genesis/pkg/command"
+//	//"github.com/whiteblock/genesis/pkg/repository"
+//	"testing"
+//
+//	"github.com/whiteblock/genesis/pkg/command"
+//	"github.com/whiteblock/genesis/pkg/repository"
+//)
+//
 //func TestCommandService_CheckDependenciesExecuted(t *testing.T) {
 //	repo := new(repository.CommandRepository)
 //	repo.On("HasCommandExecuted", "test1").Return(true, nil)
