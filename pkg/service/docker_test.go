@@ -123,3 +123,49 @@ func TestDockerService_StartContainer(t *testing.T) {
 	res := ds.StartContainer(nil, nil, containerName)
 	assert.NoError(t, res.Error)
 }
+
+func TestDockerService_CreateNetwork(t *testing.T) {
+	testNetwork := entity.Network{
+		Name:   "testnet",
+		Global: true,
+		Labels: map[string]string{
+			"FOO": "BAR",
+		},
+	}
+	repo := new(repository.DockerRepository)
+	repo.On("NetworkCreate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+		types.NetworkCreateResponse{}, nil).Run(func(args mock.Arguments) {
+
+		require.Len(t, args, 4)
+		assert.Nil(t, args.Get(0))
+		assert.Nil(t, args.Get(1))
+		assert.Equal(t, testNetwork.Name, args.String(2))
+
+		networkCreate, ok := args.Get(3).(types.NetworkCreate)
+		require.True(t, ok)
+		require.NotNil(t, networkCreate)
+		assert.True(t, networkCreate, CheckDuplicate)
+		assert.True(t, networkCreate.Attachable)
+		assert.False(t, networkCreate.Ingress)
+		assert.False(t, networkCreate.Internal)
+		assert.False(t, networkCreate.EnableIPv6)
+		assert.Equal(t, testNetwork.Labels, networkCreate.Labels)
+		assert.Nil(t, networkCreate.ConfigFrom)
+
+		if testNetwork.Global {
+			assert.Equal(t, "overlay", networkCreate.Driver)
+			assert.Equal(t, "swarm", networkCreate.Scope)
+		} else {
+			assert.Equal(t, "bridge", networkCreate.Driver)
+			assert.Equal(t, "local", networkCreate.Scope)
+			bridgeName, ok := networkCreate.Options["com.docker.network.bridge.name"]
+			assert.True(t, ok)
+			assert.Equal(t, testNetwork.Name, bridgeName)
+		}
+	})
+
+	ds, err := NewDockerService(repo)
+	assert.NoError(t, err)
+	res := ds.CreateNetwork(nil, nil, testNetwork)
+	assert.NoError(t, res.Error)
+}

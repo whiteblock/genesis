@@ -34,6 +34,9 @@ type DockerRepository interface {
 
 	//ContainerStart sends a request to the docker daemon to start a container.
 	ContainerStart(ctx context.Context, cli *client.Client, containerID string, options types.ContainerStartOptions) error
+
+	//NetworkCreate sends a request to the docker daemon to create a network
+	NetworkCreate(ctx context.Context, cli *client.Client, name string, options types.NetworkCreate) (types.NetworkCreateResponse, error)
 }
 
 type dockerRepository struct {
@@ -55,4 +58,10 @@ func (dr dockerRepository) ContainerCreate(ctx context.Context, cli *client.Clie
 func (dr dockerRepository) ContainerStart(ctx context.Context, cli *client.Client,
 	containerID string, options types.ContainerStartOptions) error {
 	return cli.ContainerStart(ctx, containerID, options)
+}
+
+//NetworkCreate sends a request to the docker daemon to create a network
+func (dr dockerRepository) NetworkCreate(ctx context.Context, cli *client.Client, name string,
+	options types.NetworkCreate) (types.NetworkCreateResponse, error) {
+	return cli.NetworkCreate(ctx, name, options)
 }

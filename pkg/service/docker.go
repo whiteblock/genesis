@@ -139,7 +139,36 @@ func (ds dockerService) RemoveContainer(ctx context.Context, cli *client.Client,
 }
 
 func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, net entity.Network) entity.Result {
-	//TODO
+	networkCreate := types.NetworkCreate{
+		CheckDuplicate: true,
+		Attachable:     true,
+		Ingress:        false,
+		Internal:       false,
+		Labels:         net.Labels,
+		IPAM: &network.IPAM{
+			Driver:  "default",
+			Options: nil,
+			Config: []network.IPAMConfig{
+				network.IPAMConfig{
+					Subnet:  network.Subnet.String(),
+					Gateway: network.Gateway.String(),
+				},
+			},
+		},
+		Options: map[string]string{},
+	}
+	if net.Global {
+		networkCreate.Driver = "overlay"
+		networkCreate.Scope = "swarm"
+	} else {
+		networkCreate.Driver = "bridge"
+		networkCreate.Scope = "local"
+		networkCreate.Options["com.docker.network.bridge.name"] = net.Name
+	}
+	_, err := ds.repo.NetworkCreate(ctx, cli, net.Name, networkCreate)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
 	return entity.Result{}
 }
 
