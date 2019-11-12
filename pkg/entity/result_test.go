@@ -28,27 +28,27 @@ import (
 
 func TestResult_IsSuccess(t *testing.T) {
 	var tests = []struct {
-		res Result
+		res      Result
 		expected bool
 	}{
 		{
 			res: Result{
 				Error: nil,
-				Type: SuccessType,
+				Type:  SuccessType,
 			},
 			expected: true,
 		},
 		{
 			res: Result{
 				Error: errors.New("Some error"),
-				Type: TooSoonType,
+				Type:  TooSoonType,
 			},
 			expected: false,
 		},
 		{
 			res: Result{
 				Error: nil,
-				Type: TooSoonType, //todo should this be a success?
+				Type:  TooSoonType, //todo should this be a success?
 			},
 			expected: true,
 		},
@@ -63,27 +63,27 @@ func TestResult_IsSuccess(t *testing.T) {
 
 func TestResult_IsFatal(t *testing.T) {
 	var tests = []struct {
-		res Result
+		res      Result
 		expected bool
 	}{
 		{
 			res: Result{
 				Error: nil,
-				Type: SuccessType,
+				Type:  SuccessType,
 			},
 			expected: false,
 		},
 		{
 			res: Result{
 				Error: errors.New("Some error"),
-				Type: TooSoonType,
+				Type:  TooSoonType,
 			},
 			expected: false,
 		},
 		{
 			res: Result{
 				Error: errors.New("Some error"),
-				Type: FatalType,
+				Type:  FatalType,
 			},
 			expected: true,
 		},
@@ -98,27 +98,27 @@ func TestResult_IsFatal(t *testing.T) {
 
 func TestResult_IsRequeue(t *testing.T) {
 	var tests = []struct {
-		res Result
+		res      Result
 		expected bool
 	}{
 		{
 			res: Result{
 				Error: nil,
-				Type: SuccessType,
+				Type:  SuccessType,
 			},
 			expected: false,
 		},
 		{
 			res: Result{
 				Error: errors.New("Some error"),
-				Type: TooSoonType,
+				Type:  TooSoonType,
 			},
 			expected: true,
 		},
 		{
 			res: Result{
 				Error: errors.New("Some error"),
-				Type: FatalType,
+				Type:  FatalType,
 			},
 			expected: false,
 		},
@@ -132,19 +132,19 @@ func TestResult_IsRequeue(t *testing.T) {
 }
 
 func TestNewSuccessResult(t *testing.T) {
-	expected := Result {
+	expected := Result{
 		Error: nil,
-		Type: SuccessType,
+		Type:  SuccessType,
 	}
 
-	expectedUnsuccessful := Result {
+	expectedUnsuccessful := Result{
 		Error: errors.New("test"),
-		Type: FatalType,
+		Type:  FatalType,
 	}
 
-	expectedUnsuccessful2 := Result {
+	expectedUnsuccessful2 := Result{
 		Error: errors.New("test"),
-		Type: SuccessType,
+		Type:  SuccessType,
 	}
 
 	assert.Equal(t, NewSuccessResult(), expected)
@@ -153,24 +153,24 @@ func TestNewSuccessResult(t *testing.T) {
 }
 
 func TestNewFatalResult(t *testing.T) {
-	expected := Result {
+	expected := Result{
 		Error: errors.New("fatal test"),
-		Type: FatalType,
+		Type:  FatalType,
 	}
 
-	expectedUnsuccessful := Result {
+	expectedUnsuccessful := Result{
 		Error: errors.New("test"),
-		Type: TooSoonType,
+		Type:  TooSoonType,
 	}
 
-	expectedUnsuccessful2 := Result {
+	expectedUnsuccessful2 := Result{
 		Error: errors.New("test"),
-		Type: SuccessType,
+		Type:  SuccessType,
 	}
 
-	expectedUnsuccessful3 := Result {
+	expectedUnsuccessful3 := Result{
 		Error: nil,
-		Type: SuccessType,
+		Type:  SuccessType,
 	}
 
 	assert.Equal(t, NewFatalResult(expected.Error), expected)
@@ -180,24 +180,24 @@ func TestNewFatalResult(t *testing.T) {
 }
 
 func TestNewErrorResult(t *testing.T) {
-	expected := Result {
+	expected := Result{
 		Error: errors.New("fatal test"),
-		Type: ErrorType,
+		Type:  ErrorType,
 	}
 
-	expectedUnsuccessful := Result {
+	expectedUnsuccessful := Result{
 		Error: errors.New("test"),
-		Type: ErrorType,
+		Type:  ErrorType,
 	}
 
-	expectedUnsuccessful2 := Result {
+	expectedUnsuccessful2 := Result{
 		Error: errors.New("test"),
-		Type: ErrorType,
+		Type:  ErrorType,
 	}
 
-	expectedUnsuccessful3 := Result {
+	expectedUnsuccessful3 := Result{
 		Error: nil,
-		Type: ErrorType,
+		Type:  ErrorType,
 	}
 
 	assert.Equal(t, NewErrorResult(expected.Error), expected) //todo shouldn't this not pass?
