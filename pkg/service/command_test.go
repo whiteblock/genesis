@@ -19,14 +19,15 @@
 package service
 
 import (
-	"github.com/stretchr/testify/assert"
-	repository "github.com/whiteblock/genesis/mocks/pkg/repository"
-	"github.com/whiteblock/genesis/pkg/command"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	repoMocks "github.com/whiteblock/genesis/mocks/pkg/repository"
+	"github.com/whiteblock/genesis/pkg/command"
 )
 
 func TestCommandService_CheckDependenciesExecuted(t *testing.T) {
-	repo := new(repository.CommandRepository)
+	repo := new(repoMocks.CommandRepository)
 	repo.On("HasCommandExecuted", "test1").Return(true, nil)
 	repo.On("HasCommandExecuted", "test2").Return(false, nil)
 
