@@ -21,6 +21,7 @@ package main
 import (
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
+	"github.com/whiteblock/genesis/config"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
@@ -107,8 +108,8 @@ func createContainer(dockerUseCase usecase.DockerUseCase) {
 		Image:   "alpine",
 		Args:    []string{"test", "test2"},
 	}
-	testContainer.Cpus = "2.5"
-	testContainer.Memory = "5gb"
+	testContainer.Cpus = "1"
+	testContainer.Memory = "1gb"
 	cmd := mintCommand(testContainer, "createContainer")
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("created a container")
@@ -128,6 +129,9 @@ func dockerTest() {
 	if err != nil {
 		panic(err)
 	}
+
+	conf := config.GetConfig()
+
 	dockerConfig := conf.GetDockerConfig()
 	dockerUseCase, err := usecase.NewDockerUseCase(dockerConfig, dockerService, commandService)
 	if err != nil {
