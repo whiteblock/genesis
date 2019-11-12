@@ -1,3 +1,5 @@
+//+build !test
+
 /*
 	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
@@ -24,6 +26,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
+	"io"
 )
 
 //DockerRepository represents direct interacts with the docker daemon
@@ -32,8 +35,17 @@ type DockerRepository interface {
 	ContainerCreate(ctx context.Context, cli *client.Client, config *container.Config, hostConfig *container.HostConfig,
 		networkingConfig *network.NetworkingConfig, containerName string) (container.ContainerCreateCreatedBody, error)
 
+	//ContainerList returns the list of containers in the docker host.
+	ContainerList(ctx context.Context, cli *client.Client, options types.ContainerListOptions) ([]types.Container, error)
+
 	//ContainerStart sends a request to the docker daemon to start a container.
 	ContainerStart(ctx context.Context, cli *client.Client, containerID string, options types.ContainerStartOptions) error
+
+	//ImageLoad is used to upload a docker image
+	ImageLoad(ctx context.Context, cli *client.Client, input io.Reader, quiet bool) (types.ImageLoadResponse, error)
+
+	//ImagePull is used to pull a docker image
+	ImagePull(ctx context.Context, cli *client.Client, refStr string, options types.ImagePullOptions) (io.ReadCloser, error)
 
 	//NetworkCreate sends a request to the docker daemon to create a network
 	NetworkCreate(ctx context.Context, cli *client.Client, name string, options types.NetworkCreate) (types.NetworkCreateResponse, error)
@@ -43,6 +55,9 @@ type DockerRepository interface {
 
 	//NetworkList lists the networks known to the docker daemon
 	NetworkList(ctx context.Context, cli *client.Client, options types.NetworkListOptions) ([]types.NetworkResource, error)
+
+	//NetworkConnect connects a container to a network
+	NetworkConnect(ctx context.Context, cli *client.Client, networkID, containerID string, config *network.EndpointSettings) error
 }
 
 type dockerRepository struct {
@@ -60,10 +75,31 @@ func (dr dockerRepository) ContainerCreate(ctx context.Context, cli *client.Clie
 	return cli.ContainerCreate(ctx, config, hostConfig, networkingConfig, containerName)
 }
 
+//ContainerList returns the list of containers in the docker host.
+func (dr dockerRepository) ContainerList(ctx context.Context, cli *client.Client,
+	options types.ContainerListOptions) ([]types.Container, error) {
+
+	return cli.ContainerList(ctx, options)
+}
+
 //ContainerStart sends a request to the docker daemon to start a container.
 func (dr dockerRepository) ContainerStart(ctx context.Context, cli *client.Client,
 	containerID string, options types.ContainerStartOptions) error {
 	return cli.ContainerStart(ctx, containerID, options)
+}
+
+//ImageLoad is used to upload a docker image
+func (dr dockerRepository) ImageLoad(ctx context.Context, cli *client.Client,
+	input io.Reader, quiet bool) (types.ImageLoadResponse, error) {
+
+	return cli.ImageLoad(ctx, input, quiet)
+}
+
+//ImagePull is used to pull a docker image
+func (dr dockerRepository) ImagePull(ctx context.Context, cli *client.Client,
+	refStr string, options types.ImagePullOptions) (io.ReadCloser, error) {
+
+	return cli.ImagePull(ctx, refStr, options)
 }
 
 //NetworkCreate sends a request to the docker daemon to create a network
@@ -81,4 +117,11 @@ func (dr dockerRepository) NetworkRemove(ctx context.Context, cli *client.Client
 func (dr dockerRepository) NetworkList(ctx context.Context, cli *client.Client,
 	options types.NetworkListOptions) ([]types.NetworkResource, error) {
 	return cli.NetworkList(ctx, options)
+}
+
+//NetworkConnect connects a container to a network
+func (dr dockerRepository) NetworkConnect(ctx context.Context, cli *client.Client, networkID,
+	containerID string, config *network.EndpointSettings) error {
+
+	return cli.NetworkConnect(ctx, networkID, containerID, config)
 }
