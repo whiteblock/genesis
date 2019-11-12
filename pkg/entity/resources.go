@@ -67,7 +67,7 @@ func (res Resources) GetMemory() (int64, error) {
 
 // NoLimits checks if the resources object doesn't specify any limits
 func (res Resources) NoLimits() bool {
-	return len(res.Memory) == 0 && len(res.Cpus) == 0
+	return res.NoCPULimits() && res.NoMemoryLimits()
 }
 
 // NoCPULimits checks if the resources object doesn't specify any cpu limits

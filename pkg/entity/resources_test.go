@@ -21,6 +21,8 @@ package entity
 import (
 	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestResources_GetMemory_Successful(t *testing.T) {
@@ -40,15 +42,22 @@ func TestResources_GetMemory_Successful(t *testing.T) {
 			Cpus:   "",
 			Memory: "92233720368547",
 		}, expected: int64(92233720368547)},
+		{res: Resources{
+			Cpus:   "",
+			Memory: "3gb",
+		}, expected: int64(3000000000)},
+		{res: Resources{
+			Cpus:   "",
+			Memory: "6KB",
+		}, expected: int64(6000)},
 	}
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			num, _ := tt.res.GetMemory()
+			num, err := tt.res.GetMemory()
+			assert.NoError(t, err)
 
-			if num != tt.expected {
-				t.Error("return value of GetMemory does not match expected value")
-			}
+			assert.Equal(t, num, tt.expected)
 		})
 	}
 }
@@ -75,9 +84,113 @@ func TestResources_GetMemory_Unsuccessful(t *testing.T) {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			_, err := tt.res.GetMemory()
 
-			if err == nil {
-				t.Error("return error of GetMemory does not match expected error")
-			}
+			assert.NotEqual(t, err, nil)
+		})
+	}
+}
+
+func TestResources_NoLimits(t *testing.T) {
+	var tests = []struct {
+		res Resources
+		expected bool
+	}{
+		{
+			res: Resources{
+				Memory: "",
+				Cpus: "",
+			},
+			expected: true,
+		},
+		{
+			res: Resources{
+				Memory: "5gb",
+				Cpus: "",
+			},
+			expected: false,
+		},
+		{
+			res: Resources{
+				Memory: "",
+				Cpus: "5",
+			},
+			expected: false,
+		},
+		{
+			res: Resources{
+				Memory: "4gb",
+				Cpus: "6",
+			},
+			expected: false,
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			assert.Equal(t, tt.res.NoLimits(), tt.expected)
+		})
+	}
+}
+
+func TestResources_NoCPULimits(t *testing.T) {
+	var tests = []struct {
+		res Resources
+		expected bool
+	}{
+		{
+			res: Resources{
+				Cpus: "",
+			},
+			expected: true,
+		},
+		{
+			res: Resources{
+				Cpus: "5",
+			},
+			expected: false,
+		},
+		{
+			res: Resources{
+				Cpus: " ",
+			},
+			expected: false,
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			assert.Equal(t, tt.res.NoCPULimits(), tt.expected)
+		})
+	}
+}
+
+func TestResources_NoMemoryLimits(t *testing.T) {
+	var tests = []struct {
+		res Resources
+		expected bool
+	}{
+		{
+			res: Resources{
+				Memory: "",
+			},
+			expected: true,
+		},
+		{
+			res: Resources{
+				Memory: " ",
+			},
+			expected: false,
+		},
+		{
+			res: Resources{
+				Memory: "5GB",
+			},
+			expected: false,
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			assert.Equal(t, tt.res.NoMemoryLimits(), tt.expected)
 		})
 	}
 }
