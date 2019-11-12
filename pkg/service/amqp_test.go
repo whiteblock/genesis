@@ -24,7 +24,7 @@ import (
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	repository "github.com/whiteblock/genesis/mocks/pkg/repository"
+	repoMocks "github.com/whiteblock/genesis/mocks/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/entity"
 )
 
@@ -40,7 +40,7 @@ func TestAMQPService_Consume(t *testing.T) {
 			Args:      nil,
 		},
 	}
-	repo := new(repository.AMQPRepository)
+	repo := new(repoMocks.AMQPRepository)
 	repo.On("Consume", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Run(
 		func(args mock.Arguments) {
@@ -50,7 +50,12 @@ func TestAMQPService_Consume(t *testing.T) {
 
 	serv, err := NewAMQPService(conf, repo)
 	assert.NoError(t, err)
-	serv.Consume()
+
+	_, err = serv.Consume()
+	if err != nil {
+		t.Error(err)
+	}
+
 	repo.AssertNumberOfCalls(t, "Consume", 1)
 }
 
@@ -62,7 +67,7 @@ func TestAMQPService_Requeue(t *testing.T) {
 			Immediate: true,
 		},
 	}
-	repo := new(repository.AMQPRepository)
+	repo := new(repoMocks.AMQPRepository)
 	repo.On("Requeue", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
 		func(args mock.Arguments) {
 			assert.True(t, args[0:2].Is(conf.Publish.Mandatory, conf.Publish.Immediate))
@@ -70,7 +75,40 @@ func TestAMQPService_Requeue(t *testing.T) {
 
 	serv, err := NewAMQPService(conf, repo)
 	assert.NoError(t, err)
-	serv.Requeue(amqp.Delivery{}, amqp.Publishing{})
-	repo.AssertNumberOfCalls(t, "Requeue", 1)
 
+	err = serv.Requeue(amqp.Delivery{}, amqp.Publishing{})
+	if err != nil {
+		t.Error(err)
+	}
+
+	repo.AssertNumberOfCalls(t, "Requeue", 1)
+}
+
+func TestAmqpService_CreateQueue(t *testing.T) {
+	conf := entity.AMQPConfig{
+		QueueName: "test queue",
+		Queue: entity.QueueConfig{
+			Durable: true,
+			AutoDelete: false,
+			Exclusive: false,
+			NoWait: false,
+			Args: map[string]interface{}{},
+		},
+	}
+
+	repo := new(repoMocks.AMQPRepository)
+	repo.On("CreateQueue", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+			assert.True(t, args[0:5].Is(conf.QueueName, conf.Queue.Durable, conf.Queue.AutoDelete, conf.Queue.Exclusive, conf.Queue.NoWait, conf.Queue.Args))
+		})
+
+	serv, err := NewAMQPService(conf, repo)
+	assert.NoError(t, err)
+
+	err = serv.CreateQueue()
+	if err != nil {
+		t.Error(err)
+	}
+
+	repo.AssertNumberOfCalls(t, "CreateQueue", 1)
 }
