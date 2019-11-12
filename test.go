@@ -52,6 +52,22 @@ func mintCommand(i interface{}, orderType string) command.Command {
 	return cmd
 }
 
+func createNetwork(dockerUseCase usecase.DockerUseCase) {
+	testNetwork := entity.Network{
+		Name:   "testnet",
+		Global: true,
+		Labels: map[string]string{
+			"FOO": "BAR",
+		},
+		Gateway: "10.14.0.1",
+		Subnet:  "10.14.0.0/16",
+	}
+	cmd := mintCommand(testNetwork, "createNetwork")
+	res := dockerUseCase.Run(cmd)
+	log.WithFields(log.Fields{"res": res}).Info("created a network")
+
+}
+
 func createContainer(dockerUseCase usecase.DockerUseCase) {
 	testContainer := entity.Container{
 		BoundCPUs:  nil, //TODO
@@ -96,6 +112,7 @@ func dockerTest() {
 	if err != nil {
 		panic(err)
 	}
+	createNetwork(dockerUseCase)
 	createContainer(dockerUseCase)
 	startContainer(dockerUseCase)
 }

@@ -18,16 +18,12 @@
 
 package entity
 
-import (
-	"net"
-)
-
 //Network represents a logic network on which containers exist
 type Network struct {
 	//Name is the name of the network
 	Name    string            `json:"name"`
-	Subnet  net.IPNet         `json:"subnet"`
-	Gateway net.IP            `json:"gateway"`
+	Subnet  string            `json:"subnet"`
+	Gateway string            `json:"gateway"`
 	Global  bool              `json:"global"`
 	Labels  map[string]string `json:"labels"`
 }

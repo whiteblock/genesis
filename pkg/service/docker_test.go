@@ -131,6 +131,8 @@ func TestDockerService_CreateNetwork(t *testing.T) {
 		Labels: map[string]string{
 			"FOO": "BAR",
 		},
+		Gateway: "10.14.0.1",
+		Subnet:  "10.14.0.0/16",
 	}
 	repo := new(repository.DockerRepository)
 	repo.On("NetworkCreate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
@@ -151,6 +153,14 @@ func TestDockerService_CreateNetwork(t *testing.T) {
 		assert.False(t, networkCreate.EnableIPv6)
 		assert.Equal(t, testNetwork.Labels, networkCreate.Labels)
 		assert.Nil(t, networkCreate.ConfigFrom)
+
+		require.NotNil(t, networkCreate.IPAM)
+		assert.Equal(t, "default", networkCreate.IPAM.Driver)
+		assert.Nil(t, networkCreate.IPAM.Options)
+		require.NotNil(t, networkCreate.IPAM.Config)
+		require.Len(t, networkCreate.IPAM.Config, 1)
+		assert.Equal(t, testNetwork.Subnet, networkCreate.IPAM.Config[0].Subnet)
+		assert.Equal(t, testNetwork.Gateway, networkCreate.IPAM.Config[0].Gateway)
 
 		if testNetwork.Global {
 			assert.Equal(t, "overlay", networkCreate.Driver)
