@@ -28,6 +28,23 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 )
 
+func TestNewAMQPService(t *testing.T) {
+	conf := entity.AMQPConfig{
+		QueueName: "test queue",
+	}
+	repo := new(repoMocks.AMQPRepository)
+
+	serv, err := NewAMQPService(conf, repo)
+	assert.NoError(t, err)
+
+	expectedServ := &amqpService{
+		repo: repo,
+		conf: conf,
+	}
+
+	assert.Equal(t, serv, expectedServ)
+}
+
 func TestAMQPService_Consume(t *testing.T) {
 	conf := entity.AMQPConfig{
 		QueueName: "test queue",
@@ -40,6 +57,7 @@ func TestAMQPService_Consume(t *testing.T) {
 			Args:      nil,
 		},
 	}
+
 	repo := new(repoMocks.AMQPRepository)
 	repo.On("Consume", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Run(
@@ -52,9 +70,7 @@ func TestAMQPService_Consume(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, err = serv.Consume()
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
 
 	repo.AssertNumberOfCalls(t, "Consume", 1)
 }
@@ -67,6 +83,7 @@ func TestAMQPService_Requeue(t *testing.T) {
 			Immediate: true,
 		},
 	}
+
 	repo := new(repoMocks.AMQPRepository)
 	repo.On("Requeue", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
 		func(args mock.Arguments) {
@@ -77,9 +94,7 @@ func TestAMQPService_Requeue(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = serv.Requeue(amqp.Delivery{}, amqp.Publishing{})
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
 
 	repo.AssertNumberOfCalls(t, "Requeue", 1)
 }
@@ -106,9 +121,7 @@ func TestAmqpService_CreateQueue(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = serv.CreateQueue()
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
 
 	repo.AssertNumberOfCalls(t, "CreateQueue", 1)
 }
