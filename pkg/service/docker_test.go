@@ -34,6 +34,7 @@ import (
 )
 
 func TestDockerService_CreateContainer(t *testing.T) {
+	testNetwork := types.NetworkResource{Name: "Testnet", ID: "id1"}
 	testContainer := entity.Container{
 		BoundCPUs:  nil, //TODO
 		Detach:     false,
@@ -93,7 +94,20 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		networkingConfig, ok := args.Get(4).(*network.NetworkingConfig)
 		require.True(t, ok)
 		require.NotNil(t, networkingConfig)
-
+		require.NotNil(t, networkingConfig.EndpointsConfig)
+		netconf, ok := networkingConfig.EndpointsConfig[testContainer.Network[0]]
+		require.True(t, ok)
+		require.NotNil(t, netconf)
+		assert.Equal(t, netconf.NetworkID, testNetwork.ID)
+		assert.Nil(t, netconf.Links)
+		assert.Nil(t, netconf.Aliases)
+		assert.Nil(t, netconf.IPAMConfig)
+		assert.Empty(t, netconf.IPv6Gateway)
+		assert.Empty(t, netconf.GlobalIPv6Address)
+		assert.Empty(t, netconf.EndpointID)
+		assert.Empty(t, netconf.Gateway)
+		assert.Empty(t, netconf.IPAddress)
+		assert.Nil(t, netconf.DriverOpts)
 		containerName, ok := args.Get(5).(string)
 		require.True(t, ok)
 		assert.Equal(t, testContainer.Name, containerName)
@@ -110,7 +124,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		assert.Equal(t, testContainer.Image, args.String(2))
 	})
 	aux.On("GetNetworkByName", mock.Anything, mock.Anything, mock.Anything).Return(
-		types.NetworkResource{Name: "Testnet", ID: "id1"}, nil).Run(func(args mock.Arguments) {
+		testNetwork, nil).Run(func(args mock.Arguments) {
 
 		require.Len(t, args, 3)
 		assert.Nil(t, args.Get(0))
