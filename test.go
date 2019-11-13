@@ -25,6 +25,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
+	"github.com/whiteblock/genesis/pkg/service/auxillary"
 	"github.com/whiteblock/genesis/pkg/usecase"
 	"time"
 )
@@ -111,7 +112,9 @@ func startContainer(dockerUseCase usecase.DockerUseCase) {
 
 func dockerTest() {
 	commandService := service.NewCommandService(repository.NewLocalCommandRepository())
-	dockerService, err := service.NewDockerService(repository.NewDockerRepository())
+	dockerRepository := repository.NewDockerRepository()
+	dockerAux := auxillary.NewDockerAuxillary(dockerRepository)
+	dockerService, err := service.NewDockerService(dockerRepository, dockerAux)
 	if err != nil {
 		panic(err)
 	}

@@ -20,7 +20,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -29,7 +28,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
-	"io/ioutil"
+	"github.com/whiteblock/genesis/pkg/service/auxillary"
 	"strconv"
 )
 
@@ -55,27 +54,18 @@ type DockerService interface {
 	PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file entity.File) entity.Result
 	Emulation(ctx context.Context, cli *client.Client, netem entity.Netconf) entity.Result
 
-	/**Non command functions**/
 	//CreateClient creates a new client for connecting to the docker daemon
 	CreateClient(conf entity.DockerConfig, host string) (*client.Client, error)
-
-	//EnsureImagePulled checks if the docker host contains an image and pulls it if it does not
-	EnsureImagePulled(ctx context.Context, cli *client.Client, imageName string) error
-
-	//GetNetworkByName attempts to find a network with the given name and return information on it.
-	GetNetworkByName(ctx context.Context, cli *client.Client, networkName string) (types.NetworkResource, error)
-
-	//HostHasImage returns true if the docker host has an image matching what was given
-	HostHasImage(ctx context.Context, cli *client.Client, image string) (bool, error)
 }
 
 type dockerService struct {
 	repo repository.DockerRepository
+	aux  auxillary.DockerAuxillary
 }
 
 //NewDockerService creates a new DockerService
-func NewDockerService(repo repository.DockerRepository) (DockerService, error) {
-	return dockerService{repo: repo}, nil
+func NewDockerService(repo repository.DockerRepository, aux auxillary.DockerAuxillary) (DockerService, error) {
+	return dockerService{repo: repo, aux: aux}, nil
 }
 
 //CreateClient creates a new client for connecting to the docker daemon
@@ -92,68 +82,14 @@ func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*cl
 	)
 }
 
-//HostHasImage returns true if the docker host has an image matching what was given
-func (ds dockerService) HostHasImage(ctx context.Context, cli *client.Client, image string) (bool, error) {
-	imgs, err := ds.repo.ImageList(ctx, cli, types.ImageListOptions{All: false})
-	if err != nil {
-		return false, err
-	}
-	for _, img := range imgs {
-		for _, tag := range img.RepoTags {
-			if tag == image {
-				return true, nil
-			}
-		}
-		for _, digest := range img.RepoDigests {
-			if digest == image {
-				return true, nil
-			}
-		}
-	}
-	return false, nil
-}
-
-//EnsureImagePulled checks if the docker host contains an image and pulls it if it does not
-func (ds dockerService) EnsureImagePulled(ctx context.Context, cli *client.Client, imageName string) error {
-	exists, err := ds.HostHasImage(ctx, cli, imageName)
-	if exists || err != nil {
-		return err
-	}
-
-	rd, err := ds.repo.ImagePull(ctx, cli, imageName, types.ImagePullOptions{
-		Platform: "Linux", //TODO: pull out to a config
-	})
-	if err != nil {
-		return err
-	}
-
-	response, err := ds.repo.ImageLoad(ctx, cli, rd, true)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-
-	_, err = ioutil.ReadAll(response.Body) //It might get stuck here...
-	return err
-}
-
-//GetNetworkByName attempts to find a network with the given name and return information on it.
-func (ds dockerService) GetNetworkByName(ctx context.Context, cli *client.Client,
-	networkName string) (types.NetworkResource, error) {
-	nets, err := ds.repo.NetworkList(ctx, cli, types.NetworkListOptions{})
-	if err != nil {
-		return types.NetworkResource{}, err
-	}
-	for _, net := range nets {
-		if net.Name == networkName {
-			return net, nil
-		}
-	}
-	return types.NetworkResource{}, fmt.Errorf("could not find the network \"%s\"", networkName)
-}
-
 //CreateContainer attempts to create a docker container
 func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, dContainer entity.Container) entity.Result {
+	errChan := make(chan error)
+
+	go func(image string) {
+		errChan <- ds.aux.EnsureImagePulled(ctx, cli, image)
+	}(dContainer.Image)
+
 	portSet, portMap, err := dContainer.GetPortBindings()
 	if err != nil {
 		return entity.NewFatalResult(err)
@@ -188,6 +124,13 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 
 	networkConfig := &network.NetworkingConfig{
 		EndpointsConfig: nil, //TODO
+	}
+
+	for i := 0; i < 1; i++ {
+		err = <-errChan
+		if err != nil {
+			return entity.NewErrorResult(err)
+		}
 	}
 
 	_, err = ds.repo.ContainerCreate(ctx, cli, config, hostConfig, networkConfig, dContainer.Name)
@@ -252,7 +195,7 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, n
 
 //RemoveNetwork attempts to remove a network
 func (ds dockerService) RemoveNetwork(ctx context.Context, cli *client.Client, name string) entity.Result {
-	net, err := ds.GetNetworkByName(ctx, cli, name)
+	net, err := ds.aux.GetNetworkByName(ctx, cli, name)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
