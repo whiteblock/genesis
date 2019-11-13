@@ -202,7 +202,27 @@ func TestDockerRepository_NetworkCreate(t *testing.T) {
 }
 
 func TestDockerRepository_NetworkDisconnect(t *testing.T) {
-	//todo
+	cli := new(entityMock.Client)
+
+	networkID := "test"
+	containerID := "test"
+	force := true
+
+	cli.On("NetworkDisconnect", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 4)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, networkID, args.Get(1))
+			assert.Equal(t, containerID, args.Get(2))
+			assert.Equal(t, force, args.Get(3))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	err := repo.NetworkDisconnect(nil, cli, networkID, containerID, force)
+	assert.NoError(t, err)
+
+	assert.True(t, cli.AssertNumberOfCalls(t, "NetworkDisconnect", 1))
 }
 
 func TestDockerRepository_NetworkRemove(t *testing.T) {
