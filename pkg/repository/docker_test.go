@@ -19,8 +19,10 @@
 package repository
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/stretchr/testify/assert"
@@ -28,6 +30,54 @@ import (
 	"github.com/stretchr/testify/require"
 	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
 )
+
+func TestDockerRepository_ContainerCreate(t *testing.T) {
+	//todo
+}
+
+func TestDockerRepository_ContainerList(t *testing.T) {
+	//todo
+}
+
+func TestDockerRepository_ContainerRemove(t *testing.T) {
+	//todo
+}
+
+func TestDockerRepository_ContainerStart(t *testing.T) {
+	//todo
+}
+
+func TestDockerRepository_ImageLoad(t *testing.T) {
+	//todo
+}
+
+func TestDockerRepository_ImagePull(t *testing.T) {
+	//todo
+}
+
+func TestDockerRepository_ImageList(t *testing.T) {
+	//todo
+}
+
+func TestDockerRepository_NetworkConnect(t *testing.T) {
+	//todo
+}
+
+func TestDockerRepository_NetworkCreate(t *testing.T) {
+	//todo
+}
+
+func TestDockerRepository_NetworkDisconnect(t *testing.T) {
+	//todo
+}
+
+func TestDockerRepository_NetworkRemove(t *testing.T) {
+	//todo
+}
+
+func TestDockerRepository_NetworkList(t *testing.T) {
+	//todo
+}
 
 func TestDockerRepository_VolumeList(t *testing.T) {
 	cli := new(entityMock.Client)
@@ -65,4 +115,33 @@ func TestDockerRepository_VolumeRemove(t *testing.T) {
 	err := repo.VolumeRemove(nil, cli, volumeID, isForced)
 	assert.NoError(t, err)
 	cli.AssertExpectations(t)
+}
+
+func TestDockerRepository_VolumeCreate(t *testing.T) { //todo why isn't this one working?
+	cli := new(entityMock.Client)
+	options := volume.VolumeCreateBody{
+		Name:   "test_volume",
+		Labels: map[string]string{"foo": "bar"},
+	}
+
+	expectedVol := types.Volume{
+		Name: options.Name,
+		Labels: options.Labels,
+	}
+
+	cli.On("VolumeCreate", mock.Anything, mock.Anything).Return(expectedVol, nil).Run(func(args mock.Arguments) {
+		require.Len(t, args, 2)
+		assert.Nil(t, args.Get(0))
+		assert.ElementsMatch(t, options, args.Get(1))
+	}).Once()
+
+	repo := NewDockerRepository()
+
+	vol, err := repo.VolumeCreate(nil, cli, options)
+	assert.NoError(t, err)
+
+	fmt.Println(vol)
+	fmt.Println(expectedVol)
+
+	assert.ElementsMatch(t, expectedVol, vol)
 }
