@@ -50,7 +50,6 @@ func TestDockerRepository_ContainerCreate(t *testing.T) {
 
 	repo := NewDockerRepository()
 
-
 	container, err := repo.ContainerCreate(nil, cli, new(container.Config), new(container.HostConfig),
 		new(network.NetworkingConfig), "test")
 	assert.NoError(t, err)
@@ -130,6 +129,7 @@ func TestDockerRepository_ContainerStart(t *testing.T) {
 }
 
 func TestDockerRepository_ImageLoad(t *testing.T) {
+	//todo
 	//cli := new(entityMock.Client)
 	//
 	//
@@ -137,8 +137,8 @@ func TestDockerRepository_ImageLoad(t *testing.T) {
 	//	func(args mock.Arguments) {
 	//		require.Len(t, args, 3)
 	//		assert.Nil(t, args.Get(0))
-			//assert.Equal(t, containerID, args.Get(1))
-			//assert.Equal(t, opts, args.Get(2))
+	//assert.Equal(t, containerID, args.Get(1))
+	//assert.Equal(t, opts, args.Get(2))
 	//	}).Once()
 	//
 	//
@@ -313,7 +313,7 @@ func TestDockerRepository_VolumeCreate(t *testing.T) { //todo why isn't this one
 	}
 
 	expectedVol := types.Volume{
-		Name: options.Name,
+		Name:   options.Name,
 		Labels: options.Labels,
 	}
 
