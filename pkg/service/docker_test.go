@@ -246,10 +246,17 @@ func TestDockerService_RemoveNetwork(t *testing.T) {
 
 //todo fix this func
 func TestDockerService_CreateVolume(t *testing.T) {
+	volume := types.Volume{
+		Name: "test_volume",
+		Labels: map[string]string{"foo":"bar"},
+	}
+
 	repo := new(repository.DockerRepository)
-	repo.On("CreateVolume", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Error: nil}).Run(
+	repo.On("VolumeCreate", mock.Anything, mock.Anything, mock.Anything).Return(volume, nil).Run(
 		func(args mock.Arguments) {
 			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
 		}).Once()
 
 	ds, err := NewDockerService(repo)

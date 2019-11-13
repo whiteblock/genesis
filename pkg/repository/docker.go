@@ -20,9 +20,11 @@ package repository
 
 import (
 	"context"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 )
 
@@ -43,6 +45,8 @@ type DockerRepository interface {
 
 	//NetworkList lists the networks known to the docker daemon
 	NetworkList(ctx context.Context, cli *client.Client, options types.NetworkListOptions) ([]types.NetworkResource, error)
+
+	VolumeCreate(ctx context.Context, cli *client.Client, options volume.VolumeCreateBody) (types.Volume, error)
 }
 
 type dockerRepository struct {
@@ -81,4 +85,9 @@ func (dr dockerRepository) NetworkRemove(ctx context.Context, cli *client.Client
 func (dr dockerRepository) NetworkList(ctx context.Context, cli *client.Client,
 	options types.NetworkListOptions) ([]types.NetworkResource, error) {
 	return cli.NetworkList(ctx, options)
+}
+
+func (dr dockerRepository) VolumeCreate(ctx context.Context, cli *client.Client,
+	options volume.VolumeCreateBody) (types.Volume, error) {
+	return cli.VolumeCreate(ctx, options)
 }
