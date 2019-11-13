@@ -265,7 +265,9 @@ func TestDockerService_CreateVolume(t *testing.T) { //todo fix this test, it's p
 			assert.Nil(t, args.Get(1))
 		}).Once()
 
-	ds, err := NewDockerService(repo)
+	aux := *new(auxillary.DockerAuxillary)
+
+	ds, err := NewDockerService(repo, aux)
 	assert.NoError(t, err)
 
 	res := ds.CreateVolume(nil, nil, entity.Volume{
