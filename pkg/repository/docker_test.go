@@ -246,7 +246,25 @@ func TestDockerRepository_NetworkRemove(t *testing.T) {
 }
 
 func TestDockerRepository_NetworkList(t *testing.T) {
-	//todo
+	cli := new(entityMock.Client)
+
+	options := types.NetworkListOptions{}
+	expectedList := []types.NetworkResource{}
+
+	cli.On("NetworkList", mock.Anything, mock.Anything, mock.Anything).Return(expectedList, nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 2)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, options, args.Get(1))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	list, err := repo.NetworkList(nil, cli, options)
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(expectedList), len(list))
+	assert.True(t, cli.AssertNumberOfCalls(t, "NetworkList", 1))
 }
 
 func TestDockerRepository_VolumeList(t *testing.T) {
