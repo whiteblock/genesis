@@ -19,14 +19,15 @@
 package auxillary
 
 import (
-	//log "github.com/sirupsen/logrus"
 	"context"
 	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	//log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"io/ioutil"
+	"strings"
 )
 
 //DockerAuxillary provides extra functions for docker service, which could be placed inside of docker
@@ -127,7 +128,7 @@ func (da dockerAuxillary) GetContainerByName(ctx context.Context, cli *client.Cl
 	}
 	for _, cntr := range cntrs {
 		for _, name := range cntr.Names {
-			if name == containerName {
+			if strings.Trim(name, "/") == strings.Trim(containerName, "/") {
 				return cntr, nil
 			}
 		}

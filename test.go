@@ -68,6 +68,22 @@ func createVolume(dockerUseCase usecase.DockerUseCase) {
 	log.WithFields(log.Fields{"res": res}).Info("created a volume")
 }
 
+func removeVolume(dockerUseCase usecase.DockerUseCase) {
+	cmd := mintCommand(map[string]string{
+		"name": "test_volume",
+	}, "removeVolume")
+	res := dockerUseCase.Run(cmd)
+	log.WithFields(log.Fields{"res": res}).Info("removed a volume")
+}
+
+func removeContainer(dockerUseCase usecase.DockerUseCase) {
+	cmd := mintCommand(map[string]string{
+		"name": "tester",
+	}, "removeContainer")
+	res := dockerUseCase.Run(cmd)
+	log.WithFields(log.Fields{"res": res}).Info("removed a container")
+}
+
 func createNetwork(dockerUseCase usecase.DockerUseCase) {
 	testNetwork := entity.Network{
 		Name:   "testnet",
@@ -81,14 +97,12 @@ func createNetwork(dockerUseCase usecase.DockerUseCase) {
 	cmd := mintCommand(testNetwork, "createNetwork")
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("created a network")
-
 }
 
 func removeNetwork(dockerUseCase usecase.DockerUseCase) {
 	cmd := mintCommand(map[string]string{"name": "testnet"}, "removeNetwork")
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("removed a network")
-
 }
 
 func createContainer(dockerUseCase usecase.DockerUseCase) {
@@ -136,10 +150,15 @@ func dockerTest() {
 	if err != nil {
 		panic(err)
 	}
+	removeContainer(dockerUseCase)
+	createVolume(dockerUseCase)
+	removeVolume(dockerUseCase)
+	createVolume(dockerUseCase)
+
 	createNetwork(dockerUseCase)
 	removeNetwork(dockerUseCase)
 	createNetwork(dockerUseCase)
 	createContainer(dockerUseCase)
 	startContainer(dockerUseCase)
-	createVolume(dockerUseCase)
+
 }
