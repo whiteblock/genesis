@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -184,4 +185,35 @@ func TestDockerAuxillary_GetContainerByName(t *testing.T) {
 	assert.Error(t, err)
 
 	repo.AssertNumberOfCalls(t, "ContainerList", (2*len(results))+1)
+}
+
+func TestDockerAuxillary_GetVolumeByName(t *testing.T) {
+	results := volume.VolumeListOKBody{
+		Volumes: []*types.Volume{
+			&types.Volume{Name: "test1"},
+			&types.Volume{Name: "test2"},
+		},
+	}
+	repo := new(repository.DockerRepository)
+	repo.On("VolumeList", mock.Anything, mock.Anything, mock.Anything).Return(results, nil).Run(
+		func(args mock.Arguments) {
+
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+		}).Times(len(results.Volumes) + 1)
+	ds := NewDockerAuxillary(repo)
+
+	for _, vol := range results.Volumes {
+		result, err := ds.GetVolumeByName(nil, nil, vol.Name)
+		assert.NoError(t, err)
+		assert.Equal(t, result, vol)
+
+	}
+
+	res, err := ds.GetVolumeByName(nil, nil, "DNE")
+	assert.Error(t, err)
+	assert.Nil(t, res)
+
+	repo.AssertExpectations(t)
 }

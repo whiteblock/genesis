@@ -282,11 +282,7 @@ func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, vo
 }
 
 func (ds dockerService) RemoveVolume(ctx context.Context, cli *client.Client, name string) entity.Result {
-	vol, err := ds.aux.GetVolumeByName(ctx, cli, name)
-	if err != nil {
-		return entity.NewErrorResult(err)
-	}
-	err = ds.repo.VolumeRemove(ctx, cli, vol.ID, true)
+	err := ds.repo.VolumeRemove(ctx, cli, name, true)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}

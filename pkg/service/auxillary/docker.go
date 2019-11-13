@@ -23,6 +23,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"io/ioutil"
@@ -136,7 +137,7 @@ func (da dockerAuxillary) GetContainerByName(ctx context.Context, cli *client.Cl
 
 //GetVolumeByName attempts to find a volume with the given name and return information on it.
 func (da dockerAuxillary) GetVolumeByName(ctx context.Context, cli *client.Client, volumeName string) (*types.Volume, error) {
-	bdy, err := da.repo.NetworkList(ctx, cli, types.NetworkListOptions{})
+	bdy, err := da.repo.VolumeList(ctx, cli, filters.Args{})
 	if err != nil {
 		return nil, err
 	}
