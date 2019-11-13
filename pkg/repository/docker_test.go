@@ -108,7 +108,25 @@ func TestDockerRepository_ContainerRemove(t *testing.T) {
 }
 
 func TestDockerRepository_ContainerStart(t *testing.T) {
-	//todo
+	cli := new(entityMock.Client)
+
+	containerID := "test"
+	opts := types.ContainerStartOptions{}
+
+	cli.On("ContainerStart", mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, containerID, args.Get(1))
+			assert.Equal(t, opts, args.Get(2))
+		}).Once()
+
+	repo := NewDockerRepository()
+	
+	err := repo.ContainerStart(nil, cli, containerID, opts)
+	assert.NoError(t, err)
+
+	assert.True(t, cli.AssertNumberOfCalls(t, "ContainerStart", 1))
 }
 
 func TestDockerRepository_ImageLoad(t *testing.T) {
