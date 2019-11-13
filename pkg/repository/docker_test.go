@@ -226,7 +226,23 @@ func TestDockerRepository_NetworkDisconnect(t *testing.T) {
 }
 
 func TestDockerRepository_NetworkRemove(t *testing.T) {
-	//todo
+	cli := new(entityMock.Client)
+
+	networkID := "test"
+
+	cli.On("NetworkRemove", mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 2)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, networkID, args.Get(1))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	err := repo.NetworkRemove(nil, cli, networkID)
+	assert.NoError(t, err)
+
+	assert.True(t, cli.AssertNumberOfCalls(t, "NetworkRemove", 1))
 }
 
 func TestDockerRepository_NetworkList(t *testing.T) {
