@@ -122,7 +122,7 @@ func TestDockerRepository_ContainerStart(t *testing.T) {
 		}).Once()
 
 	repo := NewDockerRepository()
-	
+
 	err := repo.ContainerStart(nil, cli, containerID, opts)
 	assert.NoError(t, err)
 
@@ -130,7 +130,18 @@ func TestDockerRepository_ContainerStart(t *testing.T) {
 }
 
 func TestDockerRepository_ImageLoad(t *testing.T) {
-	//todo
+	//cli := new(entityMock.Client)
+	//
+	//
+	//cli.On("ImageLoad", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Run(
+	//	func(args mock.Arguments) {
+	//		require.Len(t, args, 3)
+	//		assert.Nil(t, args.Get(0))
+			//assert.Equal(t, containerID, args.Get(1))
+			//assert.Equal(t, opts, args.Get(2))
+	//	}).Once()
+	//
+	//
 }
 
 func TestDockerRepository_ImagePull(t *testing.T) {
@@ -142,7 +153,27 @@ func TestDockerRepository_ImageList(t *testing.T) {
 }
 
 func TestDockerRepository_NetworkConnect(t *testing.T) {
-	//todo
+	cli := new(entityMock.Client)
+
+	networkID := "test"
+	containerID := "test"
+	config := new(network.EndpointSettings)
+
+	cli.On("NetworkConnect", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 4)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, networkID, args.Get(1))
+			assert.Equal(t, containerID, args.Get(2))
+			assert.Equal(t, config, args.Get(3))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	err := repo.NetworkConnect(nil, cli, networkID, containerID, config)
+	assert.NoError(t, err)
+
+	assert.True(t, cli.AssertNumberOfCalls(t, "NetworkConnect", 1))
 }
 
 func TestDockerRepository_NetworkCreate(t *testing.T) {
