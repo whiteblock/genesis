@@ -41,6 +41,9 @@ type DockerRepository interface {
 	//ContainerStart sends a request to the docker daemon to start a container.
 	ContainerStart(ctx context.Context, cli *client.Client, containerID string, options types.ContainerStartOptions) error
 
+	//ImageList returns a list of images in the docker host
+	ImageList(ctx context.Context, cli *client.Client, options types.ImageListOptions) ([]types.ImageSummary, error)
+
 	//ImageLoad is used to upload a docker image
 	ImageLoad(ctx context.Context, cli *client.Client, input io.Reader, quiet bool) (types.ImageLoadResponse, error)
 
@@ -100,6 +103,13 @@ func (dr dockerRepository) ImagePull(ctx context.Context, cli *client.Client,
 	refStr string, options types.ImagePullOptions) (io.ReadCloser, error) {
 
 	return cli.ImagePull(ctx, refStr, options)
+}
+
+//ImageList returns a list of images in the docker host
+func (dr dockerRepository) ImageList(ctx context.Context, cli *client.Client,
+	options types.ImageListOptions) ([]types.ImageSummary, error) {
+
+	return cli.ImageList(ctx, options)
 }
 
 //NetworkCreate sends a request to the docker daemon to create a network

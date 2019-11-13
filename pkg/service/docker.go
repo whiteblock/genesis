@@ -29,6 +29,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
+	"io/ioutil"
 	"strconv"
 )
 
@@ -58,8 +59,14 @@ type DockerService interface {
 	//CreateClient creates a new client for connecting to the docker daemon
 	CreateClient(conf entity.DockerConfig, host string) (*client.Client, error)
 
+	//EnsureImagePulled checks if the docker host contains an image and pulls it if it does not
+	EnsureImagePulled(ctx context.Context, cli *client.Client, imageName string) error
+
 	//GetNetworkByName attempts to find a network with the given name and return information on it.
 	GetNetworkByName(ctx context.Context, cli *client.Client, networkName string) (types.NetworkResource, error)
+
+	//HostHasImage returns true if the docker host has an image matching what was given
+	HostHasImage(ctx context.Context, cli *client.Client, image string) (bool, error)
 }
 
 type dockerService struct {
@@ -83,6 +90,51 @@ func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*cl
 		client.WithHost(host),
 		client.WithTLSClientConfig(conf.CACertPath, conf.CertPath, conf.KeyPath),
 	)
+}
+
+//HostHasImage returns true if the docker host has an image matching what was given
+func (ds dockerService) HostHasImage(ctx context.Context, cli *client.Client, image string) (bool, error) {
+	imgs, err := ds.repo.ImageList(ctx, cli, types.ImageListOptions{All: false})
+	if err != nil {
+		return false, err
+	}
+	for _, img := range imgs {
+		for _, tag := range img.RepoTags {
+			if tag == image {
+				return true, nil
+			}
+		}
+		for _, digest := range img.RepoDigests {
+			if digest == image {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+//EnsureImagePulled checks if the docker host contains an image and pulls it if it does not
+func (ds dockerService) EnsureImagePulled(ctx context.Context, cli *client.Client, imageName string) error {
+	exists, err := ds.HostHasImage(ctx, cli, imageName)
+	if exists || err != nil {
+		return err
+	}
+
+	rd, err := ds.repo.ImagePull(ctx, cli, imageName, types.ImagePullOptions{
+		Platform: "Linux", //TODO: pull out to a config
+	})
+	if err != nil {
+		return err
+	}
+
+	response, err := ds.repo.ImageLoad(ctx, cli, rd, true)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	_, err = ioutil.ReadAll(response.Body) //It might get stuck here...
+	return err
 }
 
 //GetNetworkByName attempts to find a network with the given name and return information on it.
