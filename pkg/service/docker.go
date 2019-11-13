@@ -23,6 +23,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	log "github.com/sirupsen/logrus"
@@ -56,6 +57,9 @@ type DockerService interface {
 
 	//CreateClient creates a new client for connecting to the docker daemon
 	CreateClient(conf entity.DockerConfig, host string) (*client.Client, error)
+
+	//GetNetworkingConfig determines the proper networking config based on the docker hosts state and the networks
+	GetNetworkingConfig(ctx context.Context, cli *client.Client, networks strslice.StrSlice) (*network.NetworkingConfig, error)
 }
 
 type dockerService struct {
@@ -82,13 +86,50 @@ func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*cl
 	)
 }
 
+//GetNetworkingConfig determines the proper networking config based on the docker hosts state and the networks
+func (ds dockerService) GetNetworkingConfig(ctx context.Context, cli *client.Client,
+	networks strslice.StrSlice) (*network.NetworkingConfig, error) {
+
+	resourceChan := make(chan types.NetworkResource, len(networks))
+	errChan := make(chan error, len(networks))
+
+	for _, net := range networks {
+		go func(net string) {
+			resource, err := ds.aux.GetNetworkByName(ctx, cli, net)
+			errChan <- err
+			resourceChan <- resource
+		}(net)
+	}
+	out := &network.NetworkingConfig{EndpointsConfig: map[string]*network.EndpointSettings{}}
+	for range networks {
+		err := <-errChan
+		if err != nil {
+			return out, err
+		}
+		resource := <-resourceChan
+		out.EndpointsConfig[resource.Name] = &network.EndpointSettings{
+			NetworkID: resource.ID,
+		}
+	}
+	return out, nil
+}
+
 //CreateContainer attempts to create a docker container
 func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, dContainer entity.Container) entity.Result {
 	errChan := make(chan error)
+	netConfChan := make(chan *network.NetworkingConfig)
+	defer close(errChan)
+	defer close(netConfChan)
 
 	go func(image string) {
 		errChan <- ds.aux.EnsureImagePulled(ctx, cli, image)
 	}(dContainer.Image)
+
+	go func(networks strslice.StrSlice) {
+		networkConfig, err := ds.GetNetworkingConfig(ctx, cli, networks)
+		netConfChan <- networkConfig
+		errChan <- err
+	}(dContainer.Network)
 
 	portSet, portMap, err := dContainer.GetPortBindings()
 	if err != nil {
@@ -122,11 +163,9 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 	hostConfig.NanoCPUs = int64(1000000000 * cpus)
 	hostConfig.Memory = mem
 
-	networkConfig := &network.NetworkingConfig{
-		EndpointsConfig: nil, //TODO
-	}
+	networkConfig := <-netConfChan
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 2; i++ {
 		err = <-errChan
 		if err != nil {
 			return entity.NewErrorResult(err)
