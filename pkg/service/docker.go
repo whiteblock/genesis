@@ -193,7 +193,7 @@ func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, 
 }
 
 func (ds dockerService) RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
-	//TODO
+	//ContainerRemove
 	return entity.Result{}
 }
 

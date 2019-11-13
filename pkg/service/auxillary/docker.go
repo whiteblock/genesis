@@ -34,6 +34,9 @@ type DockerAuxillary interface {
 	//EnsureImagePulled checks if the docker host contains an image and pulls it if it does not
 	EnsureImagePulled(ctx context.Context, cli *client.Client, imageName string) error
 
+	//GetContainerByName attempts to find a container with the given name and return information on it.
+	GetContainerByName(ctx context.Context, cli *client.Client, containerName string) (types.Container, error)
+
 	//GetNetworkByName attempts to find a network with the given name and return information on it.
 	GetNetworkByName(ctx context.Context, cli *client.Client, networkName string) (types.NetworkResource, error)
 
@@ -108,4 +111,22 @@ func (da dockerAuxillary) GetNetworkByName(ctx context.Context, cli *client.Clie
 		}
 	}
 	return types.NetworkResource{}, fmt.Errorf("could not find the network \"%s\"", networkName)
+}
+
+//GetContainerByName attempts to find a container with the given name and return information on it.
+func (da dockerAuxillary) GetContainerByName(ctx context.Context, cli *client.Client,
+	containerName string) (types.Container, error) {
+
+	cntrs, err := da.repo.ContainerList(ctx, cli, types.ContainerListOptions{})
+	if err != nil {
+		return types.Container{}, err
+	}
+	for _, cntr := range cntrs {
+		for _, name := range cntr.Names {
+			if name == containerName {
+				return cntr, nil
+			}
+		}
+	}
+	return types.Container{}, fmt.Errorf("could not find the container \"%s\"", containerName)
 }

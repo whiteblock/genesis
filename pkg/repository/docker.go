@@ -38,6 +38,9 @@ type DockerRepository interface {
 	//ContainerList returns the list of containers in the docker host.
 	ContainerList(ctx context.Context, cli *client.Client, options types.ContainerListOptions) ([]types.Container, error)
 
+	//ContainerRemove kills and removes a container from the docker host.
+	ContainerRemove(ctx context.Context, cli *client.Client, containerID string, options types.ContainerRemoveOptions) error
+
 	//ContainerStart sends a request to the docker daemon to start a container.
 	ContainerStart(ctx context.Context, cli *client.Client, containerID string, options types.ContainerStartOptions) error
 
@@ -83,6 +86,13 @@ func (dr dockerRepository) ContainerList(ctx context.Context, cli *client.Client
 	options types.ContainerListOptions) ([]types.Container, error) {
 
 	return cli.ContainerList(ctx, options)
+}
+
+//ContainerRemove kills and removes a container from the docker host.
+func (dr dockerRepository) ContainerRemove(ctx context.Context, cli *client.Client,
+	containerID string, options types.ContainerRemoveOptions) error {
+
+	return cli.ContainerRemove(ctx, containerID, options)
 }
 
 //ContainerStart sends a request to the docker daemon to start a container.

@@ -155,3 +155,33 @@ func TestDockerAuxillary_EnsureImagePulled(t *testing.T) {
 	}
 	repo.AssertExpectations(t)
 }
+
+func TestDockerAuxillary_GetContainerByName(t *testing.T) {
+	results := []types.Container{
+		types.Container{Names: []string{"test1", "test3"}, ID: "id1"},
+		types.Container{Names: []string{"test2", "test4"}, ID: "id2"},
+	}
+	repo := new(repository.DockerRepository)
+	repo.On("ContainerList", mock.Anything, mock.Anything, mock.Anything).Return(results, nil).Run(
+		func(args mock.Arguments) {
+
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+		})
+	ds := NewDockerAuxillary(repo)
+
+	for _, result := range results {
+		for _, name := range result.Names {
+			cntr, err := ds.GetContainerByName(nil, nil, name)
+			assert.NoError(t, err)
+			assert.Equal(t, result, cntr)
+		}
+
+	}
+
+	_, err := ds.GetContainerByName(nil, nil, "DNE")
+	assert.Error(t, err)
+
+	repo.AssertNumberOfCalls(t, "ContainerList", (2*len(results))+1)
+}
