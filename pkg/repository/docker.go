@@ -22,13 +22,15 @@ package repository
 
 import (
 	"context"
+
+	"io"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/whiteblock/genesis/pkg/entity"
-	"io"
 )
 
 //NetworkDisconnect(ctx context.Context, networkID, containerID string, force bool) error
@@ -77,6 +79,9 @@ type DockerRepository interface {
 
 	//VolumeRemove removes a volume from the docker host.
 	VolumeRemove(ctx context.Context, cli entity.Client, volumeID string, force bool) error
+
+	//VolumeCreate creates a volume in the container
+	VolumeCreate(ctx context.Context, cli entity.Client, options volume.VolumeCreateBody) (types.Volume, error)
 }
 
 type dockerRepository struct {
@@ -174,4 +179,10 @@ func (dr dockerRepository) VolumeList(ctx context.Context, cli entity.Client,
 //VolumeRemove removes a volume from the docker host.
 func (dr dockerRepository) VolumeRemove(ctx context.Context, cli entity.Client, volumeID string, force bool) error {
 	return cli.VolumeRemove(ctx, volumeID, force)
+}
+
+//VolumeCreate creates a volume in the container
+func (dr dockerRepository) VolumeCreate(ctx context.Context, cli entity.Client,
+	options volume.VolumeCreateBody) (types.Volume, error) {
+	return cli.VolumeCreate(ctx, options)
 }

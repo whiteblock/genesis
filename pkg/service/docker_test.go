@@ -24,6 +24,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
+	dockerVolume "github.com/docker/docker/api/types/volume"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -288,6 +289,41 @@ func TestDockerService_RemoveContainer(t *testing.T) {
 		res := ds.RemoveContainer(nil, nil, cntr.Names[0])
 		assert.NoError(t, res.Error)
 	}
+}
+
+func TestDockerService_CreateVolume(t *testing.T) {
+	volume := types.Volume{
+		Name:   "test_volume",
+		Labels: map[string]string{"foo": "bar"},
+	}
+
+	repo := new(repository.DockerRepository)
+	repo.On("VolumeCreate", mock.Anything, mock.Anything, mock.Anything).Return(volume, nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+
+			vol, ok := args.Get(2).(dockerVolume.VolumeCreateBody)
+			require.True(t, ok)
+			require.NotNil(t, vol)
+			assert.Contains(t, vol.Labels, "foo")
+
+			assert.Equal(t, volume.Name, vol.Name)
+			assert.Equal(t, volume.Labels["foo"], vol.Labels["foo"])
+
+		}).Once()
+
+	aux := *new(auxillary.DockerAuxillary)
+
+	ds, err := NewDockerService(repo, aux)
+	assert.NoError(t, err)
+
+	res := ds.CreateVolume(nil, nil, entity.Volume{
+		Name:   "test_volume",
+		Labels: map[string]string{"foo": "bar"},
+	})
+	assert.NoError(t, res.Error)
 
 	repo.AssertExpectations(t)
 }

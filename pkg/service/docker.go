@@ -273,7 +273,7 @@ func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, vo
 		Name:       vol.Name,
 	}
 
-	_, err := cli.VolumeCreate(ctx, volConfig)
+	_, err := ds.repo.VolumeCreate(ctx, cli, volConfig)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}

@@ -68,6 +68,8 @@ type Client interface {
 	//NetworkList lists the networks known to the docker daemon
 	NetworkList(ctx context.Context, options types.NetworkListOptions) ([]types.NetworkResource, error)
 
+	VolumeCreate(ctx context.Context, options volume.VolumeCreateBody) (types.Volume, error)
+
 	//VolumeList returns the volumes configured in the docker host.
 	VolumeList(ctx context.Context, filter filters.Args) (volume.VolumeListOKBody, error)
 

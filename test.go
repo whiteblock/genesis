@@ -20,6 +20,8 @@ package main
 
 import (
 	"encoding/json"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
@@ -27,7 +29,6 @@ import (
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
 	"github.com/whiteblock/genesis/pkg/usecase"
-	"time"
 )
 
 /*FUNCTIONALITY TESTS*/
@@ -52,6 +53,19 @@ func mintCommand(i interface{}, orderType string) command.Command {
 		panic(err)
 	}
 	return cmd
+}
+
+func createVolume(dockerUseCase usecase.DockerUseCase) {
+	vol := entity.Volume{
+		Name: "test_volume",
+		Labels: map[string]string{
+			"FOO": "BAR",
+		},
+	}
+
+	cmd := mintCommand(vol, "createVolume")
+	res := dockerUseCase.Run(cmd)
+	log.WithFields(log.Fields{"res": res}).Info("created a volume")
 }
 
 func createNetwork(dockerUseCase usecase.DockerUseCase) {
@@ -93,8 +107,8 @@ func createContainer(dockerUseCase usecase.DockerUseCase) {
 		Volumes: map[string]entity.Volume{}, //TODO
 		Image:   "nginx:latest",
 	}
-	testContainer.Cpus = "2.5"
-	testContainer.Memory = "5gb"
+	testContainer.Cpus = "1"
+	testContainer.Memory = "1gb"
 	cmd := mintCommand(testContainer, "createContainer")
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("created a container")
@@ -116,6 +130,7 @@ func dockerTest() {
 	if err != nil {
 		panic(err)
 	}
+
 	dockerConfig := conf.GetDockerConfig()
 	dockerUseCase, err := usecase.NewDockerUseCase(dockerConfig, dockerService, commandService)
 	if err != nil {
@@ -126,4 +141,5 @@ func dockerTest() {
 	createNetwork(dockerUseCase)
 	createContainer(dockerUseCase)
 	startContainer(dockerUseCase)
+	createVolume(dockerUseCase)
 }
