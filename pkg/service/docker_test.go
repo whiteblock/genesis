@@ -24,6 +24,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
+	dockerVolume "github.com/docker/docker/api/types/volume"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -251,7 +252,7 @@ func TestDockerService_RemoveNetwork(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
-func TestDockerService_CreateVolume(t *testing.T) { //todo fix this test, it's passing for no reason...
+func TestDockerService_CreateVolume(t *testing.T) {
 	volume := types.Volume{
 		Name:   "test_volume",
 		Labels: map[string]string{"foo": "bar"},
@@ -263,6 +264,15 @@ func TestDockerService_CreateVolume(t *testing.T) { //todo fix this test, it's p
 			require.Len(t, args, 3)
 			assert.Nil(t, args.Get(0))
 			assert.Nil(t, args.Get(1))
+
+			vol, ok := args.Get(2).(dockerVolume.VolumeCreateBody)
+			require.True(t, ok)
+			require.NotNil(t, vol)
+			assert.Contains(t, vol.Labels, "foo")
+
+			assert.Equal(t, volume.Name, vol.Name)
+			assert.Equal(t, volume.Labels["foo"], vol.Labels["foo"])
+
 		}).Once()
 
 	aux := *new(auxillary.DockerAuxillary)
