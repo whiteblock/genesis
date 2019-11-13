@@ -155,8 +155,8 @@ func dockerTest() {
 	removeVolume(dockerUseCase)
 	createVolume(dockerUseCase)
 
-	createNetwork(dockerUseCase)
 	removeNetwork(dockerUseCase)
+	time.Sleep(3 * time.Second)
 	createNetwork(dockerUseCase)
 	createContainer(dockerUseCase)
 	startContainer(dockerUseCase)
