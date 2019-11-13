@@ -28,10 +28,13 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	repository "github.com/whiteblock/genesis/mocks/pkg/repository"
+	auxMock "github.com/whiteblock/genesis/mocks/pkg/service"
 	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/service/auxillary"
 )
 
 func TestDockerService_CreateContainer(t *testing.T) {
+	testNetwork := types.NetworkResource{Name: "Testnet", ID: "id1"}
 	testContainer := entity.Container{
 		BoundCPUs:  nil, //TODO
 		Detach:     false,
@@ -91,7 +94,20 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		networkingConfig, ok := args.Get(4).(*network.NetworkingConfig)
 		require.True(t, ok)
 		require.NotNil(t, networkingConfig)
-
+		require.NotNil(t, networkingConfig.EndpointsConfig)
+		netconf, ok := networkingConfig.EndpointsConfig[testContainer.Network[0]]
+		require.True(t, ok)
+		require.NotNil(t, netconf)
+		assert.Equal(t, netconf.NetworkID, testNetwork.ID)
+		assert.Nil(t, netconf.Links)
+		assert.Nil(t, netconf.Aliases)
+		assert.Nil(t, netconf.IPAMConfig)
+		assert.Empty(t, netconf.IPv6Gateway)
+		assert.Empty(t, netconf.GlobalIPv6Address)
+		assert.Empty(t, netconf.EndpointID)
+		assert.Empty(t, netconf.Gateway)
+		assert.Empty(t, netconf.IPAddress)
+		assert.Nil(t, netconf.DriverOpts)
 		containerName, ok := args.Get(5).(string)
 		require.True(t, ok)
 		assert.Equal(t, testContainer.Name, containerName)
@@ -99,7 +115,24 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		//network.NetworkingConfig
 	})
 
-	ds, err := NewDockerService(repo)
+	aux := new(auxMock.DockerAuxillary)
+	aux.On("EnsureImagePulled", mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+
+		require.Len(t, args, 3)
+		assert.Nil(t, args.Get(0))
+		assert.Nil(t, args.Get(1))
+		assert.Equal(t, testContainer.Image, args.String(2))
+	})
+	aux.On("GetNetworkByName", mock.Anything, mock.Anything, mock.Anything).Return(
+		testNetwork, nil).Run(func(args mock.Arguments) {
+
+		require.Len(t, args, 3)
+		assert.Nil(t, args.Get(0))
+		assert.Nil(t, args.Get(1))
+		assert.Contains(t, testContainer.Network, args.String(2))
+	})
+
+	ds, err := NewDockerService(repo, aux)
 	assert.NoError(t, err)
 	res := ds.CreateContainer(nil, nil, testContainer)
 	assert.NoError(t, res.Error)
@@ -118,7 +151,8 @@ func TestDockerService_StartContainer(t *testing.T) {
 			assert.Equal(t, types.ContainerStartOptions{}, args.Get(3))
 		})
 
-	ds, err := NewDockerService(repo)
+	aux := new(auxMock.DockerAuxillary)
+	ds, err := NewDockerService(repo, aux)
 	assert.NoError(t, err)
 	res := ds.StartContainer(nil, nil, containerName)
 	assert.NoError(t, res.Error)
@@ -174,39 +208,12 @@ func TestDockerService_CreateNetwork(t *testing.T) {
 		}
 	})
 
-	ds, err := NewDockerService(repo)
+	aux := new(auxMock.DockerAuxillary)
+	ds, err := NewDockerService(repo, aux)
 	assert.NoError(t, err)
 	res := ds.CreateNetwork(nil, nil, testNetwork)
 	assert.NoError(t, res.Error)
 	repo.AssertNumberOfCalls(t, "NetworkCreate", 1)
-}
-
-func TestDockerService_GetNetworkByName(t *testing.T) {
-	results := []types.NetworkResource{
-		types.NetworkResource{Name: "test1", ID: "id1"},
-		types.NetworkResource{Name: "test2", ID: "id2"},
-	}
-	repo := new(repository.DockerRepository)
-	repo.On("NetworkList", mock.Anything, mock.Anything, mock.Anything).Return(results, nil).Run(
-		func(args mock.Arguments) {
-
-			require.Len(t, args, 3)
-			assert.Nil(t, args.Get(0))
-			assert.Nil(t, args.Get(1))
-		})
-	ds, err := NewDockerService(repo)
-	assert.NoError(t, err)
-
-	for _, result := range results {
-		net, err := ds.GetNetworkByName(nil, nil, result.Name)
-		assert.NoError(t, err)
-		assert.Equal(t, result, net)
-	}
-
-	_, err = ds.GetNetworkByName(nil, nil, "DNE")
-	assert.Error(t, err)
-
-	repo.AssertNumberOfCalls(t, "NetworkList", len(results)+1)
 }
 
 func TestDockerService_RemoveNetwork(t *testing.T) {
@@ -232,8 +239,8 @@ func TestDockerService_RemoveNetwork(t *testing.T) {
 				assert.Nil(t, args.Get(1))
 			}).Once()
 	}
-
-	ds, err := NewDockerService(repo)
+	aux := auxillary.NewDockerAuxillary(repo)
+	ds, err := NewDockerService(repo, aux)
 	assert.NoError(t, err)
 
 	for _, net := range networks {

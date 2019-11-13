@@ -25,6 +25,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
+	"github.com/whiteblock/genesis/pkg/service/auxillary"
 	"github.com/whiteblock/genesis/pkg/usecase"
 	"time"
 )
@@ -78,9 +79,8 @@ func removeNetwork(dockerUseCase usecase.DockerUseCase) {
 
 func createContainer(dockerUseCase usecase.DockerUseCase) {
 	testContainer := entity.Container{
-		BoundCPUs:  nil, //TODO
-		Detach:     false,
-		EntryPoint: "/bin/sh",
+		BoundCPUs: nil, //TODO
+		Detach:    false,
 		Environment: map[string]string{
 			"FOO": "BAR",
 		},
@@ -88,11 +88,10 @@ func createContainer(dockerUseCase usecase.DockerUseCase) {
 			"FOO": "BAR",
 		},
 		Name:    "tester",
-		Network: []string{"testnet"}, //TODO
+		Network: []string{"testnet"},
 		Ports:   map[int]int{8888: 8889},
 		Volumes: map[string]entity.Volume{}, //TODO
-		Image:   "alpine",
-		Args:    []string{"test", "test2"},
+		Image:   "nginx:latest",
 	}
 	testContainer.Cpus = "2.5"
 	testContainer.Memory = "5gb"
@@ -111,7 +110,9 @@ func startContainer(dockerUseCase usecase.DockerUseCase) {
 
 func dockerTest() {
 	commandService := service.NewCommandService(repository.NewLocalCommandRepository())
-	dockerService, err := service.NewDockerService(repository.NewDockerRepository())
+	dockerRepository := repository.NewDockerRepository()
+	dockerAux := auxillary.NewDockerAuxillary(dockerRepository)
+	dockerService, err := service.NewDockerService(dockerRepository, dockerAux)
 	if err != nil {
 		panic(err)
 	}
