@@ -44,6 +44,7 @@ func TestDockerRepository_ContainerCreate(t *testing.T) {
 		mock.Anything, mock.Anything, mock.Anything).Return(expectedContainer, nil).Run(
 		func(args mock.Arguments) {
 			require.Len(t, args, 5)
+			assert.Equal(t, "test", args.Get(4))
 		}).Once()
 
 	repo := NewDockerRepository()
@@ -58,7 +59,25 @@ func TestDockerRepository_ContainerCreate(t *testing.T) {
 }
 
 func TestDockerRepository_ContainerList(t *testing.T) {
-	//todo
+	cli := new(entityMock.Client)
+
+	expectedList := []types.Container{}
+	opts := types.ContainerListOptions{
+		Size: true,
+	}
+
+	cli.On("ContainerList", mock.Anything, mock.Anything).Return(expectedList, nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 2)
+			assert.Equal(t, opts, args.Get(1))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	list, err := repo.ContainerList(nil, cli, opts)
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(expectedList), len(list))
 }
 
 func TestDockerRepository_ContainerRemove(t *testing.T) {
