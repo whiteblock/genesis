@@ -41,6 +41,8 @@ type DockerService interface {
 
 	//StartContainer attempts to start an already created docker container
 	StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result
+
+	//RemoveContainer attempts to remove a container
 	RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result
 
 	//CreateNetwork attempts to create a network
@@ -192,9 +194,21 @@ func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, 
 	return entity.NewSuccessResult()
 }
 
+//RemoveContainer attempts to remove a container
 func (ds dockerService) RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
-	//TODO
-	return entity.Result{}
+	cntr, err := ds.aux.GetContainerByName(ctx, cli, name)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+	err = ds.repo.ContainerRemove(ctx, cli, cntr.ID, types.ContainerRemoveOptions{
+		RemoveVolumes: false,
+		RemoveLinks:   false,
+		Force:         true,
+	})
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+	return entity.NewSuccessResult()
 }
 
 //CreateNetwork attempts to create a network

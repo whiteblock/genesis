@@ -252,6 +252,45 @@ func TestDockerService_RemoveNetwork(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
+func TestDockerService_RemoveContainer(t *testing.T) {
+	repo := new(repository.DockerRepository)
+	cntrs := []types.Container{
+		types.Container{Names: []string{"test1", "test3"}, ID: "id1"},
+		types.Container{Names: []string{"test2", "test4"}, ID: "id2"},
+	}
+	repo.On("ContainerList", mock.Anything, mock.Anything, mock.Anything).Return(cntrs, nil).Run(
+		func(args mock.Arguments) {
+
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+		}).Times(len(cntrs))
+
+	for _, cntr := range cntrs {
+		repo.On("ContainerRemove", mock.Anything, mock.Anything, cntr.ID, mock.Anything).Return(nil).Run(
+			func(args mock.Arguments) {
+
+				require.Len(t, args, 4)
+				assert.Nil(t, args.Get(0))
+				assert.Nil(t, args.Get(1))
+				opts, ok := args.Get(3).(types.ContainerRemoveOptions)
+				require.True(t, ok)
+				assert.False(t, opts.RemoveVolumes)
+				assert.False(t, opts.RemoveLinks)
+				assert.True(t, opts.Force)
+
+			}).Once()
+	}
+	aux := auxillary.NewDockerAuxillary(repo)
+	ds, err := NewDockerService(repo, aux)
+	assert.NoError(t, err)
+
+	for _, cntr := range cntrs {
+		res := ds.RemoveContainer(nil, nil, cntr.Names[0])
+		assert.NoError(t, res.Error)
+	}
+}
+
 func TestDockerService_CreateVolume(t *testing.T) {
 	volume := types.Volume{
 		Name:   "test_volume",
