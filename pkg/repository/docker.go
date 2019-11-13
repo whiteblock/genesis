@@ -24,7 +24,9 @@ import (
 	"context"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"io"
 )
@@ -69,6 +71,12 @@ type DockerRepository interface {
 
 	//NetworkList lists the networks known to the docker daemon
 	NetworkList(ctx context.Context, cli entity.Client, options types.NetworkListOptions) ([]types.NetworkResource, error)
+
+	//VolumeList returns the volumes configured in the docker host.
+	VolumeList(ctx context.Context, cli entity.Client, filter filters.Args) (volume.VolumeListOKBody, error)
+
+	//VolumeRemove removes a volume from the docker host.
+	VolumeRemove(ctx context.Context, cli entity.Client, volumeID string, force bool) error
 }
 
 type dockerRepository struct {
@@ -155,4 +163,15 @@ func (dr dockerRepository) NetworkRemove(ctx context.Context, cli entity.Client,
 func (dr dockerRepository) NetworkList(ctx context.Context, cli entity.Client,
 	options types.NetworkListOptions) ([]types.NetworkResource, error) {
 	return cli.NetworkList(ctx, options)
+}
+
+//VolumeList returns the volumes configured in the docker host.
+func (dr dockerRepository) VolumeList(ctx context.Context, cli entity.Client,
+	filter filters.Args) (volume.VolumeListOKBody, error) {
+	return cli.VolumeList(ctx, filter)
+}
+
+//VolumeRemove removes a volume from the docker host.
+func (dr dockerRepository) VolumeRemove(ctx context.Context, cli entity.Client, volumeID string, force bool) error {
+	return cli.VolumeRemove(ctx, volumeID, force)
 }

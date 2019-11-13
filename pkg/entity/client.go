@@ -22,11 +22,13 @@ import (
 	"context"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/volume"
 	"io"
 )
 
-//Client is an interface which contains the needed methods from docker client
+//Client is an interface which contains the needed methods from the docker client
 type Client interface {
 
 	//ContainerCreate creates a new container based in the given configuration. It can be associated with a name, but it's not mandatory.
@@ -65,4 +67,10 @@ type Client interface {
 
 	//NetworkList lists the networks known to the docker daemon
 	NetworkList(ctx context.Context, options types.NetworkListOptions) ([]types.NetworkResource, error)
+
+	//VolumeList returns the volumes configured in the docker host.
+	VolumeList(ctx context.Context, filter filters.Args) (volume.VolumeListOKBody, error)
+
+	//VolumeRemove removes a volume from the docker host.
+	VolumeRemove(ctx context.Context, volumeID string, force bool) error
 }
