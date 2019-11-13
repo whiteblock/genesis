@@ -177,7 +177,28 @@ func TestDockerRepository_NetworkConnect(t *testing.T) {
 }
 
 func TestDockerRepository_NetworkCreate(t *testing.T) {
-	//todo
+	cli := new(entityMock.Client)
+
+	name := "test"
+	options := types.NetworkCreate{}
+
+	expectedCreated := types.NetworkCreateResponse{ID: "test"}
+
+	cli.On("NetworkCreate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(expectedCreated, nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, name, args.Get(1))
+			assert.Equal(t, options, args.Get(2))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	created, err := repo.NetworkCreate(nil, cli, name, options)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedCreated.ID, created.ID)
+	assert.True(t, cli.AssertNumberOfCalls(t, "NetworkCreate", 1))
 }
 
 func TestDockerRepository_NetworkDisconnect(t *testing.T) {
