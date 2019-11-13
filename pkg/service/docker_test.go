@@ -109,6 +109,14 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		assert.Nil(t, args.Get(1))
 		assert.Equal(t, testContainer.Image, args.String(2))
 	})
+	aux.On("GetNetworkByName", mock.Anything, mock.Anything, mock.Anything).Return(
+		types.NetworkResource{Name: "Testnet", ID: "id1"}, nil).Run(func(args mock.Arguments) {
+
+		require.Len(t, args, 3)
+		assert.Nil(t, args.Get(0))
+		assert.Nil(t, args.Get(1))
+		assert.Contains(t, testContainer.Network, args.String(2))
+	})
 
 	ds, err := NewDockerService(repo, aux)
 	assert.NoError(t, err)

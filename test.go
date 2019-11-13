@@ -79,9 +79,8 @@ func removeNetwork(dockerUseCase usecase.DockerUseCase) {
 
 func createContainer(dockerUseCase usecase.DockerUseCase) {
 	testContainer := entity.Container{
-		BoundCPUs:  nil, //TODO
-		Detach:     false,
-		EntryPoint: "/bin/sh",
+		BoundCPUs: nil, //TODO
+		Detach:    false,
 		Environment: map[string]string{
 			"FOO": "BAR",
 		},
@@ -89,11 +88,10 @@ func createContainer(dockerUseCase usecase.DockerUseCase) {
 			"FOO": "BAR",
 		},
 		Name:    "tester",
-		Network: []string{"testnet"}, //TODO
+		Network: []string{"testnet"},
 		Ports:   map[int]int{8888: 8889},
 		Volumes: map[string]entity.Volume{}, //TODO
-		Image:   "alpine",
-		Args:    []string{"test", "test2"},
+		Image:   "nginx:latest",
 	}
 	testContainer.Cpus = "2.5"
 	testContainer.Memory = "5gb"
