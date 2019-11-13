@@ -44,6 +44,7 @@ func TestDockerRepository_ContainerCreate(t *testing.T) {
 		mock.Anything, mock.Anything, mock.Anything).Return(expectedContainer, nil).Run(
 		func(args mock.Arguments) {
 			require.Len(t, args, 5)
+			assert.Nil(t, args.Get(0))
 			assert.Equal(t, "test", args.Get(4))
 		}).Once()
 
@@ -69,6 +70,7 @@ func TestDockerRepository_ContainerList(t *testing.T) {
 	cli.On("ContainerList", mock.Anything, mock.Anything).Return(expectedList, nil).Run(
 		func(args mock.Arguments) {
 			require.Len(t, args, 2)
+			assert.Nil(t, args.Get(0))
 			assert.Equal(t, opts, args.Get(1))
 		}).Once()
 
@@ -78,10 +80,31 @@ func TestDockerRepository_ContainerList(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, len(expectedList), len(list))
+	assert.True(t, cli.AssertNumberOfCalls(t, "ContainerList", 1))
 }
 
 func TestDockerRepository_ContainerRemove(t *testing.T) {
-	//todo
+	cli := new(entityMock.Client)
+
+	opts := types.ContainerRemoveOptions{
+		RemoveVolumes: true,
+	}
+	containerID := "test"
+
+	cli.On("ContainerRemove", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, opts, args.Get(2))
+			assert.Equal(t, containerID, args.Get(1))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	err := repo.ContainerRemove(nil, cli, "test", opts)
+	assert.NoError(t, err)
+
+	assert.True(t, cli.AssertNumberOfCalls(t, "ContainerRemove", 1))
 }
 
 func TestDockerRepository_ContainerStart(t *testing.T) {
