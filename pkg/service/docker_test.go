@@ -244,8 +244,7 @@ func TestDockerService_RemoveNetwork(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
-//todo fix this test, it's passing for no reason...
-func TestDockerService_CreateVolume(t *testing.T) {
+func TestDockerService_CreateVolume(t *testing.T) { //todo fix this test, it's passing for no reason...
 	volume := types.Volume{
 		Name: "test_volume",
 		Labels: map[string]string{"foo":"bar"},
