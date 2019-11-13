@@ -1,0 +1,68 @@
+/*
+	Copyright 2019 whiteblock Inc.
+	This file is a part of the genesis.
+
+	Genesis is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	Genesis is distributed in the hope that it will be useful,
+	but dock ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+package entity
+
+import (
+	"context"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
+	"io"
+)
+
+//Client is an interface which contains the needed methods from docker client
+type Client interface {
+
+	//ContainerCreate creates a new container based in the given configuration. It can be associated with a name, but it's not mandatory.
+	ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
+		networkingConfig *network.NetworkingConfig, containerName string) (container.ContainerCreateCreatedBody, error)
+
+	//ContainerList returns the list of containers in the docker host.
+	ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error)
+
+	//ContainerRemove kills and removes a container from the docker host.
+	ContainerRemove(ctx context.Context, containerID string, options types.ContainerRemoveOptions) error
+
+	//ContainerStart sends a request to the docker daemon to start a container.
+	ContainerStart(ctx context.Context, containerID string, options types.ContainerStartOptions) error
+
+	//ImageList returns a list of images in the docker host
+	ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error)
+
+	//ImageLoad is used to upload a docker image
+	ImageLoad(ctx context.Context, input io.Reader, quiet bool) (types.ImageLoadResponse, error)
+
+	//ImagePull is used to pull a docker image
+	ImagePull(ctx context.Context, refStr string, options types.ImagePullOptions) (io.ReadCloser, error)
+
+	//NetworkCreate sends a request to the docker daemon to create a network
+	NetworkCreate(ctx context.Context, name string, options types.NetworkCreate) (types.NetworkCreateResponse, error)
+
+	//NetworkConnect connects a container to an existent network in the docker host.
+	NetworkConnect(ctx context.Context, networkID, containerID string, config *network.EndpointSettings) error
+
+	//NetworkDisconnect disconnects a container from an existent network in the docker host.
+	NetworkDisconnect(ctx context.Context, networkID, containerID string, force bool) error
+
+	//NetworkRemove sends a request to the docker daemon to remove a network
+	NetworkRemove(ctx context.Context, networkID string) error
+
+	//NetworkList lists the networks known to the docker daemon
+	NetworkList(ctx context.Context, options types.NetworkListOptions) ([]types.NetworkResource, error)
+}
