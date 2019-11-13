@@ -23,12 +23,13 @@ package repository
 import (
 	"context"
 
+	"io"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
-	"io"
 )
 
 //DockerRepository represents direct interacts with the docker daemon
@@ -66,7 +67,6 @@ type DockerRepository interface {
 
 	//VolumeCreate creates a volume in the container
 	VolumeCreate(ctx context.Context, cli *client.Client, options volume.VolumeCreateBody) (types.Volume, error)
-
 }
 
 type dockerRepository struct {
