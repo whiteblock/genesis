@@ -246,8 +246,8 @@ func TestDockerService_RemoveNetwork(t *testing.T) {
 
 func TestDockerService_CreateVolume(t *testing.T) { //todo fix this test, it's passing for no reason...
 	volume := types.Volume{
-		Name: "test_volume",
-		Labels: map[string]string{"foo":"bar"},
+		Name:   "test_volume",
+		Labels: map[string]string{"foo": "bar"},
 	}
 
 	repo := new(repository.DockerRepository)
@@ -262,8 +262,8 @@ func TestDockerService_CreateVolume(t *testing.T) { //todo fix this test, it's p
 	assert.NoError(t, err)
 
 	res := ds.CreateVolume(nil, nil, entity.Volume{
-		Name: "test_volume",
-		Labels: map[string]string{"foo":"bar"},
+		Name:   "test_volume",
+		Labels: map[string]string{"foo": "bar"},
 	})
 	assert.NoError(t, res.Error)
 
