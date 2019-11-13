@@ -22,11 +22,14 @@ package repository
 
 import (
 	"context"
+
+	"io"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
-	"io"
 )
 
 //DockerRepository represents direct interacts with the docker daemon
@@ -61,6 +64,9 @@ type DockerRepository interface {
 
 	//NetworkConnect connects a container to a network
 	NetworkConnect(ctx context.Context, cli *client.Client, networkID, containerID string, config *network.EndpointSettings) error
+
+	//VolumeCreate creates a volume in the container
+	VolumeCreate(ctx context.Context, cli *client.Client, options volume.VolumeCreateBody) (types.Volume, error)
 }
 
 type dockerRepository struct {
@@ -134,4 +140,10 @@ func (dr dockerRepository) NetworkConnect(ctx context.Context, cli *client.Clien
 	containerID string, config *network.EndpointSettings) error {
 
 	return cli.NetworkConnect(ctx, networkID, containerID, config)
+}
+
+//VolumeCreate creates a volume in the container
+func (dr dockerRepository) VolumeCreate(ctx context.Context, cli *client.Client,
+	options volume.VolumeCreateBody) (types.Volume, error) {
+	return cli.VolumeCreate(ctx, options)
 }
