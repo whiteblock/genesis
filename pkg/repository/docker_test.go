@@ -23,7 +23,9 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -32,7 +34,27 @@ import (
 )
 
 func TestDockerRepository_ContainerCreate(t *testing.T) {
-	//todo
+	cli := new(entityMock.Client)
+
+	expectedContainer := container.ContainerCreateCreatedBody{
+		ID: "test",
+	}
+
+	cli.On("ContainerCreate", mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything).Return(expectedContainer, nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 5)
+		}).Once()
+
+	repo := NewDockerRepository()
+
+
+	container, err := repo.ContainerCreate(nil, cli, new(container.Config), new(container.HostConfig),
+		new(network.NetworkingConfig), "test")
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedContainer.ID, container.ID)
+	assert.True(t, cli.AssertNumberOfCalls(t, "ContainerCreate", 1))
 }
 
 func TestDockerRepository_ContainerList(t *testing.T) {
