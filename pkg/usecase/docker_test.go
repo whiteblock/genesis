@@ -37,8 +37,8 @@ func TestNewDockerUseCase(t *testing.T) {
 	cmdService := new(mockService.CommandService)
 
 	expected := &dockerUseCase{
-		conf: conf,
-		service: service,
+		conf:       conf,
+		service:    service,
 		cmdService: cmdService,
 	}
 
@@ -53,7 +53,7 @@ func TestDockerUseCase_Run_depCheck(t *testing.T) {
 	duc.On("Run", mock.Anything).Return(statusTooSoon)
 
 	cmd := command.Command{
-		ID: "test",
+		ID:        "test",
 		Timestamp: 1773768824,
 	}
 
