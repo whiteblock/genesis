@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package entity
+package command
 
 import (
 	"archive/tar"
@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/whiteblock/genesis/mocks/pkg/entity"
+	"github.com/whiteblock/genesis/mocks/pkg/command"
 	"path/filepath"
 	"testing"
 )

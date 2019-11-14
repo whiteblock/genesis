@@ -28,6 +28,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/util"
+	"strings"
 	"time"
 )
 
@@ -89,7 +90,7 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 		return entity.NewFatalResult(err)
 	}
 	log.WithField("client", cli).Trace("created a client")
-	switch cmd.Order.Type {
+	switch command.OrderType(strings.ToLower(string(cmd.Order.Type))) {
 	case command.Createcontainer:
 		return duc.createContainerShim(ctx, cli, cmd)
 	case command.Startcontainer:

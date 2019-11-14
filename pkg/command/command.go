@@ -34,8 +34,8 @@ const (
 	Removecontainer = OrderType("removecontainer")
 	//Createnetwork attempts to create a network
 	Createnetwork = OrderType("createnetwork")
-	//Removenetwork attempts to remove a network
-	Removenetwork = OrderType("attachnetwork")
+	//Attachnetwork attempts to remove a network
+	Attachnetwork = OrderType("attachnetwork")
 	//Detachnetwork detaches network
 	Detachnetwork = OrderType("detachnetwork")
 	//Removenetwork removes network
