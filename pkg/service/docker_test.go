@@ -341,3 +341,98 @@ func TestDockerService_CreateVolume(t *testing.T) {
 
 	repo.AssertExpectations(t)
 }
+
+func TestDockerService_AttachNetwork(t *testing.T) {
+	cntr := types.Container{Names: []string{"test1"}, ID: "id1"}
+	net := types.NetworkResource{Name: "test2", ID: "id2"}
+
+	aux := new(auxMock.DockerAuxillary)
+	aux.On("GetContainerByName", mock.Anything, mock.Anything, mock.Anything).Return(cntr, nil).Run(
+		func(args mock.Arguments) {
+
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+			assert.Equal(t, cntr.Names[0], args.String(2))
+
+		}).Once()
+
+	aux.On("GetNetworkByName", mock.Anything, mock.Anything, mock.Anything).Return(net, nil).Run(
+		func(args mock.Arguments) {
+
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+			assert.Equal(t, net.Name, args.String(2))
+		}).Once()
+
+	repo := new(repository.DockerRepository)
+	repo.On("NetworkConnect", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+
+		require.Len(t, args, 5)
+		assert.Nil(t, args.Get(0))
+		assert.Nil(t, args.Get(1))
+		assert.Equal(t, net.ID, args.String(2))
+		assert.Equal(t, cntr.ID, args.String(3))
+		epSettings, ok := args.Get(4).(*network.EndpointSettings)
+		require.True(t, ok)
+		require.NotNil(t, epSettings)
+		assert.Equal(t, net.ID, epSettings.NetworkID)
+	}).Once()
+
+	ds, err := NewDockerService(repo, aux)
+	assert.NoError(t, err)
+
+	res := ds.AttachNetwork(nil, nil, net.Name, cntr.Names[0])
+	assert.NoError(t, res.Error)
+
+	repo.AssertExpectations(t)
+	aux.AssertExpectations(t)
+}
+
+func TestDockerService_DetachNetwork(t *testing.T) {
+	cntr := types.Container{Names: []string{"test1"}, ID: "id1"}
+	net := types.NetworkResource{Name: "test2", ID: "id2"}
+
+	aux := new(auxMock.DockerAuxillary)
+	aux.On("GetContainerByName", mock.Anything, mock.Anything, mock.Anything).Return(cntr, nil).Run(
+		func(args mock.Arguments) {
+
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+			assert.Equal(t, cntr.Names[0], args.String(2))
+
+		}).Once()
+
+	aux.On("GetNetworkByName", mock.Anything, mock.Anything, mock.Anything).Return(net, nil).Run(
+		func(args mock.Arguments) {
+
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+			assert.Equal(t, net.Name, args.String(2))
+		}).Once()
+
+	repo := new(repository.DockerRepository)
+	repo.On("NetworkDisconnect", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+
+		require.Len(t, args, 5)
+		assert.Nil(t, args.Get(0))
+		assert.Nil(t, args.Get(1))
+		assert.Equal(t, net.ID, args.String(2))
+		assert.Equal(t, cntr.ID, args.String(3))
+		assert.True(t, args.Bool(4))
+	}).Once()
+
+	ds, err := NewDockerService(repo, aux)
+	assert.NoError(t, err)
+
+	res := ds.DetachNetwork(nil, nil, net.Name, cntr.Names[0])
+	assert.NoError(t, res.Error)
+
+	repo.AssertExpectations(t)
+	aux.AssertExpectations(t)
+}

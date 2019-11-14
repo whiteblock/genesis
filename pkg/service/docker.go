@@ -51,6 +51,7 @@ type DockerService interface {
 	//RemoveNetwork attempts to remove a network
 	RemoveNetwork(ctx context.Context, cli *client.Client, name string) entity.Result
 	AttachNetwork(ctx context.Context, cli *client.Client, network string, container string) entity.Result
+	DetachNetwork(ctx context.Context, cli *client.Client, network string, container string) entity.Result
 	CreateVolume(ctx context.Context, cli *client.Client, volume entity.Volume) entity.Result
 	RemoveVolume(ctx context.Context, cli *client.Client, name string) entity.Result
 	PlaceFileInContainer(ctx context.Context, cli *client.Client, containerName string, file entity.File) entity.Result
@@ -260,10 +261,68 @@ func (ds dockerService) RemoveNetwork(ctx context.Context, cli *client.Client, n
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, network string,
+func (ds dockerService) getNetworkAndContainerIDByName(ctx context.Context, cli *client.Client, networkName string,
+	containerName string) (containerID string, networkID string, err error) {
+	errChan := make(chan error, 2)
+	netIDChan := make(chan string, 1)
+	cntrIDChan := make(chan string, 1)
+	defer close(errChan)
+	defer close(netIDChan)
+	defer close(cntrIDChan)
+
+	go func(networkName string) {
+		net, err := ds.aux.GetNetworkByName(ctx, cli, networkName)
+		errChan <- err
+		netIDChan <- net.ID
+	}(networkName)
+
+	go func(containerName string) {
+		cntr, err := ds.aux.GetContainerByName(ctx, cli, containerName)
+		errChan <- err
+		cntrIDChan <- cntr.ID
+	}(containerName)
+
+	for i := 0; i < 2; i++ {
+		err = <-errChan
+		if err != nil {
+			return
+		}
+	}
+	networkID = <-netIDChan
+	containerID = <-cntrIDChan
+	return
+}
+
+func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, networkName string,
 	containerName string) entity.Result {
-	//TODO
-	return entity.Result{}
+
+	containerID, networkID, err := ds.getNetworkAndContainerIDByName(ctx, cli, networkName, containerName)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+
+	err = ds.repo.NetworkConnect(ctx, cli, networkID, containerID, &network.EndpointSettings{
+		NetworkID: networkID,
+	})
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+	return entity.NewSuccessResult()
+}
+
+func (ds dockerService) DetachNetwork(ctx context.Context, cli *client.Client,
+	networkName string, containerName string) entity.Result {
+
+	containerID, networkID, err := ds.getNetworkAndContainerIDByName(ctx, cli, networkName, containerName)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+
+	err = ds.repo.NetworkDisconnect(ctx, cli, networkID, containerID, true)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+	return entity.NewSuccessResult()
 }
 
 func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, vol entity.Volume) entity.Result {
