@@ -161,6 +161,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 	hostConfig := &container.HostConfig{
 		PortBindings: portMap,
 		AutoRemove:   true,
+		Mounts:       dContainer.GetMounts(),
 	}
 	hostConfig.NanoCPUs = int64(1000000000 * cpus)
 	hostConfig.Memory = mem
