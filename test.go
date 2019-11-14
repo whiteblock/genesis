@@ -56,9 +56,9 @@ func mintCommand(i interface{}, orderType string) command.Command {
 	return cmd
 }
 
-func createVolume(dockerUseCase usecase.DockerUseCase) {
+func createVolume(dockerUseCase usecase.DockerUseCase, name string) {
 	vol := entity.Volume{
-		Name: "test_volume",
+		Name: name,
 		Labels: map[string]string{
 			"FOO": "BAR",
 		},
@@ -69,9 +69,9 @@ func createVolume(dockerUseCase usecase.DockerUseCase) {
 	log.WithFields(log.Fields{"res": res}).Info("created a volume")
 }
 
-func removeVolume(dockerUseCase usecase.DockerUseCase) {
+func removeVolume(dockerUseCase usecase.DockerUseCase, name string) {
 	cmd := mintCommand(map[string]string{
-		"name": "test_volume",
+		"name": name,
 	}, "removeVolume")
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("removed a volume")
@@ -137,8 +137,12 @@ func createContainer(dockerUseCase usecase.DockerUseCase) {
 		Name:    "tester",
 		Network: []string{"testnet"},
 		Ports:   map[int]int{8888: 8889},
-		Volumes: []entity.Mount{}, //TODO
-		Image:   "nginx:latest",
+		Volumes: []entity.Mount{entity.Mount{
+			Name:      "test_volume",
+			Directory: "/foo/bar",
+			ReadOnly:  false,
+		}},
+		Image: "nginx:latest",
 	}
 	testContainer.Cpus = "1"
 	testContainer.Memory = "1gb"
@@ -153,6 +157,20 @@ func startContainer(dockerUseCase usecase.DockerUseCase) {
 	}, "startContainer")
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("started a container")
+}
+
+func putFile(dockerUseCase usecase.DockerUseCase) {
+
+	cmd := mintCommand(map[string]interface{}{
+		"container": "tester",
+		"file": entity.File{
+			Mode:        0600,
+			Destination: "/foo/bar/baz",
+			Data:        []byte("test"),
+		},
+	}, "putFileInContainer")
+	res := dockerUseCase.Run(cmd)
+	log.WithFields(log.Fields{"res": res}).Info("placed a file")
 }
 
 func dockerTest(clean bool) {
@@ -171,18 +189,19 @@ func dockerTest(clean bool) {
 	}
 	if clean {
 		removeContainer(dockerUseCase)
-		removeVolume(dockerUseCase)
+		removeVolume(dockerUseCase, "test_volume")
 		time.Sleep(2 * time.Second)
 		removeNetwork(dockerUseCase, "testnet")
 		removeNetwork(dockerUseCase, "testnet2")
 		return
 	}
 
-	createVolume(dockerUseCase)
+	createVolume(dockerUseCase, "test_volume")
 	createNetwork(dockerUseCase, "testnet", 14)
 	createContainer(dockerUseCase)
 	startContainer(dockerUseCase)
 	createNetwork(dockerUseCase, "testnet2", 15)
 	attachNetwork(dockerUseCase, "testnet2", "tester")
 	detachNetwork(dockerUseCase, "testnet", "tester")
+	putFile(dockerUseCase)
 }

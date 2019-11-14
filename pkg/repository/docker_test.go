@@ -54,7 +54,7 @@ func TestDockerRepository_ContainerCreate(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, expectedContainer.ID, container.ID)
-	assert.True(t, cli.AssertNumberOfCalls(t, "ContainerCreate", 1))
+	cli.AssertExpectations(t)
 }
 
 func TestDockerRepository_ContainerList(t *testing.T) {
@@ -78,7 +78,8 @@ func TestDockerRepository_ContainerList(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, len(expectedList), len(list))
-	assert.True(t, cli.AssertNumberOfCalls(t, "ContainerList", 1))
+	assert.ElementsMatch(t, expectedList, list)
+	cli.AssertExpectations(t)
 }
 
 func TestDockerRepository_ContainerRemove(t *testing.T) {
@@ -102,7 +103,7 @@ func TestDockerRepository_ContainerRemove(t *testing.T) {
 	err := repo.ContainerRemove(nil, cli, "test", opts)
 	assert.NoError(t, err)
 
-	assert.True(t, cli.AssertNumberOfCalls(t, "ContainerRemove", 1))
+	cli.AssertExpectations(t)
 }
 
 func TestDockerRepository_ContainerStart(t *testing.T) {
@@ -124,7 +125,31 @@ func TestDockerRepository_ContainerStart(t *testing.T) {
 	err := repo.ContainerStart(nil, cli, containerID, opts)
 	assert.NoError(t, err)
 
-	assert.True(t, cli.AssertNumberOfCalls(t, "ContainerStart", 1))
+	cli.AssertExpectations(t)
+}
+
+func TestDockerRepository_CopyToContainer(t *testing.T) {
+	//ctx
+	containerID := "id1"
+	dstPath := "/foo/bar"
+	//content
+	options := types.CopyToContainerOptions{}
+
+	cli := new(entityMock.Client)
+	cli.On("CopyToContainer", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+		require.Len(t, args, 5)
+		assert.Nil(t, args.Get(0))
+		assert.Equal(t, containerID, args.Get(1))
+		assert.Equal(t, dstPath, args.Get(2))
+		assert.Nil(t, args.Get(3))
+		assert.Equal(t, options, args.Get(4))
+	}).Once()
+	repo := NewDockerRepository()
+
+	err := repo.CopyToContainer(nil, cli, containerID, dstPath, nil, options)
+	assert.NoError(t, err)
+	cli.AssertExpectations(t)
 }
 
 func TestDockerRepository_ImageLoad(t *testing.T) {
@@ -169,7 +194,7 @@ func TestDockerRepository_ImagePull(t *testing.T) {
 	_, err := repo.ImagePull(nil, cli, refStr, options)
 	assert.NoError(t, err)
 
-	assert.True(t, cli.AssertNumberOfCalls(t, "ImagePull", 1))
+	cli.AssertExpectations(t)
 }
 
 func TestDockerRepository_ImageList(t *testing.T) {
@@ -191,7 +216,7 @@ func TestDockerRepository_ImageList(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, expectedList, list)
-	assert.True(t, cli.AssertNumberOfCalls(t, "ImageList", 1))
+	cli.AssertExpectations(t)
 }
 
 func TestDockerRepository_NetworkConnect(t *testing.T) {
@@ -215,7 +240,7 @@ func TestDockerRepository_NetworkConnect(t *testing.T) {
 	err := repo.NetworkConnect(nil, cli, networkID, containerID, config)
 	assert.NoError(t, err)
 
-	assert.True(t, cli.AssertNumberOfCalls(t, "NetworkConnect", 1))
+	cli.AssertExpectations(t)
 }
 
 func TestDockerRepository_NetworkCreate(t *testing.T) {
@@ -240,7 +265,7 @@ func TestDockerRepository_NetworkCreate(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, expectedCreated.ID, created.ID)
-	assert.True(t, cli.AssertNumberOfCalls(t, "NetworkCreate", 1))
+	cli.AssertExpectations(t)
 }
 
 func TestDockerRepository_NetworkDisconnect(t *testing.T) {
@@ -264,7 +289,7 @@ func TestDockerRepository_NetworkDisconnect(t *testing.T) {
 	err := repo.NetworkDisconnect(nil, cli, networkID, containerID, force)
 	assert.NoError(t, err)
 
-	assert.True(t, cli.AssertNumberOfCalls(t, "NetworkDisconnect", 1))
+	cli.AssertExpectations(t)
 }
 
 func TestDockerRepository_NetworkRemove(t *testing.T) {
@@ -284,7 +309,7 @@ func TestDockerRepository_NetworkRemove(t *testing.T) {
 	err := repo.NetworkRemove(nil, cli, networkID)
 	assert.NoError(t, err)
 
-	assert.True(t, cli.AssertNumberOfCalls(t, "NetworkRemove", 1))
+	cli.AssertExpectations(t)
 }
 
 func TestDockerRepository_NetworkList(t *testing.T) {
@@ -306,7 +331,7 @@ func TestDockerRepository_NetworkList(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, expectedList, list)
-	assert.True(t, cli.AssertNumberOfCalls(t, "NetworkList", 1))
+	cli.AssertExpectations(t)
 }
 
 func TestDockerRepository_VolumeList(t *testing.T) {
@@ -318,7 +343,7 @@ func TestDockerRepository_VolumeList(t *testing.T) {
 		require.Len(t, args, 2)
 		assert.Nil(t, args.Get(0))
 		assert.Equal(t, testFilters, args.Get(1))
-	})
+	}).Once()
 
 	repo := NewDockerRepository()
 	res, err := repo.VolumeList(nil, cli, testFilters)

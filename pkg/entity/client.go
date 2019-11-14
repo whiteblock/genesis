@@ -44,6 +44,10 @@ type Client interface {
 	//ContainerStart sends a request to the docker daemon to start a container.
 	ContainerStart(ctx context.Context, containerID string, options types.ContainerStartOptions) error
 
+	//CopyToContainer copies content into the container filesystem. Note that `content` must be a Reader for a TAR archive
+	CopyToContainer(ctx context.Context, containerID, dstPath string, content io.Reader,
+		options types.CopyToContainerOptions) error
+
 	//ImageList returns a list of images in the docker host
 	ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error)
 

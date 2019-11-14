@@ -50,6 +50,10 @@ type DockerRepository interface {
 	//ContainerStart sends a request to the docker daemon to start a container.
 	ContainerStart(ctx context.Context, cli entity.Client, containerID string, options types.ContainerStartOptions) error
 
+	//CopyToContainer copies content into the container filesystem. Note that `content` must be a Reader for a TAR archive
+	CopyToContainer(ctx context.Context, cli entity.Client, containerID, dstPath string, content io.Reader,
+		options types.CopyToContainerOptions) error
+
 	//ImageList returns a list of images in the docker host
 	ImageList(ctx context.Context, cli entity.Client, options types.ImageListOptions) ([]types.ImageSummary, error)
 
@@ -117,6 +121,13 @@ func (dr dockerRepository) ContainerRemove(ctx context.Context, cli entity.Clien
 func (dr dockerRepository) ContainerStart(ctx context.Context, cli entity.Client,
 	containerID string, options types.ContainerStartOptions) error {
 	return cli.ContainerStart(ctx, containerID, options)
+}
+
+//CopyToContainer copies content into the container filesystem. Note that `content` must be a Reader for a TAR archive
+func (dr dockerRepository) CopyToContainer(ctx context.Context, cli entity.Client,
+	containerID, dstPath string, content io.Reader,
+	options types.CopyToContainerOptions) error {
+	return cli.CopyToContainer(ctx, containerID, dstPath, content, options)
 }
 
 //ImageLoad is used to upload a docker image
