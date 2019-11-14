@@ -11,6 +11,8 @@ pipeline {
     KUBEDOG_VERSION       = "0.3.2"
     REV_SHORT             = sh(script: "git log --pretty=format:'%h' -n 1", , returnStdout: true).trim()
     INFRA_REPO_URL        = credentials('INFRA_REPO_URL')
+    CODECOV_TOKEN         = credentials('CODECOV_TOKEN')
+    CI_ENV                = sh(script: "curl -s https://codecov.io/env | bash", , returnStdout: true).trim()
 
   // Dev
     DEV_GCP_PROJECT_ID    = credentials('DEV_GCP_PROJECT_ID')
@@ -27,7 +29,7 @@ pipeline {
     SLACK_CHANNEL         = '#alerts'
     SLACK_CREDENTIALS_ID  = 'jenkins-slack-integration-token'
     SLACK_TEAM_DOMAIN     = 'whiteblock'
-
+    GO111MODULE           = 'on'
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '10'))
@@ -54,6 +56,7 @@ pipeline {
         }
       }
       when {
+        beforeAgent true
         anyOf {
           changeRequest target: 'dev'
           changeRequest target: 'master'
@@ -66,15 +69,21 @@ pipeline {
           CI_ENV = sh(script: "curl -s https://codecov.io/env | bash", , returnStdout: true).trim()
           // goimage.inside("${CI_ENV} -u root") {
           sh "apk add git gcc libc-dev curl"
+          sh "go get github.com/vektra/mockery/.../"
+          sh "go get -u golang.org/x/lint/golint"
           sh "sh tests.sh"
           // }
         }
       }
-    post {
-      success {
-        sh "curl -s https://codecov.io/bash | bash"
+      post {
+        success {
+          sh "apk add curl bash && curl -s https://codecov.io/bash | bash"
+        }
+        cleanup {
+          sh "chmod -R 777 coverage.txt mocks || true"
+          deleteDir()
+        }
       }
-    }
     }
     stage('Build docker image') {
       when {
@@ -92,9 +101,9 @@ pipeline {
             """
             sh "docker pull ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest || true"
             docker.build("${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest",
-                        "--cache-from ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest --target build -f alpine.dockerfile .")
+                        "--cache-from ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest --target build .")
             docker.build("${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-${REV_SHORT}",
-                        "--cache-from ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest -f alpine.dockerfile .")
+                        "--cache-from ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest .")
             docker.image("${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-${REV_SHORT}").push()
             docker.image("${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest").push()
           }

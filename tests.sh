@@ -2,11 +2,6 @@
 
 set -o errexit
 set -o xtrace
-set -o pipefail
-
-#go get github.com/golang/mock/gomock
-#go install github.com/golang/mock/mockgen
-go get -u golang.org/x/lint/golint
 
 if [ -n "$(gofmt -l .)" ]; then
   echo "Go code is not formatted:"
@@ -17,9 +12,10 @@ else
 fi
 
 golint -set_exit_status $(go list ./... | grep -v mocks)
+
+ls pkg | while read line; do
+  mockery -output=mocks/pkg/$line/ -dir=pkg/$line/ -all
+done
 go vet $(go list ./... | grep -v mocks)
 go test ./...
-go get ./...
 go test ./... -coverprofile=coverage.txt -covermode=atomic
-
-chmod 777 coverage.txt 

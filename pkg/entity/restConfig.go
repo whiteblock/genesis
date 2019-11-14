@@ -8,7 +8,7 @@
 	(at your option) any later version.
 
 	Genesis is distributed in the hope that it will be useful,
-	but dock ANY WARRANTY; without even the implied warranty of
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 	GNU General Public License for more details.
 
@@ -18,10 +18,8 @@
 
 package entity
 
-// File represents a file which will be placed inside either a docker container or volume
-type File struct {
-	//Path is the mount point of the file
-	Path string `json:"path"`
-	//Data is the contents of the file
-	Data []byte `json:"data"`
+//RestConfig represents the configuration needed for the REST API
+type RestConfig struct {
+	//Listen is the socket to listen on
+	Listen string `json:"listen"`
 }

@@ -19,17 +19,56 @@
 package main
 
 import (
-	_ "github.com/whiteblock/genesis/bus"
-	"github.com/whiteblock/genesis/rest"
-	"github.com/whiteblock/genesis/util"
-	"log"
+	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
+	"github.com/whiteblock/genesis/config"
+	"github.com/whiteblock/genesis/pkg/controller"
+	"github.com/whiteblock/genesis/pkg/handler"
+	"github.com/whiteblock/genesis/pkg/repository"
+	"github.com/whiteblock/genesis/pkg/service"
+	"github.com/whiteblock/genesis/pkg/service/auxillary"
+	"github.com/whiteblock/genesis/pkg/usecase"
+	"os"
 )
 
-var conf *util.Config
+var conf = config.GetConfig()
+
+func getRestServer() (controller.RestController, error) {
+	commandService := service.NewCommandService(repository.NewLocalCommandRepository())
+	dockerRepository := repository.NewDockerRepository()
+	dockerAux := auxillary.NewDockerAuxillary(dockerRepository)
+	dockerService, err := service.NewDockerService(dockerRepository, dockerAux)
+	if err != nil {
+		return nil, err
+	}
+	dockerConfig := conf.GetDockerConfig()
+	dockerUseCase, err := usecase.NewDockerUseCase(dockerConfig, dockerService, commandService)
+	if err != nil {
+		return nil, err
+	}
+
+	restHandler := handler.NewRestHandler(dockerUseCase, commandService)
+	restRouter := mux.NewRouter()
+	restConfig := conf.GetRestConfig()
+	restServer := controller.NewRestController(restConfig, restHandler, restRouter)
+	return restServer, nil
+}
 
 func main() {
-	util.DisplayBanner()
-	conf = util.GetConfig()
-	log.SetFlags(log.LstdFlags | log.Llongfile)
-	rest.StartServer()
+	if len(os.Args) == 2 && os.Args[1] == "test" { //Run some basic docker functionality tests
+		dockerTest(false)
+		os.Exit(0)
+	}
+
+	if len(os.Args) == 2 && os.Args[1] == "clean" { //Clean some basic docker functionality tests
+		dockerTest(true)
+		os.Exit(0)
+	}
+
+	restServer, err := getRestServer()
+	if err != nil {
+		panic(err)
+	}
+	log.Info("starting the rest server")
+	restServer.Start()
 }

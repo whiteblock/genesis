@@ -18,11 +18,26 @@
 
 package entity
 
-type Volume struct {
-	Name string
+//VolumeConfig is the configuration options for volumes
+type VolumeConfig struct {
+	//Driver is the docker volume to use
+	Driver string
+	//DriverOpts are the options to supply to the driver
+	DriverOpts map[string]string
 }
 
-type MountableVolume struct {
-	Name  string
-	Mount string
+//Volume represents a docker volume which may be shared among multiple containers
+type Volume struct {
+	//Name is the name of the docker volume
+	Name string `json:"name"`
+	//Labels to be attached to the volume
+	Labels map[string]string `json:"labels"`
+	VolumeConfig
+}
+
+//Mount represents the information needed for the mounting of a volume
+type Mount struct {
+	Name      string `json:"name"`
+	Directory string `json:"directory"`
+	ReadOnly  bool   `json:"readOnly"`
 }

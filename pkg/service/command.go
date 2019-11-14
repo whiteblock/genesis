@@ -20,8 +20,54 @@ package service
 
 import (
 	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/repository"
 )
 
+//CommandService is an interface to where the commands are kept for querying
 type CommandService interface {
-	CheckDependenciesExecuted(cmd command.Command) bool
+	//CheckDependenciesExecuted returns true if all of the commands dependencies have executed
+	CheckDependenciesExecuted(cmd command.Command) (bool, error)
+	//ReportCommandResult reports that the command has finished execution, with the result of execution
+	ReportCommandResult(cmd command.Command, res entity.Result) error
+}
+
+type commandService struct {
+	repo repository.CommandRepository
+}
+
+//NewCommandService creates a new CommandService
+func NewCommandService(repo repository.CommandRepository) CommandService {
+	return &commandService{repo: repo}
+}
+
+type depCheckResult struct {
+	executed bool
+	err      error
+}
+
+//CheckDependenciesExecuted returns true if all of the commands dependencies have executed
+func (cs commandService) CheckDependenciesExecuted(cmd command.Command) (bool, error) {
+	resChan := make(chan depCheckResult, len(cmd.Dependencies))
+	for _, dep := range cmd.Dependencies {
+		go func(depID string) {
+			executed, err := cs.repo.HasCommandExecuted(depID)
+			resChan <- depCheckResult{executed: executed, err: err}
+		}(dep)
+	}
+	for range cmd.Dependencies {
+		result := <-resChan
+		if result.err != nil {
+			return false, result.err
+		}
+		if result.executed == false {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+// ReportCommandResult reports that the command has finished execution, with the result of execution
+func (cs commandService) ReportCommandResult(cmd command.Command, res entity.Result) error {
+	return cs.repo.ReportCommandFinished(cmd.ID, res)
 }

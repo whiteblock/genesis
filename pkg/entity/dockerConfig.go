@@ -18,8 +18,15 @@
 
 package entity
 
+//DockerConfig represents the configuration needed to communicate with docker daemons
 type DockerConfig struct {
-	CACertPath string
-	CertPath   string
-	KeyPath    string
+	//CACertPath is the filepath to the CA Certificate
+	CACertPath string `json:"caCertPath"`
+	//CertPath is the filepath to the Certificate for TLS
+	CertPath string `json:"certPath"`
+	//KeyPath is the filepath to the private key for TLS
+	KeyPath string `json:"keyPath"`
+	//LocalMode causes the TLS parameters to be ignored and Genesis
+	//to assume that the docker daemon is on the local machine
+	LocalMode bool `json:"localMode"`
 }
