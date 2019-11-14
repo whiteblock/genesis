@@ -22,202 +22,18 @@
 package util
 
 import (
-	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"runtime"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/go.uuid"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"runtime"
-	"strings"
 )
-
-// HTTPRequest Sends a HTTP request and returns the body. Gives an error if the http request failed
-// or returned a non success code.
-func HTTPRequest(method string, url string, bodyData string) ([]byte, error) {
-	log.WithFields(log.Fields{"method": method, "url": url, "body": bodyData}).Trace("sending an http request")
-	body := strings.NewReader(bodyData)
-	req, err := http.NewRequest(method, url, body)
-	if err != nil {
-		return nil, LogError(err)
-	}
-
-	req.Close = true
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, LogError(err)
-	}
-
-	defer resp.Body.Close()
-	buf := new(bytes.Buffer)
-
-	_, err = buf.ReadFrom(resp.Body)
-	if err != nil {
-		return nil, LogError(err)
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf(buf.String())
-	}
-	return []byte(buf.String()), nil
-}
-
-// JwtHTTPRequest is similar to HttpRequest, but it have the content-type set as application/json and it will
-// put the given jwt in the auth header
-func JwtHTTPRequest(method string, url string, jwt string, bodyData string) (string, error) {
-	log.WithFields(log.Fields{"method": method, "url": url, "body": bodyData}).Trace("sending an http request with a jwt")
-	body := strings.NewReader(bodyData)
-	req, err := http.NewRequest(method, url, body)
-	if err != nil {
-		return "", LogError(err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", jwt))
-	req.Close = true
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", LogError(err)
-	}
-
-	defer resp.Body.Close()
-	buf := new(bytes.Buffer)
-
-	_, err = buf.ReadFrom(resp.Body)
-	if err != nil {
-		return "", LogError(err)
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf(buf.String())
-	}
-	return buf.String(), nil
-}
-
-// ExtractJwt will attempt to extract and return the jwt from the auth header
-func ExtractJwt(r *http.Request) (string, error) {
-	tokenString := r.Header.Get("Authorization")
-
-	if len(tokenString) == 0 {
-		return "", fmt.Errorf("missing JWT in authorization header")
-	}
-	splt := strings.Split(tokenString, " ")
-	if len(splt) < 2 {
-		return "", fmt.Errorf("invalid auth header")
-	}
-	return splt[1], nil
-}
-
-//GetKidFromJwt will attempt to extract the kid from the given jwt
-func GetKidFromJwt(jwt string) (string, error) {
-	if len(jwt) == 0 {
-		return "", fmt.Errorf("given empty string for JWT")
-	}
-	headerb64 := strings.Split(jwt, ".")[0]
-	headerJSON, err := base64.StdEncoding.DecodeString(headerb64)
-	if err != nil {
-		return "", LogError(err)
-	}
-	var header map[string]interface{}
-	err = json.Unmarshal(headerJSON, &header)
-	if err != nil {
-		return "", LogError(err)
-	}
-	kidAsI, ok := header["kid"]
-	if !ok {
-		return "", fmt.Errorf("JWT does not have kid in header")
-	}
-	kid, ok := kidAsI.(string)
-	if !ok {
-		return "", fmt.Errorf("kid is not string as expected")
-	}
-	return kid, nil
-}
 
 //GetUUIDString generates a new UUID
 func GetUUIDString() (string, error) {
 	uid, err := uuid.NewV4()
 	return uid.String(), err
-}
-
-/****Basic Linux Functions****/
-
-// Rm removes all of the given directories or files. Convenience function for os.RemoveAll
-func Rm(directories ...string) error {
-	for _, directory := range directories {
-		log.WithFields(log.Fields{"dir": directory}).Info("removing directory")
-
-		err := os.RemoveAll(directory)
-		if err != nil {
-			return LogError(err)
-		}
-	}
-	return nil
-}
-
-// Lsr lists the contents of a directory recursively
-func Lsr(_dir string) ([]string, error) {
-	dir := _dir
-	if dir[len(dir)-1:] != "/" {
-		dir += "/"
-	}
-	out := []string{}
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		return nil, LogError(err)
-	}
-	for _, f := range files {
-		if f.IsDir() {
-			contents, err := Lsr(fmt.Sprintf("%s%s/", dir, f.Name()))
-			if err != nil {
-				return nil, LogError(err)
-			}
-			out = append(out, contents...)
-		} else {
-			out = append(out, fmt.Sprintf("%s%s", dir, f.Name()))
-		}
-	}
-	return out, nil
-}
-
-// CombineConfig combines an Array with \n as the delimiter.
-// Useful for generating configuration files. DEPRECATED
-func CombineConfig(entries []string) string {
-	out := ""
-	for _, entry := range entries {
-		out += fmt.Sprintf("%s\n", entry)
-	}
-	return out
-}
-
-/*
-   BashExec executes _cmd in bash then return the result
-*/
-/*func BashExec(_cmd string) (string, error) {
-	cmd := exec.Command("bash", "-c", _cmd)
-
-	var resultsRaw bytes.Buffer
-
-	cmd.Stdout = &resultsRaw
-	err := cmd.Start()
-	if err != nil {
-		return "", LogError(err)
-	}
-	err = cmd.Wait()
-	if err != nil {
-		return "", LogError(err)
-	}
-
-	return resultsRaw.String(), nil
-}*/
-
-// GetPath extracts the base path of the given path
-func GetPath(path string) string {
-	index := strings.LastIndex(path, "/")
-	if index != -1 {
-		return path
-	}
-	return path[:index]
 }
 
 /******* JSON helper functions *******/
@@ -278,7 +94,6 @@ func MergeStringMaps(m1 map[string]interface{}, m2 map[string]interface{}) map[s
 
 // ConvertToStringMap converts a map of string to interface to a map of string to json
 func ConvertToStringMap(data map[string]interface{}) map[string]string {
-
 	out := make(map[string]string)
 
 	for key, value := range data {
@@ -318,4 +133,11 @@ func LogError(err error) error {
 	}
 
 	return err
+}
+
+// LogErrorf formats an error message, logs that error and returns that error.
+// Used to help reduce code clutter and unify the error handling in the code.
+// Has no effect if err == nil
+func LogErrorf(format string, a ...interface{}) error {
+	return LogError(fmt.Errorf(format, a...))
 }

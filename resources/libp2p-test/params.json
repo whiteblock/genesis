@@ -1,8 +1,0 @@
-[
-    ["router","string"],
-    ["connections","int"],
-    ["interval","int"],
-    ["senders","int"],
-    ["payloadSize","int"],
-    ["useValgrind","bool"]
-]

@@ -12,7 +12,7 @@ FROM alpine:3.10 as final
 
 RUN apk add ca-certificates
 RUN mkdir -p /etc/whiteblock
-RUN mkdir -p /genesis
+RUN mkdir -p /genesis 
 
 WORKDIR /genesis
 

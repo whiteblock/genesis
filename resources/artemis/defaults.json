@@ -1,5 +1,0 @@
-{
-    "validators": 16,
-    "networkMode": "hobbits",
-    "constantsSource":"https://raw.githubusercontent.com/PegaSysEng/artemis/master/config/config.toml"
-}

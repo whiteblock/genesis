@@ -35,7 +35,5 @@ influxPassword: ""
 # Misc
 maxRunAttempts: 30
 maxConnections: 50
-nibblerEndPoint: "https://storage.googleapis.com/genesis-public/nibbler/dev/bin/linux/amd64/nibbler"
-disableNibbler: false
 disableTestnetReporting: false
 maxCommandOutputLogSize: 200000 #200kB max output to be logged
