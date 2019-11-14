@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
@@ -286,6 +287,35 @@ func TestContainer_GetEntryPoint(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			assert.Equal(t, tt.expected, tt.c.GetEntryPoint())
+		})
+	}
+}
+
+func TestContainer_GetMounts(t *testing.T) {
+	var tests = []struct {
+		c        Container
+		expected []mount.Mount
+	}{
+		{
+			c:        Container{},
+			expected: []mount.Mount{},
+		},
+		{
+			c: Container{
+				Volumes: []Mount{Mount{Name: "test", Directory: "/opt/whiteblock", ReadOnly: false}},
+			},
+			expected: []mount.Mount{mount.Mount{
+				Type:     mount.TypeVolume,
+				Source:   "test",
+				Target:   "/opt/whiteblock",
+				ReadOnly: false,
+			}},
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.c.GetMounts())
 		})
 	}
 }

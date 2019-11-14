@@ -34,3 +34,10 @@ type Volume struct {
 	Labels map[string]string `json:"labels"`
 	VolumeConfig
 }
+
+//Mount represents the information needed for the mounting of a volume
+type Mount struct {
+	Name      string `json:"name"`
+	Directory string `json:"directory"`
+	ReadOnly  bool   `json:"readOnly"`
+}
