@@ -19,13 +19,15 @@
 package auxillary
 
 import (
-	//log "github.com/sirupsen/logrus"
 	"context"
 	"fmt"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	//log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"io/ioutil"
+	"strings"
 )
 
 //DockerAuxillary provides extra functions for docker service, which could be placed inside of docker
@@ -39,6 +41,9 @@ type DockerAuxillary interface {
 
 	//GetNetworkByName attempts to find a network with the given name and return information on it.
 	GetNetworkByName(ctx context.Context, cli *client.Client, networkName string) (types.NetworkResource, error)
+
+	//GetVolumeByName attempts to find a volume with the given name and return information on it.
+	GetVolumeByName(ctx context.Context, cli *client.Client, volumeName string) (*types.Volume, error)
 
 	//HostHasImage returns true if the docker host has an image matching what was given
 	HostHasImage(ctx context.Context, cli *client.Client, image string) (bool, error)
@@ -123,10 +128,28 @@ func (da dockerAuxillary) GetContainerByName(ctx context.Context, cli *client.Cl
 	}
 	for _, cntr := range cntrs {
 		for _, name := range cntr.Names {
-			if name == containerName {
+			if strings.Trim(name, "/") == strings.Trim(containerName, "/") {
 				return cntr, nil
 			}
 		}
 	}
 	return types.Container{}, fmt.Errorf("could not find the container \"%s\"", containerName)
+}
+
+//GetVolumeByName attempts to find a volume with the given name and return information on it.
+func (da dockerAuxillary) GetVolumeByName(ctx context.Context, cli *client.Client, volumeName string) (*types.Volume, error) {
+	bdy, err := da.repo.VolumeList(ctx, cli, filters.Args{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, vol := range bdy.Volumes {
+		if vol == nil {
+			continue
+		}
+		if vol.Name == volumeName {
+			return vol, nil
+		}
+	}
+	return nil, fmt.Errorf("could not find the volume \"%s\"", volumeName)
 }
