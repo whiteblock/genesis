@@ -25,18 +25,18 @@ import (
 type OrderType string
 
 const (
-	Createcontainer = OrderType("createcontainer")
-	Startcontainer  = OrderType("startcontainer")
-	Removecontainer = OrderType("removecontainer")
-	Createnetwork = OrderType("createnetwork")
-	Attachnetwork = OrderType("attachnetwork")
-	Detachnetwork = OrderType("detachnetwork")
-	Removenetwork = OrderType("removenetwork")
-	Createvolume = OrderType("createvolume")
-	Removevolume = OrderType("removevolume")
-	Putfile = OrderType("putfile")
+	Createcontainer    = OrderType("createcontainer")
+	Startcontainer     = OrderType("startcontainer")
+	Removecontainer    = OrderType("removecontainer")
+	Createnetwork      = OrderType("createnetwork")
+	Attachnetwork      = OrderType("attachnetwork")
+	Detachnetwork      = OrderType("detachnetwork")
+	Removenetwork      = OrderType("removenetwork")
+	Createvolume       = OrderType("createvolume")
+	Removevolume       = OrderType("removevolume")
+	Putfile            = OrderType("putfile")
 	Putfileincontainer = OrderType("putfileincontainer")
-	Emulation = OrderType("emulation")
+	Emulation          = OrderType("emulation")
 )
 
 // Order to be executed by genesis
