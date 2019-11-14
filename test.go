@@ -118,7 +118,7 @@ func createContainer(dockerUseCase usecase.DockerUseCase) {
 		Name:    "tester",
 		Network: []string{"testnet"},
 		Ports:   map[int]int{8888: 8889},
-		Volumes: map[string]entity.Volume{}, //TODO
+		Volumes: []entity.Mount{}, //TODO
 		Image:   "nginx:latest",
 	}
 	testContainer.Cpus = "1"

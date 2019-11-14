@@ -20,6 +20,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-connections/nat"
@@ -55,7 +56,7 @@ type Container struct {
 	Ports map[int]int `json:"ports"`
 
 	// Volumes are the docker volumes to be mounted on this container
-	Volumes map[string]Volume `json:"volumes"`
+	Volumes []Mount `json:"volumes"`
 
 	// Cpus should be a floating point value represented as a string, and
 	// is  equivalent to the percentage of a single cores time which can be used
@@ -122,6 +123,20 @@ func (c Container) GetEntryPoint() strslice.StrSlice {
 		return nil
 	}
 	return strslice.StrSlice(append([]string{c.EntryPoint}, c.Args...))
+}
+
+//GetMounts gets the docker mounts for the docker container
+func (c Container) GetMounts() []mount.Mount {
+	out := []mount.Mount{}
+	for _, vol := range c.Volumes {
+		out = append(out, mount.Mount{
+			Type:     mount.TypeVolume,
+			Source:   vol.Name,
+			Target:   vol.Directory,
+			ReadOnly: vol.ReadOnly,
+		})
+	}
+	return out
 }
 
 func memconv(mem string) (int64, error) {
