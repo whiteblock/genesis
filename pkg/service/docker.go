@@ -259,10 +259,44 @@ func (ds dockerService) RemoveNetwork(ctx context.Context, cli *client.Client, n
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, network string,
+func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, networkName string,
 	containerName string) entity.Result {
-	//TODO
-	return entity.Result{}
+
+	errChan := make(chan error, 2)
+	netIDChan := make(chan string, 1)
+	cntrIDChan := make(chan string, 1)
+	defer close(errChan)
+	defer close(netIDChan)
+	defer close(cntrIDChan)
+
+	go func(networkName string) {
+		net, err := ds.aux.GetNetworkByName(ctx, cli, networkName)
+		errChan <- err
+		netIDChan <- net.ID
+	}(networkName)
+
+	go func(containerName string) {
+		cntr, err := ds.aux.GetContainerByName(ctx, cli, containerName)
+		errChan <- err
+		cntrIDChan <- cntr.ID
+	}(containerName)
+
+	for i := 0; i < 2; i++ {
+		err := <-errChan
+		if err != nil {
+			return entity.NewFatalResult(err)
+		}
+	}
+	networkID := <-netIDChan
+	containerID := <-cntrIDChan
+
+	err := ds.repo.NetworkConnect(ctx, cli, networkID, containerID, &network.EndpointSettings{
+		NetworkID: networkID,
+	})
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+	return entity.NewSuccessResult()
 }
 
 func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, vol entity.Volume) entity.Result {
