@@ -37,12 +37,13 @@ func getRestServer() (controller.RestController, error) {
 	commandService := service.NewCommandService(repository.NewLocalCommandRepository())
 	dockerRepository := repository.NewDockerRepository()
 	dockerAux := auxillary.NewDockerAuxillary(dockerRepository)
-	dockerService, err := service.NewDockerService(dockerRepository, dockerAux)
+	dockerConfig := conf.GetDockerConfig()
+	dockerService, err := service.NewDockerService(dockerRepository, dockerAux, dockerConfig)
 	if err != nil {
 		return nil, err
 	}
-	dockerConfig := conf.GetDockerConfig()
-	dockerUseCase, err := usecase.NewDockerUseCase(dockerConfig, dockerService, commandService)
+
+	dockerUseCase, err := usecase.NewDockerUseCase(dockerService, commandService)
 	if err != nil {
 		return nil, err
 	}

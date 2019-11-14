@@ -51,16 +51,15 @@ type DockerUseCase interface {
 	Execute(ctx context.Context, cmd command.Command) entity.Result
 }
 
-type dockerUseCase struct { //TODO: move to service
-	conf       entity.DockerConfig
+type dockerUseCase struct {
 	service    service.DockerService
 	cmdService service.CommandService
 }
 
 //NewDockerUseCase creates a DockerUseCase arguments given the proper dep injections
-func NewDockerUseCase(conf entity.DockerConfig, service service.DockerService,
+func NewDockerUseCase(service service.DockerService,
 	cmdService service.CommandService) (DockerUseCase, error) {
-	return &dockerUseCase{conf: conf, service: service, cmdService: cmdService}, nil
+	return &dockerUseCase{service: service, cmdService: cmdService}, nil
 }
 
 // TimeSupplier supplies the time as a unix timestamp
@@ -85,7 +84,7 @@ func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
 
 // Execute executes the command with the given context
 func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entity.Result {
-	cli, err := duc.service.CreateClient(duc.conf, cmd.Target.IP)
+	cli, err := duc.service.CreateClient(cmd.Target.IP)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}

@@ -524,3 +524,6 @@ func TestDockerService_RemoveVolume(t *testing.T) {
 	assert.True(t, repo.AssertNumberOfCalls(t, "VolumeRemove", 1))
 	repo.AssertExpectations(t)
 }
+func (ds dockerService) TestDockerService_Emulation(t *testing.T) {
+
+}

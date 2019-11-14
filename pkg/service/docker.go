@@ -61,7 +61,7 @@ type DockerService interface {
 	Emulation(ctx context.Context, cli *client.Client, netem command.Netconf) entity.Result
 
 	//CreateClient creates a new client for connecting to the docker daemon
-	CreateClient(conf entity.DockerConfig, host string) (*client.Client, error)
+	CreateClient(host string) (*client.Client, error)
 
 	//GetNetworkingConfig determines the proper networking config based on the docker hosts state and the networks
 	GetNetworkingConfig(ctx context.Context, cli *client.Client, networks strslice.StrSlice) (*network.NetworkingConfig, error)
@@ -70,16 +70,18 @@ type DockerService interface {
 type dockerService struct {
 	repo repository.DockerRepository
 	aux  auxillary.DockerAuxillary
+	conf entity.DockerConfig
 }
 
 //NewDockerService creates a new DockerService
-func NewDockerService(repo repository.DockerRepository, aux auxillary.DockerAuxillary) (DockerService, error) {
+func NewDockerService(repo repository.DockerRepository, aux auxillary.DockerAuxillary,
+	conf entity.DockerConfig) (DockerService, error) {
 	return dockerService{repo: repo, aux: aux}, nil
 }
 
 //CreateClient creates a new client for connecting to the docker daemon
-func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*client.Client, error) {
-	if conf.LocalMode {
+func (ds dockerService) CreateClient(host string) (*client.Client, error) {
+	if ds.conf.LocalMode {
 		return client.NewClientWithOpts(
 			client.WithAPIVersionNegotiation(),
 		)
@@ -87,7 +89,7 @@ func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*cl
 	return client.NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
 		client.WithHost(host),
-		client.WithTLSClientConfig(conf.CACertPath, conf.CertPath, conf.KeyPath),
+		client.WithTLSClientConfig(ds.conf.CACertPath, ds.conf.CertPath, ds.conf.KeyPath),
 	)
 }
 
