@@ -22,6 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
+	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 )
 
@@ -105,8 +106,8 @@ func (c Config) GetDockerConfig() entity.DockerConfig {
 }
 
 // GetVolumeConfig extracts the fields of this object representing VolumeConfig
-func (c Config) GetVolumeConfig() entity.VolumeConfig {
-	return entity.VolumeConfig{
+func (c Config) GetVolumeConfig() command.VolumeConfig {
+	return command.VolumeConfig{
 		Driver:     c.VolumeDriver,
 		DriverOpts: c.VoluemDriverOpts,
 	}
