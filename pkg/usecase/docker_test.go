@@ -61,7 +61,6 @@ func TestDockerUseCase_Run_depCheck(t *testing.T) {
 	assert.NotNil(t, res.Error)
 
 	assert.Equal(t, entity.TooSoonType, res.Type)
-	assert.True(t, duc.AssertNumberOfCalls(t, "Run", 1))
 }
 
 func TestDockerUseCase_TimeSupplier(t *testing.T) {

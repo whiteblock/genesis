@@ -21,16 +21,17 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	service "github.com/whiteblock/genesis/mocks/pkg/service"
 	usecase "github.com/whiteblock/genesis/mocks/pkg/usecase"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-	"time"
 )
 
 func TestRestHandler(t *testing.T) {
@@ -88,4 +89,20 @@ func TestRestHandler(t *testing.T) {
 	}
 	uc.AssertNumberOfCalls(t, "Run", len(commands))
 	close(rh.(*restHandler).cmdChan)
+}
+
+func TestRestHandler_HealthCheck(t *testing.T) {
+	req, err := http.NewRequest("GET", "/health", bytes.NewReader([]byte{}))
+	assert.NoError(t, err)
+
+	uc := new(usecase.DockerUseCase)
+
+	serv := new(service.CommandService)
+	serv.On("ReportCommandResult", mock.Anything, mock.Anything)
+
+	rh := NewRestHandler(uc, serv)
+	recorder := httptest.NewRecorder()
+	rh.HealthCheck(recorder, req)
+
+	assert.Equal(t, "OK", recorder.Body.String())
 }
