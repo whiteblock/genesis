@@ -20,7 +20,7 @@ package entity
 
 import (
 	"archive/tar"
-	"fmt"
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -29,7 +29,7 @@ import (
 	"testing"
 )
 
-func File_writeToTar_Success(t *testing.T) {
+func TestFile_writeToTar_Success(t *testing.T) {
 	testFile := File{
 		Mode:        0644,
 		Destination: "pkg/test",
@@ -38,7 +38,7 @@ func File_writeToTar_Success(t *testing.T) {
 	tw := new(mocks.TarWriter)
 	tw.On("WriteHeader", mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 		require.Len(t, args, 1)
-		hdr, ok := args.Get(1).(*tar.Header)
+		hdr, ok := args.Get(0).(*tar.Header)
 		require.True(t, ok)
 		require.NotNil(t, hdr)
 		assert.Equal(t, filepath.Base(testFile.Destination), hdr.Name)
@@ -48,7 +48,7 @@ func File_writeToTar_Success(t *testing.T) {
 
 	tw.On("Write", mock.Anything).Return(len(testFile.Data), nil).Run(func(args mock.Arguments) {
 		require.Len(t, args, 1)
-		data, ok := args.Get(1).([]byte)
+		data, ok := args.Get(0).([]byte)
 		require.True(t, ok)
 		require.NotNil(t, data)
 		assert.ElementsMatch(t, testFile.Data, data)
@@ -59,16 +59,16 @@ func File_writeToTar_Success(t *testing.T) {
 	tw.AssertExpectations(t)
 }
 
-func File_writeToTar_Failure(t *testing.T) {
+func TestFile_writeToTar_Failure(t *testing.T) {
 	testFile := File{
 		Mode:        0644,
 		Destination: "pkg/test",
 		Data:        []byte("test"),
 	}
 	tw := new(mocks.TarWriter)
-	tw.On("WriteHeader", mock.Anything).Return(fmt.Errorf("err")).Run(func(args mock.Arguments) {
+	tw.On("WriteHeader", mock.Anything).Return(errors.New("err")).Run(func(args mock.Arguments) {
 		require.Len(t, args, 1)
-		hdr, ok := args.Get(1).(*tar.Header)
+		hdr, ok := args.Get(0).(*tar.Header)
 		require.True(t, ok)
 		require.NotNil(t, hdr)
 		assert.Equal(t, filepath.Base(testFile.Destination), hdr.Name)
@@ -81,7 +81,7 @@ func File_writeToTar_Failure(t *testing.T) {
 	tw.AssertExpectations(t)
 }
 
-func File_GetTarReader(t *testing.T) {
+func TestFile_GetTarReader(t *testing.T) {
 	testFile := File{
 		Mode:        0644,
 		Destination: "pkg/test",
@@ -90,4 +90,14 @@ func File_GetTarReader(t *testing.T) {
 	rdr, err := testFile.GetTarReader()
 	assert.NoError(t, err)
 	assert.NotNil(t, rdr)
+}
+
+func TestFile_GetDir(t *testing.T) {
+	testFile := File{
+		Mode:        0644,
+		Destination: "pkg/test",
+		Data:        []byte("test"),
+	}
+	dir := testFile.GetDir()
+	assert.Equal(t, "pkg", dir)
 }

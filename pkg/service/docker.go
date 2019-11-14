@@ -54,8 +54,8 @@ type DockerService interface {
 	DetachNetwork(ctx context.Context, cli *client.Client, network string, container string) entity.Result
 	CreateVolume(ctx context.Context, cli *client.Client, volume entity.Volume) entity.Result
 	RemoveVolume(ctx context.Context, cli *client.Client, name string) entity.Result
-	PlaceFileInContainer(ctx context.Context, cli *client.Client, containerName string, file entity.File) entity.Result
-	PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file entity.File) entity.Result
+	PlaceFileInContainer(ctx context.Context, cli *client.Client, containerName string, file entity.IFile) entity.Result
+	PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file entity.IFile) entity.Result
 	Emulation(ctx context.Context, cli *client.Client, netem entity.Netconf) entity.Result
 
 	//CreateClient creates a new client for connecting to the docker daemon
@@ -348,12 +348,28 @@ func (ds dockerService) RemoveVolume(ctx context.Context, cli *client.Client, na
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli *client.Client, containerName string, file entity.File) entity.Result {
-	//TODO
-	return entity.Result{}
+func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli *client.Client,
+	containerName string, file entity.IFile) entity.Result {
+
+	cntr, err := ds.aux.GetContainerByName(ctx, cli, containerName)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	rdr, err := file.GetTarReader()
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	err = ds.repo.CopyToContainer(ctx, cli, cntr.ID, file.GetDir(), rdr, types.CopyToContainerOptions{
+		AllowOverwriteDirWithFile: false,
+		CopyUIDGID:                false,
+	})
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file entity.File) entity.Result {
+func (ds dockerService) PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file entity.IFile) entity.Result {
 	//TODO
 	return entity.Result{}
 }

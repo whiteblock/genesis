@@ -33,6 +33,12 @@ type TarWriter interface {
 	WriteHeader(hdr *tar.Header) error
 }
 
+//IFile represents the operations needed for the file object
+type IFile interface {
+	GetTarReader() (io.Reader, error)
+	GetDir() string
+}
+
 // File represents a file which will be placed inside either a docker container or volume
 type File struct {
 	//Mode is permission and mode bits
@@ -60,4 +66,9 @@ func (file File) writeToTar(tw TarWriter) error {
 func (file File) GetTarReader() (io.Reader, error) {
 	var buf bytes.Buffer
 	return &buf, file.writeToTar(tar.NewWriter(&buf))
+}
+
+//GetDir gets the destination directory
+func (file File) GetDir() string {
+	return filepath.Dir(file.Destination)
 }

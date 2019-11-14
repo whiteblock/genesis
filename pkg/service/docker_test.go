@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
 	repository "github.com/whiteblock/genesis/mocks/pkg/repository"
 	auxMock "github.com/whiteblock/genesis/mocks/pkg/service"
 	"github.com/whiteblock/genesis/pkg/entity"
@@ -326,6 +327,53 @@ func TestDockerService_CreateVolume(t *testing.T) {
 	assert.NoError(t, res.Error)
 
 	repo.AssertExpectations(t)
+}
+
+func TestDockerService_PlaceFileInContainer(t *testing.T) {
+	testDir := "/pkg"
+	testContainer := types.Container{Names: []string{"test1"}, ID: "id1"}
+
+	file := new(entityMock.IFile)
+	file.On("GetDir").Return(testDir).Once()
+	file.On("GetTarReader").Return(nil, nil).Once()
+
+	repo := new(repository.DockerRepository)
+	repo.On("CopyToContainer", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 6)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+			assert.Equal(t, testContainer.ID, args.String(2))
+			assert.Equal(t, testDir, args.String(3))
+			assert.Nil(t, args.Get(4))
+			{
+				opts, ok := args.Get(5).(types.CopyToContainerOptions)
+				require.True(t, ok)
+				assert.False(t, opts.AllowOverwriteDirWithFile)
+				assert.False(t, opts.CopyUIDGID)
+			}
+		}).Once()
+
+	aux := new(auxMock.DockerAuxillary)
+	aux.On("GetContainerByName", mock.Anything, mock.Anything, mock.Anything).Return(testContainer, nil).Run(
+		func(args mock.Arguments) {
+
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+			assert.Equal(t, testContainer.Names[0], args.String(2))
+		}).Once()
+
+	ds, err := NewDockerService(repo, aux)
+	assert.NoError(t, err)
+
+	res := ds.PlaceFileInContainer(nil, nil, testContainer.Names[0], file)
+	assert.NoError(t, res.Error)
+
+	repo.AssertExpectations(t)
+	aux.AssertExpectations(t)
+	file.AssertExpectations(t)
 }
 
 func TestDockerService_AttachNetwork(t *testing.T) {
