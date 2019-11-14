@@ -25,7 +25,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/command"
-	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
@@ -57,7 +56,7 @@ func mintCommand(i interface{}, orderType command.OrderType) command.Command {
 }
 
 func createVolume(dockerUseCase usecase.DockerUseCase, name string) {
-	vol := entity.Volume{
+	vol := command.Volume{
 		Name: name,
 		Labels: map[string]string{
 			"FOO": "BAR",
@@ -86,7 +85,7 @@ func removeContainer(dockerUseCase usecase.DockerUseCase) {
 }
 
 func createNetwork(dockerUseCase usecase.DockerUseCase, name string, num int) {
-	testNetwork := entity.Network{
+	testNetwork := command.Network{
 		Name:   name,
 		Global: true,
 		Labels: map[string]string{
@@ -125,7 +124,7 @@ func removeNetwork(dockerUseCase usecase.DockerUseCase, name string) {
 }
 
 func createContainer(dockerUseCase usecase.DockerUseCase) {
-	testContainer := entity.Container{
+	testContainer := command.Container{
 		BoundCPUs: nil, //TODO
 		Detach:    false,
 		Environment: map[string]string{
@@ -137,7 +136,7 @@ func createContainer(dockerUseCase usecase.DockerUseCase) {
 		Name:    "tester",
 		Network: []string{"testnet"},
 		Ports:   map[int]int{8888: 8889},
-		Volumes: []entity.Mount{entity.Mount{
+		Volumes: []command.Mount{command.Mount{
 			Name:      "test_volume",
 			Directory: "/foo/bar",
 			ReadOnly:  false,
@@ -163,7 +162,7 @@ func putFile(dockerUseCase usecase.DockerUseCase) {
 
 	cmd := mintCommand(map[string]interface{}{
 		"container": "tester",
-		"file": entity.File{
+		"file": command.File{
 			Mode:        0600,
 			Destination: "/foo/bar/baz",
 			Data:        []byte("test"),

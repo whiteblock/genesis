@@ -19,6 +19,7 @@
 package service
 
 import (
+	"github.com/whiteblock/genesis/pkg/command"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -32,7 +33,6 @@ import (
 	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
 	repoMock "github.com/whiteblock/genesis/mocks/pkg/repository"
 	auxMock "github.com/whiteblock/genesis/mocks/pkg/service"
-	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
 )
 
@@ -53,7 +53,7 @@ func TestNewDockerService(t *testing.T) {
 
 func TestDockerService_CreateContainer(t *testing.T) {
 	testNetwork := types.NetworkResource{Name: "Testnet", ID: "id1"}
-	testContainer := entity.Container{
+	testContainer := command.Container{
 		BoundCPUs:  nil, //TODO
 		Detach:     false,
 		EntryPoint: "/bin/bash",
@@ -66,7 +66,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		Name:    "TEST",
 		Network: []string{"Testnet"},
 		Ports:   map[int]int{8888: 8889},
-		Volumes: []entity.Mount{entity.Mount{Name: "volume1", Directory: "/foo/bar", ReadOnly: false}}, //TODO
+		Volumes: []command.Mount{command.Mount{Name: "volume1", Directory: "/foo/bar", ReadOnly: false}}, //TODO
 		Image:   "alpine",
 		Args:    []string{"test"},
 	}
@@ -190,7 +190,7 @@ func TestDockerService_StartContainer(t *testing.T) {
 }
 
 func TestDockerService_CreateNetwork(t *testing.T) {
-	testNetwork := entity.Network{
+	testNetwork := command.Network{
 		Name:   "testnet",
 		Global: true,
 		Labels: map[string]string{
@@ -491,7 +491,7 @@ func TestDockerService_CreateVolume(t *testing.T) {
 	ds, err := NewDockerService(repo, aux)
 	assert.NoError(t, err)
 
-	res := ds.CreateVolume(nil, nil, entity.Volume{
+	res := ds.CreateVolume(nil, nil, command.Volume{
 		Name:   "test_volume",
 		Labels: map[string]string{"foo": "bar"},
 	})

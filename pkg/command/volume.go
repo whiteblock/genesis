@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package entity
+package command
 
 //VolumeConfig is the configuration options for volumes
 type VolumeConfig struct {

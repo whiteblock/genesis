@@ -144,7 +144,7 @@ func (duc dockerUseCase) createContainerShim(ctx context.Context, cli *client.Cl
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var container entity.Container
+	var container command.Container
 	err = json.Unmarshal(raw, &container)
 	if err != nil {
 		return entity.NewFatalResult(err)
@@ -178,7 +178,7 @@ func (duc dockerUseCase) createNetworkShim(ctx context.Context, cli *client.Clie
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var net entity.Network
+	var net command.Network
 	err = json.Unmarshal(raw, &net)
 	if err != nil {
 		return entity.NewFatalResult(err)
@@ -227,7 +227,7 @@ func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli *client.Clien
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var volume entity.Volume
+	var volume command.Volume
 	err = json.Unmarshal(raw, &volume)
 	if err != nil {
 		return entity.NewFatalResult(err)
@@ -260,7 +260,7 @@ func (duc dockerUseCase) putFileShim(ctx context.Context, cli *client.Client, cm
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var file entity.File
+	var file command.File
 	err = json.Unmarshal(raw, &file)
 	if err != nil {
 		return entity.NewFatalResult(err)
@@ -284,7 +284,7 @@ func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli *client
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var file entity.File
+	var file command.File
 	err = json.Unmarshal(raw, &file)
 	if err != nil {
 		return entity.NewFatalResult(err)
@@ -297,7 +297,7 @@ func (duc dockerUseCase) emulationShim(ctx context.Context, cli *client.Client, 
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var netem entity.Netconf
+	var netem command.Netconf
 	err = json.Unmarshal(raw, &netem)
 	if err != nil {
 		return entity.NewFatalResult(err)

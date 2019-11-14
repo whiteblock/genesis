@@ -27,6 +27,7 @@ import (
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	log "github.com/sirupsen/logrus"
+	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
@@ -37,7 +38,7 @@ import (
 type DockerService interface {
 
 	//CreateContainer attempts to create a docker container
-	CreateContainer(ctx context.Context, cli *client.Client, container entity.Container) entity.Result
+	CreateContainer(ctx context.Context, cli *client.Client, container command.Container) entity.Result
 
 	//StartContainer attempts to start an already created docker container
 	StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result
@@ -46,17 +47,17 @@ type DockerService interface {
 	RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result
 
 	//CreateNetwork attempts to create a network
-	CreateNetwork(ctx context.Context, cli *client.Client, net entity.Network) entity.Result
+	CreateNetwork(ctx context.Context, cli *client.Client, net command.Network) entity.Result
 
 	//RemoveNetwork attempts to remove a network
 	RemoveNetwork(ctx context.Context, cli *client.Client, name string) entity.Result
 	AttachNetwork(ctx context.Context, cli *client.Client, network string, container string) entity.Result
 	DetachNetwork(ctx context.Context, cli *client.Client, network string, container string) entity.Result
-	CreateVolume(ctx context.Context, cli *client.Client, volume entity.Volume) entity.Result
+	CreateVolume(ctx context.Context, cli *client.Client, volume command.Volume) entity.Result
 	RemoveVolume(ctx context.Context, cli *client.Client, name string) entity.Result
-	PlaceFileInContainer(ctx context.Context, cli *client.Client, containerName string, file entity.IFile) entity.Result
-	PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file entity.IFile) entity.Result
-	Emulation(ctx context.Context, cli *client.Client, netem entity.Netconf) entity.Result
+	PlaceFileInContainer(ctx context.Context, cli *client.Client, containerName string, file command.IFile) entity.Result
+	PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file command.IFile) entity.Result
+	Emulation(ctx context.Context, cli *client.Client, netem command.Netconf) entity.Result
 
 	//CreateClient creates a new client for connecting to the docker daemon
 	CreateClient(conf entity.DockerConfig, host string) (*client.Client, error)
@@ -118,7 +119,7 @@ func (ds dockerService) GetNetworkingConfig(ctx context.Context, cli *client.Cli
 }
 
 //CreateContainer attempts to create a docker container
-func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, dContainer entity.Container) entity.Result {
+func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, dContainer command.Container) entity.Result {
 	errChan := make(chan error)
 	netConfChan := make(chan *network.NetworkingConfig)
 	defer close(errChan)
@@ -214,7 +215,7 @@ func (ds dockerService) RemoveContainer(ctx context.Context, cli *client.Client,
 }
 
 //CreateNetwork attempts to create a network
-func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, net entity.Network) entity.Result {
+func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, net command.Network) entity.Result {
 	networkCreate := types.NetworkCreate{
 		CheckDuplicate: true,
 		Attachable:     true,
@@ -325,7 +326,7 @@ func (ds dockerService) DetachNetwork(ctx context.Context, cli *client.Client,
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, vol entity.Volume) entity.Result {
+func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, vol command.Volume) entity.Result {
 	volConfig := volume.VolumeCreateBody{
 		Driver:     vol.Driver,
 		DriverOpts: vol.DriverOpts,
@@ -350,7 +351,7 @@ func (ds dockerService) RemoveVolume(ctx context.Context, cli *client.Client, na
 }
 
 func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli *client.Client,
-	containerName string, file entity.IFile) entity.Result {
+	containerName string, file command.IFile) entity.Result {
 
 	cntr, err := ds.aux.GetContainerByName(ctx, cli, containerName)
 	if err != nil {
@@ -370,12 +371,12 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli *client.Cl
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file entity.IFile) entity.Result {
+func (ds dockerService) PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file command.IFile) entity.Result {
 	//TODO
 	return entity.Result{}
 }
 
-func (ds dockerService) Emulation(ctx context.Context, cli *client.Client, netem entity.Netconf) entity.Result {
+func (ds dockerService) Emulation(ctx context.Context, cli *client.Client, netem command.Netconf) entity.Result {
 	//TODO
 	return entity.Result{}
 }
