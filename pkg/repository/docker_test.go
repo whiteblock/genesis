@@ -151,7 +151,25 @@ func TestDockerRepository_ImageLoad(t *testing.T) {
 }
 
 func TestDockerRepository_ImagePull(t *testing.T) {
-	//todo
+	cli := new(entityMock.Client)
+
+	refStr := "test"
+	options := types.ImagePullOptions{All: true}
+
+	cli.On("ImagePull", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, refStr, args.Get(1))
+			assert.Equal(t, options, args.Get(2))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	_, err := repo.ImagePull(nil, cli, refStr, options)
+	assert.NoError(t, err)
+
+	assert.True(t, cli.AssertNumberOfCalls(t, "ImagePull", 1))
 }
 
 func TestDockerRepository_ImageList(t *testing.T) {
