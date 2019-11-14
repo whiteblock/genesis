@@ -28,11 +28,26 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	repository "github.com/whiteblock/genesis/mocks/pkg/repository"
+	repoMock "github.com/whiteblock/genesis/mocks/pkg/repository"
 	auxMock "github.com/whiteblock/genesis/mocks/pkg/service"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
 )
+
+func TestNewDockerService(t *testing.T) {
+	repo := new(repoMock.DockerRepository)
+	aux := new(auxMock.DockerAuxillary)
+
+	expected := dockerService{
+		repo: repo,
+		aux: aux,
+	}
+
+	ds, err := NewDockerService(repo, aux)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expected, ds)
+}
 
 func TestDockerService_CreateContainer(t *testing.T) {
 	testNetwork := types.NetworkResource{Name: "Testnet", ID: "id1"}
@@ -56,7 +71,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 	testContainer.Cpus = "2.5"
 	testContainer.Memory = "5gb"
 
-	repo := new(repository.DockerRepository)
+	repo := new(repoMock.DockerRepository)
 	repo.On("ContainerCreate", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
 		container.ContainerCreateCreatedBody{}, nil).Run(func(args mock.Arguments) {
 		require.Len(t, args, 6)
@@ -141,7 +156,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 
 func TestDockerService_StartContainer(t *testing.T) {
 	containerName := "TEST"
-	repo := new(repository.DockerRepository)
+	repo := new(repoMock.DockerRepository)
 	repo.On("ContainerStart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
 		func(args mock.Arguments) {
 
@@ -169,7 +184,7 @@ func TestDockerService_CreateNetwork(t *testing.T) {
 		Gateway: "10.14.0.1",
 		Subnet:  "10.14.0.0/16",
 	}
-	repo := new(repository.DockerRepository)
+	repo := new(repoMock.DockerRepository)
 	repo.On("NetworkCreate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
 		types.NetworkCreateResponse{}, nil).Run(func(args mock.Arguments) {
 
@@ -218,7 +233,7 @@ func TestDockerService_CreateNetwork(t *testing.T) {
 }
 
 func TestDockerService_RemoveNetwork(t *testing.T) {
-	repo := new(repository.DockerRepository)
+	repo := new(repoMock.DockerRepository)
 	networks := []types.NetworkResource{
 		types.NetworkResource{Name: "test1", ID: "id1"},
 		types.NetworkResource{Name: "test2", ID: "id2"},
@@ -253,7 +268,7 @@ func TestDockerService_RemoveNetwork(t *testing.T) {
 }
 
 func TestDockerService_RemoveContainer(t *testing.T) {
-	repo := new(repository.DockerRepository)
+	repo := new(repoMock.DockerRepository)
 	cntrs := []types.Container{
 		types.Container{Names: []string{"test1", "test3"}, ID: "id1"},
 		types.Container{Names: []string{"test2", "test4"}, ID: "id2"},
@@ -291,43 +306,6 @@ func TestDockerService_RemoveContainer(t *testing.T) {
 	}
 }
 
-func TestDockerService_CreateVolume(t *testing.T) {
-	volume := types.Volume{
-		Name:   "test_volume",
-		Labels: map[string]string{"foo": "bar"},
-	}
-
-	repo := new(repository.DockerRepository)
-	repo.On("VolumeCreate", mock.Anything, mock.Anything, mock.Anything).Return(volume, nil).Run(
-		func(args mock.Arguments) {
-			require.Len(t, args, 3)
-			assert.Nil(t, args.Get(0))
-			assert.Nil(t, args.Get(1))
-
-			vol, ok := args.Get(2).(dockerVolume.VolumeCreateBody)
-			require.True(t, ok)
-			require.NotNil(t, vol)
-			assert.Contains(t, vol.Labels, "foo")
-
-			assert.Equal(t, volume.Name, vol.Name)
-			assert.Equal(t, volume.Labels["foo"], vol.Labels["foo"])
-
-		}).Once()
-
-	aux := *new(auxillary.DockerAuxillary)
-
-	ds, err := NewDockerService(repo, aux)
-	assert.NoError(t, err)
-
-	res := ds.CreateVolume(nil, nil, entity.Volume{
-		Name:   "test_volume",
-		Labels: map[string]string{"foo": "bar"},
-	})
-	assert.NoError(t, res.Error)
-
-	repo.AssertExpectations(t)
-}
-
 func TestDockerService_AttachNetwork(t *testing.T) {
 	cntr := types.Container{Names: []string{"test1"}, ID: "id1"}
 	net := types.NetworkResource{Name: "test2", ID: "id2"}
@@ -352,7 +330,7 @@ func TestDockerService_AttachNetwork(t *testing.T) {
 			assert.Equal(t, net.Name, args.String(2))
 		}).Once()
 
-	repo := new(repository.DockerRepository)
+	repo := new(repoMock.DockerRepository)
 	repo.On("NetworkConnect", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 
@@ -401,7 +379,7 @@ func TestDockerService_DetachNetwork(t *testing.T) {
 			assert.Equal(t, net.Name, args.String(2))
 		}).Once()
 
-	repo := new(repository.DockerRepository)
+	repo := new(repoMock.DockerRepository)
 	repo.On("NetworkDisconnect", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 
@@ -421,4 +399,66 @@ func TestDockerService_DetachNetwork(t *testing.T) {
 
 	repo.AssertExpectations(t)
 	aux.AssertExpectations(t)
+}
+
+func TestDockerService_CreateVolume(t *testing.T) {
+	volume := types.Volume{
+		Name:   "test_volume",
+		Labels: map[string]string{"foo": "bar"},
+	}
+
+	repo := new(repoMock.DockerRepository)
+	repo.On("VolumeCreate", mock.Anything, mock.Anything, mock.Anything).Return(volume, nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+
+			vol, ok := args.Get(2).(dockerVolume.VolumeCreateBody)
+			require.True(t, ok)
+			require.NotNil(t, vol)
+			assert.Contains(t, vol.Labels, "foo")
+
+			assert.Equal(t, volume.Name, vol.Name)
+			assert.Equal(t, volume.Labels["foo"], vol.Labels["foo"])
+
+		}).Once()
+
+	aux := *new(auxillary.DockerAuxillary)
+
+	ds, err := NewDockerService(repo, aux)
+	assert.NoError(t, err)
+
+	res := ds.CreateVolume(nil, nil, entity.Volume{
+		Name:   "test_volume",
+		Labels: map[string]string{"foo": "bar"},
+	})
+	assert.NoError(t, res.Error)
+
+	repo.AssertExpectations(t)
+}
+
+func TestDockerService_RemoveVolume(t *testing.T) {
+	name := "test_volume"
+
+	repo := new(repoMock.DockerRepository)
+	repo.On("VolumeRemove", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 4)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+			assert.Equal(t, name, args.Get(2))
+			assert.Equal(t, true, args.Get(3))
+		}).Once()
+
+	aux := *new(auxillary.DockerAuxillary)
+
+	ds, err := NewDockerService(repo, aux)
+	assert.NoError(t, err)
+
+	res := ds.RemoveVolume(nil, nil, name)
+	assert.NoError(t, res.Error)
+
+	assert.True(t, repo.AssertNumberOfCalls(t, "VolumeRemove", 1))
+	repo.AssertExpectations(t)
 }
