@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package entity
+package command
 
 //Netconf represents network impairments which are to be applied to a network
 type Netconf struct {

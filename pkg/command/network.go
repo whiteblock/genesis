@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package entity
+package command
 
 //Network represents a logic network on which containers exist
 type Network struct {

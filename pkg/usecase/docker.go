@@ -90,30 +90,30 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 		return entity.NewFatalResult(err)
 	}
 	log.WithField("client", cli).Trace("created a client")
-	switch strings.ToLower(cmd.Order.Type) {
-	case "createcontainer":
+	switch command.OrderType(strings.ToLower(string(cmd.Order.Type))) {
+	case command.Createcontainer:
 		return duc.createContainerShim(ctx, cli, cmd)
-	case "startcontainer":
+	case command.Startcontainer:
 		return duc.startContainerShim(ctx, cli, cmd)
-	case "removecontainer":
+	case command.Removecontainer:
 		return duc.removeContainerShim(ctx, cli, cmd)
-	case "createnetwork":
+	case command.Createnetwork:
 		return duc.createNetworkShim(ctx, cli, cmd)
-	case "attachnetwork":
+	case command.Attachnetwork:
 		return duc.attachNetworkShim(ctx, cli, cmd)
-	case "detachnetwork":
+	case command.Detachnetwork:
 		return duc.detachNetworkShim(ctx, cli, cmd)
-	case "removenetwork":
+	case command.Removenetwork:
 		return duc.removeNetworkShim(ctx, cli, cmd)
-	case "createvolume":
+	case command.Createvolume:
 		return duc.createVolumeShim(ctx, cli, cmd)
-	case "removevolume":
+	case command.Removevolume:
 		return duc.removeVolumeShim(ctx, cli, cmd)
-	case "putfile":
+	case command.Putfile:
 		return duc.putFileShim(ctx, cli, cmd)
-	case "putfileincontainer":
+	case command.Putfileincontainer:
 		return duc.putFileInContainerShim(ctx, cli, cmd)
-	case "emulation":
+	case command.Emulation:
 		return duc.emulationShim(ctx, cli, cmd)
 	}
 	return entity.NewFatalResult(fmt.Errorf("unknown command type: %s", cmd.Order.Type))
@@ -145,7 +145,7 @@ func (duc dockerUseCase) createContainerShim(ctx context.Context, cli *client.Cl
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var container entity.Container
+	var container command.Container
 	err = json.Unmarshal(raw, &container)
 	if err != nil {
 		return entity.NewFatalResult(err)
@@ -179,7 +179,7 @@ func (duc dockerUseCase) createNetworkShim(ctx context.Context, cli *client.Clie
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var net entity.Network
+	var net command.Network
 	err = json.Unmarshal(raw, &net)
 	if err != nil {
 		return entity.NewFatalResult(err)
@@ -228,7 +228,7 @@ func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli *client.Clien
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var volume entity.Volume
+	var volume command.Volume
 	err = json.Unmarshal(raw, &volume)
 	if err != nil {
 		return entity.NewFatalResult(err)
@@ -261,7 +261,7 @@ func (duc dockerUseCase) putFileShim(ctx context.Context, cli *client.Client, cm
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var file entity.File
+	var file command.File
 	err = json.Unmarshal(raw, &file)
 	if err != nil {
 		return entity.NewFatalResult(err)
@@ -285,7 +285,7 @@ func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli *client
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var file entity.File
+	var file command.File
 	err = json.Unmarshal(raw, &file)
 	if err != nil {
 		return entity.NewFatalResult(err)
@@ -298,7 +298,7 @@ func (duc dockerUseCase) emulationShim(ctx context.Context, cli *client.Client, 
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var netem entity.Netconf
+	var netem command.Netconf
 	err = json.Unmarshal(raw, &netem)
 	if err != nil {
 		return entity.NewFatalResult(err)

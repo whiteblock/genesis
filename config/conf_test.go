@@ -19,6 +19,7 @@
 package config
 
 import (
+	"github.com/whiteblock/genesis/pkg/command"
 	"reflect"
 	"strconv"
 	"testing"
@@ -260,21 +261,21 @@ func TestConfig_GetDockerConfig(t *testing.T) {
 func TestConfig_GetVolumeConfig(t *testing.T) {
 	var tests = []struct {
 		conf               Config
-		expectedVolumeConf entity.VolumeConfig
+		expectedVolumeConf command.VolumeConfig
 	}{
 		{
 			conf: Config{
 				VolumeDriver:     "test",
 				VoluemDriverOpts: map[string]string{"test": "test"},
 			},
-			expectedVolumeConf: entity.VolumeConfig{
+			expectedVolumeConf: command.VolumeConfig{
 				Driver:     "test",
 				DriverOpts: map[string]string{"test": "test"},
 			},
 		},
 		{
 			conf: *GetConfig(),
-			expectedVolumeConf: entity.VolumeConfig{
+			expectedVolumeConf: command.VolumeConfig{
 				Driver:     "",
 				DriverOpts: *new(map[string]string),
 			},

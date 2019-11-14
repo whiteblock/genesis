@@ -22,10 +22,40 @@ import (
 	"time"
 )
 
+//OrderType is the type of order
+type OrderType string
+
+const (
+	//Createcontainer attempts to create a docker container
+	Createcontainer = OrderType("createcontainer")
+	//Startcontainer attempts to start an already created docker container
+	Startcontainer = OrderType("startcontainer")
+	//Removecontainer attempts to remove a container
+	Removecontainer = OrderType("removecontainer")
+	//Createnetwork attempts to create a network
+	Createnetwork = OrderType("createnetwork")
+	//Attachnetwork attempts to remove a network
+	Attachnetwork = OrderType("attachnetwork")
+	//Detachnetwork detaches network
+	Detachnetwork = OrderType("detachnetwork")
+	//Removenetwork removes network
+	Removenetwork = OrderType("removenetwork")
+	//Createvolume creates volume
+	Createvolume = OrderType("createvolume")
+	//Removevolume removes volume
+	Removevolume = OrderType("removevolume")
+	//Putfile puts file
+	Putfile = OrderType("putfile")
+	//Putfileincontainer puts file in container
+	Putfileincontainer = OrderType("putfileincontainer")
+	//Emulation emulates
+	Emulation = OrderType("emulation")
+)
+
 // Order to be executed by genesis
 type Order struct {
 	//Type is the type of the order
-	Type string `json:"type"`
+	Type OrderType `json:"type"`
 	//Payload is the payload object of the order
 	Payload map[string]interface{} `json:"payload"`
 }

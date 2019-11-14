@@ -25,7 +25,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/command"
-	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
@@ -35,7 +34,7 @@ import (
 /*FUNCTIONALITY TESTS*/
 /*NOTE: this should be replaced with an integration test*/
 
-func mintCommand(i interface{}, orderType string) command.Command {
+func mintCommand(i interface{}, orderType command.OrderType) command.Command {
 	raw, err := json.Marshal(i)
 	if err != nil {
 		panic(err)
@@ -57,14 +56,14 @@ func mintCommand(i interface{}, orderType string) command.Command {
 }
 
 func createVolume(dockerUseCase usecase.DockerUseCase, name string) {
-	vol := entity.Volume{
+	vol := command.Volume{
 		Name: name,
 		Labels: map[string]string{
 			"FOO": "BAR",
 		},
 	}
 
-	cmd := mintCommand(vol, "createVolume")
+	cmd := mintCommand(vol, command.Createvolume)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("created a volume")
 }
@@ -72,7 +71,7 @@ func createVolume(dockerUseCase usecase.DockerUseCase, name string) {
 func removeVolume(dockerUseCase usecase.DockerUseCase, name string) {
 	cmd := mintCommand(map[string]string{
 		"name": name,
-	}, "removeVolume")
+	}, command.Removevolume)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("removed a volume")
 }
@@ -80,13 +79,13 @@ func removeVolume(dockerUseCase usecase.DockerUseCase, name string) {
 func removeContainer(dockerUseCase usecase.DockerUseCase) {
 	cmd := mintCommand(map[string]string{
 		"name": "tester",
-	}, "removeContainer")
+	}, command.Removecontainer)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("removed a container")
 }
 
 func createNetwork(dockerUseCase usecase.DockerUseCase, name string, num int) {
-	testNetwork := entity.Network{
+	testNetwork := command.Network{
 		Name:   name,
 		Global: true,
 		Labels: map[string]string{
@@ -95,7 +94,7 @@ func createNetwork(dockerUseCase usecase.DockerUseCase, name string, num int) {
 		Gateway: fmt.Sprintf("10.%d.0.1", num),
 		Subnet:  fmt.Sprintf("10.%d.0.0/16", num),
 	}
-	cmd := mintCommand(testNetwork, "createNetwork")
+	cmd := mintCommand(testNetwork, command.Createnetwork)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("created a network")
 }
@@ -104,7 +103,7 @@ func attachNetwork(dockerUseCase usecase.DockerUseCase, networkName string, cont
 	cmd := mintCommand(map[string]string{
 		"container": "tester",
 		"network":   networkName,
-	}, "attachnetwork")
+	}, command.Attachnetwork)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("attached a network")
 }
@@ -113,19 +112,19 @@ func detachNetwork(dockerUseCase usecase.DockerUseCase, networkName string, cont
 	cmd := mintCommand(map[string]string{
 		"container": "tester",
 		"network":   networkName,
-	}, "detachnetwork")
+	}, command.Detachnetwork)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("detached a network")
 }
 
 func removeNetwork(dockerUseCase usecase.DockerUseCase, name string) {
-	cmd := mintCommand(map[string]string{"name": name}, "removeNetwork")
+	cmd := mintCommand(map[string]string{"name": name}, command.Removenetwork)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("removed a network")
 }
 
 func createContainer(dockerUseCase usecase.DockerUseCase) {
-	testContainer := entity.Container{
+	testContainer := command.Container{
 		BoundCPUs: nil, //TODO
 		Detach:    false,
 		Environment: map[string]string{
@@ -137,7 +136,7 @@ func createContainer(dockerUseCase usecase.DockerUseCase) {
 		Name:    "tester",
 		Network: []string{"testnet"},
 		Ports:   map[int]int{8888: 8889},
-		Volumes: []entity.Mount{entity.Mount{
+		Volumes: []command.Mount{command.Mount{
 			Name:      "test_volume",
 			Directory: "/foo/bar",
 			ReadOnly:  false,
@@ -154,7 +153,7 @@ func createContainer(dockerUseCase usecase.DockerUseCase) {
 func startContainer(dockerUseCase usecase.DockerUseCase) {
 	cmd := mintCommand(map[string]interface{}{
 		"name": "tester",
-	}, "startContainer")
+	}, command.Startcontainer)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("started a container")
 }
@@ -163,7 +162,7 @@ func putFile(dockerUseCase usecase.DockerUseCase) {
 
 	cmd := mintCommand(map[string]interface{}{
 		"container": "tester",
-		"file": entity.File{
+		"file": command.File{
 			Mode:        0600,
 			Destination: "/foo/bar/baz",
 			Data:        []byte("test"),
