@@ -22,21 +22,34 @@ import (
 	"time"
 )
 
+//OrderType is the type of order
 type OrderType string
 
 const (
-	Createcontainer    = OrderType("createcontainer")
-	Startcontainer     = OrderType("startcontainer")
-	Removecontainer    = OrderType("removecontainer")
-	Createnetwork      = OrderType("createnetwork")
-	Attachnetwork      = OrderType("attachnetwork")
-	Detachnetwork      = OrderType("detachnetwork")
-	Removenetwork      = OrderType("removenetwork")
-	Createvolume       = OrderType("createvolume")
-	Removevolume       = OrderType("removevolume")
-	Putfile            = OrderType("putfile")
+	//Createcontainer attempts to create a docker container
+	Createcontainer = OrderType("createcontainer")
+	//Startcontainer attempts to start an already created docker container
+	Startcontainer = OrderType("startcontainer")
+	//Removecontainer attempts to remove a container
+	Removecontainer = OrderType("removecontainer")
+	//Createnetwork attempts to create a network
+	Createnetwork = OrderType("createnetwork")
+	//Removenetwork attempts to remove a network
+	Removenetwork = OrderType("attachnetwork")
+	//Detachnetwork detaches network
+	Detachnetwork = OrderType("detachnetwork")
+	//Removenetwork removes network
+	Removenetwork = OrderType("removenetwork")
+	//Createvolume creates volume
+	Createvolume = OrderType("createvolume")
+	//Removevolume removes volume
+	Removevolume = OrderType("removevolume")
+	//Putfile puts file
+	Putfile = OrderType("putfile")
+	//Putfileincontainer puts file in container
 	Putfileincontainer = OrderType("putfileincontainer")
-	Emulation          = OrderType("emulation")
+	//Emulation emulates
+	Emulation = OrderType("emulation")
 )
 
 // Order to be executed by genesis
