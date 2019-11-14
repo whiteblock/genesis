@@ -66,6 +66,9 @@ type Client interface {
 	//NetworkDisconnect disconnects a container from an existent network in the docker host.
 	NetworkDisconnect(ctx context.Context, networkID, containerID string, force bool) error
 
+	//NetworkInspect returns the information for a specific network configured in the docker host.
+	NetworkInspect(ctx context.Context, networkID string, options types.NetworkInspectOptions) (types.NetworkResource, error)
+
 	//NetworkRemove sends a request to the docker daemon to remove a network
 	NetworkRemove(ctx context.Context, networkID string) error
 

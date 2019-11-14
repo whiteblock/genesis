@@ -20,6 +20,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -262,25 +263,25 @@ func (ds dockerService) RemoveNetwork(ctx context.Context, cli *client.Client, n
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) getNetworkAndContainerIDByName(ctx context.Context, cli *client.Client, networkName string,
-	containerName string) (containerID string, networkID string, err error) {
+func (ds dockerService) getNetworkAndContainerByName(ctx context.Context, cli *client.Client, networkName string,
+	containerName string) (container types.Container, network types.NetworkResource, err error) {
 	errChan := make(chan error, 2)
-	netIDChan := make(chan string, 1)
-	cntrIDChan := make(chan string, 1)
+	netChan := make(chan types.NetworkResource, 1)
+	cntrChan := make(chan types.Container, 1)
 	defer close(errChan)
-	defer close(netIDChan)
-	defer close(cntrIDChan)
+	defer close(netChan)
+	defer close(cntrChan)
 
 	go func(networkName string) {
 		net, err := ds.aux.GetNetworkByName(ctx, cli, networkName)
 		errChan <- err
-		netIDChan <- net.ID
+		netChan <- net
 	}(networkName)
 
 	go func(containerName string) {
 		cntr, err := ds.aux.GetContainerByName(ctx, cli, containerName)
 		errChan <- err
-		cntrIDChan <- cntr.ID
+		cntrChan <- cntr
 	}(containerName)
 
 	for i := 0; i < 2; i++ {
@@ -289,21 +290,21 @@ func (ds dockerService) getNetworkAndContainerIDByName(ctx context.Context, cli 
 			return
 		}
 	}
-	networkID = <-netIDChan
-	containerID = <-cntrIDChan
+	network = <-netChan
+	container = <-cntrChan
 	return
 }
 
 func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, networkName string,
 	containerName string) entity.Result {
 
-	containerID, networkID, err := ds.getNetworkAndContainerIDByName(ctx, cli, networkName, containerName)
+	cntr, net, err := ds.getNetworkAndContainerByName(ctx, cli, networkName, containerName)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
 
-	err = ds.repo.NetworkConnect(ctx, cli, networkID, containerID, &network.EndpointSettings{
-		NetworkID: networkID,
+	err = ds.repo.NetworkConnect(ctx, cli, net.ID, cntr.ID, &network.EndpointSettings{
+		NetworkID: net.ID,
 	})
 	if err != nil {
 		return entity.NewErrorResult(err)
@@ -314,12 +315,12 @@ func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, n
 func (ds dockerService) DetachNetwork(ctx context.Context, cli *client.Client,
 	networkName string, containerName string) entity.Result {
 
-	containerID, networkID, err := ds.getNetworkAndContainerIDByName(ctx, cli, networkName, containerName)
+	cntr, net, err := ds.getNetworkAndContainerByName(ctx, cli, networkName, containerName)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
 
-	err = ds.repo.NetworkDisconnect(ctx, cli, networkID, containerID, true)
+	err = ds.repo.NetworkDisconnect(ctx, cli, net.ID, cntr.ID, true)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
@@ -377,6 +378,61 @@ func (ds dockerService) PlaceFileInVolume(ctx context.Context, cli *client.Clien
 }
 
 func (ds dockerService) Emulation(ctx context.Context, cli *client.Client, netem command.Netconf) entity.Result {
-	//TODO
-	return entity.Result{}
+	cntr, net, err := ds.getNetworkAndContainerByName(ctx, cli, netem.Network, netem.Container)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+
+	name := cntr.ID + "-" + net.ID
+	log.WithFields(log.Fields{"network": net}).Info("network")
+	netemCmd := fmt.Sprintf(
+		"tc qdisc add dev $(ip -o addr show to %s | sed -n 's/.*\\(eth[0-9]*\\).*/\\1/p') root netem",
+		net.IPAM.Config[0].Subnet)
+
+	if netem.Limit > 0 {
+		netemCmd += fmt.Sprintf(" limit %d", netem.Limit)
+	}
+
+	if netem.Loss > 0 {
+		netemCmd += fmt.Sprintf(" loss %.4f", netem.Loss)
+	}
+
+	if netem.Delay > 0 {
+		netemCmd += fmt.Sprintf(" delay %dus", netem.Delay)
+	}
+
+	if len(netem.Rate) > 0 {
+		netemCmd += fmt.Sprintf(" rate %s", netem.Rate)
+	}
+
+	if netem.Duplication > 0 {
+		netemCmd += fmt.Sprintf(" duplicate %.4f", netem.Duplication)
+	}
+
+	if netem.Corrupt > 0 {
+		netemCmd += fmt.Sprintf(" corrupt %.4f", netem.Duplication)
+	}
+
+	if netem.Reorder > 0 {
+		netemCmd += fmt.Sprintf(" reorder %.4f", netem.Reorder)
+	}
+
+	config := &container.Config{
+		Image:      "gaiadocker/iproute2",
+		Entrypoint: strslice.StrSlice([]string{"/bin/sh", "-c", netemCmd}),
+	}
+
+	hostConfig := &container.HostConfig{
+		AutoRemove:  false,
+		NetworkMode: container.NetworkMode(fmt.Sprintf("container:%s", cntr.ID)),
+		CapAdd:      strslice.StrSlice([]string{"NET_ADMIN"}),
+	}
+
+	networkConfig := &network.NetworkingConfig{}
+
+	_, err = ds.repo.ContainerCreate(ctx, cli, config, hostConfig, networkConfig, name)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	return ds.StartContainer(ctx, cli, name)
 }

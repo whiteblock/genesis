@@ -20,6 +20,10 @@ package command
 
 //Netconf represents network impairments which are to be applied to a network
 type Netconf struct {
+	//Container is the target container
+	Container string `json:"container"`
+	//Network is the target network
+	Network string `json:"network"`
 	//Limit is the max number of packets to hold the in queue
 	Limit int `json:"limit"`
 	//Loss represents packet loss % ie 100% = 100

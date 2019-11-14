@@ -171,7 +171,15 @@ func putFile(dockerUseCase usecase.DockerUseCase) {
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("placed a file")
 }
-
+func emulate(dockerUseCase usecase.DockerUseCase) {
+	cmd := mintCommand(command.Netconf{
+		Container: "tester",
+		Network:   "testnet2",
+		Delay:     100000,
+	}, command.Emulation)
+	res := dockerUseCase.Run(cmd)
+	log.WithFields(log.Fields{"res": res}).Info("applied emulation")
+}
 func dockerTest(clean bool) {
 	commandService := service.NewCommandService(repository.NewLocalCommandRepository())
 	dockerRepository := repository.NewDockerRepository()
@@ -202,5 +210,6 @@ func dockerTest(clean bool) {
 	createNetwork(dockerUseCase, "testnet2", 15)
 	attachNetwork(dockerUseCase, "testnet2", "tester")
 	detachNetwork(dockerUseCase, "testnet", "tester")
+	emulate(dockerUseCase)
 	putFile(dockerUseCase)
 }
