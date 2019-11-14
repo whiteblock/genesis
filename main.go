@@ -56,7 +56,12 @@ func getRestServer() (controller.RestController, error) {
 
 func main() {
 	if len(os.Args) == 2 && os.Args[1] == "test" { //Run some basic docker functionality tests
-		dockerTest()
+		dockerTest(false)
+		os.Exit(0)
+	}
+
+	if len(os.Args) == 2 && os.Args[1] == "clean" { //Clean some basic docker functionality tests
+		dockerTest(true)
 		os.Exit(0)
 	}
 

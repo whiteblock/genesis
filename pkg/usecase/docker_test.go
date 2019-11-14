@@ -142,7 +142,8 @@ func TestDockerUseCase_Run_CreateNetwork(t *testing.T) {
 func TestDockerUseCase_Run_AttachNetwork(t *testing.T) {
 	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-	service.On("AttachNetwork", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+	service.On("AttachNetwork", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
@@ -156,12 +157,44 @@ func TestDockerUseCase_Run_AttachNetwork(t *testing.T) {
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    "attachNetwork",
-			Payload: map[string]interface{}{"name": "test"},
+			Type: "attachNetwork",
+			Payload: map[string]interface{}{
+				"container": "test",
+				"network":   "testnet",
+			},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error)
 	assert.True(t, service.AssertNumberOfCalls(t, "AttachNetwork", 1))
+}
+
+func TestDockerUseCase_Run_DetachNetwork(t *testing.T) {
+	service := new(mockService.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
+	service.On("DetachNetwork", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything).Return(entity.NewSuccessResult()).Once()
+
+	cmdService := new(mockService.CommandService)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
+
+	usecase, err := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	assert.NoError(t, err)
+
+	res := usecase.Run(command.Command{
+		ID:        "TEST",
+		Timestamp: time.Now().Unix() - 5,
+		Timeout:   0,
+		Target:    command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type: "detachNetwork",
+			Payload: map[string]interface{}{
+				"container": "test",
+				"network":   "testnet",
+			},
+		},
+	})
+	assert.NoError(t, res.Error)
+	service.AssertExpectations(t)
 }
 
 func TestDockerUseCase_Run_CreateVolume(t *testing.T) {
