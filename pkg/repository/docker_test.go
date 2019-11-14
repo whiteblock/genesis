@@ -19,7 +19,6 @@
 package repository
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -320,7 +319,7 @@ func TestDockerRepository_VolumeCreate(t *testing.T) { //todo why isn't this one
 	cli.On("VolumeCreate", mock.Anything, mock.Anything).Return(expectedVol, nil).Run(func(args mock.Arguments) {
 		require.Len(t, args, 2)
 		assert.Nil(t, args.Get(0))
-		assert.ElementsMatch(t, options, args.Get(1))
+		assert.Equal(t, options, args.Get(1))
 	}).Once()
 
 	repo := NewDockerRepository()
@@ -328,8 +327,8 @@ func TestDockerRepository_VolumeCreate(t *testing.T) { //todo why isn't this one
 	vol, err := repo.VolumeCreate(nil, cli, options)
 	assert.NoError(t, err)
 
-	fmt.Println(vol)
-	fmt.Println(expectedVol)
+	assert.Equal(t, expectedVol.Name, vol.Name)
+	assert.Equal(t, expectedVol.Labels, vol.Labels)
 
-	assert.ElementsMatch(t, expectedVol, vol)
+	assert.True(t, cli.AssertNumberOfCalls(t, "VolumeCreate", 1))
 }
