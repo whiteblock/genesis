@@ -22,8 +22,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	repoMocks "github.com/whiteblock/genesis/mocks/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/entity"
 )
 
 func TestNewCommandService(t *testing.T) {
@@ -58,5 +61,27 @@ func TestCommandService_CheckDependenciesExecuted(t *testing.T) {
 }
 
 func TestCommandService_ReportCommandResult(t *testing.T) {
-	//TODO
+	repo := new(repoMocks.CommandRepository)
+
+	cmd := command.Command{
+		ID: "test",
+	}
+	res := entity.Result{
+		Error: nil,
+		Type: entity.SuccessType,
+	}
+
+	repo.On("ReportCommandFinished", mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 2)
+			assert.Equal(t, cmd.ID, args.Get(0))
+			assert.Equal(t, res, args.Get(1))
+		})
+
+	serv := NewCommandService(repo)
+
+	err := serv.ReportCommandResult(cmd, res)
+	assert.NoError(t, err)
+
+	assert.True(t, repo.AssertNumberOfCalls(t, "ReportCommandFinished", 1))
 }
