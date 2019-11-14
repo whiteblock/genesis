@@ -26,6 +26,16 @@ import (
 	"github.com/whiteblock/genesis/pkg/command"
 )
 
+func TestNewCommandService(t *testing.T) {
+	repo := new(repoMocks.CommandRepository)
+
+	expected := &commandService{
+		repo: repo,
+	}
+
+	assert.Equal(t, expected, NewCommandService(repo))
+}
+
 func TestCommandService_CheckDependenciesExecuted(t *testing.T) {
 	repo := new(repoMocks.CommandRepository)
 	repo.On("HasCommandExecuted", "test1").Return(true, nil)
