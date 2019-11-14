@@ -23,6 +23,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	dockerVolume "github.com/docker/docker/api/types/volume"
 	"github.com/stretchr/testify/assert"
@@ -50,7 +51,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		Name:    "TEST",
 		Network: []string{"Testnet"},
 		Ports:   map[int]int{8888: 8889},
-		Volumes: []entity.Mount{entity.Mount{Name: "volume1", Directory: "/foo/bar"}}, //TODO
+		Volumes: []entity.Mount{entity.Mount{Name: "volume1", Directory: "/foo/bar", ReadOnly: false}}, //TODO
 		Image:   "alpine",
 		Args:    []string{"test"},
 	}
@@ -63,58 +64,71 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		require.Len(t, args, 6)
 		assert.Nil(t, args.Get(0))
 		assert.Nil(t, args.Get(1))
-
-		config, ok := args.Get(2).(*container.Config)
-		require.True(t, ok)
-		require.NotNil(t, config)
-		require.Len(t, config.Entrypoint, 2)
-		assert.Contains(t, config.Env, "FOO=BAR")
-		assert.Equal(t, testContainer.EntryPoint, config.Entrypoint[0])
-		assert.Equal(t, testContainer.Args[0], config.Entrypoint[1])
-		assert.Equal(t, testContainer.Name, config.Hostname)
-		assert.Equal(t, testContainer.Labels, config.Labels)
-		assert.Equal(t, testContainer.Image, config.Image)
 		{
-			_, exists := config.ExposedPorts["8889/tcp"]
-			assert.True(t, exists)
+			config, ok := args.Get(2).(*container.Config)
+			require.True(t, ok)
+			require.NotNil(t, config)
+			require.Len(t, config.Entrypoint, 2)
+			assert.Contains(t, config.Env, "FOO=BAR")
+			assert.Equal(t, testContainer.EntryPoint, config.Entrypoint[0])
+			assert.Equal(t, testContainer.Args[0], config.Entrypoint[1])
+			assert.Equal(t, testContainer.Name, config.Hostname)
+			assert.Equal(t, testContainer.Labels, config.Labels)
+			assert.Equal(t, testContainer.Image, config.Image)
+			{
+				_, exists := config.ExposedPorts["8889/tcp"]
+				assert.True(t, exists)
+			}
 		}
+		{
+			hostConfig, ok := args.Get(3).(*container.HostConfig)
+			require.True(t, ok)
+			require.NotNil(t, hostConfig)
+			assert.Equal(t, int64(2500000000), hostConfig.NanoCPUs)
+			assert.Equal(t, int64(5000000000), hostConfig.Memory)
+			{ //Port bindings
+				bindings, exists := hostConfig.PortBindings["8889/tcp"]
+				assert.True(t, exists)
+				require.NotNil(t, bindings)
+				require.Len(t, bindings, 1)
+				assert.Equal(t, bindings[0].HostIP, "0.0.0.0")
+				assert.Equal(t, bindings[0].HostPort, "8888")
+			}
 
-		hostConfig, ok := args.Get(3).(*container.HostConfig)
-		require.True(t, ok)
-		require.NotNil(t, hostConfig)
-		assert.Equal(t, int64(2500000000), hostConfig.NanoCPUs)
-		assert.Equal(t, int64(5000000000), hostConfig.Memory)
-		{ //Port bindings
-			bindings, exists := hostConfig.PortBindings["8889/tcp"]
-			assert.True(t, exists)
-			require.NotNil(t, bindings)
-			require.Len(t, bindings, 1)
-			assert.Equal(t, bindings[0].HostIP, "0.0.0.0")
-			assert.Equal(t, bindings[0].HostPort, "8888")
+			require.NotNil(t, hostConfig.Mounts)
+			require.Len(t, hostConfig.Mounts, len(testContainer.Volumes))
+			for i, vol := range testContainer.Volumes {
+				assert.Equal(t, vol.Name, hostConfig.Mounts[i].Source)
+				assert.Equal(t, vol.Directory, hostConfig.Mounts[i].Target)
+				assert.Equal(t, vol.ReadOnly, hostConfig.Mounts[i].ReadOnly)
+				assert.Equal(t, mount.TypeVolume, hostConfig.Mounts[i].Type)
+				assert.Nil(t, hostConfig.Mounts[i].TmpfsOptions)
+				assert.Nil(t, hostConfig.Mounts[i].BindOptions)
+			}
+			assert.True(t, hostConfig.AutoRemove)
 		}
-		assert.True(t, hostConfig.AutoRemove)
-		networkingConfig, ok := args.Get(4).(*network.NetworkingConfig)
-		require.True(t, ok)
-		require.NotNil(t, networkingConfig)
-		require.NotNil(t, networkingConfig.EndpointsConfig)
-		netconf, ok := networkingConfig.EndpointsConfig[testContainer.Network[0]]
-		require.True(t, ok)
-		require.NotNil(t, netconf)
-		assert.Equal(t, netconf.NetworkID, testNetwork.ID)
-		assert.Nil(t, netconf.Links)
-		assert.Nil(t, netconf.Aliases)
-		assert.Nil(t, netconf.IPAMConfig)
-		assert.Empty(t, netconf.IPv6Gateway)
-		assert.Empty(t, netconf.GlobalIPv6Address)
-		assert.Empty(t, netconf.EndpointID)
-		assert.Empty(t, netconf.Gateway)
-		assert.Empty(t, netconf.IPAddress)
-		assert.Nil(t, netconf.DriverOpts)
+		{
+			networkingConfig, ok := args.Get(4).(*network.NetworkingConfig)
+			require.True(t, ok)
+			require.NotNil(t, networkingConfig)
+			require.NotNil(t, networkingConfig.EndpointsConfig)
+			netconf, ok := networkingConfig.EndpointsConfig[testContainer.Network[0]]
+			require.True(t, ok)
+			require.NotNil(t, netconf)
+			assert.Equal(t, netconf.NetworkID, testNetwork.ID)
+			assert.Nil(t, netconf.Links)
+			assert.Nil(t, netconf.Aliases)
+			assert.Nil(t, netconf.IPAMConfig)
+			assert.Empty(t, netconf.IPv6Gateway)
+			assert.Empty(t, netconf.GlobalIPv6Address)
+			assert.Empty(t, netconf.EndpointID)
+			assert.Empty(t, netconf.Gateway)
+			assert.Empty(t, netconf.IPAddress)
+			assert.Nil(t, netconf.DriverOpts)
+		}
 		containerName, ok := args.Get(5).(string)
 		require.True(t, ok)
 		assert.Equal(t, testContainer.Name, containerName)
-
-		//network.NetworkingConfig
 	})
 
 	aux := new(auxMock.DockerAuxillary)
