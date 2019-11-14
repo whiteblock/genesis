@@ -34,6 +34,25 @@ pipeline {
   }
   stages {
     stage('Run tests') {
+      agent {
+        kubernetes {
+          cloud 'kubernetes-dev-gke'
+          yaml """
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      labels:
+        cicd: true
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command:
+        - cat
+        tty: true
+    """
+        }
+      }
       when {
         anyOf {
           changeRequest target: 'dev'
@@ -42,13 +61,13 @@ pipeline {
       }
       steps {
         script {
-          def goimage = docker.image('golang:1.12.6-alpine')
-          goimage.pull()
+          // def goimage = docker.image('golang:1.12.6-alpine')
+          // goimage.pull()
           CI_ENV = sh(script: "curl -s https://codecov.io/env | bash", , returnStdout: true).trim()
-          goimage.inside("${CI_ENV} -u root") {
-            sh "apk add git gcc libc-dev curl"
-            sh "sh tests.sh"
-          }
+          // goimage.inside("${CI_ENV} -u root") {
+          sh "apk add git gcc libc-dev curl"
+          sh "sh tests.sh"
+          // }
         }
       }
     post {
