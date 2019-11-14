@@ -21,13 +21,293 @@ package repository
 import (
 	"testing"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
 )
+
+func TestDockerRepository_ContainerCreate(t *testing.T) {
+	cli := new(entityMock.Client)
+
+	expectedContainer := container.ContainerCreateCreatedBody{
+		ID: "test",
+	}
+
+	cli.On("ContainerCreate", mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything).Return(expectedContainer, nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 5)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, "test", args.Get(4))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	container, err := repo.ContainerCreate(nil, cli, new(container.Config), new(container.HostConfig),
+		new(network.NetworkingConfig), "test")
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedContainer.ID, container.ID)
+	assert.True(t, cli.AssertNumberOfCalls(t, "ContainerCreate", 1))
+}
+
+func TestDockerRepository_ContainerList(t *testing.T) {
+	cli := new(entityMock.Client)
+
+	expectedList := []types.Container{}
+	opts := types.ContainerListOptions{
+		Size: true,
+	}
+
+	cli.On("ContainerList", mock.Anything, mock.Anything).Return(expectedList, nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 2)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, opts, args.Get(1))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	list, err := repo.ContainerList(nil, cli, opts)
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(expectedList), len(list))
+	assert.True(t, cli.AssertNumberOfCalls(t, "ContainerList", 1))
+}
+
+func TestDockerRepository_ContainerRemove(t *testing.T) {
+	cli := new(entityMock.Client)
+
+	opts := types.ContainerRemoveOptions{
+		RemoveVolumes: true,
+	}
+	containerID := "test"
+
+	cli.On("ContainerRemove", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, opts, args.Get(2))
+			assert.Equal(t, containerID, args.Get(1))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	err := repo.ContainerRemove(nil, cli, "test", opts)
+	assert.NoError(t, err)
+
+	assert.True(t, cli.AssertNumberOfCalls(t, "ContainerRemove", 1))
+}
+
+func TestDockerRepository_ContainerStart(t *testing.T) {
+	cli := new(entityMock.Client)
+
+	containerID := "test"
+	opts := types.ContainerStartOptions{}
+
+	cli.On("ContainerStart", mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, containerID, args.Get(1))
+			assert.Equal(t, opts, args.Get(2))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	err := repo.ContainerStart(nil, cli, containerID, opts)
+	assert.NoError(t, err)
+
+	assert.True(t, cli.AssertNumberOfCalls(t, "ContainerStart", 1))
+}
+
+func TestDockerRepository_ImageLoad(t *testing.T) {
+	cli := new(entityMock.Client)
+
+	quiet := false
+	expectedRes := types.ImageLoadResponse{}
+
+	cli.On("ImageLoad", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(expectedRes, nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, quiet, args.Get(2))
+			assert.Nil(t, args.Get(1))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	res, err := repo.ImageLoad(nil, cli, nil, quiet)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedRes, res)
+	assert.True(t, cli.AssertNumberOfCalls(t, "ImageLoad", 1))
+}
+
+func TestDockerRepository_ImagePull(t *testing.T) {
+	cli := new(entityMock.Client)
+
+	refStr := "test"
+	options := types.ImagePullOptions{All: true}
+
+	cli.On("ImagePull", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, refStr, args.Get(1))
+			assert.Equal(t, options, args.Get(2))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	_, err := repo.ImagePull(nil, cli, refStr, options)
+	assert.NoError(t, err)
+
+	assert.True(t, cli.AssertNumberOfCalls(t, "ImagePull", 1))
+}
+
+func TestDockerRepository_ImageList(t *testing.T) {
+	cli := new(entityMock.Client)
+
+	options := types.ImageListOptions{All: true}
+	expectedList := []types.ImageSummary{}
+
+	cli.On("ImageList", mock.Anything, mock.Anything, mock.Anything).Return(expectedList, nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 2)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, options, args.Get(1))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	list, err := repo.ImageList(nil, cli, options)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedList, list)
+	assert.True(t, cli.AssertNumberOfCalls(t, "ImageList", 1))
+}
+
+func TestDockerRepository_NetworkConnect(t *testing.T) {
+	cli := new(entityMock.Client)
+
+	networkID := "test"
+	containerID := "test"
+	config := new(network.EndpointSettings)
+
+	cli.On("NetworkConnect", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 4)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, networkID, args.Get(1))
+			assert.Equal(t, containerID, args.Get(2))
+			assert.Equal(t, config, args.Get(3))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	err := repo.NetworkConnect(nil, cli, networkID, containerID, config)
+	assert.NoError(t, err)
+
+	assert.True(t, cli.AssertNumberOfCalls(t, "NetworkConnect", 1))
+}
+
+func TestDockerRepository_NetworkCreate(t *testing.T) {
+	cli := new(entityMock.Client)
+
+	name := "test"
+	options := types.NetworkCreate{}
+
+	expectedCreated := types.NetworkCreateResponse{ID: "test"}
+
+	cli.On("NetworkCreate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(expectedCreated, nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, name, args.Get(1))
+			assert.Equal(t, options, args.Get(2))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	created, err := repo.NetworkCreate(nil, cli, name, options)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedCreated.ID, created.ID)
+	assert.True(t, cli.AssertNumberOfCalls(t, "NetworkCreate", 1))
+}
+
+func TestDockerRepository_NetworkDisconnect(t *testing.T) {
+	cli := new(entityMock.Client)
+
+	networkID := "test"
+	containerID := "test"
+	force := true
+
+	cli.On("NetworkDisconnect", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 4)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, networkID, args.Get(1))
+			assert.Equal(t, containerID, args.Get(2))
+			assert.Equal(t, force, args.Get(3))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	err := repo.NetworkDisconnect(nil, cli, networkID, containerID, force)
+	assert.NoError(t, err)
+
+	assert.True(t, cli.AssertNumberOfCalls(t, "NetworkDisconnect", 1))
+}
+
+func TestDockerRepository_NetworkRemove(t *testing.T) {
+	cli := new(entityMock.Client)
+
+	networkID := "test"
+
+	cli.On("NetworkRemove", mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 2)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, networkID, args.Get(1))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	err := repo.NetworkRemove(nil, cli, networkID)
+	assert.NoError(t, err)
+
+	assert.True(t, cli.AssertNumberOfCalls(t, "NetworkRemove", 1))
+}
+
+func TestDockerRepository_NetworkList(t *testing.T) {
+	cli := new(entityMock.Client)
+
+	options := types.NetworkListOptions{}
+	expectedList := []types.NetworkResource{}
+
+	cli.On("NetworkList", mock.Anything, mock.Anything, mock.Anything).Return(expectedList, nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 2)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, options, args.Get(1))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	list, err := repo.NetworkList(nil, cli, options)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedList, list)
+	assert.True(t, cli.AssertNumberOfCalls(t, "NetworkList", 1))
+}
 
 func TestDockerRepository_VolumeList(t *testing.T) {
 	cli := new(entityMock.Client)
@@ -43,8 +323,8 @@ func TestDockerRepository_VolumeList(t *testing.T) {
 	repo := NewDockerRepository()
 	res, err := repo.VolumeList(nil, cli, testFilters)
 	assert.NoError(t, err)
-	assert.Equal(t, result, res)
 
+	assert.Equal(t, result, res)
 	cli.AssertExpectations(t)
 }
 
@@ -64,5 +344,35 @@ func TestDockerRepository_VolumeRemove(t *testing.T) {
 
 	err := repo.VolumeRemove(nil, cli, volumeID, isForced)
 	assert.NoError(t, err)
+
 	cli.AssertExpectations(t)
+}
+
+func TestDockerRepository_VolumeCreate(t *testing.T) {
+	cli := new(entityMock.Client)
+	options := volume.VolumeCreateBody{
+		Name:   "test_volume",
+		Labels: map[string]string{"foo": "bar"},
+	}
+
+	expectedVol := types.Volume{
+		Name:   options.Name,
+		Labels: options.Labels,
+	}
+
+	cli.On("VolumeCreate", mock.Anything, mock.Anything).Return(expectedVol, nil).Run(func(args mock.Arguments) {
+		require.Len(t, args, 2)
+		assert.Nil(t, args.Get(0))
+		assert.Equal(t, options, args.Get(1))
+	}).Once()
+
+	repo := NewDockerRepository()
+
+	vol, err := repo.VolumeCreate(nil, cli, options)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedVol.Name, vol.Name)
+	assert.Equal(t, expectedVol.Labels, vol.Labels)
+
+	assert.True(t, cli.AssertNumberOfCalls(t, "VolumeCreate", 1))
 }
