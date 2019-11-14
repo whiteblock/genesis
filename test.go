@@ -109,6 +109,15 @@ func attachNetwork(dockerUseCase usecase.DockerUseCase, networkName string, cont
 	log.WithFields(log.Fields{"res": res}).Info("attached a network")
 }
 
+func detachNetwork(dockerUseCase usecase.DockerUseCase, networkName string, containerName string) {
+	cmd := mintCommand(map[string]string{
+		"container": "tester",
+		"network":   networkName,
+	}, "detachnetwork")
+	res := dockerUseCase.Run(cmd)
+	log.WithFields(log.Fields{"res": res}).Info("detached a network")
+}
+
 func removeNetwork(dockerUseCase usecase.DockerUseCase, name string) {
 	cmd := mintCommand(map[string]string{"name": name}, "removeNetwork")
 	res := dockerUseCase.Run(cmd)
@@ -146,7 +155,7 @@ func startContainer(dockerUseCase usecase.DockerUseCase) {
 	log.WithFields(log.Fields{"res": res}).Info("started a container")
 }
 
-func dockerTest() {
+func dockerTest(clean bool) {
 	commandService := service.NewCommandService(repository.NewLocalCommandRepository())
 	dockerRepository := repository.NewDockerRepository()
 	dockerAux := auxillary.NewDockerAuxillary(dockerRepository)
@@ -160,13 +169,14 @@ func dockerTest() {
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
+	if clean {
 		removeContainer(dockerUseCase)
 		removeVolume(dockerUseCase)
 		time.Sleep(2 * time.Second)
 		removeNetwork(dockerUseCase, "testnet")
 		removeNetwork(dockerUseCase, "testnet2")
-	}()
+		return
+	}
 
 	createVolume(dockerUseCase)
 	createNetwork(dockerUseCase, "testnet", 14)
@@ -174,5 +184,5 @@ func dockerTest() {
 	startContainer(dockerUseCase)
 	createNetwork(dockerUseCase, "testnet2", 15)
 	attachNetwork(dockerUseCase, "testnet2", "tester")
-
+	detachNetwork(dockerUseCase, "testnet", "tester")
 }

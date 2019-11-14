@@ -101,6 +101,8 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 		return duc.createNetworkShim(ctx, cli, cmd)
 	case "attachnetwork":
 		return duc.attachNetworkShim(ctx, cli, cmd)
+	case "detachnetwork":
+		return duc.detachNetworkShim(ctx, cli, cmd)
 	case "removenetwork":
 		return duc.removeNetworkShim(ctx, cli, cmd)
 	case "createvolume":
@@ -197,6 +199,20 @@ func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli *client.Clie
 		return entity.NewFatalResult(err)
 	}
 	return duc.service.AttachNetwork(ctx, cli, networkName, containerName)
+}
+
+func (duc dockerUseCase) detachNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
+	var networkName string
+	var containerName string
+	err := util.GetJSONString(cmd.Order.Payload, "network", &networkName)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	err = util.GetJSONString(cmd.Order.Payload, "container", &containerName)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	return duc.service.DetachNetwork(ctx, cli, networkName, containerName)
 }
 
 func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
