@@ -40,7 +40,7 @@ func TestNewDockerService(t *testing.T) {
 
 	expected := dockerService{
 		repo: repo,
-		aux: aux,
+		aux:  aux,
 	}
 
 	ds, err := NewDockerService(repo, aux)

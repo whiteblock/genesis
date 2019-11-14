@@ -68,7 +68,7 @@ func TestCommandService_ReportCommandResult(t *testing.T) {
 	}
 	res := entity.Result{
 		Error: nil,
-		Type: entity.SuccessType,
+		Type:  entity.SuccessType,
 	}
 
 	repo.On("ReportCommandFinished", mock.Anything, mock.Anything).Return(nil).Run(
