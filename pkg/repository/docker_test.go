@@ -128,19 +128,26 @@ func TestDockerRepository_ContainerStart(t *testing.T) {
 }
 
 func TestDockerRepository_ImageLoad(t *testing.T) {
-	//todo
-	//cli := new(entityMock.Client)
-	//
-	//
-	//cli.On("ImageLoad", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Run(
-	//	func(args mock.Arguments) {
-	//		require.Len(t, args, 3)
-	//		assert.Nil(t, args.Get(0))
-	//assert.Equal(t, containerID, args.Get(1))
-	//assert.Equal(t, opts, args.Get(2))
-	//	}).Once()
-	//
-	//
+	cli := new(entityMock.Client)
+
+	quiet := false
+	expectedRes := types.ImageLoadResponse{}
+
+	cli.On("ImageLoad", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(expectedRes, nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 3)
+			assert.Nil(t, args.Get(0))
+			assert.Equal(t, quiet, args.Get(2))
+			assert.Nil(t, args.Get(1))
+		}).Once()
+
+	repo := NewDockerRepository()
+
+	res, err := repo.ImageLoad(nil, cli, nil, quiet)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedRes, res)
+	assert.True(t, cli.AssertNumberOfCalls(t, "ImageLoad", 1))
 }
 
 func TestDockerRepository_ImagePull(t *testing.T) {
@@ -304,7 +311,7 @@ func TestDockerRepository_VolumeRemove(t *testing.T) {
 	cli.AssertExpectations(t)
 }
 
-func TestDockerRepository_VolumeCreate(t *testing.T) { //todo why isn't this one working?
+func TestDockerRepository_VolumeCreate(t *testing.T) {
 	cli := new(entityMock.Client)
 	options := volume.VolumeCreateBody{
 		Name:   "test_volume",
