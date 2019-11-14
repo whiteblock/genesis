@@ -19,4 +19,4 @@ done
 go vet $(go list ./... | grep -v mocks)
 go test ./...
 go test ./... -coverprofile=coverage.txt -covermode=atomic
-bash <(curl -s https://codecov.io/bash)
+curl -s https://codecov.io/bash  | bash
