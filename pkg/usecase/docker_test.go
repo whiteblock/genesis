@@ -31,6 +31,23 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 )
 
+func TestNewDockerUseCase(t *testing.T) {
+	conf := entity.DockerConfig{}
+	service := new(mockService.DockerService)
+	cmdService := new(mockService.CommandService)
+
+	expected := &dockerUseCase{
+		conf: conf,
+		service: service,
+		cmdService: cmdService,
+	}
+
+	duc, err := NewDockerUseCase(conf, service, cmdService)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expected, duc)
+}
+
 func TestDockerUseCase_TimeSupplier(t *testing.T) {
 	usecase := new(mockUseCase.DockerUseCase)
 	usecase.On("TimeSupplier").Return(int64(5))
