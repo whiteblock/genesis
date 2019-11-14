@@ -159,6 +159,20 @@ func startContainer(dockerUseCase usecase.DockerUseCase) {
 	log.WithFields(log.Fields{"res": res}).Info("started a container")
 }
 
+func putFile(dockerUseCase usecase.DockerUseCase) {
+
+	cmd := mintCommand(map[string]interface{}{
+		"container": "tester",
+		"file": entity.File{
+			Mode:        0600,
+			Destination: "/foo/bar/baz",
+			Data:        []byte("test"),
+		},
+	}, "putFileInContainer")
+	res := dockerUseCase.Run(cmd)
+	log.WithFields(log.Fields{"res": res}).Info("placed a file")
+}
+
 func dockerTest(clean bool) {
 	commandService := service.NewCommandService(repository.NewLocalCommandRepository())
 	dockerRepository := repository.NewDockerRepository()
@@ -189,4 +203,5 @@ func dockerTest(clean bool) {
 	createNetwork(dockerUseCase, "testnet2", 15)
 	attachNetwork(dockerUseCase, "testnet2", "tester")
 	detachNetwork(dockerUseCase, "testnet", "tester")
+	putFile(dockerUseCase)
 }
