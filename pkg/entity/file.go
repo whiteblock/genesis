@@ -18,10 +18,46 @@
 
 package entity
 
+import (
+	"archive/tar"
+	"bytes"
+	"io"
+	"path/filepath"
+)
+
+//TarWriter represents a writer that outputs a tar achive
+type TarWriter interface {
+	io.Closer
+	io.Writer
+	Flush() error
+	WriteHeader(hdr *tar.Header) error
+}
+
 // File represents a file which will be placed inside either a docker container or volume
 type File struct {
-	//Path is the mount point of the file
-	Path string `json:"path"`
+	//Mode is permission and mode bits
+	Mode int64 `json:"mode"`
+	//Destination is the mount point of the file
+	Destination string `json:"destination"`
 	//Data is the contents of the file
 	Data []byte `json:"data"`
+}
+
+func (file File) writeToTar(tw TarWriter) error {
+	hdr := &tar.Header{
+		Name: filepath.Base(file.Destination),
+		Mode: file.Mode,
+		Size: int64(len(file.Data)),
+	}
+	if err := tw.WriteHeader(hdr); err != nil {
+		return err
+	}
+	_, err := tw.Write(file.Data)
+	return err
+}
+
+//GetTarReader returns a reader which reads this file as if it was in a tar archive
+func (file File) GetTarReader() (io.Reader, error) {
+	var buf bytes.Buffer
+	return &buf, file.writeToTar(tar.NewWriter(&buf))
 }
