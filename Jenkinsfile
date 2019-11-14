@@ -51,7 +51,7 @@ pipeline {
       }
       steps {
         script {
-          sh "apk add git gcc libc-dev"
+          sh "apk add git gcc libc-dev curl bash"
           sh "go get github.com/vektra/mockery/.../"
           sh "go get -u golang.org/x/lint/golint"
           sh "sh tests.sh"
@@ -59,7 +59,7 @@ pipeline {
       }
       post {
         success {
-          sh "apk add curl bash && curl -s https://codecov.io/bash | bash"
+          sh ":"
         }
         cleanup {
           sh "chmod -R 777 coverage.txt mocks || true"
