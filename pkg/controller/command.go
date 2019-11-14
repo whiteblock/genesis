@@ -1,4 +1,4 @@
-/*
+gi/*
 	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
 

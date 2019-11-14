@@ -22,10 +22,27 @@ import (
 	"time"
 )
 
+type OrderType string
+
+const (
+	Createcontainer = OrderType("createcontainer")
+	Startcontainer  = OrderType("startcontainer")
+	Removecontainer = OrderType("removecontainer")
+	Createnetwork = OrderType("createnetwork")
+	Attachnetwork = OrderType("attachnetwork")
+	Detachnetwork = OrderType("detachnetwork")
+	Removenetwork = OrderType("removenetwork")
+	Createvolume = OrderType("createvolume")
+	Removevolume = OrderType("removevolume")
+	Putfile = OrderType("putfile")
+	Putfileincontainer = OrderType("putfileincontainer")
+	Emulation = OrderType("emulation")
+)
+
 // Order to be executed by genesis
 type Order struct {
 	//Type is the type of the order
-	Type string `json:"type"`
+	Type OrderType `json:"type"`
 	//Payload is the payload object of the order
 	Payload map[string]interface{} `json:"payload"`
 }

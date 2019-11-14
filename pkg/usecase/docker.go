@@ -28,7 +28,6 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/util"
-	"strings"
 	"time"
 )
 
@@ -90,30 +89,30 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 		return entity.NewFatalResult(err)
 	}
 	log.WithField("client", cli).Trace("created a client")
-	switch strings.ToLower(cmd.Order.Type) {
-	case "createcontainer":
+	switch cmd.Order.Type {
+	case command.Createcontainer:
 		return duc.createContainerShim(ctx, cli, cmd)
-	case "startcontainer":
+	case command.Startcontainer:
 		return duc.startContainerShim(ctx, cli, cmd)
-	case "removecontainer":
+	case command.Removecontainer:
 		return duc.removeContainerShim(ctx, cli, cmd)
-	case "createnetwork":
+	case command.Createnetwork:
 		return duc.createNetworkShim(ctx, cli, cmd)
-	case "attachnetwork":
+	case command.Attachnetwork:
 		return duc.attachNetworkShim(ctx, cli, cmd)
-	case "detachnetwork":
+	case command.Detachnetwork:
 		return duc.detachNetworkShim(ctx, cli, cmd)
-	case "removenetwork":
+	case command.Removenetwork:
 		return duc.removeNetworkShim(ctx, cli, cmd)
-	case "createvolume":
+	case command.Createvolume:
 		return duc.createVolumeShim(ctx, cli, cmd)
-	case "removevolume":
+	case command.Removevolume:
 		return duc.removeVolumeShim(ctx, cli, cmd)
-	case "putfile":
+	case command.Putfile:
 		return duc.putFileShim(ctx, cli, cmd)
-	case "putfileincontainer":
+	case command.Putfileincontainer:
 		return duc.putFileInContainerShim(ctx, cli, cmd)
-	case "emulation":
+	case command.Emulation:
 		return duc.emulationShim(ctx, cli, cmd)
 	}
 	return entity.NewFatalResult(fmt.Errorf("unknown command type: %s", cmd.Order.Type))
