@@ -48,6 +48,22 @@ func TestNewDockerUseCase(t *testing.T) {
 	assert.Equal(t, expected, duc)
 }
 
+func TestDockerUseCase_Run_depCheck(t *testing.T) {
+	duc := new(mockUseCase.DockerUseCase)
+	duc.On("Run", mock.Anything).Return(statusTooSoon)
+
+	cmd := command.Command{
+		ID: "test",
+		Timestamp: 1773768824,
+	}
+
+	res := duc.Run(cmd)
+	assert.NotNil(t, res.Error)
+
+	assert.Equal(t, entity.TooSoonType, res.Type)
+	assert.True(t, duc.AssertNumberOfCalls(t, "Run", 1))
+}
+
 func TestDockerUseCase_TimeSupplier(t *testing.T) {
 	usecase := new(mockUseCase.DockerUseCase)
 	usecase.On("TimeSupplier").Return(int64(5))
@@ -211,6 +227,35 @@ func TestDockerUseCase_Run_DetachNetwork(t *testing.T) {
 		},
 	})
 	assert.NoError(t, res.Error)
+	service.AssertExpectations(t)
+}
+
+func TestDockerUseCase_RemoveNetwork(t *testing.T) {
+	service := new(mockService.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
+	service.On("RemoveNetwork", mock.Anything, mock.Anything, mock.Anything).Return(
+		entity.NewSuccessResult()).Once()
+
+	cmdService := new(mockService.CommandService)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
+
+	usecase, err := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	assert.NoError(t, err)
+
+	res := usecase.Run(command.Command{
+		ID:        "TEST",
+		Timestamp: time.Now().Unix() - 5,
+		Timeout:   0,
+		Target:    command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type: "removeNetwork",
+			Payload: map[string]interface{}{
+				"name": "test",
+			},
+		},
+	})
+	assert.NoError(t, res.Error)
+	assert.True(t, service.AssertNumberOfCalls(t, "RemoveNetwork", 1))
 	service.AssertExpectations(t)
 }
 
