@@ -380,13 +380,19 @@ func (ds dockerService) PlaceFileInVolume(ctx context.Context, cli *client.Clien
 }
 
 func (ds dockerService) Emulation(ctx context.Context, cli *client.Client, netem command.Netconf) entity.Result {
+	netemImage := "gaiadocker/iproute2:latest"
+	errChan := make(chan error)
+	defer close(errChan)
+	go func() {
+		errChan <- ds.aux.EnsureImagePulled(ctx, cli, netemImage)
+	}()
+
 	cntr, net, err := ds.getNetworkAndContainerByName(ctx, cli, netem.Network, netem.Container)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-
+	err = <-errChan
 	name := cntr.ID + "-" + net.ID
-	log.WithFields(log.Fields{"network": net}).Info("network")
 	netemCmd := fmt.Sprintf(
 		"tc qdisc add dev $(ip -o addr show to %s | sed -n 's/.*\\(eth[0-9]*\\).*/\\1/p') root netem",
 		net.IPAM.Config[0].Subnet)
@@ -420,12 +426,12 @@ func (ds dockerService) Emulation(ctx context.Context, cli *client.Client, netem
 	}
 
 	config := &container.Config{
-		Image:      "gaiadocker/iproute2",
+		Image:      netemImage,
 		Entrypoint: strslice.StrSlice([]string{"/bin/sh", "-c", netemCmd}),
 	}
 
 	hostConfig := &container.HostConfig{
-		AutoRemove:  false,
+		AutoRemove:  true,
 		NetworkMode: container.NetworkMode(fmt.Sprintf("container:%s", cntr.ID)),
 		CapAdd:      strslice.StrSlice([]string{"NET_ADMIN"}),
 	}
