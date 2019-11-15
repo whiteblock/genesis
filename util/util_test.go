@@ -85,27 +85,3 @@ func TestConvertToStringMap(t *testing.T) {
 		})
 	}
 }
-
-func TestCopyMap(t *testing.T) {
-	var test = []struct {
-		m map[string]interface{}
-	}{
-		{m: map[string]interface{}{"1": 1.0, "2": 2.0}},
-		{m: map[string]interface{}{"bool": false}},
-		{m: map[string]interface{}{"field": "this is a test string"}},
-		{m: map[string]interface{}{}},
-	}
-
-	for i, tt := range test {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			m, err := CopyMap(tt.m)
-			if err != nil {
-				t.Errorf("an error occurred within CopyMap")
-			}
-
-			if !reflect.DeepEqual(m, tt.m) {
-				t.Errorf("return value of CopyMap did not match expected value")
-			}
-		})
-	}
-}

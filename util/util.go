@@ -24,14 +24,7 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/whiteblock/go.uuid"
 )
-
-//GetUUIDString generates a new UUID
-func GetUUIDString() (string, error) {
-	uid, err := uuid.NewV4()
-	return uid.String(), err
-}
 
 // GetJSONString checks and extracts a string from data[field].
 // Will return an error if data[field] does not exist or is of the wrong type.
@@ -59,14 +52,4 @@ func ConvertToStringMap(data map[string]interface{}) map[string]string {
 		out[key] = string(strval)
 	}
 	return out
-}
-
-// CopyMap performs a deep copy of the given map m.
-func CopyMap(m map[string]interface{}) (map[string]interface{}, error) {
-	var out map[string]interface{}
-	tmp, err := json.Marshal(m)
-	if err != nil {
-		return nil, err
-	}
-	return out, json.Unmarshal(tmp, &out)
 }
