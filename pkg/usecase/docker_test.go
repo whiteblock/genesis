@@ -590,7 +590,7 @@ func TestDockerUseCase_Execute_AttachNetwork_Success(t *testing.T) {
 		Timeout:   5 * time.Second,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type: "attachNetwork",
+			Type:    "attachNetwork",
 			Payload: command.ContainerNetwork{ContainerName: "tester", Network: "testnet"},
 		},
 	})
