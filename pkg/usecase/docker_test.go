@@ -32,17 +32,15 @@ import (
 )
 
 func TestNewDockerUseCase(t *testing.T) {
-	conf := entity.DockerConfig{}
 	service := new(mockService.DockerService)
 	cmdService := new(mockService.CommandService)
 
 	expected := &dockerUseCase{
-		conf:       conf,
 		service:    service,
 		cmdService: cmdService,
 	}
 
-	duc, err := NewDockerUseCase(conf, service, cmdService)
+	duc, err := NewDockerUseCase(service, cmdService)
 	assert.NoError(t, err)
 
 	assert.Equal(t, expected, duc)
@@ -65,10 +63,10 @@ func TestDockerUseCase_Run_depCheck(t *testing.T) {
 
 func TestDockerUseCase_TimeSupplier(t *testing.T) {
 	usecase := new(mockUseCase.DockerUseCase)
-	usecase.On("TimeSupplier").Return(int64(5))
+	usecase.On("TimeSupplier").Return(int64(5)).Once()
 
 	assert.Equal(t, usecase.TimeSupplier(), int64(5))
-	assert.True(t, usecase.AssertNumberOfCalls(t, "TimeSupplier", 1))
+	usecase.AssertExpectations(t)
 }
 
 func TestDockerUseCase_Run_CreateContainer(t *testing.T) {
@@ -149,7 +147,8 @@ func TestDockerUseCase_Run_RemoveContainer(t *testing.T) {
 func TestDockerUseCase_Run_CreateNetwork(t *testing.T) {
 	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-	service.On("CreateNetwork", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+	service.On("CreateNetwork", mock.Anything, mock.Anything, mock.Anything).Return(
+		entity.Result{Type: entity.SuccessType}).Once()
 
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
@@ -168,14 +167,14 @@ func TestDockerUseCase_Run_CreateNetwork(t *testing.T) {
 		},
 	})
 	assert.Equal(t, res.Error, nil)
-	assert.True(t, service.AssertNumberOfCalls(t, "CreateNetwork", 1))
+	service.AssertExpectations(t)
 }
 
 func TestDockerUseCase_Run_AttachNetwork(t *testing.T) {
 	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
 	service.On("AttachNetwork", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+		mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType}).Once()
 
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
@@ -197,7 +196,7 @@ func TestDockerUseCase_Run_AttachNetwork(t *testing.T) {
 		},
 	})
 	assert.NoError(t, res.Error)
-	assert.True(t, service.AssertNumberOfCalls(t, "AttachNetwork", 1))
+	service.AssertExpectations(t)
 }
 
 func TestDockerUseCase_Run_DetachNetwork(t *testing.T) {
@@ -238,7 +237,7 @@ func TestDockerUseCase_RemoveNetwork(t *testing.T) {
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
 
-	usecase, err := NewDockerUseCase(entity.DockerConfig{}, service, cmdService)
+	usecase, err := NewDockerUseCase(service, cmdService)
 	assert.NoError(t, err)
 
 	res := usecase.Run(command.Command{
