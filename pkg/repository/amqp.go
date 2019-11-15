@@ -19,72 +19,28 @@
 package repository
 
 import (
-	"github.com/streadway/amqp"
+	"github.com/whiteblock/genesis/pkg/externals"
 )
 
-//AMQPRepository represents functions available via a connection to a AMQP provider
+//AMQPRepository represents functions for connecting to a AMQP provider
 type AMQPRepository interface {
-	//Consume immediately starts delivering queued messages.
-	Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args amqp.Table) (<-chan amqp.Delivery, error)
-	//Requeue rejects the oldMsg and queues the newMsg in a transaction
-	Requeue(mandatory bool, immediate bool, oldMsg amqp.Delivery, newMsg amqp.Publishing) error
-	//CreateQueue attempts to publish a queue
-	CreateQueue(name string, durable, autoDelete, exclusive, noWait bool, args amqp.Table) error
+	GetChannel() (externals.AMQPChannel, error)
+	RejectDelivery(msg externals.AMQPDelivery, requeue bool) error
 }
 
 type amqpRepository struct {
-	conn *amqp.Connection
+	conn externals.AMQPConnection
 }
 
 //NewAMQPRepository creates a new AMQPRepository
-func NewAMQPRepository(conn *amqp.Connection) (AMQPRepository, error) {
+func NewAMQPRepository(conn externals.AMQPConnection) (AMQPRepository, error) {
 	return &amqpRepository{conn: conn}, nil
 }
 
-//Consume immediately starts delivering queued messages.
-func (ar amqpRepository) Consume(queue, consumer string, autoAck, exclusive,
-	noLocal, noWait bool, args amqp.Table) (<-chan amqp.Delivery, error) {
-	ch, err := ar.conn.Channel()
-	if err != nil {
-		return nil, err
-	}
-	msgs, err := ch.Consume(queue, consumer, autoAck, exclusive, noLocal, noWait, args)
-	return msgs, err
+func (ar amqpRepository) GetChannel() (externals.AMQPChannel, error) {
+	return ar.conn.Channel()
 }
 
-//Requeue rejects the oldMsg and queues the newMsg in a transaction
-func (ar amqpRepository) Requeue(mandatory bool, immediate bool, oldMsg amqp.Delivery, newMsg amqp.Publishing) error {
-	ch, err := ar.conn.Channel()
-	if err != nil {
-		return err
-	}
-	defer ch.Close()
-	err = ch.Tx()
-	if err != nil {
-		return err
-	}
-
-	err = ch.Publish(oldMsg.Exchange, oldMsg.RoutingKey, mandatory, immediate, newMsg)
-	if err != nil {
-		ch.TxRollback()
-		return err
-	}
-
-	err = oldMsg.Reject(false)
-	if err != nil {
-		ch.TxRollback()
-		return err
-	}
-	return ch.TxCommit()
-}
-
-//CreateQueue attempts to publish a queue
-func (ar amqpRepository) CreateQueue(name string, durable, autoDelete, exclusive, noWait bool, args amqp.Table) error {
-	ch, err := ar.conn.Channel()
-	if err != nil {
-		return err
-	}
-	defer ch.Close()
-	_, err = ch.QueueDeclare(name, durable, autoDelete, exclusive, noWait, args)
-	return err
+func (ar amqpRepository) RejectDelivery(msg externals.AMQPDelivery, requeue bool) error {
+	return msg.Reject(requeue)
 }

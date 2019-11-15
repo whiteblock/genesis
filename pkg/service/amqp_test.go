@@ -24,6 +24,8 @@ import (
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	externalsMocks "github.com/whiteblock/genesis/mocks/pkg/externals"
 	repoMocks "github.com/whiteblock/genesis/mocks/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/entity"
 )
@@ -57,14 +59,16 @@ func TestAMQPService_Consume(t *testing.T) {
 			Args:      nil,
 		},
 	}
+	ch := new(externalsMocks.AMQPChannel)
 
-	repo := new(repoMocks.AMQPRepository)
-	repo.On("Consume", mock.Anything, mock.Anything, mock.Anything,
+	ch.On("Consume", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Run(
 		func(args mock.Arguments) {
 			assert.True(t, args[0:len(args)-2].Is(conf.QueueName, conf.Consume.Consumer, conf.Consume.AutoAck,
 				conf.Consume.Exclusive, conf.Consume.NoLocal, conf.Consume.NoWait))
-		})
+		}).Once()
+	repo := new(repoMocks.AMQPRepository)
+	repo.On("GetChannel").Return(ch, nil).Once()
 
 	serv, err := NewAMQPService(conf, repo)
 	assert.NoError(t, err)
@@ -72,10 +76,11 @@ func TestAMQPService_Consume(t *testing.T) {
 	_, err = serv.Consume()
 	assert.NoError(t, err)
 
-	repo.AssertNumberOfCalls(t, "Consume", 1)
+	repo.AssertExpectations(t)
+	ch.AssertExpectations(t)
 }
 
-func TestAMQPService_Requeue(t *testing.T) {
+func TestAMQPService_Requeue_Success(t *testing.T) {
 	conf := entity.AMQPConfig{
 		QueueName: "test queue",
 		Publish: entity.PublishConfig{
@@ -84,19 +89,43 @@ func TestAMQPService_Requeue(t *testing.T) {
 		},
 	}
 
-	repo := new(repoMocks.AMQPRepository)
-	repo.On("Requeue", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+	oldMsg := amqp.Delivery{
+		Exchange:   "t",
+		RoutingKey: "1",
+	}
+	newMsg := amqp.Publishing{}
+
+	ch := new(externalsMocks.AMQPChannel)
+	ch.On("Publish", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
 		func(args mock.Arguments) {
-			assert.True(t, args[0:2].Is(conf.Publish.Mandatory, conf.Publish.Immediate))
+			require.Len(t, args, 5)
+			assert.Equal(t, oldMsg.Exchange, args.Get(0))
+			assert.Equal(t, oldMsg.RoutingKey, args.Get(1))
+			assert.Equal(t, conf.Publish.Mandatory, args.Get(2))
+			assert.Equal(t, conf.Publish.Immediate, args.Get(3))
+			assert.Equal(t, newMsg, args.Get(4))
+		}).Once()
+	ch.On("Tx").Return(nil).Once()
+	ch.On("Close").Return(nil).Once()
+	ch.On("TxCommit").Return(nil).Once()
+
+	repo := new(repoMocks.AMQPRepository)
+	repo.On("GetChannel").Return(ch, nil).Once()
+	repo.On("RejectDelivery", mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+			require.Len(t, args, 2)
+			assert.Equal(t, oldMsg, args.Get(0))
+			assert.False(t, args.Bool(1))
 		})
 
 	serv, err := NewAMQPService(conf, repo)
 	assert.NoError(t, err)
 
-	err = serv.Requeue(amqp.Delivery{}, amqp.Publishing{})
+	err = serv.Requeue(oldMsg, amqp.Publishing{})
 	assert.NoError(t, err)
 
-	repo.AssertNumberOfCalls(t, "Requeue", 1)
+	repo.AssertExpectations(t)
+	ch.AssertExpectations(t)
 }
 
 func TestAmqpService_CreateQueue(t *testing.T) {
@@ -111,17 +140,21 @@ func TestAmqpService_CreateQueue(t *testing.T) {
 		},
 	}
 
-	repo := new(repoMocks.AMQPRepository)
-	repo.On("CreateQueue", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+	ch := new(externalsMocks.AMQPChannel)
+	ch.On("QueueDeclare", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(amqp.Queue{}, nil).Run(
 		func(args mock.Arguments) {
+			require.Len(t, args, 6)
 			assert.True(t, args[0:5].Is(conf.QueueName, conf.Queue.Durable, conf.Queue.AutoDelete, conf.Queue.Exclusive, conf.Queue.NoWait, conf.Queue.Args))
-		})
-
+		}).Once()
+	ch.On("Close").Return(nil).Once()
+	repo := new(repoMocks.AMQPRepository)
+	repo.On("GetChannel").Return(ch, nil).Once()
 	serv, err := NewAMQPService(conf, repo)
 	assert.NoError(t, err)
 
 	err = serv.CreateQueue()
 	assert.NoError(t, err)
 
-	repo.AssertNumberOfCalls(t, "CreateQueue", 1)
+	repo.AssertExpectations(t)
+	ch.AssertExpectations(t)
 }

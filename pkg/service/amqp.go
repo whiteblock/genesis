@@ -46,18 +46,49 @@ func NewAMQPService(conf entity.AMQPConfig, repo repository.AMQPRepository) (AMQ
 
 //Consume immediately starts delivering queued messages.
 func (as amqpService) Consume() (<-chan amqp.Delivery, error) {
-	return as.repo.Consume(as.conf.QueueName, as.conf.Consume.Consumer, as.conf.Consume.AutoAck,
+	ch, err := as.repo.GetChannel()
+	if err != nil {
+		return nil, err
+	}
+	return ch.Consume(as.conf.QueueName, as.conf.Consume.Consumer, as.conf.Consume.AutoAck,
 		as.conf.Consume.Exclusive, as.conf.Consume.NoLocal, as.conf.Consume.NoWait,
 		as.conf.Consume.Args)
 }
 
 //Requeue rejects the oldMsg and queues the newMsg in a transaction
 func (as amqpService) Requeue(oldMsg amqp.Delivery, newMsg amqp.Publishing) error {
-	return as.repo.Requeue(as.conf.Publish.Mandatory, as.conf.Publish.Immediate, oldMsg, newMsg)
+	ch, err := as.repo.GetChannel()
+	if err != nil {
+		return err
+	}
+	defer ch.Close()
+	err = ch.Tx()
+	if err != nil {
+		return err
+	}
+
+	err = ch.Publish(oldMsg.Exchange, oldMsg.RoutingKey, as.conf.Publish.Mandatory, as.conf.Publish.Immediate, newMsg)
+	if err != nil {
+		ch.TxRollback()
+		return err
+	}
+
+	err = as.repo.RejectDelivery(oldMsg, false)
+	if err != nil {
+		ch.TxRollback()
+		return err
+	}
+	return ch.TxCommit()
 }
 
 //CreateQueue attempts to publish a queue
 func (as amqpService) CreateQueue() error {
-	return as.repo.CreateQueue(as.conf.QueueName, as.conf.Queue.Durable, as.conf.Queue.AutoDelete,
+	ch, err := as.repo.GetChannel()
+	if err != nil {
+		return err
+	}
+	defer ch.Close()
+	_, err = ch.QueueDeclare(as.conf.QueueName, as.conf.Queue.Durable, as.conf.Queue.AutoDelete,
 		as.conf.Queue.Exclusive, as.conf.Queue.NoWait, as.conf.Queue.Args)
+	return err
 }
