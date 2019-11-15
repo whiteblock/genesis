@@ -270,9 +270,6 @@ func (ds dockerService) getNetworkAndContainerByName(ctx context.Context, cli *c
 	errChan := make(chan error, 2)
 	netChan := make(chan types.NetworkResource, 1)
 	cntrChan := make(chan types.Container, 1)
-	defer close(errChan)
-	defer close(netChan)
-	defer close(cntrChan)
 
 	go func(networkName string) {
 		net, err := ds.aux.GetNetworkByName(ctx, cli, networkName)
@@ -381,8 +378,7 @@ func (ds dockerService) PlaceFileInVolume(ctx context.Context, cli *client.Clien
 
 func (ds dockerService) Emulation(ctx context.Context, cli *client.Client, netem command.Netconf) entity.Result {
 	netemImage := "gaiadocker/iproute2:latest"
-	errChan := make(chan error)
-	defer close(errChan)
+	errChan := make(chan error, 1)
 	go func() {
 		errChan <- ds.aux.EnsureImagePulled(ctx, cli, netemImage)
 	}()
@@ -392,6 +388,10 @@ func (ds dockerService) Emulation(ctx context.Context, cli *client.Client, netem
 		return entity.NewFatalResult(err)
 	}
 	err = <-errChan
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+
 	name := cntr.ID + "-" + net.ID
 	netemCmd := fmt.Sprintf(
 		"tc qdisc add dev $(ip -o addr show to %s | sed -n 's/.*\\(eth[0-9]*\\).*/\\1/p') root netem",

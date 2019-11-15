@@ -76,9 +76,9 @@ func removeVolume(dockerUseCase usecase.DockerUseCase, name string) {
 	log.WithFields(log.Fields{"res": res}).Info("removed a volume")
 }
 
-func removeContainer(dockerUseCase usecase.DockerUseCase) {
+func removeContainer(dockerUseCase usecase.DockerUseCase, name string) {
 	cmd := mintCommand(map[string]string{
-		"name": "tester",
+		"name": name,
 	}, command.Removecontainer)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("removed a container")
@@ -101,7 +101,7 @@ func createNetwork(dockerUseCase usecase.DockerUseCase, name string, num int) {
 
 func attachNetwork(dockerUseCase usecase.DockerUseCase, networkName string, containerName string) {
 	cmd := mintCommand(map[string]string{
-		"container": "tester",
+		"container": containerName,
 		"network":   networkName,
 	}, command.Attachnetwork)
 	res := dockerUseCase.Run(cmd)
@@ -123,7 +123,7 @@ func removeNetwork(dockerUseCase usecase.DockerUseCase, name string) {
 	log.WithFields(log.Fields{"res": res}).Info("removed a network")
 }
 
-func createContainer(dockerUseCase usecase.DockerUseCase) {
+func createContainer(dockerUseCase usecase.DockerUseCase, name string) {
 	testContainer := command.Container{
 		BoundCPUs: nil, //TODO
 		Detach:    false,
@@ -133,15 +133,17 @@ func createContainer(dockerUseCase usecase.DockerUseCase) {
 		Labels: map[string]string{
 			"FOO": "BAR",
 		},
-		Name:    "tester",
+		Name:    name,
 		Network: []string{"testnet"},
-		Ports:   map[int]int{8888: 8889},
+		//	Ports:   map[int]int{8888: 8889},
 		Volumes: []command.Mount{command.Mount{
 			Name:      "test_volume",
 			Directory: "/foo/bar",
 			ReadOnly:  false,
 		}},
-		Image: "nginx:latest",
+		Image:      "nettools/ubuntools",
+		EntryPoint: "ping",
+		Args:       []string{"localhost"},
 	}
 	testContainer.Cpus = "1"
 	testContainer.Memory = "1gb"
@@ -150,9 +152,9 @@ func createContainer(dockerUseCase usecase.DockerUseCase) {
 	log.WithFields(log.Fields{"res": res}).Info("created a container")
 }
 
-func startContainer(dockerUseCase usecase.DockerUseCase) {
+func startContainer(dockerUseCase usecase.DockerUseCase, name string) {
 	cmd := mintCommand(map[string]interface{}{
-		"name": "tester",
+		"name": name,
 	}, command.Startcontainer)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("started a container")
@@ -171,10 +173,10 @@ func putFile(dockerUseCase usecase.DockerUseCase) {
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("placed a file")
 }
-func emulate(dockerUseCase usecase.DockerUseCase) {
+func emulate(dockerUseCase usecase.DockerUseCase, containerName string, networkName string) {
 	cmd := mintCommand(command.Netconf{
-		Container: "tester",
-		Network:   "testnet2",
+		Container: containerName,
+		Network:   networkName,
 		Delay:     100000,
 	}, command.Emulation)
 	res := dockerUseCase.Run(cmd)
@@ -196,7 +198,8 @@ func dockerTest(clean bool) {
 		panic(err)
 	}
 	if clean {
-		removeContainer(dockerUseCase)
+		removeContainer(dockerUseCase, "tester")
+		removeContainer(dockerUseCase, "tester2")
 		removeVolume(dockerUseCase, "test_volume")
 		time.Sleep(2 * time.Second)
 		removeNetwork(dockerUseCase, "testnet")
@@ -206,11 +209,16 @@ func dockerTest(clean bool) {
 
 	createVolume(dockerUseCase, "test_volume")
 	createNetwork(dockerUseCase, "testnet", 14)
-	createContainer(dockerUseCase)
-	startContainer(dockerUseCase)
+	createContainer(dockerUseCase, "tester")
+	startContainer(dockerUseCase, "tester")
+	createContainer(dockerUseCase, "tester2")
+	startContainer(dockerUseCase, "tester2")
+
 	createNetwork(dockerUseCase, "testnet2", 15)
 	attachNetwork(dockerUseCase, "testnet2", "tester")
+	attachNetwork(dockerUseCase, "testnet2", "tester2")
 	detachNetwork(dockerUseCase, "testnet", "tester")
-	emulate(dockerUseCase)
+	emulate(dockerUseCase, "tester", "testnet2")
+	emulate(dockerUseCase, "tester2", "testnet2")
 	putFile(dockerUseCase)
 }
