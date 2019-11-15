@@ -76,7 +76,7 @@ type dockerService struct {
 //NewDockerService creates a new DockerService
 func NewDockerService(repo repository.DockerRepository, aux auxillary.DockerAuxillary,
 	conf entity.DockerConfig) (DockerService, error) {
-	return dockerService{repo: repo, aux: aux}, nil
+	return dockerService{conf:conf,repo: repo, aux: aux}, nil
 }
 
 //CreateClient creates a new client for connecting to the docker daemon

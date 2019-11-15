@@ -185,6 +185,7 @@ func dockerTest(clean bool) {
 	dockerRepository := repository.NewDockerRepository()
 	dockerAux := auxillary.NewDockerAuxillary(dockerRepository)
 	dockerConfig := conf.GetDockerConfig()
+	log.Info(dockerConfig)
 	dockerService, err := service.NewDockerService(dockerRepository, dockerAux, dockerConfig)
 	if err != nil {
 		panic(err)
