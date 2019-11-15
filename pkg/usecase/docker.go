@@ -108,8 +108,6 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 		return duc.createVolumeShim(ctx, cli, cmd)
 	case command.Removevolume:
 		return duc.removeVolumeShim(ctx, cli, cmd)
-	case command.Putfile:
-		return duc.putFileShim(ctx, cli, cmd)
 	case command.Putfileincontainer:
 		return duc.putFileInContainerShim(ctx, cli, cmd)
 	case command.Emulation:
@@ -244,36 +242,7 @@ func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli *client.Clien
 	return duc.service.RemoveVolume(ctx, cli, name)
 }
 
-func (duc dockerUseCase) putFileShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
-	var volumeName string
-	err := util.GetJSONString(cmd.Order.Payload, "volume", &volumeName)
-	if err != nil {
-		return entity.NewFatalResult(err)
-	}
-
-	_, hasField := cmd.Order.Payload["file"]
-	if !hasField {
-		return entity.NewFatalResult(fmt.Errorf("missing file field"))
-	}
-
-	raw, err := json.Marshal(cmd.Order.Payload["file"])
-	if err != nil {
-		return entity.NewFatalResult(err)
-	}
-	var file command.File
-	err = json.Unmarshal(raw, &file)
-	if err != nil {
-		return entity.NewFatalResult(err)
-	}
-	return duc.service.PlaceFileInVolume(ctx, cli, volumeName, file)
-}
-
 func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
-	var containerName string
-	err := util.GetJSONString(cmd.Order.Payload, "container", &containerName)
-	if err != nil {
-		return entity.NewFatalResult(err)
-	}
 
 	_, hasField := cmd.Order.Payload["file"]
 	if !hasField {
@@ -286,6 +255,12 @@ func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli *client
 	}
 	var file command.File
 	err = json.Unmarshal(raw, &file)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+
+	var containerName string
+	err = util.GetJSONString(cmd.Order.Payload, "container", &containerName)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}

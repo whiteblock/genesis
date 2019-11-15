@@ -24,7 +24,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/usecase"
-	"github.com/whiteblock/genesis/util"
+	util "github.com/whiteblock/utility/utils"
 	"net/http"
 	"sync"
 )
