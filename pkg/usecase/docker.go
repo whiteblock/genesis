@@ -152,6 +152,9 @@ func (duc dockerUseCase) createContainerShim(ctx context.Context, cli *client.Cl
 
 func (duc dockerUseCase) startContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	if payload, ok := cmd.Order.Payload.(command.SimpleName); ok {
+		if payload.Name == "" {
+			return entity.NewFatalResult(fmt.Errorf("empty field \"name\""))
+		}
 		return duc.service.StartContainer(ctx, cli, payload.Name)
 	}
 	return entity.NewFatalResult(fmt.Errorf("missing field \"name\""))
@@ -159,6 +162,9 @@ func (duc dockerUseCase) startContainerShim(ctx context.Context, cli *client.Cli
 
 func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	if payload, ok := cmd.Order.Payload.(command.SimpleName); ok {
+		if payload.Name == "" {
+			return entity.NewFatalResult(fmt.Errorf("empty field \"name\""))
+		}
 		return duc.service.RemoveContainer(ctx, cli, payload.Name)
 	}
 	return entity.NewFatalResult(fmt.Errorf("missing field \"name\""))
@@ -193,6 +199,9 @@ func (duc dockerUseCase) detachNetworkShim(ctx context.Context, cli *client.Clie
 
 func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	if payload, ok := cmd.Order.Payload.(command.SimpleName); ok {
+		if payload.Name == "" {
+			return entity.NewFatalResult(fmt.Errorf("empty field \"name\""))
+		}
 		return duc.service.RemoveNetwork(ctx, cli, payload.Name)
 	}
 	return entity.NewFatalResult(fmt.Errorf("missing field \"name\""))
@@ -206,6 +215,9 @@ func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli *client.Clien
 
 func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	if payload, ok := cmd.Order.Payload.(command.SimpleName); ok {
+		if payload.Name == "" {
+			return entity.NewFatalResult(fmt.Errorf("empty field \"name\""))
+		}
 		return duc.service.RemoveVolume(ctx, cli, payload.Name)
 	}
 	return entity.NewFatalResult(fmt.Errorf("missing field \"name\""))
