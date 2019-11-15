@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
+	cmdMock "github.com/whiteblock/genesis/mocks/pkg/command"
 	repoMock "github.com/whiteblock/genesis/mocks/pkg/repository"
 	auxMock "github.com/whiteblock/genesis/mocks/pkg/service"
 	"github.com/whiteblock/genesis/pkg/entity"
@@ -327,7 +327,7 @@ func TestDockerService_PlaceFileInContainer(t *testing.T) {
 	testDir := "/pkg"
 	testContainer := types.Container{Names: []string{"test1"}, ID: "id1"}
 
-	file := new(entityMock.IFile)
+	file := new(cmdMock.IFile)
 	file.On("GetDir").Return(testDir).Once()
 	file.On("GetTarReader").Return(nil, nil).Once()
 
