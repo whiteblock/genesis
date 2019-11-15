@@ -204,7 +204,7 @@ func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli *client.Clie
 }
 func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	if payload, ok := cmd.Order.Payload.(command.Volume); ok {
-		return  duc.service.CreateVolume(ctx, cli, payload)
+		return duc.service.CreateVolume(ctx, cli, payload)
 	} else {
 		return entity.NewFatalResult(fmt.Errorf("Invalid payload"))
 	}

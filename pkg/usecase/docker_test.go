@@ -267,7 +267,7 @@ func TestDockerUseCase_Run_AttachNetwork(t *testing.T) {
 			Type: command.Attachnetwork,
 			Payload: command.ContainerNetwork{
 				ContainerName: "test",
-				Network: "testnet",
+				Network:       "testnet",
 			},
 		},
 	})
@@ -293,8 +293,8 @@ func TestDockerUseCase_Run_DetachNetwork(t *testing.T) {
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type: "detachNetwork",
-			Payload: command.ContainerNetwork{ContainerName:"test",Network:"testnet"},
+			Type:    "detachNetwork",
+			Payload: command.ContainerNetwork{ContainerName: "test", Network: "testnet"},
 		},
 	})
 	assert.NoError(t, res.Error)
@@ -347,7 +347,7 @@ func TestDockerUseCase_Run_CreateVolume(t *testing.T) {
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    command.Createvolume,
+			Type: command.Createvolume,
 			Payload: command.Volume{
 				Name: "test",
 			},
@@ -400,7 +400,7 @@ func TestDockerUseCase_Run_PutFileInContainer(t *testing.T) {
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    command.Putfileincontainer,
-			Payload: command.FileAndContainer{File: command.File{Destination: "test/path/", Data: []byte("content")} },
+			Payload: command.FileAndContainer{File: command.File{Destination: "test/path/", Data: []byte("content")}},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -615,7 +615,7 @@ func TestDockerUseCase_Execute_AttachNetwork_Failure(t *testing.T) {
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    command.Attachnetwork,
-			Payload: command.ContainerNetwork{ContainerName:"test", Network:"testnet"},
+			Payload: command.ContainerNetwork{ContainerName: "test", Network: "testnet"},
 		},
 	})
 	assert.Error(t, res.Error)
@@ -690,7 +690,7 @@ func TestDockerUseCase_Execute_RemoveVolume_Failure(t *testing.T) {
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    command.Putfile,
-			Payload: command.FileAndVolume{File: command.File {Destination: "/test/path/", Data: []byte("contents")}},
+			Payload: command.FileAndVolume{File: command.File{Destination: "/test/path/", Data: []byte("contents")}},
 		},
 	})
 	assert.Error(t, res.Error, nil)
@@ -727,7 +727,7 @@ func TestDockerUseCase_Execute_PutFileInContainer_Success(t *testing.T) {
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    command.Putfileincontainer,
-			Payload: command.FileAndContainer{File:command.File{Destination: "/test/path", Data: []byte("contents"), Mode: 0777}},
+			Payload: command.FileAndContainer{File: command.File{Destination: "/test/path", Data: []byte("contents"), Mode: 0777}},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -777,13 +777,13 @@ func TestDockerUseCase_Execute_Emulation(t *testing.T) {
 		Order: command.Order{
 			Type: command.Emulation,
 			Payload: command.Netconf{
-				Limit:     4,
-				Loss:      float64(2),
-				Delay:     4,
-				Rate:      "0",
+				Limit:       4,
+				Loss:        float64(2),
+				Delay:       4,
+				Rate:        "0",
 				Duplication: float64(2),
-				Corrupt:   float64(0),
-				Reorder:   float64(0),
+				Corrupt:     float64(0),
+				Reorder:     float64(0),
 			},
 		},
 	})

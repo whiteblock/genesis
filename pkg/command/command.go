@@ -54,7 +54,6 @@ const (
 
 // Generic order payload
 type OrderPayload interface {
-
 }
 
 // Order to be executed by genesis
