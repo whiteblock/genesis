@@ -46,10 +46,8 @@ func GetJSONString(data map[string]interface{}, field string, out *string) error
 		default:
 			return fmt.Errorf("incorrect type for %s", field)
 		}
-	} else {
-		return fmt.Errorf("missing field \"%s\"", field)
 	}
-	return nil
+	return fmt.Errorf("missing field \"%s\"", field)
 }
 
 // ConvertToStringMap converts a map of string to interface to a map of string to json
