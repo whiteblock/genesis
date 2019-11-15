@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/whiteblock/genesis/mocks/pkg/command"
+	mocks "github.com/whiteblock/genesis/mocks/pkg/command"
 	"path/filepath"
 	"testing"
 )

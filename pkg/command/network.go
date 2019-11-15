@@ -20,6 +20,7 @@ package command
 
 //Network represents a logic network on which containers exist
 type Network struct {
+	OrderPayload
 	//Name is the name of the network
 	Name    string            `json:"name"`
 	Subnet  string            `json:"subnet"`

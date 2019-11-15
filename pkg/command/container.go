@@ -36,6 +36,7 @@ type NetworkConfig struct {
 
 // Container represents a docker container, this is calculated from the payload of the Run command
 type Container struct {
+	OrderPayload
 	// BoundCpus are the cpus which the container will be set with an affinity for.
 	BoundCPUs []int `json:"boundCPUs,omitonempty"`
 	// Detach indicates that we should wait for the containers entrypoint to finish execution
