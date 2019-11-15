@@ -19,6 +19,7 @@
 package service
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/streadway/amqp"
@@ -116,13 +117,86 @@ func TestAMQPService_Requeue_Success(t *testing.T) {
 			require.Len(t, args, 2)
 			assert.Equal(t, oldMsg, args.Get(0))
 			assert.False(t, args.Bool(1))
-		})
+		}).Once()
 
 	serv, err := NewAMQPService(conf, repo)
 	assert.NoError(t, err)
 
-	err = serv.Requeue(oldMsg, amqp.Publishing{})
+	err = serv.Requeue(oldMsg, newMsg)
 	assert.NoError(t, err)
+
+	repo.AssertExpectations(t)
+	ch.AssertExpectations(t)
+}
+
+func TestAMQPService_Requeue_RejectDelivery_Failure(t *testing.T) {
+	ch := new(externalsMocks.AMQPChannel)
+	ch.On("Publish", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	ch.On("Tx").Return(nil).Once()
+	ch.On("Close").Return(nil).Once()
+	ch.On("TxRollback").Return(nil).Once()
+
+	repo := new(repoMocks.AMQPRepository)
+	repo.On("GetChannel").Return(ch, nil).Once()
+	repo.On("RejectDelivery", mock.Anything, mock.Anything).Return(fmt.Errorf("error")).Once()
+
+	serv, err := NewAMQPService(entity.AMQPConfig{}, repo)
+	assert.NoError(t, err)
+
+	err = serv.Requeue(amqp.Delivery{}, amqp.Publishing{})
+	assert.Error(t, err)
+
+	repo.AssertExpectations(t)
+	ch.AssertExpectations(t)
+}
+
+func TestAMQPService_Requeue_GetChannel_Failure(t *testing.T) {
+	repo := new(repoMocks.AMQPRepository)
+	repo.On("GetChannel").Return(nil, fmt.Errorf("error")).Once()
+
+	serv, err := NewAMQPService(entity.AMQPConfig{}, repo)
+	assert.NoError(t, err)
+
+	err = serv.Requeue(amqp.Delivery{}, amqp.Publishing{})
+	assert.Error(t, err)
+
+	repo.AssertExpectations(t)
+}
+
+func TestAMQPService_Requeue_Tx_Failure(t *testing.T) {
+	ch := new(externalsMocks.AMQPChannel)
+	ch.On("Tx").Return(fmt.Errorf("error")).Once()
+	ch.On("Close").Return(nil).Once()
+
+	repo := new(repoMocks.AMQPRepository)
+	repo.On("GetChannel").Return(ch, nil).Once()
+
+	serv, err := NewAMQPService(entity.AMQPConfig{}, repo)
+	assert.NoError(t, err)
+
+	err = serv.Requeue(amqp.Delivery{}, amqp.Publishing{})
+	assert.Error(t, err)
+
+	repo.AssertExpectations(t)
+	ch.AssertExpectations(t)
+}
+
+func TestAMQPService_Requeue_Publish_Failure(t *testing.T) {
+	ch := new(externalsMocks.AMQPChannel)
+	ch.On("Publish", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+		fmt.Errorf("error")).Once()
+	ch.On("Tx").Return(nil).Once()
+	ch.On("Close").Return(nil).Once()
+	ch.On("TxRollback").Return(nil).Once()
+
+	repo := new(repoMocks.AMQPRepository)
+	repo.On("GetChannel").Return(ch, nil).Once()
+
+	serv, err := NewAMQPService(entity.AMQPConfig{}, repo)
+	assert.NoError(t, err)
+
+	err = serv.Requeue(amqp.Delivery{}, amqp.Publishing{})
+	assert.Error(t, err)
 
 	repo.AssertExpectations(t)
 	ch.AssertExpectations(t)
