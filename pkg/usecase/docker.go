@@ -185,6 +185,12 @@ func (duc dockerUseCase) createNetworkShim(ctx context.Context, cli *client.Clie
 
 func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	if payload, ok := cmd.Order.Payload.(command.ContainerNetwork); ok {
+		if payload.ContainerName == "" {
+			return entity.NewFatalResult(fmt.Errorf("empty field \"container\""))
+		}
+		if payload.Network == "" {
+			return entity.NewFatalResult(fmt.Errorf("empty field \"network\""))
+		}
 		return duc.service.AttachNetwork(ctx, cli, payload.Network, payload.ContainerName)
 	}
 	return entity.NewFatalResult(errors.New("Invalid payload"))
