@@ -342,31 +342,6 @@ func TestDockerUseCase_Run_RemoveVolume(t *testing.T) {
 	assert.True(t, service.AssertNumberOfCalls(t, "RemoveVolume", 1))
 }
 
-func TestDockerUseCase_Run_PutFile(t *testing.T) {
-	service := new(mockService.DockerService)
-	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-	service.On("PlaceFileInVolume", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
-
-	cmdService := new(mockService.CommandService)
-	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
-
-	usecase, err := NewDockerUseCase(service, cmdService)
-	assert.NoError(t, err)
-
-	res := usecase.Run(command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
-		Order: command.Order{
-			Type:    "putFile",
-			Payload: map[string]interface{}{"file": map[string]interface{}{"path": "test/path/", "data": []byte("content")}},
-		},
-	})
-	assert.Equal(t, res.Error, nil)
-	assert.True(t, service.AssertNumberOfCalls(t, "PlaceFileInVolume", 1))
-}
-
 func TestDockerUseCase_Run_PutFileInContainer(t *testing.T) {
 	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
@@ -578,28 +553,6 @@ func TestDockerUseCase_Execute_RemoveVolume(t *testing.T) {
 	assert.True(t, service.AssertNumberOfCalls(t, "RemoveVolume", 1))
 }
 
-func TestDockerUseCase_Execute_PutFile(t *testing.T) {
-	service := new(mockService.DockerService)
-	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-	service.On("PlaceFileInVolume", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
-
-	usecase, err := NewDockerUseCase(service, nil)
-	assert.NoError(t, err)
-
-	res := usecase.Execute(context.TODO(), command.Command{
-		ID:        "TEST",
-		Timestamp: 1234567,
-		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "0.0.0.0"},
-		Order: command.Order{
-			Type:    "putFile",
-			Payload: map[string]interface{}{"file": map[string]interface{}{"Path": "/test/path/", "Data": []byte("contents")}},
-		},
-	})
-	assert.Equal(t, res.Error, nil)
-	assert.True(t, service.AssertNumberOfCalls(t, "PlaceFileInVolume", 1))
-}
-
 func TestDockerUseCase_Execute_PutFileInContainer(t *testing.T) {
 	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
@@ -615,11 +568,33 @@ func TestDockerUseCase_Execute_PutFileInContainer(t *testing.T) {
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    "putFileInContainer",
-			Payload: map[string]interface{}{"file": map[string]interface{}{"Path": "/test/path/", "Data": []byte("contents")}},
+			Payload: map[string]interface{}{"file": map[string]interface{}{"destination": "/test/path/", "data": []byte("contents")}},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
 	assert.True(t, service.AssertNumberOfCalls(t, "PlaceFileInContainer", 1))
+}
+
+func TestdockerUseCase_putFileInContainerShim_missingFields(t *testing.T) {
+	duc := &dockerUseCase{}
+
+	cmd := command.Command{
+		Order: command.Order{
+			Payload: map[string]interface{}{},
+		},
+	}
+	res := duc.putFileInContainerShim(nil, nil, cmd)
+	assert.Error(t, res.Error)
+
+	cmd.Order.Payload = map[string]interface{}{"file": map[string]interface{}{"destination": 2, "Data": []byte("contents")}}
+	res = duc.putFileInContainerShim(nil, nil, cmd)
+	assert.Error(t, res.Error)
+
+	cmd.Order.Payload = map[string]interface{}{"file": map[string]interface{}{
+		"destination": "/test/path/",
+		"data":        []byte("contents")}}
+	res = duc.putFileInContainerShim(nil, nil, cmd)
+	assert.Error(t, res.Error)
 }
 
 func TestDockerUseCase_Execute_Emulation(t *testing.T) {
