@@ -57,7 +57,6 @@ type DockerService interface {
 	CreateVolume(ctx context.Context, cli *client.Client, volume command.Volume) entity.Result
 	RemoveVolume(ctx context.Context, cli *client.Client, name string) entity.Result
 	PlaceFileInContainer(ctx context.Context, cli *client.Client, containerName string, file command.IFile) entity.Result
-	PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file command.IFile) entity.Result
 	Emulation(ctx context.Context, cli *client.Client, netem command.Netconf) entity.Result
 
 	//CreateClient creates a new client for connecting to the docker daemon
@@ -369,11 +368,6 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli *client.Cl
 		return entity.NewErrorResult(err)
 	}
 	return entity.NewSuccessResult()
-}
-
-func (ds dockerService) PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file command.IFile) entity.Result {
-	//TODO
-	return entity.Result{}
 }
 
 func (ds dockerService) Emulation(ctx context.Context, cli *client.Client, netem command.Netconf) entity.Result {
