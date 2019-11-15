@@ -182,9 +182,9 @@ func TestDockerUseCase_Run_RemoveContainer_Success(t *testing.T) {
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type: "removeContainer",
-			Payload: map[string]interface{}{
-				"name": containerName,
+			Type: command.Removecontainer,
+			Payload: command.SimpleName{
+				Name: containerName,
 			},
 		},
 	})
@@ -212,7 +212,7 @@ func TestDockerUseCase_Run_RemoveContainer_Failure(t *testing.T) {
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    command.Removecontainer,
-			Payload: command.SimpleName{Name: "test"},
+			Payload: command.SimpleName{},
 		},
 	})
 	assert.Error(t, res.Error)
@@ -511,9 +511,9 @@ func TestDockerUseCase_Execute_RemoveContainer_Success(t *testing.T) {
 		Timeout:   5 * time.Second,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type: "removeContainer",
-			Payload: map[string]interface{}{
-				"name": containerName,
+			Type: command.Removecontainer,
+			Payload: command.SimpleName{
+				Name: containerName,
 			},
 		},
 	})
@@ -535,7 +535,7 @@ func TestDockerUseCase_Execute_RemoveContainer_Failure(t *testing.T) {
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    command.Removecontainer,
-			Payload: command.SimpleName{Name: "test"},
+			Payload: command.SimpleName{},
 		},
 	})
 	assert.Error(t, res.Error)
