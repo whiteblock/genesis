@@ -20,6 +20,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -46,19 +47,53 @@ func TestNewDockerUseCase(t *testing.T) {
 	assert.Equal(t, expected, duc)
 }
 
-func TestDockerUseCase_Run_depCheck(t *testing.T) {
-	duc := new(mockUseCase.DockerUseCase)
-	duc.On("Run", mock.Anything).Return(statusTooSoon)
+func TestDockerUseCase_dependencyCheck_tooSoon(t *testing.T) {
 
 	cmd := command.Command{
 		ID:        "test",
-		Timestamp: 1773768824,
+		Timestamp: 17737688240,
 	}
+	cmdService := new(mockService.CommandService)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
 
-	res := duc.Run(cmd)
-	assert.NotNil(t, res.Error)
-
+	duc, err := NewDockerUseCase(nil, cmdService)
+	assert.NoError(t, err)
+	res, ok := duc.(*dockerUseCase).dependencyCheck(cmd)
+	assert.False(t, ok)
+	assert.Error(t, res.Error)
 	assert.Equal(t, entity.TooSoonType, res.Type)
+}
+
+func TestDockerUseCase_dependencyCheck_fail(t *testing.T) {
+
+	cmd := command.Command{
+		ID:        "test",
+		Timestamp: 0,
+	}
+	cmdService := new(mockService.CommandService)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(false, nil)
+
+	duc, err := NewDockerUseCase(nil, cmdService)
+	assert.NoError(t, err)
+	res, ok := duc.(*dockerUseCase).dependencyCheck(cmd)
+	assert.False(t, ok)
+	assert.Error(t, res.Error)
+}
+
+func TestDockerUseCase_dependencyCheck_error(t *testing.T) {
+
+	cmd := command.Command{
+		ID:        "test",
+		Timestamp: 0,
+	}
+	cmdService := new(mockService.CommandService)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(false, fmt.Errorf("err"))
+
+	duc, err := NewDockerUseCase(nil, cmdService)
+	assert.NoError(t, err)
+	res, ok := duc.(*dockerUseCase).dependencyCheck(cmd)
+	assert.False(t, ok)
+	assert.Error(t, res.Error)
 }
 
 func TestDockerUseCase_TimeSupplier(t *testing.T) {
