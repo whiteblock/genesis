@@ -575,7 +575,7 @@ func TestDockerUseCase_Execute_PutFileInContainer(t *testing.T) {
 	assert.True(t, service.AssertNumberOfCalls(t, "PlaceFileInContainer", 1))
 }
 
-func TestdockerUseCase_putFileInContainerShim_missingFields(t *testing.T) {
+func TestDockerUseCase_putFileInContainerShim_missingFields(t *testing.T) {
 	duc := &dockerUseCase{}
 
 	cmd := command.Command{
