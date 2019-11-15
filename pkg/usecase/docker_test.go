@@ -147,8 +147,8 @@ func TestDockerUseCase_Run_StartContainer(t *testing.T) {
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    "startContainer",
-			Payload: map[string]interface{}{"name": "test"},
+			Type:    command.Startcontainer,
+			Payload: command.SimpleName{Name: "test"},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -211,8 +211,8 @@ func TestDockerUseCase_Run_RemoveContainer_Failure(t *testing.T) {
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    "removeContainer",
-			Payload: map[string]interface{}{},
+			Type:    command.Removecontainer,
+			Payload: command.SimpleName{Name: "test"},
 		},
 	})
 	assert.Error(t, res.Error)
@@ -264,10 +264,10 @@ func TestDockerUseCase_Run_AttachNetwork(t *testing.T) {
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type: "attachNetwork",
-			Payload: map[string]interface{}{
-				"container": "test",
-				"network":   "testnet",
+			Type: command.Attachnetwork,
+			Payload: command.ContainerNetwork{
+				ContainerName: "test",
+				Network: "testnet",
 			},
 		},
 	})
@@ -294,10 +294,7 @@ func TestDockerUseCase_Run_DetachNetwork(t *testing.T) {
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type: "detachNetwork",
-			Payload: map[string]interface{}{
-				"container": "test",
-				"network":   "testnet",
-			},
+			Payload: command.ContainerNetwork{ContainerName:"test",Network:"testnet"},
 		},
 	})
 	assert.NoError(t, res.Error)
@@ -322,9 +319,9 @@ func TestDockerUseCase_RemoveNetwork(t *testing.T) {
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type: "removeNetwork",
-			Payload: map[string]interface{}{
-				"name": "test",
+			Type: command.Removenetwork,
+			Payload: command.SimpleName{
+				Name: "test",
 			},
 		},
 	})
@@ -350,8 +347,10 @@ func TestDockerUseCase_Run_CreateVolume(t *testing.T) {
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    "createVolume",
-			Payload: map[string]interface{}{"volume": map[string]string{"name": "test"}},
+			Type:    command.Createvolume,
+			Payload: command.Volume{
+				Name: "test",
+			},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -376,7 +375,7 @@ func TestDockerUseCase_Run_RemoveVolume(t *testing.T) {
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type:    "removeVolume",
-			Payload: map[string]interface{}{"name": "test"},
+			Payload: command.SimpleName{Name: "test"},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -400,8 +399,8 @@ func TestDockerUseCase_Run_PutFileInContainer(t *testing.T) {
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    "putFileInContainer",
-			Payload: map[string]interface{}{"container": "test", "file": map[string]interface{}{"path": "test/path/", "data": []byte("content")}},
+			Type:    command.Putfileincontainer,
+			Payload: command.FileAndContainer{File: command.File{Destination: "test/path/", Data: []byte("content")} },
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -425,15 +424,19 @@ func TestDockerUseCase_Run_Emulation(t *testing.T) {
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type: "emulation",
-			Payload: map[string]interface{}{
-				"limit":     4,
-				"loss":      float64(2),
-				"delay":     4,
-				"rate":      "0",
-				"duplicate": float64(2),
-				"corrupt":   float64(0),
-				"reorder":   float64(0)},
+			Type: command.Emulation,
+			Payload: command.Netconf{
+				OrderPayload: nil,
+				Container:    "test",
+				Network:      "testnet",
+				Limit:        4,
+				Loss:         float64(2),
+				Delay:        4,
+				Rate:         "0",
+				Duplication:  float64(2),
+				Corrupt:      float64(0),
+				Reorder:      float64(0),
+			},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -454,7 +457,7 @@ func TestDockerUseCase_Execute_CreateContainer(t *testing.T) {
 		Timeout:   5 * time.Second,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    "createContainer",
+			Type:    command.Createcontainer,
 			Payload: map[string]interface{}{},
 		},
 	})
@@ -476,8 +479,8 @@ func TestDockerUseCase_Execute_StartContainer(t *testing.T) {
 		Timeout:   5 * time.Second,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    "startContainer",
-			Payload: map[string]interface{}{"name": "test"},
+			Type:    command.Startcontainer,
+			Payload: command.SimpleName{Name: "test"},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -531,8 +534,8 @@ func TestDockerUseCase_Execute_RemoveContainer_Failure(t *testing.T) {
 		Timeout:   5 * time.Second,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    "removeContainer",
-			Payload: map[string]interface{}{},
+			Type:    command.Removecontainer,
+			Payload: command.SimpleName{Name: "test"},
 		},
 	})
 	assert.Error(t, res.Error)
@@ -611,8 +614,8 @@ func TestDockerUseCase_Execute_AttachNetwork_Failure(t *testing.T) {
 		Timeout:   5 * time.Second,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    "attachNetwork",
-			Payload: map[string]interface{}{},
+			Type:    command.Attachnetwork,
+			Payload: command.ContainerNetwork{ContainerName:"test", Network:"testnet"},
 		},
 	})
 	assert.Error(t, res.Error)
@@ -633,8 +636,8 @@ func TestDockerUseCase_Execute_CreateVolume(t *testing.T) {
 		Timeout:   5 * time.Second,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    "createVolume",
-			Payload: map[string]interface{}{},
+			Type:    command.Createvolume,
+			Payload: command.Volume{},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -665,8 +668,8 @@ func TestDockerUseCase_Execute_RemoveVolume_Success(t *testing.T) {
 		Timeout:   5 * time.Second,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    "removeVolume",
-			Payload: map[string]interface{}{"name": volumeName},
+			Type:    command.Removevolume,
+			Payload: command.SimpleName{Name: "test"},
 		},
 	})
 	assert.NoError(t, res.Error)
@@ -686,8 +689,8 @@ func TestDockerUseCase_Execute_RemoveVolume_Failure(t *testing.T) {
 		Timeout:   5 * time.Second,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    "removeVolume",
-			Payload: map[string]interface{}{},
+			Type:    command.Putfile,
+			Payload: command.FileAndVolume{File: command.File {Destination: "/test/path/", Data: []byte("contents")}},
 		},
 	})
 	assert.Error(t, res.Error, nil)
@@ -723,8 +726,8 @@ func TestDockerUseCase_Execute_PutFileInContainer_Success(t *testing.T) {
 		Timeout:   5 * time.Second,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    "putFileInContainer",
-			Payload: map[string]interface{}{"container": containerName, "file": mockFile},
+			Type:    command.Putfileincontainer,
+			Payload: command.FileAndContainer{File:command.File{Destination: "/test/path", Data: []byte("contents"), Mode: 0777}},
 		},
 	})
 	assert.Equal(t, res.Error, nil)
@@ -772,15 +775,16 @@ func TestDockerUseCase_Execute_Emulation(t *testing.T) {
 		Timeout:   5 * time.Second,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type: "emulation",
-			Payload: map[string]interface{}{
-				"limit":     4,
-				"loss":      float64(2),
-				"delay":     4,
-				"rate":      "0",
-				"duplicate": float64(2),
-				"corrupt":   float64(0),
-				"reorder":   float64(0)},
+			Type: command.Emulation,
+			Payload: command.Netconf{
+				Limit:     4,
+				Loss:      float64(2),
+				Delay:     4,
+				Rate:      "0",
+				Duplication: float64(2),
+				Corrupt:   float64(0),
+				Reorder:   float64(0),
+			},
 		},
 	})
 	assert.Equal(t, res.Error, nil)

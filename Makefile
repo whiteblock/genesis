@@ -2,7 +2,7 @@ GOC=go
 GO111MODULE=on
 
 PKG_SOURCES=$(wildcard pkg/*/*.go)
-DIRECTORIES=$(wildcard pkg/*/)
+DIRECTORIES=$(wildcard pkg/*/ util/*/)
 MOCKS=$(foreach x, $(DIRECTORIES), mocks/$(x))
 
 

@@ -52,12 +52,51 @@ const (
 	Emulation = OrderType("emulation")
 )
 
+// Generic order payload
+type OrderPayload interface {
+
+}
+
 // Order to be executed by genesis
 type Order struct {
 	//Type is the type of the order
 	Type OrderType `json:"type"`
 	//Payload is the payload object of the order
-	Payload map[string]interface{} `json:"payload"`
+	Payload OrderPayload `json:"payload"`
+}
+
+// simple order payload with just the container name
+type SimpleName struct {
+	OrderPayload
+	// Name of the container.
+	Name string `json:"name"`
+}
+
+// Container and network order payload.
+type ContainerNetwork struct {
+	OrderPayload
+	// Name of the container.
+	ContainerName string `json:"container"`
+	// Name of the network.
+	Network string `json:"network"`
+}
+
+// File and container order payload.
+type FileAndContainer struct {
+	OrderPayload
+	// Name of the container.
+	ContainerName string `json:"container"`
+	// Name of the file.
+	File File `json:"file"`
+}
+
+// File and volume order payload.
+type FileAndVolume struct {
+	OrderPayload
+	// Name of the volume.
+	VolumeName string `json:"volume"`
+	// Name of the file.
+	File File `json:"file"`
 }
 
 // Target sets the target of a command - which testnet, instance to hit
