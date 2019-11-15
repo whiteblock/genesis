@@ -153,17 +153,15 @@ func (duc dockerUseCase) createContainerShim(ctx context.Context, cli *client.Cl
 func (duc dockerUseCase) startContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	if payload, ok := cmd.Order.Payload.(command.SimpleName); ok {
 		return duc.service.StartContainer(ctx, cli, payload.Name)
-	} else {
-		return entity.NewFatalResult(fmt.Errorf("missing field \"name\""))
 	}
+	return entity.NewFatalResult(fmt.Errorf("missing field \"name\""))
 }
 
 func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	if payload, ok := cmd.Order.Payload.(command.SimpleName); ok {
 		return duc.service.RemoveContainer(ctx, cli, payload.Name)
-	} else {
-		return entity.NewFatalResult(fmt.Errorf("missing field \"name\""))
 	}
+	return entity.NewFatalResult(fmt.Errorf("missing field \"name\""))
 }
 
 func (duc dockerUseCase) createNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
@@ -182,53 +180,46 @@ func (duc dockerUseCase) createNetworkShim(ctx context.Context, cli *client.Clie
 func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	if payload, ok := cmd.Order.Payload.(command.ContainerNetwork); ok {
 		return duc.service.AttachNetwork(ctx, cli, payload.Network, payload.ContainerName)
-	} else {
-		return entity.NewFatalResult(errors.New("Invalid payload"))
 	}
+	return entity.NewFatalResult(errors.New("Invalid payload"))
 }
 
 func (duc dockerUseCase) detachNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	if payload, ok := cmd.Order.Payload.(command.ContainerNetwork); ok {
 		return duc.service.DetachNetwork(ctx, cli, payload.Network, payload.ContainerName)
-	} else {
-		return entity.NewFatalResult(errors.New("Invalid payload"))
 	}
+	return entity.NewFatalResult(errors.New("Invalid payload"))
 }
 
 func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	if payload, ok := cmd.Order.Payload.(command.SimpleName); ok {
 		return duc.service.RemoveNetwork(ctx, cli, payload.Name)
-	} else {
-		return entity.NewFatalResult(fmt.Errorf("missing field \"name\""))
 	}
+	return entity.NewFatalResult(fmt.Errorf("missing field \"name\""))
 }
 func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	if payload, ok := cmd.Order.Payload.(command.Volume); ok {
 		return duc.service.CreateVolume(ctx, cli, payload)
-	} else {
-		return entity.NewFatalResult(fmt.Errorf("Invalid payload"))
 	}
+	return entity.NewFatalResult(fmt.Errorf("Invalid payload"))
 }
 
 func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	if payload, ok := cmd.Order.Payload.(command.SimpleName); ok {
 		return duc.service.RemoveVolume(ctx, cli, payload.Name)
-	} else {
-		return entity.NewFatalResult(fmt.Errorf("missing field \"name\""))
 	}
+	return entity.NewFatalResult(fmt.Errorf("missing field \"name\""))
 }
 func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	if payload, ok := cmd.Order.Payload.(command.FileAndContainer); ok {
 		return duc.service.PlaceFileInContainer(ctx, cli, payload.ContainerName, payload.File)
-	} else {
-		return entity.NewFatalResult(errors.New("Invalid payload"))
 	}
+	return entity.NewFatalResult(errors.New("Invalid payload"))
 }
 
 func (duc dockerUseCase) emulationShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	if payload, ok := cmd.Order.Payload.(command.Netconf); ok {
 		return duc.service.Emulation(ctx, cli, payload)
-	} else {
-		return entity.NewFatalResult(errors.New("Invalid payload"))
 	}
+	return entity.NewFatalResult(errors.New("Invalid payload"))
 }

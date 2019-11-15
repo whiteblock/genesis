@@ -52,7 +52,7 @@ const (
 	Emulation = OrderType("emulation")
 )
 
-// Generic order payload
+// OrderPayload is a pointer interface for order payloads.
 type OrderPayload interface {
 }
 
@@ -64,14 +64,14 @@ type Order struct {
 	Payload OrderPayload `json:"payload"`
 }
 
-// simple order payload with just the container name
+// SimpleName is a simple order payload with just the container name
 type SimpleName struct {
 	OrderPayload
 	// Name of the container.
 	Name string `json:"name"`
 }
 
-// Container and network order payload.
+// ContainerNetwork is a container and network order payload.
 type ContainerNetwork struct {
 	OrderPayload
 	// Name of the container.
@@ -80,7 +80,7 @@ type ContainerNetwork struct {
 	Network string `json:"network"`
 }
 
-// File and container order payload.
+// FileAndContainer is a file and container order payload.
 type FileAndContainer struct {
 	OrderPayload
 	// Name of the container.
@@ -89,7 +89,7 @@ type FileAndContainer struct {
 	File File `json:"file"`
 }
 
-// File and volume order payload.
+// FileAndVolume is a file and volume order payload.
 type FileAndVolume struct {
 	OrderPayload
 	// Name of the volume.
