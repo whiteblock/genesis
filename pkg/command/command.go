@@ -19,6 +19,7 @@
 package command
 
 import (
+	"bytes"
 	"encoding/json"
 	"time"
 )
@@ -67,14 +68,12 @@ type Order struct {
 
 // SimpleName is a simple order payload with just the container name
 type SimpleName struct {
-	OrderPayload
 	// Name of the container.
 	Name string `json:"name"`
 }
 
 // ContainerNetwork is a container and network order payload.
 type ContainerNetwork struct {
-	OrderPayload
 	// Name of the container.
 	ContainerName string `json:"container"`
 	// Name of the network.
@@ -83,7 +82,6 @@ type ContainerNetwork struct {
 
 // FileAndContainer is a file and container order payload.
 type FileAndContainer struct {
-	OrderPayload
 	// Name of the container.
 	ContainerName string `json:"container"`
 	// Name of the file.
@@ -92,7 +90,6 @@ type FileAndContainer struct {
 
 // FileAndVolume is a file and volume order payload.
 type FileAndVolume struct {
-	OrderPayload
 	// Name of the volume.
 	VolumeName string `json:"volume"`
 	// Name of the file.
@@ -128,7 +125,10 @@ func (cmd Command) ParseOrderPayloadInto(out interface{}) error {
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(raw, out)
+	rdr := bytes.NewReader(raw)
+	decoder := json.NewDecoder(rdr)
+	decoder.DisallowUnknownFields()
+	return decoder.Decode(out)
 }
 
 //GetRetryCommand creates a copy of this command which has been modified to be requeued after an error

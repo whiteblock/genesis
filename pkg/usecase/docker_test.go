@@ -126,7 +126,7 @@ func TestDockerUseCase_Run_CreateContainer(t *testing.T) {
 			Payload: map[string]interface{}{},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error)
 	assert.True(t, service.AssertNumberOfCalls(t, "CreateContainer", 1))
 }
 
@@ -151,7 +151,7 @@ func TestDockerUseCase_Run_StartContainer(t *testing.T) {
 			Payload: command.SimpleName{Name: "test"},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error)
 	assert.True(t, service.AssertNumberOfCalls(t, "StartContainer", 1))
 }
 
@@ -188,7 +188,7 @@ func TestDockerUseCase_Run_RemoveContainer_Success(t *testing.T) {
 			},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error)
 	service.AssertExpectations(t)
 	cmdService.AssertExpectations(t)
 }
@@ -242,7 +242,7 @@ func TestDockerUseCase_Run_CreateNetwork(t *testing.T) {
 			Payload: map[string]interface{}{"name": "test"},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error)
 	service.AssertExpectations(t)
 }
 
@@ -353,7 +353,7 @@ func TestDockerUseCase_Run_CreateVolume(t *testing.T) {
 			},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error)
 	assert.True(t, service.AssertNumberOfCalls(t, "CreateVolume", 1))
 }
 
@@ -378,7 +378,7 @@ func TestDockerUseCase_Run_RemoveVolume(t *testing.T) {
 			Payload: command.SimpleName{Name: "test"},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error)
 	assert.True(t, service.AssertNumberOfCalls(t, "RemoveVolume", 1))
 }
 
@@ -443,7 +443,7 @@ func TestDockerUseCase_Run_Emulation(t *testing.T) {
 			},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error)
 	assert.True(t, service.AssertNumberOfCalls(t, "Emulation", 1))
 }
 
@@ -465,14 +465,14 @@ func TestDockerUseCase_Execute_CreateContainer(t *testing.T) {
 			Payload: map[string]interface{}{},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error)
 	assert.True(t, service.AssertNumberOfCalls(t, "CreateContainer", 1))
 }
 
 func TestDockerUseCase_Execute_StartContainer(t *testing.T) {
 	service := new(mockService.DockerService)
-	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-	service.On("StartContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
+	service.On("StartContainer", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType}).Once()
 
 	usecase, err := NewDockerUseCase(service, nil)
 	assert.NoError(t, err)
@@ -487,8 +487,8 @@ func TestDockerUseCase_Execute_StartContainer(t *testing.T) {
 			Payload: command.SimpleName{Name: "test"},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
-	assert.True(t, service.AssertNumberOfCalls(t, "StartContainer", 1))
+	assert.NoError(t, res.Error)
+	service.AssertExpectations(t)
 }
 
 func TestDockerUseCase_Execute_RemoveContainer_Success(t *testing.T) {
@@ -521,7 +521,7 @@ func TestDockerUseCase_Execute_RemoveContainer_Success(t *testing.T) {
 			},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error)
 	service.AssertExpectations(t)
 }
 
@@ -564,7 +564,7 @@ func TestDockerUseCase_Execute_CreateNetwork(t *testing.T) {
 			Payload: map[string]interface{}{},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error)
 	assert.True(t, service.AssertNumberOfCalls(t, "CreateNetwork", 1))
 }
 
@@ -598,7 +598,7 @@ func TestDockerUseCase_Execute_AttachNetwork_Success(t *testing.T) {
 			Payload: command.ContainerNetwork{ContainerName: "tester", Network: "testnet"},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error)
 	service.AssertExpectations(t)
 }
 
@@ -641,7 +641,7 @@ func TestDockerUseCase_Execute_CreateVolume(t *testing.T) {
 			Payload: command.Volume{},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error)
 	assert.True(t, service.AssertNumberOfCalls(t, "CreateVolume", 1))
 }
 
@@ -731,7 +731,7 @@ func TestDockerUseCase_Execute_PutFileInContainer_Success(t *testing.T) {
 			Payload: command.FileAndContainer{ContainerName: "tester", File: command.File{Destination: "/test/path/", Data: []byte("contents"), Mode: 0777}},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error)
 	service.AssertExpectations(t)
 }
 
@@ -788,6 +788,6 @@ func TestDockerUseCase_Execute_Emulation(t *testing.T) {
 			},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error)
 	assert.True(t, service.AssertNumberOfCalls(t, "Emulation", 1))
 }
