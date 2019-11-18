@@ -32,6 +32,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
+	"io"
 	"strconv"
 )
 
@@ -195,7 +196,28 @@ func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, 
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
-
+	if !sc.Attach {
+		return entity.NewSuccessResult()
+	}
+	attachOpts := types.ContainerAttachOptions{
+		Stream: true,
+		Stdin:  false,
+		Stdout: true,
+		Stderr: true,
+		Logs:   true,
+	}
+	hijacked, err := ds.repo.ContainerAttach(ctx, cli, sc.Name, attachOpts)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+	defer hijacked.Close()
+	buff := make([]byte, 10)
+	for err == nil {
+		_, err = hijacked.Reader.Read(buff)
+	}
+	if err != io.EOF {
+		return entity.NewErrorResult(err)
+	}
 	return entity.NewSuccessResult()
 }
 

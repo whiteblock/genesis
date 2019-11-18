@@ -19,8 +19,10 @@
 package service
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/whiteblock/genesis/pkg/command"
+	"strings"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -32,6 +34,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	cmdMock "github.com/whiteblock/genesis/mocks/pkg/command"
+	externalsMock "github.com/whiteblock/genesis/mocks/pkg/externals"
 	repoMock "github.com/whiteblock/genesis/mocks/pkg/repository"
 	auxMock "github.com/whiteblock/genesis/mocks/pkg/service"
 	"github.com/whiteblock/genesis/pkg/entity"
@@ -182,13 +185,57 @@ func TestDockerService_StartContainer(t *testing.T) {
 			assert.Nil(t, args.Get(1))
 			assert.Equal(t, scCommand.Name, args.Get(2))
 			assert.Equal(t, types.ContainerStartOptions{}, args.Get(3))
-		})
+		}).Once()
 
 	aux := new(auxMock.DockerAuxillary)
 	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
 	assert.NoError(t, err)
 	res := ds.StartContainer(nil, nil, scCommand)
 	assert.NoError(t, res.Error)
+	repo.AssertExpectations(t)
+}
+
+func TestDockerService_StartContainer_Attach(t *testing.T) {
+	scCommand := command.StartContainer{Name: "TEST", Attach: true}
+
+	mockConn := new(externalsMock.NetConn)
+	mockConn.On("Close").Return(nil).Once()
+
+	mockResponse := types.HijackedResponse{Conn: mockConn, Reader: bufio.NewReader(strings.NewReader("tessssttt"))}
+	repo := new(repoMock.DockerRepository)
+	repo.On("ContainerStart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+		func(args mock.Arguments) {
+
+			require.Len(t, args, 4)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+			assert.Equal(t, scCommand.Name, args.Get(2))
+			assert.Equal(t, types.ContainerStartOptions{}, args.Get(3))
+		}).Once()
+
+	repo.On("ContainerAttach", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(mockResponse, nil).Run(
+		func(args mock.Arguments) {
+
+			require.Len(t, args, 4)
+			assert.Nil(t, args.Get(0))
+			assert.Nil(t, args.Get(1))
+			assert.Equal(t, scCommand.Name, args.Get(2))
+			assert.Equal(t, types.ContainerAttachOptions{
+				Stream: true,
+				Stdin:  false,
+				Stdout: true,
+				Stderr: true,
+				Logs:   true,
+			}, args.Get(3))
+		}).Once()
+
+	aux := new(auxMock.DockerAuxillary)
+	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
+	assert.NoError(t, err)
+	res := ds.StartContainer(nil, nil, scCommand)
+	assert.NoError(t, res.Error)
+	repo.AssertExpectations(t)
+	mockConn.AssertExpectations(t)
 }
 
 func TestDockerService_CreateNetwork(t *testing.T) {
