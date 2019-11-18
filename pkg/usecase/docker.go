@@ -151,13 +151,19 @@ func (duc dockerUseCase) createContainerShim(ctx context.Context, cli *client.Cl
 }
 
 func (duc dockerUseCase) startContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
-	if payload, ok := cmd.Order.Payload.(command.SimpleName); ok {
-		if payload.Name == "" {
-			return entity.NewFatalResult(fmt.Errorf("empty field \"name\""))
-		}
-		return duc.service.StartContainer(ctx, cli, payload.Name)
+	raw, err := json.Marshal(cmd.Order.Payload)
+	if err != nil {
+		return entity.NewFatalResult(err)
 	}
-	return entity.NewFatalResult(fmt.Errorf("missing field \"name\""))
+	var sc command.StartContainer
+	err = json.Unmarshal(raw, &sc)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	if len(sc.Name) == 0 {
+		return entity.NewFatalResult(fmt.Errorf("empty field \"name\""))
+	}
+	return duc.service.StartContainer(ctx, cli, sc)
 }
 
 func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {

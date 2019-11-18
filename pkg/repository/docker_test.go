@@ -32,6 +32,26 @@ import (
 	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
 )
 
+func TestDockerRepository_ContainerAttach(t *testing.T) {
+	cli := new(entityMock.Client)
+	testOpts := types.ContainerAttachOptions{}
+	containerName := "tester"
+
+	cli.On("ContainerAttach", mock.Anything, mock.Anything, mock.Anything).Return(
+		types.HijackedResponse{}, nil).Run(func(args mock.Arguments) {
+		require.Len(t, args, 3)
+		assert.Nil(t, args.Get(0))
+		assert.Equal(t, containerName, args.String(1))
+		assert.Equal(t, testOpts, args.Get(2))
+	}).Once()
+
+	repo := NewDockerRepository()
+
+	_, err := repo.ContainerAttach(nil, cli, containerName, testOpts)
+	assert.NoError(t, err)
+	cli.AssertExpectations(t)
+}
+
 func TestDockerRepository_ContainerCreate(t *testing.T) {
 	cli := new(entityMock.Client)
 

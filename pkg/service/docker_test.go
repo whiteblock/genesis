@@ -172,7 +172,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 }
 
 func TestDockerService_StartContainer(t *testing.T) {
-	containerName := "TEST"
+	scCommand := command.StartContainer{Name: "TEST"}
 	repo := new(repoMock.DockerRepository)
 	repo.On("ContainerStart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
 		func(args mock.Arguments) {
@@ -180,14 +180,14 @@ func TestDockerService_StartContainer(t *testing.T) {
 			require.Len(t, args, 4)
 			assert.Nil(t, args.Get(0))
 			assert.Nil(t, args.Get(1))
-			assert.Equal(t, containerName, args.String(2))
+			assert.Equal(t, scCommand.Name, args.Get(2))
 			assert.Equal(t, types.ContainerStartOptions{}, args.Get(3))
 		})
 
 	aux := new(auxMock.DockerAuxillary)
 	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
 	assert.NoError(t, err)
-	res := ds.StartContainer(nil, nil, containerName)
+	res := ds.StartContainer(nil, nil, scCommand)
 	assert.NoError(t, res.Error)
 }
 
