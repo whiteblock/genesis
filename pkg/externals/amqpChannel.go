@@ -32,3 +32,12 @@ type AMQPChannel interface {
 	TxCommit() error
 	TxRollback() error
 }
+
+func (conn *amqpConnection) QueueDeclare(name string, durable bool, autoDelete bool, exclusive bool, noWait bool, args amqp.Table) (amqp.Queue, error) {
+	q, err := conn.ch.QueueDeclare(name, durable, autoDelete, exclusive, noWait, args)
+	if err != nil {
+		return amqp.Queue{}, err
+	}
+
+	return q, nil
+}

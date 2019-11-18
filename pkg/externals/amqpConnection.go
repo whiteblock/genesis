@@ -27,3 +27,7 @@ type AMQPConnection interface {
 	Channel() (*amqp.Channel, error)
 	Close() error
 }
+
+type amqpConnection struct {
+	ch *amqp.Channel
+}
