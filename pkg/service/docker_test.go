@@ -174,7 +174,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 	assert.NoError(t, res.Error)
 }
 
-func TestDockerService_StartContainer(t *testing.T) {
+func TestDockerService_StartContainer_Success(t *testing.T) {
 	scCommand := command.StartContainer{Name: "TEST"}
 	repo := new(repoMock.DockerRepository)
 	repo.On("ContainerStart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
@@ -195,7 +195,20 @@ func TestDockerService_StartContainer(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
-func TestDockerService_StartContainer_Attach(t *testing.T) {
+func TestDockerService_StartContainer_Failure(t *testing.T) {
+	scCommand := command.StartContainer{Name: "TEST"}
+	repo := new(repoMock.DockerRepository)
+	repo.On("ContainerStart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("error")).Once()
+
+	aux := new(auxMock.DockerAuxillary)
+	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
+	assert.NoError(t, err)
+	res := ds.StartContainer(nil, nil, scCommand)
+	assert.Error(t, res.Error)
+	repo.AssertExpectations(t)
+}
+
+func TestDockerService_StartContainer_Attach_Success(t *testing.T) {
 	scCommand := command.StartContainer{Name: "TEST", Attach: true}
 
 	mockConn := new(externalsMock.NetConn)
@@ -238,7 +251,24 @@ func TestDockerService_StartContainer_Attach(t *testing.T) {
 	mockConn.AssertExpectations(t)
 }
 
-func TestDockerService_CreateNetwork(t *testing.T) {
+func TestDockerService_StartContainer_Attach_Failure(t *testing.T) {
+	scCommand := command.StartContainer{Name: "TEST", Attach: true}
+
+	repo := new(repoMock.DockerRepository)
+	repo.On("ContainerStart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+
+	repo.On("ContainerAttach", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+		types.HijackedResponse{}, fmt.Errorf("err")).Once()
+
+	aux := new(auxMock.DockerAuxillary)
+	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
+	assert.NoError(t, err)
+	res := ds.StartContainer(nil, nil, scCommand)
+	assert.Error(t, res.Error)
+	repo.AssertExpectations(t)
+}
+
+func TestDockerService_CreateNetwork_Success(t *testing.T) {
 	testNetwork := command.Network{
 		Name:   "testnet",
 		Global: true,
@@ -298,6 +328,30 @@ func TestDockerService_CreateNetwork(t *testing.T) {
 	testNetwork.Global = false
 	res = ds.CreateNetwork(nil, nil, testNetwork)
 	assert.NoError(t, res.Error)
+
+	repo.AssertExpectations(t)
+}
+
+func TestDockerService_CreateNetwork_Failure(t *testing.T) {
+	testNetwork := command.Network{
+		Name:   "testnet",
+		Global: true,
+		Labels: map[string]string{
+			"FOO": "BAR",
+		},
+		Gateway: "10.14.0.1",
+		Subnet:  "10.14.0.0/16",
+	}
+	repo := new(repoMock.DockerRepository)
+	repo.On("NetworkCreate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+		types.NetworkCreateResponse{}, fmt.Errorf("error")).Once()
+
+	aux := new(auxMock.DockerAuxillary)
+	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
+	assert.NoError(t, err)
+
+	res := ds.CreateNetwork(nil, nil, testNetwork)
+	assert.Error(t, res.Error)
 
 	repo.AssertExpectations(t)
 }
