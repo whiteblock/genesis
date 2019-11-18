@@ -65,6 +65,21 @@ func TestDockerUseCase_dependencyCheck_tooSoon(t *testing.T) {
 	assert.Equal(t, entity.TooSoonType, res.Type)
 }
 
+func TestDockerUseCase_Run_Failure_DepCheck(t *testing.T) {
+	cmd := command.Command{
+		ID: "test",
+	}
+	cmdService := new(mockService.CommandService)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(false, nil).Once()
+
+	duc, err := NewDockerUseCase(nil, cmdService)
+	assert.NoError(t, err)
+	res := duc.Run(cmd)
+	assert.Error(t, res.Error)
+	cmdService.AssertExpectations(t)
+
+}
+
 func TestDockerUseCase_dependencyCheck_Failure(t *testing.T) {
 
 	cmd := command.Command{
@@ -103,6 +118,22 @@ func TestDockerUseCase_TimeSupplier(t *testing.T) {
 
 	assert.Equal(t, usecase.TimeSupplier(), int64(5))
 	usecase.AssertExpectations(t)
+}
+
+func TestDockerUseCase_Run_Failure_CreateClient(t *testing.T) {
+	service := new(mockService.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err")).Once()
+
+	cmdService := new(mockService.CommandService)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil).Once()
+
+	usecase, err := NewDockerUseCase(service, cmdService)
+	assert.NoError(t, err)
+
+	res := usecase.Run(command.Command{})
+	assert.Error(t, res.Error)
+	service.AssertExpectations(t)
+	cmdService.AssertExpectations(t)
 }
 
 func TestDockerUseCase_Run_CreateContainer(t *testing.T) {
@@ -437,7 +468,7 @@ func TestDockerUseCase_Run_DetachNetwork(t *testing.T) {
 		mock.Anything, mock.Anything).Return(entity.NewSuccessResult()).Once()
 
 	cmdService := new(mockService.CommandService)
-	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil).Once()
 
 	usecase, err := NewDockerUseCase(service, cmdService)
 	assert.NoError(t, err)
@@ -454,25 +485,47 @@ func TestDockerUseCase_Run_DetachNetwork(t *testing.T) {
 	})
 	assert.NoError(t, res.Error)
 	service.AssertExpectations(t)
+	cmdService.AssertExpectations(t)
 }
 
-func TestDockerUseCase_RemoveNetwork(t *testing.T) {
+func TestDockerUseCase_Run_DetachNetwork_Failure(t *testing.T) {
+	service := new(mockService.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
+
+	cmdService := new(mockService.CommandService)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil).Once()
+
+	usecase, err := NewDockerUseCase(service, cmdService)
+	assert.NoError(t, err)
+
+	res := usecase.Run(command.Command{
+		ID:     "TEST",
+		Target: command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type:    "detachNetwork",
+			Payload: map[string]interface{}{"invalid": "value"},
+		},
+	})
+	assert.Error(t, res.Error)
+	service.AssertExpectations(t)
+	cmdService.AssertExpectations(t)
+}
+
+func TestDockerUseCase_RemoveNetwork_Success(t *testing.T) {
 	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
 	service.On("RemoveNetwork", mock.Anything, mock.Anything, mock.Anything).Return(
 		entity.NewSuccessResult()).Once()
 
 	cmdService := new(mockService.CommandService)
-	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil).Once()
 
 	usecase, err := NewDockerUseCase(service, cmdService)
 	assert.NoError(t, err)
 
 	res := usecase.Run(command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		ID:     "TEST",
+		Target: command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type: command.Removenetwork,
 			Payload: command.SimpleName{
@@ -481,17 +534,69 @@ func TestDockerUseCase_RemoveNetwork(t *testing.T) {
 		},
 	})
 	assert.NoError(t, res.Error)
-	assert.True(t, service.AssertNumberOfCalls(t, "RemoveNetwork", 1))
 	service.AssertExpectations(t)
+	cmdService.AssertExpectations(t)
+}
+
+func TestDockerUseCase_RemoveNetwork_Failure_EmptyName(t *testing.T) {
+	service := new(mockService.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
+
+	cmdService := new(mockService.CommandService)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil).Once()
+
+	usecase, err := NewDockerUseCase(service, cmdService)
+	assert.NoError(t, err)
+
+	res := usecase.Run(command.Command{
+		ID:     "TEST",
+		Target: command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type: command.Removenetwork,
+			Payload: command.SimpleName{
+				Name: "",
+			},
+		},
+	})
+	assert.Error(t, res.Error)
+	service.AssertExpectations(t)
+	cmdService.AssertExpectations(t)
+}
+
+func TestDockerUseCase_RemoveNetwork_Failure_ExtraField(t *testing.T) {
+	service := new(mockService.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
+
+	cmdService := new(mockService.CommandService)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil).Once()
+
+	usecase, err := NewDockerUseCase(service, cmdService)
+	assert.NoError(t, err)
+
+	res := usecase.Run(command.Command{
+		ID:     "TEST",
+		Target: command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type: command.Removenetwork,
+			Payload: map[string]interface{}{
+				"name":    "test",
+				"invalid": "field",
+			},
+		},
+	})
+	assert.Error(t, res.Error)
+	service.AssertExpectations(t)
+	cmdService.AssertExpectations(t)
 }
 
 func TestDockerUseCase_Run_CreateVolume(t *testing.T) {
 	service := new(mockService.DockerService)
-	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-	service.On("CreateVolume", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
+	service.On("CreateVolume", mock.Anything, mock.Anything, mock.Anything).Return(
+		entity.Result{Type: entity.SuccessType}).Once()
 
 	cmdService := new(mockService.CommandService)
-	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil).Once()
 
 	usecase, err := NewDockerUseCase(service, cmdService)
 	assert.NoError(t, err)
@@ -509,7 +614,8 @@ func TestDockerUseCase_Run_CreateVolume(t *testing.T) {
 		},
 	})
 	assert.NoError(t, res.Error)
-	assert.True(t, service.AssertNumberOfCalls(t, "CreateVolume", 1))
+	service.AssertExpectations(t)
+	cmdService.AssertExpectations(t)
 }
 
 func TestDockerUseCase_Run_RemoveVolume(t *testing.T) {
@@ -845,7 +951,7 @@ func TestDockerUseCase_Execute_RemoveVolume_Failure(t *testing.T) {
 		Timeout:   5 * time.Second,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    command.Putfile,
+			Type:    command.Removevolume,
 			Payload: command.FileAndVolume{File: command.File{Destination: "/test/path/", Data: []byte("contents")}},
 		},
 	})
@@ -919,8 +1025,9 @@ func TestDockerUseCase_putFileInContainerShim_MissingFields(t *testing.T) {
 
 func TestDockerUseCase_Execute_Emulation(t *testing.T) {
 	service := new(mockService.DockerService)
-	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-	service.On("Emulation", mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
+	service.On("Emulation", mock.Anything, mock.Anything, mock.Anything).Return(
+		entity.Result{Type: entity.SuccessType}).Once()
 
 	usecase, err := NewDockerUseCase(service, nil)
 	assert.NoError(t, err)
@@ -944,5 +1051,28 @@ func TestDockerUseCase_Execute_Emulation(t *testing.T) {
 		},
 	})
 	assert.NoError(t, res.Error)
-	assert.True(t, service.AssertNumberOfCalls(t, "Emulation", 1))
+	service.AssertExpectations(t)
+}
+
+func TestDockerUseCase_Execute_Emulation_Failure(t *testing.T) {
+	service := new(mockService.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
+
+	usecase, err := NewDockerUseCase(service, nil)
+	assert.NoError(t, err)
+
+	res := usecase.Execute(context.TODO(), command.Command{
+		ID:        "TEST",
+		Timestamp: 1234567,
+		Timeout:   5 * time.Second,
+		Target:    command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type: command.Emulation,
+			Payload: map[string]interface{}{
+				"invalid": "field",
+			},
+		},
+	})
+	assert.Error(t, res.Error)
+	service.AssertExpectations(t)
 }
