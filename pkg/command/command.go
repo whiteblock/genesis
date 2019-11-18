@@ -19,6 +19,7 @@
 package command
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -119,6 +120,15 @@ type Command struct {
 	Dependencies []string `json:"dependencies"`
 	//Order is the action of the command, it represents what needs to be done
 	Order Order `json:"order"`
+}
+
+//ParseOrderPayloadInto attempts to Marshal the payload into the object pointed to by out
+func (cmd Command) ParseOrderPayloadInto(out interface{}) error {
+	raw, err := json.Marshal(cmd.Order.Payload)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(raw, out)
 }
 
 //GetRetryCommand creates a copy of this command which has been modified to be requeued after an error

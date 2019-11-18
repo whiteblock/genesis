@@ -385,7 +385,8 @@ func TestDockerUseCase_Run_RemoveVolume(t *testing.T) {
 func TestDockerUseCase_Run_PutFileInContainer(t *testing.T) {
 	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-	service.On("PlaceFileInContainer", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+	service.On("PlaceFileInContainer", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything).Return(entity.Result{Type: entity.SuccessType})
 
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil)
@@ -399,11 +400,14 @@ func TestDockerUseCase_Run_PutFileInContainer(t *testing.T) {
 		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
-			Type:    command.Putfileincontainer,
-			Payload: command.FileAndContainer{File: command.File{Destination: "test/path/", Data: []byte("content")}},
+			Type: command.Putfileincontainer,
+			Payload: command.FileAndContainer{
+				ContainerName: "tester",
+				File:          command.File{Destination: "test/path/", Data: []byte("content")},
+			},
 		},
 	})
-	assert.Equal(t, res.Error, nil)
+	assert.NoError(t, res.Error, nil)
 	assert.True(t, service.AssertNumberOfCalls(t, "PlaceFileInContainer", 1))
 }
 

@@ -77,8 +77,8 @@ func removeVolume(dockerUseCase usecase.DockerUseCase, name string) {
 }
 
 func removeContainer(dockerUseCase usecase.DockerUseCase, name string) {
-	cmd := mintCommand(map[string]string{
-		"name": name,
+	cmd := mintCommand(command.SimpleName{
+		Name: name,
 	}, command.Removecontainer)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("removed a container")
@@ -123,7 +123,7 @@ func removeNetwork(dockerUseCase usecase.DockerUseCase, name string) {
 	log.WithFields(log.Fields{"res": res}).Info("removed a network")
 }
 
-func createContainer(dockerUseCase usecase.DockerUseCase, name string) {
+func createContainer(dockerUseCase usecase.DockerUseCase, name string, args []string) {
 	testContainer := command.Container{
 		BoundCPUs: nil, //TODO
 		Detach:    false,
@@ -143,7 +143,7 @@ func createContainer(dockerUseCase usecase.DockerUseCase, name string) {
 		}},
 		Image:      "nettools/ubuntools",
 		EntryPoint: "ping",
-		Args:       []string{"localhost"},
+		Args:       args,
 	}
 	testContainer.Cpus = "1"
 	testContainer.Memory = "1gb"
@@ -152,9 +152,10 @@ func createContainer(dockerUseCase usecase.DockerUseCase, name string) {
 	log.WithFields(log.Fields{"res": res}).Info("created a container")
 }
 
-func startContainer(dockerUseCase usecase.DockerUseCase, name string) {
+func startContainer(dockerUseCase usecase.DockerUseCase, name string, attach bool) {
 	cmd := mintCommand(map[string]interface{}{
-		"name": name,
+		"name":   name,
+		"attach": attach,
 	}, command.Startcontainer)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("started a container")
@@ -200,6 +201,7 @@ func dockerTest(clean bool) {
 	if clean {
 		removeContainer(dockerUseCase, "tester")
 		removeContainer(dockerUseCase, "tester2")
+		removeContainer(dockerUseCase, "tester3")
 		removeVolume(dockerUseCase, "test_volume")
 		time.Sleep(2 * time.Second)
 		removeNetwork(dockerUseCase, "testnet")
@@ -209,10 +211,13 @@ func dockerTest(clean bool) {
 
 	createVolume(dockerUseCase, "test_volume")
 	createNetwork(dockerUseCase, "testnet", 14)
-	createContainer(dockerUseCase, "tester")
-	startContainer(dockerUseCase, "tester")
-	createContainer(dockerUseCase, "tester2")
-	startContainer(dockerUseCase, "tester2")
+	createContainer(dockerUseCase, "tester", []string{"localhost"})
+	startContainer(dockerUseCase, "tester", false)
+	createContainer(dockerUseCase, "tester2", []string{"localhost"})
+	startContainer(dockerUseCase, "tester2", false)
+
+	createContainer(dockerUseCase, "tester3", []string{"-c", "10", "localhost"})
+	startContainer(dockerUseCase, "tester3", true)
 
 	createNetwork(dockerUseCase, "testnet2", 15)
 	attachNetwork(dockerUseCase, "testnet2", "tester")
