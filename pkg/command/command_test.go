@@ -19,7 +19,10 @@
 package command
 
 import (
+	"encoding/json"
+	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 )
 
@@ -75,4 +78,40 @@ func TestCommand_GetRetryCommand(t *testing.T) {
 	newCmd := cmd.GetRetryCommand(6)
 	assert.Equal(t, cmd.Retry+1, newCmd.Retry)
 	assert.Equal(t, int64(6), newCmd.Timestamp)
+}
+
+func TestDeserSerRoundtripCommand(t *testing.T) {
+	command := Command{
+		ID:           "",
+		Timestamp:    0,
+		Timeout:      0,
+		Retry:        0,
+		Target:       Target{},
+		Dependencies: nil,
+		Order: Order{
+			Type:    Startcontainer,
+			Payload: SimpleName{Name: "test"},
+		},
+	}
+	bytes, err := json.Marshal(command)
+	if err != nil {
+		t.Fatal(err)
+	}
+	read := Command{}
+	err = json.Unmarshal(bytes, &read)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reflect.DeepEqual(command, read) {
+		t.Fatal("cannot read back command")
+	}
+
+	payload := SimpleName{}
+	err = mapstructure.Decode(read.Order.Payload, &payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if payload.Name != "test" {
+		t.Fatal("cannot read back payload name")
+	}
 }
