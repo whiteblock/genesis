@@ -30,6 +30,10 @@ import (
 
 //Client is an interface which contains the needed methods from the docker client
 type Client interface {
+	//ContainerAttach attaches a connection to a container in the server. It returns a types.HijackedConnection with
+	//the hijacked connection and the a reader to get output. It's up to the called to close
+	//the hijacked connection by calling types.HijackedResponse.Close.
+	ContainerAttach(ctx context.Context, container string, options types.ContainerAttachOptions) (types.HijackedResponse, error)
 
 	//ContainerCreate creates a new container based in the given configuration. It can be associated with a name, but it's not mandatory.
 	ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,

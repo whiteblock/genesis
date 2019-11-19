@@ -21,9 +21,64 @@ package command
 import (
 	"encoding/json"
 	"github.com/mitchellh/mapstructure"
+	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 )
+
+func TestCommand_ParseOrderPayloadInto_Success(t *testing.T) {
+	containerName := "tester"
+	networkName := "testnet"
+	cmd := Command{
+		ID:        "TEST",
+		Timestamp: 4,
+		Timeout:   0,
+		Target:    Target{IP: "0.0.0.0"},
+		Order: Order{
+			Type: Attachnetwork,
+			Payload: map[string]string{
+				"container": containerName,
+				"network":   networkName,
+			},
+		},
+	}
+
+	var cn ContainerNetwork
+	err := cmd.ParseOrderPayloadInto(&cn)
+	assert.NoError(t, err)
+}
+
+func TestCommand_ParseOrderPayloadInto_Failure(t *testing.T) {
+	containerName := "tester"
+	networkName := "testnet"
+	cmd := Command{
+		ID:        "TEST",
+		Timestamp: 4,
+		Timeout:   0,
+		Target:    Target{IP: "0.0.0.0"},
+		Order: Order{
+			Type: Attachnetwork,
+			Payload: map[string]string{
+				"container": containerName,
+				"network":   networkName,
+				"i should":  "not be here",
+			},
+		},
+	}
+
+	var cn ContainerNetwork
+	err := cmd.ParseOrderPayloadInto(&cn)
+	assert.Error(t, err)
+}
+
+func TestCommand_GetRetryCommand(t *testing.T) {
+	cmd := Command{
+		Retry: 4,
+	}
+	newCmd := cmd.GetRetryCommand(6)
+	assert.Equal(t, cmd.Retry+1, newCmd.Retry)
+	assert.Equal(t, int64(6), newCmd.Timestamp)
+}
 
 func TestDeserSerRoundtripCommand(t *testing.T) {
 	command := Command{

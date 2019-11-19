@@ -37,6 +37,10 @@ import (
 
 //DockerRepository represents direct interacts with the docker daemon
 type DockerRepository interface {
+	//ContainerAttach attaches to a container
+	ContainerAttach(ctx context.Context, cli entity.Client, container string,
+		options types.ContainerAttachOptions) (types.HijackedResponse, error)
+
 	//ContainerCreate creates a new container based in the given configuration. It can be associated with a name, but it's not mandatory.
 	ContainerCreate(ctx context.Context, cli entity.Client, config *container.Config, hostConfig *container.HostConfig,
 		networkingConfig *network.NetworkingConfig, containerName string) (container.ContainerCreateCreatedBody, error)
@@ -94,6 +98,13 @@ type dockerRepository struct {
 //NewDockerRepository creates a new DockerRepository
 func NewDockerRepository() DockerRepository {
 	return &dockerRepository{}
+}
+
+//ContainerAttach attaches to a container
+func (dr dockerRepository) ContainerAttach(ctx context.Context, cli entity.Client,
+	container string, options types.ContainerAttachOptions) (types.HijackedResponse, error) {
+
+	return cli.ContainerAttach(ctx, container, options)
 }
 
 //ContainerCreate creates a new container based in the given configuration. It can be associated with a name, but it's not mandatory.

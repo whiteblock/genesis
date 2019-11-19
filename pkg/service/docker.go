@@ -32,6 +32,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
+	"io"
 	"strconv"
 )
 
@@ -42,7 +43,7 @@ type DockerService interface {
 	CreateContainer(ctx context.Context, cli *client.Client, container command.Container) entity.Result
 
 	//StartContainer attempts to start an already created docker container
-	StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result
+	StartContainer(ctx context.Context, cli *client.Client, sc command.StartContainer) entity.Result
 
 	//RemoveContainer attempts to remove a container
 	RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result
@@ -188,14 +189,35 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 }
 
 //StartContainer attempts to start an already created docker container
-func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
-	log.WithFields(log.Fields{"name": name}).Trace("starting container")
+func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, sc command.StartContainer) entity.Result {
+	log.WithFields(log.Fields{"name": sc.Name}).Trace("starting container")
 	opts := types.ContainerStartOptions{}
-	err := ds.repo.ContainerStart(ctx, cli, name, opts)
+	err := ds.repo.ContainerStart(ctx, cli, sc.Name, opts)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
-
+	if !sc.Attach {
+		return entity.NewSuccessResult()
+	}
+	attachOpts := types.ContainerAttachOptions{
+		Stream: true,
+		Stdin:  false,
+		Stdout: true,
+		Stderr: true,
+		Logs:   true,
+	}
+	hijacked, err := ds.repo.ContainerAttach(ctx, cli, sc.Name, attachOpts)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+	defer hijacked.Close()
+	buff := make([]byte, 10)
+	for err == nil {
+		_, err = hijacked.Reader.Read(buff)
+	}
+	if err != io.EOF {
+		return entity.NewErrorResult(err)
+	}
 	return entity.NewSuccessResult()
 }
 
@@ -441,5 +463,5 @@ func (ds dockerService) Emulation(ctx context.Context, cli *client.Client, netem
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	return ds.StartContainer(ctx, cli, name)
+	return ds.StartContainer(ctx, cli, command.StartContainer{Name: name})
 }
