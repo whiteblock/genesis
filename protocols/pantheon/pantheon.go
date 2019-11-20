@@ -85,7 +85,7 @@ func build(tn *testnet.TestNet) error {
 
 		tn.BuildState.IncrementBuildProgress()
 		_, err = client.DockerExec(node,
-			"pantheon --data-path=/pantheon/data public-key export --to=/pantheon/data/publicKey")
+			"besu --data-path=/pantheon/data public-key export --to=/pantheon/data/publicKey")
 		if err != nil {
 			return util.LogError(err)
 		}
@@ -159,7 +159,7 @@ func build(tn *testnet.TestNet) error {
 			return util.LogError(err)
 		}
 		return client.DockerRunMainDaemon(node, fmt.Sprintf(
-			`pantheon --config-file=/pantheon/config.toml --data-path=/pantheon/data --genesis-file=%s  `+
+			`besu --config-file=/pantheon/config.toml --data-path=/pantheon/data --genesis-file=%s  `+
 				`--rpc-http-enabled --rpc-http-api="ADMIN,CLIQUE,DEBUG,EEA,ETH,IBFT,MINER,NET,TXPOOL,WEB3" `+
 				` --p2p-port=%d --rpc-http-port=8545 --rpc-http-host="0.0.0.0" --host-whitelist=all %s`,
 			genesisFileLoc, p2pPort, flags))
@@ -278,7 +278,7 @@ func getIBFTExtraData(tn *testnet.TestNet, panconf *panConf, accounts []*ethereu
 	}
 
 	ibftExtraData, err := tn.Clients[tn.Nodes[0].Server].DockerExec(
-		tn.Nodes[0], "pantheon rlp encode --from=/pantheon/rlpValidators.json")
+		tn.Nodes[0], "besu rlp encode --from=/pantheon/rlpValidators.json")
 	if err != nil {
 		return "", util.LogError(err)
 	}
