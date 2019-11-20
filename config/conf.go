@@ -145,7 +145,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("listen", "LISTEN")
 }
 
-func setViperDefaults() { //todo am i missing anything?
+func setViperDefaults() {
 	viper.SetDefault("verbosity", "INFO")
 	viper.SetDefault("queueDurable", true)
 	viper.SetDefault("queueAutoDelete", false)

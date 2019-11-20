@@ -71,6 +71,10 @@ func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
 	if !ok {
 		return stat
 	}
+	stat, ok = duc.validationCheck(cmd)
+	if !ok {
+		return stat
+	}
 	log.WithField("command", cmd).Trace("running command")
 	if cmd.Timeout == 0 {
 		return duc.Execute(context.Background(), cmd)
@@ -112,6 +116,16 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 		return duc.emulationShim(ctx, cli, cmd)
 	}
 	return entity.NewFatalResult(fmt.Errorf("unknown command type: %s", cmd.Order.Type))
+}
+
+func (duc dockerUseCase) validationCheck(cmd command.Command) (result entity.Result, ok bool) {
+	ok = false
+	if len(cmd.Target.IP) == 0 || cmd.Target.IP == "0.0.0.0" {
+		result = entity.NewFatalResult(fmt.Errorf("invalid target ip"))
+		return
+	}
+	ok = true
+	return
 }
 
 func (duc dockerUseCase) dependencyCheck(cmd command.Command) (stat entity.Result, ok bool) {

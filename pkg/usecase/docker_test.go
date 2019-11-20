@@ -48,9 +48,41 @@ func TestNewDockerUseCase(t *testing.T) {
 	assert.Equal(t, expected, duc)
 }
 
+func TestDockerUseCase_validationCheck_success(t *testing.T) {
+	cmd := command.Command{
+		Target: command.Target{IP: "127.0.0.1"},
+	}
+	duc, err := NewDockerUseCase(nil, nil)
+	assert.NoError(t, err)
+	_, ok := duc.(*dockerUseCase).validationCheck(cmd)
+	assert.True(t, ok)
+}
+
+func TestDockerUseCase_validationCheck_failure_special_ip(t *testing.T) {
+	cmd := command.Command{
+		Target: command.Target{IP: "0.0.0.0"},
+	}
+
+	duc, err := NewDockerUseCase(nil, nil)
+	assert.NoError(t, err)
+	res, ok := duc.(*dockerUseCase).validationCheck(cmd)
+	assert.False(t, ok)
+	assert.Error(t, res.Error)
+}
+
+func TestDockerUseCase_validationCheck_failure_no_ip(t *testing.T) {
+	cmd := command.Command{}
+	duc, err := NewDockerUseCase(nil, nil)
+	assert.NoError(t, err)
+	res, ok := duc.(*dockerUseCase).validationCheck(cmd)
+	assert.False(t, ok)
+	assert.Error(t, res.Error)
+}
+
 func TestDockerUseCase_dependencyCheck_tooSoon(t *testing.T) {
 
 	cmd := command.Command{
+		Target:    command.Target{IP: "127.0.0.1"},
 		ID:        "test",
 		Timestamp: 17737688240,
 	}
@@ -67,7 +99,8 @@ func TestDockerUseCase_dependencyCheck_tooSoon(t *testing.T) {
 
 func TestDockerUseCase_Run_Failure_DepCheck(t *testing.T) {
 	cmd := command.Command{
-		ID: "test",
+		Target: command.Target{IP: "127.0.0.1"},
+		ID:     "test",
 	}
 	cmdService := new(mockService.CommandService)
 	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(false, nil).Once()
@@ -83,6 +116,7 @@ func TestDockerUseCase_Run_Failure_DepCheck(t *testing.T) {
 func TestDockerUseCase_dependencyCheck_Failure(t *testing.T) {
 
 	cmd := command.Command{
+		Target:    command.Target{IP: "127.0.0.1"},
 		ID:        "test",
 		Timestamp: 0,
 	}
@@ -99,6 +133,7 @@ func TestDockerUseCase_dependencyCheck_Failure(t *testing.T) {
 func TestDockerUseCase_dependencyCheck_error(t *testing.T) {
 
 	cmd := command.Command{
+		Target:    command.Target{IP: "127.0.0.1"},
 		ID:        "test",
 		Timestamp: 0,
 	}
@@ -130,9 +165,23 @@ func TestDockerUseCase_Run_Failure_CreateClient(t *testing.T) {
 	usecase, err := NewDockerUseCase(service, cmdService)
 	assert.NoError(t, err)
 
-	res := usecase.Run(command.Command{})
+	res := usecase.Run(command.Command{Target: command.Target{IP: "127.0.0.1"}})
 	assert.Error(t, res.Error)
 	service.AssertExpectations(t)
+	cmdService.AssertExpectations(t)
+}
+
+func TestDockerUseCase_Run_Failure_Invalid_IP(t *testing.T) {
+	service := new(mockService.DockerService)
+
+	cmdService := new(mockService.CommandService)
+	cmdService.On("CheckDependenciesExecuted", mock.Anything).Return(true, nil).Once()
+
+	usecase, err := NewDockerUseCase(service, cmdService)
+	assert.NoError(t, err)
+
+	res := usecase.Run(command.Command{Target: command.Target{IP: "0.0.0.0"}})
+	assert.Error(t, res.Error)
 	cmdService.AssertExpectations(t)
 }
 
@@ -151,7 +200,7 @@ func TestDockerUseCase_Run_CreateContainer(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    "createContainer",
 			Payload: map[string]interface{}{},
@@ -177,7 +226,7 @@ func TestDockerUseCase_Run_StartContainer_Success(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Startcontainer,
 			Payload: command.StartContainer{Name: "test"},
@@ -202,7 +251,7 @@ func TestDockerUseCase_Run_StartContainer_Failure_ExtraField(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Startcontainer,
 			Payload: map[string]interface{}{"name": "test", "invalid": "field"},
@@ -227,7 +276,7 @@ func TestDockerUseCase_Run_StartContainer_Failure_EmptyName(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Startcontainer,
 			Payload: command.StartContainer{Name: ""},
@@ -263,7 +312,7 @@ func TestDockerUseCase_Run_RemoveContainer_Success(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: 0,
 		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Removecontainer,
 			Payload: command.SimpleName{
@@ -290,7 +339,7 @@ func TestDockerUseCase_Run_RemoveContainer_Failure_EmptyName(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Removecontainer,
 			Payload: command.SimpleName{},
@@ -315,7 +364,7 @@ func TestDockerUseCase_Run_RemoveContainer_Failure_ExtraField(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Removecontainer,
 			Payload: map[string]interface{}{"name": "tester", "extra": "field"},
@@ -340,7 +389,7 @@ func TestDockerUseCase_Run_CreateNetwork(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "0.0.0.0"},
+		Target: command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    "createNetwork",
 			Payload: map[string]interface{}{"name": "test"},
@@ -364,7 +413,7 @@ func TestDockerUseCase_Run_AttachNetwork_Success(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "0.0.0.0"},
+		Target: command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Attachnetwork,
 			Payload: command.ContainerNetwork{
@@ -390,7 +439,7 @@ func TestDockerUseCase_Run_AttachNetwork_Failure_EmptyContainerName(t *testing.T
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "0.0.0.0"},
+		Target: command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Attachnetwork,
 			Payload: command.ContainerNetwork{
@@ -418,7 +467,7 @@ func TestDockerUseCase_Run_AttachNetwork_Failure_EmptyNetworkName(t *testing.T) 
 		ID:        "TEST",
 		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Attachnetwork,
 			Payload: command.ContainerNetwork{
@@ -446,7 +495,7 @@ func TestDockerUseCase_Run_AttachNetwork_Failure_ExtraField(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Attachnetwork,
 			Payload: map[string]interface{}{
@@ -477,7 +526,7 @@ func TestDockerUseCase_Run_DetachNetwork(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    "detachNetwork",
 			Payload: command.ContainerNetwork{ContainerName: "test", Network: "testnet"},
@@ -500,7 +549,7 @@ func TestDockerUseCase_Run_DetachNetwork_Failure(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "0.0.0.0"},
+		Target: command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    "detachNetwork",
 			Payload: map[string]interface{}{"invalid": "value"},
@@ -525,7 +574,7 @@ func TestDockerUseCase_RemoveNetwork_Success(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "0.0.0.0"},
+		Target: command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Removenetwork,
 			Payload: command.SimpleName{
@@ -550,7 +599,7 @@ func TestDockerUseCase_RemoveNetwork_Failure_EmptyName(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "0.0.0.0"},
+		Target: command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Removenetwork,
 			Payload: command.SimpleName{
@@ -575,7 +624,7 @@ func TestDockerUseCase_RemoveNetwork_Failure_ExtraField(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "0.0.0.0"},
+		Target: command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Removenetwork,
 			Payload: map[string]interface{}{
@@ -605,7 +654,7 @@ func TestDockerUseCase_Run_CreateVolume(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Createvolume,
 			Payload: command.Volume{
@@ -633,7 +682,7 @@ func TestDockerUseCase_Run_RemoveVolume(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    "removeVolume",
 			Payload: command.SimpleName{Name: "test"},
@@ -659,7 +708,7 @@ func TestDockerUseCase_Run_PutFileInContainer(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Putfileincontainer,
 			Payload: command.FileAndContainer{
@@ -687,7 +736,7 @@ func TestDockerUseCase_Run_Emulation(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: time.Now().Unix() - 5,
 		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Emulation,
 			Payload: command.Netconf{
@@ -720,7 +769,7 @@ func TestDockerUseCase_Execute_CreateContainer(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: 1234567,
 		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Createcontainer,
 			Payload: map[string]interface{}{},
@@ -742,7 +791,7 @@ func TestDockerUseCase_Execute_StartContainer(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: 1234567,
 		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Startcontainer,
 			Payload: command.SimpleName{Name: "test"},
@@ -774,7 +823,7 @@ func TestDockerUseCase_Execute_RemoveContainer_Success(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: 1234567,
 		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Removecontainer,
 			Payload: command.SimpleName{
@@ -797,7 +846,7 @@ func TestDockerUseCase_Execute_RemoveContainer_Failure(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: 1234567,
 		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Removecontainer,
 			Payload: command.SimpleName{},
@@ -819,7 +868,7 @@ func TestDockerUseCase_Execute_CreateNetwork(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: 1234567,
 		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    "createNetwork",
 			Payload: map[string]interface{}{},
@@ -853,7 +902,7 @@ func TestDockerUseCase_Execute_AttachNetwork_Success(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: 1234567,
 		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    "attachNetwork",
 			Payload: command.ContainerNetwork{ContainerName: "tester", Network: "testnet"},
@@ -874,7 +923,7 @@ func TestDockerUseCase_Execute_AttachNetwork_Failure(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: 1234567,
 		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Attachnetwork,
 			Payload: command.ContainerNetwork{Network: "testnet"},
@@ -896,7 +945,7 @@ func TestDockerUseCase_Execute_CreateVolume(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: 1234567,
 		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Createvolume,
 			Payload: command.Volume{},
@@ -928,7 +977,7 @@ func TestDockerUseCase_Execute_RemoveVolume_Success(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: 1234567,
 		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Removevolume,
 			Payload: command.SimpleName{Name: "vol"},
@@ -949,7 +998,7 @@ func TestDockerUseCase_Execute_RemoveVolume_Failure(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: 1234567,
 		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Removevolume,
 			Payload: command.FileAndVolume{File: command.File{Destination: "/test/path/", Data: []byte("contents")}},
@@ -986,7 +1035,7 @@ func TestDockerUseCase_Execute_PutFileInContainer_Success(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: 1234567,
 		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Putfileincontainer,
 			Payload: command.FileAndContainer{ContainerName: "tester", File: command.File{Destination: "/test/path/", Data: []byte("contents"), Mode: 0777}},
@@ -1036,7 +1085,7 @@ func TestDockerUseCase_Execute_Emulation(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: 1234567,
 		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Emulation,
 			Payload: command.Netconf{
@@ -1065,7 +1114,7 @@ func TestDockerUseCase_Execute_Emulation_Failure(t *testing.T) {
 		ID:        "TEST",
 		Timestamp: 1234567,
 		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Emulation,
 			Payload: map[string]interface{}{
