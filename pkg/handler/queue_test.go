@@ -20,6 +20,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/streadway/amqp"
@@ -37,25 +38,21 @@ func TestNewDeliveryHandler(t *testing.T) {
 		usecase: duc,
 	}
 
-	dh, err := NewDeliveryHandler(duc)
-	assert.NoError(t, err)
+	dh := NewDeliveryHandler(duc)
 
 	assert.Equal(t, expected, dh)
 }
 
 func TestDeliveryHandler_ProcessMessage_Successful(t *testing.T) {
 	duc := new(usecaseMocks.DockerUseCase)
-	duc.On("Run", mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+	duc.On("Run", mock.Anything).Return(entity.Result{Type: entity.SuccessType}).Once()
 
-	dh, err := NewDeliveryHandler(duc)
-	if err != nil {
-		t.Error(err)
-	}
+	dh := NewDeliveryHandler(duc)
 
 	cmd := new(command.Command)
 	cmd.Order.Type = "createContainer"
 	cmd.Order.Payload = map[string]interface{}{}
-	cmd.Target.IP = "0.0.0.0"
+	cmd.Target.IP = "127.0.0.1"
 
 	body, err := json.Marshal(cmd)
 	if err != nil {
@@ -67,18 +64,12 @@ func TestDeliveryHandler_ProcessMessage_Successful(t *testing.T) {
 		t.Error("expected return value of ProcessMessage does not match expected value: ", err)
 	}
 
-	assert.Equal(t, res.Error, nil)
-	assert.True(t, duc.AssertNumberOfCalls(t, "Run", 1))
-	assert.True(t, duc.AssertCalled(t, "Run", *cmd))
+	assert.NoError(t, res.Error)
+	duc.AssertExpectations(t)
 }
 
 func TestDeliveryHandler_ProcessMessage_Unsuccessful(t *testing.T) {
-	duc := new(usecaseMocks.DockerUseCase)
-
-	dh, err := NewDeliveryHandler(duc)
-	if err != nil {
-		t.Error(err)
-	}
+	dh := NewDeliveryHandler(new(usecaseMocks.DockerUseCase))
 
 	body := []byte("should be a failure")
 
@@ -90,8 +81,7 @@ func TestDeliveryHandler_GetKickbackMessage_Successful(t *testing.T) {
 	duc := new(usecaseMocks.DockerUseCase)
 	duc.On("TimeSupplier").Return(int64(5))
 
-	dh, err := NewDeliveryHandler(duc)
-	assert.NoError(t, err)
+	dh := NewDeliveryHandler(duc)
 
 	cmd := new(command.Command)
 	cmd.ID = "unit_test"
@@ -119,8 +109,7 @@ func TestDeliveryHandler_GetKickbackMessage_Successful(t *testing.T) {
 func TestDeliveryHandler_GetKickbackMessage_Unsuccessful(t *testing.T) {
 	duc := new(usecaseMocks.DockerUseCase)
 
-	dh, err := NewDeliveryHandler(duc)
-	assert.NoError(t, err)
+	dh := NewDeliveryHandler(duc)
 
 	body := []byte("supposed to fail")
 
@@ -128,6 +117,6 @@ func TestDeliveryHandler_GetKickbackMessage_Unsuccessful(t *testing.T) {
 		Body: body,
 	}
 
-	_, err = dh.GetKickbackMessage(msg)
+	_, err := dh.GetKickbackMessage(msg)
 	assert.Error(t, err)
 }

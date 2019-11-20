@@ -43,13 +43,13 @@ type deliveryHandler struct {
 
 //NewDeliveryHandler creates a new DeliveryHandler which uses the given usecase for
 //executing the extracted command
-func NewDeliveryHandler(usecase usecase.DockerUseCase) (DeliveryHandler, error) {
-	return deliveryHandler{usecase: usecase}, nil
+func NewDeliveryHandler(usecase usecase.DockerUseCase) DeliveryHandler {
+	return &deliveryHandler{usecase: usecase}
 }
 
 //ProcessMessage attempts to extract the command and execute it
 func (dh deliveryHandler) ProcessMessage(msg amqp.Delivery) entity.Result {
-	var cmd command.Command //TODO: add validation check
+	var cmd command.Command
 	err := json.Unmarshal(msg.Body, &cmd)
 	if err != nil {
 		return entity.Result{Error: err}
