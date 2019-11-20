@@ -20,7 +20,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/streadway/amqp"
@@ -34,7 +33,7 @@ import (
 func TestNewDeliveryHandler(t *testing.T) {
 	duc := new(usecaseMocks.DockerUseCase)
 
-	expected := deliveryHandler{
+	expected := &deliveryHandler{
 		usecase: duc,
 	}
 
