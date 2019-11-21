@@ -98,7 +98,8 @@ type FileAndVolume struct {
 
 // Target sets the target of a command - which testnet, instance to hit
 type Target struct {
-	IP string `json:"ip"`
+	IP        string `json:"ip"`
+	TestnetID string `json:"testnetId"`
 }
 
 // Command is the command sent to Genesis.
