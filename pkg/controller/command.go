@@ -21,41 +21,60 @@ package controller
 import (
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/streadway/amqp"
+	"sync"
+
 	"github.com/whiteblock/genesis/pkg/handler"
 	"github.com/whiteblock/genesis/pkg/service"
-	"github.com/whiteblock/utility/utils"
+
+	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
 	"golang.org/x/sync/semaphore"
-	"sync"
 )
 
-//CommandController is a controller which brings in from an AMQP compatible provider
+// CommandController is a controller which brings in from an AMQP compatible provider
 type CommandController interface {
 	// Start starts the client. This function should be called only once and does not return
 	Start()
 }
 
 type consumer struct {
-	serv   service.AMQPService
-	handle handler.DeliveryHandler
-	once   *sync.Once
-	sem    *semaphore.Weighted
+	completion service.AMQPService
+	cmds       service.AMQPService
+	handle     handler.DeliveryHandler
+	log        logrus.Ext1FieldLogger
+	once       *sync.Once
+	sem        *semaphore.Weighted
 }
 
-//NewCommandController creates a new CommandController
-func NewCommandController(maxConcurreny int64, serv service.AMQPService, handle handler.DeliveryHandler) (CommandController, error) {
+// NewCommandController creates a new CommandController
+func NewCommandController(
+	maxConcurreny int64,
+	cmds service.AMQPService,
+	completion service.AMQPService,
+	handle handler.DeliveryHandler,
+	log logrus.Ext1FieldLogger) (CommandController, error) {
+
 	if maxConcurreny < 1 {
 		return nil, fmt.Errorf("maxConcurreny must be atleast 1")
 	}
 	out := &consumer{
-		serv:   serv,
-		handle: handle,
-		once:   &sync.Once{},
-		sem:    semaphore.NewWeighted(maxConcurreny),
+		log:        log,
+		completion: completion,
+		cmds:       cmds,
+		handle:     handle,
+		once:       &sync.Once{},
+		sem:        semaphore.NewWeighted(maxConcurreny),
 	}
-	err := out.serv.CreateQueue()
-	log.WithFields(log.Fields{"err": err}).Debug("attempted to create queue on start")
+	err := out.cmds.CreateQueue()
+	if err != nil {
+		log.WithFields(logrus.Fields{"err": err}).Debug("attempted to create queue on start")
+	}
+
+	err = out.completion.CreateQueue()
+	if err != nil {
+		log.WithFields(logrus.Fields{"err": err}).Debug("attempted to create queue on start")
+	}
+
 	return out, nil
 }
 
@@ -64,33 +83,27 @@ func (c *consumer) Start() {
 	c.once.Do(func() { c.loop() })
 }
 
-func (c *consumer) kickBackMessage(msg amqp.Delivery) error {
-	log.WithFields(log.Fields{"msg": msg}).Info("kicking back message")
-	pub, err := c.handle.GetKickbackMessage(msg)
-	if err != nil {
-		return err
-	}
-	return c.serv.Requeue(msg, pub)
-}
-
 func (c *consumer) handleMessage(msg amqp.Delivery) {
 	defer c.sem.Release(1)
-	res := c.handle.ProcessMessage(msg)
+
+	pub, res := c.handle.Process(msg)
 	if res.IsRequeue() {
-		utils.LogError(res.Error)
-		c.kickBackMessage(msg)
+		err := c.cmds.Requeue(msg, pub)
+		c.log.WithField("err", err).Error("failed to re-queue")
 		return
-	} else if res.IsSuccess() {
-		msg.Ack(false)
-		//TODO: Status report
-	} else {
-		utils.LogError(msg.Ack(false))
-		//TODO: Fatal command error handling
 	}
+	if res.IsAllDone() {
+		err := c.completion.Send(pub)
+		if err != nil {
+			c.log.WithField("err", err).Error("failed to send to the completion queue")
+			return
+		}
+	}
+	msg.Ack(false)
 }
 
 func (c *consumer) loop() {
-	msgs, err := c.serv.Consume()
+	msgs, err := c.cmds.Consume()
 	if err != nil {
 		log.Fatal(err)
 	}

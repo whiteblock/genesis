@@ -48,7 +48,7 @@ func TestResult_IsSuccess(t *testing.T) {
 		{
 			res: Result{
 				Error: nil,
-				Type:  TooSoonType, //todo should this be a success?
+				Type:  TooSoonType,
 			},
 			expected: true,
 		},
@@ -195,13 +195,7 @@ func TestNewErrorResult(t *testing.T) {
 		Type:  ErrorType,
 	}
 
-	expectedUnsuccessful3 := Result{
-		Error: nil,
-		Type:  ErrorType,
-	}
-
-	assert.Equal(t, expected, NewErrorResult(expected.Error)) //todo shouldn't this not pass?
+	assert.Equal(t, expected, NewErrorResult(expected.Error))
 	assert.Equal(t, expectedUnsuccessful, NewErrorResult(expectedUnsuccessful.Error))
 	assert.Equal(t, expectedUnsuccessful2, NewErrorResult(expectedUnsuccessful2.Error))
-	assert.Equal(t, expectedUnsuccessful3, NewErrorResult(expectedUnsuccessful3.Error))
 }

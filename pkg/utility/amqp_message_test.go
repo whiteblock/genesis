@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package handler
+package utility
 
 import (
 	"encoding/json"
@@ -31,33 +31,39 @@ import (
 )
 
 func TestNewDeliveryHandler(t *testing.T) {
-	assert.NotNil(t, NewDeliveryHandler(nil, nil, nil))
+	duc := new(usecaseMocks.DockerUseCase)
+
+	expected := &deliveryHandler{
+		usecase: duc,
+	}
+
+	dh := NewDeliveryHandler(duc)
+
+	assert.Equal(t, expected, dh)
 }
 
-func TestDeliveryHandler_Process_Successful(t *testing.T) {
+func TestDeliveryHandler_ProcessMessage_Successful(t *testing.T) {
 	duc := new(usecaseMocks.DockerUseCase)
 	duc.On("Run", mock.Anything).Return(entity.Result{Type: entity.SuccessType}).Once()
 
 	dh := NewDeliveryHandler(duc)
 
-	cmd := command.Command{
-		Order: command.Order{
-			Type:    "createContainer",
-			Payload: map[string]interface{}{},
-		},
-		Target: command.Target{
-			IP: "127.0.0.1",
-		},
-	}
+	cmd := new(command.Command)
+	cmd.Order.Type = "createContainer"
+	cmd.Order.Payload = map[string]interface{}{}
+	cmd.Target.IP = "127.0.0.1"
 
 	body, err := json.Marshal(cmd)
 	if err != nil {
 		t.Error(err)
 	}
 
-	pub, res := dh.Process(amqp.Delivery{Body: body})
-	assert.NoError(t, res.Error)
+	res := dh.ProcessMessage(amqp.Delivery{Body: body})
+	if res.Error != nil {
+		t.Error("expected return value of ProcessMessage does not match expected value: ", err)
+	}
 
+	assert.NoError(t, res.Error)
 	duc.AssertExpectations(t)
 }
 
@@ -68,4 +74,48 @@ func TestDeliveryHandler_Process_Unsuccessful(t *testing.T) {
 
 	res := dh.ProcessMessage(amqp.Delivery{Body: body})
 	assert.Error(t, res.Error)
+}
+
+func TestDeliveryHandler_GetKickbackMessage_Successful(t *testing.T) {
+	duc := new(usecaseMocks.DockerUseCase)
+	duc.On("TimeSupplier").Return(int64(5))
+
+	dh := NewDeliveryHandler(duc)
+
+	cmd := new(command.Command)
+	cmd.ID = "unit_test"
+	cmd.Retry = uint8(1)
+
+	body, err := json.Marshal(cmd)
+	assert.NoError(t, err)
+
+	msg := amqp.Delivery{
+		Body: body,
+	}
+
+	res, err := dh.GetKickbackMessage(msg)
+	assert.NoError(t, err)
+
+	var resCmd command.Command
+	err = json.Unmarshal(res.Body, &resCmd)
+	assert.NoError(t, err)
+
+	assert.Exactly(t, resCmd.Timestamp, int64(5))
+	assert.Exactly(t, resCmd.Retry, uint8(2))
+	assert.Exactly(t, resCmd.ID, "unit_test")
+}
+
+func TestDeliveryHandler_GetKickbackMessage_Unsuccessful(t *testing.T) {
+	duc := new(usecaseMocks.DockerUseCase)
+
+	dh := NewDeliveryHandler(duc)
+
+	body := []byte("supposed to fail")
+
+	msg := amqp.Delivery{
+		Body: body,
+	}
+
+	_, err := dh.GetKickbackMessage(msg)
+	assert.Error(t, err)
 }

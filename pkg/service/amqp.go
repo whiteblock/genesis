@@ -20,7 +20,7 @@ package service
 
 import (
 	"github.com/streadway/amqp"
-	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/repository"
 )
 
@@ -28,6 +28,8 @@ import (
 type AMQPService interface {
 	//Consume immediately starts delivering queued messages.
 	Consume() (<-chan amqp.Delivery, error)
+	//send places a message into the queue
+	Send(pub amqp.Publishing) error
 	//Requeue rejects the oldMsg and queues the newMsg in a transaction
 	Requeue(oldMsg amqp.Delivery, newMsg amqp.Publishing) error
 	//CreateQueue attempts to publish a queue
@@ -36,12 +38,21 @@ type AMQPService interface {
 
 type amqpService struct {
 	repo repository.AMQPRepository
-	conf entity.AMQPConfig
+	conf config.AMQPConfig
 }
 
 //NewAMQPService creates a new AMQPService
-func NewAMQPService(conf entity.AMQPConfig, repo repository.AMQPRepository) (AMQPService, error) {
+func NewAMQPService(conf config.AMQPConfig, repo repository.AMQPRepository) (AMQPService, error) {
 	return &amqpService{repo: repo, conf: conf}, nil
+}
+
+func (as amqpService) Send(pub amqp.Publishing) error {
+	ch, err := as.repo.GetChannel()
+	if err != nil {
+		return err
+	}
+	defer ch.Close()
+	return ch.Publish(as.conf.Publish.Exchange, "", as.conf.Publish.Mandatory, as.conf.Publish.Immediate)
 }
 
 //Consume immediately starts delivering queued messages.

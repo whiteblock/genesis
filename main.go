@@ -21,7 +21,7 @@ package main
 import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/config"
+	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/controller"
 	"github.com/whiteblock/genesis/pkg/handler"
 	"github.com/whiteblock/genesis/pkg/repository"

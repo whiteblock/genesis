@@ -30,7 +30,7 @@ import (
 func TestConfig_GetQueueConfig(t *testing.T) {
 	var tests = []struct {
 		conf              Config
-		expectedQueueConf entity.QueueConfig
+		expectedQueueConf Queue
 	}{
 		{
 			conf: Config{
@@ -40,7 +40,7 @@ func TestConfig_GetQueueConfig(t *testing.T) {
 				QueueNoWait:     false,
 				QueueArgs:       map[string]interface{}{"test": true, "arguments": "test"},
 			},
-			expectedQueueConf: entity.QueueConfig{
+			expectedQueueConf: Queue{
 				Durable:    false,
 				AutoDelete: true,
 				Exclusive:  false,
@@ -50,7 +50,7 @@ func TestConfig_GetQueueConfig(t *testing.T) {
 		},
 		{
 			conf: *GetConfig(),
-			expectedQueueConf: entity.QueueConfig{
+			expectedQueueConf: Queue{
 				Durable:    true,
 				AutoDelete: false,
 				Exclusive:  false,
@@ -72,7 +72,7 @@ func TestConfig_GetQueueConfig(t *testing.T) {
 func TestConfig_GetConsumeConfig(t *testing.T) {
 	var tests = []struct {
 		conf                Config
-		expectedConsumeConf entity.ConsumeConfig
+		expectedConsumeConf Consume
 	}{
 		{
 			conf: Config{
@@ -83,7 +83,7 @@ func TestConfig_GetConsumeConfig(t *testing.T) {
 				ConsumerNoWait:    true,
 				ConsumerArgs:      map[string]interface{}{"test": 4},
 			},
-			expectedConsumeConf: entity.ConsumeConfig{
+			expectedConsumeConf: Consume{
 				Consumer:  "test",
 				AutoAck:   false,
 				Exclusive: true,
@@ -94,7 +94,7 @@ func TestConfig_GetConsumeConfig(t *testing.T) {
 		},
 		{
 			conf: *GetConfig(),
-			expectedConsumeConf: entity.ConsumeConfig{
+			expectedConsumeConf: Consume{
 				Consumer:  "",
 				AutoAck:   false,
 				Exclusive: false,
@@ -117,21 +117,21 @@ func TestConfig_GetConsumeConfig(t *testing.T) {
 func TestConfig_GetPublishConfig(t *testing.T) {
 	var tests = []struct {
 		conf              Config
-		expectedPubConfig entity.PublishConfig
+		expectedPubConfig Publish
 	}{
 		{
 			conf: Config{
 				PublishMandatory: true,
 				PublishImmediate: false,
 			},
-			expectedPubConfig: entity.PublishConfig{
+			expectedPubConfig: Publish{
 				Mandatory: true,
 				Immediate: false,
 			},
 		},
 		{
 			conf: *GetConfig(),
-			expectedPubConfig: entity.PublishConfig{
+			expectedPubConfig: Publish{
 				Mandatory: false,
 				Immediate: false,
 			},
@@ -150,7 +150,7 @@ func TestConfig_GetPublishConfig(t *testing.T) {
 func TestConfig_GetAMQPConfig(t *testing.T) {
 	var tests = []struct {
 		conf             Config
-		expectedAMQPConf entity.AMQPConfig
+		expectedAMQPConf AMQP
 	}{
 		{
 			conf: Config{
@@ -169,16 +169,16 @@ func TestConfig_GetAMQPConfig(t *testing.T) {
 				PublishMandatory:  true,
 				PublishImmediate:  false,
 			},
-			expectedAMQPConf: entity.AMQPConfig{
+			expectedAMQPConf: AMQP{
 				QueueName: "test",
-				Queue: entity.QueueConfig{
+				Queue: Queue{
 					Durable:    false,
 					AutoDelete: true,
 					Exclusive:  false,
 					NoWait:     false,
 					Args:       map[string]interface{}{"test": true, "arguments": "test"},
 				},
-				Consume: entity.ConsumeConfig{
+				Consume: Consume{
 					Consumer:  "test",
 					AutoAck:   false,
 					Exclusive: true,
@@ -186,7 +186,7 @@ func TestConfig_GetAMQPConfig(t *testing.T) {
 					NoWait:    true,
 					Args:      map[string]interface{}{"test": 4},
 				},
-				Publish: entity.PublishConfig{
+				Publish: Publish{
 					Mandatory: true,
 					Immediate: false,
 				},
@@ -194,16 +194,16 @@ func TestConfig_GetAMQPConfig(t *testing.T) {
 		},
 		{
 			conf: *GetConfig(),
-			expectedAMQPConf: entity.AMQPConfig{
+			expectedAMQPConf: AMQP{
 				QueueName: "",
-				Queue: entity.QueueConfig{
+				Queue: Queue{
 					Durable:    true,
 					AutoDelete: false,
 					Exclusive:  false,
 					NoWait:     false,
 					Args:       *new(map[string]interface{}),
 				},
-				Consume: entity.ConsumeConfig{
+				Consume: Consume{
 					Consumer:  "",
 					AutoAck:   false,
 					Exclusive: false,
@@ -211,7 +211,7 @@ func TestConfig_GetAMQPConfig(t *testing.T) {
 					NoWait:    false,
 					Args:      *new(map[string]interface{}),
 				},
-				Publish: entity.PublishConfig{
+				Publish: Publish{
 					Mandatory: false,
 					Immediate: false,
 				},

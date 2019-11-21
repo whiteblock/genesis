@@ -55,8 +55,8 @@ type Config struct {
 }
 
 // GetQueueConfig extracts the fields of this object representing QueueConfig
-func (c Config) GetQueueConfig() entity.QueueConfig {
-	return entity.QueueConfig{
+func (c Config) GetQueueConfig() Queue {
+	return Queue{
 		Durable:    c.QueueDurable,
 		AutoDelete: c.QueueAutoDelete,
 		Exclusive:  c.QueueExclusive,
@@ -66,8 +66,8 @@ func (c Config) GetQueueConfig() entity.QueueConfig {
 }
 
 // GetConsumeConfig  extracts the fields of this object representing ConsumeConfig
-func (c Config) GetConsumeConfig() entity.ConsumeConfig {
-	return entity.ConsumeConfig{
+func (c Config) GetConsumeConfig() Consume {
+	return Consume{
 		Consumer:  c.Consumer,
 		AutoAck:   c.ConsumerAutoAck,
 		Exclusive: c.ConsumerExclusive,
@@ -78,16 +78,16 @@ func (c Config) GetConsumeConfig() entity.ConsumeConfig {
 }
 
 // GetPublishConfig extracts the fields of this object representing PublishConfig
-func (c Config) GetPublishConfig() entity.PublishConfig {
-	return entity.PublishConfig{
+func (c Config) GetPublishConfig() Publish {
+	return Publish{
 		Mandatory: c.PublishMandatory,
 		Immediate: c.PublishImmediate,
 	}
 }
 
 // GetAMQPConfig extracts the fields of this object representing AMQPConfig
-func (c Config) GetAMQPConfig() entity.AMQPConfig {
-	return entity.AMQPConfig{
+func (c Config) GetAMQPConfig() AMQP {
+	return AMQP{
 		QueueName: c.AMQPQueueName,
 		Queue:     c.GetQueueConfig(),
 		Consume:   c.GetConsumeConfig(),
