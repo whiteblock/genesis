@@ -22,13 +22,14 @@ import (
 	"fmt"
 	"testing"
 
+	externalsMocks "github.com/whiteblock/genesis/mocks/pkg/externals"
+	repoMocks "github.com/whiteblock/genesis/mocks/pkg/repository"
+	"github.com/whiteblock/genesis/pkg/config"
+
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	externalsMocks "github.com/whiteblock/genesis/mocks/pkg/externals"
-	repoMocks "github.com/whiteblock/genesis/mocks/pkg/repository"
-	"github.com/whiteblock/genesis/pkg/entity"
 )
 
 func TestNewAMQPService(t *testing.T) {

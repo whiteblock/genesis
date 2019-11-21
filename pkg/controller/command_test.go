@@ -20,14 +20,17 @@ package controller
 
 import (
 	"fmt"
-	"github.com/streadway/amqp"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
+	"testing"
+	"time"
+
 	handler "github.com/whiteblock/genesis/mocks/pkg/handler"
 	service "github.com/whiteblock/genesis/mocks/pkg/service"
 	"github.com/whiteblock/genesis/pkg/entity"
-	"testing"
-	"time"
+
+	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestCommandController_Consumption(t *testing.T) {
@@ -36,15 +39,17 @@ func TestCommandController_Consumption(t *testing.T) {
 	processedChan := make(chan bool, items)
 	deliveryChan := make(chan amqp.Delivery, items)
 	serv := new(service.AMQPService)
-	serv.On("Consume").Return((<-chan amqp.Delivery)(deliveryChan), nil)
-	serv.On("CreateQueue").Return(nil)
+	serv2 := new(service.AMQPService)
+	serv.On("Consume").Return((<-chan amqp.Delivery)(deliveryChan), nil).Once()
+	serv.On("CreateQueue").Return(nil).Once()
+	serv2.On("CreateQueue").Return(nil).Once()
 
 	hand := new(handler.DeliveryHandler)
-	hand.On("ProcessMessage", mock.Anything).Run(func(_ mock.Arguments) {
+	hand.On("Process", mock.Anything).Run(func(_ mock.Arguments) {
 		processedChan <- true
-	}).Return(entity.NewSuccessResult())
+	}).Return(amqp.Publishing{}, entity.NewSuccessResult()).Times(items)
 
-	control, err := NewCommandController(2, serv, hand)
+	control, err := NewCommandController(2, serv, serv2, hand, logrus.New())
 	assert.Equal(t, err, nil)
 	go control.Start()
 
@@ -60,9 +65,9 @@ func TestCommandController_Consumption(t *testing.T) {
 	}
 
 	close(deliveryChan)
-	assert.True(t, hand.AssertNumberOfCalls(t, "ProcessMessage", items))
-	assert.True(t, serv.AssertNumberOfCalls(t, "Consume", 1))
-	assert.True(t, serv.AssertNumberOfCalls(t, "CreateQueue", 1))
+	hand.AssertExpectations(t)
+	serv.AssertExpectations(t)
+	serv2.AssertExpectations(t)
 }
 
 func TestCommandController_Requeue(t *testing.T) {
@@ -71,17 +76,19 @@ func TestCommandController_Requeue(t *testing.T) {
 	processedChan := make(chan bool, items)
 	deliveryChan := make(chan amqp.Delivery, items)
 	serv := new(service.AMQPService)
-	serv.On("Consume").Return((<-chan amqp.Delivery)(deliveryChan), nil)
-	serv.On("CreateQueue").Return(nil)
+	serv.On("Consume").Return((<-chan amqp.Delivery)(deliveryChan), nil).Once()
+	serv.On("CreateQueue").Return(nil).Once()
 	serv.On("Requeue", mock.Anything, mock.Anything).Run(func(_ mock.Arguments) {
 		processedChan <- true
-	}).Return(nil)
+	}).Return(nil).Times(items)
+	serv2 := new(service.AMQPService)
+	serv2.On("CreateQueue").Return(nil).Once()
 
 	hand := new(handler.DeliveryHandler)
-	hand.On("GetKickbackMessage", mock.Anything).Return(amqp.Publishing{}, nil)
-	hand.On("ProcessMessage", mock.Anything).Return(entity.NewErrorResult(fmt.Errorf("some non-fatal error")))
+	hand.On("Process", mock.Anything).Return(amqp.Publishing{},
+		entity.NewErrorResult(fmt.Errorf("some non-fatal error"))).Times(items)
 
-	control, err := NewCommandController(2, serv, hand)
+	control, err := NewCommandController(2, serv, serv2, hand, logrus.New())
 	assert.Equal(t, err, nil)
 	go control.Start()
 
@@ -97,9 +104,6 @@ func TestCommandController_Requeue(t *testing.T) {
 	}
 
 	close(deliveryChan)
-	assert.True(t, hand.AssertNumberOfCalls(t, "ProcessMessage", items))
-	assert.True(t, hand.AssertNumberOfCalls(t, "GetKickbackMessage", items))
-	assert.True(t, serv.AssertNumberOfCalls(t, "Requeue", items))
-	assert.True(t, serv.AssertNumberOfCalls(t, "Consume", 1))
-	assert.True(t, serv.AssertNumberOfCalls(t, "CreateQueue", 1))
+	hand.AssertExpectations(t)
+	serv.AssertExpectations(t)
 }

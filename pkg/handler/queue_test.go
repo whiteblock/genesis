@@ -22,12 +22,15 @@ import (
 	"encoding/json"
 	"testing"
 
+	auxMocks "github.com/whiteblock/genesis/mocks/pkg/handler/auxillary"
+	utilityMocks "github.com/whiteblock/genesis/mocks/pkg/utility"
+	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/entity"
+
+	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	usecaseMocks "github.com/whiteblock/genesis/mocks/pkg/usecase"
-	"github.com/whiteblock/genesis/pkg/command"
-	"github.com/whiteblock/genesis/pkg/entity"
 )
 
 func TestNewDeliveryHandler(t *testing.T) {
@@ -35,12 +38,14 @@ func TestNewDeliveryHandler(t *testing.T) {
 }
 
 func TestDeliveryHandler_Process_Successful(t *testing.T) {
-	duc := new(usecaseMocks.DockerUseCase)
-	duc.On("Run", mock.Anything).Return(entity.Result{Type: entity.SuccessType}).Once()
+	aux := new(auxMocks.Executor)
+	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewSuccessResult()).Once()
+	util := new(utilityMocks.AMQPMessage)
+	util.On("CreateMessage", mock.Anything).Return(amqp.Publishing{}, nil).Once()
 
-	dh := NewDeliveryHandler(duc)
+	dh := NewDeliveryHandler(aux, util, logrus.New())
 
-	cmd := command.Command{
+	cmd := [][]command.Command{[]command.Command{command.Command{
 		Order: command.Order{
 			Type:    "createContainer",
 			Payload: map[string]interface{}{},
@@ -48,24 +53,29 @@ func TestDeliveryHandler_Process_Successful(t *testing.T) {
 		Target: command.Target{
 			IP: "127.0.0.1",
 		},
-	}
+	}}}
 
 	body, err := json.Marshal(cmd)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
 
-	pub, res := dh.Process(amqp.Delivery{Body: body})
+	_, res := dh.Process(amqp.Delivery{Body: body})
 	assert.NoError(t, res.Error)
 
-	duc.AssertExpectations(t)
+	aux.AssertExpectations(t)
+	util.AssertExpectations(t)
 }
 
 func TestDeliveryHandler_Process_Unsuccessful(t *testing.T) {
-	dh := NewDeliveryHandler(new(usecaseMocks.DockerUseCase))
+	aux := new(auxMocks.Executor)
+	util := new(utilityMocks.AMQPMessage)
+
+	dh := NewDeliveryHandler(aux, util, logrus.New())
 
 	body := []byte("should be a failure")
 
-	res := dh.ProcessMessage(amqp.Delivery{Body: body})
+	_, res := dh.Process(amqp.Delivery{Body: body})
 	assert.Error(t, res.Error)
+
+	aux.AssertExpectations(t)
+	util.AssertExpectations(t)
 }

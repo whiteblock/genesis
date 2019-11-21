@@ -105,7 +105,7 @@ func (c *consumer) handleMessage(msg amqp.Delivery) {
 func (c *consumer) loop() {
 	msgs, err := c.cmds.Consume()
 	if err != nil {
-		log.Fatal(err)
+		c.log.Fatal(err)
 	}
 	for msg := range msgs {
 		c.sem.Acquire(context.Background(), 1)

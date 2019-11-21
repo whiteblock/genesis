@@ -47,8 +47,8 @@ type deliveryHandler struct {
 //executing the extracted command
 func NewDeliveryHandler(
 	aux auxillary.Executor,
-	log logrus.Ext1FieldLogger,
-	msgUtil utility.AMQPMessage) DeliveryHandler {
+	msgUtil utility.AMQPMessage,
+	log logrus.Ext1FieldLogger) DeliveryHandler {
 	return &deliveryHandler{aux: aux, log: log, msgUtil: msgUtil}
 }
 

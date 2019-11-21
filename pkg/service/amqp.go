@@ -38,11 +38,11 @@ type AMQPService interface {
 
 type amqpService struct {
 	repo repository.AMQPRepository
-	conf config.AMQPConfig
+	conf config.AMQP
 }
 
 //NewAMQPService creates a new AMQPService
-func NewAMQPService(conf config.AMQPConfig, repo repository.AMQPRepository) (AMQPService, error) {
+func NewAMQPService(conf config.AMQP, repo repository.AMQPRepository) (AMQPService, error) {
 	return &amqpService{repo: repo, conf: conf}, nil
 }
 
@@ -52,7 +52,7 @@ func (as amqpService) Send(pub amqp.Publishing) error {
 		return err
 	}
 	defer ch.Close()
-	return ch.Publish(as.conf.Publish.Exchange, "", as.conf.Publish.Mandatory, as.conf.Publish.Immediate)
+	return ch.Publish(as.conf.Publish.Exchange, "", as.conf.Publish.Mandatory, as.conf.Publish.Immediate, pub)
 }
 
 //Consume immediately starts delivering queued messages.

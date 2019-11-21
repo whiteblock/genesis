@@ -43,7 +43,7 @@ func NewAMQPMessage(maxRetries int64) AMQPMessage {
 	return &amqpMessage{maxRetries: maxRetries}
 }
 
-func (dh amqpMessage) CreateMessage(body interface{}) (amqp.Publishing, error) {
+func (am amqpMessage) CreateMessage(body interface{}) (amqp.Publishing, error) {
 	rawBody, err := json.Marshal(body)
 	if err != nil {
 		return amqp.Publishing{}, err
@@ -60,7 +60,7 @@ func (dh amqpMessage) CreateMessage(body interface{}) (amqp.Publishing, error) {
 
 // GetNextMessage is similar to GetKickbackMessage but takes in a new body, and does not increment the
 // retry count
-func (dh amqpMessage) GetNextMessage(msg amqp.Delivery, body interface{}) (amqp.Publishing, error) {
+func (am amqpMessage) GetNextMessage(msg amqp.Delivery, body interface{}) (amqp.Publishing, error) {
 	rawBody, err := json.Marshal(body)
 	if err != nil {
 		return amqp.Publishing{}, err

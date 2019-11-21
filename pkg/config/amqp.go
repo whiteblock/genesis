@@ -71,8 +71,9 @@ func GetConsume() (Consume, error) {
 
 //Publish  is the configuration for the publishing of messages
 type Publish struct {
-	Mandatory bool `mapstructure:"publishMandatory"`
-	Immediate bool `mapstructure:"publishImmediate"`
+	Mandatory bool   `mapstructure:"publishMandatory"`
+	Immediate bool   `mapstructure:"publishImmediate"`
+	Exchange  string `mapstructure:"exchange"`
 }
 
 //GetPublish gets Publish from the values in viper

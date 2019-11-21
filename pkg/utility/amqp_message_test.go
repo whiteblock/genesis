@@ -19,103 +19,36 @@
 package utility
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	usecaseMocks "github.com/whiteblock/genesis/mocks/pkg/usecase"
-	"github.com/whiteblock/genesis/pkg/command"
-	"github.com/whiteblock/genesis/pkg/entity"
 )
 
-func TestNewDeliveryHandler(t *testing.T) {
-	duc := new(usecaseMocks.DockerUseCase)
-
-	expected := &deliveryHandler{
-		usecase: duc,
+func TestAMQPMessage_GetKickbackMessage_Successful(t *testing.T) {
+	am := NewAMQPMessage(2)
+	msg := amqp.Delivery{
+		Body: []byte("stuff"),
 	}
 
-	dh := NewDeliveryHandler(duc)
-
-	assert.Equal(t, expected, dh)
-}
-
-func TestDeliveryHandler_ProcessMessage_Successful(t *testing.T) {
-	duc := new(usecaseMocks.DockerUseCase)
-	duc.On("Run", mock.Anything).Return(entity.Result{Type: entity.SuccessType}).Once()
-
-	dh := NewDeliveryHandler(duc)
-
-	cmd := new(command.Command)
-	cmd.Order.Type = "createContainer"
-	cmd.Order.Payload = map[string]interface{}{}
-	cmd.Target.IP = "127.0.0.1"
-
-	body, err := json.Marshal(cmd)
-	if err != nil {
-		t.Error(err)
-	}
-
-	res := dh.ProcessMessage(amqp.Delivery{Body: body})
-	if res.Error != nil {
-		t.Error("expected return value of ProcessMessage does not match expected value: ", err)
-	}
-
-	assert.NoError(t, res.Error)
-	duc.AssertExpectations(t)
-}
-
-func TestDeliveryHandler_Process_Unsuccessful(t *testing.T) {
-	dh := NewDeliveryHandler(new(usecaseMocks.DockerUseCase))
-
-	body := []byte("should be a failure")
-
-	res := dh.ProcessMessage(amqp.Delivery{Body: body})
-	assert.Error(t, res.Error)
-}
-
-func TestDeliveryHandler_GetKickbackMessage_Successful(t *testing.T) {
-	duc := new(usecaseMocks.DockerUseCase)
-	duc.On("TimeSupplier").Return(int64(5))
-
-	dh := NewDeliveryHandler(duc)
-
-	cmd := new(command.Command)
-	cmd.ID = "unit_test"
-	cmd.Retry = uint8(1)
-
-	body, err := json.Marshal(cmd)
+	res, err := am.GetKickbackMessage(msg)
 	assert.NoError(t, err)
+	assert.NotNil(t, res.Headers)
+	val, exists := res.Headers["retryCount"]
+	assert.True(t, exists)
+	assert.Exactly(t, int64(1), val)
+}
+
+func TestAMQPMessage_GetKickbackMessage_Unsuccessful(t *testing.T) {
+	var retries int64 = 20
 
 	msg := amqp.Delivery{
-		Body: body,
+		Headers: map[string]interface{}{
+			"retryCount": int64(retries + 1),
+		},
+		Body: []byte("supposed to fail"),
 	}
-
-	res, err := dh.GetKickbackMessage(msg)
-	assert.NoError(t, err)
-
-	var resCmd command.Command
-	err = json.Unmarshal(res.Body, &resCmd)
-	assert.NoError(t, err)
-
-	assert.Exactly(t, resCmd.Timestamp, int64(5))
-	assert.Exactly(t, resCmd.Retry, uint8(2))
-	assert.Exactly(t, resCmd.ID, "unit_test")
-}
-
-func TestDeliveryHandler_GetKickbackMessage_Unsuccessful(t *testing.T) {
-	duc := new(usecaseMocks.DockerUseCase)
-
-	dh := NewDeliveryHandler(duc)
-
-	body := []byte("supposed to fail")
-
-	msg := amqp.Delivery{
-		Body: body,
-	}
-
-	_, err := dh.GetKickbackMessage(msg)
+	am := NewAMQPMessage(retries)
+	_, err := am.GetKickbackMessage(msg)
 	assert.Error(t, err)
 }
