@@ -26,6 +26,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service"
+	"github.com/whiteblock/genesis/pkg/validator"
 	"strings"
 	"time"
 )
@@ -52,12 +53,15 @@ type DockerUseCase interface {
 type dockerUseCase struct {
 	service    service.DockerService
 	cmdService service.CommandService
+	valid      validator.OrderValidator
 }
 
 //NewDockerUseCase creates a DockerUseCase arguments given the proper dep injections
-func NewDockerUseCase(service service.DockerService,
-	cmdService service.CommandService) (DockerUseCase, error) {
-	return &dockerUseCase{service: service, cmdService: cmdService}, nil
+func NewDockerUseCase(
+	service service.DockerService,
+	cmdService service.CommandService,
+	valid validator.OrderValidator) DockerUseCase {
+	return &dockerUseCase{service: service, cmdService: cmdService, valid: valid}
 }
 
 // TimeSupplier supplies the time as a unix timestamp
@@ -152,6 +156,10 @@ func (duc dockerUseCase) dependencyCheck(cmd command.Command) (stat entity.Resul
 func (duc dockerUseCase) createContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
 	var container command.Container
 	err := cmd.ParseOrderPayloadInto(&container)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	err = duc.valid.ValidateContainer(container)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}

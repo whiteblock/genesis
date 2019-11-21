@@ -28,6 +28,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
 	"github.com/whiteblock/genesis/pkg/usecase"
+	"github.com/whiteblock/genesis/pkg/validator"
 	"os"
 )
 
@@ -43,10 +44,7 @@ func getRestServer() (controller.RestController, error) {
 		return nil, err
 	}
 
-	dockerUseCase, err := usecase.NewDockerUseCase(dockerService, commandService)
-	if err != nil {
-		return nil, err
-	}
+	dockerUseCase := usecase.NewDockerUseCase(dockerService, commandService, validator.NewOrderValidator())
 
 	restHandler := handler.NewRestHandler(dockerUseCase, commandService)
 	restRouter := mux.NewRouter()
