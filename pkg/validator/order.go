@@ -38,13 +38,6 @@ func NewOrderValidator() OrderValidator {
 	return &orderValidator{}
 }
 
-// Container represents a docker container, this is calculated from the payload of the Run command
-type Container struct {
-
-	//Image is the docker image
-	Image string `json:"image"`
-}
-
 func (ov *orderValidator) ValidateContainer(cntr command.Container) error {
 	if len(cntr.Name) == 0 {
 		return errors.New(`missing field "name"`)
