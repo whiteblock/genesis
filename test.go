@@ -25,6 +25,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
@@ -184,6 +185,10 @@ func emulate(dockerUseCase usecase.DockerUseCase, containerName string, networkN
 	log.WithFields(log.Fields{"res": res}).Info("applied emulation")
 }
 func dockerTest(clean bool) {
+	conf, err := config.NewConfig()
+	if err != nil {
+		panic(err)
+	}
 	commandService := service.NewCommandService(repository.NewLocalCommandRepository())
 	dockerRepository := repository.NewDockerRepository()
 	dockerAux := auxillary.NewDockerAuxillary(dockerRepository)

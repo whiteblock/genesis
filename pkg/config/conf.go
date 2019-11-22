@@ -19,9 +19,8 @@
 package config
 
 import (
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/streadway/amqp"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 )
@@ -29,70 +28,78 @@ import (
 // Config groups all of the global configuration parameters into
 // a single struct
 type Config struct {
-	QueueDurable      bool       `mapstructure:"queueDurable"`
-	QueueAutoDelete   bool       `mapstructure:"queueAutoDelete"`
-	QueueExclusive    bool       `mapstructure:"queueExclusive"`
-	QueueNoWait       bool       `mapstructure:"queueNoWait"`
-	QueueArgs         amqp.Table `mapstructure:"queueArgs"`
-	Consumer          string     `mapstructure:"consumer"`
-	ConsumerAutoAck   bool       `mapstructure:"consumerAutoAck"`
-	ConsumerExclusive bool       `mapstructure:"consumerExclusive"`
-	ConsumerNoLocal   bool       `mapstructure:"consumerNoLocal"`
-	ConsumerNoWait    bool       `mapstructure:"consumerNoWait"`
-	ConsumerArgs      amqp.Table `mapstructure:"consumerArgs"`
-	PublishMandatory  bool       `mapstructure:"publishMandatory"`
-	PublishImmediate  bool       `mapstructure:"publishImmediate"`
-	AMQPQueueName     string     `mapstructure:"amqpQueueName"`
-	DockerCACertPath  string     `mapstructure:"dockerCACertPath"`
-	DockerCertPath    string     `mapstructure:"dockerCertPath"`
-	DockerKeyPath     string     `mapstructure:"dockerKeyPath"`
+	CompletionQueueName string `mapstructure:"completionQueueName"`
+	CommandQueueName    string `mapstructure:"commandQueueName"`
+	DockerCACertPath    string `mapstructure:"dockerCACertPath"`
+	DockerCertPath      string `mapstructure:"dockerCertPath"`
+	DockerKeyPath       string `mapstructure:"dockerKeyPath"`
 	//LocalMode indicates that Genesis is operating in standalone mode
 	LocalMode        bool              `mapstructure:"localMode"`
 	VolumeDriver     string            `mapstructure:"volumeDriver"`
-	VoluemDriverOpts map[string]string `mapstructure:"volumeDriverOpts"`
+	VolumeDriverOpts map[string]string `mapstructure:"volumeDriverOpts"`
 	Verbosity        string            `mapstructure:"verbosity"`
 	Listen           string            `mapstructure:"listen"`
 }
 
-// GetQueueConfig extracts the fields of this object representing QueueConfig
-func (c Config) GetQueueConfig() Queue {
-	return Queue{
-		Durable:    c.QueueDurable,
-		AutoDelete: c.QueueAutoDelete,
-		Exclusive:  c.QueueExclusive,
-		NoWait:     c.QueueNoWait,
-		Args:       c.QueueArgs,
+//GetLogger gets a logger according to the config
+func (c Config) GetLogger() (*logrus.Logger, error) {
+	logger := logrus.New()
+	lvl, err := logrus.ParseLevel(c.Verbosity)
+	if err != nil {
+		return nil, err
 	}
+	logger.SetLevel(lvl)
+	return logger, nil
 }
 
-// GetConsumeConfig  extracts the fields of this object representing ConsumeConfig
-func (c Config) GetConsumeConfig() Consume {
-	return Consume{
-		Consumer:  c.Consumer,
-		AutoAck:   c.ConsumerAutoAck,
-		Exclusive: c.ConsumerExclusive,
-		NoLocal:   c.ConsumerNoLocal,
-		NoWait:    c.ConsumerNoWait,
-		Args:      c.ConsumerArgs,
+//CompletionAMQP gets the AMQP for the completion queue
+func (c Config) CompletionAMQP() (AMQP, error) {
+	queue, err := GetQueue()
+	if err != nil {
+		return AMQP{}, err
 	}
-}
 
-// GetPublishConfig extracts the fields of this object representing PublishConfig
-func (c Config) GetPublishConfig() Publish {
-	return Publish{
-		Mandatory: c.PublishMandatory,
-		Immediate: c.PublishImmediate,
+	consume, err := GetConsume()
+	if err != nil {
+		return AMQP{}, err
 	}
-}
 
-// GetAMQPConfig extracts the fields of this object representing AMQPConfig
-func (c Config) GetAMQPConfig() AMQP {
+	publish, err := GetPublish()
+	if err != nil {
+		return AMQP{}, err
+	}
+
 	return AMQP{
-		QueueName: c.AMQPQueueName,
-		Queue:     c.GetQueueConfig(),
-		Consume:   c.GetConsumeConfig(),
-		Publish:   c.GetPublishConfig(),
+		QueueName: c.CompletionQueueName,
+		Queue:     queue,
+		Consume:   consume,
+		Publish:   publish,
+	}, nil
+}
+
+//CompletionAMQP gets the AMQP for the completion queue
+func (c Config) CommandAMQP() (AMQP, error) {
+	queue, err := GetQueue()
+	if err != nil {
+		return AMQP{}, err
 	}
+
+	consume, err := GetConsume()
+	if err != nil {
+		return AMQP{}, err
+	}
+
+	publish, err := GetPublish()
+	if err != nil {
+		return AMQP{}, err
+	}
+
+	return AMQP{
+		QueueName: c.CommandQueueName,
+		Queue:     queue,
+		Consume:   consume,
+		Publish:   publish,
+	}, nil
 }
 
 // GetDockerConfig extracts the fields of this object representing DockerConfig
@@ -109,7 +116,7 @@ func (c Config) GetDockerConfig() entity.DockerConfig {
 func (c Config) GetVolumeConfig() command.VolumeConfig {
 	return command.VolumeConfig{
 		Driver:     c.VolumeDriver,
-		DriverOpts: c.VoluemDriverOpts,
+		DriverOpts: c.VolumeDriverOpts,
 	}
 }
 
@@ -118,23 +125,7 @@ func (c Config) GetRestConfig() entity.RestConfig {
 	return entity.RestConfig{Listen: c.Listen}
 }
 
-var conf = new(Config)
-
 func setViperEnvBindings() {
-	viper.BindEnv("queueDurable", "QUEUE_DURABLE")
-	viper.BindEnv("queueAutoDelete", "QUEUE_AUTO_DELETE")
-	viper.BindEnv("queueExclusive", "QUEUE_EXCLUSIVE")
-	viper.BindEnv("queueNoWait", "QUEUE_NO_WAIT")
-	viper.BindEnv("queueArgs", "QUEUE_ARGS")
-	viper.BindEnv("consumer", "CONSUMER")
-	viper.BindEnv("consumerAutoAck", "CONSUMER_AUTO_ACK")
-	viper.BindEnv("consumerExclusive", "CONSUMER_EXCLUSIVE")
-	viper.BindEnv("consumerNoLocal", "CONSUMER_NO_LOCAL")
-	viper.BindEnv("consumerNoWait", "CONSUMER_NO_WAIT")
-	viper.BindEnv("consumerArgs", "CONSUMER_ARGS")
-	viper.BindEnv("publishMandatory", "PUBLISH_MANDATORY")
-	viper.BindEnv("publishImmediate", "PUBLISH_IMMEDIATE")
-	viper.BindEnv("amqpQueueName", "AMQP_QUEUE_NAME")
 	viper.BindEnv("dockerCACertPath", "DOCKER_CACERT_PATH")
 	viper.BindEnv("dockerCertPath", "DOCKER_CERT_PATH")
 	viper.BindEnv("dockerKeyPath", "DOCKER_KEY_PATH")
@@ -147,16 +138,12 @@ func setViperEnvBindings() {
 
 func setViperDefaults() {
 	viper.SetDefault("verbosity", "INFO")
-	viper.SetDefault("queueDurable", true)
-	viper.SetDefault("queueAutoDelete", false)
-	viper.SetDefault("queueExclusive", false)
-	viper.SetDefault("consumerAutoAck", false)
-	viper.SetDefault("consumerExclusive", false)
 	viper.SetDefault("listen", "0.0.0.0:8000")
 	viper.SetDefault("localMode", true)
 }
 
 func init() {
+	amqpInit()
 	setViperDefaults()
 	setViperEnvBindings()
 
@@ -165,26 +152,14 @@ func init() {
 	viper.SetConfigName("genesis")
 	viper.SetConfigType("yaml")
 
-	err := viper.ReadInConfig()
-	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Warn("could not find the config file")
-	}
-
-	err = viper.Unmarshal(&conf)
-	if err != nil {
-		log.Fatalf("unable to decode into struct, %v", err)
-	}
-
-	lvl, err := log.ParseLevel(conf.Verbosity)
-	if err != nil {
-		log.SetLevel(log.InfoLevel)
-		log.Warn(err)
-	}
-	log.SetLevel(lvl)
 }
 
-// GetConfig gets a pointer to the global config object.
-// Do not modify conf object
-func GetConfig() *Config {
-	return conf
+// NewConfig creates a new config object from the global config
+func NewConfig() (*Config, error) {
+	conf := new(Config)
+	err := viper.ReadInConfig()
+	if err != nil {
+		return nil, err
+	}
+	return conf, viper.Unmarshal(&conf)
 }

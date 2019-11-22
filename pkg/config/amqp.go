@@ -116,6 +116,8 @@ func amqpInit() {
 	/** START Publish **/
 	viper.BindEnv("publishMandatory", "PUBLISH_MANDATORU")
 	viper.BindEnv("publishImmediate", "PUBLISH_IMMEDIATE")
+	viper.BindEnv("exchange", "EXCHANGE")
+	viper.SetDefault("exchange", "")
 	viper.SetDefault("publishMandatory", true)
 	viper.SetDefault("publishImmediate", true)
 	/** END Publish **/

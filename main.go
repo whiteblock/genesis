@@ -31,9 +31,12 @@ import (
 	"os"
 )
 
-var conf = config.GetConfig()
-
 func getRestServer() (controller.RestController, error) {
+	conf, err := config.NewConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	commandService := service.NewCommandService(repository.NewLocalCommandRepository())
 	dockerRepository := repository.NewDockerRepository()
 	dockerAux := auxillary.NewDockerAuxillary(dockerRepository)

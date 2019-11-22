@@ -27,207 +27,6 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 )
 
-func TestConfig_GetQueueConfig(t *testing.T) {
-	var tests = []struct {
-		conf              Config
-		expectedQueueConf Queue
-	}{
-		{
-			conf: Config{
-				QueueDurable:    false,
-				QueueAutoDelete: true,
-				QueueExclusive:  false,
-				QueueNoWait:     false,
-				QueueArgs:       map[string]interface{}{"test": true, "arguments": "test"},
-			},
-			expectedQueueConf: Queue{
-				Durable:    false,
-				AutoDelete: true,
-				Exclusive:  false,
-				NoWait:     false,
-				Args:       map[string]interface{}{"test": true, "arguments": "test"},
-			},
-		},
-		{
-			conf: *GetConfig(),
-			expectedQueueConf: Queue{
-				Durable:    true,
-				AutoDelete: false,
-				Exclusive:  false,
-				NoWait:     false,
-				Args:       *new(map[string]interface{}),
-			},
-		},
-	}
-
-	for i, tt := range tests {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			if !reflect.DeepEqual(tt.conf.GetQueueConfig(), tt.expectedQueueConf) {
-				t.Error("return value of GetQueueConfig does not match expected value")
-			}
-		})
-	}
-}
-
-func TestConfig_GetConsumeConfig(t *testing.T) {
-	var tests = []struct {
-		conf                Config
-		expectedConsumeConf Consume
-	}{
-		{
-			conf: Config{
-				Consumer:          "test",
-				ConsumerAutoAck:   false,
-				ConsumerExclusive: true,
-				ConsumerNoLocal:   false,
-				ConsumerNoWait:    true,
-				ConsumerArgs:      map[string]interface{}{"test": 4},
-			},
-			expectedConsumeConf: Consume{
-				Consumer:  "test",
-				AutoAck:   false,
-				Exclusive: true,
-				NoLocal:   false,
-				NoWait:    true,
-				Args:      map[string]interface{}{"test": 4},
-			},
-		},
-		{
-			conf: *GetConfig(),
-			expectedConsumeConf: Consume{
-				Consumer:  "",
-				AutoAck:   false,
-				Exclusive: false,
-				NoLocal:   false,
-				NoWait:    false,
-				Args:      *new(map[string]interface{}),
-			},
-		},
-	}
-
-	for i, tt := range tests {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			if !reflect.DeepEqual(tt.conf.GetConsumeConfig(), tt.expectedConsumeConf) {
-				t.Error("return value of GetConsumeConfig does not match expected value")
-			}
-		})
-	}
-}
-
-func TestConfig_GetPublishConfig(t *testing.T) {
-	var tests = []struct {
-		conf              Config
-		expectedPubConfig Publish
-	}{
-		{
-			conf: Config{
-				PublishMandatory: true,
-				PublishImmediate: false,
-			},
-			expectedPubConfig: Publish{
-				Mandatory: true,
-				Immediate: false,
-			},
-		},
-		{
-			conf: *GetConfig(),
-			expectedPubConfig: Publish{
-				Mandatory: false,
-				Immediate: false,
-			},
-		},
-	}
-
-	for i, tt := range tests {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			if !reflect.DeepEqual(tt.conf.GetPublishConfig(), tt.expectedPubConfig) {
-				t.Error("return value of GetPublishConfig does not match expected value")
-			}
-		})
-	}
-}
-
-func TestConfig_GetAMQPConfig(t *testing.T) {
-	var tests = []struct {
-		conf             Config
-		expectedAMQPConf AMQP
-	}{
-		{
-			conf: Config{
-				AMQPQueueName:     "test",
-				QueueDurable:      false,
-				QueueAutoDelete:   true,
-				QueueExclusive:    false,
-				QueueNoWait:       false,
-				QueueArgs:         map[string]interface{}{"test": true, "arguments": "test"},
-				Consumer:          "test",
-				ConsumerAutoAck:   false,
-				ConsumerExclusive: true,
-				ConsumerNoLocal:   false,
-				ConsumerNoWait:    true,
-				ConsumerArgs:      map[string]interface{}{"test": 4},
-				PublishMandatory:  true,
-				PublishImmediate:  false,
-			},
-			expectedAMQPConf: AMQP{
-				QueueName: "test",
-				Queue: Queue{
-					Durable:    false,
-					AutoDelete: true,
-					Exclusive:  false,
-					NoWait:     false,
-					Args:       map[string]interface{}{"test": true, "arguments": "test"},
-				},
-				Consume: Consume{
-					Consumer:  "test",
-					AutoAck:   false,
-					Exclusive: true,
-					NoLocal:   false,
-					NoWait:    true,
-					Args:      map[string]interface{}{"test": 4},
-				},
-				Publish: Publish{
-					Mandatory: true,
-					Immediate: false,
-				},
-			},
-		},
-		{
-			conf: *GetConfig(),
-			expectedAMQPConf: AMQP{
-				QueueName: "",
-				Queue: Queue{
-					Durable:    true,
-					AutoDelete: false,
-					Exclusive:  false,
-					NoWait:     false,
-					Args:       *new(map[string]interface{}),
-				},
-				Consume: Consume{
-					Consumer:  "",
-					AutoAck:   false,
-					Exclusive: false,
-					NoLocal:   false,
-					NoWait:    false,
-					Args:      *new(map[string]interface{}),
-				},
-				Publish: Publish{
-					Mandatory: false,
-					Immediate: false,
-				},
-			},
-		},
-	}
-
-	for i, tt := range tests {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			if !reflect.DeepEqual(tt.conf.GetAMQPConfig(), tt.expectedAMQPConf) {
-				t.Error("return value of GetAMQPConfig does not match expected value")
-			}
-		})
-	}
-}
-
 func TestConfig_GetDockerConfig(t *testing.T) {
 	var tests = []struct {
 		conf               Config
@@ -266,7 +65,7 @@ func TestConfig_GetVolumeConfig(t *testing.T) {
 		{
 			conf: Config{
 				VolumeDriver:     "test",
-				VoluemDriverOpts: map[string]string{"test": "test"},
+				VolumeDriverOpts: map[string]string{"test": "test"},
 			},
 			expectedVolumeConf: command.VolumeConfig{
 				Driver:     "test",
@@ -274,10 +73,10 @@ func TestConfig_GetVolumeConfig(t *testing.T) {
 			},
 		},
 		{
-			conf: *GetConfig(),
+			conf: Config{VolumeDriver: "", VolumeDriverOpts: nil},
 			expectedVolumeConf: command.VolumeConfig{
 				Driver:     "",
-				DriverOpts: *new(map[string]string),
+				DriverOpts: nil,
 			},
 		},
 	}
@@ -302,12 +101,6 @@ func TestConfig_GetRestConfig(t *testing.T) {
 			},
 			expectedRestConf: entity.RestConfig{
 				Listen: "129.9.9.0:3000", //todo is this meant to happen?
-			},
-		},
-		{
-			conf: *GetConfig(),
-			expectedRestConf: entity.RestConfig{
-				Listen: "0.0.0.0:8000",
 			},
 		},
 	}
