@@ -10,3 +10,4 @@
 /.vscode
 /.vagrant
 **/mocks
+/bin

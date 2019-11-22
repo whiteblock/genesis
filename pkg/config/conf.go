@@ -153,8 +153,8 @@ func setViperEnvBindings() {
 }
 
 func setViperDefaults() {
-	viper.SetDefault("completionQueueName","completion")
-	viper.SetDefault("commandQueueName","commands")
+	viper.SetDefault("completionQueueName", "completion")
+	viper.SetDefault("commandQueueName", "commands")
 	viper.SetDefault("maxMessageRetries", 10)
 	viper.SetDefault("queueMaxConcurrency", 20)
 	viper.SetDefault("verbosity", "INFO")
@@ -177,9 +177,7 @@ func init() {
 // NewConfig creates a new config object from the global config
 func NewConfig() (*Config, error) {
 	conf := new(Config)
-	err := viper.ReadInConfig()
-	if err != nil {
-		return nil, err
-	}
+	_ = viper.ReadInConfig()
+
 	return conf, viper.Unmarshal(&conf)
 }

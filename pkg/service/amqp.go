@@ -19,6 +19,7 @@
 package service
 
 import (
+	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/repository"
@@ -39,11 +40,16 @@ type AMQPService interface {
 type amqpService struct {
 	repo repository.AMQPRepository
 	conf config.AMQP
+	log  logrus.Ext1FieldLogger
 }
 
 //NewAMQPService creates a new AMQPService
-func NewAMQPService(conf config.AMQP, repo repository.AMQPRepository) AMQPService {
-	return &amqpService{repo: repo, conf: conf}
+func NewAMQPService(
+	conf config.AMQP,
+	repo repository.AMQPRepository,
+	log logrus.Ext1FieldLogger) AMQPService {
+
+	return &amqpService{repo: repo, conf: conf, log: log}
 }
 
 func (as amqpService) Send(pub amqp.Publishing) error {
@@ -52,6 +58,9 @@ func (as amqpService) Send(pub amqp.Publishing) error {
 		return err
 	}
 	defer ch.Close()
+	as.log.WithFields(logrus.Fields{
+		"exchange": as.conf.Publish.Exchange,
+	}).Debug("publishing a message")
 	return ch.Publish(as.conf.Publish.Exchange, "", as.conf.Publish.Mandatory, as.conf.Publish.Immediate, pub)
 }
 

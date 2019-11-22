@@ -89,8 +89,8 @@ func getCommandController() (controller.CommandController, error) {
 
 	return controller.NewCommandController(
 		conf.QueueMaxConcurrency,
-		service.NewAMQPService(cmdConf, repository.NewAMQPRepository(cmdConn)),
-		service.NewAMQPService(complConf, repository.NewAMQPRepository(complConn)),
+		service.NewAMQPService(cmdConf, repository.NewAMQPRepository(cmdConn), logger),
+		service.NewAMQPService(complConf, repository.NewAMQPRepository(complConn), logger),
 		handler.NewDeliveryHandler(
 			handAux.NewExecutor(
 				usecase.NewDockerUseCase(
