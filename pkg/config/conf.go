@@ -28,6 +28,8 @@ import (
 // Config groups all of the global configuration parameters into
 // a single struct
 type Config struct {
+	MaxMessageRetries   int64  `mapstructure:"maxMessageRetries"`
+	QueueMaxConcurrency int64  `mapstructure:"queueMaxConcurrency"`
 	CompletionQueueName string `mapstructure:"completionQueueName"`
 	CommandQueueName    string `mapstructure:"commandQueueName"`
 	DockerCACertPath    string `mapstructure:"dockerCACertPath"`
@@ -69,11 +71,17 @@ func (c Config) CompletionAMQP() (AMQP, error) {
 		return AMQP{}, err
 	}
 
+	ep, err := GetAMQPEndpoint()
+	if err != nil {
+		return AMQP{}, err
+	}
+
 	return AMQP{
 		QueueName: c.CompletionQueueName,
 		Queue:     queue,
 		Consume:   consume,
 		Publish:   publish,
+		Endpoint:  ep,
 	}, nil
 }
 
@@ -94,11 +102,17 @@ func (c Config) CommandAMQP() (AMQP, error) {
 		return AMQP{}, err
 	}
 
+	ep, err := GetAMQPEndpoint()
+	if err != nil {
+		return AMQP{}, err
+	}
+
 	return AMQP{
 		QueueName: c.CommandQueueName,
 		Queue:     queue,
 		Consume:   consume,
 		Publish:   publish,
+		Endpoint:  ep,
 	}, nil
 }
 
@@ -126,6 +140,8 @@ func (c Config) GetRestConfig() entity.RestConfig {
 }
 
 func setViperEnvBindings() {
+	viper.BindEnv("maxMessageRetries", "MAX_MESSAGE_RETRIES")
+	viper.BindEnv("queueMaxConcurrency", "QUEUE_MAX_CONCURRENCY")
 	viper.BindEnv("dockerCACertPath", "DOCKER_CACERT_PATH")
 	viper.BindEnv("dockerCertPath", "DOCKER_CERT_PATH")
 	viper.BindEnv("dockerKeyPath", "DOCKER_KEY_PATH")
@@ -137,6 +153,8 @@ func setViperEnvBindings() {
 }
 
 func setViperDefaults() {
+	viper.SetDefault("maxMessageRetries", 10)
+	viper.SetDefault("queueMaxConcurrency", 20)
 	viper.SetDefault("verbosity", "INFO")
 	viper.SetDefault("listen", "0.0.0.0:8000")
 	viper.SetDefault("localMode", true)

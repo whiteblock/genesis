@@ -42,8 +42,8 @@ type amqpService struct {
 }
 
 //NewAMQPService creates a new AMQPService
-func NewAMQPService(conf config.AMQP, repo repository.AMQPRepository) (AMQPService, error) {
-	return &amqpService{repo: repo, conf: conf}, nil
+func NewAMQPService(conf config.AMQP, repo repository.AMQPRepository) AMQPService {
+	return &amqpService{repo: repo, conf: conf}
 }
 
 func (as amqpService) Send(pub amqp.Publishing) error {

@@ -175,6 +175,7 @@ func putFile(dockerUseCase usecase.DockerUseCase) {
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("placed a file")
 }
+
 func emulate(dockerUseCase usecase.DockerUseCase, containerName string, networkName string) {
 	cmd := mintCommand(command.Netconf{
 		Container: containerName,
@@ -184,25 +185,27 @@ func emulate(dockerUseCase usecase.DockerUseCase, containerName string, networkN
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("applied emulation")
 }
+
 func dockerTest(clean bool) {
 	conf, err := config.NewConfig()
 	if err != nil {
 		panic(err)
 	}
-	commandService := service.NewCommandService(repository.NewLocalCommandRepository())
+
+	lvl, err := log.ParseLevel(conf.Verbosity)
+	if err != nil {
+		panic(err)
+	}
+	log.SetLevel(lvl)
+
 	dockerRepository := repository.NewDockerRepository()
 	dockerAux := auxillary.NewDockerAuxillary(dockerRepository)
 	dockerConfig := conf.GetDockerConfig()
 	log.Info(dockerConfig)
-	dockerService, err := service.NewDockerService(dockerRepository, dockerAux, dockerConfig)
-	if err != nil {
-		panic(err)
-	}
 
-	dockerUseCase, err := usecase.NewDockerUseCase(dockerService, commandService)
-	if err != nil {
-		panic(err)
-	}
+	dockerUseCase := usecase.NewDockerUseCase(
+		service.NewDockerService(dockerRepository, dockerAux, dockerConfig))
+
 	if clean {
 		removeContainer(dockerUseCase, "tester")
 		removeContainer(dockerUseCase, "tester2")

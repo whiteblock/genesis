@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/command"
-	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/usecase"
 	util "github.com/whiteblock/utility/utils"
 	"net/http"
@@ -39,17 +38,15 @@ type RestHandler interface {
 
 type restHandler struct {
 	cmdChan chan command.Command
-	serv    service.CommandService
 	uc      usecase.DockerUseCase
 	once    *sync.Once
 }
 
 //NewRestHandler creates a new rest handler
-func NewRestHandler(uc usecase.DockerUseCase, serv service.CommandService) RestHandler {
+func NewRestHandler(uc usecase.DockerUseCase) RestHandler {
 	log.Debug("creating a new rest handler")
 	out := &restHandler{
 		cmdChan: make(chan command.Command),
-		serv:    serv,
 		uc:      uc,
 		once:    &sync.Once{},
 	}
@@ -93,8 +90,6 @@ func (rH *restHandler) runCommand(cmd command.Command) {
 	log.WithFields(log.Fields{"result": res}).Debug("got a result")
 	if res.IsRequeue() {
 		rH.cmdChan <- cmd
-	} else {
-		rH.serv.ReportCommandResult(cmd, res)
 	}
 }
 

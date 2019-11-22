@@ -24,10 +24,12 @@ import (
 	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/controller"
 	"github.com/whiteblock/genesis/pkg/handler"
+	handAux "github.com/whiteblock/genesis/pkg/handler/auxillary"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
 	"github.com/whiteblock/genesis/pkg/usecase"
+	"github.com/whiteblock/genesis/pkg/utility"
 	"os"
 )
 
@@ -37,28 +39,74 @@ func getRestServer() (controller.RestController, error) {
 		return nil, err
 	}
 
-	commandService := service.NewCommandService(repository.NewLocalCommandRepository())
+	/*logger,err := conf.GetLogger()
+	if err != nil {
+		return nil, err
+	}*/
 	dockerRepository := repository.NewDockerRepository()
-	dockerAux := auxillary.NewDockerAuxillary(dockerRepository)
-	dockerConfig := conf.GetDockerConfig()
-	dockerService, err := service.NewDockerService(dockerRepository, dockerAux, dockerConfig)
+
+	return controller.NewRestController(
+		conf.GetRestConfig(),
+		handler.NewRestHandler(
+			usecase.NewDockerUseCase(
+				service.NewDockerService(
+					dockerRepository,
+					auxillary.NewDockerAuxillary(dockerRepository),
+					conf.GetDockerConfig()))),
+		mux.NewRouter()), nil
+}
+
+func getCommandController() (controller.CommandController, error) {
+	conf, err := config.NewConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	dockerUseCase, err := usecase.NewDockerUseCase(dockerService, commandService)
+	logger, err := conf.GetLogger()
 	if err != nil {
 		return nil, err
 	}
 
-	restHandler := handler.NewRestHandler(dockerUseCase, commandService)
-	restRouter := mux.NewRouter()
-	restConfig := conf.GetRestConfig()
-	restServer := controller.NewRestController(restConfig, restHandler, restRouter)
-	return restServer, nil
+	complConf, err := conf.CompletionAMQP()
+	if err != nil {
+		return nil, err
+	}
+
+	cmdConf, err := conf.CommandAMQP()
+	if err != nil {
+		return nil, err
+	}
+
+	cmdConn, err := utility.OpenAMQPConnection(cmdConf.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	complConn, err := utility.OpenAMQPConnection(complConf.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	return controller.NewCommandController(
+		conf.QueueMaxConcurrency,
+		service.NewAMQPService(cmdConf, repository.NewAMQPRepository(cmdConn)),
+		service.NewAMQPService(complConf, repository.NewAMQPRepository(complConn)),
+		handler.NewDeliveryHandler(
+			handAux.NewExecutor(
+				usecase.NewDockerUseCase(
+					service.NewDockerService(
+						repository.NewDockerRepository(),
+						auxillary.NewDockerAuxillary(
+							repository.NewDockerRepository()),
+						conf.GetDockerConfig())),
+				logger),
+			utility.NewAMQPMessage(conf.MaxMessageRetries),
+			logger),
+		logger)
 }
 
 func main() {
+
 	if len(os.Args) == 2 && os.Args[1] == "test" { //Run some basic docker functionality tests
 		dockerTest(false)
 		os.Exit(0)

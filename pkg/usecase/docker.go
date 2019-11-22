@@ -50,14 +50,12 @@ type DockerUseCase interface {
 }
 
 type dockerUseCase struct {
-	service    service.DockerService
-	cmdService service.CommandService
+	service service.DockerService
 }
 
 //NewDockerUseCase creates a DockerUseCase arguments given the proper dep injections
-func NewDockerUseCase(service service.DockerService,
-	cmdService service.CommandService) (DockerUseCase, error) {
-	return &dockerUseCase{service: service, cmdService: cmdService}, nil
+func NewDockerUseCase(service service.DockerService) DockerUseCase {
+	return &dockerUseCase{service: service}
 }
 
 // TimeSupplier supplies the time as a unix timestamp
@@ -67,11 +65,7 @@ func (duc dockerUseCase) TimeSupplier() int64 {
 
 // Run is equivalent to Execute, except it generates context based on the given command
 func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
-	stat, ok := duc.dependencyCheck(cmd)
-	if !ok {
-		return stat
-	}
-	stat, ok = duc.validationCheck(cmd)
+	stat, ok := duc.validationCheck(cmd)
 	if !ok {
 		return stat
 	}
@@ -122,27 +116,6 @@ func (duc dockerUseCase) validationCheck(cmd command.Command) (result entity.Res
 	ok = false
 	if len(cmd.Target.IP) == 0 || cmd.Target.IP == "0.0.0.0" {
 		result = entity.NewFatalResult(fmt.Errorf("invalid target ip"))
-		return
-	}
-	ok = true
-	return
-}
-
-func (duc dockerUseCase) dependencyCheck(cmd command.Command) (stat entity.Result, ok bool) {
-	ok = false
-	if duc.TimeSupplier() < cmd.Timestamp {
-		stat = statusTooSoon
-		return
-	}
-
-	ready, err := duc.cmdService.CheckDependenciesExecuted(cmd)
-	if err != nil {
-		stat = entity.NewErrorResult(fmt.Errorf("error checking dependencies"))
-		return
-	}
-
-	if !ready {
-		stat = statusTooSoon
 		return
 	}
 	ok = true
