@@ -117,6 +117,12 @@ func main() {
 		os.Exit(0)
 	}
 
+	cmdCntl, err := getCommandController()
+	if err != nil {
+		panic(err)
+	}
+	go cmdCntl.Start()
+
 	restServer, err := getRestServer()
 	if err != nil {
 		panic(err)

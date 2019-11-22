@@ -153,6 +153,8 @@ func setViperEnvBindings() {
 }
 
 func setViperDefaults() {
+	viper.SetDefault("completionQueueName","completion")
+	viper.SetDefault("commandQueueName","commands")
 	viper.SetDefault("maxMessageRetries", 10)
 	viper.SetDefault("queueMaxConcurrency", 20)
 	viper.SetDefault("verbosity", "INFO")
