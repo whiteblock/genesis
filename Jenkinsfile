@@ -158,7 +158,7 @@ pipeline {
       sh "docker network prune --force"
       sh "docker volume prune --force"
       script {
-        if (env.BRANCH_NAME == DEFAULT_BRANCH) {
+        if (env.BRANCH_NAME == DEFAULT_BRANCH || env.BRANCH_NAME == 'master') {
           withCredentials([
               [$class: 'StringBinding', credentialsId: "${SLACK_CREDENTIALS_ID}", variable: 'SLACK_TOKEN']
           ]) {
