@@ -29,6 +29,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
 	"github.com/whiteblock/genesis/pkg/usecase"
+	"github.com/whiteblock/genesis/pkg/validator"
 )
 
 /*FUNCTIONALITY TESTS*/
@@ -194,10 +195,8 @@ func dockerTest(clean bool) {
 		panic(err)
 	}
 
-	dockerUseCase, err := usecase.NewDockerUseCase(dockerService, commandService)
-	if err != nil {
-		panic(err)
-	}
+	dockerUseCase := usecase.NewDockerUseCase(dockerService, commandService, validator.NewOrderValidator())
+
 	if clean {
 		removeContainer(dockerUseCase, "tester")
 		removeContainer(dockerUseCase, "tester2")
