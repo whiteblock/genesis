@@ -22,11 +22,11 @@ import (
 	"testing"
 
 	"github.com/whiteblock/genesis/pkg/entity"
-	
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRestController(t *testing.T) {
-	rc := NewRestController(entity.RestConfig{},nil,nil)
+	rc := NewRestController(entity.RestConfig{}, nil, nil)
 	assert.NotNil(t, rc)
 }

@@ -54,8 +54,7 @@ func (c Config) GetLogger() (*logrus.Logger, error) {
 	return logger, nil
 }
 
-//CompletionAMQP gets the AMQP for the completion queue
-func (c Config) CompletionAMQP() (AMQP, error) {
+func getAmqpBase() (AMQP, error) {
 	queue, err := GetQueue()
 	if err != nil {
 		return AMQP{}, err
@@ -77,43 +76,25 @@ func (c Config) CompletionAMQP() (AMQP, error) {
 	}
 
 	return AMQP{
-		QueueName: c.CompletionQueueName,
-		Queue:     queue,
-		Consume:   consume,
-		Publish:   publish,
-		Endpoint:  ep,
+		Queue:    queue,
+		Consume:  consume,
+		Publish:  publish,
+		Endpoint: ep,
 	}, nil
+}
+
+//CompletionAMQP gets the AMQP for the completion queue
+func (c Config) CompletionAMQP() (AMQP, error) {
+	conf, err := getAmqpBase()
+	conf.QueueName = c.CompletionQueueName
+	return conf, err
 }
 
 //CommandAMQP gets the AMQP for the command queue
 func (c Config) CommandAMQP() (AMQP, error) {
-	queue, err := GetQueue()
-	if err != nil {
-		return AMQP{}, err
-	}
-
-	consume, err := GetConsume()
-	if err != nil {
-		return AMQP{}, err
-	}
-
-	publish, err := GetPublish()
-	if err != nil {
-		return AMQP{}, err
-	}
-
-	ep, err := GetAMQPEndpoint()
-	if err != nil {
-		return AMQP{}, err
-	}
-
-	return AMQP{
-		QueueName: c.CommandQueueName,
-		Queue:     queue,
-		Consume:   consume,
-		Publish:   publish,
-		Endpoint:  ep,
-	}, nil
+	conf, err := getAmqpBase()
+	conf.QueueName = c.CommandQueueName
+	return conf, err
 }
 
 // GetDockerConfig extracts the fields of this object representing DockerConfig
