@@ -204,7 +204,7 @@ func dockerTest(clean bool) {
 	log.Info(dockerConfig)
 
 	dockerUseCase := usecase.NewDockerUseCase(
-		service.NewDockerService(dockerRepository, dockerAux, dockerConfig))
+		service.NewDockerService(dockerRepository, dockerAux, dockerConfig), log.New())
 
 	if clean {
 		removeContainer(dockerUseCase, "tester")

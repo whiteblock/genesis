@@ -67,12 +67,12 @@ func NewCommandController(
 	}
 	err := out.cmds.CreateQueue()
 	if err != nil {
-		log.WithFields(logrus.Fields{"err": err}).Debug("attempted to create queue on start")
+		log.WithFields(logrus.Fields{"err": err}).Debug("failed attempt to create queue on start")
 	}
 
 	err = out.completion.CreateQueue()
 	if err != nil {
-		log.WithFields(logrus.Fields{"err": err}).Debug("attempted to create queue on start")
+		log.WithFields(logrus.Fields{"err": err}).Debug("failed attempt to create queue on start")
 	}
 
 	return out, nil
@@ -108,7 +108,9 @@ func (c *consumer) loop() {
 		c.log.Fatal(err)
 	}
 	for msg := range msgs {
+		c.log.Trace("recieved a message")
 		c.sem.Acquire(context.Background(), 1)
 		go c.handleMessage(msg)
 	}
+	c.log.Fatal("consume loop ended")
 }

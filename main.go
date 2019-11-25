@@ -19,8 +19,8 @@
 package main
 
 import (
-	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
+	"os"
+	
 	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/controller"
 	"github.com/whiteblock/genesis/pkg/handler"
@@ -30,7 +30,8 @@ import (
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
 	"github.com/whiteblock/genesis/pkg/usecase"
 	"github.com/whiteblock/genesis/pkg/utility"
-	"os"
+	
+	"github.com/gorilla/mux"
 )
 
 func getRestServer() (controller.RestController, error) {
@@ -39,10 +40,11 @@ func getRestServer() (controller.RestController, error) {
 		return nil, err
 	}
 
-	/*logger,err := conf.GetLogger()
+	logger,err := conf.GetLogger()
 	if err != nil {
 		return nil, err
-	}*/
+	}
+
 	dockerRepository := repository.NewDockerRepository()
 
 	return controller.NewRestController(
@@ -52,7 +54,8 @@ func getRestServer() (controller.RestController, error) {
 				service.NewDockerService(
 					dockerRepository,
 					auxillary.NewDockerAuxillary(dockerRepository),
-					conf.GetDockerConfig()))),
+					conf.GetDockerConfig()),
+				logger)),
 		mux.NewRouter()), nil
 }
 
@@ -98,7 +101,8 @@ func getCommandController() (controller.CommandController, error) {
 						repository.NewDockerRepository(),
 						auxillary.NewDockerAuxillary(
 							repository.NewDockerRepository()),
-						conf.GetDockerConfig())),
+						conf.GetDockerConfig()),
+					logger),
 				logger),
 			utility.NewAMQPMessage(conf.MaxMessageRetries),
 			logger),
@@ -127,6 +131,16 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	log.Info("starting the rest server")
+
+	conf, err := config.NewConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	logger, err := conf.GetLogger()
+	if err != nil {
+		panic(err)
+	}
+	logger.Info("starting the rest server")
 	restServer.Start()
 }

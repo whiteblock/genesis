@@ -22,21 +22,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/docker/client"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service"
 	"strings"
 	"time"
-)
-
-const (
-	numberOfRetries = 4
-	waitBeforeRetry = 10
-)
-
-var (
-	statusTooSoon = entity.Result{Type: entity.TooSoonType, Error: fmt.Errorf("command ran too soon")}
 )
 
 //DockerUseCase is the usecase for executing the commands in docker
@@ -51,11 +42,12 @@ type DockerUseCase interface {
 
 type dockerUseCase struct {
 	service service.DockerService
+	log logrus.Ext1FieldLogger
 }
 
 //NewDockerUseCase creates a DockerUseCase arguments given the proper dep injections
-func NewDockerUseCase(service service.DockerService) DockerUseCase {
-	return &dockerUseCase{service: service}
+func NewDockerUseCase(service service.DockerService,log logrus.Ext1FieldLogger) DockerUseCase {
+	return &dockerUseCase{service: service, log:log}
 }
 
 // TimeSupplier supplies the time as a unix timestamp
@@ -69,7 +61,7 @@ func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
 	if !ok {
 		return stat
 	}
-	log.WithField("command", cmd).Trace("running command")
+	duc.log.WithField("command", cmd).Trace("running command")
 	if cmd.Timeout == 0 {
 		return duc.Execute(context.Background(), cmd)
 	}
@@ -84,7 +76,7 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	log.WithField("client", cli).Trace("created a client")
+	duc.log.WithField("client", cli).Trace("created a client")
 	switch command.OrderType(strings.ToLower(string(cmd.Order.Type))) {
 	case command.Createcontainer:
 		return duc.createContainerShim(ctx, cli, cmd)

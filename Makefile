@@ -10,7 +10,7 @@ OUTPUT_DIR=./bin
 all: prep tester genesis
 
 genesis: | get
-	go build ./...
+	go build
 
 prep:
 	@mkdir $(OUTPUT_DIR) 2>> /dev/null | true 

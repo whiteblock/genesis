@@ -118,7 +118,7 @@ func amqpInit() {
 	viper.BindEnv("publishImmediate", "PUBLISH_IMMEDIATE")
 	viper.BindEnv("exchange", "EXCHANGE")
 	viper.SetDefault("exchange", "")
-	viper.SetDefault("publishMandatory", true)
+	viper.SetDefault("publishMandatory", false)
 	viper.SetDefault("publishImmediate", true)
 	/** END Publish **/
 
