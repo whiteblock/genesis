@@ -182,7 +182,7 @@ func getAMQPService() (service.AMQPService, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	log.WithField("commandConf", cmdConf).Debug("got the config")
 	cmdConn, err := utility.OpenAMQPConnection(cmdConf.Endpoint)
 	if err != nil {
 		return nil, err

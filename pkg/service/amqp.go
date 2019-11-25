@@ -62,7 +62,7 @@ func (as amqpService) Send(pub amqp.Publishing) error {
 		"exchange": as.conf.Publish.Exchange,
 		"queue":    as.conf.QueueName,
 	}).Debug("publishing a message")
-	return ch.Publish(as.conf.Publish.Exchange, "", as.conf.Publish.Mandatory, as.conf.Publish.Immediate, pub)
+	return ch.Publish(as.conf.Publish.Exchange, as.conf.QueueName, as.conf.Publish.Mandatory, as.conf.Publish.Immediate, pub)
 }
 
 //Consume immediately starts delivering queued messages.
