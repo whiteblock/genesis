@@ -100,12 +100,12 @@ func TestCommandController_ConsumptionAllDone(t *testing.T) {
 	serv.On("Consume").Return((<-chan amqp.Delivery)(deliveryChan), nil).Once()
 	serv.On("CreateQueue").Return(nil).Once()
 	serv2.On("CreateQueue").Return(nil).Once()
-	serv2.On("Send", mock.Anything).Return(nil).Times(items)
+	serv2.On("Send", mock.Anything).Return(nil).Times(items).Run(func(_ mock.Arguments) {
+		processedChan <- true
+	})
 
 	hand := new(handler.DeliveryHandler)
-	hand.On("Process", mock.Anything).Run(func(_ mock.Arguments) {
-		processedChan <- true
-	}).Return(amqp.Publishing{}, entity.NewAllDoneResult()).Times(items)
+	hand.On("Process", mock.Anything).Return(amqp.Publishing{}, entity.NewAllDoneResult()).Times(items)
 
 	control, err := NewCommandController(2, serv, serv2, hand, logrus.New())
 	assert.Equal(t, err, nil)
@@ -138,12 +138,12 @@ func TestCommandController_ConsumptionAllDone_Send_Err(t *testing.T) {
 	serv.On("Consume").Return((<-chan amqp.Delivery)(deliveryChan), nil).Once()
 	serv.On("CreateQueue").Return(nil).Once()
 	serv2.On("CreateQueue").Return(nil).Once()
-	serv2.On("Send", mock.Anything).Return(fmt.Errorf("err")).Times(items)
+	serv2.On("Send", mock.Anything).Return(fmt.Errorf("err")).Times(items).Run(func(_ mock.Arguments) {
+		processedChan <- true
+	})
 
 	hand := new(handler.DeliveryHandler)
-	hand.On("Process", mock.Anything).Run(func(_ mock.Arguments) {
-		processedChan <- true
-	}).Return(amqp.Publishing{}, entity.NewAllDoneResult()).Times(items)
+	hand.On("Process", mock.Anything).Return(amqp.Publishing{}, entity.NewAllDoneResult()).Times(items)
 
 	control, err := NewCommandController(2, serv, serv2, hand, logrus.New())
 	assert.Equal(t, err, nil)
