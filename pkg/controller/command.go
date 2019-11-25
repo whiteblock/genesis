@@ -112,5 +112,4 @@ func (c *consumer) loop() {
 		c.sem.Acquire(context.Background(), 1)
 		go c.handleMessage(msg)
 	}
-	c.log.Fatal("consume loop ended")
 }

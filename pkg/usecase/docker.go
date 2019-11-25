@@ -112,7 +112,7 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 func (duc dockerUseCase) validationCheck(cmd command.Command) (result entity.Result, ok bool) {
 	ok = false
 	if len(cmd.Target.IP) == 0 || cmd.Target.IP == "0.0.0.0" {
-		result = entity.NewFatalResult(fmt.Errorf("invalid target ip"))
+		result = entity.NewFatalResult("invalid target ip")
 		return
 	}
 	ok = true
@@ -139,7 +139,7 @@ func (duc dockerUseCase) startContainerShim(ctx context.Context, cli *client.Cli
 		return entity.NewFatalResult(err)
 	}
 	if len(sc.Name) == 0 {
-		return entity.NewFatalResult(fmt.Errorf("empty field \"name\""))
+		return entity.NewFatalResult("empty field \"name\"")
 	}
 	return duc.service.StartContainer(ctx, cli, sc)
 }
@@ -151,7 +151,7 @@ func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli *client.Cl
 		return entity.NewFatalResult(err)
 	}
 	if payload.Name == "" {
-		return entity.NewFatalResult(fmt.Errorf("empty field \"name\""))
+		return entity.NewFatalResult("empty field \"name\"")
 	}
 	return duc.service.RemoveContainer(ctx, cli, payload.Name)
 }
@@ -196,7 +196,7 @@ func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli *client.Clie
 		return entity.NewFatalResult(err)
 	}
 	if payload.Name == "" {
-		return entity.NewFatalResult(fmt.Errorf("empty field \"name\""))
+		return entity.NewFatalResult("empty field \"name\"")
 	}
 	return duc.service.RemoveNetwork(ctx, cli, payload.Name)
 }
@@ -216,7 +216,7 @@ func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli *client.Clien
 		return entity.NewFatalResult(err)
 	}
 	if payload.Name == "" {
-		return entity.NewFatalResult(fmt.Errorf("empty field \"name\""))
+		return entity.NewFatalResult("empty field \"name\"")
 	}
 	return duc.service.RemoveVolume(ctx, cli, payload.Name)
 }
@@ -227,7 +227,7 @@ func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli *client
 		return entity.NewFatalResult(err)
 	}
 	if len(payload.ContainerName) == 0 {
-		return entity.NewFatalResult(fmt.Errorf("missing field \"container\""))
+		return entity.NewFatalResult("missing field \"container\"")
 	}
 	return duc.service.PlaceFileInContainer(ctx, cli, payload.ContainerName, payload.File)
 }

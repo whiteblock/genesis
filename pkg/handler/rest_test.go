@@ -28,7 +28,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	service "github.com/whiteblock/genesis/mocks/pkg/service"
 	usecase "github.com/whiteblock/genesis/mocks/pkg/usecase"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
@@ -66,16 +65,13 @@ func TestRestHandler(t *testing.T) {
 	runChan := make(chan command.Command)
 
 	uc := new(usecase.DockerUseCase)
-	uc.On("Run", mock.Anything).Return(entity.NewSuccessResult())
-
-	serv := new(service.CommandService)
-	serv.On("ReportCommandResult", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+	uc.On("Run", mock.Anything).Return(entity.NewSuccessResult()).Run(func(args mock.Arguments) {
 		cmd, ok := args.Get(0).(command.Command)
 		assert.True(t, ok)
 		runChan <- cmd
-	}).Return(nil)
+	})
 
-	rh := NewRestHandler(uc, serv)
+	rh := NewRestHandler(uc)
 
 	recorder := httptest.NewRecorder()
 	rh.AddCommands(recorder, req)
@@ -97,10 +93,7 @@ func TestRestHandler_HealthCheck(t *testing.T) {
 
 	uc := new(usecase.DockerUseCase)
 
-	serv := new(service.CommandService)
-	serv.On("ReportCommandResult", mock.Anything, mock.Anything)
-
-	rh := NewRestHandler(uc, serv)
+	rh := NewRestHandler(uc)
 	recorder := httptest.NewRecorder()
 	rh.HealthCheck(recorder, req)
 

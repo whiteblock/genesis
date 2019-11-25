@@ -85,7 +85,7 @@ func (c Config) CompletionAMQP() (AMQP, error) {
 	}, nil
 }
 
-//CompletionAMQP gets the AMQP for the completion queue
+//CommandAMQP gets the AMQP for the command queue
 func (c Config) CommandAMQP() (AMQP, error) {
 	queue, err := GetQueue()
 	if err != nil {
