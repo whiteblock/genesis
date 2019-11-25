@@ -36,7 +36,6 @@ type NetworkConfig struct {
 
 // Container represents a docker container, this is calculated from the payload of the Run command
 type Container struct {
-	OrderPayload
 	// BoundCpus are the cpus which the container will be set with an affinity for.
 	BoundCPUs []int `json:"boundCPUs,omitonempty"`
 	// Detach indicates that we should wait for the containers entrypoint to finish execution
@@ -78,21 +77,6 @@ type Container struct {
 // GetMemory gets the memory value as an integer.
 func (c Container) GetMemory() (int64, error) {
 	return memconv(c.Memory)
-}
-
-// NoLimits checks if the resources object doesn't specify any limits
-func (c Container) NoLimits() bool {
-	return c.NoCPULimits() && c.NoMemoryLimits()
-}
-
-// NoCPULimits checks if the resources object doesn't specify any cpu limits
-func (c Container) NoCPULimits() bool {
-	return len(c.Cpus) == 0
-}
-
-// NoMemoryLimits checks if the resources object doesn't specify any memory limits
-func (c Container) NoMemoryLimits() bool {
-	return len(c.Memory) == 0
 }
 
 //GetEnv gets the environment variables in the format which is

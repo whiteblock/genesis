@@ -60,7 +60,7 @@ func (as amqpService) Send(pub amqp.Publishing) error {
 	defer ch.Close()
 	as.log.WithFields(logrus.Fields{
 		"exchange": as.conf.Publish.Exchange,
-		"queue": as.conf.QueueName,
+		"queue":    as.conf.QueueName,
 	}).Debug("publishing a message")
 	return ch.Publish(as.conf.Publish.Exchange, "", as.conf.Publish.Mandatory, as.conf.Publish.Immediate, pub)
 }
@@ -72,8 +72,8 @@ func (as amqpService) Consume() (<-chan amqp.Delivery, error) {
 		return nil, err
 	}
 	as.log.WithFields(logrus.Fields{
-		"queue":as.conf.QueueName,
-		"consumer":as.conf.Consume.Consumer,
+		"queue":    as.conf.QueueName,
+		"consumer": as.conf.Consume.Consumer,
 	}).Trace("consuming")
 	return ch.Consume(as.conf.QueueName, as.conf.Consume.Consumer, as.conf.Consume.AutoAck,
 		as.conf.Consume.Exclusive, as.conf.Consume.NoLocal, as.conf.Consume.NoWait,

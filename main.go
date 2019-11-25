@@ -20,7 +20,7 @@ package main
 
 import (
 	"os"
-	
+
 	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/controller"
 	"github.com/whiteblock/genesis/pkg/handler"
@@ -30,7 +30,8 @@ import (
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
 	"github.com/whiteblock/genesis/pkg/usecase"
 	"github.com/whiteblock/genesis/pkg/utility"
-	
+	"github.com/whiteblock/genesis/pkg/validator"
+
 	"github.com/gorilla/mux"
 )
 
@@ -40,7 +41,7 @@ func getRestServer() (controller.RestController, error) {
 		return nil, err
 	}
 
-	logger,err := conf.GetLogger()
+	logger, err := conf.GetLogger()
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +103,7 @@ func getCommandController() (controller.CommandController, error) {
 						auxillary.NewDockerAuxillary(
 							repository.NewDockerRepository()),
 						conf.GetDockerConfig()),
+					validator.NewOrderValidator(),
 					logger),
 				logger),
 			utility.NewAMQPMessage(conf.MaxMessageRetries),

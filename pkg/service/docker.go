@@ -125,8 +125,6 @@ func (ds dockerService) GetNetworkingConfig(ctx context.Context, cli *client.Cli
 func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, dContainer command.Container) entity.Result {
 	errChan := make(chan error)
 	netConfChan := make(chan *network.NetworkingConfig)
-	defer close(errChan)
-	defer close(netConfChan)
 
 	go func(image string) {
 		errChan <- ds.aux.EnsureImagePulled(ctx, cli, image)
