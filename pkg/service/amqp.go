@@ -19,10 +19,11 @@
 package service
 
 import (
-	"github.com/sirupsen/logrus"
-	"github.com/streadway/amqp"
 	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/repository"
+
+	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
 )
 
 //AMQPService acts as a simple interface to the command queue

@@ -21,6 +21,14 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
+	"strconv"
+
+	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/repository"
+	"github.com/whiteblock/genesis/pkg/service/auxillary"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -28,12 +36,6 @@ import (
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/pkg/command"
-	"github.com/whiteblock/genesis/pkg/entity"
-	"github.com/whiteblock/genesis/pkg/repository"
-	"github.com/whiteblock/genesis/pkg/service/auxillary"
-	"io"
-	"strconv"
 )
 
 //DockerService provides a intermediate interface between docker and the order from a command

@@ -20,12 +20,14 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/sirupsen/logrus"
+	"net/http"
+	"sync"
+
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/usecase"
 	util "github.com/whiteblock/utility/utils"
-	"net/http"
-	"sync"
+
+	"github.com/sirupsen/logrus"
 )
 
 const maxRetries = 5
