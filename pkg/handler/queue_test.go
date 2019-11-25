@@ -22,112 +22,176 @@ import (
 	"encoding/json"
 	"testing"
 
+	auxMocks "github.com/whiteblock/genesis/mocks/pkg/handler/auxillary"
+	utilityMocks "github.com/whiteblock/genesis/mocks/pkg/utility"
+	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/entity"
+
+	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	usecaseMocks "github.com/whiteblock/genesis/mocks/pkg/usecase"
-	"github.com/whiteblock/genesis/pkg/command"
-	"github.com/whiteblock/genesis/pkg/entity"
 )
 
 func TestNewDeliveryHandler(t *testing.T) {
-	duc := new(usecaseMocks.DockerUseCase)
-
-	expected := deliveryHandler{
-		usecase: duc,
-	}
-
-	dh, err := NewDeliveryHandler(duc)
-	assert.NoError(t, err)
-
-	assert.Equal(t, expected, dh)
+	assert.NotNil(t, NewDeliveryHandler(nil, nil, nil))
 }
 
-func TestDeliveryHandler_ProcessMessage_Successful(t *testing.T) {
-	duc := new(usecaseMocks.DockerUseCase)
-	duc.On("Run", mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+func TestDeliveryHandler_Process_Successful(t *testing.T) {
+	aux := new(auxMocks.Executor)
+	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewSuccessResult()).Once()
+	util := new(utilityMocks.AMQPMessage)
+	util.On("CreateMessage", mock.Anything).Return(amqp.Publishing{}, nil).Once()
 
-	dh, err := NewDeliveryHandler(duc)
-	if err != nil {
-		t.Error(err)
-	}
+	dh := NewDeliveryHandler(aux, util, logrus.New())
 
-	cmd := new(command.Command)
-	cmd.Order.Type = "createContainer"
-	cmd.Order.Payload = map[string]interface{}{}
-	cmd.Target.IP = "0.0.0.0"
+	cmd := [][]command.Command{[]command.Command{command.Command{
+		Order: command.Order{
+			Type:    "createContainer",
+			Payload: map[string]interface{}{},
+		},
+		Target: command.Target{
+			IP: "127.0.0.1",
+		},
+	}}}
 
 	body, err := json.Marshal(cmd)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
 
-	res := dh.ProcessMessage(amqp.Delivery{Body: body})
-	if res.Error != nil {
-		t.Error("expected return value of ProcessMessage does not match expected value: ", err)
-	}
+	_, res := dh.Process(amqp.Delivery{Body: body})
+	assert.NoError(t, res.Error)
 
-	assert.Equal(t, res.Error, nil)
-	assert.True(t, duc.AssertNumberOfCalls(t, "Run", 1))
-	assert.True(t, duc.AssertCalled(t, "Run", *cmd))
+	aux.AssertExpectations(t)
+	util.AssertExpectations(t)
 }
 
-func TestDeliveryHandler_ProcessMessage_Unsuccessful(t *testing.T) {
-	duc := new(usecaseMocks.DockerUseCase)
+func TestDeliveryHandler_Process_Unsuccessful(t *testing.T) {
+	aux := new(auxMocks.Executor)
 
-	dh, err := NewDeliveryHandler(duc)
-	if err != nil {
-		t.Error(err)
-	}
+	dh := NewDeliveryHandler(aux, nil, logrus.New())
 
 	body := []byte("should be a failure")
 
-	res := dh.ProcessMessage(amqp.Delivery{Body: body})
+	_, res := dh.Process(amqp.Delivery{Body: body})
 	assert.Error(t, res.Error)
+
+	aux.AssertExpectations(t)
 }
 
-func TestDeliveryHandler_GetKickbackMessage_Successful(t *testing.T) {
-	duc := new(usecaseMocks.DockerUseCase)
-	duc.On("TimeSupplier").Return(int64(5))
+func TestDeliveryHandler_Process_NoCmds_Failures(t *testing.T) {
+	dh := NewDeliveryHandler(nil, nil, logrus.New())
 
-	dh, err := NewDeliveryHandler(duc)
-	assert.NoError(t, err)
-
-	cmd := new(command.Command)
-	cmd.ID = "unit_test"
-	cmd.Retry = uint8(1)
+	cmd := [][]command.Command{}
 
 	body, err := json.Marshal(cmd)
 	assert.NoError(t, err)
 
-	msg := amqp.Delivery{
-		Body: body,
-	}
-
-	res, err := dh.GetKickbackMessage(msg)
-	assert.NoError(t, err)
-
-	var resCmd command.Command
-	err = json.Unmarshal(res.Body, &resCmd)
-	assert.NoError(t, err)
-
-	assert.Exactly(t, resCmd.Timestamp, int64(5))
-	assert.Exactly(t, resCmd.Retry, uint8(2))
-	assert.Exactly(t, resCmd.ID, "unit_test")
+	_, res := dh.Process(amqp.Delivery{Body: body})
+	assert.Error(t, res.Error)
 }
 
-func TestDeliveryHandler_GetKickbackMessage_Unsuccessful(t *testing.T) {
-	duc := new(usecaseMocks.DockerUseCase)
+func TestDeliveryHandler_Process_Multiple_Commands_Successful(t *testing.T) {
+	aux := new(auxMocks.Executor)
+	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewSuccessResult()).Once()
+	util := new(utilityMocks.AMQPMessage)
+	util.On("GetNextMessage", mock.Anything, mock.Anything).Return(amqp.Publishing{}, nil).Once()
 
-	dh, err := NewDeliveryHandler(duc)
-	assert.NoError(t, err)
+	dh := NewDeliveryHandler(aux, util, logrus.New())
 
-	body := []byte("supposed to fail")
-
-	msg := amqp.Delivery{
-		Body: body,
+	cmd := [][]command.Command{
+		[]command.Command{
+			command.Command{
+				Order: command.Order{
+					Type:    "createContainer",
+					Payload: map[string]interface{}{},
+				},
+				Target: command.Target{
+					IP: "127.0.0.1",
+				},
+			},
+		},
+		[]command.Command{
+			command.Command{
+				Order: command.Order{
+					Type:    "createContainer",
+					Payload: map[string]interface{}{},
+				},
+				Target: command.Target{
+					IP: "127.0.0.1",
+				},
+			},
+		},
 	}
 
-	_, err = dh.GetKickbackMessage(msg)
-	assert.Error(t, err)
+	body, err := json.Marshal(cmd)
+	assert.NoError(t, err)
+
+	_, res := dh.Process(amqp.Delivery{Body: body})
+	assert.NoError(t, res.Error)
+
+	aux.AssertExpectations(t)
+	util.AssertExpectations(t)
+}
+
+func TestDeliveryHandler_Process_Execute_Nonfatal_Failure(t *testing.T) {
+	aux := new(auxMocks.Executor)
+	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewErrorResult("err")).Once()
+	util := new(utilityMocks.AMQPMessage)
+	util.On("GetKickbackMessage", mock.Anything).Return(amqp.Publishing{}, nil).Once()
+
+	dh := NewDeliveryHandler(aux, util, logrus.New())
+
+	cmd := [][]command.Command{
+		[]command.Command{
+			command.Command{
+				Order: command.Order{
+					Type:    "createContainer",
+					Payload: map[string]interface{}{},
+				},
+				Target: command.Target{
+					IP: "127.0.0.1",
+				},
+			},
+		},
+	}
+
+	body, err := json.Marshal(cmd)
+	assert.NoError(t, err)
+
+	_, res := dh.Process(amqp.Delivery{Body: body})
+	assert.Error(t, res.Error)
+
+	aux.AssertExpectations(t)
+	util.AssertExpectations(t)
+}
+
+func TestDeliveryHandler_Process_Execute_Fatal_Failure(t *testing.T) {
+	aux := new(auxMocks.Executor)
+	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewFatalResult("err")).Once()
+	util := new(utilityMocks.AMQPMessage)
+
+	dh := NewDeliveryHandler(aux, util, logrus.New())
+
+	cmd := [][]command.Command{
+		[]command.Command{
+			command.Command{
+				Order: command.Order{
+					Type:    "createContainer",
+					Payload: map[string]interface{}{},
+				},
+				Target: command.Target{
+					IP: "127.0.0.1",
+				},
+			},
+		},
+	}
+
+	body, err := json.Marshal(cmd)
+	assert.NoError(t, err)
+
+	_, res := dh.Process(amqp.Delivery{Body: body})
+	assert.Error(t, res.Error)
+
+	aux.AssertExpectations(t)
+	util.AssertExpectations(t)
 }

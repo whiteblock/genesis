@@ -25,6 +25,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
@@ -175,6 +176,7 @@ func putFile(dockerUseCase usecase.DockerUseCase) {
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("placed a file")
 }
+
 func emulate(dockerUseCase usecase.DockerUseCase, containerName string, networkName string) {
 	cmd := mintCommand(command.Netconf{
 		Container: containerName,
@@ -184,18 +186,26 @@ func emulate(dockerUseCase usecase.DockerUseCase, containerName string, networkN
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("applied emulation")
 }
+
 func dockerTest(clean bool) {
-	commandService := service.NewCommandService(repository.NewLocalCommandRepository())
-	dockerRepository := repository.NewDockerRepository()
-	dockerAux := auxillary.NewDockerAuxillary(dockerRepository)
-	dockerConfig := conf.GetDockerConfig()
-	log.Info(dockerConfig)
-	dockerService, err := service.NewDockerService(dockerRepository, dockerAux, dockerConfig)
+	conf, err := config.NewConfig()
 	if err != nil {
 		panic(err)
 	}
 
-	dockerUseCase := usecase.NewDockerUseCase(dockerService, commandService, validator.NewOrderValidator())
+	lvl, err := log.ParseLevel(conf.Verbosity)
+	if err != nil {
+		panic(err)
+	}
+	log.SetLevel(lvl)
+
+	dockerRepository := repository.NewDockerRepository()
+	dockerAux := auxillary.NewDockerAuxillary(dockerRepository)
+	dockerConfig := conf.GetDockerConfig()
+	log.Info(dockerConfig)
+
+	dockerUseCase := usecase.NewDockerUseCase(
+		service.NewDockerService(dockerRepository, dockerAux, dockerConfig), validator.NewOrderValidator(), log.New())
 
 	if clean {
 		removeContainer(dockerUseCase, "tester")

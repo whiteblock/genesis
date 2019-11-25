@@ -19,15 +19,19 @@
 package service
 
 import (
-	"github.com/streadway/amqp"
-	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/repository"
+
+	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
 )
 
 //AMQPService acts as a simple interface to the command queue
 type AMQPService interface {
 	//Consume immediately starts delivering queued messages.
 	Consume() (<-chan amqp.Delivery, error)
+	//send places a message into the queue
+	Send(pub amqp.Publishing) error
 	//Requeue rejects the oldMsg and queues the newMsg in a transaction
 	Requeue(oldMsg amqp.Delivery, newMsg amqp.Publishing) error
 	//CreateQueue attempts to publish a queue
@@ -36,12 +40,30 @@ type AMQPService interface {
 
 type amqpService struct {
 	repo repository.AMQPRepository
-	conf entity.AMQPConfig
+	conf config.AMQP
+	log  logrus.Ext1FieldLogger
 }
 
 //NewAMQPService creates a new AMQPService
-func NewAMQPService(conf entity.AMQPConfig, repo repository.AMQPRepository) (AMQPService, error) {
-	return &amqpService{repo: repo, conf: conf}, nil
+func NewAMQPService(
+	conf config.AMQP,
+	repo repository.AMQPRepository,
+	log logrus.Ext1FieldLogger) AMQPService {
+
+	return &amqpService{repo: repo, conf: conf, log: log}
+}
+
+func (as amqpService) Send(pub amqp.Publishing) error {
+	ch, err := as.repo.GetChannel()
+	if err != nil {
+		return err
+	}
+	defer ch.Close()
+	as.log.WithFields(logrus.Fields{
+		"exchange": as.conf.Publish.Exchange,
+		"queue":    as.conf.QueueName,
+	}).Trace("publishing a message")
+	return ch.Publish(as.conf.Publish.Exchange, as.conf.QueueName, as.conf.Publish.Mandatory, as.conf.Publish.Immediate, pub)
 }
 
 //Consume immediately starts delivering queued messages.
@@ -50,6 +72,10 @@ func (as amqpService) Consume() (<-chan amqp.Delivery, error) {
 	if err != nil {
 		return nil, err
 	}
+	as.log.WithFields(logrus.Fields{
+		"queue":    as.conf.QueueName,
+		"consumer": as.conf.Consume.Consumer,
+	}).Trace("consuming")
 	return ch.Consume(as.conf.QueueName, as.conf.Consume.Consumer, as.conf.Consume.AutoAck,
 		as.conf.Consume.Exclusive, as.conf.Consume.NoLocal, as.conf.Consume.NoWait,
 		as.conf.Consume.Args)

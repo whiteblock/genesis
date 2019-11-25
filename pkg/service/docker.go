@@ -21,6 +21,14 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
+	"strconv"
+
+	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/repository"
+	"github.com/whiteblock/genesis/pkg/service/auxillary"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -28,12 +36,6 @@ import (
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/pkg/command"
-	"github.com/whiteblock/genesis/pkg/entity"
-	"github.com/whiteblock/genesis/pkg/repository"
-	"github.com/whiteblock/genesis/pkg/service/auxillary"
-	"io"
-	"strconv"
 )
 
 //DockerService provides a intermediate interface between docker and the order from a command
@@ -75,8 +77,8 @@ type dockerService struct {
 
 //NewDockerService creates a new DockerService
 func NewDockerService(repo repository.DockerRepository, aux auxillary.DockerAuxillary,
-	conf entity.DockerConfig) (DockerService, error) {
-	return dockerService{conf: conf, repo: repo, aux: aux}, nil
+	conf entity.DockerConfig) DockerService {
+	return dockerService{conf: conf, repo: repo, aux: aux}
 }
 
 //CreateClient creates a new client for connecting to the docker daemon
@@ -388,11 +390,6 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli *client.Cl
 		return entity.NewErrorResult(err)
 	}
 	return entity.NewSuccessResult()
-}
-
-func (ds dockerService) PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file command.IFile) entity.Result {
-	//TODO
-	return entity.Result{}
 }
 
 func (ds dockerService) Emulation(ctx context.Context, cli *client.Client, netem command.Netconf) entity.Result {

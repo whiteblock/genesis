@@ -18,53 +18,77 @@
 
 package entity
 
-//Result is the result of executing the command, contains a type and possibly an error
+import (
+	"fmt"
+)
+
+// ResultType is the type of the result
+type ResultType int
+
+// Result is the result of executing the command, contains a type and possibly an error
 type Result struct {
-	//Error is where the error is stored if this result is not a successful result
+	// Error is where the error is stored if this result is not a successful result
 	Error error
-	//Type is the type of result
-	Type string
+	// Type is the type of result
+	Type ResultType
 }
 
-//IsSuccess returns whether or not the result indicates success
+// IsAllDone checks whether the request is completely finished. If true, then the completion
+// protocol should be followed
+func (res Result) IsAllDone() bool {
+	return res.Error == nil && res.Type == AllDoneType
+}
+
+// IsSuccess returns whether or not the result indicates success. Both AllDoneType and
+// SuccessType count as being successful
 func (res Result) IsSuccess() bool {
-	return res.Error == nil //todo shouldn't there be a check for c.Type == SuccessType ?
+	return res.Error == nil
 }
 
-//IsFatal returns true if there is an errr and it is marked as a fatal error,
-//meaning it should not be reattempted
+// IsFatal returns true if there is an errr and it is marked as a fatal error,
+// meaning it should not be reattempted
 func (res Result) IsFatal() bool {
 	return res.Error != nil && res.Type == FatalType
 }
 
-//IsRequeue returns true if this result indicates that the command should be retried at a
-//later pint
+// IsRequeue returns true if this result indicates that the command should be retried at a
+// later time
 func (res Result) IsRequeue() bool {
 	return !res.IsSuccess() && !res.IsFatal()
 }
 
 const (
 	//SuccessType is the type of a successful result
-	SuccessType = "Success"
+	SuccessType ResultType = iota + 1
+
+	// AllDoneType is the type for when all of the commands executed successfully and
+	// there are not anymore commands to execute
+	AllDoneType
+
 	//TooSoonType is the type of a result from a cmd which tried to execute too soon
-	TooSoonType = "TooSoon"
+	TooSoonType
 	//FatalType is the type of a result which indicates a fatal error
-	FatalType = "Fatal"
+	FatalType
 	//ErrorType is the generic error type
-	ErrorType = "Error"
+	ErrorType
 )
 
-//NewSuccessResult indicates a successful result
+// NewSuccessResult indicates a successful result
 func NewSuccessResult() Result {
 	return Result{Type: SuccessType, Error: nil}
 }
 
-//NewFatalResult creates a fatal error result. Commands with fatal errors are not retried
-func NewFatalResult(err error) Result {
-	return Result{Type: FatalType, Error: err}
+// NewFatalResult creates a fatal error result. Commands with fatal errors are not retried
+func NewFatalResult(err interface{}) Result {
+	return Result{Type: FatalType, Error: fmt.Errorf("%v", err)}
 }
 
-//NewErrorResult creates a result which indicates a non-fatal error. Commands with this result should be requeued.
-func NewErrorResult(err error) Result {
-	return Result{Type: ErrorType, Error: err}
+// NewErrorResult creates a result which indicates a non-fatal error. Commands with this result should be requeued.
+func NewErrorResult(err interface{}) Result {
+	return Result{Type: ErrorType, Error: fmt.Errorf("%v", err)}
+}
+
+//NewAllDoneResult creates a result for the all done condition
+func NewAllDoneResult() Result {
+	return Result{Type: AllDoneType, Error: nil}
 }

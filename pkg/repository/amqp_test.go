@@ -27,17 +27,14 @@ import (
 )
 
 func TestNewAMQPRepository(t *testing.T) {
-	conn := new(externalsMock.AMQPConnection)
-	repo, err := NewAMQPRepository(conn)
-	assert.NoError(t, err)
+	repo := NewAMQPRepository(new(externalsMock.AMQPConnection))
 	assert.NotNil(t, repo)
 }
 
 func TestAMQPRepository_GetChannel(t *testing.T) {
 	conn := new(externalsMock.AMQPConnection)
 	conn.On("Channel").Return(nil, nil).Once()
-	repo, err := NewAMQPRepository(conn)
-	assert.NoError(t, err)
+	repo := NewAMQPRepository(conn)
 
 	ch, err := repo.GetChannel()
 	assert.NoError(t, err)
@@ -52,11 +49,10 @@ func TestAMQPRepository_RejectDelivery(t *testing.T) {
 			assert.Equal(t, true, args.Get(0))
 		}).Once()
 	conn := new(externalsMock.AMQPConnection)
-	repo, err := NewAMQPRepository(conn)
-	assert.NoError(t, err)
+	repo := NewAMQPRepository(conn)
 	require.NotNil(t, repo)
 
-	err = repo.RejectDelivery(msg, true)
+	err := repo.RejectDelivery(msg, true)
 	assert.NoError(t, err)
 	msg.AssertExpectations(t)
 

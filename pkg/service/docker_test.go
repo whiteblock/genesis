@@ -50,8 +50,7 @@ func TestNewDockerService(t *testing.T) {
 		aux:  aux,
 	}
 
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 
 	assert.Equal(t, expected, ds)
 }
@@ -168,8 +167,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		assert.Contains(t, testContainer.Network, args.String(2))
 	})
 
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 	res := ds.CreateContainer(nil, nil, testContainer)
 	assert.NoError(t, res.Error)
 }
@@ -188,8 +186,7 @@ func TestDockerService_StartContainer_Success(t *testing.T) {
 		}).Once()
 
 	aux := new(auxMock.DockerAuxillary)
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 	res := ds.StartContainer(nil, nil, scCommand)
 	assert.NoError(t, res.Error)
 	repo.AssertExpectations(t)
@@ -201,8 +198,7 @@ func TestDockerService_StartContainer_Failure(t *testing.T) {
 	repo.On("ContainerStart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("error")).Once()
 
 	aux := new(auxMock.DockerAuxillary)
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 	res := ds.StartContainer(nil, nil, scCommand)
 	assert.Error(t, res.Error)
 	repo.AssertExpectations(t)
@@ -243,8 +239,7 @@ func TestDockerService_StartContainer_Attach_Success(t *testing.T) {
 		}).Once()
 
 	aux := new(auxMock.DockerAuxillary)
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 	res := ds.StartContainer(nil, nil, scCommand)
 	assert.NoError(t, res.Error)
 	repo.AssertExpectations(t)
@@ -261,8 +256,7 @@ func TestDockerService_StartContainer_Attach_Failure(t *testing.T) {
 		types.HijackedResponse{}, fmt.Errorf("err")).Once()
 
 	aux := new(auxMock.DockerAuxillary)
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 	res := ds.StartContainer(nil, nil, scCommand)
 	assert.Error(t, res.Error)
 	repo.AssertExpectations(t)
@@ -319,8 +313,7 @@ func TestDockerService_CreateNetwork_Success(t *testing.T) {
 	}).Twice()
 
 	aux := new(auxMock.DockerAuxillary)
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 
 	res := ds.CreateNetwork(nil, nil, testNetwork)
 	assert.NoError(t, res.Error)
@@ -347,8 +340,7 @@ func TestDockerService_CreateNetwork_Failure(t *testing.T) {
 		types.NetworkCreateResponse{}, fmt.Errorf("error")).Once()
 
 	aux := new(auxMock.DockerAuxillary)
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 
 	res := ds.CreateNetwork(nil, nil, testNetwork)
 	assert.Error(t, res.Error)
@@ -380,8 +372,7 @@ func TestDockerService_RemoveNetwork_Success(t *testing.T) {
 			}).Once()
 	}
 	aux := auxillary.NewDockerAuxillary(repo)
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 
 	for _, net := range networks {
 		res := ds.RemoveNetwork(nil, nil, net.Name)
@@ -396,8 +387,7 @@ func TestDockerService_RemoveNetwork_NetworkList_Failure(t *testing.T) {
 	repo.On("NetworkList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("test")).Once()
 
 	aux := auxillary.NewDockerAuxillary(repo)
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 
 	res := ds.RemoveNetwork(nil, nil, "")
 	assert.Error(t, res.Error)
@@ -417,8 +407,7 @@ func TestDockerService_RemoveNetwork_NetworkRemove_Failure(t *testing.T) {
 		repo.On("NetworkRemove", mock.Anything, mock.Anything, net.ID).Return(fmt.Errorf("err")).Once()
 	}
 	aux := auxillary.NewDockerAuxillary(repo)
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 
 	for _, net := range networks {
 		res := ds.RemoveNetwork(nil, nil, net.Name)
@@ -458,8 +447,7 @@ func TestDockerService_RemoveContainer(t *testing.T) {
 			}).Once()
 	}
 	aux := auxillary.NewDockerAuxillary(repo)
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 
 	for _, cntr := range cntrs {
 		res := ds.RemoveContainer(nil, nil, cntr.Names[0])
@@ -504,8 +492,7 @@ func TestDockerService_PlaceFileInContainer(t *testing.T) {
 			assert.Equal(t, testContainer.Names[0], args.String(2))
 		}).Once()
 
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 
 	res := ds.PlaceFileInContainer(nil, nil, testContainer.Names[0], file)
 	assert.NoError(t, res.Error)
@@ -554,8 +541,7 @@ func TestDockerService_AttachNetwork(t *testing.T) {
 		assert.Equal(t, net.ID, epSettings.NetworkID)
 	}).Once()
 
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 
 	res := ds.AttachNetwork(nil, nil, net.Name, cntr.Names[0])
 	assert.NoError(t, res.Error)
@@ -600,8 +586,7 @@ func TestDockerService_DetachNetwork(t *testing.T) {
 		assert.True(t, args.Bool(4))
 	}).Once()
 
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 
 	res := ds.DetachNetwork(nil, nil, net.Name, cntr.Names[0])
 	assert.NoError(t, res.Error)
@@ -635,8 +620,7 @@ func TestDockerService_CreateVolume(t *testing.T) {
 
 	aux := *new(auxillary.DockerAuxillary)
 
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 
 	res := ds.CreateVolume(nil, nil, command.Volume{
 		Name:   "test_volume",
@@ -662,8 +646,7 @@ func TestDockerService_RemoveVolume(t *testing.T) {
 
 	aux := *new(auxillary.DockerAuxillary)
 
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 
 	res := ds.RemoveVolume(nil, nil, name)
 	assert.NoError(t, res.Error)
@@ -783,8 +766,7 @@ func TestDockerService_Emulation(t *testing.T) {
 			assert.Equal(t, types.ContainerStartOptions{}, args.Get(3))
 		})
 
-	ds, err := NewDockerService(repo, aux, entity.DockerConfig{})
-	assert.NoError(t, err)
+	ds := NewDockerService(repo, aux, entity.DockerConfig{})
 
 	res := ds.Emulation(nil, nil, testNetConf)
 	assert.NoError(t, res.Error)

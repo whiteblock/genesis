@@ -13,9 +13,7 @@ fi
 
 golint -set_exit_status $(go list ./... | grep -v mocks)
 
-ls pkg | while read line; do
-  mockery -output=mocks/pkg/$line/ -dir=pkg/$line/ -all
-done
+make mocks
 go vet $(go list ./... | grep -v mocks)
 go test ./...
 go test ./... -coverprofile=coverage.txt -covermode=atomic

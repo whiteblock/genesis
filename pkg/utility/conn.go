@@ -13,20 +13,26 @@
 	GNU General Public License for more details.
 
 	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
-package controller
+package utility
 
 import (
-	"testing"
+	"fmt"
 
-	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/config"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/streadway/amqp"
 )
 
-func TestRestController(t *testing.T) {
-	rc := NewRestController(entity.RestConfig{}, nil, nil)
-	assert.NotNil(t, rc)
+//OpenAMQPConnection attempts to dial a new AMQP connection
+func OpenAMQPConnection(conf config.AMQPEndpoint) (*amqp.Connection, error) {
+	return amqp.Dial(fmt.Sprintf("%s://%s:%s@%s:%d/%s",
+		conf.QueueProtocol,
+		conf.QueueUser,
+		conf.QueuePassword,
+		conf.QueueHost,
+		conf.QueuePort,
+		conf.QueueVHost))
 }

@@ -51,7 +51,7 @@ pipeline {
       }
       steps {
         script {
-          sh "apk add git gcc libc-dev curl bash"
+          sh "apk add git gcc libc-dev curl bash make"
           sh "go get github.com/vektra/mockery/.../"
           sh "go get -u golang.org/x/lint/golint"
           sh "sh tests.sh"

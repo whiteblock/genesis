@@ -22,64 +22,43 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/docker/client"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/validator"
 	"strings"
-	"time"
-)
-
-const (
-	numberOfRetries = 4
-	waitBeforeRetry = 10
-)
-
-var (
-	statusTooSoon = entity.Result{Type: entity.TooSoonType, Error: fmt.Errorf("command ran too soon")}
 )
 
 //DockerUseCase is the usecase for executing the commands in docker
 type DockerUseCase interface {
 	// Run is equivalent to Execute, except it generates context based on the given command
 	Run(cmd command.Command) entity.Result
-	// TimeSupplier supplies the time as a unix timestamp
-	TimeSupplier() int64
 	// Execute executes the command with the given context
 	Execute(ctx context.Context, cmd command.Command) entity.Result
 }
 
 type dockerUseCase struct {
-	service    service.DockerService
-	cmdService service.CommandService
-	valid      validator.OrderValidator
+	valid   validator.OrderValidator
+	service service.DockerService
+	log     logrus.Ext1FieldLogger
 }
 
 //NewDockerUseCase creates a DockerUseCase arguments given the proper dep injections
 func NewDockerUseCase(
 	service service.DockerService,
-	cmdService service.CommandService,
-	valid validator.OrderValidator) DockerUseCase {
-	return &dockerUseCase{service: service, cmdService: cmdService, valid: valid}
-}
-
-// TimeSupplier supplies the time as a unix timestamp
-func (duc dockerUseCase) TimeSupplier() int64 {
-	return time.Now().Unix()
+	valid validator.OrderValidator,
+	log logrus.Ext1FieldLogger) DockerUseCase {
+	return &dockerUseCase{service: service, valid: valid, log: log}
 }
 
 // Run is equivalent to Execute, except it generates context based on the given command
 func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
-	stat, ok := duc.dependencyCheck(cmd)
+	stat, ok := duc.validationCheck(cmd)
 	if !ok {
 		return stat
 	}
-	stat, ok = duc.validationCheck(cmd)
-	if !ok {
-		return stat
-	}
-	log.WithField("command", cmd).Trace("running command")
+	duc.log.WithField("command", cmd).Trace("running command")
 	if cmd.Timeout == 0 {
 		return duc.Execute(context.Background(), cmd)
 	}
@@ -94,7 +73,8 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	log.WithField("client", cli).Trace("created a client")
+	duc.log.WithField("client", cli).Trace("created a client")
+	duc.log.WithField("type", cmd.Order.Type).Trace("routing a command")
 	switch command.OrderType(strings.ToLower(string(cmd.Order.Type))) {
 	case command.Createcontainer:
 		return duc.createContainerShim(ctx, cli, cmd)
@@ -125,28 +105,7 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 func (duc dockerUseCase) validationCheck(cmd command.Command) (result entity.Result, ok bool) {
 	ok = false
 	if len(cmd.Target.IP) == 0 || cmd.Target.IP == "0.0.0.0" {
-		result = entity.NewFatalResult(fmt.Errorf("invalid target ip"))
-		return
-	}
-	ok = true
-	return
-}
-
-func (duc dockerUseCase) dependencyCheck(cmd command.Command) (stat entity.Result, ok bool) {
-	ok = false
-	if duc.TimeSupplier() < cmd.Timestamp {
-		stat = statusTooSoon
-		return
-	}
-
-	ready, err := duc.cmdService.CheckDependenciesExecuted(cmd)
-	if err != nil {
-		stat = entity.NewErrorResult(fmt.Errorf("error checking dependencies"))
-		return
-	}
-
-	if !ready {
-		stat = statusTooSoon
+		result = entity.NewFatalResult("invalid target ip")
 		return
 	}
 	ok = true
@@ -173,7 +132,7 @@ func (duc dockerUseCase) startContainerShim(ctx context.Context, cli *client.Cli
 		return entity.NewFatalResult(err)
 	}
 	if len(sc.Name) == 0 {
-		return entity.NewFatalResult(fmt.Errorf("empty field \"name\""))
+		return entity.NewFatalResult("empty field \"name\"")
 	}
 	return duc.service.StartContainer(ctx, cli, sc)
 }
@@ -185,7 +144,7 @@ func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli *client.Cl
 		return entity.NewFatalResult(err)
 	}
 	if payload.Name == "" {
-		return entity.NewFatalResult(fmt.Errorf("empty field \"name\""))
+		return entity.NewFatalResult("empty field \"name\"")
 	}
 	return duc.service.RemoveContainer(ctx, cli, payload.Name)
 }
@@ -230,7 +189,7 @@ func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli *client.Clie
 		return entity.NewFatalResult(err)
 	}
 	if payload.Name == "" {
-		return entity.NewFatalResult(fmt.Errorf("empty field \"name\""))
+		return entity.NewFatalResult("empty field \"name\"")
 	}
 	return duc.service.RemoveNetwork(ctx, cli, payload.Name)
 }
@@ -250,7 +209,7 @@ func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli *client.Clien
 		return entity.NewFatalResult(err)
 	}
 	if payload.Name == "" {
-		return entity.NewFatalResult(fmt.Errorf("empty field \"name\""))
+		return entity.NewFatalResult("empty field \"name\"")
 	}
 	return duc.service.RemoveVolume(ctx, cli, payload.Name)
 }
@@ -261,7 +220,7 @@ func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli *client
 		return entity.NewFatalResult(err)
 	}
 	if len(payload.ContainerName) == 0 {
-		return entity.NewFatalResult(fmt.Errorf("missing field \"container\""))
+		return entity.NewFatalResult("missing field \"container\"")
 	}
 	return duc.service.PlaceFileInContainer(ctx, cli, payload.ContainerName, payload.File)
 }

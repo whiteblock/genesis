@@ -33,8 +33,8 @@ type amqpRepository struct {
 }
 
 //NewAMQPRepository creates a new AMQPRepository
-func NewAMQPRepository(conn externals.AMQPConnection) (AMQPRepository, error) {
-	return &amqpRepository{conn: conn}, nil
+func NewAMQPRepository(conn externals.AMQPConnection) AMQPRepository {
+	return &amqpRepository{conn: conn}
 }
 
 func (ar amqpRepository) GetChannel() (externals.AMQPChannel, error) {

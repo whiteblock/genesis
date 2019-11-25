@@ -20,74 +20,69 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 
-	log "github.com/sirupsen/logrus"
-	"github.com/streadway/amqp"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
-	"github.com/whiteblock/genesis/pkg/usecase"
+	"github.com/whiteblock/genesis/pkg/handler/auxillary"
+	"github.com/whiteblock/genesis/pkg/utility"
+
+	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
 )
 
 //DeliveryHandler handles the initial processing of a amqp delivery
 type DeliveryHandler interface {
-	//ProcessMessage attempts to extract the command and execute it
-	ProcessMessage(msg amqp.Delivery) entity.Result
-	//GetKickbackMessage takes the delivery and creates a message from it
-	//for requeuing on non-fatal error
-	GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing, error)
+	//Process attempts to extract the command and execute it
+	Process(msg amqp.Delivery) (out amqp.Publishing, result entity.Result)
 }
 
 type deliveryHandler struct {
-	usecase usecase.DockerUseCase
+	msgUtil utility.AMQPMessage
+	aux     auxillary.Executor
+	log     logrus.Ext1FieldLogger
 }
 
 //NewDeliveryHandler creates a new DeliveryHandler which uses the given usecase for
 //executing the extracted command
-func NewDeliveryHandler(usecase usecase.DockerUseCase) (DeliveryHandler, error) {
-	return deliveryHandler{usecase: usecase}, nil
+func NewDeliveryHandler(
+	aux auxillary.Executor,
+	msgUtil utility.AMQPMessage,
+	log logrus.Ext1FieldLogger) DeliveryHandler {
+	return &deliveryHandler{aux: aux, log: log, msgUtil: msgUtil}
 }
 
-//ProcessMessage attempts to extract the command and execute it
-func (dh deliveryHandler) ProcessMessage(msg amqp.Delivery) entity.Result {
-	var cmd command.Command //TODO: add validation check
-	err := json.Unmarshal(msg.Body, &cmd)
+//Process attempts to extract the command and execute it
+func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, result entity.Result) {
+	var allCmds [][]command.Command
+	err := json.Unmarshal(msg.Body, &allCmds)
 	if err != nil {
-		return entity.Result{Error: err}
-	}
-	log.WithFields(log.Fields{"cmd": cmd}).Trace("finished processing a command from amqp")
-	return dh.usecase.Run(cmd)
-}
-
-//GetKickbackMessage takes the delivery and creates a message from it
-//for requeuing on non-fatal error
-func (dh deliveryHandler) GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing, error) {
-	pub := amqp.Publishing{
-		Headers: msg.Headers,
-		// Properties
-		ContentType:     msg.ContentType,
-		ContentEncoding: msg.ContentEncoding,
-		DeliveryMode:    msg.DeliveryMode,
-		Priority:        msg.Priority,
-		CorrelationId:   msg.CorrelationId,
-		ReplyTo:         msg.ReplyTo,
-		Expiration:      msg.Expiration,
-		MessageId:       msg.MessageId,
-		Timestamp:       msg.Timestamp,
-		Type:            msg.Type,
+		return amqp.Publishing{}, entity.Result{Error: err}
 	}
 
-	var cmd command.Command
-	err := json.Unmarshal(msg.Body, &cmd)
+	if len(allCmds) == 0 {
+		dh.log.Error("recieved an empty command sausage")
+		return amqp.Publishing{}, entity.NewFatalResult(fmt.Errorf("nothing to execute"))
+	}
+
+	result = dh.aux.ExecuteCommands(allCmds[0])
+	if result.IsFatal() {
+		return
+	}
+
+	if result.IsSuccess() {
+		if len(allCmds) != 1 {
+			out, err = dh.msgUtil.GetNextMessage(msg, allCmds[1:])
+		} else {
+			out, err = dh.msgUtil.CreateMessage(map[string]string{
+				"testnetId": allCmds[0][0].Target.TestnetID,
+			})
+		}
+	} else {
+		out, err = dh.msgUtil.GetKickbackMessage(msg)
+	}
 	if err != nil {
-		return pub, err
+		result = entity.NewFatalResult(msg)
 	}
-
-	cmd = cmd.GetRetryCommand(dh.usecase.TimeSupplier())
-
-	body, err := json.Marshal(cmd)
-	if err != nil {
-		return pub, err
-	}
-	pub.Body = body
-	return pub, nil
+	return
 }
