@@ -392,11 +392,6 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli *client.Cl
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file command.IFile) entity.Result {
-	//TODO
-	return entity.Result{}
-}
-
 func (ds dockerService) Emulation(ctx context.Context, cli *client.Client, netem command.Netconf) entity.Result {
 	netemImage := "gaiadocker/iproute2:latest"
 	errChan := make(chan error, 1)

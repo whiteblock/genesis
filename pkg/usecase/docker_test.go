@@ -25,7 +25,6 @@ import (
 	"time"
 
 	mockService "github.com/whiteblock/genesis/mocks/pkg/service"
-	mockUseCase "github.com/whiteblock/genesis/mocks/pkg/usecase"
 	mockValid "github.com/whiteblock/genesis/mocks/pkg/validator"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
@@ -67,14 +66,6 @@ func TestDockerUseCase_validationCheck_failure_no_ip(t *testing.T) {
 	res, ok := duc.(*dockerUseCase).validationCheck(cmd)
 	assert.False(t, ok)
 	assert.Error(t, res.Error)
-}
-
-func TestDockerUseCase_TimeSupplier(t *testing.T) {
-	usecase := new(mockUseCase.DockerUseCase)
-	usecase.On("TimeSupplier").Return(int64(5)).Once()
-
-	assert.Equal(t, usecase.TimeSupplier(), int64(5))
-	usecase.AssertExpectations(t)
 }
 
 func TestDockerUseCase_Run_Failure_CreateClient(t *testing.T) {
@@ -132,10 +123,9 @@ func TestDockerUseCase_Run_CreateContainer_Failure(t *testing.T) {
 	usecase := NewDockerUseCase(service, valid, logrus.New())
 
 	res := usecase.Run(command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 0,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    "createContainer",
 			Payload: map[string]interface{}{},
@@ -158,10 +148,9 @@ func TestDockerUseCase_Run_StartContainer_Success(t *testing.T) {
 	usecase := NewDockerUseCase(service, valid, logrus.New())
 
 	res := usecase.Run(command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 0,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Startcontainer,
 			Payload: command.StartContainer{Name: "test"},
@@ -181,10 +170,9 @@ func TestDockerUseCase_Run_StartContainer_Failure_ExtraField(t *testing.T) {
 	usecase := NewDockerUseCase(service, valid, logrus.New())
 
 	res := usecase.Run(command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 0,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Startcontainer,
 			Payload: map[string]interface{}{"name": "test", "invalid": "field"},
@@ -204,10 +192,9 @@ func TestDockerUseCase_Run_StartContainer_Failure_EmptyName(t *testing.T) {
 	usecase := NewDockerUseCase(service, valid, logrus.New())
 
 	res := usecase.Run(command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 0,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Startcontainer,
 			Payload: command.StartContainer{Name: ""},
@@ -261,10 +248,9 @@ func TestDockerUseCase_Run_RemoveContainer_Failure_EmptyName(t *testing.T) {
 	usecase := NewDockerUseCase(service, valid, logrus.New())
 
 	res := usecase.Run(command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 0,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Removecontainer,
 			Payload: command.SimpleName{},
@@ -284,10 +270,9 @@ func TestDockerUseCase_Run_RemoveContainer_Failure_ExtraField(t *testing.T) {
 	usecase := NewDockerUseCase(service, valid, logrus.New())
 
 	res := usecase.Run(command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 0,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Removecontainer,
 			Payload: map[string]interface{}{"name": "tester", "extra": "field"},
@@ -379,10 +364,9 @@ func TestDockerUseCase_Run_AttachNetwork_Failure_EmptyNetworkName(t *testing.T) 
 	usecase := NewDockerUseCase(service, valid, logrus.New())
 
 	res := usecase.Run(command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 0,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Attachnetwork,
 			Payload: command.ContainerNetwork{
@@ -405,10 +389,9 @@ func TestDockerUseCase_Run_AttachNetwork_Failure_ExtraField(t *testing.T) {
 	usecase := NewDockerUseCase(service, valid, logrus.New())
 
 	res := usecase.Run(command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 0,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Attachnetwork,
 			Payload: map[string]interface{}{
@@ -434,10 +417,9 @@ func TestDockerUseCase_Run_DetachNetwork(t *testing.T) {
 	usecase := NewDockerUseCase(service, valid, logrus.New())
 
 	res := usecase.Run(command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 0,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    "detachNetwork",
 			Payload: command.ContainerNetwork{ContainerName: "test", Network: "testnet"},
@@ -552,10 +534,9 @@ func TestDockerUseCase_Run_CreateVolume(t *testing.T) {
 	usecase := NewDockerUseCase(service, valid, logrus.New())
 
 	res := usecase.Run(command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 0,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Createvolume,
 			Payload: command.Volume{
@@ -578,10 +559,9 @@ func TestDockerUseCase_Run_RemoveVolume(t *testing.T) {
 	usecase := NewDockerUseCase(service, valid, logrus.New())
 
 	res := usecase.Run(command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 0,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    "removeVolume",
 			Payload: command.SimpleName{Name: "test"},
@@ -602,10 +582,9 @@ func TestDockerUseCase_Run_PutFileInContainer(t *testing.T) {
 	usecase := NewDockerUseCase(service, valid, logrus.New())
 
 	res := usecase.Run(command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 0,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Putfileincontainer,
 			Payload: command.FileAndContainer{
@@ -629,10 +608,9 @@ func TestDockerUseCase_Run_Emulation(t *testing.T) {
 	usecase := NewDockerUseCase(service, valid, logrus.New())
 
 	res := usecase.Run(command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 0,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Emulation,
 			Payload: command.Netconf{
@@ -665,10 +643,9 @@ func TestDockerUseCase_Execute_CreateContainer(t *testing.T) {
 	usecase := NewDockerUseCase(service, valid, logrus.New())
 
 	res := usecase.Execute(context.TODO(), command.Command{
-		ID:        "TEST",
-		Timestamp: 1234567,
-		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 5 * time.Second,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Createcontainer,
 			Payload: map[string]interface{}{},
@@ -688,10 +665,9 @@ func TestDockerUseCase_Execute_StartContainer(t *testing.T) {
 	usecase := NewDockerUseCase(service, nil, logrus.New())
 
 	res := usecase.Execute(context.TODO(), command.Command{
-		ID:        "TEST",
-		Timestamp: 1234567,
-		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 5 * time.Second,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Startcontainer,
 			Payload: command.SimpleName{Name: "test"},
@@ -719,10 +695,9 @@ func TestDockerUseCase_Execute_RemoveContainer_Success(t *testing.T) {
 	usecase := NewDockerUseCase(service, nil, logrus.New())
 
 	res := usecase.Execute(context.TODO(), command.Command{
-		ID:        "TEST",
-		Timestamp: 1234567,
-		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 5 * time.Second,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Removecontainer,
 			Payload: command.SimpleName{
@@ -741,10 +716,9 @@ func TestDockerUseCase_Execute_RemoveContainer_Failure(t *testing.T) {
 	usecase := NewDockerUseCase(service, nil, logrus.New())
 
 	res := usecase.Execute(context.TODO(), command.Command{
-		ID:        "TEST",
-		Timestamp: 1234567,
-		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 5 * time.Second,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Removecontainer,
 			Payload: command.SimpleName{},
@@ -762,10 +736,9 @@ func TestDockerUseCase_Execute_CreateNetwork(t *testing.T) {
 	usecase := NewDockerUseCase(service, nil, logrus.New())
 
 	res := usecase.Execute(context.TODO(), command.Command{
-		ID:        "TEST",
-		Timestamp: 1234567,
-		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 5 * time.Second,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    "createNetwork",
 			Payload: map[string]interface{}{},
@@ -795,10 +768,9 @@ func TestDockerUseCase_Execute_AttachNetwork_Success(t *testing.T) {
 	usecase := NewDockerUseCase(service, nil, logrus.New())
 
 	res := usecase.Execute(context.TODO(), command.Command{
-		ID:        "TEST",
-		Timestamp: 1234567,
-		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 5 * time.Second,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    "attachNetwork",
 			Payload: command.ContainerNetwork{ContainerName: "tester", Network: "testnet"},
@@ -815,10 +787,9 @@ func TestDockerUseCase_Execute_AttachNetwork_Failure(t *testing.T) {
 	usecase := NewDockerUseCase(service, nil, logrus.New())
 
 	res := usecase.Execute(context.TODO(), command.Command{
-		ID:        "TEST",
-		Timestamp: 1234567,
-		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 5 * time.Second,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Attachnetwork,
 			Payload: command.ContainerNetwork{Network: "testnet"},
@@ -836,10 +807,9 @@ func TestDockerUseCase_Execute_CreateVolume(t *testing.T) {
 	usecase := NewDockerUseCase(service, nil, logrus.New())
 
 	res := usecase.Execute(context.TODO(), command.Command{
-		ID:        "TEST",
-		Timestamp: 1234567,
-		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 5 * time.Second,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Createvolume,
 			Payload: command.Volume{},
@@ -867,10 +837,9 @@ func TestDockerUseCase_Execute_RemoveVolume_Success(t *testing.T) {
 	usecase := NewDockerUseCase(service, nil, logrus.New())
 
 	res := usecase.Execute(context.TODO(), command.Command{
-		ID:        "TEST",
-		Timestamp: 1234567,
-		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 5 * time.Second,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Removevolume,
 			Payload: command.SimpleName{Name: "vol"},
@@ -887,10 +856,9 @@ func TestDockerUseCase_Execute_RemoveVolume_Failure(t *testing.T) {
 	usecase := NewDockerUseCase(service, nil, logrus.New())
 
 	res := usecase.Execute(context.TODO(), command.Command{
-		ID:        "TEST",
-		Timestamp: 1234567,
-		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 5 * time.Second,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    command.Removevolume,
 			Payload: command.FileAndVolume{File: command.File{Destination: "/test/path/", Data: []byte("contents")}},
@@ -1000,14 +968,100 @@ func TestDockerUseCase_Execute_Emulation_Failure(t *testing.T) {
 	usecase := NewDockerUseCase(service, nil, logrus.New())
 
 	res := usecase.Execute(context.TODO(), command.Command{
-		ID:        "TEST",
-		Timestamp: 1234567,
-		Timeout:   5 * time.Second,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:      "TEST",
+		Timeout: 5 * time.Second,
+		Target:  command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Emulation,
 			Payload: map[string]interface{}{
 				"invalid": "field",
+			},
+		},
+	})
+	assert.Error(t, res.Error)
+	service.AssertExpectations(t)
+}
+
+func TestDockerUseCase_Execute_UnknownType_Failure(t *testing.T) {
+	service := new(mockService.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
+
+	usecase := NewDockerUseCase(service, nil, logrus.New())
+
+	res := usecase.Execute(context.TODO(), command.Command{
+		ID:     "TEST",
+		Target: command.Target{IP: "127.0.0.1"},
+		Order: command.Order{
+			Type:    command.OrderType("I do not exist fdsfwerwerwR"),
+			Payload: nil,
+		},
+	})
+	assert.Error(t, res.Error)
+	service.AssertExpectations(t)
+}
+
+func TestDockerUseCase_Execute_CreateContainer_Failure_ExtraField(t *testing.T) {
+	service := new(mockService.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
+
+	valid := new(mockValid.OrderValidator)
+
+	usecase := NewDockerUseCase(service, valid, logrus.New())
+
+	res := usecase.Run(command.Command{
+		Timeout: 0,
+		Target:  command.Target{IP: "127.0.0.1"},
+		Order: command.Order{
+			Type: command.Createcontainer,
+			Payload: map[string]interface{}{
+				"extra": "field",
+			},
+		},
+	})
+	assert.Error(t, res.Error)
+	service.AssertExpectations(t)
+}
+
+func TestDockerUseCase_Execute_CreateVolume_Failure_ExtraField(t *testing.T) {
+	service := new(mockService.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
+
+	valid := new(mockValid.OrderValidator)
+
+	usecase := NewDockerUseCase(service, valid, logrus.New())
+
+	res := usecase.Run(command.Command{
+		Timeout: 0,
+		Target:  command.Target{IP: "127.0.0.1"},
+		Order: command.Order{
+			Type: command.Createvolume,
+			Payload: map[string]interface{}{
+				"extra": "field",
+			},
+		},
+	})
+	assert.Error(t, res.Error)
+	service.AssertExpectations(t)
+
+}
+
+func TestDockerUseCase_Execute_PutFileInContainer_NoName_Fail(t *testing.T) {
+	service := new(mockService.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
+
+	usecase := NewDockerUseCase(service, nil, logrus.New())
+
+	res := usecase.Execute(context.TODO(), command.Command{
+		Target: command.Target{IP: "127.0.0.1"},
+		Order: command.Order{
+			Type: command.Putfileincontainer,
+			Payload: command.FileAndContainer{
+				ContainerName: "",
+				File: command.File{
+					Destination: "/test/path/",
+					Data:        []byte("contents"),
+					Mode:        0777,
+				},
 			},
 		},
 	})

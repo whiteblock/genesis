@@ -28,15 +28,12 @@ import (
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/validator"
 	"strings"
-	"time"
 )
 
 //DockerUseCase is the usecase for executing the commands in docker
 type DockerUseCase interface {
 	// Run is equivalent to Execute, except it generates context based on the given command
 	Run(cmd command.Command) entity.Result
-	// TimeSupplier supplies the time as a unix timestamp
-	TimeSupplier() int64
 	// Execute executes the command with the given context
 	Execute(ctx context.Context, cmd command.Command) entity.Result
 }
@@ -53,11 +50,6 @@ func NewDockerUseCase(
 	valid validator.OrderValidator,
 	log logrus.Ext1FieldLogger) DockerUseCase {
 	return &dockerUseCase{service: service, valid: valid, log: log}
-}
-
-// TimeSupplier supplies the time as a unix timestamp
-func (duc dockerUseCase) TimeSupplier() int64 {
-	return time.Now().Unix()
 }
 
 // Run is equivalent to Execute, except it generates context based on the given command
