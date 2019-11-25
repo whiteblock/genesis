@@ -132,20 +132,20 @@ func TestResult_IsRequeue(t *testing.T) {
 }
 
 func TestResult_IsAllDone(t *testing.T) {
-		var tests = []struct {
+	var tests = []struct {
 		res      Result
 		expected bool
 	}{
 		{
-			res: NewAllDoneResult(),
+			res:      NewAllDoneResult(),
 			expected: true,
 		},
 		{
-			res: NewErrorResult("err"),
+			res:      NewErrorResult("err"),
 			expected: false,
 		},
 		{
-			res: NewSuccessResult(),
+			res:      NewSuccessResult(),
 			expected: false,
 		},
 	}
