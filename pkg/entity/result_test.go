@@ -131,6 +131,32 @@ func TestResult_IsRequeue(t *testing.T) {
 	}
 }
 
+func TestResult_IsAllDone(t *testing.T) {
+		var tests = []struct {
+		res      Result
+		expected bool
+	}{
+		{
+			res: NewAllDoneResult(),
+			expected: true,
+		},
+		{
+			res: NewErrorResult("err"),
+			expected: false,
+		},
+		{
+			res: NewSuccessResult(),
+			expected: false,
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.res.IsAllDone())
+		})
+	}
+}
+
 func TestNewSuccessResult(t *testing.T) {
 	expected := Result{
 		Error: nil,
@@ -198,4 +224,12 @@ func TestNewErrorResult(t *testing.T) {
 	assert.Equal(t, expected, NewErrorResult(expected.Error))
 	assert.Equal(t, expectedUnsuccessful, NewErrorResult(expectedUnsuccessful.Error))
 	assert.Equal(t, expectedUnsuccessful2, NewErrorResult(expectedUnsuccessful2.Error))
+}
+
+func TestNewAllDoneResult(t *testing.T) {
+	expected := Result{
+		Error: nil,
+		Type:  AllDoneType,
+	}
+	assert.Equal(t, expected, NewAllDoneResult())
 }

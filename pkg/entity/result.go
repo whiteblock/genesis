@@ -90,5 +90,5 @@ func NewErrorResult(err interface{}) Result {
 
 //NewAllDoneResult creates a result for the all done condition
 func NewAllDoneResult() Result {
-	return Result{Type: SuccessType, Error: nil}
+	return Result{Type: AllDoneType, Error: nil}
 }
