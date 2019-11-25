@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"github.com/docker/docker/client"
 	"github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/validator"

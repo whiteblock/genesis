@@ -21,7 +21,7 @@ package service
 import (
 	"bufio"
 	"fmt"
-	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/definition/command"
 	"strings"
 	"testing"
 

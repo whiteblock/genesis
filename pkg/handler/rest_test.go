@@ -26,8 +26,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/whiteblock/definition/command"
 	usecase "github.com/whiteblock/genesis/mocks/pkg/usecase"
-	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 
 	"github.com/sirupsen/logrus"
