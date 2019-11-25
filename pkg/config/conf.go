@@ -21,7 +21,7 @@ package config
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 )
 

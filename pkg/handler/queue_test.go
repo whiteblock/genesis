@@ -22,9 +22,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/whiteblock/definition/command"
 	auxMocks "github.com/whiteblock/genesis/mocks/pkg/handler/auxillary"
 	utilityMocks "github.com/whiteblock/genesis/mocks/pkg/utility"
-	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 
 	"github.com/sirupsen/logrus"

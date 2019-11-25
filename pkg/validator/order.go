@@ -22,7 +22,7 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/definition/command"
 )
 
 //OrderValidator is a series of functions which validate different orders

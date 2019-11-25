@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"

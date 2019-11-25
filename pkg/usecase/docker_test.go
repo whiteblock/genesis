@@ -24,9 +24,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/whiteblock/definition/command"
 	mockService "github.com/whiteblock/genesis/mocks/pkg/service"
 	mockValid "github.com/whiteblock/genesis/mocks/pkg/validator"
-	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 
 	"github.com/sirupsen/logrus"

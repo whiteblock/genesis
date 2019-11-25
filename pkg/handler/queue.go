@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/whiteblock/genesis/pkg/command"
+	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/handler/auxillary"
 	"github.com/whiteblock/genesis/pkg/utility"

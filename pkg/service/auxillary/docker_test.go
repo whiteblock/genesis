@@ -19,6 +19,7 @@
 package auxillary
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -32,7 +33,7 @@ import (
 	"strings"
 )
 
-func TestDockerAuxillary_GetNetworkByName(t *testing.T) {
+func TestDockerAuxillary_GetNetworkByName_Success(t *testing.T) {
 	results := []types.NetworkResource{
 		types.NetworkResource{Name: "test1", ID: "id1"},
 		types.NetworkResource{Name: "test2", ID: "id2"},
@@ -44,7 +45,7 @@ func TestDockerAuxillary_GetNetworkByName(t *testing.T) {
 			require.Len(t, args, 3)
 			assert.Nil(t, args.Get(0))
 			assert.Nil(t, args.Get(1))
-		})
+		}).Times(len(results) + 1)
 	ds := NewDockerAuxillary(repo)
 
 	for _, result := range results {
@@ -56,10 +57,20 @@ func TestDockerAuxillary_GetNetworkByName(t *testing.T) {
 	_, err := ds.GetNetworkByName(nil, nil, "DNE")
 	assert.Error(t, err)
 
-	repo.AssertNumberOfCalls(t, "NetworkList", len(results)+1)
+	repo.AssertExpectations(t)
 }
 
-func TestDockerAuxillary_HostHasImage(t *testing.T) {
+func TestDockerAuxillary_GetNetworkByName_Failure(t *testing.T) {
+	repo := new(repository.DockerRepository)
+	repo.On("NetworkList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("eerrr")).Once()
+	ds := NewDockerAuxillary(repo)
+	_, err := ds.GetNetworkByName(nil, nil, "foo")
+	assert.Error(t, err)
+
+	repo.AssertExpectations(t)
+}
+
+func TestDockerAuxillary_HostHasImage_Success(t *testing.T) {
 	testImageList := []types.ImageSummary{
 		types.ImageSummary{RepoDigests: []string{"test0"}, RepoTags: []string{"test2"}},
 		types.ImageSummary{RepoDigests: []string{"test3"}, RepoTags: []string{"test4"}},
@@ -94,7 +105,17 @@ func TestDockerAuxillary_HostHasImage(t *testing.T) {
 		assert.NoError(t, err)
 		assert.False(t, exists)
 	}
+}
 
+func TestDockerAuxillary_HostHasImage_Failure(t *testing.T) {
+
+	repo := new(repository.DockerRepository)
+	repo.On("ImageList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err"))
+
+	ds := NewDockerAuxillary(repo)
+	exists, err := ds.HostHasImage(nil, nil, "foo")
+	assert.Error(t, err)
+	assert.False(t, exists)
 }
 
 func TestDockerAuxillary_EnsureImagePulled(t *testing.T) {
@@ -157,7 +178,55 @@ func TestDockerAuxillary_EnsureImagePulled(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
-func TestDockerAuxillary_GetContainerByName(t *testing.T) {
+func TestDockerAuxillary_EnsureImagePulled_ImagePull_Failure(t *testing.T) {
+	testImageList := []types.ImageSummary{
+		types.ImageSummary{RepoDigests: []string{"test0"}, RepoTags: []string{"test2"}},
+		types.ImageSummary{RepoDigests: []string{"test3"}, RepoTags: []string{"test4"}},
+	}
+
+	repo := new(repository.DockerRepository)
+	repo.On("ImageList", mock.Anything, mock.Anything, mock.Anything).Return(testImageList, nil).Once()
+
+	repo.On("ImagePull", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+		nil, fmt.Errorf("err")).Once()
+
+	ds := NewDockerAuxillary(repo)
+
+	err := ds.EnsureImagePulled(nil, nil, "Foobar")
+	assert.Error(t, err)
+	repo.AssertExpectations(t)
+}
+
+func TestDockerAuxillary_EnsureImagePulled_ImageLoad_Failure(t *testing.T) {
+	testImageList := []types.ImageSummary{
+		types.ImageSummary{RepoDigests: []string{"test0"}, RepoTags: []string{"test2"}},
+		types.ImageSummary{RepoDigests: []string{"test3"}, RepoTags: []string{"test4"}},
+	}
+
+	testReader := strings.NewReader("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
+
+	repo := new(repository.DockerRepository)
+	repo.On("ImageList", mock.Anything, mock.Anything, mock.Anything).Return(
+		testImageList, nil).Once()
+
+	repo.On("ImagePull", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+		ioutil.NopCloser(testReader), nil).Run(func(args mock.Arguments) {
+		testReader.Reset("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
+	}).Once()
+
+	repo.On("ImageLoad", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+		types.ImageLoadResponse{}, fmt.Errorf("err")).Run(
+		func(args mock.Arguments) {
+		}).Once()
+
+	ds := NewDockerAuxillary(repo)
+
+	err := ds.EnsureImagePulled(nil, nil, "FOOBAR")
+	assert.Error(t, err)
+	repo.AssertExpectations(t)
+}
+
+func TestDockerAuxillary_GetContainerByName_Success(t *testing.T) {
 	results := []types.Container{
 		types.Container{Names: []string{"test1", "test3"}, ID: "id1"},
 		types.Container{Names: []string{"test2", "test4"}, ID: "id2"},
@@ -169,7 +238,7 @@ func TestDockerAuxillary_GetContainerByName(t *testing.T) {
 			require.Len(t, args, 3)
 			assert.Nil(t, args.Get(0))
 			assert.Nil(t, args.Get(1))
-		})
+		}).Times((2 * len(results)) + 1)
 	ds := NewDockerAuxillary(repo)
 
 	for _, result := range results {
@@ -184,10 +253,20 @@ func TestDockerAuxillary_GetContainerByName(t *testing.T) {
 	_, err := ds.GetContainerByName(nil, nil, "DNE")
 	assert.Error(t, err)
 
-	repo.AssertNumberOfCalls(t, "ContainerList", (2*len(results))+1)
+	repo.AssertExpectations(t)
 }
 
-func TestDockerAuxillary_GetVolumeByName(t *testing.T) {
+func TestDockerAuxillary_GetContainerByName_Failure(t *testing.T) {
+	repo := new(repository.DockerRepository)
+	repo.On("ContainerList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err")).Once()
+	ds := NewDockerAuxillary(repo)
+	_, err := ds.GetContainerByName(nil, nil, "DNE")
+	assert.Error(t, err)
+
+	repo.AssertExpectations(t)
+}
+
+func TestDockerAuxillary_GetVolumeByName_Success(t *testing.T) {
 	results := volume.VolumeListOKBody{
 		Volumes: []*types.Volume{
 			&types.Volume{Name: "test1"},
@@ -210,6 +289,20 @@ func TestDockerAuxillary_GetVolumeByName(t *testing.T) {
 		assert.Equal(t, result, vol)
 
 	}
+
+	res, err := ds.GetVolumeByName(nil, nil, "DNE")
+	assert.Error(t, err)
+	assert.Nil(t, res)
+
+	repo.AssertExpectations(t)
+}
+
+func TestDockerAuxillary_GetVolumeByName_Failure(t *testing.T) {
+
+	repo := new(repository.DockerRepository)
+	repo.On("VolumeList", mock.Anything, mock.Anything, mock.Anything).Return(
+		volume.VolumeListOKBody{}, fmt.Errorf("err")).Once()
+	ds := NewDockerAuxillary(repo)
 
 	res, err := ds.GetVolumeByName(nil, nil, "DNE")
 	assert.Error(t, err)
