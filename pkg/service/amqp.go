@@ -61,7 +61,7 @@ func (as amqpService) Send(pub amqp.Publishing) error {
 	as.log.WithFields(logrus.Fields{
 		"exchange": as.conf.Publish.Exchange,
 		"queue":    as.conf.QueueName,
-	}).Debug("publishing a message")
+	}).Trace("publishing a message")
 	return ch.Publish(as.conf.Publish.Exchange, as.conf.QueueName, as.conf.Publish.Mandatory, as.conf.Publish.Immediate, pub)
 }
 

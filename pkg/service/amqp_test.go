@@ -220,3 +220,31 @@ func TestAmqpService_CreateQueue(t *testing.T) {
 	repo.AssertExpectations(t)
 	ch.AssertExpectations(t)
 }
+
+func TestAMQPService_Send_GetChannel_Failure(t *testing.T) {
+	repo := new(repoMocks.AMQPRepository)
+	repo.On("GetChannel").Return(nil, fmt.Errorf("error")).Once()
+
+	serv := NewAMQPService(config.AMQP{}, repo, logrus.New())
+
+	err := serv.Send(amqp.Publishing{})
+	assert.Error(t, err)
+
+	repo.AssertExpectations(t)
+}
+
+func TestAMQPService_Send_Success(t *testing.T) {
+	ch := new(externalsMocks.AMQPChannel)
+	ch.On("Publish", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
+	ch.On("Close").Return(nil).Once()
+
+	repo := new(repoMocks.AMQPRepository)
+	repo.On("GetChannel").Return(ch, nil).Once()
+
+	serv := NewAMQPService(config.AMQP{}, repo, logrus.New())
+
+	err := serv.Send(amqp.Publishing{})
+	assert.NoError(t, err)
+
+	repo.AssertExpectations(t)
+}
