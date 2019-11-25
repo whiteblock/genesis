@@ -28,6 +28,8 @@ import (
 	"sync"
 )
 
+const maxRetries = 5
+
 //RestHandler handles the REST api calls
 type RestHandler interface {
 	//AddCommands handles the addition of new commands
@@ -92,25 +94,24 @@ func (rH *restHandler) start() {
 
 func (rH *restHandler) runCommand(cmd commandWrapper) {
 	res := rH.uc.Run(cmd.cmd)
-	rH.log.WithField("result", res).Debug("got a result")
+	entry := rH.log.WithFields(logrus.Fields{"result": res, "count": cmd.retries})
 
 	if res.IsSuccess() {
-		rH.log.WithField("result", res).Trace("a command executed successfully")
+		entry.Trace("a command executed successfully")
 		return
 	}
 	if res.IsFatal() {
-		rH.log.WithField("result", res).Error("a command could not execute")
+		entry.Error("a command could not execute")
 		return
 	}
 	if res.IsRequeue() {
-		if cmd.retries < 5 {
+		if cmd.retries < maxRetries {
 			cmd.retries++
-			rH.log.WithFields(logrus.Fields{"result": res, "count": cmd.retries}).Debug("retrying command")
+			entry.Debug("retrying command")
 			rH.cmdChan <- cmd
-		} else {
-			rH.log.WithFields(logrus.Fields{"result": res, "count": cmd.retries}).Error("too many retries for command")
 			return
 		}
+		entry.Error("too many retries for command")
 	}
 }
 
