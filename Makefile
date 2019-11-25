@@ -5,7 +5,7 @@ DIRECTORIES=$(wildcard util/*/)  $(sort $(dir $(wildcard pkg/*/*/)))
 MOCKS=$(foreach x, $(DIRECTORIES), mocks/$(x))
 OUTPUT_DIR=./bin
 
-.PHONY: build test test_race lint vet get mocks clean-mocks
+.PHONY: build test test_race lint vet get mocks clean-mocks manual-mocks
 
 all: prep tester genesis
 
@@ -36,7 +36,11 @@ get:
 clean-mocks:
 	rm -rf mocks
 
-mocks: $(MOCKS)
+mocks: $(MOCKS) manual-mocks
 	
 $(MOCKS): mocks/% : %
 	mockery -output=$@ -dir=$^ -all
+
+manual-mocks:
+	git clone https://github.com/whiteblock/definition.git mocks/.src/definition
+	mockery -dir=mocks/.src/definition/command -output=mocks/definition/command -all

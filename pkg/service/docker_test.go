@@ -21,9 +21,16 @@ package service
 import (
 	"bufio"
 	"fmt"
-	"github.com/whiteblock/definition/command"
 	"strings"
 	"testing"
+
+	"github.com/whiteblock/definition/command"
+	cmdMock "github.com/whiteblock/genesis/mocks/definition/command"
+	externalsMock "github.com/whiteblock/genesis/mocks/pkg/externals"
+	repoMock "github.com/whiteblock/genesis/mocks/pkg/repository"
+	auxMock "github.com/whiteblock/genesis/mocks/pkg/service"
+	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/service/auxillary"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -33,12 +40,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	cmdMock "github.com/whiteblock/genesis/mocks/pkg/command"
-	externalsMock "github.com/whiteblock/genesis/mocks/pkg/externals"
-	repoMock "github.com/whiteblock/genesis/mocks/pkg/repository"
-	auxMock "github.com/whiteblock/genesis/mocks/pkg/service"
-	"github.com/whiteblock/genesis/pkg/entity"
-	"github.com/whiteblock/genesis/pkg/service/auxillary"
 )
 
 func TestNewDockerService(t *testing.T) {
