@@ -20,7 +20,7 @@ package handler
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/usecase"
 	util "github.com/whiteblock/utility/utils"
@@ -36,19 +36,26 @@ type RestHandler interface {
 	HealthCheck(w http.ResponseWriter, r *http.Request)
 }
 
+type commandWrapper struct {
+	cmd     command.Command
+	retries int
+}
+
 type restHandler struct {
-	cmdChan chan command.Command
+	cmdChan chan commandWrapper
 	uc      usecase.DockerUseCase
 	once    *sync.Once
+	log     logrus.Ext1FieldLogger
 }
 
 //NewRestHandler creates a new rest handler
-func NewRestHandler(uc usecase.DockerUseCase) RestHandler {
+func NewRestHandler(uc usecase.DockerUseCase, log logrus.Ext1FieldLogger) RestHandler {
 	log.Debug("creating a new rest handler")
 	out := &restHandler{
-		cmdChan: make(chan command.Command),
+		cmdChan: make(chan commandWrapper),
 		uc:      uc,
 		once:    &sync.Once{},
+		log:     log,
 	}
 	go out.start()
 	return out
@@ -63,7 +70,7 @@ func (rH *restHandler) AddCommands(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, cmd := range commands {
-		rH.cmdChan <- cmd
+		rH.cmdChan <- commandWrapper{cmd: cmd, retries: 0}
 	}
 	w.Write([]byte("Success"))
 }
@@ -72,11 +79,9 @@ func (rH *restHandler) AddCommands(w http.ResponseWriter, r *http.Request) {
 func (rH *restHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	_, err := w.Write([]byte("OK"))
 	if err != nil {
-		log.Fatal(err)
+		rH.log.Error(err)
 	}
 }
-
-//TODO: move this logic out of the rest handler
 
 //start starts the states inner consume loop
 func (rH *restHandler) start() {
@@ -85,11 +90,27 @@ func (rH *restHandler) start() {
 	})
 }
 
-func (rH *restHandler) runCommand(cmd command.Command) {
-	res := rH.uc.Run(cmd)
-	log.WithFields(log.Fields{"result": res}).Debug("got a result")
+func (rH *restHandler) runCommand(cmd commandWrapper) {
+	res := rH.uc.Run(cmd.cmd)
+	rH.log.WithField("result", res).Debug("got a result")
+
+	if res.IsSuccess() {
+		rH.log.WithField("result", res).Trace("a command executed successfully")
+		return
+	}
+	if res.IsFatal() {
+		rH.log.WithField("result", res).Error("a command could not execute")
+		return
+	}
 	if res.IsRequeue() {
-		rH.cmdChan <- cmd
+		if cmd.retries < 5 {
+			cmd.retries++
+			rH.log.WithFields(logrus.Fields{"result": res, "count": cmd.retries}).Debug("retrying command")
+			rH.cmdChan <- cmd
+		} else {
+			rH.log.WithFields(logrus.Fields{"result": res, "count": cmd.retries}).Error("too many retries for command")
+			return
+		}
 	}
 }
 
@@ -99,7 +120,7 @@ func (rH *restHandler) loop() {
 		if !closed {
 			return
 		}
-		log.WithFields(log.Fields{"command": cmd}).Trace("attempting to run a command")
+		rH.log.WithField("command", cmd).Trace("attempting to run a command")
 		go rH.runCommand(cmd)
 	}
 }

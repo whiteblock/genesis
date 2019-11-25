@@ -26,11 +26,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	usecase "github.com/whiteblock/genesis/mocks/pkg/usecase"
 	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
+
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestRestHandler(t *testing.T) {
@@ -71,7 +73,7 @@ func TestRestHandler(t *testing.T) {
 		runChan <- cmd
 	})
 
-	rh := NewRestHandler(uc)
+	rh := NewRestHandler(uc, logrus.New())
 
 	recorder := httptest.NewRecorder()
 	rh.AddCommands(recorder, req)
@@ -91,9 +93,7 @@ func TestRestHandler_HealthCheck(t *testing.T) {
 	req, err := http.NewRequest("GET", "/health", bytes.NewReader([]byte{}))
 	assert.NoError(t, err)
 
-	uc := new(usecase.DockerUseCase)
-
-	rh := NewRestHandler(uc)
+	rh := NewRestHandler(nil, logrus.New())
 	recorder := httptest.NewRecorder()
 	rh.HealthCheck(recorder, req)
 

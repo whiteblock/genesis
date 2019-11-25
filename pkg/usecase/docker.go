@@ -82,6 +82,7 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 		return entity.NewFatalResult(err)
 	}
 	duc.log.WithField("client", cli).Trace("created a client")
+	duc.log.WithField("type", cmd.Order.Type).Trace("routing a command")
 	switch command.OrderType(strings.ToLower(string(cmd.Order.Type))) {
 	case command.Createcontainer:
 		return duc.createContainerShim(ctx, cli, cmd)

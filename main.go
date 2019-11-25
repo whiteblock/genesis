@@ -57,7 +57,8 @@ func getRestServer() (controller.RestController, error) {
 					auxillary.NewDockerAuxillary(dockerRepository),
 					conf.GetDockerConfig()),
 				validator.NewOrderValidator(),
-				logger)),
+				logger),
+			logger),
 		mux.NewRouter()), nil
 }
 
