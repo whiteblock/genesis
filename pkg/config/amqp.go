@@ -109,12 +109,12 @@ func amqpInit() {
 	/** START Consume **/
 	viper.BindEnv("consumer", "CONSUMER")
 	viper.BindEnv("consumerNoWait", "CONSUMER_NO_WAIT")
-	viper.SetDefault("consumer", "provisioner")
+	viper.SetDefault("consumer", "genesis")
 	viper.SetDefault("consumerNoWait", false)
 	/** END Consume **/
 
 	/** START Publish **/
-	viper.BindEnv("publishMandatory", "PUBLISH_MANDATORU")
+	viper.BindEnv("publishMandatory", "PUBLISH_MANDATORY")
 	viper.BindEnv("publishImmediate", "PUBLISH_IMMEDIATE")
 	viper.BindEnv("exchange", "EXCHANGE")
 	viper.SetDefault("exchange", "")
