@@ -131,6 +131,8 @@ func setViperEnvBindings() {
 	viper.BindEnv("volumeDriverOpts", "VOLUME_DRIVER_OPTS")
 	viper.BindEnv("verbosity", "VERBOSITY")
 	viper.BindEnv("listen", "LISTEN")
+	viper.BindEnv("completionQueueName", "COMPLETION_QUEUE_NAME")
+	viper.BindEnv("commandQueueName", "COMMAND_QUEUE_NAME")
 }
 
 func setViperDefaults() {
