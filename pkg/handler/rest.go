@@ -56,7 +56,7 @@ type restHandler struct {
 func NewRestHandler(uc usecase.DockerUseCase, log logrus.Ext1FieldLogger) RestHandler {
 	log.Debug("creating a new rest handler")
 	out := &restHandler{
-		cmdChan: make(chan commandWrapper, 200),
+		cmdChan: make(chan commandWrapper),
 		uc:      uc,
 		once:    &sync.Once{},
 		log:     log,
