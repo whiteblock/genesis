@@ -59,8 +59,6 @@ func TestNewDockerService(t *testing.T) {
 func TestDockerService_CreateContainer(t *testing.T) {
 	testNetwork := types.NetworkResource{Name: "Testnet", ID: "id1"}
 	testContainer := command.Container{
-		BoundCPUs:  nil, //TODO
-		Detach:     false,
 		EntryPoint: "/bin/bash",
 		Environment: map[string]string{
 			"FOO": "BAR",

@@ -105,7 +105,7 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 func (duc dockerUseCase) validationCheck(cmd command.Command) (result entity.Result, ok bool) {
 	ok = false
 	if len(cmd.Target.IP) == 0 || cmd.Target.IP == "0.0.0.0" {
-		result = entity.NewFatalResult("invalid target ip")
+		result = entity.NewFatalResult(fmt.Sprintf(`invalid target ip "%s"`, cmd.Target.IP))
 		return
 	}
 	ok = true

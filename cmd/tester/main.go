@@ -116,7 +116,6 @@ func removeNetwork(name string) command.Command {
 func createContainer(name string, network string, volume string, args []string) command.Command {
 	testContainer := command.Container{
 		BoundCPUs: nil, //TODO
-		Detach:    false,
 		Environment: map[string]string{
 			"FOO": "BAR",
 		},

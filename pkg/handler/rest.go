@@ -56,7 +56,7 @@ type restHandler struct {
 func NewRestHandler(uc usecase.DockerUseCase, log logrus.Ext1FieldLogger) RestHandler {
 	log.Debug("creating a new rest handler")
 	out := &restHandler{
-		cmdChan: make(chan commandWrapper),
+		cmdChan: make(chan commandWrapper, 200),
 		uc:      uc,
 		once:    &sync.Once{},
 		log:     log,
@@ -67,14 +67,16 @@ func NewRestHandler(uc usecase.DockerUseCase, log logrus.Ext1FieldLogger) RestHa
 
 //AddCommands handles the addition of new commands
 func (rH *restHandler) AddCommands(w http.ResponseWriter, r *http.Request) {
-	var commands []command.Command
-	err := json.NewDecoder(r.Body).Decode(&commands)
+	var cmds [][]command.Command
+	err := json.NewDecoder(r.Body).Decode(&cmds)
 	if err != nil {
 		http.Error(w, util.LogError(err).Error(), 400)
 		return
 	}
-	for _, cmd := range commands {
-		rH.cmdChan <- commandWrapper{cmd: cmd, retries: 0}
+	for _, commands := range cmds {
+		for _, cmd := range commands {
+			rH.cmdChan <- commandWrapper{cmd: cmd, retries: 0}
+		}
 	}
 	w.Write([]byte("Success"))
 }
@@ -107,13 +109,16 @@ func (rH *restHandler) runCommand(cmd commandWrapper) {
 		return
 	}
 	if res.IsRequeue() {
-		if cmd.retries < maxRetries {
-			cmd.retries++
-			entry.Debug("retrying command")
-			rH.cmdChan <- cmd
-			return
-		}
-		entry.Error("too many retries for command")
+		go func() {
+			if cmd.retries < maxRetries {
+				cmd.retries++
+				entry.Info("retrying command")
+				rH.cmdChan <- cmd
+
+			}
+			entry.Error("too many retries for command")
+		}()
+		return
 	}
 }
 
@@ -124,6 +129,6 @@ func (rH *restHandler) loop() {
 			return
 		}
 		rH.log.WithField("command", cmd).Trace("attempting to run a command")
-		go rH.runCommand(cmd)
+		rH.runCommand(cmd)
 	}
 }

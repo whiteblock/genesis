@@ -128,7 +128,6 @@ func removeNetwork(dockerUseCase usecase.DockerUseCase, name string) {
 func createContainer(dockerUseCase usecase.DockerUseCase, name string, args []string) {
 	testContainer := command.Container{
 		BoundCPUs: nil, //TODO
-		Detach:    false,
 		Environment: map[string]string{
 			"FOO": "BAR",
 		},
