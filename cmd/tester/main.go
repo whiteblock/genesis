@@ -21,9 +21,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
-	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
@@ -31,6 +29,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
+	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/utility/utils"
 )
 
@@ -44,10 +43,8 @@ func mintCommand(i interface{}, orderType command.OrderType) command.Command {
 		panic(err)
 	}
 	cmd := command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
-		Target:    command.Target{IP: "0.0.0.0"},
+		ID:     "TEST",
+		Target: command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type: orderType,
 		},
@@ -116,7 +113,6 @@ func removeNetwork(name string) command.Command {
 func createContainer(name string, network string, volume string, args []string) command.Command {
 	testContainer := command.Container{
 		BoundCPUs: nil, //TODO
-		Detach:    false,
 		Environment: map[string]string{
 			"FOO": "BAR",
 		},

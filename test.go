@@ -44,7 +44,6 @@ func mintCommand(i interface{}, orderType command.OrderType) command.Command {
 	cmd := command.Command{
 		ID:        "TEST",
 		Timestamp: time.Now().Unix() - 5,
-		Timeout:   0,
 		Target:    command.Target{IP: "0.0.0.0"},
 		Order: command.Order{
 			Type: orderType,
@@ -128,7 +127,6 @@ func removeNetwork(dockerUseCase usecase.DockerUseCase, name string) {
 func createContainer(dockerUseCase usecase.DockerUseCase, name string, args []string) {
 	testContainer := command.Container{
 		BoundCPUs: nil, //TODO
-		Detach:    false,
 		Environment: map[string]string{
 			"FOO": "BAR",
 		},

@@ -125,12 +125,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	cmdCntl, err := getCommandController()
-	if err != nil {
-		panic(err)
-	}
-	go cmdCntl.Start()
-
 	restServer, err := getRestServer()
 	if err != nil {
 		panic(err)
@@ -139,6 +133,14 @@ func main() {
 	conf, err := config.NewConfig()
 	if err != nil {
 		panic(err)
+	}
+
+	if !conf.LocalMode {
+		cmdCntl, err := getCommandController()
+		if err != nil {
+			panic(err)
+		}
+		go cmdCntl.Start()
 	}
 
 	logger, err := conf.GetLogger()

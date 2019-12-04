@@ -36,28 +36,24 @@ import (
 )
 
 func TestRestHandler(t *testing.T) {
-	commands := []command.Command{
+	commands := [][]command.Command{[]command.Command{
 		command.Command{
-			ID:        "TEST",
-			Timestamp: 5,
-			Timeout:   0,
-			Target:    command.Target{IP: "0.0.0.0"},
+			ID:     "TEST",
+			Target: command.Target{IP: "0.0.0.0"},
 			Order: command.Order{
 				Type:    "createContainer",
 				Payload: map[string]interface{}{},
 			},
 		},
 		command.Command{
-			ID:        "TEST2",
-			Timestamp: 5,
-			Timeout:   0,
-			Target:    command.Target{IP: "0.0.0.0"},
+			ID:     "TEST2",
+			Target: command.Target{IP: "0.0.0.0"},
 			Order: command.Order{
 				Type:    "createContainer",
 				Payload: map[string]interface{}{},
 			},
 		},
-	}
+	}}
 	data, err := json.Marshal(commands)
 	assert.NoError(t, err)
 	req, err := http.NewRequest("POST", "/commands", bytes.NewReader(data))
@@ -76,42 +72,39 @@ func TestRestHandler(t *testing.T) {
 	rh := NewRestHandler(uc, logrus.New())
 
 	recorder := httptest.NewRecorder()
-	rh.AddCommands(recorder, req)
+	go rh.AddCommands(recorder, req)
 
-	for range commands {
+	for range commands[0] {
 		select {
 		case <-runChan:
 		case <-time.After(5 * time.Second):
 			t.Fatal("Report did not happen within 5 seconds")
 		}
 	}
-	uc.AssertNumberOfCalls(t, "Run", len(commands))
+
+	uc.AssertNumberOfCalls(t, "Run", len(commands[0]))
 	close(rh.(*restHandler).cmdChan)
 }
 
 func TestRestHandler_Requeue(t *testing.T) {
-	commands := []command.Command{
+	commands := [][]command.Command{[]command.Command{
 		command.Command{
-			ID:        "TEST",
-			Timestamp: 5,
-			Timeout:   0,
-			Target:    command.Target{IP: "0.0.0.0"},
+			ID:     "TEST",
+			Target: command.Target{IP: "0.0.0.0"},
 			Order: command.Order{
 				Type:    "createContainer",
 				Payload: map[string]interface{}{},
 			},
 		},
 		command.Command{
-			ID:        "TEST2",
-			Timestamp: 5,
-			Timeout:   0,
-			Target:    command.Target{IP: "0.0.0.0"},
+			ID:     "TEST2",
+			Target: command.Target{IP: "0.0.0.0"},
 			Order: command.Order{
 				Type:    "createContainer",
 				Payload: map[string]interface{}{},
 			},
 		},
-	}
+	}}
 	data, err := json.Marshal(commands)
 	assert.NoError(t, err)
 	req, err := http.NewRequest("POST", "/commands", bytes.NewReader(data))
@@ -125,14 +118,15 @@ func TestRestHandler_Requeue(t *testing.T) {
 		cmd, ok := args.Get(0).(command.Command)
 		assert.True(t, ok)
 		runChan <- cmd
-	}).Times(len(commands) * (maxRetries + 1))
+
+	}).Times(len(commands[0]) * (maxRetries + 1))
 
 	rh := NewRestHandler(uc, logrus.New())
 
 	recorder := httptest.NewRecorder()
-	rh.AddCommands(recorder, req)
+	go rh.AddCommands(recorder, req)
 
-	for i := 0; i < len(commands)*(maxRetries+1); i++ {
+	for i := 0; i < len(commands[0])*(maxRetries+1); i++ {
 		select {
 		case <-runChan:
 		case <-time.After(5 * time.Second):
@@ -144,28 +138,24 @@ func TestRestHandler_Requeue(t *testing.T) {
 }
 
 func TestRestHandler_Fatal(t *testing.T) {
-	commands := []command.Command{
+	commands := [][]command.Command{[]command.Command{
 		command.Command{
-			ID:        "TEST",
-			Timestamp: 5,
-			Timeout:   0,
-			Target:    command.Target{IP: "0.0.0.0"},
+			ID:     "TEST",
+			Target: command.Target{IP: "0.0.0.0"},
 			Order: command.Order{
 				Type:    "createContainer",
 				Payload: map[string]interface{}{},
 			},
 		},
 		command.Command{
-			ID:        "TEST2",
-			Timestamp: 5,
-			Timeout:   0,
-			Target:    command.Target{IP: "0.0.0.0"},
+			ID:     "TEST2",
+			Target: command.Target{IP: "0.0.0.0"},
 			Order: command.Order{
 				Type:    "createContainer",
 				Payload: map[string]interface{}{},
 			},
 		},
-	}
+	}}
 	data, err := json.Marshal(commands)
 	assert.NoError(t, err)
 	req, err := http.NewRequest("POST", "/commands", bytes.NewReader(data))
@@ -176,17 +166,19 @@ func TestRestHandler_Fatal(t *testing.T) {
 
 	uc := new(usecase.DockerUseCase)
 	uc.On("Run", mock.Anything).Return(entity.NewFatalResult("err")).Run(func(args mock.Arguments) {
+		t.Log("called run")
 		cmd, ok := args.Get(0).(command.Command)
 		assert.True(t, ok)
 		runChan <- cmd
-	}).Times(len(commands))
+
+	}).Times(len(commands[0]))
 
 	rh := NewRestHandler(uc, logrus.New())
 
 	recorder := httptest.NewRecorder()
-	rh.AddCommands(recorder, req)
+	go rh.AddCommands(recorder, req)
 
-	for range commands {
+	for range commands[0] {
 		select {
 		case <-runChan:
 		case <-time.After(5 * time.Second):

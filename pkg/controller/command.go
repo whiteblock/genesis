@@ -89,7 +89,9 @@ func (c *consumer) handleMessage(msg amqp.Delivery) {
 	pub, res := c.handle.Process(msg)
 	if res.IsRequeue() {
 		err := c.cmds.Requeue(msg, pub)
-		c.log.WithField("err", err).Error("failed to re-queue")
+		if err != nil {
+			c.log.WithField("err", err).Error("failed to re-queue")
+		}
 		return
 	}
 	if res.IsAllDone() {
