@@ -56,7 +56,7 @@ type restHandler struct {
 func NewRestHandler(uc usecase.DockerUseCase, log logrus.Ext1FieldLogger) RestHandler {
 	log.Debug("creating a new rest handler")
 	out := &restHandler{
-		cmdChan: make(chan commandWrapper),
+		cmdChan: make(chan commandWrapper, 200),
 		uc:      uc,
 		once:    &sync.Once{},
 		log:     log,
@@ -73,11 +73,13 @@ func (rH *restHandler) AddCommands(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, util.LogError(err).Error(), 400)
 		return
 	}
-	for _, commands := range cmds {
-		for _, cmd := range commands {
-			rH.cmdChan <- commandWrapper{cmd: cmd, retries: 0}
+	go func(cmds [][]command.Command) {
+		for _, commands := range cmds {
+			for _, cmd := range commands {
+				rH.cmdChan <- commandWrapper{cmd: cmd, retries: 0}
+			}
 		}
-	}
+	}(cmds)
 	w.Write([]byte("Success"))
 }
 
