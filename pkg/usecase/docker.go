@@ -21,13 +21,16 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/client"
-	"github.com/sirupsen/logrus"
+	"strings"
+	"time"
+
 	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/validator"
-	"strings"
+
+	"github.com/docker/docker/client"
+	"github.com/sirupsen/logrus"
 )
 
 //DockerUseCase is the usecase for executing the commands in docker
@@ -59,10 +62,7 @@ func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
 		return stat
 	}
 	duc.log.WithField("command", cmd).Trace("running command")
-	if cmd.Timeout == 0 {
-		return duc.Execute(context.Background(), cmd)
-	}
-	ctx, cancelFn := context.WithTimeout(context.Background(), cmd.Timeout)
+	ctx, cancelFn := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancelFn()
 	return duc.Execute(ctx, cmd)
 }

@@ -6,6 +6,7 @@ MOCKS=$(foreach x, $(DIRECTORIES), mocks/$(x))
 OUTPUT_DIR=./bin
 
 .PHONY: build test test_race lint vet get mocks clean-mocks manual-mocks
+.ONESHELL:
 
 all: prep tester genesis
 
@@ -41,6 +42,12 @@ mocks: $(MOCKS) manual-mocks
 $(MOCKS): mocks/% : %
 	mockery -output=$@ -dir=$^ -all
 
-manual-mocks:
-	git clone https://github.com/whiteblock/definition.git mocks/.src/definition
-	mockery -dir=mocks/.src/definition/command -output=mocks/definition/command -all
+manual-mocks: clone-definition mock-definition
+
+clone-definition:
+	git clone https://github.com/whiteblock/definition.git mocks/.src/definition || true
+
+mock-definition:
+	cd mocks/.src/definition/command/ &&\
+	mockery -dir=. -output=../../../../mocks/definition/command/ -all && \
+	cd -

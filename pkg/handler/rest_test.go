@@ -38,20 +38,16 @@ import (
 func TestRestHandler(t *testing.T) {
 	commands := [][]command.Command{[]command.Command{
 		command.Command{
-			ID:        "TEST",
-			Timestamp: 5,
-			Timeout:   0,
-			Target:    command.Target{IP: "0.0.0.0"},
+			ID:     "TEST",
+			Target: command.Target{IP: "0.0.0.0"},
 			Order: command.Order{
 				Type:    "createContainer",
 				Payload: map[string]interface{}{},
 			},
 		},
 		command.Command{
-			ID:        "TEST2",
-			Timestamp: 5,
-			Timeout:   0,
-			Target:    command.Target{IP: "0.0.0.0"},
+			ID:     "TEST2",
+			Target: command.Target{IP: "0.0.0.0"},
 			Order: command.Order{
 				Type:    "createContainer",
 				Payload: map[string]interface{}{},
@@ -93,20 +89,16 @@ func TestRestHandler(t *testing.T) {
 func TestRestHandler_Requeue(t *testing.T) {
 	commands := [][]command.Command{[]command.Command{
 		command.Command{
-			ID:        "TEST",
-			Timestamp: 5,
-			Timeout:   0,
-			Target:    command.Target{IP: "0.0.0.0"},
+			ID:     "TEST",
+			Target: command.Target{IP: "0.0.0.0"},
 			Order: command.Order{
 				Type:    "createContainer",
 				Payload: map[string]interface{}{},
 			},
 		},
 		command.Command{
-			ID:        "TEST2",
-			Timestamp: 5,
-			Timeout:   0,
-			Target:    command.Target{IP: "0.0.0.0"},
+			ID:     "TEST2",
+			Target: command.Target{IP: "0.0.0.0"},
 			Order: command.Order{
 				Type:    "createContainer",
 				Payload: map[string]interface{}{},
@@ -148,20 +140,16 @@ func TestRestHandler_Requeue(t *testing.T) {
 func TestRestHandler_Fatal(t *testing.T) {
 	commands := [][]command.Command{[]command.Command{
 		command.Command{
-			ID:        "TEST",
-			Timestamp: 5,
-			Timeout:   0,
-			Target:    command.Target{IP: "0.0.0.0"},
+			ID:     "TEST",
+			Target: command.Target{IP: "0.0.0.0"},
 			Order: command.Order{
 				Type:    "createContainer",
 				Payload: map[string]interface{}{},
 			},
 		},
 		command.Command{
-			ID:        "TEST2",
-			Timestamp: 5,
-			Timeout:   0,
-			Target:    command.Target{IP: "0.0.0.0"},
+			ID:     "TEST2",
+			Target: command.Target{IP: "0.0.0.0"},
 			Order: command.Order{
 				Type:    "createContainer",
 				Payload: map[string]interface{}{},
