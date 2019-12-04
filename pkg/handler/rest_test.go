@@ -72,7 +72,7 @@ func TestRestHandler(t *testing.T) {
 	rh := NewRestHandler(uc, logrus.New())
 
 	recorder := httptest.NewRecorder()
-	rh.AddCommands(recorder, req)
+	go rh.AddCommands(recorder, req)
 
 	for range commands[0] {
 		select {
@@ -124,7 +124,7 @@ func TestRestHandler_Requeue(t *testing.T) {
 	rh := NewRestHandler(uc, logrus.New())
 
 	recorder := httptest.NewRecorder()
-	rh.AddCommands(recorder, req)
+	go rh.AddCommands(recorder, req)
 
 	for i := 0; i < len(commands[0])*(maxRetries+1); i++ {
 		select {
@@ -176,7 +176,7 @@ func TestRestHandler_Fatal(t *testing.T) {
 	rh := NewRestHandler(uc, logrus.New())
 
 	recorder := httptest.NewRecorder()
-	rh.AddCommands(recorder, req)
+	go rh.AddCommands(recorder, req)
 
 	for range commands[0] {
 		select {

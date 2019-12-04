@@ -22,7 +22,7 @@ require (
 	github.com/vektra/mockery v0.0.0-20181123154057-e78b021dcbb5 // indirect
 	github.com/whiteblock/definition v0.0.0-20191204152450-b8eb51db2194
 	github.com/whiteblock/go.uuid v1.2.1
-	github.com/whiteblock/utility v0.0.0-20191025151649-f566a71bdc8c
+	github.com/whiteblock/utility v0.0.0-20191204153325-8c91068475f3
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 )

@@ -40,6 +40,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/whiteblock/utility/utils"
 )
 
 func TestNewDockerService(t *testing.T) {
@@ -103,7 +104,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 			require.True(t, ok)
 			require.NotNil(t, hostConfig)
 			assert.Equal(t, int64(2500000000), hostConfig.NanoCPUs)
-			assert.Equal(t, int64(5000000000), hostConfig.Memory)
+			assert.Equal(t, int64(5 * utils.Gibi), hostConfig.Memory)
 			{ //Port bindings
 				bindings, exists := hostConfig.PortBindings["8889/tcp"]
 				assert.True(t, exists)
