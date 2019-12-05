@@ -57,7 +57,8 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 	var allCmds [][]command.Command
 	err := json.Unmarshal(msg.Body, &allCmds)
 	if err != nil {
-		return amqp.Publishing{}, entity.Result{Error: err}
+		dh.log.WithField("error", err).Errorf("received a malformed command sausage")
+		return amqp.Publishing{}, entity.NewFatalResult(err)
 	}
 
 	if len(allCmds) == 0 {
@@ -73,17 +74,20 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 
 	if result.IsSuccess() {
 		if len(allCmds) != 1 {
+			dh.log.WithField("remaining", len(allCmds)-1).Debug("creating message for next round")
 			out, err = dh.msgUtil.GetNextMessage(msg, allCmds[1:])
 		} else {
+			dh.log.Debug("creating completion message")
 			out, err = dh.msgUtil.CreateMessage(map[string]string{
 				"testnetId": allCmds[0][0].Target.TestnetID,
 			})
 		}
 	} else {
+		dh.log.WithField("result", result).Debug("something went wrong, getting kickback message")
 		out, err = dh.msgUtil.GetKickbackMessage(msg)
 	}
 	if err != nil {
-		result = entity.NewFatalResult(msg)
+		result = entity.NewFatalResult(err)
 	}
 	return
 }
