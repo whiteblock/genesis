@@ -57,6 +57,7 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 		result := <-resultChan
 		exec.log.WithFields(logrus.Fields{"success": result.IsSuccess()}).Trace("finished processing a command")
 		if !result.IsSuccess() {
+			exec.log.WithField("result", result).Error("a command failed to execute")
 			err = errors.Wrap(err, result.Error.Error())
 			if result.IsFatal() {
 				return result

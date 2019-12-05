@@ -74,10 +74,12 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 
 	if result.IsSuccess() {
 		if len(allCmds) != 1 {
+			result = entity.NewRequeueResult()
 			dh.log.WithField("remaining", len(allCmds)-1).Debug("creating message for next round")
 			out, err = dh.msgUtil.GetNextMessage(msg, allCmds[1:])
 		} else {
 			dh.log.Debug("creating completion message")
+			result = entity.NewAllDoneResult()
 			out, err = dh.msgUtil.CreateMessage(map[string]string{
 				"testnetId": allCmds[0][0].Target.TestnetID,
 			})

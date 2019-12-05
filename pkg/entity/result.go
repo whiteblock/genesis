@@ -54,7 +54,7 @@ func (res Result) IsFatal() bool {
 // IsRequeue returns true if this result indicates that the command should be retried at a
 // later time
 func (res Result) IsRequeue() bool {
-	return !res.IsSuccess() && !res.IsFatal()
+	return res.Type == RequeueType || !res.IsSuccess() && !res.IsFatal()
 }
 
 const (
@@ -71,6 +71,9 @@ const (
 	FatalType
 	//ErrorType is the generic error type
 	ErrorType
+
+	//RequeueType is when there is no error but should requeue something
+	RequeueType
 )
 
 // NewSuccessResult indicates a successful result
@@ -91,4 +94,9 @@ func NewErrorResult(err interface{}) Result {
 //NewAllDoneResult creates a result for the all done condition
 func NewAllDoneResult() Result {
 	return Result{Type: AllDoneType, Error: nil}
+}
+
+//NewRequeueResult creates a new requeue result non-error
+func NewRequeueResult() Result {
+	return Result{Type: RequeueType, Error: nil}
 }
