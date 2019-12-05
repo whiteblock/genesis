@@ -90,8 +90,8 @@ func (ds dockerService) CreateClient(host string) (*client.Client, error) {
 	}
 	return client.NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
-		client.WithHost(host),
-		client.WithTLSClientConfig(ds.conf.CACertPath, ds.conf.CertPath, ds.conf.KeyPath),
+		client.WithHost(host))
+		//client.WithTLSClientConfig(ds.conf.CACertPath, ds.conf.CertPath, ds.conf.KeyPath),
 	)
 }
 
