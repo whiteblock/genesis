@@ -48,14 +48,7 @@ func TestNewDockerService(t *testing.T) {
 	repo := new(repoMock.DockerRepository)
 	aux := new(auxMock.DockerAuxillary)
 
-	expected := dockerService{
-		repo: repo,
-		aux:  aux,
-	}
-
-	ds := NewDockerService(repo, aux, entity.DockerConfig{}, logrus.New())
-
-	assert.NotNil(t, ds)
+	assert.NotNil(t, NewDockerService(repo, aux, entity.DockerConfig{}, nil))
 }
 
 func TestDockerService_CreateContainer(t *testing.T) {
