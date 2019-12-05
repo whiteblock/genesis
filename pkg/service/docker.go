@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"strconv"
 
 	"github.com/whiteblock/definition/command"
@@ -35,6 +36,8 @@ import (
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/tlsconfig"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -90,6 +93,27 @@ func NewDockerService(
 		log:  log}
 }
 
+func withTLSClientConfig(cacertPath, certPath, keyPath string) client.Opt {
+	return func(c *client.Client) error {
+		opts := tlsconfig.Options{
+			CAFile:             cacertPath,
+			CertFile:           certPath,
+			KeyFile:            keyPath,
+			ExclusiveRootPools: true,
+			InsecureSkipVerify: true,
+		}
+		config, err := tlsconfig.Client(opts)
+		if err != nil {
+			return errors.Wrap(err, "failed to create tls config")
+		}
+		if transport, ok := c.HTTPClient().Transport.(*http.Transport); ok {
+			transport.TLSClientConfig = config
+			return nil
+		}
+		return errors.Errorf("cannot apply tls config to transport: %T", c.HTTPClient().Transport)
+	}
+}
+
 //CreateClient creates a new client for connecting to the docker daemon
 func (ds dockerService) CreateClient(host string) (*client.Client, error) {
 	if ds.conf.LocalMode {
@@ -100,7 +124,7 @@ func (ds dockerService) CreateClient(host string) (*client.Client, error) {
 	return client.NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
 		client.WithHost("tcp://"+host+":2376"),
-		client.WithTLSClientConfig(ds.conf.CACertPath, ds.conf.CertPath, ds.conf.KeyPath),
+		withTLSClientConfig(ds.conf.CACertPath, ds.conf.CertPath, ds.conf.KeyPath),
 	)
 }
 
