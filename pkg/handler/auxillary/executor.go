@@ -19,11 +19,12 @@
 package auxillary
 
 import (
+	"fmt"
+
 	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/usecase"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -58,10 +59,10 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 		exec.log.WithFields(logrus.Fields{"success": result.IsSuccess()}).Trace("finished processing a command")
 		if !result.IsSuccess() {
 			exec.log.WithField("result", result).Error("a command failed to execute")
-			err = errors.Wrap(err, result.Error.Error())
 			if result.IsFatal() {
 				return result
 			}
+			err = fmt.Errorf("%v;%v", err, result.Error.Error())
 		}
 	}
 	if err != nil {

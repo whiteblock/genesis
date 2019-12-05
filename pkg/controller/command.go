@@ -103,8 +103,13 @@ func (c *consumer) handleMessage(msg amqp.Delivery) {
 			return
 		}
 	}
+
+	if res.IsFatal() {
+		c.log.WithField("result", res).Warn("fatal error with message")
+	} else {
+		c.log.Info("successfully completed a message")
+	}
 	msg.Ack(false)
-	c.log.Info("successfully completed a message")
 }
 
 func (c *consumer) loop() {
