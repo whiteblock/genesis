@@ -102,6 +102,7 @@ func (c *consumer) handleMessage(msg amqp.Delivery) {
 		}
 	}
 	msg.Ack(false)
+	c.log.Info("successfully completely a message")
 }
 
 func (c *consumer) loop() {
@@ -110,7 +111,7 @@ func (c *consumer) loop() {
 		c.log.Fatal(err)
 	}
 	for msg := range msgs {
-		c.log.Trace("recieved a message")
+		c.log.Info("recieved a message")
 		c.sem.Acquire(context.Background(), 1)
 		go c.handleMessage(msg)
 	}
