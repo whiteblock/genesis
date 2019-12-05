@@ -45,6 +45,7 @@ func getRestServer() (controller.RestController, error) {
 	if err != nil {
 		return nil, err
 	}
+	logger.SetReportCaller(true)
 
 	dockerRepository := repository.NewDockerRepository()
 
@@ -93,6 +94,7 @@ func getCommandController() (controller.CommandController, error) {
 	if err != nil {
 		return nil, err
 	}
+	logger.SetReportCaller(true)
 
 	return controller.NewCommandController(
 		conf.QueueMaxConcurrency,
