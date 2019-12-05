@@ -24,6 +24,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/genesis/pkg/entity"
@@ -303,6 +304,10 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, n
 	ds.log.WithFields(logrus.Fields{"name": net.Name, "conf": networkCreate}).Debug("creating a network")
 	_, err := ds.repo.NetworkCreate(ctx, cli, net.Name, networkCreate)
 	if err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			ds.log.WithFields(logrus.Fields{"name": net.Name, "error": err}).Error("duplicate error")
+			return entity.NewSuccessResult()
+		}
 		return entity.NewErrorResult(err)
 	}
 	return entity.NewSuccessResult()
