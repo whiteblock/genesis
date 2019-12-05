@@ -67,6 +67,7 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 
 	result = dh.aux.ExecuteCommands(allCmds[0])
 	if result.IsFatal() {
+		dh.log.WithField("result", result).Error("execution resulted")
 		return
 	}
 
