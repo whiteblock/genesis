@@ -35,7 +35,7 @@ import (
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 //DockerService provides a intermediate interface between docker and the order from a command
@@ -73,12 +73,21 @@ type dockerService struct {
 	repo repository.DockerRepository
 	aux  auxillary.DockerAuxillary
 	conf entity.DockerConfig
+	log  logrus.Ext1FieldLogger
 }
 
 //NewDockerService creates a new DockerService
-func NewDockerService(repo repository.DockerRepository, aux auxillary.DockerAuxillary,
-	conf entity.DockerConfig) DockerService {
-	return dockerService{conf: conf, repo: repo, aux: aux}
+func NewDockerService(
+	repo repository.DockerRepository,
+	aux auxillary.DockerAuxillary,
+	conf entity.DockerConfig,
+	log logrus.Ext1FieldLogger) DockerService {
+
+	return dockerService{
+		conf: conf,
+		repo: repo,
+		aux:  aux,
+		log:  log}
 }
 
 //CreateClient creates a new client for connecting to the docker daemon
@@ -91,7 +100,7 @@ func (ds dockerService) CreateClient(host string) (*client.Client, error) {
 	return client.NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
 		client.WithHost(host),
-		//client.WithTLSClientConfig(ds.conf.CACertPath, ds.conf.CertPath, ds.conf.KeyPath),
+		client.WithTLSClientConfig(ds.conf.CACertPath, ds.conf.CertPath, ds.conf.KeyPath),
 	)
 }
 
@@ -190,7 +199,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 
 //StartContainer attempts to start an already created docker container
 func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, sc command.StartContainer) entity.Result {
-	log.WithFields(log.Fields{"name": sc.Name}).Trace("starting container")
+	ds.log.WithFields(logrus.Fields{"name": sc.Name}).Trace("starting container")
 	opts := types.ContainerStartOptions{}
 	err := ds.repo.ContainerStart(ctx, cli, sc.Name, opts)
 	if err != nil {
@@ -223,6 +232,7 @@ func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, 
 
 //RemoveContainer attempts to remove a container
 func (ds dockerService) RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
+	ds.log.WithFields(logrus.Fields{"name": name}).Debug("removing container")
 	cntr, err := ds.aux.GetContainerByName(ctx, cli, name)
 	if err != nil {
 		return entity.NewErrorResult(err)
@@ -266,6 +276,7 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, n
 		networkCreate.Scope = "local"
 		networkCreate.Options["com.docker.network.bridge.name"] = net.Name
 	}
+	ds.log.WithFields(logrus.Fields{"name": net.Name, "conf": networkCreate}).Debug("creating a network")
 	_, err := ds.repo.NetworkCreate(ctx, cli, net.Name, networkCreate)
 	if err != nil {
 		return entity.NewErrorResult(err)
@@ -275,6 +286,7 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, n
 
 //RemoveNetwork attempts to remove a network
 func (ds dockerService) RemoveNetwork(ctx context.Context, cli *client.Client, name string) entity.Result {
+	ds.log.WithFields(logrus.Fields{"name": name}).Debug("removing a network")
 	net, err := ds.aux.GetNetworkByName(ctx, cli, name)
 	if err != nil {
 		return entity.NewErrorResult(err)

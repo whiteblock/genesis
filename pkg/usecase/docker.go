@@ -71,6 +71,7 @@ func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
 func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entity.Result {
 	cli, err := duc.service.CreateClient(cmd.Target.IP)
 	if err != nil {
+		duc.log.WithField("client", cli).Error("failed to create a client")
 		return entity.NewFatalResult(err)
 	}
 	duc.log.WithField("client", cli).Trace("created a client")

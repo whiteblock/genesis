@@ -55,7 +55,8 @@ func getRestServer() (controller.RestController, error) {
 				service.NewDockerService(
 					dockerRepository,
 					auxillary.NewDockerAuxillary(dockerRepository),
-					conf.GetDockerConfig()),
+					conf.GetDockerConfig(),
+					logger),
 				validator.NewOrderValidator(),
 				logger),
 			logger),
@@ -104,7 +105,8 @@ func getCommandController() (controller.CommandController, error) {
 						repository.NewDockerRepository(),
 						auxillary.NewDockerAuxillary(
 							repository.NewDockerRepository()),
-						conf.GetDockerConfig()),
+						conf.GetDockerConfig(),
+						logger),
 					validator.NewOrderValidator(),
 					logger),
 				logger),
