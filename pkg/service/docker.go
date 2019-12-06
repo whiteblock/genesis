@@ -92,7 +92,10 @@ func NewDockerService(
 }
 
 const (
-	DockerPort      = "2376"
+	//DockerPort is the port docker daemon is listening on
+	DockerPort = "2376"
+
+	//DockerSwarmPort is the docker swarm port
 	DockerSwarmPort = 2377
 )
 
