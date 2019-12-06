@@ -1,5 +1,3 @@
-//+build !test
-
 /*
 	Copyright 2019 whiteblock Inc.
 	This file is a part of the genesis.
@@ -22,189 +20,163 @@ package repository
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
 
-	"io"
+	"github.com/whiteblock/genesis/pkg/entity"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/api/types/volume"
-	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/tlsconfig"
+	"github.com/pkg/errors"
 )
 
-//NetworkDisconnect(ctx context.Context, networkID, containerID string, force bool) error
-
-//DockerRepository represents direct interacts with the docker daemon
+//DockerRepository provides extra functions for docker service, which could be placed inside of docker
+//service, but would make the testing more difficult
 type DockerRepository interface {
-	//ContainerAttach attaches to a container
-	ContainerAttach(ctx context.Context, cli entity.Client, container string,
-		options types.ContainerAttachOptions) (types.HijackedResponse, error)
+	//WithTLSClientConfig provides the opt for TLS auth
+	WithTLSClientConfig(cacertPath, certPath, keyPath string) client.Opt
 
-	//ContainerCreate creates a new container based in the given configuration. It can be associated with a name, but it's not mandatory.
-	ContainerCreate(ctx context.Context, cli entity.Client, config *container.Config, hostConfig *container.HostConfig,
-		networkingConfig *network.NetworkingConfig, containerName string) (container.ContainerCreateCreatedBody, error)
+	//EnsureImagePulled checks if the docker host contains an image and pulls it if it does not
+	EnsureImagePulled(ctx context.Context, cli entity.Client, imageName string) error
 
-	//ContainerList returns the list of containers in the docker host.
-	ContainerList(ctx context.Context, cli entity.Client, options types.ContainerListOptions) ([]types.Container, error)
+	//GetContainerByName attempts to find a container with the given name and return information on it.
+	GetContainerByName(ctx context.Context, cli entity.Client, containerName string) (types.Container, error)
 
-	//ContainerRemove kills and removes a container from the docker host.
-	ContainerRemove(ctx context.Context, cli entity.Client, containerID string, options types.ContainerRemoveOptions) error
+	//GetNetworkByName attempts to find a network with the given name and return information on it.
+	GetNetworkByName(ctx context.Context, cli entity.Client, networkName string) (types.NetworkResource, error)
 
-	//ContainerStart sends a request to the docker daemon to start a container.
-	ContainerStart(ctx context.Context, cli entity.Client, containerID string, options types.ContainerStartOptions) error
+	//GetVolumeByName attempts to find a volume with the given name and return information on it.
+	GetVolumeByName(ctx context.Context, cli entity.Client, volumeName string) (*types.Volume, error)
 
-	//CopyToContainer copies content into the container filesystem. Note that `content` must be a Reader for a TAR archive
-	CopyToContainer(ctx context.Context, cli entity.Client, containerID, dstPath string, content io.Reader,
-		options types.CopyToContainerOptions) error
-
-	//ImageList returns a list of images in the docker host
-	ImageList(ctx context.Context, cli entity.Client, options types.ImageListOptions) ([]types.ImageSummary, error)
-
-	//ImageLoad is used to upload a docker image
-	ImageLoad(ctx context.Context, cli entity.Client, input io.Reader, quiet bool) (types.ImageLoadResponse, error)
-
-	//ImagePull is used to pull a docker image
-	ImagePull(ctx context.Context, cli entity.Client, refStr string, options types.ImagePullOptions) (io.ReadCloser, error)
-
-	//NetworkCreate sends a request to the docker daemon to create a network
-	NetworkCreate(ctx context.Context, cli entity.Client, name string, options types.NetworkCreate) (types.NetworkCreateResponse, error)
-
-	//NetworkConnect connects a container to an existent network in the docker host.
-	NetworkConnect(ctx context.Context, cli entity.Client, networkID, containerID string, config *network.EndpointSettings) error
-
-	//NetworkDisconnect disconnects a container from an existent network in the docker host.
-	NetworkDisconnect(ctx context.Context, cli entity.Client, networkID, containerID string, force bool) error
-
-	//NetworkRemove sends a request to the docker daemon to remove a network
-	NetworkRemove(ctx context.Context, cli entity.Client, networkID string) error
-
-	//NetworkList lists the networks known to the docker daemon
-	NetworkList(ctx context.Context, cli entity.Client, options types.NetworkListOptions) ([]types.NetworkResource, error)
-
-	//VolumeList returns the volumes configured in the docker host.
-	VolumeList(ctx context.Context, cli entity.Client, filter filters.Args) (volume.VolumeListOKBody, error)
-
-	//VolumeRemove removes a volume from the docker host.
-	VolumeRemove(ctx context.Context, cli entity.Client, volumeID string, force bool) error
-
-	//VolumeCreate creates a volume in the container
-	VolumeCreate(ctx context.Context, cli entity.Client, options volume.VolumeCreateBody) (types.Volume, error)
+	//HostHasImage returns true if the docker host has an image matching what was given
+	HostHasImage(ctx context.Context, cli entity.Client, image string) (bool, error)
 }
 
 type dockerRepository struct {
 }
 
-//NewDockerRepository creates a new DockerRepository
+//NewDockerRepository creates a new DockerRepository instance
 func NewDockerRepository() DockerRepository {
 	return &dockerRepository{}
 }
 
-//ContainerAttach attaches to a container
-func (dr dockerRepository) ContainerAttach(ctx context.Context, cli entity.Client,
-	container string, options types.ContainerAttachOptions) (types.HijackedResponse, error) {
-
-	return cli.ContainerAttach(ctx, container, options)
+func (da dockerRepository) WithTLSClientConfig(cacertPath, certPath, keyPath string) client.Opt {
+	return func(c *client.Client) error {
+		opts := tlsconfig.Options{
+			CAFile:             cacertPath,
+			CertFile:           certPath,
+			KeyFile:            keyPath,
+			ExclusiveRootPools: true,
+			InsecureSkipVerify: true,
+		}
+		config, err := tlsconfig.Client(opts)
+		if err != nil {
+			return errors.Wrap(err, "failed to create tls config")
+		}
+		if transport, ok := c.HTTPClient().Transport.(*http.Transport); ok {
+			transport.TLSClientConfig = config
+			return nil
+		}
+		return errors.Errorf("cannot apply tls config to transport: %T", c.HTTPClient().Transport)
+	}
 }
 
-//ContainerCreate creates a new container based in the given configuration. It can be associated with a name, but it's not mandatory.
-func (dr dockerRepository) ContainerCreate(ctx context.Context, cli entity.Client, config *container.Config,
-	hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig,
-	containerName string) (container.ContainerCreateCreatedBody, error) {
-	return cli.ContainerCreate(ctx, config, hostConfig, networkingConfig, containerName)
+//HostHasImage returns true if the docker host has an image matching what was given
+func (da dockerRepository) HostHasImage(ctx context.Context, cli entity.Client, image string) (bool, error) {
+	imgs, err := cli.ImageList(ctx, types.ImageListOptions{All: false})
+	if err != nil {
+		return false, err
+	}
+	for _, img := range imgs {
+		for _, tag := range img.RepoTags {
+			if tag == image {
+				return true, nil
+			}
+		}
+		for _, digest := range img.RepoDigests {
+			if digest == image {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }
 
-//ContainerList returns the list of containers in the docker host.
-func (dr dockerRepository) ContainerList(ctx context.Context, cli entity.Client,
-	options types.ContainerListOptions) ([]types.Container, error) {
+//EnsureImagePulled checks if the docker host contains an image and pulls it if it does not
+func (da dockerRepository) EnsureImagePulled(ctx context.Context, cli entity.Client, imageName string) error {
+	exists, err := da.HostHasImage(ctx, cli, imageName)
+	if exists || err != nil {
+		return err
+	}
 
-	return cli.ContainerList(ctx, options)
+	rd, err := cli.ImagePull(ctx, imageName, types.ImagePullOptions{
+		Platform: "Linux", //TODO: pull out to a config
+	})
+	if err != nil {
+		return err
+	}
+
+	response, err := cli.ImageLoad(ctx, rd, true)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	_, err = ioutil.ReadAll(response.Body) //It might get stuck here...
+	return err
 }
 
-//ContainerRemove kills and removes a container from the docker host.
-func (dr dockerRepository) ContainerRemove(ctx context.Context, cli entity.Client,
-	containerID string, options types.ContainerRemoveOptions) error {
-
-	return cli.ContainerRemove(ctx, containerID, options)
+//GetNetworkByName attempts to find a network with the given name and return information on it.
+func (da dockerRepository) GetNetworkByName(ctx context.Context, cli entity.Client,
+	networkName string) (types.NetworkResource, error) {
+	nets, err := cli.NetworkList(ctx, types.NetworkListOptions{})
+	if err != nil {
+		return types.NetworkResource{}, err
+	}
+	for _, net := range nets {
+		if net.Name == networkName {
+			return net, nil
+		}
+	}
+	return types.NetworkResource{}, fmt.Errorf("could not find the network \"%s\"", networkName)
 }
 
-//ContainerStart sends a request to the docker daemon to start a container.
-func (dr dockerRepository) ContainerStart(ctx context.Context, cli entity.Client,
-	containerID string, options types.ContainerStartOptions) error {
-	return cli.ContainerStart(ctx, containerID, options)
+//GetContainerByName attempts to find a container with the given name and return information on it.
+func (da dockerRepository) GetContainerByName(ctx context.Context, cli entity.Client,
+	containerName string) (types.Container, error) {
+
+	cntrs, err := cli.ContainerList(ctx, types.ContainerListOptions{})
+	if err != nil {
+		return types.Container{}, err
+	}
+	for _, cntr := range cntrs {
+		for _, name := range cntr.Names {
+			if strings.Trim(name, "/") == strings.Trim(containerName, "/") {
+				return cntr, nil
+			}
+		}
+	}
+	return types.Container{}, fmt.Errorf("could not find the container \"%s\"", containerName)
 }
 
-//CopyToContainer copies content into the container filesystem. Note that `content` must be a Reader for a TAR archive
-func (dr dockerRepository) CopyToContainer(ctx context.Context, cli entity.Client,
-	containerID, dstPath string, content io.Reader,
-	options types.CopyToContainerOptions) error {
-	return cli.CopyToContainer(ctx, containerID, dstPath, content, options)
-}
+//GetVolumeByName attempts to find a volume with the given name and return information on it.
+func (da dockerRepository) GetVolumeByName(ctx context.Context, cli entity.Client, volumeName string) (*types.Volume, error) {
+	bdy, err := cli.VolumeList(ctx, filters.Args{})
+	if err != nil {
+		return nil, err
+	}
 
-//ImageLoad is used to upload a docker image
-func (dr dockerRepository) ImageLoad(ctx context.Context, cli entity.Client,
-	input io.Reader, quiet bool) (types.ImageLoadResponse, error) {
-
-	return cli.ImageLoad(ctx, input, quiet)
-}
-
-//ImagePull is used to pull a docker image
-func (dr dockerRepository) ImagePull(ctx context.Context, cli entity.Client,
-	refStr string, options types.ImagePullOptions) (io.ReadCloser, error) {
-
-	return cli.ImagePull(ctx, refStr, options)
-}
-
-//ImageList returns a list of images in the docker host
-func (dr dockerRepository) ImageList(ctx context.Context, cli entity.Client,
-	options types.ImageListOptions) ([]types.ImageSummary, error) {
-
-	return cli.ImageList(ctx, options)
-}
-
-//NetworkConnect connects a container to an existent network in the docker host.
-func (dr dockerRepository) NetworkConnect(ctx context.Context, cli entity.Client,
-	networkID, containerID string, config *network.EndpointSettings) error {
-	return cli.NetworkConnect(ctx, networkID, containerID, config)
-}
-
-//NetworkCreate sends a request to the docker daemon to create a network
-func (dr dockerRepository) NetworkCreate(ctx context.Context, cli entity.Client, name string,
-	options types.NetworkCreate) (types.NetworkCreateResponse, error) {
-	return cli.NetworkCreate(ctx, name, options)
-}
-
-//NetworkDisconnect disconnects a container from an existent network in the docker host.
-func (dr dockerRepository) NetworkDisconnect(ctx context.Context, cli entity.Client,
-	networkID, containerID string, force bool) error {
-
-	return cli.NetworkDisconnect(ctx, networkID, containerID, force)
-}
-
-//NetworkRemove sends a request to the docker daemon to remove a network
-func (dr dockerRepository) NetworkRemove(ctx context.Context, cli entity.Client, networkID string) error {
-	return cli.NetworkRemove(ctx, networkID)
-}
-
-//NetworkList lists the networks known to the docker daemon
-func (dr dockerRepository) NetworkList(ctx context.Context, cli entity.Client,
-	options types.NetworkListOptions) ([]types.NetworkResource, error) {
-	return cli.NetworkList(ctx, options)
-}
-
-//VolumeList returns the volumes configured in the docker host.
-func (dr dockerRepository) VolumeList(ctx context.Context, cli entity.Client,
-	filter filters.Args) (volume.VolumeListOKBody, error) {
-	return cli.VolumeList(ctx, filter)
-}
-
-//VolumeRemove removes a volume from the docker host.
-func (dr dockerRepository) VolumeRemove(ctx context.Context, cli entity.Client, volumeID string, force bool) error {
-	return cli.VolumeRemove(ctx, volumeID, force)
-}
-
-//VolumeCreate creates a volume in the container
-func (dr dockerRepository) VolumeCreate(ctx context.Context, cli entity.Client,
-	options volume.VolumeCreateBody) (types.Volume, error) {
-	return cli.VolumeCreate(ctx, options)
+	for _, vol := range bdy.Volumes {
+		if vol == nil {
+			continue
+		}
+		if vol.Name == volumeName {
+			return vol, nil
+		}
+	}
+	return nil, fmt.Errorf("could not find the volume \"%s\"", volumeName)
 }

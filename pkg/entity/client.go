@@ -20,12 +20,15 @@ package entity
 
 import (
 	"context"
+	"io"
+	"net/http"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/api/types/volume"
-	"io"
 )
 
 //Client is an interface which contains the needed methods from the docker client
@@ -51,6 +54,9 @@ type Client interface {
 	//CopyToContainer copies content into the container filesystem. Note that `content` must be a Reader for a TAR archive
 	CopyToContainer(ctx context.Context, containerID, dstPath string, content io.Reader,
 		options types.CopyToContainerOptions) error
+
+	//HTTPClient returns a copy of the HTTP client bound to the server
+	HTTPClient() *http.Client
 
 	//ImageList returns a list of images in the docker host
 	ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error)
@@ -79,6 +85,13 @@ type Client interface {
 	//NetworkList lists the networks known to the docker daemon
 	NetworkList(ctx context.Context, options types.NetworkListOptions) ([]types.NetworkResource, error)
 
+	//SwarmInit initializes the swarm.
+	SwarmInit(ctx context.Context, req swarm.InitRequest) (string, error)
+
+	//SwarmJoin joins the swarm.
+	SwarmJoin(ctx context.Context, req swarm.JoinRequest) error
+
+	//VolumeCreate creates a volume in the docker host.
 	VolumeCreate(ctx context.Context, options volume.VolumeCreateBody) (types.Volume, error)
 
 	//VolumeList returns the volumes configured in the docker host.
