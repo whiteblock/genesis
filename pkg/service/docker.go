@@ -234,13 +234,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, sc command.StartContainer) entity.Result {
 	ds.log.WithFields(logrus.Fields{"name": sc.Name}).Trace("starting container")
 	opts := types.ContainerStartOptions{}
-	err := ds.repo.ContainerStart(ctx, cli, sc.Name, opts)
-	if err != nil {
-		return entity.NewErrorResult(err)
-	}
-	if !sc.Attach {
-		return entity.NewSuccessResult()
-	}
+
 	attachOpts := types.ContainerAttachOptions{
 		Stream: true,
 		Stdin:  false,
@@ -252,10 +246,19 @@ func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, 
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
-
 	err = hijacked.Conn.SetDeadline(time.Now().Add(sc.Timeout))
 	if err != nil {
 		return entity.NewErrorResult(err)
+	}
+
+	defer hijacked.Close()
+
+	err = ds.repo.ContainerStart(ctx, cli, sc.Name, opts)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+	if !sc.Attach {
+		return entity.NewSuccessResult()
 	}
 
 	stdout := new(bytes.Buffer)
