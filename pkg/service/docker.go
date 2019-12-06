@@ -19,12 +19,13 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/genesis/pkg/entity"
@@ -37,7 +38,9 @@ import (
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/tlsconfig"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -249,13 +252,17 @@ func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, 
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
-	defer hijacked.Close()
-	buff := make([]byte, 10)
-	for err == nil {
-		_, err = hijacked.Reader.Read(buff)
-	}
-	if err != io.EOF {
+
+	err = hijacked.Conn.SetDeadline(time.Now().Add(sc.Timeout))
+	if err != nil {
 		return entity.NewErrorResult(err)
+	}
+
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+	_, err = stdcopy.StdCopy(stdout, stderr, hijacked.Reader)
+	if err != nil {
+		return entity.NewFatalResult(err)
 	}
 	return entity.NewSuccessResult()
 }
