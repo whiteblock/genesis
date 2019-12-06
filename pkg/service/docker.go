@@ -506,6 +506,7 @@ func (ds dockerService) SwarmCluster(ctx context.Context, _ entity.Client,
 	}
 	cli, err := ds.CreateClient(dswarm.Hosts[0])
 	if err != nil {
+		ds.log.WithField("error", err).Error("creating the manager client")
 		return entity.NewErrorResult(err)
 	}
 	token, err := cli.SwarmInit(ctx, swarm.InitRequest{
@@ -515,6 +516,7 @@ func (ds dockerService) SwarmCluster(ctx context.Context, _ entity.Client,
 		Availability:    swarm.NodeAvailabilityActive,
 	})
 	if err != nil {
+		ds.log.WithField("error", err).Error("error with docker swarm init")
 		return entity.NewErrorResult(err)
 	}
 
