@@ -63,6 +63,7 @@ type DockerService interface {
 	RemoveVolume(ctx context.Context, cli entity.Client, name string) entity.Result
 	PlaceFileInContainer(ctx context.Context, cli entity.Client, containerName string, file command.IFile) entity.Result
 	Emulation(ctx context.Context, cli entity.Client, netem command.Netconf) entity.Result
+	SwarmCluster(ctx context.Context, cli entity.Client, swarm command.SetupSwarm) entity.Result
 
 	//CreateClient creates a new client for connecting to the docker daemon
 	CreateClient(host string) (entity.Client, error)
@@ -89,6 +90,11 @@ func NewDockerService(
 		log:  log}
 }
 
+const (
+	DockerPort      = "2376"
+	DockerSwarmPort = 2377
+)
+
 //CreateClient creates a new client for connecting to the docker daemon
 func (ds dockerService) CreateClient(host string) (entity.Client, error) {
 	if ds.conf.LocalMode {
@@ -98,7 +104,7 @@ func (ds dockerService) CreateClient(host string) (entity.Client, error) {
 	}
 	return client.NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
-		client.WithHost("tcp://"+host+":2376"),
+		client.WithHost("tcp://"+host+":"+DockerPort),
 		ds.repo.WithTLSClientConfig(ds.conf.CACertPath, ds.conf.CertPath, ds.conf.KeyPath),
 	)
 }
@@ -486,4 +492,43 @@ func (ds dockerService) Emulation(ctx context.Context, cli entity.Client, netem 
 		return entity.NewFatalResult(err)
 	}
 	return ds.StartContainer(ctx, cli, command.StartContainer{Name: name})
+}
+
+func (ds dockerService) SwarmCluster(ctx context.Context, _ entity.Client,
+	swarm command.SetupSwarm) entity.Result {
+
+	if len(swarm.Hosts) == 0 {
+		return entity.NewFatalResult("no hosts given")
+	}
+	cli, err := ds.CreateClient(swarm.Hosts[0])
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+	token, err := cli.SwarmInit(ctx, swarm.InitRequest{
+		ListenAddr:      fmt.Sprintf("%s:%d", swarm.Hosts[0], DockerSwarmPort),
+		AdvertiseAddr:   fmt.Sprintf("%s:%d", swarm.Hosts[0], DockerSwarmPort),
+		ForceNewCluster: true,
+		Availability:    swarm.NodeAvailabilityActive,
+	})
+	if len(swarm.Hosts) == 1 {
+		return entity.NewSuccessResult()
+	}
+
+	for _, host := range swarm.Hosts[1:] {
+		cli, err := ds.CreateClient(swarm.Hosts[0])
+		if err != nil {
+			return entity.NewErrorResult(err)
+		}
+		err = cli.SwarmJoin(ctx, swarm.JoinRequest{
+			ListenAddr:    fmt.Sprintf("%s:%d", host, DockerSwarmPort),
+			AdvertiseAddr: fmt.Sprintf("%s:%d", host, DockerSwarmPort),
+			RemoteAddrs:   []string{fmt.Sprintf("%s:%d", swarm.Hosts[0], DockerSwarmPort)},
+			JoinToken:     token,
+			Availability:  swarm.NodeAvailabilityActive,
+		})
+		if err != nil {
+			return entity.NewErrorResult(err)
+		}
+	}
+	return entity.NewSuccessResult()
 }

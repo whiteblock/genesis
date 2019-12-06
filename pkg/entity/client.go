@@ -27,6 +27,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/api/types/volume"
 )
 
@@ -84,6 +85,13 @@ type Client interface {
 	//NetworkList lists the networks known to the docker daemon
 	NetworkList(ctx context.Context, options types.NetworkListOptions) ([]types.NetworkResource, error)
 
+	//SwarmInit initializes the swarm.
+	SwarmInit(ctx context.Context, req swarm.InitRequest) (string, error)
+
+	//SwarmJoin joins the swarm.
+	SwarmJoin(ctx context.Context, req swarm.JoinRequest) error
+
+	//VolumeCreate creates a volume in the docker host.
 	VolumeCreate(ctx context.Context, options volume.VolumeCreateBody) (types.Volume, error)
 
 	//VolumeList returns the volumes configured in the docker host.
