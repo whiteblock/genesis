@@ -169,7 +169,7 @@ func TestDeliveryHandler_Process_Execute_Fatal_Failure(t *testing.T) {
 	aux := new(auxMocks.Executor)
 	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewFatalResult("err")).Once()
 	util := new(utilityMocks.AMQPMessage)
-
+	util.On("CreateMessage", mock.Anything).Return(amqp.Publishing{}, nil).Once()
 	dh := NewDeliveryHandler(aux, util, logrus.New())
 
 	cmd := [][]command.Command{

@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/whiteblock/definition/command"
+	"github.com/whiteblock/definition/command/biome"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/handler/auxillary"
 	"github.com/whiteblock/genesis/pkg/utility"
@@ -68,6 +69,9 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 
 	result = dh.aux.ExecuteCommands(allCmds[0])
 	if result.IsFatal() {
+		out, err = dh.msgUtil.CreateMessage(biome.DestroyBiome{
+			TestnetID: allCmds[0][0].Target.TestnetID,
+		})
 		dh.log.WithField("result", result).Error("execution resulted")
 		return
 	}
@@ -80,8 +84,8 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 		} else {
 			dh.log.Debug("creating completion message")
 			result = entity.NewAllDoneResult()
-			out, err = dh.msgUtil.CreateMessage(map[string]string{
-				"testnetId": allCmds[0][0].Target.TestnetID,
+			out, err = dh.msgUtil.CreateMessage(biome.DestroyBiome{
+				TestnetID: allCmds[0][0].Target.TestnetID,
 			})
 		}
 	} else {

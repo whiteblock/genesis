@@ -95,7 +95,7 @@ func (c *consumer) handleMessage(msg amqp.Delivery) {
 		}
 		return
 	}
-	if res.IsAllDone() {
+	if res.IsAllDone() || res.IsFatal() {
 		c.log.Info("sending the all done signal")
 		err := c.completion.Send(pub)
 		if err != nil {
@@ -103,12 +103,8 @@ func (c *consumer) handleMessage(msg amqp.Delivery) {
 			return
 		}
 	}
+	c.log.Info("successfully completed a message")
 
-	if res.IsFatal() {
-		c.log.WithField("result", res).Warn("fatal error with message")
-	} else {
-		c.log.Info("successfully completed a message")
-	}
 	msg.Ack(false)
 }
 
