@@ -33,6 +33,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/strslice"
+	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
@@ -495,34 +496,39 @@ func (ds dockerService) Emulation(ctx context.Context, cli entity.Client, netem 
 }
 
 func (ds dockerService) SwarmCluster(ctx context.Context, _ entity.Client,
-	swarm command.SetupSwarm) entity.Result {
+	dswarm command.SetupSwarm) entity.Result {
 
-	if len(swarm.Hosts) == 0 {
+	if len(dswarm.Hosts) == 0 {
 		return entity.NewFatalResult("no hosts given")
 	}
-	cli, err := ds.CreateClient(swarm.Hosts[0])
+	cli, err := ds.CreateClient(dswarm.Hosts[0])
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
 	token, err := cli.SwarmInit(ctx, swarm.InitRequest{
-		ListenAddr:      fmt.Sprintf("%s:%d", swarm.Hosts[0], DockerSwarmPort),
-		AdvertiseAddr:   fmt.Sprintf("%s:%d", swarm.Hosts[0], DockerSwarmPort),
+		ListenAddr:      fmt.Sprintf("%s:%d", dswarm.Hosts[0], DockerSwarmPort),
+		AdvertiseAddr:   fmt.Sprintf("%s:%d", dswarm.Hosts[0], DockerSwarmPort),
 		ForceNewCluster: true,
 		Availability:    swarm.NodeAvailabilityActive,
 	})
-	if len(swarm.Hosts) == 1 {
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+
+	ds.log.WithField("token", token).Info("initializing docker swarm")
+	if len(dswarm.Hosts) == 1 {
 		return entity.NewSuccessResult()
 	}
 
-	for _, host := range swarm.Hosts[1:] {
-		cli, err := ds.CreateClient(swarm.Hosts[0])
+	for _, host := range dswarm.Hosts[1:] {
+		cli, err := ds.CreateClient(host)
 		if err != nil {
 			return entity.NewErrorResult(err)
 		}
 		err = cli.SwarmJoin(ctx, swarm.JoinRequest{
 			ListenAddr:    fmt.Sprintf("%s:%d", host, DockerSwarmPort),
 			AdvertiseAddr: fmt.Sprintf("%s:%d", host, DockerSwarmPort),
-			RemoteAddrs:   []string{fmt.Sprintf("%s:%d", swarm.Hosts[0], DockerSwarmPort)},
+			RemoteAddrs:   []string{fmt.Sprintf("%s:%d", dswarm.Hosts[0], DockerSwarmPort)},
 			JoinToken:     token,
 			Availability:  swarm.NodeAvailabilityActive,
 		})
