@@ -96,7 +96,7 @@ const (
 	DockerPort = "2376"
 
 	//DockerSwarmPort is the docker swarm port
-	DockerSwarmPort = 2377
+	DockerSwarmPort = 2477
 )
 
 //CreateClient creates a new client for connecting to the docker daemon
