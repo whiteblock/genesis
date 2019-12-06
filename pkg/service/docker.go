@@ -216,6 +216,11 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 
 	_, err = ds.repo.ContainerCreate(ctx, cli, config, hostConfig, networkConfig, dContainer.Name)
 	if err != nil {
+		if strings.Contains(err.Error(), "already in use by container") {
+			ds.log.WithFields(logrus.Fields{"name": dContainer.Name,
+				"error": err}).Error("duplicate container error")
+			return entity.NewSuccessResult()
+		}
 		return entity.NewFatalResult(err)
 	}
 
