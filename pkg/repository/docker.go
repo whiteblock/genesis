@@ -16,27 +16,30 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package auxillary
+package repository
 
 import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"strings"
-	
-	//log "github.com/sirupsen/logrus"
+
 	"github.com/whiteblock/genesis/pkg/entity"
-	"github.com/whiteblock/genesis/pkg/repository"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
-
-	
+	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/tlsconfig"
+	"github.com/pkg/errors"
 )
 
-//DockerAuxillary provides extra functions for docker service, which could be placed inside of docker
+//DockerRepository provides extra functions for docker service, which could be placed inside of docker
 //service, but would make the testing more difficult
-type DockerAuxillary interface {
+type DockerRepository interface {
+	//WithTLSClientConfig provides the opt for TLS auth
+	WithTLSClientConfig(cacertPath, certPath, keyPath string) client.Opt
+
 	//EnsureImagePulled checks if the docker host contains an image and pulls it if it does not
 	EnsureImagePulled(ctx context.Context, cli entity.Client, imageName string) error
 
@@ -53,18 +56,38 @@ type DockerAuxillary interface {
 	HostHasImage(ctx context.Context, cli entity.Client, image string) (bool, error)
 }
 
-type dockerAuxillary struct {
-	repo repository.DockerRepository
+type dockerRepository struct {
 }
 
-//NewDockerAuxillary creates a new DockerAuxillary instance
-func NewDockerAuxillary(repo repository.DockerRepository) DockerAuxillary {
-	return &dockerAuxillary{repo: repo}
+//NewDockerRepository creates a new DockerRepository instance
+func NewDockerRepository() DockerRepository {
+	return &dockerRepository{}
+}
+
+func (da dockerRepository) WithTLSClientConfig(cacertPath, certPath, keyPath string) client.Opt {
+	return func(c *client.Client) error {
+		opts := tlsconfig.Options{
+			CAFile:             cacertPath,
+			CertFile:           certPath,
+			KeyFile:            keyPath,
+			ExclusiveRootPools: true,
+			InsecureSkipVerify: true,
+		}
+		config, err := tlsconfig.Client(opts)
+		if err != nil {
+			return errors.Wrap(err, "failed to create tls config")
+		}
+		if transport, ok := c.HTTPClient().Transport.(*http.Transport); ok {
+			transport.TLSClientConfig = config
+			return nil
+		}
+		return errors.Errorf("cannot apply tls config to transport: %T", c.HTTPClient().Transport)
+	}
 }
 
 //HostHasImage returns true if the docker host has an image matching what was given
-func (da dockerAuxillary) HostHasImage(ctx context.Context, cli entity.Client, image string) (bool, error) {
-	imgs, err := da.repo.ImageList(ctx, cli, types.ImageListOptions{All: false})
+func (da dockerRepository) HostHasImage(ctx context.Context, cli entity.Client, image string) (bool, error) {
+	imgs, err := cli.ImageList(ctx, types.ImageListOptions{All: false})
 	if err != nil {
 		return false, err
 	}
@@ -84,20 +107,20 @@ func (da dockerAuxillary) HostHasImage(ctx context.Context, cli entity.Client, i
 }
 
 //EnsureImagePulled checks if the docker host contains an image and pulls it if it does not
-func (da dockerAuxillary) EnsureImagePulled(ctx context.Context, cli entity.Client, imageName string) error {
+func (da dockerRepository) EnsureImagePulled(ctx context.Context, cli entity.Client, imageName string) error {
 	exists, err := da.HostHasImage(ctx, cli, imageName)
 	if exists || err != nil {
 		return err
 	}
 
-	rd, err := da.repo.ImagePull(ctx, cli, imageName, types.ImagePullOptions{
+	rd, err := cli.ImagePull(ctx, imageName, types.ImagePullOptions{
 		Platform: "Linux", //TODO: pull out to a config
 	})
 	if err != nil {
 		return err
 	}
 
-	response, err := da.repo.ImageLoad(ctx, cli, rd, true)
+	response, err := cli.ImageLoad(ctx, rd, true)
 	if err != nil {
 		return err
 	}
@@ -108,9 +131,9 @@ func (da dockerAuxillary) EnsureImagePulled(ctx context.Context, cli entity.Clie
 }
 
 //GetNetworkByName attempts to find a network with the given name and return information on it.
-func (da dockerAuxillary) GetNetworkByName(ctx context.Context, cli entity.Client,
+func (da dockerRepository) GetNetworkByName(ctx context.Context, cli entity.Client,
 	networkName string) (types.NetworkResource, error) {
-	nets, err := da.repo.NetworkList(ctx, cli, types.NetworkListOptions{})
+	nets, err := cli.NetworkList(ctx, types.NetworkListOptions{})
 	if err != nil {
 		return types.NetworkResource{}, err
 	}
@@ -123,10 +146,10 @@ func (da dockerAuxillary) GetNetworkByName(ctx context.Context, cli entity.Clien
 }
 
 //GetContainerByName attempts to find a container with the given name and return information on it.
-func (da dockerAuxillary) GetContainerByName(ctx context.Context, cli entity.Client,
+func (da dockerRepository) GetContainerByName(ctx context.Context, cli entity.Client,
 	containerName string) (types.Container, error) {
 
-	cntrs, err := da.repo.ContainerList(ctx, cli, types.ContainerListOptions{})
+	cntrs, err := cli.ContainerList(ctx, types.ContainerListOptions{})
 	if err != nil {
 		return types.Container{}, err
 	}
@@ -141,8 +164,8 @@ func (da dockerAuxillary) GetContainerByName(ctx context.Context, cli entity.Cli
 }
 
 //GetVolumeByName attempts to find a volume with the given name and return information on it.
-func (da dockerAuxillary) GetVolumeByName(ctx context.Context, cli entity.Client, volumeName string) (*types.Volume, error) {
-	bdy, err := da.repo.VolumeList(ctx, cli, filters.Args{})
+func (da dockerRepository) GetVolumeByName(ctx context.Context, cli entity.Client, volumeName string) (*types.Volume, error) {
+	bdy, err := cli.VolumeList(ctx, filters.Args{})
 	if err != nil {
 		return nil, err
 	}

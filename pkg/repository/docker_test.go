@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package auxillary
+package repository
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ import (
 	"strings"
 	"testing"
 
-	repository "github.com/whiteblock/genesis/mocks/pkg/repository"
+	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/volume"
@@ -34,44 +34,43 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDockerAuxillary_GetNetworkByName_Success(t *testing.T) {
+func TestDockerRepository_GetNetworkByName_Success(t *testing.T) {
 	results := []types.NetworkResource{
 		types.NetworkResource{Name: "test1", ID: "id1"},
 		types.NetworkResource{Name: "test2", ID: "id2"},
 	}
-	repo := new(repository.DockerRepository)
-	repo.On("NetworkList", mock.Anything, mock.Anything, mock.Anything).Return(results, nil).Run(
+	cli := new(entityMock.Client)
+	cli.On("NetworkList", mock.Anything, mock.Anything).Return(results, nil).Run(
 		func(args mock.Arguments) {
 
-			require.Len(t, args, 3)
+			require.Len(t, args, 2)
 			assert.Nil(t, args.Get(0))
-			assert.Nil(t, args.Get(1))
 		}).Times(len(results) + 1)
-	ds := NewDockerAuxillary(repo)
+	ds := NewDockerRepository()
 
 	for _, result := range results {
-		net, err := ds.GetNetworkByName(nil, nil, result.Name)
+		net, err := ds.GetNetworkByName(nil, cli, result.Name)
 		assert.NoError(t, err)
 		assert.Equal(t, result, net)
 	}
 
-	_, err := ds.GetNetworkByName(nil, nil, "DNE")
+	_, err := ds.GetNetworkByName(nil, cli, "DNE")
 	assert.Error(t, err)
 
-	repo.AssertExpectations(t)
+	cli.AssertExpectations(t)
 }
 
-func TestDockerAuxillary_GetNetworkByName_Failure(t *testing.T) {
-	repo := new(repository.DockerRepository)
-	repo.On("NetworkList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("eerrr")).Once()
-	ds := NewDockerAuxillary(repo)
-	_, err := ds.GetNetworkByName(nil, nil, "foo")
+func TestDockerRepository_GetNetworkByName_Failure(t *testing.T) {
+	cli := new(entityMock.Client)
+	cli.On("NetworkList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("eerrr")).Once()
+	ds := NewDockerRepository()
+	_, err := ds.GetNetworkByName(nil, cli, "foo")
 	assert.Error(t, err)
 
-	repo.AssertExpectations(t)
+	cli.AssertExpectations(t)
 }
 
-func TestDockerAuxillary_HostHasImage_Success(t *testing.T) {
+func TestDockerRepository_HostHasImage_Success(t *testing.T) {
 	testImageList := []types.ImageSummary{
 		types.ImageSummary{RepoDigests: []string{"test0"}, RepoTags: []string{"test2"}},
 		types.ImageSummary{RepoDigests: []string{"test3"}, RepoTags: []string{"test4"}},
@@ -84,42 +83,41 @@ func TestDockerAuxillary_HostHasImage_Success(t *testing.T) {
 	noneExistingImageTags := []string{"A", "B"}
 	noneExistingImageDigests := []string{"C", "D"}
 
-	repo := new(repository.DockerRepository)
-	repo.On("ImageList", mock.Anything, mock.Anything, mock.Anything).Return(testImageList, nil).Run(
+	cli := new(entityMock.Client)
+	cli.On("ImageList", mock.Anything, mock.Anything).Return(testImageList, nil).Run(
 		func(args mock.Arguments) {
 
-			require.Len(t, args, 3)
+			require.Len(t, args, 2)
 			assert.Nil(t, args.Get(0))
-			assert.Nil(t, args.Get(1))
 		})
 
-	ds := NewDockerAuxillary(repo)
+	ds := NewDockerRepository()
 
 	for _, term := range append(existingImageTags, existingImageDigests...) {
-		exists, err := ds.HostHasImage(nil, nil, term)
+		exists, err := ds.HostHasImage(nil, cli, term)
 		assert.NoError(t, err)
 		assert.True(t, exists)
 	}
 
 	for _, term := range append(noneExistingImageTags, noneExistingImageDigests...) {
-		exists, err := ds.HostHasImage(nil, nil, term)
+		exists, err := ds.HostHasImage(nil, cli, term)
 		assert.NoError(t, err)
 		assert.False(t, exists)
 	}
 }
 
-func TestDockerAuxillary_HostHasImage_Failure(t *testing.T) {
+func TestDockerRepository_HostHasImage_Failure(t *testing.T) {
 
-	repo := new(repository.DockerRepository)
-	repo.On("ImageList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err"))
+	cli := new(entityMock.Client)
+	cli.On("ImageList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err"))
 
-	ds := NewDockerAuxillary(repo)
-	exists, err := ds.HostHasImage(nil, nil, "foo")
+	ds := NewDockerRepository()
+	exists, err := ds.HostHasImage(nil, cli, "foo")
 	assert.Error(t, err)
 	assert.False(t, exists)
 }
 
-func TestDockerAuxillary_EnsureImagePulled(t *testing.T) {
+func TestDockerRepository_EnsureImagePulled(t *testing.T) {
 	testImageList := []types.ImageSummary{
 		types.ImageSummary{RepoDigests: []string{"test0"}, RepoTags: []string{"test2"}},
 		types.ImageSummary{RepoDigests: []string{"test3"}, RepoTags: []string{"test4"}},
@@ -131,74 +129,71 @@ func TestDockerAuxillary_EnsureImagePulled(t *testing.T) {
 	nonExistingImages := []string{"A", "B"}
 	testReader := strings.NewReader("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
 
-	repo := new(repository.DockerRepository)
-	repo.On("ImageList", mock.Anything, mock.Anything, mock.Anything).Return(testImageList, nil).Run(
+	cli := new(entityMock.Client)
+	cli.On("ImageList", mock.Anything, mock.Anything).Return(testImageList, nil).Run(
 		func(args mock.Arguments) {
 
-			require.Len(t, args, 3)
+			require.Len(t, args, 2)
 			assert.Nil(t, args.Get(0))
-			assert.Nil(t, args.Get(1))
 		}).Times(len(nonExistingImages) + len(existingImages))
 
-	repo.On("ImagePull", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+	cli.On("ImagePull", mock.Anything, mock.Anything, mock.Anything).Return(
 		ioutil.NopCloser(testReader), nil).Run(func(args mock.Arguments) {
 		testReader.Reset("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
-		require.Len(t, args, 4)
+		require.Len(t, args, 3)
 		assert.Nil(t, args.Get(0))
-		assert.Nil(t, args.Get(1))
-		ipo, ok := args.Get(3).(types.ImagePullOptions)
+		ipo, ok := args.Get(2).(types.ImagePullOptions)
 		require.True(t, ok)
 		assert.Equal(t, "Linux", ipo.Platform)
 	}).Times(len(nonExistingImages))
 
-	repo.On("ImageLoad", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+	cli.On("ImageLoad", mock.Anything, mock.Anything, mock.Anything).Return(
 		types.ImageLoadResponse{
 			Body: ioutil.NopCloser(testReader),
 		}, nil).Run(
 		func(args mock.Arguments) {
 
-			require.Len(t, args, 4)
+			require.Len(t, args, 3)
 			assert.Nil(t, args.Get(0))
-			assert.Nil(t, args.Get(1))
-			rdr, ok := args.Get(2).(io.Reader)
+			rdr, ok := args.Get(1).(io.Reader)
 			require.True(t, ok)
 			require.NotNil(t, rdr)
 		}).Times(len(nonExistingImages))
 
-	ds := NewDockerAuxillary(repo)
+	ds := NewDockerRepository()
 
 	for _, img := range existingImages {
-		err := ds.EnsureImagePulled(nil, nil, img)
+		err := ds.EnsureImagePulled(nil, cli, img)
 		assert.NoError(t, err)
 	}
 
 	for _, img := range nonExistingImages {
-		err := ds.EnsureImagePulled(nil, nil, img)
+		err := ds.EnsureImagePulled(nil, cli, img)
 		assert.NoError(t, err)
 	}
-	repo.AssertExpectations(t)
+	cli.AssertExpectations(t)
 }
 
-func TestDockerAuxillary_EnsureImagePulled_ImagePull_Failure(t *testing.T) {
+func TestDockerRepository_EnsureImagePulled_ImagePull_Failure(t *testing.T) {
 	testImageList := []types.ImageSummary{
 		types.ImageSummary{RepoDigests: []string{"test0"}, RepoTags: []string{"test2"}},
 		types.ImageSummary{RepoDigests: []string{"test3"}, RepoTags: []string{"test4"}},
 	}
 
-	repo := new(repository.DockerRepository)
-	repo.On("ImageList", mock.Anything, mock.Anything, mock.Anything).Return(testImageList, nil).Once()
+	cli := new(entityMock.Client)
+	cli.On("ImageList", mock.Anything, mock.Anything, mock.Anything).Return(testImageList, nil).Once()
 
-	repo.On("ImagePull", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+	cli.On("ImagePull", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
 		nil, fmt.Errorf("err")).Once()
 
-	ds := NewDockerAuxillary(repo)
+	ds := NewDockerRepository()
 
-	err := ds.EnsureImagePulled(nil, nil, "Foobar")
+	err := ds.EnsureImagePulled(nil, cli, "Foobar")
 	assert.Error(t, err)
-	repo.AssertExpectations(t)
+	cli.AssertExpectations(t)
 }
 
-func TestDockerAuxillary_EnsureImagePulled_ImageLoad_Failure(t *testing.T) {
+func TestDockerRepository_EnsureImagePulled_ImageLoad_Failure(t *testing.T) {
 	testImageList := []types.ImageSummary{
 		types.ImageSummary{RepoDigests: []string{"test0"}, RepoTags: []string{"test2"}},
 		types.ImageSummary{RepoDigests: []string{"test3"}, RepoTags: []string{"test4"}},
@@ -206,108 +201,106 @@ func TestDockerAuxillary_EnsureImagePulled_ImageLoad_Failure(t *testing.T) {
 
 	testReader := strings.NewReader("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
 
-	repo := new(repository.DockerRepository)
-	repo.On("ImageList", mock.Anything, mock.Anything, mock.Anything).Return(
+	cli := new(entityMock.Client)
+	cli.On("ImageList", mock.Anything, mock.Anything).Return(
 		testImageList, nil).Once()
 
-	repo.On("ImagePull", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+	cli.On("ImagePull", mock.Anything, mock.Anything, mock.Anything).Return(
 		ioutil.NopCloser(testReader), nil).Run(func(args mock.Arguments) {
 		testReader.Reset("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
 	}).Once()
 
-	repo.On("ImageLoad", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+	cli.On("ImageLoad", mock.Anything, mock.Anything, mock.Anything).Return(
 		types.ImageLoadResponse{}, fmt.Errorf("err")).Run(
 		func(args mock.Arguments) {
 		}).Once()
 
-	ds := NewDockerAuxillary(repo)
+	ds := NewDockerRepository()
 
-	err := ds.EnsureImagePulled(nil, nil, "FOOBAR")
+	err := ds.EnsureImagePulled(nil, cli, "FOOBAR")
 	assert.Error(t, err)
-	repo.AssertExpectations(t)
+	cli.AssertExpectations(t)
 }
 
-func TestDockerAuxillary_GetContainerByName_Success(t *testing.T) {
+func TestDockerRepository_GetContainerByName_Success(t *testing.T) {
 	results := []types.Container{
 		types.Container{Names: []string{"test1", "test3"}, ID: "id1"},
 		types.Container{Names: []string{"test2", "test4"}, ID: "id2"},
 	}
-	repo := new(repository.DockerRepository)
-	repo.On("ContainerList", mock.Anything, mock.Anything, mock.Anything).Return(results, nil).Run(
+	cli := new(entityMock.Client)
+	cli.On("ContainerList", mock.Anything, mock.Anything).Return(results, nil).Run(
 		func(args mock.Arguments) {
 
-			require.Len(t, args, 3)
+			require.Len(t, args, 2)
 			assert.Nil(t, args.Get(0))
-			assert.Nil(t, args.Get(1))
 		}).Times((2 * len(results)) + 1)
-	ds := NewDockerAuxillary(repo)
+	ds := NewDockerRepository()
 
 	for _, result := range results {
 		for _, name := range result.Names {
-			cntr, err := ds.GetContainerByName(nil, nil, name)
+			cntr, err := ds.GetContainerByName(nil, cli, name)
 			assert.NoError(t, err)
 			assert.Equal(t, result, cntr)
 		}
 
 	}
 
-	_, err := ds.GetContainerByName(nil, nil, "DNE")
+	_, err := ds.GetContainerByName(nil, cli, "DNE")
 	assert.Error(t, err)
 
-	repo.AssertExpectations(t)
+	cli.AssertExpectations(t)
 }
 
-func TestDockerAuxillary_GetContainerByName_Failure(t *testing.T) {
-	repo := new(repository.DockerRepository)
-	repo.On("ContainerList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err")).Once()
-	ds := NewDockerAuxillary(repo)
-	_, err := ds.GetContainerByName(nil, nil, "DNE")
+func TestDockerRepository_GetContainerByName_Failure(t *testing.T) {
+	cli := new(entityMock.Client)
+	cli.On("ContainerList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err")).Once()
+	ds := NewDockerRepository()
+	_, err := ds.GetContainerByName(nil, cli, "DNE")
 	assert.Error(t, err)
 
-	repo.AssertExpectations(t)
+	cli.AssertExpectations(t)
 }
 
-func TestDockerAuxillary_GetVolumeByName_Success(t *testing.T) {
+func TestDockerRepository_GetVolumeByName_Success(t *testing.T) {
 	results := volume.VolumeListOKBody{
 		Volumes: []*types.Volume{
 			&types.Volume{Name: "test1"},
 			&types.Volume{Name: "test2"},
 		},
 	}
-	repo := new(repository.DockerRepository)
-	repo.On("VolumeList", mock.Anything, mock.Anything, mock.Anything).Return(results, nil).Run(
+	cli := new(entityMock.Client)
+	cli.On("VolumeList", mock.Anything, mock.Anything).Return(results, nil).Run(
 		func(args mock.Arguments) {
 
-			require.Len(t, args, 3)
+			require.Len(t, args, 2)
 			assert.Nil(t, args.Get(0))
-			assert.Nil(t, args.Get(1))
 		}).Times(len(results.Volumes) + 1)
-	ds := NewDockerAuxillary(repo)
+	ds := NewDockerRepository()
 
 	for _, vol := range results.Volumes {
-		result, err := ds.GetVolumeByName(nil, nil, vol.Name)
+		result, err := ds.GetVolumeByName(nil, cli, vol.Name)
 		assert.NoError(t, err)
 		assert.Equal(t, result, vol)
 
 	}
 
-	res, err := ds.GetVolumeByName(nil, nil, "DNE")
+	res, err := ds.GetVolumeByName(nil, cli, "DNE")
 	assert.Error(t, err)
 	assert.Nil(t, res)
 
-	repo.AssertExpectations(t)
+	cli.AssertExpectations(t)
 }
 
-func TestDockerAuxillary_GetVolumeByName_Failure(t *testing.T) {
+func TestDockerRepository_GetVolumeByName_Failure(t *testing.T) {
 
-	repo := new(repository.DockerRepository)
-	repo.On("VolumeList", mock.Anything, mock.Anything, mock.Anything).Return(
+	cli := new(entityMock.Client)
+	cli.On("VolumeList", mock.Anything, mock.Anything).Return(
 		volume.VolumeListOKBody{}, fmt.Errorf("err")).Once()
-	ds := NewDockerAuxillary(repo)
+	ds := NewDockerRepository()
 
-	res, err := ds.GetVolumeByName(nil, nil, "DNE")
+	res, err := ds.GetVolumeByName(nil, cli, "DNE")
 	assert.Error(t, err)
 	assert.Nil(t, res)
 
-	repo.AssertExpectations(t)
+	cli.AssertExpectations(t)
 }

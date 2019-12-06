@@ -64,6 +64,7 @@ github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5a
 github.com/google/go-cmp v0.3.0/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
 github.com/google/martian v2.1.0+incompatible/go.mod h1:9I4somxYTbIHy5NJKHRl3wXiIaQGbYVAs8BPL6v8lEs=
 github.com/google/pprof v0.0.0-20181206194817-3ea8567a2e57/go.mod h1:zfwlbNMJ+OItoe0UupaVj+oy1omPYYDuagoSzA8v9mc=
+github.com/google/uuid v1.1.1 h1:Gkbcsh/GbpXz7lPftLA3P6TYMwjCLYm83jiFQZF/3gY=
 github.com/google/uuid v1.1.1/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+vpHVxEJEs9eg=
 github.com/googleapis/gax-go/v2 v2.0.5/go.mod h1:DWXyrwAJ9X0FpwwEdw+IPEYBICEFu5mhpdKc/us6bOk=
@@ -162,6 +163,8 @@ github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljT
 github.com/vektra/mockery v0.0.0-20181123154057-e78b021dcbb5/go.mod h1:ppEjwdhyy7Y31EnHRDm1JkChoC7LXIJ7Ex0VYLWtZtQ=
 github.com/whiteblock/definition v0.0.0-20191204152450-b8eb51db2194 h1:b5WVjOxeKnFoz7ILk6xgv5mnRPIzOJEL6QOahwcxsww=
 github.com/whiteblock/definition v0.0.0-20191204152450-b8eb51db2194/go.mod h1:VjDUy6Q1OnU7eAF4RwQUY5Tef21IfQwwYXxgYmduzmE=
+github.com/whiteblock/definition v0.0.0-20191206161235-61a60b3974a4 h1:FyJ309yqdGBRiCcRw27vO1YJ/HbhERNXyH65BcWxsRc=
+github.com/whiteblock/definition v0.0.0-20191206161235-61a60b3974a4/go.mod h1:Iz3yIK1DoGV6/DvjxAL7GhJb6QyK2f32dh1KiJAtYDw=
 github.com/whiteblock/go.uuid v1.2.1 h1:prUjjtzVGGZ0A1Jt3yGxFIdTD69u9FGwaU3e73xqFeI=
 github.com/whiteblock/go.uuid v1.2.1/go.mod h1:J0Y9qymnDEwrdEFeIzpsul8Ye1jzfPoW3JDJVx8hdGM=
 github.com/whiteblock/utility v0.0.0-20191025151649-f566a71bdc8c h1:gNxrG9hGL4BiKtRIOQ1+Uh9kQGpJ/WePagl4Kr2Km7M=

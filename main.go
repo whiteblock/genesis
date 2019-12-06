@@ -27,7 +27,6 @@ import (
 	handAux "github.com/whiteblock/genesis/pkg/handler/auxillary"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
-	"github.com/whiteblock/genesis/pkg/service/auxillary"
 	"github.com/whiteblock/genesis/pkg/usecase"
 	"github.com/whiteblock/genesis/pkg/utility"
 	"github.com/whiteblock/genesis/pkg/validator"
@@ -55,7 +54,6 @@ func getRestServer() (controller.RestController, error) {
 			usecase.NewDockerUseCase(
 				service.NewDockerService(
 					dockerRepository,
-					auxillary.NewDockerAuxillary(dockerRepository),
 					conf.GetDockerConfig(),
 					logger),
 				validator.NewOrderValidator(),
@@ -105,8 +103,6 @@ func getCommandController() (controller.CommandController, error) {
 				usecase.NewDockerUseCase(
 					service.NewDockerService(
 						repository.NewDockerRepository(),
-						auxillary.NewDockerAuxillary(
-							repository.NewDockerRepository()),
 						conf.GetDockerConfig(),
 						logger),
 					validator.NewOrderValidator(),

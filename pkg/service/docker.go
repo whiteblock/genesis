@@ -22,14 +22,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
-	"github.com/whiteblock/genesis/pkg/service/auxillary"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -38,8 +36,6 @@ import (
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/docker/go-connections/tlsconfig"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/whiteblock/definition/command"
 )
@@ -83,35 +79,14 @@ type dockerService struct {
 
 //NewDockerService creates a new DockerService
 func NewDockerService(
-	repo repository.DockerRepository
+	repo repository.DockerRepository,
 	conf entity.DockerConfig,
 	log logrus.Ext1FieldLogger) DockerService {
 
 	return dockerService{
 		conf: conf,
-		repo:  repo,
+		repo: repo,
 		log:  log}
-}
-
-func withTLSClientConfig(cacertPath, certPath, keyPath string) client.Opt {
-	return func(c *client.Client) error {
-		opts := tlsconfig.Options{
-			CAFile:             cacertPath,
-			CertFile:           certPath,
-			KeyFile:            keyPath,
-			ExclusiveRootPools: true,
-			InsecureSkipVerify: true,
-		}
-		config, err := tlsconfig.Client(opts)
-		if err != nil {
-			return errors.Wrap(err, "failed to create tls config")
-		}
-		if transport, ok := c.HTTPClient().Transport.(*http.Transport); ok {
-			transport.TLSClientConfig = config
-			return nil
-		}
-		return errors.Errorf("cannot apply tls config to transport: %T", c.HTTPClient().Transport)
-	}
 }
 
 //CreateClient creates a new client for connecting to the docker daemon
@@ -124,7 +99,7 @@ func (ds dockerService) CreateClient(host string) (entity.Client, error) {
 	return client.NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
 		client.WithHost("tcp://"+host+":2376"),
-		withTLSClientConfig(ds.conf.CACertPath, ds.conf.CertPath, ds.conf.KeyPath),
+		ds.repo.WithTLSClientConfig(ds.conf.CACertPath, ds.conf.CertPath, ds.conf.KeyPath),
 	)
 }
 
@@ -137,7 +112,7 @@ func (ds dockerService) GetNetworkingConfig(ctx context.Context, cli entity.Clie
 
 	for _, net := range networks {
 		go func(net string) {
-			resource, err := ds.aux.GetNetworkByName(ctx, cli, net)
+			resource, err := ds.repo.GetNetworkByName(ctx, cli, net)
 			errChan <- err
 			resourceChan <- resource
 		}(net)
@@ -162,7 +137,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.Client, 
 	netConfChan := make(chan *network.NetworkingConfig)
 
 	go func(image string) {
-		errChan <- ds.aux.EnsureImagePulled(ctx, cli, image)
+		errChan <- ds.repo.EnsureImagePulled(ctx, cli, image)
 	}(dContainer.Image)
 
 	go func(networks strslice.StrSlice) {
@@ -269,7 +244,7 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.Client, s
 //RemoveContainer attempts to remove a container
 func (ds dockerService) RemoveContainer(ctx context.Context, cli entity.Client, name string) entity.Result {
 	ds.log.WithFields(logrus.Fields{"name": name}).Debug("removing container")
-	cntr, err := ds.aux.GetContainerByName(ctx, cli, name)
+	cntr, err := ds.repo.GetContainerByName(ctx, cli, name)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
@@ -327,7 +302,7 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli entity.Client, ne
 //RemoveNetwork attempts to remove a network
 func (ds dockerService) RemoveNetwork(ctx context.Context, cli entity.Client, name string) entity.Result {
 	ds.log.WithFields(logrus.Fields{"name": name}).Debug("removing a network")
-	net, err := ds.aux.GetNetworkByName(ctx, cli, name)
+	net, err := ds.repo.GetNetworkByName(ctx, cli, name)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
@@ -345,13 +320,13 @@ func (ds dockerService) getNetworkAndContainerByName(ctx context.Context, cli en
 	cntrChan := make(chan types.Container, 1)
 
 	go func(networkName string) {
-		net, err := ds.aux.GetNetworkByName(ctx, cli, networkName)
+		net, err := ds.repo.GetNetworkByName(ctx, cli, networkName)
 		errChan <- err
 		netChan <- net
 	}(networkName)
 
 	go func(containerName string) {
-		cntr, err := ds.aux.GetContainerByName(ctx, cli, containerName)
+		cntr, err := ds.repo.GetContainerByName(ctx, cli, containerName)
 		errChan <- err
 		cntrChan <- cntr
 	}(containerName)
@@ -426,7 +401,7 @@ func (ds dockerService) RemoveVolume(ctx context.Context, cli entity.Client, nam
 func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Client,
 	containerName string, file command.IFile) entity.Result {
 
-	cntr, err := ds.aux.GetContainerByName(ctx, cli, containerName)
+	cntr, err := ds.repo.GetContainerByName(ctx, cli, containerName)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
@@ -448,7 +423,7 @@ func (ds dockerService) Emulation(ctx context.Context, cli entity.Client, netem 
 	netemImage := "gaiadocker/iproute2:latest"
 	errChan := make(chan error, 1)
 	go func() {
-		errChan <- ds.aux.EnsureImagePulled(ctx, cli, netemImage)
+		errChan <- ds.repo.EnsureImagePulled(ctx, cli, netemImage)
 	}()
 
 	cntr, net, err := ds.getNetworkAndContainerByName(ctx, cli, netem.Network, netem.Container)

@@ -23,14 +23,14 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
-	"github.com/whiteblock/genesis/pkg/service/auxillary"
 	"github.com/whiteblock/genesis/pkg/usecase"
 	"github.com/whiteblock/genesis/pkg/validator"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/whiteblock/definition/command"
 )
 
 /*FUNCTIONALITY TESTS*/
@@ -198,12 +198,11 @@ func dockerTest(clean bool) {
 	log.SetLevel(lvl)
 
 	dockerRepository := repository.NewDockerRepository()
-	dockerAux := auxillary.NewDockerAuxillary(dockerRepository)
 	dockerConfig := conf.GetDockerConfig()
 	log.Info(dockerConfig)
 
 	dockerUseCase := usecase.NewDockerUseCase(
-		service.NewDockerService(dockerRepository, dockerAux, dockerConfig, log.New()), validator.NewOrderValidator(), log.New())
+		service.NewDockerService(dockerRepository, dockerConfig, log.New()), validator.NewOrderValidator(), log.New())
 
 	if clean {
 		removeContainer(dockerUseCase, "tester")
