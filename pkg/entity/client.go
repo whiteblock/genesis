@@ -20,12 +20,14 @@ package entity
 
 import (
 	"context"
+	"io"
+	"net/http"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
-	"io"
 )
 
 //Client is an interface which contains the needed methods from the docker client
@@ -51,6 +53,9 @@ type Client interface {
 	//CopyToContainer copies content into the container filesystem. Note that `content` must be a Reader for a TAR archive
 	CopyToContainer(ctx context.Context, containerID, dstPath string, content io.Reader,
 		options types.CopyToContainerOptions) error
+
+	//HTTPClient returns a copy of the HTTP client bound to the server
+	HTTPClient() *http.Client
 
 	//ImageList returns a list of images in the docker host
 	ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error)

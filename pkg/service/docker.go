@@ -27,7 +27,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service/auxillary"
@@ -40,60 +39,57 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/tlsconfig"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/whiteblock/definition/command"
 )
 
 //DockerService provides a intermediate interface between docker and the order from a command
 type DockerService interface {
 
 	//CreateContainer attempts to create a docker container
-	CreateContainer(ctx context.Context, cli *client.Client, container command.Container) entity.Result
+	CreateContainer(ctx context.Context, cli entity.Client, container command.Container) entity.Result
 
 	//StartContainer attempts to start an already created docker container
-	StartContainer(ctx context.Context, cli *client.Client, sc command.StartContainer) entity.Result
+	StartContainer(ctx context.Context, cli entity.Client, sc command.StartContainer) entity.Result
 
 	//RemoveContainer attempts to remove a container
-	RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result
+	RemoveContainer(ctx context.Context, cli entity.Client, name string) entity.Result
 
 	//CreateNetwork attempts to create a network
-	CreateNetwork(ctx context.Context, cli *client.Client, net command.Network) entity.Result
+	CreateNetwork(ctx context.Context, cli entity.Client, net command.Network) entity.Result
 
 	//RemoveNetwork attempts to remove a network
-	RemoveNetwork(ctx context.Context, cli *client.Client, name string) entity.Result
-	AttachNetwork(ctx context.Context, cli *client.Client, network string, container string) entity.Result
-	DetachNetwork(ctx context.Context, cli *client.Client, network string, container string) entity.Result
-	CreateVolume(ctx context.Context, cli *client.Client, volume command.Volume) entity.Result
-	RemoveVolume(ctx context.Context, cli *client.Client, name string) entity.Result
-	PlaceFileInContainer(ctx context.Context, cli *client.Client, containerName string, file command.IFile) entity.Result
-	Emulation(ctx context.Context, cli *client.Client, netem command.Netconf) entity.Result
+	RemoveNetwork(ctx context.Context, cli entity.Client, name string) entity.Result
+	AttachNetwork(ctx context.Context, cli entity.Client, network string, container string) entity.Result
+	DetachNetwork(ctx context.Context, cli entity.Client, network string, container string) entity.Result
+	CreateVolume(ctx context.Context, cli entity.Client, volume command.Volume) entity.Result
+	RemoveVolume(ctx context.Context, cli entity.Client, name string) entity.Result
+	PlaceFileInContainer(ctx context.Context, cli entity.Client, containerName string, file command.IFile) entity.Result
+	Emulation(ctx context.Context, cli entity.Client, netem command.Netconf) entity.Result
 
 	//CreateClient creates a new client for connecting to the docker daemon
-	CreateClient(host string) (*client.Client, error)
+	CreateClient(host string) (entity.Client, error)
 
 	//GetNetworkingConfig determines the proper networking config based on the docker hosts state and the networks
-	GetNetworkingConfig(ctx context.Context, cli *client.Client, networks strslice.StrSlice) (*network.NetworkingConfig, error)
+	GetNetworkingConfig(ctx context.Context, cli entity.Client, networks strslice.StrSlice) (*network.NetworkingConfig, error)
 }
 
 type dockerService struct {
 	repo repository.DockerRepository
-	aux  auxillary.DockerAuxillary
 	conf entity.DockerConfig
 	log  logrus.Ext1FieldLogger
 }
 
 //NewDockerService creates a new DockerService
 func NewDockerService(
-	repo repository.DockerRepository,
-	aux auxillary.DockerAuxillary,
+	repo repository.DockerRepository
 	conf entity.DockerConfig,
 	log logrus.Ext1FieldLogger) DockerService {
 
 	return dockerService{
 		conf: conf,
-		repo: repo,
-		aux:  aux,
+		repo:  repo,
 		log:  log}
 }
 
@@ -119,7 +115,7 @@ func withTLSClientConfig(cacertPath, certPath, keyPath string) client.Opt {
 }
 
 //CreateClient creates a new client for connecting to the docker daemon
-func (ds dockerService) CreateClient(host string) (*client.Client, error) {
+func (ds dockerService) CreateClient(host string) (entity.Client, error) {
 	if ds.conf.LocalMode {
 		return client.NewClientWithOpts(
 			client.WithAPIVersionNegotiation(),
@@ -133,7 +129,7 @@ func (ds dockerService) CreateClient(host string) (*client.Client, error) {
 }
 
 //GetNetworkingConfig determines the proper networking config based on the docker hosts state and the networks
-func (ds dockerService) GetNetworkingConfig(ctx context.Context, cli *client.Client,
+func (ds dockerService) GetNetworkingConfig(ctx context.Context, cli entity.Client,
 	networks strslice.StrSlice) (*network.NetworkingConfig, error) {
 
 	resourceChan := make(chan types.NetworkResource, len(networks))
@@ -161,7 +157,7 @@ func (ds dockerService) GetNetworkingConfig(ctx context.Context, cli *client.Cli
 }
 
 //CreateContainer attempts to create a docker container
-func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, dContainer command.Container) entity.Result {
+func (ds dockerService) CreateContainer(ctx context.Context, cli entity.Client, dContainer command.Container) entity.Result {
 	errChan := make(chan error)
 	netConfChan := make(chan *network.NetworkingConfig)
 
@@ -217,7 +213,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 		}
 	}
 
-	_, err = ds.repo.ContainerCreate(ctx, cli, config, hostConfig, networkConfig, dContainer.Name)
+	_, err = cli.ContainerCreate(ctx, config, hostConfig, networkConfig, dContainer.Name)
 	if err != nil {
 		if strings.Contains(err.Error(), "already in use by container") {
 			ds.log.WithFields(logrus.Fields{"name": dContainer.Name,
@@ -231,7 +227,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 }
 
 //StartContainer attempts to start an already created docker container
-func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, sc command.StartContainer) entity.Result {
+func (ds dockerService) StartContainer(ctx context.Context, cli entity.Client, sc command.StartContainer) entity.Result {
 	ds.log.WithFields(logrus.Fields{"name": sc.Name}).Trace("starting container")
 	opts := types.ContainerStartOptions{}
 
@@ -242,7 +238,7 @@ func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, 
 		Stderr: true,
 		Logs:   true,
 	}
-	hijacked, err := ds.repo.ContainerAttach(ctx, cli, sc.Name, attachOpts)
+	hijacked, err := cli.ContainerAttach(ctx, sc.Name, attachOpts)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
@@ -253,7 +249,7 @@ func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, 
 
 	defer hijacked.Close()
 
-	err = ds.repo.ContainerStart(ctx, cli, sc.Name, opts)
+	err = cli.ContainerStart(ctx, sc.Name, opts)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
@@ -271,13 +267,13 @@ func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, 
 }
 
 //RemoveContainer attempts to remove a container
-func (ds dockerService) RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
+func (ds dockerService) RemoveContainer(ctx context.Context, cli entity.Client, name string) entity.Result {
 	ds.log.WithFields(logrus.Fields{"name": name}).Debug("removing container")
 	cntr, err := ds.aux.GetContainerByName(ctx, cli, name)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
-	err = ds.repo.ContainerRemove(ctx, cli, cntr.ID, types.ContainerRemoveOptions{
+	err = cli.ContainerRemove(ctx, cntr.ID, types.ContainerRemoveOptions{
 		RemoveVolumes: false,
 		RemoveLinks:   false,
 		Force:         true,
@@ -289,7 +285,7 @@ func (ds dockerService) RemoveContainer(ctx context.Context, cli *client.Client,
 }
 
 //CreateNetwork attempts to create a network
-func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, net command.Network) entity.Result {
+func (ds dockerService) CreateNetwork(ctx context.Context, cli entity.Client, net command.Network) entity.Result {
 	networkCreate := types.NetworkCreate{
 		CheckDuplicate: true,
 		Attachable:     true,
@@ -317,7 +313,7 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, n
 		networkCreate.Options["com.docker.network.bridge.name"] = net.Name
 	}
 	ds.log.WithFields(logrus.Fields{"name": net.Name, "conf": networkCreate}).Debug("creating a network")
-	_, err := ds.repo.NetworkCreate(ctx, cli, net.Name, networkCreate)
+	_, err := cli.NetworkCreate(ctx, net.Name, networkCreate)
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
 			ds.log.WithFields(logrus.Fields{"name": net.Name, "error": err}).Error("duplicate error")
@@ -329,20 +325,20 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, n
 }
 
 //RemoveNetwork attempts to remove a network
-func (ds dockerService) RemoveNetwork(ctx context.Context, cli *client.Client, name string) entity.Result {
+func (ds dockerService) RemoveNetwork(ctx context.Context, cli entity.Client, name string) entity.Result {
 	ds.log.WithFields(logrus.Fields{"name": name}).Debug("removing a network")
 	net, err := ds.aux.GetNetworkByName(ctx, cli, name)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
-	err = ds.repo.NetworkRemove(ctx, cli, net.ID)
+	err = cli.NetworkRemove(ctx, net.ID)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) getNetworkAndContainerByName(ctx context.Context, cli *client.Client, networkName string,
+func (ds dockerService) getNetworkAndContainerByName(ctx context.Context, cli entity.Client, networkName string,
 	containerName string) (container types.Container, network types.NetworkResource, err error) {
 	errChan := make(chan error, 2)
 	netChan := make(chan types.NetworkResource, 1)
@@ -371,7 +367,7 @@ func (ds dockerService) getNetworkAndContainerByName(ctx context.Context, cli *c
 	return
 }
 
-func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, networkName string,
+func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.Client, networkName string,
 	containerName string) entity.Result {
 
 	cntr, net, err := ds.getNetworkAndContainerByName(ctx, cli, networkName, containerName)
@@ -379,7 +375,7 @@ func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, n
 		return entity.NewFatalResult(err)
 	}
 
-	err = ds.repo.NetworkConnect(ctx, cli, net.ID, cntr.ID, &network.EndpointSettings{
+	err = cli.NetworkConnect(ctx, net.ID, cntr.ID, &network.EndpointSettings{
 		NetworkID: net.ID,
 	})
 	if err != nil {
@@ -388,7 +384,7 @@ func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, n
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) DetachNetwork(ctx context.Context, cli *client.Client,
+func (ds dockerService) DetachNetwork(ctx context.Context, cli entity.Client,
 	networkName string, containerName string) entity.Result {
 
 	cntr, net, err := ds.getNetworkAndContainerByName(ctx, cli, networkName, containerName)
@@ -396,14 +392,14 @@ func (ds dockerService) DetachNetwork(ctx context.Context, cli *client.Client,
 		return entity.NewFatalResult(err)
 	}
 
-	err = ds.repo.NetworkDisconnect(ctx, cli, net.ID, cntr.ID, true)
+	err = cli.NetworkDisconnect(ctx, net.ID, cntr.ID, true)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, vol command.Volume) entity.Result {
+func (ds dockerService) CreateVolume(ctx context.Context, cli entity.Client, vol command.Volume) entity.Result {
 	volConfig := volume.VolumeCreateBody{
 		Driver:     vol.Driver,
 		DriverOpts: vol.DriverOpts,
@@ -411,7 +407,7 @@ func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, vo
 		Name:       vol.Name,
 	}
 
-	_, err := ds.repo.VolumeCreate(ctx, cli, volConfig)
+	_, err := cli.VolumeCreate(ctx, volConfig)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
@@ -419,15 +415,15 @@ func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, vo
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) RemoveVolume(ctx context.Context, cli *client.Client, name string) entity.Result {
-	err := ds.repo.VolumeRemove(ctx, cli, name, true)
+func (ds dockerService) RemoveVolume(ctx context.Context, cli entity.Client, name string) entity.Result {
+	err := cli.VolumeRemove(ctx, name, true)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli *client.Client,
+func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Client,
 	containerName string, file command.IFile) entity.Result {
 
 	cntr, err := ds.aux.GetContainerByName(ctx, cli, containerName)
@@ -438,7 +434,7 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli *client.Cl
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	err = ds.repo.CopyToContainer(ctx, cli, cntr.ID, file.GetDir(), rdr, types.CopyToContainerOptions{
+	err = cli.CopyToContainer(ctx, cntr.ID, file.GetDir(), rdr, types.CopyToContainerOptions{
 		AllowOverwriteDirWithFile: false,
 		CopyUIDGID:                false,
 	})
@@ -448,7 +444,7 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli *client.Cl
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) Emulation(ctx context.Context, cli *client.Client, netem command.Netconf) entity.Result {
+func (ds dockerService) Emulation(ctx context.Context, cli entity.Client, netem command.Netconf) entity.Result {
 	netemImage := "gaiadocker/iproute2:latest"
 	errChan := make(chan error, 1)
 	go func() {
@@ -510,7 +506,7 @@ func (ds dockerService) Emulation(ctx context.Context, cli *client.Client, netem
 
 	networkConfig := &network.NetworkingConfig{}
 
-	_, err = ds.repo.ContainerCreate(ctx, cli, config, hostConfig, networkConfig, name)
+	_, err = cli.ContainerCreate(ctx, config, hostConfig, networkConfig, name)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}

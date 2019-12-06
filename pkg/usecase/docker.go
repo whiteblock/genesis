@@ -29,7 +29,6 @@ import (
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/validator"
 
-	"github.com/docker/docker/client"
 	"github.com/sirupsen/logrus"
 )
 
@@ -113,7 +112,7 @@ func (duc dockerUseCase) validationCheck(cmd command.Command) (result entity.Res
 	return
 }
 
-func (duc dockerUseCase) createContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) createContainerShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
 	var container command.Container
 	err := cmd.ParseOrderPayloadInto(&container)
 	if err != nil {
@@ -126,7 +125,7 @@ func (duc dockerUseCase) createContainerShim(ctx context.Context, cli *client.Cl
 	return duc.service.CreateContainer(ctx, cli, container)
 }
 
-func (duc dockerUseCase) startContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) startContainerShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
 	var sc command.StartContainer
 	err := cmd.ParseOrderPayloadInto(&sc)
 	if err != nil {
@@ -138,7 +137,7 @@ func (duc dockerUseCase) startContainerShim(ctx context.Context, cli *client.Cli
 	return duc.service.StartContainer(ctx, cli, sc)
 }
 
-func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
 	var payload command.SimpleName
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
@@ -150,7 +149,7 @@ func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli *client.Cl
 	return duc.service.RemoveContainer(ctx, cli, payload.Name)
 }
 
-func (duc dockerUseCase) createNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) createNetworkShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
 	var net command.Network
 	err := cmd.ParseOrderPayloadInto(&net)
 	if err != nil {
@@ -159,7 +158,7 @@ func (duc dockerUseCase) createNetworkShim(ctx context.Context, cli *client.Clie
 	return duc.service.CreateNetwork(ctx, cli, net)
 }
 
-func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
 	var payload command.ContainerNetwork
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
@@ -174,7 +173,7 @@ func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli *client.Clie
 	return duc.service.AttachNetwork(ctx, cli, payload.Network, payload.ContainerName)
 }
 
-func (duc dockerUseCase) detachNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) detachNetworkShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
 	var payload command.ContainerNetwork
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
@@ -183,7 +182,7 @@ func (duc dockerUseCase) detachNetworkShim(ctx context.Context, cli *client.Clie
 	return duc.service.DetachNetwork(ctx, cli, payload.Network, payload.ContainerName)
 }
 
-func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
 	var payload command.SimpleName
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
@@ -194,7 +193,7 @@ func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli *client.Clie
 	}
 	return duc.service.RemoveNetwork(ctx, cli, payload.Name)
 }
-func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
 	var payload command.Volume
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
@@ -203,7 +202,7 @@ func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli *client.Clien
 	return duc.service.CreateVolume(ctx, cli, payload)
 }
 
-func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
 	var payload command.SimpleName
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
@@ -214,7 +213,7 @@ func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli *client.Clien
 	}
 	return duc.service.RemoveVolume(ctx, cli, payload.Name)
 }
-func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
 	var payload command.FileAndContainer
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
@@ -226,7 +225,7 @@ func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli *client
 	return duc.service.PlaceFileInContainer(ctx, cli, payload.ContainerName, payload.File)
 }
 
-func (duc dockerUseCase) emulationShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) emulationShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
 	var payload command.Netconf
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
