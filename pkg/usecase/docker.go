@@ -100,6 +100,8 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 		return duc.emulationShim(ctx, cli, cmd)
 	case command.SwarmInit:
 		return duc.swarmSetupShim(ctx, cli, cmd)
+	case command.Pullimage:
+		return duc.pullImageShim(ctx, cli, cmd)
 	}
 	return entity.NewFatalResult(fmt.Errorf("unknown command type: %s", cmd.Order.Type))
 }
@@ -246,4 +248,16 @@ func (duc dockerUseCase) swarmSetupShim(ctx context.Context, cli entity.Client, 
 		return entity.NewFatalResult("hosts cannot be empty")
 	}
 	return duc.service.SwarmCluster(ctx, cli, payload)
+}
+
+func (duc dockerUseCase) pullImageShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
+	var payload command.PullImage
+	err := cmd.ParseOrderPayloadInto(&payload)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	if len(payload.Image) == 0 {
+		return entity.NewFatalResult("image cannot be empty")
+	}
+	return duc.service.PullImage(ctx, cli, payload)
 }

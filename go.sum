@@ -165,6 +165,8 @@ github.com/whiteblock/definition v0.0.0-20191204152450-b8eb51db2194 h1:b5WVjOxeK
 github.com/whiteblock/definition v0.0.0-20191204152450-b8eb51db2194/go.mod h1:VjDUy6Q1OnU7eAF4RwQUY5Tef21IfQwwYXxgYmduzmE=
 github.com/whiteblock/definition v0.0.0-20191206161235-61a60b3974a4 h1:FyJ309yqdGBRiCcRw27vO1YJ/HbhERNXyH65BcWxsRc=
 github.com/whiteblock/definition v0.0.0-20191206161235-61a60b3974a4/go.mod h1:Iz3yIK1DoGV6/DvjxAL7GhJb6QyK2f32dh1KiJAtYDw=
+github.com/whiteblock/definition v0.0.0-20191209160238-c4e1deabcbac h1:eqbnD2VBJISqPZAI4TbU8gab00mNE8aRgisczfP7oo8=
+github.com/whiteblock/definition v0.0.0-20191209160238-c4e1deabcbac/go.mod h1:Iz3yIK1DoGV6/DvjxAL7GhJb6QyK2f32dh1KiJAtYDw=
 github.com/whiteblock/go.uuid v1.2.1 h1:prUjjtzVGGZ0A1Jt3yGxFIdTD69u9FGwaU3e73xqFeI=
 github.com/whiteblock/go.uuid v1.2.1/go.mod h1:J0Y9qymnDEwrdEFeIzpsul8Ye1jzfPoW3JDJVx8hdGM=
 github.com/whiteblock/utility v0.0.0-20191025151649-f566a71bdc8c h1:gNxrG9hGL4BiKtRIOQ1+Uh9kQGpJ/WePagl4Kr2Km7M=

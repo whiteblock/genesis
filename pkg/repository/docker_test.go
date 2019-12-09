@@ -163,12 +163,12 @@ func TestDockerRepository_EnsureImagePulled(t *testing.T) {
 	ds := NewDockerRepository()
 
 	for _, img := range existingImages {
-		err := ds.EnsureImagePulled(nil, cli, img)
+		err := ds.EnsureImagePulled(nil, cli, img, "")
 		assert.NoError(t, err)
 	}
 
 	for _, img := range nonExistingImages {
-		err := ds.EnsureImagePulled(nil, cli, img)
+		err := ds.EnsureImagePulled(nil, cli, img, "")
 		assert.NoError(t, err)
 	}
 	cli.AssertExpectations(t)
@@ -188,7 +188,7 @@ func TestDockerRepository_EnsureImagePulled_ImagePull_Failure(t *testing.T) {
 
 	ds := NewDockerRepository()
 
-	err := ds.EnsureImagePulled(nil, cli, "Foobar")
+	err := ds.EnsureImagePulled(nil, cli, "Foobar", "")
 	assert.Error(t, err)
 	cli.AssertExpectations(t)
 }
@@ -217,7 +217,7 @@ func TestDockerRepository_EnsureImagePulled_ImageLoad_Failure(t *testing.T) {
 
 	ds := NewDockerRepository()
 
-	err := ds.EnsureImagePulled(nil, cli, "FOOBAR")
+	err := ds.EnsureImagePulled(nil, cli, "FOOBAR", "")
 	assert.Error(t, err)
 	cli.AssertExpectations(t)
 }

@@ -41,7 +41,8 @@ type DockerRepository interface {
 	WithTLSClientConfig(cacertPath, certPath, keyPath string) client.Opt
 
 	//EnsureImagePulled checks if the docker host contains an image and pulls it if it does not
-	EnsureImagePulled(ctx context.Context, cli entity.Client, imageName string) error
+	EnsureImagePulled(ctx context.Context, cli entity.Client,
+		imageName string, auth string) error
 
 	//GetContainerByName attempts to find a container with the given name and return information on it.
 	GetContainerByName(ctx context.Context, cli entity.Client, containerName string) (types.Container, error)
@@ -107,14 +108,16 @@ func (da dockerRepository) HostHasImage(ctx context.Context, cli entity.Client, 
 }
 
 //EnsureImagePulled checks if the docker host contains an image and pulls it if it does not
-func (da dockerRepository) EnsureImagePulled(ctx context.Context, cli entity.Client, imageName string) error {
+func (da dockerRepository) EnsureImagePulled(ctx context.Context, cli entity.Client,
+	imageName string, auth string) error {
 	exists, err := da.HostHasImage(ctx, cli, imageName)
 	if exists || err != nil {
 		return err
 	}
 
 	rd, err := cli.ImagePull(ctx, imageName, types.ImagePullOptions{
-		Platform: "Linux", //TODO: pull out to a config
+		Platform:     "Linux", //TODO: pull out to a config
+		RegistryAuth: auth,
 	})
 	if err != nil {
 		return err
@@ -133,6 +136,7 @@ func (da dockerRepository) EnsureImagePulled(ctx context.Context, cli entity.Cli
 //GetNetworkByName attempts to find a network with the given name and return information on it.
 func (da dockerRepository) GetNetworkByName(ctx context.Context, cli entity.Client,
 	networkName string) (types.NetworkResource, error) {
+
 	nets, err := cli.NetworkList(ctx, types.NetworkListOptions{})
 	if err != nil {
 		return types.NetworkResource{}, err
@@ -164,7 +168,9 @@ func (da dockerRepository) GetContainerByName(ctx context.Context, cli entity.Cl
 }
 
 //GetVolumeByName attempts to find a volume with the given name and return information on it.
-func (da dockerRepository) GetVolumeByName(ctx context.Context, cli entity.Client, volumeName string) (*types.Volume, error) {
+func (da dockerRepository) GetVolumeByName(ctx context.Context, cli entity.Client,
+	volumeName string) (*types.Volume, error) {
+
 	bdy, err := cli.VolumeList(ctx, filters.Args{})
 	if err != nil {
 		return nil, err
