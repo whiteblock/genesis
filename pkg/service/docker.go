@@ -65,12 +65,14 @@ type DockerService interface {
 	PlaceFileInContainer(ctx context.Context, cli entity.Client, containerName string, file command.IFile) entity.Result
 	Emulation(ctx context.Context, cli entity.Client, netem command.Netconf) entity.Result
 	SwarmCluster(ctx context.Context, cli entity.Client, swarm command.SetupSwarm) entity.Result
+	PullImage(ctx context.Context, cli entity.Client, imagePull command.PullImage) entity.Result
 
 	//CreateClient creates a new client for connecting to the docker daemon
 	CreateClient(host string) (entity.Client, error)
 
 	//GetNetworkingConfig determines the proper networking config based on the docker hosts state and the networks
-	GetNetworkingConfig(ctx context.Context, cli entity.Client, networks strslice.StrSlice) (*network.NetworkingConfig, error)
+	GetNetworkingConfig(ctx context.Context, cli entity.Client,
+		networks strslice.StrSlice) (*network.NetworkingConfig, error)
 }
 
 type dockerService struct {
@@ -142,12 +144,14 @@ func (ds dockerService) GetNetworkingConfig(ctx context.Context, cli entity.Clie
 }
 
 //CreateContainer attempts to create a docker container
-func (ds dockerService) CreateContainer(ctx context.Context, cli entity.Client, dContainer command.Container) entity.Result {
+func (ds dockerService) CreateContainer(ctx context.Context, cli entity.Client,
+	dContainer command.Container) entity.Result {
+
 	errChan := make(chan error)
 	netConfChan := make(chan *network.NetworkingConfig)
 
 	go func(image string) {
-		errChan <- ds.repo.EnsureImagePulled(ctx, cli, image)
+		errChan <- ds.repo.EnsureImagePulled(ctx, cli, image, "")
 	}(dContainer.Image)
 
 	go func(networks strslice.StrSlice) {
@@ -212,7 +216,9 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.Client, 
 }
 
 //StartContainer attempts to start an already created docker container
-func (ds dockerService) StartContainer(ctx context.Context, cli entity.Client, sc command.StartContainer) entity.Result {
+func (ds dockerService) StartContainer(ctx context.Context, cli entity.Client,
+	sc command.StartContainer) entity.Result {
+
 	ds.log.WithFields(logrus.Fields{"name": sc.Name}).Trace("starting container")
 	opts := types.ContainerStartOptions{}
 
@@ -433,7 +439,7 @@ func (ds dockerService) Emulation(ctx context.Context, cli entity.Client, netem 
 	netemImage := "gaiadocker/iproute2:latest"
 	errChan := make(chan error, 1)
 	go func() {
-		errChan <- ds.repo.EnsureImagePulled(ctx, cli, netemImage)
+		errChan <- ds.repo.EnsureImagePulled(ctx, cli, netemImage, "")
 	}()
 
 	cntr, net, err := ds.getNetworkAndContainerByName(ctx, cli, netem.Network, netem.Container)
@@ -547,6 +553,25 @@ func (ds dockerService) SwarmCluster(ctx context.Context, _ entity.Client,
 		if err != nil {
 			return entity.NewErrorResult(err)
 		}
+	}
+	return entity.NewSuccessResult()
+}
+
+func (ds dockerService) PullImage(ctx context.Context, cli entity.Client,
+	imagePull command.PullImage) entity.Result {
+
+	ds.log.WithFields(logrus.Fields{
+		"image":     imagePull.Image,
+		"usingAuth": imagePull.RegistryAuth != "",
+	}).Debug("pre-emptively pulling an image if it doesn't exist")
+
+	err := ds.repo.EnsureImagePulled(ctx, cli, imagePull.Image, imagePull.RegistryAuth)
+	if err != nil {
+		ds.log.WithFields(logrus.Fields{
+			"image": imagePull.Image,
+			"error": err,
+		}).Error("unable to pull an image")
+		return entity.NewErrorResult(err)
 	}
 	return entity.NewSuccessResult()
 }

@@ -142,9 +142,10 @@ func TestDockerService_CreateContainer(t *testing.T) {
 	})
 
 	repo := new(repoMock.DockerRepository)
-	repo.On("EnsureImagePulled", mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+	repo.On("EnsureImagePulled", mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 
-		require.Len(t, args, 3)
+		require.Len(t, args, 4)
 		assert.Nil(t, args.Get(0))
 		assert.NotNil(t, args.Get(1))
 		assert.Equal(t, testContainer.Image, args.String(2))
