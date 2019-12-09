@@ -45,7 +45,7 @@ func TestNewCommandController_Ignore_CreateQueueFailure(t *testing.T) {
 	serv.On("CreateQueue").Return(fmt.Errorf("err")).Once()
 	serv2.On("CreateQueue").Return(fmt.Errorf("err")).Once()
 
-	control, err := NewCommandController(2, serv, serv2, nil, logrus.New())
+	control, err := NewCommandController(2, serv, nil, logrus.New(), serv2)
 	assert.NotNil(t, control)
 	assert.NoError(t, err)
 
@@ -69,7 +69,7 @@ func TestCommandController_Consumption(t *testing.T) {
 		processedChan <- true
 	}).Return(amqp.Publishing{}, entity.NewSuccessResult()).Times(items)
 
-	control, err := NewCommandController(2, serv, serv2, hand, logrus.New())
+	control, err := NewCommandController(2, serv, hand, logrus.New(), serv2)
 	assert.Equal(t, err, nil)
 	go control.Start()
 
@@ -107,7 +107,7 @@ func TestCommandController_ConsumptionAllDone(t *testing.T) {
 	hand := new(handler.DeliveryHandler)
 	hand.On("Process", mock.Anything).Return(amqp.Publishing{}, entity.NewAllDoneResult()).Times(items)
 
-	control, err := NewCommandController(2, serv, serv2, hand, logrus.New())
+	control, err := NewCommandController(2, serv, hand, logrus.New(), serv2)
 	assert.Equal(t, err, nil)
 	go control.Start()
 
@@ -145,7 +145,7 @@ func TestCommandController_ConsumptionAllDone_Send_Err(t *testing.T) {
 	hand := new(handler.DeliveryHandler)
 	hand.On("Process", mock.Anything).Return(amqp.Publishing{}, entity.NewAllDoneResult()).Times(items)
 
-	control, err := NewCommandController(2, serv, serv2, hand, logrus.New())
+	control, err := NewCommandController(2, serv, hand, logrus.New(), serv2)
 	assert.Equal(t, err, nil)
 	go control.Start()
 
@@ -184,7 +184,7 @@ func TestCommandController_Requeue(t *testing.T) {
 	hand.On("Process", mock.Anything).Return(amqp.Publishing{},
 		entity.NewErrorResult(fmt.Errorf("some non-fatal error"))).Times(items)
 
-	control, err := NewCommandController(2, serv, serv2, hand, logrus.New())
+	control, err := NewCommandController(2, serv, hand, logrus.New(), serv2)
 	assert.Equal(t, err, nil)
 	go control.Start()
 

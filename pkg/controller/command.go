@@ -38,49 +38,66 @@ type CommandController interface {
 }
 
 type consumer struct {
-	completion service.AMQPService
-	cmds       service.AMQPService
-	handle     handler.DeliveryHandler
-	log        logrus.Ext1FieldLogger
-	once       *sync.Once
-	sem        *semaphore.Weighted
+	completions []service.AMQPService
+	cmds        service.AMQPService
+	handle      handler.DeliveryHandler
+	log         logrus.Ext1FieldLogger
+	once        *sync.Once
+	sem         *semaphore.Weighted
 }
 
 // NewCommandController creates a new CommandController
 func NewCommandController(
 	maxConcurreny int64,
 	cmds service.AMQPService,
-	completion service.AMQPService,
 	handle handler.DeliveryHandler,
-	log logrus.Ext1FieldLogger) (CommandController, error) {
+	log logrus.Ext1FieldLogger,
+	completions ...service.AMQPService) (CommandController, error) {
 
 	if maxConcurreny < 1 {
 		return nil, fmt.Errorf("maxConcurreny must be at least 1")
 	}
 	out := &consumer{
-		log:        log,
-		completion: completion,
-		cmds:       cmds,
-		handle:     handle,
-		once:       &sync.Once{},
-		sem:        semaphore.NewWeighted(maxConcurreny),
+		log:         log,
+		completions: completions,
+		cmds:        cmds,
+		handle:      handle,
+		once:        &sync.Once{},
+		sem:         semaphore.NewWeighted(maxConcurreny),
 	}
 	err := out.cmds.CreateQueue()
 	if err != nil {
 		log.WithFields(logrus.Fields{"err": err}).Debug("failed attempt to create queue on start")
 	}
-
-	err = out.completion.CreateQueue()
-	if err != nil {
-		log.WithFields(logrus.Fields{"err": err}).Debug("failed attempt to create queue on start")
-	}
-
+	go func() {
+		for i := range out.completions {
+			err := out.completions[i].CreateQueue()
+			if err != nil {
+				log.WithFields(logrus.Fields{"err": err}).Debug("failed attempt to create queue on start")
+			}
+		}
+	}()
 	return out, nil
 }
 
 // Start starts the client. This function should be called only once and does not return
 func (c *consumer) Start() {
 	c.once.Do(func() { c.loop() })
+}
+
+func (c *consumer) sendCompletion(pub amqp.Publishing) {
+	c.log.Info("sending the all done signal")
+
+	for i := range c.completions {
+		go func(i int) {
+			err := c.completions[i].Send(pub)
+			if err != nil {
+				c.log.WithField("err", err).Error("failed to send to the completion queue")
+				return
+			}
+		}(i)
+	}
+
 }
 
 func (c *consumer) handleMessage(msg amqp.Delivery) {
@@ -96,12 +113,7 @@ func (c *consumer) handleMessage(msg amqp.Delivery) {
 		return
 	}
 	if res.IsAllDone() || res.IsFatal() {
-		c.log.Info("sending the all done signal")
-		err := c.completion.Send(pub)
-		if err != nil {
-			c.log.WithField("err", err).Error("failed to send to the completion queue")
-			return
-		}
+		c.sendCompletion(pub)
 	}
 	c.log.Info("successfully completed a message")
 

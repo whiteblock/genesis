@@ -19,10 +19,13 @@
 package config
 
 import (
+	"strings"
+
+	"github.com/whiteblock/genesis/pkg/entity"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/whiteblock/definition/command"
-	"github.com/whiteblock/genesis/pkg/entity"
 )
 
 // Config groups all of the global configuration parameters into
@@ -30,7 +33,7 @@ import (
 type Config struct {
 	MaxMessageRetries   int64  `mapstructure:"maxMessageRetries"`
 	QueueMaxConcurrency int64  `mapstructure:"queueMaxConcurrency"`
-	CompletionQueueName string `mapstructure:"completionQueueName"`
+	CompletionQueues    string `mapstructure:"completionQueues"`
 	CommandQueueName    string `mapstructure:"commandQueueName"`
 	DockerCACertPath    string `mapstructure:"dockerCACertPath"`
 	DockerCertPath      string `mapstructure:"dockerCertPath"`
@@ -51,6 +54,7 @@ func (c Config) GetLogger() (*logrus.Logger, error) {
 		return nil, err
 	}
 	logger.SetLevel(lvl)
+	logger.SetReportCaller(true)
 	return logger, nil
 }
 
@@ -84,10 +88,19 @@ func getAmqpBase() (AMQP, error) {
 }
 
 //CompletionAMQP gets the AMQP for the completion queue
-func (c Config) CompletionAMQP() (AMQP, error) {
-	conf, err := getAmqpBase()
-	conf.QueueName = c.CompletionQueueName
-	return conf, err
+func (c Config) CompletionAMQP() ([]AMQP, error) {
+	out := []AMQP{}
+	queues := strings.Split(c.CompletionQueues, ",")
+	for _, complQueue := range queues {
+		conf, err := getAmqpBase()
+		if err != nil {
+			return nil, err
+		}
+		conf.QueueName = strings.TrimSpace(complQueue)
+		out = append(out, conf)
+	}
+
+	return out, nil
 }
 
 //CommandAMQP gets the AMQP for the command queue
@@ -131,12 +144,12 @@ func setViperEnvBindings() {
 	viper.BindEnv("volumeDriverOpts", "VOLUME_DRIVER_OPTS")
 	viper.BindEnv("verbosity", "VERBOSITY")
 	viper.BindEnv("listen", "LISTEN")
-	viper.BindEnv("completionQueueName", "COMPLETION_QUEUE_NAME")
+	viper.BindEnv("completionQueues", "COMPLETION_QUEUES")
 	viper.BindEnv("commandQueueName", "COMMAND_QUEUE_NAME")
 }
 
 func setViperDefaults() {
-	viper.SetDefault("completionQueueName", "teardownRequests")
+	viper.SetDefault("completionQueues", "teardownRequests")
 	viper.SetDefault("commandQueueName", "commands")
 	viper.SetDefault("maxMessageRetries", 10)
 	viper.SetDefault("queueMaxConcurrency", 20)

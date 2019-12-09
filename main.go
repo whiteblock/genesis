@@ -62,6 +62,29 @@ func getRestServer() (controller.RestController, error) {
 		mux.NewRouter()), nil
 }
 
+func getComplServices(conf *config.Config) ([]service.AMQPService, error) {
+	logger, err := conf.GetLogger()
+	if err != nil {
+		return nil, err
+	}
+
+	complConf, err := conf.CompletionAMQP()
+	if err != nil {
+		return nil, err
+	}
+
+	out := []service.AMQPService{}
+	for _, amqpConf := range complConf {
+		complConn, err := utility.OpenAMQPConnection(amqpConf.Endpoint)
+		if err != nil {
+			return nil, err
+		}
+		serv := service.NewAMQPService(amqpConf, repository.NewAMQPRepository(complConn), logger)
+		out = append(out, serv)
+	}
+	return out, nil
+}
+
 func getCommandController() (controller.CommandController, error) {
 	conf, err := config.NewConfig()
 	if err != nil {
@@ -69,11 +92,6 @@ func getCommandController() (controller.CommandController, error) {
 	}
 
 	logger, err := conf.GetLogger()
-	if err != nil {
-		return nil, err
-	}
-
-	complConf, err := conf.CompletionAMQP()
 	if err != nil {
 		return nil, err
 	}
@@ -88,16 +106,14 @@ func getCommandController() (controller.CommandController, error) {
 		return nil, err
 	}
 
-	complConn, err := utility.OpenAMQPConnection(complConf.Endpoint)
+	completionQueues, err := getComplServices(conf)
 	if err != nil {
 		return nil, err
 	}
-	logger.SetReportCaller(true)
 
 	return controller.NewCommandController(
 		conf.QueueMaxConcurrency,
 		service.NewAMQPService(cmdConf, repository.NewAMQPRepository(cmdConn), logger),
-		service.NewAMQPService(complConf, repository.NewAMQPRepository(complConn), logger),
 		handler.NewDeliveryHandler(
 			handAux.NewExecutor(
 				usecase.NewDockerUseCase(
@@ -110,11 +126,11 @@ func getCommandController() (controller.CommandController, error) {
 				logger),
 			utility.NewAMQPMessage(conf.MaxMessageRetries),
 			logger),
-		logger)
+		logger,
+		completionQueues...)
 }
 
 func main() {
-
 	if len(os.Args) == 2 && os.Args[1] == "test" { //Run some basic docker functionality tests
 		dockerTest(false)
 		os.Exit(0)
