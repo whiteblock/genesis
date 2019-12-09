@@ -106,6 +106,12 @@ func detachNetwork(networkName string, containerName string) command.Command {
 	}, command.Detachnetwork)
 }
 
+func pullImage() command.Command {
+	return mintCommand(map[string]string{
+		"image": "debian:latest",
+	}, command.Pullimage)
+}
+
 func removeNetwork(name string) command.Command {
 	return mintCommand(map[string]string{"name": name}, command.Removenetwork)
 }
@@ -226,6 +232,7 @@ func runTest(serv service.AMQPService) error {
 			createVolume(volumeNames[0]),
 			createNetwork(networkNames[0], 14),
 			createNetwork(networkNames[1], 15),
+			pullImage(),
 		},
 		[]command.Command{
 			createContainer(containerNames[0], networkNames[0], volumeNames[0], []string{"localhost"}),

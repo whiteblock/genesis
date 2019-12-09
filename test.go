@@ -44,7 +44,7 @@ func mintCommand(i interface{}, orderType command.OrderType) command.Command {
 	cmd := command.Command{
 		ID:        "TEST",
 		Timestamp: time.Now().Unix() - 5,
-		Target:    command.Target{IP: "0.0.0.0"},
+		Target:    command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: orderType,
 		},
@@ -161,6 +161,14 @@ func startContainer(dockerUseCase usecase.DockerUseCase, name string, attach boo
 	log.WithFields(log.Fields{"res": res}).Info("started a container")
 }
 
+func pullImage(dockerUseCase usecase.DockerUseCase) {
+	cmd := mintCommand(map[string]string{
+		"image": "debian:latest",
+	}, command.Pullimage)
+	res := dockerUseCase.Run(cmd)
+	log.WithFields(log.Fields{"res": res}).Info("pulled an image")
+}
+
 func putFile(dockerUseCase usecase.DockerUseCase) {
 
 	cmd := mintCommand(map[string]interface{}{
@@ -214,6 +222,7 @@ func dockerTest(clean bool) {
 		removeNetwork(dockerUseCase, "testnet2")
 		return
 	}
+	pullImage(dockerUseCase)
 
 	createVolume(dockerUseCase, "test_volume")
 	createNetwork(dockerUseCase, "testnet", 14)
