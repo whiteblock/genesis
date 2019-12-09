@@ -178,8 +178,8 @@ func TestDockerService_StartContainer_Success(t *testing.T) {
 			assert.Equal(t, types.ContainerStartOptions{}, args.Get(2))
 		}).Once()
 	conn := new(externalsMock.NetConn)
-	conn.On("SetDeadline", mock.Anything).Return(nil).Once()
-	conn.On("Close", mock.Anything).Return(nil).Once()
+	conn.On("SetDeadline", mock.Anything).Return(nil).Maybe()
+	conn.On("Close", mock.Anything).Return(nil).Maybe()
 	//conn.On("Read",mock.Anything).Return(0,io.EOF)
 
 	cli.On("ContainerAttach", mock.Anything, mock.Anything, mock.Anything).Return(
@@ -189,7 +189,7 @@ func TestDockerService_StartContainer_Success(t *testing.T) {
 			require.Len(t, args, 3)
 			assert.Nil(t, args.Get(0))
 			assert.Equal(t, scCommand.Name, args.Get(1))
-		}).Once()
+		}).Maybe()
 
 	repo := new(repoMock.DockerRepository)
 	ds := NewDockerService(repo, entity.DockerConfig{}, logrus.New())

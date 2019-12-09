@@ -223,12 +223,20 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 	opts := types.ContainerStartOptions{}
 
 	attachOpts := types.ContainerAttachOptions{
-		Stream: true,
+		Stream: sc.Attach,
 		Stdin:  false,
 		Stdout: true,
 		Stderr: true,
 		Logs:   true,
 	}
+	if !sc.Attach {
+		err := cli.ContainerStart(ctx, sc.Name, opts)
+		if err != nil {
+			return entity.NewErrorResult(err)
+		}
+		return entity.NewSuccessResult()
+	}
+
 	hijacked, err := cli.ContainerAttach(ctx, sc.Name, attachOpts)
 	if err != nil {
 		return entity.NewErrorResult(err)
@@ -237,15 +245,11 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
-
 	defer hijacked.Close()
 
 	err = cli.ContainerStart(ctx, sc.Name, opts)
 	if err != nil {
 		return entity.NewErrorResult(err)
-	}
-	if !sc.Attach {
-		return entity.NewSuccessResult()
 	}
 
 	stdout := new(bytes.Buffer)
