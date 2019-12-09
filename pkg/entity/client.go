@@ -91,6 +91,9 @@ type Client interface {
 	//SwarmJoin joins the swarm.
 	SwarmJoin(ctx context.Context, req swarm.JoinRequest) error
 
+	//SwarmInspect inspects the swarm.
+	SwarmInspect(ctx context.Context) (swarm.Swarm, error)
+
 	//VolumeCreate creates a volume in the docker host.
 	VolumeCreate(ctx context.Context, options volume.VolumeCreateBody) (types.Volume, error)
 
