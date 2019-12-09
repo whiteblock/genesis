@@ -21,7 +21,7 @@ require (
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
 	github.com/stretchr/testify v1.4.0
 	github.com/vektra/mockery v0.0.0-20181123154057-e78b021dcbb5 // indirect
-	github.com/whiteblock/definition v0.0.0-20191209160238-c4e1deabcbac
+	github.com/whiteblock/definition v0.0.0-20191209185242-ff42efb6d465
 	github.com/whiteblock/go.uuid v1.2.1
 	github.com/whiteblock/utility v0.0.0-20191204153325-8c91068475f3
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
