@@ -134,10 +134,10 @@ func TestConfig_GetLogger_Failure(t *testing.T) {
 
 func TestConfig_CompletionAMQP(t *testing.T) {
 	conf := Config{
-		CompletionQueueName: "compl",
+		CompletionQueues: "compl",
 	}
 	res, _ := conf.CompletionAMQP()
-	assert.Equal(t, conf.CompletionQueueName, res.QueueName)
+	assert.Len(t, res, 1)
 }
 
 func TestConfig_CommandAMQP(t *testing.T) {

@@ -34,7 +34,7 @@ import (
 )
 
 func TestNewCommandController_Failure(t *testing.T) {
-	ctl, err := NewCommandController(0, nil, nil, nil, logrus.New())
+	ctl, err := NewCommandController(0, nil, nil, logrus.New())
 	assert.Nil(t, ctl)
 	assert.Error(t, err)
 }
@@ -43,7 +43,7 @@ func TestNewCommandController_Ignore_CreateQueueFailure(t *testing.T) {
 	serv := new(service.AMQPService)
 	serv2 := new(service.AMQPService)
 	serv.On("CreateQueue").Return(fmt.Errorf("err")).Once()
-	serv2.On("CreateQueue").Return(fmt.Errorf("err")).Once()
+	serv2.On("CreateQueue").Return(fmt.Errorf("err")).Maybe()
 
 	control, err := NewCommandController(2, serv, nil, logrus.New(), serv2)
 	assert.NotNil(t, control)
@@ -62,7 +62,7 @@ func TestCommandController_Consumption(t *testing.T) {
 	serv2 := new(service.AMQPService)
 	serv.On("Consume").Return((<-chan amqp.Delivery)(deliveryChan), nil).Once()
 	serv.On("CreateQueue").Return(nil).Once()
-	serv2.On("CreateQueue").Return(nil).Once()
+	serv2.On("CreateQueue").Return(nil).Maybe()
 
 	hand := new(handler.DeliveryHandler)
 	hand.On("Process", mock.Anything).Run(func(_ mock.Arguments) {
