@@ -19,13 +19,16 @@
 package auxillary
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/whiteblock/definition/command"
+	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/usecase"
 
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/semaphore"
 )
 
 // Executor handles the  processing of mutliple commands
@@ -35,21 +38,26 @@ type Executor interface {
 
 type executor struct {
 	usecase usecase.DockerUseCase
+	conf    config.Execution
 	log     logrus.Ext1FieldLogger
 }
 
 // NewExecutor creates a new DeliveryHandler which uses the given usecase for
 // executing the extracted command
 func NewExecutor(
+	conf config.Execution,
 	usecase usecase.DockerUseCase,
 	log logrus.Ext1FieldLogger) Executor {
-	return &executor{usecase: usecase, log: log}
+	return &executor{usecase: usecase, conf: conf, log: log}
 }
 
 func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 	resultChan := make(chan entity.Result, len(cmds))
+	sem := semaphore.NewWeighted(exec.conf.LimitPerTest)
 	for _, cmd := range cmds {
 		go func(cmd command.Command) {
+			sem.Acquire(context.Background(), 1)
+			defer sem.Release(1)
 			resultChan <- exec.usecase.Run(cmd)
 		}(cmd)
 	}

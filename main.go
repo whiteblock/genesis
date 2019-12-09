@@ -100,6 +100,7 @@ func getCommandController() (controller.CommandController, error) {
 		service.NewAMQPService(complConf, repository.NewAMQPRepository(complConn), logger),
 		handler.NewDeliveryHandler(
 			handAux.NewExecutor(
+				conf.Execution,
 				usecase.NewDockerUseCase(
 					service.NewDockerService(
 						repository.NewDockerRepository(),
