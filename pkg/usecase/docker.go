@@ -29,6 +29,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/validator"
 
+	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
 )
 
@@ -116,6 +117,13 @@ func (duc dockerUseCase) validationCheck(cmd command.Command) (result entity.Res
 	return
 }
 
+func (duc dockerUseCase) injectLabels(cli entity.Client, cmd command.Command) entity.DockerCli {
+	out := entity.DockerCli{Client: cli, Labels: map[string]string{}}
+	out.Labels["testnet"] = cmd.Target.TestnetID
+	//TODO add command meta, and then use it here
+	return out
+}
+
 func (duc dockerUseCase) createContainerShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
 	var container command.Container
 	err := cmd.ParseOrderPayloadInto(&container)
@@ -126,7 +134,14 @@ func (duc dockerUseCase) createContainerShim(ctx context.Context, cli entity.Cli
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	return duc.service.CreateContainer(ctx, cli, container)
+
+	docker := duc.injectLabels(cli, cmd)
+	err = mergo.Map(&docker.Labels, container.Labels)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	docker.Labels["name"] = container.Name
+	return duc.service.CreateContainer(ctx, docker, container)
 }
 
 func (duc dockerUseCase) startContainerShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
@@ -138,7 +153,7 @@ func (duc dockerUseCase) startContainerShim(ctx context.Context, cli entity.Clie
 	if len(sc.Name) == 0 {
 		return entity.NewFatalResult("empty field \"name\"")
 	}
-	return duc.service.StartContainer(ctx, cli, sc)
+	return duc.service.StartContainer(ctx, duc.injectLabels(cli, cmd), sc)
 }
 
 func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
@@ -150,7 +165,7 @@ func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli entity.Cli
 	if payload.Name == "" {
 		return entity.NewFatalResult("empty field \"name\"")
 	}
-	return duc.service.RemoveContainer(ctx, cli, payload.Name)
+	return duc.service.RemoveContainer(ctx, duc.injectLabels(cli, cmd), payload.Name)
 }
 
 func (duc dockerUseCase) createNetworkShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
@@ -159,7 +174,12 @@ func (duc dockerUseCase) createNetworkShim(ctx context.Context, cli entity.Clien
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	return duc.service.CreateNetwork(ctx, cli, net)
+	docker := duc.injectLabels(cli, cmd)
+	err = mergo.Map(&docker.Labels, net.Labels)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	return duc.service.CreateNetwork(ctx, docker, net)
 }
 
 func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
@@ -174,16 +194,19 @@ func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli entity.Clien
 	if len(payload.Network) == 0 {
 		return entity.NewFatalResult(fmt.Errorf("empty field \"network\""))
 	}
-	return duc.service.AttachNetwork(ctx, cli, payload.Network, payload.ContainerName)
+	return duc.service.AttachNetwork(ctx, duc.injectLabels(cli, cmd), payload.Network, payload.ContainerName)
 }
 
-func (duc dockerUseCase) detachNetworkShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) detachNetworkShim(ctx context.Context,
+	cli entity.Client, cmd command.Command) entity.Result {
+
 	var payload command.ContainerNetwork
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
-	return duc.service.DetachNetwork(ctx, cli, payload.Network, payload.ContainerName)
+	return duc.service.DetachNetwork(ctx, duc.injectLabels(cli, cmd),
+		payload.Network, payload.ContainerName)
 }
 
 func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
@@ -195,7 +218,7 @@ func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli entity.Clien
 	if payload.Name == "" {
 		return entity.NewFatalResult("empty field \"name\"")
 	}
-	return duc.service.RemoveNetwork(ctx, cli, payload.Name)
+	return duc.service.RemoveNetwork(ctx, duc.injectLabels(cli, cmd), payload.Name)
 }
 func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
 	var payload command.Volume
@@ -203,7 +226,12 @@ func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli entity.Client
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	return duc.service.CreateVolume(ctx, cli, payload)
+	docker := duc.injectLabels(cli, cmd)
+	err = mergo.Map(&docker.Labels, payload.Labels)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	return duc.service.CreateVolume(ctx, docker, payload)
 }
 
 func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
@@ -215,7 +243,7 @@ func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli entity.Client
 	if payload.Name == "" {
 		return entity.NewFatalResult("empty field \"name\"")
 	}
-	return duc.service.RemoveVolume(ctx, cli, payload.Name)
+	return duc.service.RemoveVolume(ctx, duc.injectLabels(cli, cmd), payload.Name)
 }
 func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
 	var payload command.FileAndContainer
@@ -226,7 +254,8 @@ func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli entity.
 	if len(payload.ContainerName) == 0 {
 		return entity.NewFatalResult("missing field \"container\"")
 	}
-	return duc.service.PlaceFileInContainer(ctx, cli, payload.ContainerName, payload.File)
+	return duc.service.PlaceFileInContainer(ctx, duc.injectLabels(cli, cmd),
+		payload.ContainerName, payload.File)
 }
 
 func (duc dockerUseCase) emulationShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
@@ -235,7 +264,7 @@ func (duc dockerUseCase) emulationShim(ctx context.Context, cli entity.Client, c
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	return duc.service.Emulation(ctx, cli, payload)
+	return duc.service.Emulation(ctx, duc.injectLabels(cli, cmd), payload)
 }
 
 func (duc dockerUseCase) swarmSetupShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
@@ -247,7 +276,7 @@ func (duc dockerUseCase) swarmSetupShim(ctx context.Context, cli entity.Client, 
 	if len(payload.Hosts) == 0 {
 		return entity.NewFatalResult("hosts cannot be empty")
 	}
-	return duc.service.SwarmCluster(ctx, cli, payload)
+	return duc.service.SwarmCluster(ctx, duc.injectLabels(cli, cmd), payload)
 }
 
 func (duc dockerUseCase) pullImageShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
@@ -259,5 +288,5 @@ func (duc dockerUseCase) pullImageShim(ctx context.Context, cli entity.Client, c
 	if len(payload.Image) == 0 {
 		return entity.NewFatalResult("image cannot be empty")
 	}
-	return duc.service.PullImage(ctx, cli, payload)
+	return duc.service.PullImage(ctx, duc.injectLabels(cli, cmd), payload)
 }
