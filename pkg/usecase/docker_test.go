@@ -207,7 +207,7 @@ func TestDockerUseCase_Run_RemoveContainer_Success(t *testing.T) {
 
 			require.Len(t, args, 3)
 			assert.NotNil(t, args.Get(0))
-			assert.Nil(t, args.Get(1))
+			assert.NotNil(t, args.Get(1))
 			assert.Equal(t, containerName, args.String(2))
 
 		}).Once()
@@ -666,7 +666,7 @@ func TestDockerUseCase_Execute_RemoveContainer_Success(t *testing.T) {
 
 			require.Len(t, args, 3)
 			assert.NotNil(t, args.Get(0))
-			assert.Nil(t, args.Get(1))
+			assert.NotNil(t, args.Get(1))
 			assert.Equal(t, containerName, args.String(2))
 
 		}).Once()
@@ -735,7 +735,7 @@ func TestDockerUseCase_Execute_AttachNetwork_Success(t *testing.T) {
 
 			require.Len(t, args, 4)
 			assert.NotNil(t, args.Get(0))
-			assert.Nil(t, args.Get(1))
+			assert.NotNil(t, args.Get(1))
 			assert.Equal(t, networkName, args.String(2))
 			assert.Equal(t, containerName, args.String(3))
 
@@ -802,7 +802,7 @@ func TestDockerUseCase_Execute_RemoveVolume_Success(t *testing.T) {
 
 			require.Len(t, args, 3)
 			assert.NotNil(t, args.Get(0))
-			assert.Nil(t, args.Get(1))
+			assert.NotNil(t, args.Get(1))
 			assert.Equal(t, volumeName, args.String(2))
 
 		}).Once()
@@ -850,7 +850,7 @@ func TestDockerUseCase_Execute_PutFileInContainer_Success(t *testing.T) {
 
 			require.Len(t, args, 4)
 			assert.NotNil(t, args.Get(0))
-			assert.Nil(t, args.Get(1))
+			assert.NotNil(t, args.Get(1))
 			assert.Equal(t, containerName, args.String(2))
 			file, ok := args.Get(3).(command.File)
 			require.True(t, ok)

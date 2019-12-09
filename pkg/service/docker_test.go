@@ -56,9 +56,6 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		Environment: map[string]string{
 			"FOO": "BAR",
 		},
-		Labels: map[string]string{
-			"FOO": "BAR",
-		},
 		Name:    "TEST",
 		Network: []string{"Testnet"},
 		Ports:   map[int]int{8888: 8889},
@@ -83,7 +80,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 			assert.Equal(t, testContainer.EntryPoint, config.Entrypoint[0])
 			assert.Equal(t, testContainer.Args[0], config.Entrypoint[1])
 			assert.Equal(t, testContainer.Name, config.Hostname)
-			assert.Equal(t, testContainer.Labels, config.Labels)
+			assert.NotNil(t, config.Labels)
 			assert.Equal(t, testContainer.Image, config.Image)
 			{
 				_, exists := config.ExposedPorts["8889/tcp"]
@@ -160,7 +157,12 @@ func TestDockerService_CreateContainer(t *testing.T) {
 	})
 
 	ds := NewDockerService(repo, entity.DockerConfig{}, logrus.New())
-	res := ds.CreateContainer(nil, cli, testContainer)
+	res := ds.CreateContainer(nil, entity.DockerCli{
+		Client: cli,
+		Labels: map[string]string{
+			"FOO": "BAR",
+		},
+	}, testContainer)
 	assert.NoError(t, res.Error)
 }
 
@@ -191,7 +193,7 @@ func TestDockerService_StartContainer_Success(t *testing.T) {
 
 	repo := new(repoMock.DockerRepository)
 	ds := NewDockerService(repo, entity.DockerConfig{}, logrus.New())
-	res := ds.StartContainer(nil, cli, scCommand)
+	res := ds.StartContainer(nil, entity.DockerCli{Client: cli}, scCommand)
 	assert.NoError(t, res.Error)
 	cli.AssertExpectations(t)
 	conn.AssertExpectations(t)
@@ -269,11 +271,8 @@ func TestDockerService_StartContainer_Attach_Failure(t *testing.T) {
 
 func TestDockerService_CreateNetwork_Success(t *testing.T) {
 	testNetwork := command.Network{
-		Name:   "testnet",
-		Global: true,
-		Labels: map[string]string{
-			"FOO": "BAR",
-		},
+		Name:    "testnet",
+		Global:  true,
 		Gateway: "10.14.0.1",
 		Subnet:  "10.14.0.0/16",
 	}
@@ -293,7 +292,7 @@ func TestDockerService_CreateNetwork_Success(t *testing.T) {
 		assert.False(t, networkCreate.Ingress)
 		assert.False(t, networkCreate.Internal)
 		assert.False(t, networkCreate.EnableIPv6)
-		assert.Equal(t, testNetwork.Labels, networkCreate.Labels)
+		assert.NotNil(t, networkCreate.Labels)
 		assert.Nil(t, networkCreate.ConfigFrom)
 
 		require.NotNil(t, networkCreate.IPAM)
@@ -319,11 +318,21 @@ func TestDockerService_CreateNetwork_Success(t *testing.T) {
 	repo := new(repoMock.DockerRepository)
 	ds := NewDockerService(repo, entity.DockerConfig{}, logrus.New())
 
-	res := ds.CreateNetwork(nil, cli, testNetwork)
+	res := ds.CreateNetwork(nil, entity.DockerCli{
+		Client: cli,
+		Labels: map[string]string{
+			"FOO": "BAR",
+		},
+	}, testNetwork)
 	assert.NoError(t, res.Error)
 
 	testNetwork.Global = false
-	res = ds.CreateNetwork(nil, cli, testNetwork)
+	res = ds.CreateNetwork(nil, entity.DockerCli{
+		Client: cli,
+		Labels: map[string]string{
+			"FOO": "BAR",
+		},
+	}, testNetwork)
 	assert.NoError(t, res.Error)
 
 	cli.AssertExpectations(t)
@@ -346,7 +355,7 @@ func TestDockerService_CreateNetwork_Failure(t *testing.T) {
 	repo := new(repoMock.DockerRepository)
 	ds := NewDockerService(repo, entity.DockerConfig{}, logrus.New())
 
-	res := ds.CreateNetwork(nil, cli, testNetwork)
+	res := ds.CreateNetwork(nil, entity.DockerCli{Client: cli}, testNetwork)
 	assert.Error(t, res.Error)
 
 	cli.AssertExpectations(t)
@@ -374,7 +383,7 @@ func TestDockerService_RemoveNetwork_Success(t *testing.T) {
 	ds := NewDockerService(repo, entity.DockerConfig{}, logrus.New())
 
 	for _, net := range networks {
-		res := ds.RemoveNetwork(nil, cli, net.Name)
+		res := ds.RemoveNetwork(nil, entity.DockerCli{Client: cli}, net.Name)
 		assert.NoError(t, res.Error)
 	}
 
@@ -390,7 +399,7 @@ func TestDockerService_RemoveNetwork_NetworkList_Failure(t *testing.T) {
 		types.NetworkResource{ID: ""}, nil).Once()
 	ds := NewDockerService(repo, entity.DockerConfig{}, logrus.New())
 
-	res := ds.RemoveNetwork(nil, cli, "")
+	res := ds.RemoveNetwork(nil, entity.DockerCli{Client: cli}, "")
 	assert.Error(t, res.Error)
 
 	cli.AssertExpectations(t)
@@ -415,7 +424,7 @@ func TestDockerService_RemoveNetwork_NetworkRemove_Failure(t *testing.T) {
 	ds := NewDockerService(repo, entity.DockerConfig{}, logrus.New())
 
 	for _, net := range networks {
-		res := ds.RemoveNetwork(nil, cli, net.Name)
+		res := ds.RemoveNetwork(nil, entity.DockerCli{Client: cli}, net.Name)
 		assert.Error(t, res.Error)
 	}
 
@@ -450,7 +459,7 @@ func TestDockerService_RemoveContainer(t *testing.T) {
 	ds := NewDockerService(repo, entity.DockerConfig{}, logrus.New())
 
 	for _, cntr := range cntrs {
-		res := ds.RemoveContainer(nil, cli, cntr.Names[0])
+		res := ds.RemoveContainer(nil, entity.DockerCli{Client: cli}, cntr.Names[0])
 		assert.NoError(t, res.Error)
 	}
 	cli.AssertExpectations(t)
@@ -492,7 +501,7 @@ func TestDockerService_PlaceFileInContainer(t *testing.T) {
 
 	ds := NewDockerService(repo, entity.DockerConfig{}, logrus.New())
 
-	res := ds.PlaceFileInContainer(nil, cli, testContainer.Names[0], file)
+	res := ds.PlaceFileInContainer(nil, entity.DockerCli{Client: cli}, testContainer.Names[0], file)
 	assert.NoError(t, res.Error)
 
 	cli.AssertExpectations(t)
@@ -538,7 +547,7 @@ func TestDockerService_AttachNetwork(t *testing.T) {
 
 	ds := NewDockerService(repo, entity.DockerConfig{}, logrus.New())
 
-	res := ds.AttachNetwork(nil, cli, net.Name, cntr.Names[0])
+	res := ds.AttachNetwork(nil, entity.DockerCli{Client: cli}, net.Name, cntr.Names[0])
 	assert.NoError(t, res.Error)
 
 	cli.AssertExpectations(t)
@@ -580,7 +589,7 @@ func TestDockerService_DetachNetwork(t *testing.T) {
 
 	ds := NewDockerService(repo, entity.DockerConfig{}, logrus.New())
 
-	res := ds.DetachNetwork(nil, cli, net.Name, cntr.Names[0])
+	res := ds.DetachNetwork(nil, entity.DockerCli{Client: cli}, net.Name, cntr.Names[0])
 	assert.NoError(t, res.Error)
 
 	cli.AssertExpectations(t)
@@ -613,7 +622,7 @@ func TestDockerService_CreateVolume(t *testing.T) {
 
 	ds := NewDockerService(repo, entity.DockerConfig{}, logrus.New())
 
-	res := ds.CreateVolume(nil, cli, command.Volume{
+	res := ds.CreateVolume(nil, entity.DockerCli{Client: cli}, command.Volume{
 		Name:   "test_volume",
 		Labels: map[string]string{"foo": "bar"},
 	})
@@ -638,7 +647,7 @@ func TestDockerService_RemoveVolume(t *testing.T) {
 
 	ds := NewDockerService(repo, entity.DockerConfig{}, logrus.New())
 
-	res := ds.RemoveVolume(nil, cli, name)
+	res := ds.RemoveVolume(nil, entity.DockerCli{Client: cli}, name)
 	assert.NoError(t, res.Error)
 
 	assert.True(t, cli.AssertNumberOfCalls(t, "VolumeRemove", 1))
