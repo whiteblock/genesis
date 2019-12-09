@@ -21,6 +21,8 @@ package auxillary
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/genesis/pkg/config"
@@ -56,9 +58,17 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 	sem := semaphore.NewWeighted(exec.conf.LimitPerTest)
 	for _, cmd := range cmds {
 		go func(cmd command.Command) {
-			sem.Acquire(context.Background(), 1)
-			defer sem.Release(1)
-			resultChan <- exec.usecase.Run(cmd)
+			for i := 0; i < exec.conf.ConnectionRetries; i++ {
+				sem.Acquire(context.Background(), 1)
+				res := exec.usecase.Run(cmd)
+				sem.Release(1)
+				if !res.IsSuccess() && strings.Contains(res.Error.Error(), "Cannot connect to the Docker daemon") {
+					time.Sleep(exec.conf.RetryDelay)
+					continue
+				}
+				resultChan <- res
+				break
+			}
 		}(cmd)
 	}
 	var err error

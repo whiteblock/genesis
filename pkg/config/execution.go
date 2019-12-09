@@ -20,12 +20,14 @@ package config
 
 import (
 	"github.com/spf13/viper"
+	"time"
 )
 
 //Execution is the configuration for execution
 type Execution struct {
-	LimitPerTest int64 `mapstructure:"executionLimitPerTest"`
-	//GlobalLimit  int64 `mapstructure:"executionGlobalLimit"`
+	LimitPerTest      int64         `mapstructure:"executionLimitPerTest"`
+	ConnectionRetries int           `mapstructure:"executionConnectionRetries"`
+	RetryDelay        time.Duration `mapstructure:"executionRetryDelay"`
 }
 
 //NewExecution creates a new Execution config from the given viper
@@ -38,10 +40,15 @@ func setExecutionBindings(v *viper.Viper) error {
 	if err != nil {
 		return err
 	}
-	return nil //v.BindEnv("executionGlobalLimit", "EXECUTION_GLOBAL_LIMIT")
+	err = v.BindEnv("executionRetryDelay", "EXECUTION_RETRY_DELAY")
+	if err != nil {
+		return err
+	}
+	return v.BindEnv("executionConnectionRetries", "EXECUTION_CONNECTION_RETRIES")
 }
 
 func setExecutionDefaults(v *viper.Viper) {
 	v.SetDefault("executionLimitPerTest", 40)
-	//v.SetDefault("executionGlobalLimit", 1000)
+	v.SetDefault("executionConnectionRetries", 5)
+	v.SetDefault("executionRetryDelay", "10s")
 }
