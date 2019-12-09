@@ -63,7 +63,7 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 				sem.Acquire(context.Background(), 1)
 				res := exec.usecase.Run(cmd)
 				sem.Release(1)
-				if !res.IsSuccess() && strings.Contains(res.Error.Error(), "Cannot connect to the Docker daemon") {
+				if !res.IsSuccess() && strings.Contains(res.Error.Error(), "cannot connect to the Docker daemon") {
 					exec.log.WithField("time", exec.conf.RetryDelay).Info("connection to docker failed, retrying")
 					time.Sleep(exec.conf.RetryDelay)
 					continue
