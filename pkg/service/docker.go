@@ -110,7 +110,7 @@ func (ds dockerService) CreateClient(host string) (entity.Client, error) {
 	}
 	return client.NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
-		client.WithHost("tcp://"+host+":"+DockerPort),
+		client.WithHost("https://"+host+":"+DockerPort),
 		ds.repo.WithTLSClientConfig(ds.conf.CACertPath, ds.conf.CertPath, ds.conf.KeyPath),
 	)
 }
