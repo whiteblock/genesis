@@ -41,6 +41,8 @@ type Config struct {
 	VolumeDriverOpts map[string]string `mapstructure:"volumeDriverOpts"`
 	Verbosity        string            `mapstructure:"verbosity"`
 	Listen           string            `mapstructure:"listen"`
+
+	Execution Execution `mapstructure:"-"`
 }
 
 //GetLogger gets a logger according to the config
@@ -133,6 +135,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("listen", "LISTEN")
 	viper.BindEnv("completionQueueName", "COMPLETION_QUEUE_NAME")
 	viper.BindEnv("commandQueueName", "COMMAND_QUEUE_NAME")
+	setExecutionBindings(viper.GetViper())
 }
 
 func setViperDefaults() {
@@ -143,6 +146,8 @@ func setViperDefaults() {
 	viper.SetDefault("verbosity", "INFO")
 	viper.SetDefault("listen", "0.0.0.0:8000")
 	viper.SetDefault("localMode", true)
+
+	setExecutionDefaults(viper.GetViper())
 }
 
 func init() {
@@ -161,6 +166,10 @@ func init() {
 func NewConfig() (*Config, error) {
 	conf := new(Config)
 	_ = viper.ReadInConfig()
-
-	return conf, viper.Unmarshal(&conf)
+	err := viper.Unmarshal(&conf)
+	if err != nil {
+		return nil, err
+	}
+	conf.Execution, err = NewExecution(viper.GetViper())
+	return conf, err
 }
