@@ -510,7 +510,7 @@ func (ds dockerService) SwarmCluster(ctx context.Context, _ entity.Client,
 		return entity.NewErrorResult(err)
 	}
 	token, err := cli.SwarmInit(ctx, swarm.InitRequest{
-		ListenAddr:      fmt.Sprintf("%s:%d", dswarm.Hosts[0], DockerSwarmPort),
+		ListenAddr:      fmt.Sprintf("0.0.0.0:%d", DockerSwarmPort),
 		AdvertiseAddr:   fmt.Sprintf("%s:%d", dswarm.Hosts[0], DockerSwarmPort),
 		ForceNewCluster: true,
 		Availability:    swarm.NodeAvailabilityActive,
@@ -531,7 +531,7 @@ func (ds dockerService) SwarmCluster(ctx context.Context, _ entity.Client,
 			return entity.NewErrorResult(err)
 		}
 		err = cli.SwarmJoin(ctx, swarm.JoinRequest{
-			ListenAddr:    fmt.Sprintf("%s:%d", host, DockerSwarmPort),
+			ListenAddr:    fmt.Sprintf("0.0.0.0:%d", DockerSwarmPort),
 			AdvertiseAddr: fmt.Sprintf("%s:%d", host, DockerSwarmPort),
 			RemoteAddrs:   []string{fmt.Sprintf("%s:%d", dswarm.Hosts[0], DockerSwarmPort)},
 			JoinToken:     token,
