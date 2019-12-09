@@ -115,6 +115,17 @@ func (ds dockerService) CreateClient(host string) (entity.Client, error) {
 	)
 }
 
+func (ds dockerService) withFields(cli entity.DockerCli, fields logrus.Fields) *logrus.Entry {
+	for key, value := range cli.Labels {
+		fields[key] = value
+	}
+	return ds.log.WithFields(fields)
+}
+
+func (ds dockerService) withField(cli entity.DockerCli, key string, value interface{}) *logrus.Entry {
+	return ds.withFields(cli, logrus.Fields{key: value})
+}
+
 //GetNetworkingConfig determines the proper networking config based on the docker hosts state and the networks
 func (ds dockerService) GetNetworkingConfig(ctx context.Context, cli entity.DockerCli,
 	networks strslice.StrSlice) (*network.NetworkingConfig, error) {
@@ -205,7 +216,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 	_, err = cli.ContainerCreate(ctx, config, hostConfig, networkConfig, dContainer.Name)
 	if err != nil {
 		if strings.Contains(err.Error(), "already in use by container") {
-			ds.log.WithFields(logrus.Fields{"name": dContainer.Name,
+			ds.withFields(cli, logrus.Fields{"name": dContainer.Name,
 				"error": err}).Error("duplicate container error")
 			return entity.NewSuccessResult()
 		}
@@ -219,7 +230,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli,
 	sc command.StartContainer) entity.Result {
 
-	ds.log.WithFields(logrus.Fields{"name": sc.Name}).Trace("starting container")
+	ds.withFields(cli, logrus.Fields{"name": sc.Name}).Trace("starting container")
 	opts := types.ContainerStartOptions{}
 
 	attachOpts := types.ContainerAttachOptions{
@@ -263,7 +274,7 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 
 //RemoveContainer attempts to remove a container
 func (ds dockerService) RemoveContainer(ctx context.Context, cli entity.DockerCli, name string) entity.Result {
-	ds.log.WithFields(logrus.Fields{"name": name}).Debug("removing container")
+	ds.withFields(cli, logrus.Fields{"name": name}).Debug("removing container")
 	cntr, err := ds.repo.GetContainerByName(ctx, cli, name)
 	if err != nil {
 		return entity.NewErrorResult(err)
@@ -307,11 +318,11 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli entity.DockerCli,
 		networkCreate.Scope = "local"
 		networkCreate.Options["com.docker.network.bridge.name"] = net.Name
 	}
-	ds.log.WithFields(logrus.Fields{"name": net.Name, "conf": networkCreate}).Debug("creating a network")
+	ds.withFields(cli, logrus.Fields{"name": net.Name, "conf": networkCreate}).Debug("creating a network")
 	_, err := cli.NetworkCreate(ctx, net.Name, networkCreate)
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
-			ds.log.WithFields(logrus.Fields{"name": net.Name, "error": err}).Error("duplicate error")
+			ds.withFields(cli, logrus.Fields{"name": net.Name, "error": err}).Error("duplicate error")
 			return entity.NewSuccessResult()
 		}
 		return entity.NewErrorResult(err)
@@ -321,7 +332,7 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli entity.DockerCli,
 
 //RemoveNetwork attempts to remove a network
 func (ds dockerService) RemoveNetwork(ctx context.Context, cli entity.DockerCli, name string) entity.Result {
-	ds.log.WithFields(logrus.Fields{"name": name}).Debug("removing a network")
+	ds.withFields(cli, logrus.Fields{"name": name}).Debug("removing a network")
 	net, err := ds.repo.GetNetworkByName(ctx, cli, name)
 	if err != nil {
 		return entity.NewErrorResult(err)
@@ -508,7 +519,7 @@ func (ds dockerService) Emulation(ctx context.Context, cli entity.DockerCli, net
 	return ds.StartContainer(ctx, cli, command.StartContainer{Name: name})
 }
 
-func (ds dockerService) SwarmCluster(ctx context.Context, _ entity.DockerCli,
+func (ds dockerService) SwarmCluster(ctx context.Context, entryCLI entity.DockerCli,
 	dswarm command.SetupSwarm) entity.Result {
 
 	if len(dswarm.Hosts) == 0 {
@@ -516,7 +527,7 @@ func (ds dockerService) SwarmCluster(ctx context.Context, _ entity.DockerCli,
 	}
 	cli, err := ds.CreateClient(dswarm.Hosts[0])
 	if err != nil {
-		ds.log.WithField("error", err).Error("creating the manager client")
+		ds.withField(entryCLI, "error", err).Error("creating the manager client")
 		return entity.NewErrorResult(err)
 	}
 	token, err := cli.SwarmInit(ctx, swarm.InitRequest{
@@ -526,17 +537,17 @@ func (ds dockerService) SwarmCluster(ctx context.Context, _ entity.DockerCli,
 		Availability:    swarm.NodeAvailabilityActive,
 	})
 	if err != nil {
-		ds.log.WithField("error", err).Error("error with docker swarm init")
+		ds.withField(entryCLI, "error", err).Error("error with docker swarm init")
 		return entity.NewErrorResult(err)
 	}
 
 	details, err := cli.SwarmInspect(ctx)
 	if err != nil {
-		ds.log.WithField("error", err).Error("error with docker swarm inspect")
+		ds.withField(entryCLI, "error", err).Error("error with docker swarm inspect")
 		return entity.NewErrorResult(err)
 	}
 
-	ds.log.WithField("manager", token).Info("initializing docker swarm")
+	ds.withField(entryCLI, "manager", token).Info("initializing docker swarm")
 	if len(dswarm.Hosts) == 1 {
 		return entity.NewSuccessResult()
 	}
@@ -546,7 +557,7 @@ func (ds dockerService) SwarmCluster(ctx context.Context, _ entity.DockerCli,
 		if err != nil {
 			return entity.NewErrorResult(err)
 		}
-		ds.log.WithField("token", details.JoinTokens.Worker).Info("adding worker to swarm")
+		ds.withField(entryCLI, "token", details.JoinTokens.Worker).Info("adding worker to swarm")
 		err = cli.SwarmJoin(ctx, swarm.JoinRequest{
 			ListenAddr:    fmt.Sprintf("0.0.0.0:%d", DockerSwarmPort),
 			AdvertiseAddr: fmt.Sprintf("%s:%d", host, DockerSwarmPort),
@@ -564,14 +575,14 @@ func (ds dockerService) SwarmCluster(ctx context.Context, _ entity.DockerCli,
 func (ds dockerService) PullImage(ctx context.Context, cli entity.DockerCli,
 	imagePull command.PullImage) entity.Result {
 
-	ds.log.WithFields(logrus.Fields{
+	ds.withFields(cli, logrus.Fields{
 		"image":     imagePull.Image,
 		"usingAuth": imagePull.RegistryAuth != "",
 	}).Debug("pre-emptively pulling an image if it doesn't exist")
 
 	err := ds.repo.EnsureImagePulled(ctx, cli, imagePull.Image, imagePull.RegistryAuth)
 	if err != nil {
-		ds.log.WithFields(logrus.Fields{
+		ds.withFields(cli, logrus.Fields{
 			"image": imagePull.Image,
 			"error": err,
 		}).Error("unable to pull an image")
