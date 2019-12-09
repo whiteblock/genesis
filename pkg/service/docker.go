@@ -520,7 +520,13 @@ func (ds dockerService) SwarmCluster(ctx context.Context, _ entity.Client,
 		return entity.NewErrorResult(err)
 	}
 
-	ds.log.WithField("token", token).Info("initializing docker swarm")
+	details, err := cli.SwarmInspect(ctx)
+	if err != nil {
+		ds.log.WithField("error", err).Error("error with docker swarm inspect")
+		return entity.NewErrorResult(err)
+	}
+
+	ds.log.WithField("manager", token).Info("initializing docker swarm")
 	if len(dswarm.Hosts) == 1 {
 		return entity.NewSuccessResult()
 	}
@@ -530,11 +536,12 @@ func (ds dockerService) SwarmCluster(ctx context.Context, _ entity.Client,
 		if err != nil {
 			return entity.NewErrorResult(err)
 		}
+		ds.log.WithField("token", details.JoinTokens.Worker).Info("adding worker to swarm")
 		err = cli.SwarmJoin(ctx, swarm.JoinRequest{
 			ListenAddr:    fmt.Sprintf("0.0.0.0:%d", DockerSwarmPort),
 			AdvertiseAddr: fmt.Sprintf("%s:%d", host, DockerSwarmPort),
 			RemoteAddrs:   []string{fmt.Sprintf("%s:%d", dswarm.Hosts[0], DockerSwarmPort)},
-			JoinToken:     token,
+			JoinToken:     details.JoinTokens.Worker,
 			Availability:  swarm.NodeAvailabilityActive,
 		})
 		if err != nil {
