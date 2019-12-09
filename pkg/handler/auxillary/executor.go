@@ -58,7 +58,8 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 	sem := semaphore.NewWeighted(exec.conf.LimitPerTest)
 	for _, cmd := range cmds {
 		go func(cmd command.Command) {
-			for i := 0; i < exec.conf.ConnectionRetries; i++ {
+			i := 0
+			for ; i < exec.conf.ConnectionRetries; i++ {
 				sem.Acquire(context.Background(), 1)
 				res := exec.usecase.Run(cmd)
 				sem.Release(1)
@@ -69,6 +70,9 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 				}
 				resultChan <- res
 				break
+			}
+			if i == exec.conf.ConnectionRetries {
+				resultChan <- entity.NewFatalResult("could not connect to docker")
 			}
 		}(cmd)
 	}
