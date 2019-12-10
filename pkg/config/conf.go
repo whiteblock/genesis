@@ -19,10 +19,12 @@
 package config
 
 import (
+	"github.com/whiteblock/genesis/pkg/entity"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	queue "github.com/whiteblock/amqp"
 	"github.com/whiteblock/definition/command"
-	"github.com/whiteblock/genesis/pkg/entity"
 )
 
 // Config groups all of the global configuration parameters into
@@ -53,48 +55,20 @@ func (c Config) GetLogger() (*logrus.Logger, error) {
 		return nil, err
 	}
 	logger.SetLevel(lvl)
+	logger.SetReportCaller(true)
 	return logger, nil
 }
 
-func getAmqpBase() (AMQP, error) {
-	queue, err := GetQueue()
-	if err != nil {
-		return AMQP{}, err
-	}
-
-	consume, err := GetConsume()
-	if err != nil {
-		return AMQP{}, err
-	}
-
-	publish, err := GetPublish()
-	if err != nil {
-		return AMQP{}, err
-	}
-
-	ep, err := GetAMQPEndpoint()
-	if err != nil {
-		return AMQP{}, err
-	}
-
-	return AMQP{
-		Queue:    queue,
-		Consume:  consume,
-		Publish:  publish,
-		Endpoint: ep,
-	}, nil
-}
-
 //CompletionAMQP gets the AMQP for the completion queue
-func (c Config) CompletionAMQP() (AMQP, error) {
-	conf, err := getAmqpBase()
+func (c Config) CompletionAMQP() (queue.AMQPConfig, error) {
+	conf, err := queue.NewAMQPConfig(viper.GetViper())
 	conf.QueueName = c.CompletionQueueName
 	return conf, err
 }
 
 //CommandAMQP gets the AMQP for the command queue
-func (c Config) CommandAMQP() (AMQP, error) {
-	conf, err := getAmqpBase()
+func (c Config) CommandAMQP() (queue.AMQPConfig, error) {
+	conf, err := queue.NewAMQPConfig(viper.GetViper())
 	conf.QueueName = c.CommandQueueName
 	return conf, err
 }
@@ -151,7 +125,7 @@ func setViperDefaults() {
 }
 
 func init() {
-	amqpInit()
+	queue.SetConfig(viper.GetViper())
 	setViperDefaults()
 	setViperEnvBindings()
 

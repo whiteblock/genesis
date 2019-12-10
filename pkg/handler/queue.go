@@ -22,14 +22,14 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/whiteblock/definition/command"
-	"github.com/whiteblock/definition/command/biome"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/handler/auxillary"
-	"github.com/whiteblock/genesis/pkg/utility"
 
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
+	queue "github.com/whiteblock/amqp"
+	"github.com/whiteblock/definition/command"
+	"github.com/whiteblock/definition/command/biome"
 )
 
 //DeliveryHandler handles the initial processing of a amqp delivery
@@ -39,7 +39,7 @@ type DeliveryHandler interface {
 }
 
 type deliveryHandler struct {
-	msgUtil utility.AMQPMessage
+	msgUtil queue.AMQPMessage
 	aux     auxillary.Executor
 	log     logrus.Ext1FieldLogger
 }
@@ -48,7 +48,7 @@ type deliveryHandler struct {
 //executing the extracted command
 func NewDeliveryHandler(
 	aux auxillary.Executor,
-	msgUtil utility.AMQPMessage,
+	msgUtil queue.AMQPMessage,
 	log logrus.Ext1FieldLogger) DeliveryHandler {
 	return &deliveryHandler{aux: aux, log: log, msgUtil: msgUtil}
 }

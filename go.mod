@@ -3,27 +3,21 @@ module github.com/whiteblock/genesis
 go 1.13
 
 require (
-	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/docker/docker v1.4.2-0.20191106232431-31abc6c089eb
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259
 	github.com/gorilla/mux v1.7.3
 	github.com/imdario/mergo v0.3.8
-	github.com/mitchellh/mapstructure v1.1.2
-	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.2
-	github.com/spf13/viper v1.5.0
+	github.com/spf13/viper v1.6.1
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
 	github.com/stretchr/testify v1.4.0
-	github.com/vektra/mockery v0.0.0-20181123154057-e78b021dcbb5 // indirect
+	github.com/whiteblock/amqp v1.0.1
 	github.com/whiteblock/definition v0.0.0-20191209185242-ff42efb6d465
-	github.com/whiteblock/go.uuid v1.2.1
 	github.com/whiteblock/utility v0.0.0-20191204153325-8c91068475f3
-	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 )
