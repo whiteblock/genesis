@@ -24,10 +24,10 @@ import (
 	"sync"
 
 	"github.com/whiteblock/genesis/pkg/handler"
-	"github.com/whiteblock/genesis/pkg/service"
 
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
+	queue "github.com/whiteblock/amqp"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -38,8 +38,8 @@ type CommandController interface {
 }
 
 type consumer struct {
-	completion service.AMQPService
-	cmds       service.AMQPService
+	completion queue.AMQPService
+	cmds       queue.AMQPService
 	handle     handler.DeliveryHandler
 	log        logrus.Ext1FieldLogger
 	once       *sync.Once
@@ -49,8 +49,8 @@ type consumer struct {
 // NewCommandController creates a new CommandController
 func NewCommandController(
 	maxConcurreny int64,
-	cmds service.AMQPService,
-	completion service.AMQPService,
+	cmds queue.AMQPService,
+	completion queue.AMQPService,
 	handle handler.DeliveryHandler,
 	log logrus.Ext1FieldLogger) (CommandController, error) {
 

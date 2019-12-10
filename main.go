@@ -28,10 +28,10 @@ import (
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/usecase"
-	"github.com/whiteblock/genesis/pkg/utility"
 	"github.com/whiteblock/genesis/pkg/validator"
 
 	"github.com/gorilla/mux"
+	queue "github.com/whiteblock/amqp"
 )
 
 func getRestServer() (controller.RestController, error) {
@@ -83,21 +83,20 @@ func getCommandController() (controller.CommandController, error) {
 		return nil, err
 	}
 
-	cmdConn, err := utility.OpenAMQPConnection(cmdConf.Endpoint)
+	cmdConn, err := queue.OpenAMQPConnection(cmdConf.Endpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	complConn, err := utility.OpenAMQPConnection(complConf.Endpoint)
+	complConn, err := queue.OpenAMQPConnection(complConf.Endpoint)
 	if err != nil {
 		return nil, err
 	}
-	logger.SetReportCaller(true)
 
 	return controller.NewCommandController(
 		conf.QueueMaxConcurrency,
-		service.NewAMQPService(cmdConf, repository.NewAMQPRepository(cmdConn), logger),
-		service.NewAMQPService(complConf, repository.NewAMQPRepository(complConn), logger),
+		queue.NewAMQPService(cmdConf, queue.NewAMQPRepository(cmdConn), logger),
+		queue.NewAMQPService(complConf, queue.NewAMQPRepository(complConn), logger),
 		handler.NewDeliveryHandler(
 			handAux.NewExecutor(
 				conf.Execution,
@@ -109,7 +108,7 @@ func getCommandController() (controller.CommandController, error) {
 					validator.NewOrderValidator(),
 					logger),
 				logger),
-			utility.NewAMQPMessage(conf.MaxMessageRetries),
+			queue.NewAMQPMessage(conf.MaxMessageRetries),
 			logger),
 		logger)
 }

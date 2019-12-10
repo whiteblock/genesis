@@ -22,15 +22,15 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/whiteblock/definition/command"
+	utilityMocks "github.com/whiteblock/genesis/mocks/amqp"
 	auxMocks "github.com/whiteblock/genesis/mocks/pkg/handler/auxillary"
-	utilityMocks "github.com/whiteblock/genesis/mocks/pkg/utility"
 	"github.com/whiteblock/genesis/pkg/entity"
 
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/whiteblock/definition/command"
 )
 
 func TestNewDeliveryHandler(t *testing.T) {

@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
+	queue "github.com/whiteblock/genesis/mocks/amqp"
 	handler "github.com/whiteblock/genesis/mocks/pkg/handler"
-	service "github.com/whiteblock/genesis/mocks/pkg/service"
 	"github.com/whiteblock/genesis/pkg/entity"
 
 	"github.com/sirupsen/logrus"
@@ -40,8 +40,8 @@ func TestNewCommandController_Failure(t *testing.T) {
 }
 
 func TestNewCommandController_Ignore_CreateQueueFailure(t *testing.T) {
-	serv := new(service.AMQPService)
-	serv2 := new(service.AMQPService)
+	serv := new(queue.AMQPService)
+	serv2 := new(queue.AMQPService)
 	serv.On("CreateQueue").Return(fmt.Errorf("err")).Once()
 	serv2.On("CreateQueue").Return(fmt.Errorf("err")).Once()
 
@@ -58,8 +58,8 @@ func TestCommandController_Consumption(t *testing.T) {
 
 	processedChan := make(chan bool, items)
 	deliveryChan := make(chan amqp.Delivery, items)
-	serv := new(service.AMQPService)
-	serv2 := new(service.AMQPService)
+	serv := new(queue.AMQPService)
+	serv2 := new(queue.AMQPService)
 	serv.On("Consume").Return((<-chan amqp.Delivery)(deliveryChan), nil).Once()
 	serv.On("CreateQueue").Return(nil).Once()
 	serv2.On("CreateQueue").Return(nil).Once()
@@ -95,8 +95,8 @@ func TestCommandController_ConsumptionAllDone(t *testing.T) {
 
 	processedChan := make(chan bool, items)
 	deliveryChan := make(chan amqp.Delivery, items)
-	serv := new(service.AMQPService)
-	serv2 := new(service.AMQPService)
+	serv := new(queue.AMQPService)
+	serv2 := new(queue.AMQPService)
 	serv.On("Consume").Return((<-chan amqp.Delivery)(deliveryChan), nil).Once()
 	serv.On("CreateQueue").Return(nil).Once()
 	serv2.On("CreateQueue").Return(nil).Once()
@@ -133,8 +133,8 @@ func TestCommandController_ConsumptionAllDone_Send_Err(t *testing.T) {
 
 	processedChan := make(chan bool, items)
 	deliveryChan := make(chan amqp.Delivery, items)
-	serv := new(service.AMQPService)
-	serv2 := new(service.AMQPService)
+	serv := new(queue.AMQPService)
+	serv2 := new(queue.AMQPService)
 	serv.On("Consume").Return((<-chan amqp.Delivery)(deliveryChan), nil).Once()
 	serv.On("CreateQueue").Return(nil).Once()
 	serv2.On("CreateQueue").Return(nil).Once()
@@ -171,13 +171,13 @@ func TestCommandController_Requeue(t *testing.T) {
 
 	processedChan := make(chan bool, items)
 	deliveryChan := make(chan amqp.Delivery, items)
-	serv := new(service.AMQPService)
+	serv := new(queue.AMQPService)
 	serv.On("Consume").Return((<-chan amqp.Delivery)(deliveryChan), nil).Once()
 	serv.On("CreateQueue").Return(nil).Once()
 	serv.On("Requeue", mock.Anything, mock.Anything).Run(func(_ mock.Arguments) {
 		processedChan <- true
 	}).Return(nil).Times(items)
-	serv2 := new(service.AMQPService)
+	serv2 := new(queue.AMQPService)
 	serv2.On("CreateQueue").Return(nil).Once()
 
 	hand := new(handler.DeliveryHandler)

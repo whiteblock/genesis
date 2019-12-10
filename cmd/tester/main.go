@@ -23,12 +23,10 @@ import (
 	"fmt"
 
 	"github.com/whiteblock/genesis/pkg/config"
-	"github.com/whiteblock/genesis/pkg/repository"
-	"github.com/whiteblock/genesis/pkg/service"
-	"github.com/whiteblock/genesis/pkg/utility"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
+	queue "github.com/whiteblock/amqp"
 	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/utility/utils"
 )
@@ -169,7 +167,7 @@ func emulate(containerName string, networkName string) command.Command {
 	}, command.Emulation)
 }
 
-func getAMQPService() (service.AMQPService, error) {
+func getAMQPService() (queue.AMQPService, error) {
 	conf, err := config.NewConfig()
 	if err != nil {
 		return nil, err
@@ -185,11 +183,11 @@ func getAMQPService() (service.AMQPService, error) {
 		return nil, err
 	}
 	log.WithField("commandConf", cmdConf).Debug("got the config")
-	cmdConn, err := utility.OpenAMQPConnection(cmdConf.Endpoint)
+	cmdConn, err := queue.OpenAMQPConnection(cmdConf.Endpoint)
 	if err != nil {
 		return nil, err
 	}
-	return service.NewAMQPService(cmdConf, repository.NewAMQPRepository(cmdConn), logger), nil
+	return queue.NewAMQPService(cmdConf, queue.NewAMQPRepository(cmdConn), logger), nil
 }
 
 func main() {
@@ -214,7 +212,7 @@ func main() {
 	}
 }
 
-func runTest(serv service.AMQPService) error {
+func runTest(serv queue.AMQPService) error {
 	networkNames := []string{
 		utils.GetUUIDString() + "-testnet",
 		utils.GetUUIDString() + "-testnet",
