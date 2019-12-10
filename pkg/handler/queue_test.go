@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	utilityMocks "github.com/whiteblock/genesis/mocks/amqp"
 	auxMocks "github.com/whiteblock/genesis/mocks/pkg/handler/auxillary"
 	"github.com/whiteblock/genesis/pkg/entity"
 
@@ -31,6 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/whiteblock/definition/command"
+	utilityMocks "github.com/whiteblock/genesis/mocks/amqp"
 )
 
 func TestNewDeliveryHandler(t *testing.T) {

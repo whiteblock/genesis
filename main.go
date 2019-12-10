@@ -59,7 +59,8 @@ func getRestServer() (controller.RestController, error) {
 				validator.NewOrderValidator(),
 				logger),
 			logger),
-		mux.NewRouter()), nil
+		mux.NewRouter(),
+		logger), nil
 }
 
 func getCommandController() (controller.CommandController, error) {
