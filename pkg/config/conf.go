@@ -21,6 +21,7 @@ package config
 import (
 	"github.com/whiteblock/genesis/pkg/entity"
 
+	joonix "github.com/joonix/log"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	queue "github.com/whiteblock/amqp"
@@ -42,6 +43,7 @@ type Config struct {
 	VolumeDriver     string            `mapstructure:"volumeDriver"`
 	VolumeDriverOpts map[string]string `mapstructure:"volumeDriverOpts"`
 	Verbosity        string            `mapstructure:"verbosity"`
+	FluentDLogging   bool              `mapstructure:"fluentDLogging"`
 	Listen           string            `mapstructure:"listen"`
 
 	Execution Execution `mapstructure:"-"`
@@ -56,6 +58,7 @@ func (c Config) GetLogger() (*logrus.Logger, error) {
 	}
 	logger.SetLevel(lvl)
 	logger.SetReportCaller(true)
+	logger.SetFormatter(joonix.NewFormatter())
 	return logger, nil
 }
 
@@ -97,6 +100,7 @@ func (c Config) GetRestConfig() entity.RestConfig {
 }
 
 func setViperEnvBindings() {
+	viper.BindEnv("fluentDLogging", "FLUENT_D_LOGGING")
 	viper.BindEnv("maxMessageRetries", "MAX_MESSAGE_RETRIES")
 	viper.BindEnv("queueMaxConcurrency", "QUEUE_MAX_CONCURRENCY")
 	viper.BindEnv("dockerCACertPath", "DOCKER_CACERT_PATH")
@@ -113,6 +117,7 @@ func setViperEnvBindings() {
 }
 
 func setViperDefaults() {
+	viper.SetDefault("fluentDLogging", true)
 	viper.SetDefault("completionQueueName", "teardownRequests")
 	viper.SetDefault("commandQueueName", "commands")
 	viper.SetDefault("maxMessageRetries", 10)

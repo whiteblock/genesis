@@ -27,6 +27,6 @@ import (
 )
 
 func TestRestController(t *testing.T) {
-	rc := NewRestController(entity.RestConfig{}, nil, nil)
+	rc := NewRestController(entity.RestConfig{}, nil, nil, nil)
 	assert.NotNil(t, rc)
 }

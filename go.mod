@@ -9,6 +9,7 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/imdario/mergo v0.3.8
+	github.com/joonix/log v0.0.0-20190524090622-13fe31bbdd7a
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/pkg/errors v0.8.1
