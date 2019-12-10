@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/whiteblock/definition/command"
+	
 	mockService "github.com/whiteblock/genesis/mocks/pkg/service"
 	mockValid "github.com/whiteblock/genesis/mocks/pkg/validator"
 	"github.com/whiteblock/genesis/pkg/entity"
@@ -32,6 +32,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/whiteblock/definition/command"
 )
 
 func TestNewDockerUseCase(t *testing.T) {

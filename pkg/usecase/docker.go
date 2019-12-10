@@ -24,13 +24,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/validator"
 
 	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
+	"github.com/whiteblock/definition/command"
 )
 
 //DockerUseCase is the usecase for executing the commands in docker
@@ -55,13 +55,22 @@ func NewDockerUseCase(
 	return &dockerUseCase{service: service, valid: valid, log: log}
 }
 
+func (duc dockerUseCase) withFields(cmd command.Command, fields logrus.Fields) *logrus.Entry {
+	fields["command"] = cmd.ID
+	return logrus.WithFields(fields)
+}
+
+func (duc dockerUseCase) withField(cmd command.Command, key string, value interface{}) *logrus.Entry {
+	return duc.withFields(cmd, logrus.Fields{key: value})
+}
+
 // Run is equivalent to Execute, except it generates context based on the given command
 func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
 	stat, ok := duc.validationCheck(cmd)
 	if !ok {
 		return stat
 	}
-	duc.log.WithField("command", cmd).Trace("running command")
+	duc.withField(cmd, "command", cmd).Trace("running command")
 	ctx, cancelFn := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancelFn()
 	return duc.Execute(ctx, cmd)
@@ -71,11 +80,11 @@ func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
 func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entity.Result {
 	cli, err := duc.service.CreateClient(cmd.Target.IP)
 	if err != nil {
-		duc.log.WithField("client", cli).Error("failed to create a client")
+		duc.withField(cmd, "dest", cmd.Target.IP).Error("failed to create a client")
 		return entity.NewFatalResult(err)
 	}
-	duc.log.WithField("client", cli).Trace("created a client")
-	duc.log.WithField("type", cmd.Order.Type).Trace("routing a command")
+	duc.withField(cmd, "client", cli).Trace("created a client")
+	duc.withField(cmd, "type", cmd.Order.Type).Trace("routing a command")
 	switch command.OrderType(strings.ToLower(string(cmd.Order.Type))) {
 	case command.Createcontainer:
 		return duc.createContainerShim(ctx, cli, cmd)

@@ -22,11 +22,11 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/genesis/pkg/entity"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/whiteblock/definition/command"
 )
 
 func TestConfig_GetDockerConfig(t *testing.T) {

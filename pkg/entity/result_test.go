@@ -159,7 +159,7 @@ func TestResult_IsAllDone(t *testing.T) {
 
 func TestNewSuccessResult(t *testing.T) {
 	expected := Result{
-		Type:  SuccessType,
+		Type: SuccessType,
 		Meta: map[string]interface{}{},
 	}
 	assert.Equal(t, expected, NewSuccessResult())
@@ -169,13 +169,13 @@ func TestNewFatalResult(t *testing.T) {
 	expected := Result{
 		Error: errors.New("fatal test"),
 		Type:  FatalType,
-		Meta: map[string]interface{}{},
+		Meta:  map[string]interface{}{},
 	}
 
 	expectedSuccessful := Result{
 		Error: errors.New("test"),
 		Type:  FatalType,
-		Meta: map[string]interface{}{},
+		Meta:  map[string]interface{}{},
 	}
 	assert.Equal(t, expected, NewFatalResult(expected.Error))
 	assert.Equal(t, expectedSuccessful, NewFatalResult(expectedSuccessful.Error))
@@ -185,19 +185,19 @@ func TestNewErrorResult(t *testing.T) {
 	expected := Result{
 		Error: errors.New("fatal test"),
 		Type:  ErrorType,
-		Meta: map[string]interface{}{},
+		Meta:  map[string]interface{}{},
 	}
 
 	expectedUnsuccessful := Result{
 		Error: errors.New("test"),
 		Type:  ErrorType,
-		Meta: map[string]interface{}{},
+		Meta:  map[string]interface{}{},
 	}
 
 	expectedUnsuccessful2 := Result{
 		Error: errors.New("test"),
 		Type:  ErrorType,
-		Meta: map[string]interface{}{},
+		Meta:  map[string]interface{}{},
 	}
 
 	assert.Equal(t, expected, NewErrorResult(expected.Error))
@@ -207,7 +207,7 @@ func TestNewErrorResult(t *testing.T) {
 
 func TestNewAllDoneResult(t *testing.T) {
 	expected := Result{
-		Type:  AllDoneType,
+		Type: AllDoneType,
 		Meta: map[string]interface{}{},
 	}
 	assert.Equal(t, expected, NewAllDoneResult())
