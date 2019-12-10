@@ -220,7 +220,12 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 				"error": err}).Error("duplicate container error")
 			return entity.NewSuccessResult()
 		}
-		return entity.NewFatalResult(err)
+		return entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
+			"image":  dContainer.Image,
+			"name":   dContainer.Name,
+			"errMsg": err,
+			"type":   "CreateContainer",
+		})
 	}
 
 	return entity.NewSuccessResult()
@@ -233,19 +238,23 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 	ds.withFields(cli, logrus.Fields{"name": sc.Name}).Trace("starting container")
 	opts := types.ContainerStartOptions{}
 
+	if !sc.Attach {
+		err := cli.ContainerStart(ctx, sc.Name, opts)
+		if err != nil {
+			return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
+				"name": sc.Name,
+				"type": "StartContainer",
+			})
+		}
+		return entity.NewSuccessResult()
+	}
+
 	attachOpts := types.ContainerAttachOptions{
 		Stream: sc.Attach,
 		Stdin:  false,
 		Stdout: true,
 		Stderr: true,
 		Logs:   true,
-	}
-	if !sc.Attach {
-		err := cli.ContainerStart(ctx, sc.Name, opts)
-		if err != nil {
-			return entity.NewErrorResult(err)
-		}
-		return entity.NewSuccessResult()
 	}
 
 	hijacked, err := cli.ContainerAttach(ctx, sc.Name, attachOpts)
@@ -260,7 +269,10 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 
 	err = cli.ContainerStart(ctx, sc.Name, opts)
 	if err != nil {
-		return entity.NewErrorResult(err)
+		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
+			"name": sc.Name,
+			"type": "StartContainer",
+		})
 	}
 
 	stdout := new(bytes.Buffer)

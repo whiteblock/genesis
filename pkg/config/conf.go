@@ -145,7 +145,7 @@ func init() {
 func NewConfig() (*Config, error) {
 	conf := new(Config)
 	_ = viper.ReadInConfig()
-	err := viper.Unmarshal(&conf)
+	err := viper.Unmarshal(conf)
 	if err != nil {
 		return nil, err
 	}
