@@ -21,7 +21,7 @@ package handler
 import (
 	"encoding/json"
 	"testing"
-	
+
 	auxMocks "github.com/whiteblock/genesis/mocks/pkg/handler/auxillary"
 	"github.com/whiteblock/genesis/pkg/entity"
 

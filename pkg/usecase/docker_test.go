@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"testing"
 
-	
 	mockService "github.com/whiteblock/genesis/mocks/pkg/service"
 	mockValid "github.com/whiteblock/genesis/mocks/pkg/validator"
 	"github.com/whiteblock/genesis/pkg/entity"

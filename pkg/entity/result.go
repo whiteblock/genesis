@@ -20,6 +20,7 @@ package entity
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/imdario/mergo"
 )
@@ -36,6 +37,9 @@ type Result struct {
 
 	// Meta is additional information which can be added for debugging purposes
 	Meta map[string]interface{}
+
+	//Caller is the location in which it was first created
+	Caller string
 }
 
 // IsAllDone checks whether the request is completely finished. If true, then the completion
@@ -89,27 +93,40 @@ const (
 	RequeueType
 )
 
+func getCaller(n int) string {
+	_, file, line, ok := runtime.Caller(n)
+	if !ok {
+		return ""
+	}
+	return fmt.Sprintf("%s:%d", file, line)
+}
+
 // NewSuccessResult indicates a successful result
 func NewSuccessResult() Result {
-	return Result{Type: SuccessType, Error: nil, Meta: map[string]interface{}{}}
+	return Result{Type: SuccessType, Error: nil,
+		Meta: map[string]interface{}{}, Caller: getCaller(2)}
 }
 
 // NewFatalResult creates a fatal error result. Commands with fatal errors are not retried
 func NewFatalResult(err interface{}) Result {
-	return Result{Type: FatalType, Error: fmt.Errorf("%v", err), Meta: map[string]interface{}{}}
+	return Result{Type: FatalType, Error: fmt.Errorf("%v", err),
+		Meta: map[string]interface{}{}, Caller: getCaller(2)}
 }
 
 // NewErrorResult creates a result which indicates a non-fatal error. Commands with this result should be requeued.
 func NewErrorResult(err interface{}) Result {
-	return Result{Type: ErrorType, Error: fmt.Errorf("%v", err), Meta: map[string]interface{}{}}
+	return Result{Type: ErrorType, Error: fmt.Errorf("%v", err),
+		Meta: map[string]interface{}{}, Caller: getCaller(2)}
 }
 
 // NewAllDoneResult creates a result for the all done condition
 func NewAllDoneResult() Result {
-	return Result{Type: AllDoneType, Error: nil, Meta: map[string]interface{}{}}
+	return Result{Type: AllDoneType, Error: nil,
+		Meta: map[string]interface{}{}, Caller: getCaller(2)}
 }
 
 // NewRequeueResult creates a new requeue result non-error
 func NewRequeueResult() Result {
-	return Result{Type: RequeueType, Error: nil, Meta: map[string]interface{}{}}
+	return Result{Type: RequeueType, Error: nil,
+		Meta: map[string]interface{}{}, Caller: getCaller(2)}
 }
