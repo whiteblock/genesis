@@ -159,66 +159,45 @@ func TestResult_IsAllDone(t *testing.T) {
 
 func TestNewSuccessResult(t *testing.T) {
 	expected := Result{
-		Error: nil,
 		Type:  SuccessType,
+		Meta: map[string]interface{}{},
 	}
-
-	expectedUnsuccessful := Result{
-		Error: errors.New("test"),
-		Type:  FatalType,
-	}
-
-	expectedUnsuccessful2 := Result{
-		Error: errors.New("test"),
-		Type:  SuccessType,
-	}
-
 	assert.Equal(t, expected, NewSuccessResult())
-	assert.NotEqual(t, expectedUnsuccessful, NewSuccessResult())
-	assert.NotEqual(t, expectedUnsuccessful2, NewSuccessResult())
 }
 
 func TestNewFatalResult(t *testing.T) {
 	expected := Result{
 		Error: errors.New("fatal test"),
 		Type:  FatalType,
+		Meta: map[string]interface{}{},
 	}
 
-	expectedUnsuccessful := Result{
+	expectedSuccessful := Result{
 		Error: errors.New("test"),
-		Type:  TooSoonType,
+		Type:  FatalType,
+		Meta: map[string]interface{}{},
 	}
-
-	expectedUnsuccessful2 := Result{
-		Error: errors.New("test"),
-		Type:  SuccessType,
-	}
-
-	expectedUnsuccessful3 := Result{
-		Error: nil,
-		Type:  SuccessType,
-	}
-
 	assert.Equal(t, expected, NewFatalResult(expected.Error))
-	assert.NotEqual(t, expectedUnsuccessful, NewFatalResult(expectedUnsuccessful.Error))
-	assert.NotEqual(t, expectedUnsuccessful2, NewFatalResult(expectedUnsuccessful2.Error))
-	assert.NotEqual(t, expectedUnsuccessful3, NewFatalResult(expectedUnsuccessful3.Error))
+	assert.Equal(t, expectedSuccessful, NewFatalResult(expectedSuccessful.Error))
 }
 
 func TestNewErrorResult(t *testing.T) {
 	expected := Result{
 		Error: errors.New("fatal test"),
 		Type:  ErrorType,
+		Meta: map[string]interface{}{},
 	}
 
 	expectedUnsuccessful := Result{
 		Error: errors.New("test"),
 		Type:  ErrorType,
+		Meta: map[string]interface{}{},
 	}
 
 	expectedUnsuccessful2 := Result{
 		Error: errors.New("test"),
 		Type:  ErrorType,
+		Meta: map[string]interface{}{},
 	}
 
 	assert.Equal(t, expected, NewErrorResult(expected.Error))
@@ -228,8 +207,8 @@ func TestNewErrorResult(t *testing.T) {
 
 func TestNewAllDoneResult(t *testing.T) {
 	expected := Result{
-		Error: nil,
 		Type:  AllDoneType,
+		Meta: map[string]interface{}{},
 	}
 	assert.Equal(t, expected, NewAllDoneResult())
 }

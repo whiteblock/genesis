@@ -20,7 +20,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/handler/auxillary"
@@ -94,8 +93,8 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 	}
 	if err != nil {
 		dh.log.WithFields(logrus.Fields{
-			"result", result,
-			"err":err}).Error("a fatal error occured, flagging as fatal")
+			"result": result,
+			"err":    err}).Error("a fatal error occured, flagging as fatal")
 		result = entity.NewFatalResult(err)
 	}
 	return

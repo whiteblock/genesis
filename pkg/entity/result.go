@@ -20,6 +20,8 @@ package entity
 
 import (
 	"fmt"
+
+	"github.com/imdario/mergo"
 )
 
 // ResultType is the type of the result
@@ -31,6 +33,9 @@ type Result struct {
 	Error error
 	// Type is the type of result
 	Type ResultType
+
+	// Meta is additional information which can be added for debugging purposes
+	Meta map[string]interface{}
 }
 
 // IsAllDone checks whether the request is completely finished. If true, then the completion
@@ -57,6 +62,12 @@ func (res Result) IsRequeue() bool {
 	return res.Type == RequeueType || !res.IsSuccess() && !res.IsFatal()
 }
 
+// InjectMeta allows for chaining on New...Result for the return statement
+func (res Result) InjectMeta(meta map[string]interface{}) Result {
+	mergo.Map(&res.Meta, meta)
+	return res
+}
+
 const (
 	//SuccessType is the type of a successful result
 	SuccessType ResultType = iota + 1
@@ -65,38 +76,40 @@ const (
 	// there are not anymore commands to execute
 	AllDoneType
 
-	//TooSoonType is the type of a result from a cmd which tried to execute too soon
+	// TooSoonType is the type of a result from a cmd which tried to execute too soon
 	TooSoonType
-	//FatalType is the type of a result which indicates a fatal error
+
+	// FatalType is the type of a result which indicates a fatal error
 	FatalType
-	//ErrorType is the generic error type
+
+	// ErrorType is the generic error type
 	ErrorType
 
-	//RequeueType is when there is no error but should requeue something
+	// RequeueType is when there is no error but should requeue something
 	RequeueType
 )
 
 // NewSuccessResult indicates a successful result
 func NewSuccessResult() Result {
-	return Result{Type: SuccessType, Error: nil}
+	return Result{Type: SuccessType, Error: nil, Meta: map[string]interface{}{}}
 }
 
 // NewFatalResult creates a fatal error result. Commands with fatal errors are not retried
 func NewFatalResult(err interface{}) Result {
-	return Result{Type: FatalType, Error: fmt.Errorf("%v", err)}
+	return Result{Type: FatalType, Error: fmt.Errorf("%v", err), Meta: map[string]interface{}{}}
 }
 
 // NewErrorResult creates a result which indicates a non-fatal error. Commands with this result should be requeued.
 func NewErrorResult(err interface{}) Result {
-	return Result{Type: ErrorType, Error: fmt.Errorf("%v", err)}
+	return Result{Type: ErrorType, Error: fmt.Errorf("%v", err), Meta: map[string]interface{}{}}
 }
 
-//NewAllDoneResult creates a result for the all done condition
+// NewAllDoneResult creates a result for the all done condition
 func NewAllDoneResult() Result {
-	return Result{Type: AllDoneType, Error: nil}
+	return Result{Type: AllDoneType, Error: nil, Meta: map[string]interface{}{}}
 }
 
-//NewRequeueResult creates a new requeue result non-error
+// NewRequeueResult creates a new requeue result non-error
 func NewRequeueResult() Result {
-	return Result{Type: RequeueType, Error: nil}
+	return Result{Type: RequeueType, Error: nil, Meta: map[string]interface{}{}}
 }
