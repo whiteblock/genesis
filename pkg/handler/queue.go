@@ -64,7 +64,7 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 
 	if len(allCmds) == 0 {
 		dh.log.Error("recieved an empty command sausage")
-		return amqp.Publishing{}, entity.NewFatalResult(fmt.Errorf("nothing to execute"))
+		return amqp.Publishing{}, entity.NewFatalResult("nothing to execute")
 	}
 
 	result = dh.aux.ExecuteCommands(allCmds[0])
@@ -93,6 +93,9 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 		out, err = dh.msgUtil.GetKickbackMessage(msg)
 	}
 	if err != nil {
+		dh.log.WithFields(logrus.Fields{
+			"result", result,
+			"err":err}).Error("a fatal error occured, flagging as fatal")
 		result = entity.NewFatalResult(err)
 	}
 	return
