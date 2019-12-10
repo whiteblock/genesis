@@ -223,7 +223,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 		return entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
 			"image":  dContainer.Image,
 			"name":   dContainer.Name,
-			"errMsg": err,
+			"errMsg": err.Error(),
 			"type":   "CreateContainer",
 		})
 	}

@@ -71,7 +71,10 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 		out, err = dh.msgUtil.CreateMessage(biome.DestroyBiome{
 			TestnetID: allCmds[0][0].Target.TestnetID,
 		})
-		dh.log.WithField("result", result).Error("execution resulted")
+		dh.log.WithFields(logrus.Fields{
+			"result": result,
+			"error":  result.Error.Error(),
+		}).Error("execution resulted in a fatal error")
 		return
 	}
 
