@@ -78,6 +78,7 @@ func (res Result) InjectMeta(meta map[string]interface{}) Result {
 	return res
 }
 
+//MarshalJSON allows Result to customize the marshaling into JSON
 func (res Result) MarshalJSON() ([]byte, error) {
 	resType := ""
 	switch res.Type {
