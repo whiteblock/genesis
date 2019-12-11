@@ -63,8 +63,11 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 				sem.Acquire(context.Background(), 1)
 				res := exec.usecase.Run(cmd)
 				sem.Release(1)
-				if !res.IsSuccess() && strings.Contains(res.Error.Error(), "cannot connect to the Docker daemon") {
-					exec.log.WithField("time", exec.conf.RetryDelay).Info("connection to docker failed, retrying")
+				if !res.IsSuccess() && strings.Contains(res.Error.Error(), "connect to the Docker daemon") {
+					exec.log.WithFields(logrus.Fields{
+						"time":    exec.conf.RetryDelay,
+						"attempt": i,
+					}).Info("connection to docker failed, retrying")
 					time.Sleep(exec.conf.RetryDelay)
 					continue
 				}
@@ -77,19 +80,32 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 		}(cmd)
 	}
 	var err error
+	isTrap := false
 	for range cmds {
 		result := <-resultChan
 		exec.log.WithFields(logrus.Fields{"success": result.IsSuccess()}).Trace("finished processing a command")
 		if !result.IsSuccess() {
-			exec.log.WithField("result", result).Error("a command failed to execute")
+
 			if result.IsFatal() {
+				exec.log.WithField("result", result).Error("a command had a fatal error")
+				if exec.conf.DebugMode {
+					exec.log.Info("trapping fatal error due to debug mode")
+					return entity.NewTrapResult()
+				}
 				return result
 			}
+			exec.log.WithField("result", result).Warn("a command failed to execute")
 			err = fmt.Errorf("%v;%v", err, result.Error.Error())
+		} else if result.IsTrap() {
+			exec.log.WithField("result", result).Info("a command raised a trap")
+			isTrap = true
 		}
 	}
 	if err != nil {
 		return entity.NewErrorResult(err)
+	}
+	if isTrap {
+		return entity.NewTrapResult()
 	}
 	return entity.NewSuccessResult()
 }
