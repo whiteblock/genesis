@@ -19,6 +19,7 @@
 package entity
 
 import (
+	"encoding/json"
 	"fmt"
 	"runtime"
 
@@ -75,6 +76,41 @@ func (res Result) IsRequeue() bool {
 func (res Result) InjectMeta(meta map[string]interface{}) Result {
 	mergo.Map(&res.Meta, meta)
 	return res
+}
+
+//MarshalJSON allows Result to customize the marshaling into JSON
+func (res Result) MarshalJSON() ([]byte, error) {
+	resType := ""
+	switch res.Type {
+	case SuccessType:
+		resType = "Success"
+	case AllDoneType:
+		resType = "AllDone"
+	case TooSoonType:
+		resType = "TooSoon"
+	case FatalType:
+		resType = "Fatal"
+	case ErrorType:
+		resType = "Error"
+	case RequeueType:
+		resType = "Requeue"
+	case TrapType:
+		resType = "Trap"
+	default:
+		resType = "Unknown"
+	}
+
+	jRes := map[string]interface{}{
+		"type":   resType,
+		"meta":   res.Meta,
+		"caller": res.Caller,
+	}
+	if res.Error != nil {
+		jRes["error"] = res.Error.Error()
+	} else {
+		jRes["error"] = nil
+	}
+	return json.Marshal(jRes)
 }
 
 const (

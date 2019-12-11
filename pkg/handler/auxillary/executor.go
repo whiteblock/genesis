@@ -24,12 +24,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/usecase"
 
 	"github.com/sirupsen/logrus"
+	"github.com/whiteblock/definition/command"
 	"golang.org/x/sync/semaphore"
 )
 
