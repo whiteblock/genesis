@@ -62,7 +62,8 @@ type DockerService interface {
 	DetachNetwork(ctx context.Context, cli entity.DockerCli, network string, container string) entity.Result
 	CreateVolume(ctx context.Context, cli entity.DockerCli, volume command.Volume) entity.Result
 	RemoveVolume(ctx context.Context, cli entity.DockerCli, name string) entity.Result
-	PlaceFileInContainer(ctx context.Context, cli entity.DockerCli, containerName string, file command.IFile) entity.Result
+	PlaceFileInContainer(ctx context.Context, cli entity.DockerCli,
+		containerName string, file command.IFile) entity.Result
 	Emulation(ctx context.Context, cli entity.DockerCli, netem command.Netconf) entity.Result
 	SwarmCluster(ctx context.Context, cli entity.DockerCli, swarm command.SetupSwarm) entity.Result
 	PullImage(ctx context.Context, cli entity.DockerCli, imagePull command.PullImage) entity.Result
@@ -70,7 +71,8 @@ type DockerService interface {
 	//CreateClient creates a new client for connecting to the docker daemon
 	CreateClient(host string) (entity.Client, error)
 
-	//GetNetworkingConfig determines the proper networking config based on the docker hosts state and the networks
+	// GetNetworkingConfig determines the proper networking config based
+	// on the docker hosts state and the networks
 	GetNetworkingConfig(ctx context.Context, cli entity.DockerCli,
 		networks strslice.StrSlice) (*network.NetworkingConfig, error)
 }
@@ -126,7 +128,8 @@ func (ds dockerService) withField(cli entity.DockerCli, key string, value interf
 	return ds.withFields(cli, logrus.Fields{key: value})
 }
 
-//GetNetworkingConfig determines the proper networking config based on the docker hosts state and the networks
+// GetNetworkingConfig determines the proper networking
+// config based on the docker hosts state and the networks
 func (ds dockerService) GetNetworkingConfig(ctx context.Context, cli entity.DockerCli,
 	networks strslice.StrSlice) (*network.NetworkingConfig, error) {
 
@@ -237,8 +240,8 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 
 	ds.withFields(cli, logrus.Fields{"name": sc.Name}).Trace("starting container")
 	opts := types.ContainerStartOptions{}
-
-	if !sc.Attach {
+	if !sc.Attach || sc.Timeout < 1 {
+		//Attaching also requires a timeout
 		err := cli.ContainerStart(ctx, sc.Name, opts)
 		if err != nil {
 			return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
@@ -257,7 +260,10 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 		Logs:   true,
 	}
 
-	hijacked, err := cli.ContainerAttach(ctx, sc.Name, attachOpts)
+	ctx2, cancelFn := context.WithTimeout(context.Background(), sc.Timeout)
+	defer cancelFn()
+
+	hijacked, err := cli.ContainerAttach(ctx2, sc.Name, attachOpts)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
@@ -285,7 +291,9 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 }
 
 //RemoveContainer attempts to remove a container
-func (ds dockerService) RemoveContainer(ctx context.Context, cli entity.DockerCli, name string) entity.Result {
+func (ds dockerService) RemoveContainer(ctx context.Context, cli entity.DockerCli,
+	name string) entity.Result {
+
 	ds.withFields(cli, logrus.Fields{"name": name}).Debug("removing container")
 	cntr, err := ds.repo.GetContainerByName(ctx, cli, name)
 	if err != nil {
@@ -303,7 +311,9 @@ func (ds dockerService) RemoveContainer(ctx context.Context, cli entity.DockerCl
 }
 
 //CreateNetwork attempts to create a network
-func (ds dockerService) CreateNetwork(ctx context.Context, cli entity.DockerCli, net command.Network) entity.Result {
+func (ds dockerService) CreateNetwork(ctx context.Context, cli entity.DockerCli,
+	net command.Network) entity.Result {
+
 	networkCreate := types.NetworkCreate{
 		CheckDuplicate: true,
 		Attachable:     true,
@@ -356,8 +366,10 @@ func (ds dockerService) RemoveNetwork(ctx context.Context, cli entity.DockerCli,
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) getNetworkAndContainerByName(ctx context.Context, cli entity.DockerCli, networkName string,
-	containerName string) (container types.Container, network types.NetworkResource, err error) {
+func (ds dockerService) getNetworkAndContainerByName(ctx context.Context, cli entity.DockerCli,
+	networkName string, containerName string) (container types.Container,
+	network types.NetworkResource, err error) {
+
 	errChan := make(chan error, 2)
 	netChan := make(chan types.NetworkResource, 1)
 	cntrChan := make(chan types.Container, 1)
@@ -417,7 +429,9 @@ func (ds dockerService) DetachNetwork(ctx context.Context, cli entity.DockerCli,
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) CreateVolume(ctx context.Context, cli entity.DockerCli, vol command.Volume) entity.Result {
+func (ds dockerService) CreateVolume(ctx context.Context, cli entity.DockerCli,
+	vol command.Volume) entity.Result {
+
 	volConfig := volume.VolumeCreateBody{
 		Driver:     vol.Driver,
 		DriverOpts: vol.DriverOpts,
@@ -462,7 +476,9 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) Emulation(ctx context.Context, cli entity.DockerCli, netem command.Netconf) entity.Result {
+func (ds dockerService) Emulation(ctx context.Context, cli entity.DockerCli,
+	netem command.Netconf) entity.Result {
+
 	netemImage := "gaiadocker/iproute2:latest"
 	errChan := make(chan error, 1)
 	go func() {

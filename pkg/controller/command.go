@@ -87,6 +87,11 @@ func (c *consumer) handleMessage(msg amqp.Delivery) {
 	defer c.sem.Release(1)
 
 	pub, res := c.handle.Process(msg)
+	if res.IsTrap() {
+		c.log.Info("falling through due to trap")
+		msg.Ack(false)
+		return
+	}
 	if res.IsRequeue() {
 		c.log.WithField("result", res).Info("a requeue is needed")
 		err := c.cmds.Requeue(msg, pub)

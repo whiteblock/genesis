@@ -78,6 +78,11 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 		return
 	}
 
+	if result.IsTrap() {
+		dh.log.Debug("propogating the trap")
+		return
+	}
+
 	if result.IsSuccess() {
 		if len(allCmds) != 1 {
 			result = entity.NewRequeueResult()

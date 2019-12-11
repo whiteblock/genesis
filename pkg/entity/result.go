@@ -54,6 +54,11 @@ func (res Result) IsSuccess() bool {
 	return res.Error == nil
 }
 
+// IsTrap returns whether or not the result indicates a trap was raised.
+func (res Result) IsTrap() bool {
+	return res.Type == TrapType
+}
+
 // IsFatal returns true if there is an errr and it is marked as a fatal error,
 // meaning it should not be reattempted
 func (res Result) IsFatal() bool {
@@ -91,6 +96,10 @@ const (
 
 	// RequeueType is when there is no error but should requeue something
 	RequeueType
+
+	// TrapType indicates that the task is a trap, and the commands should just be acked without
+	// further action
+	TrapType
 )
 
 func getCaller(n int) string {
@@ -104,6 +113,12 @@ func getCaller(n int) string {
 // NewSuccessResult indicates a successful result
 func NewSuccessResult() Result {
 	return Result{Type: SuccessType, Error: nil,
+		Meta: map[string]interface{}{}, Caller: getCaller(2)}
+}
+
+// NewTrapResult creates a new Trapping result
+func NewTrapResult() Result {
+	return Result{Type: TrapType, Error: nil,
 		Meta: map[string]interface{}{}, Caller: getCaller(2)}
 }
 
