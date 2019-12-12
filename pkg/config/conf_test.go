@@ -29,34 +29,6 @@ import (
 	"github.com/whiteblock/definition/command"
 )
 
-func TestConfig_GetDockerConfig(t *testing.T) {
-	var tests = []struct {
-		conf               Config
-		expectedDockerConf entity.DockerConfig
-	}{
-		{
-			conf: Config{
-				DockerCACertPath: "test",
-				DockerCertPath:   "test",
-				DockerKeyPath:    "test",
-				LocalMode:        false,
-			},
-			expectedDockerConf: entity.DockerConfig{
-				CACertPath: "test",
-				CertPath:   "test",
-				KeyPath:    "test",
-				LocalMode:  false,
-			},
-		},
-	}
-
-	for i, tt := range tests {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			assert.Equal(t, tt.expectedDockerConf, tt.conf.GetDockerConfig())
-		})
-	}
-}
-
 func TestConfig_GetVolumeConfig(t *testing.T) {
 	var tests = []struct {
 		conf               Config

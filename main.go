@@ -54,7 +54,7 @@ func getRestServer() (controller.RestController, error) {
 			usecase.NewDockerUseCase(
 				service.NewDockerService(
 					dockerRepository,
-					conf.GetDockerConfig(),
+					conf.Docker,
 					logger),
 				validator.NewOrderValidator(),
 				logger),
@@ -104,7 +104,7 @@ func getCommandController() (controller.CommandController, error) {
 				usecase.NewDockerUseCase(
 					service.NewDockerService(
 						repository.NewDockerRepository(),
-						conf.GetDockerConfig(),
+						conf.Docker,
 						logger),
 					validator.NewOrderValidator(),
 					logger),

@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/repository"
 
@@ -79,14 +80,14 @@ type DockerService interface {
 
 type dockerService struct {
 	repo repository.DockerRepository
-	conf entity.DockerConfig
+	conf config.Docker
 	log  logrus.Ext1FieldLogger
 }
 
 //NewDockerService creates a new DockerService
 func NewDockerService(
 	repo repository.DockerRepository,
-	conf entity.DockerConfig,
+	conf config.Docker,
 	log logrus.Ext1FieldLogger) DockerService {
 
 	return dockerService{
@@ -94,14 +95,6 @@ func NewDockerService(
 		repo: repo,
 		log:  log}
 }
-
-const (
-	//DockerPort is the port docker daemon is listening on
-	DockerPort = "2376"
-
-	//DockerSwarmPort is the docker swarm port
-	DockerSwarmPort = 2477
-)
 
 //CreateClient creates a new client for connecting to the docker daemon
 func (ds dockerService) CreateClient(host string) (entity.Client, error) {
@@ -112,7 +105,7 @@ func (ds dockerService) CreateClient(host string) (entity.Client, error) {
 	}
 	return client.NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
-		client.WithHost("https://"+host+":"+DockerPort),
+		client.WithHost("https://"+host+":"+ds.conf.DaemonPort),
 		ds.repo.WithTLSClientConfig(ds.conf.CACertPath, ds.conf.CertPath, ds.conf.KeyPath),
 	)
 }
@@ -202,7 +195,13 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 	hostConfig := &container.HostConfig{
 		PortBindings: portMap,
 		AutoRemove:   true,
-		Mounts:       dContainer.GetMounts(),
+		LogConfig: container.LogConfig{
+			Type: ds.conf.LogDriver,
+			Config: map[string]string{
+				"labels": ds.conf.LogLabels,
+			},
+		},
+		Mounts: dContainer.GetMounts(),
 	}
 	hostConfig.NanoCPUs = int64(1000000000 * cpus)
 	hostConfig.Memory = mem
@@ -559,8 +558,8 @@ func (ds dockerService) SwarmCluster(ctx context.Context, entryCLI entity.Docker
 		return entity.NewErrorResult(err)
 	}
 	token, err := cli.SwarmInit(ctx, swarm.InitRequest{
-		ListenAddr:      fmt.Sprintf("0.0.0.0:%d", DockerSwarmPort),
-		AdvertiseAddr:   fmt.Sprintf("%s:%d", dswarm.Hosts[0], DockerSwarmPort),
+		ListenAddr:      fmt.Sprintf("0.0.0.0:%d", ds.conf.SwarmPort),
+		AdvertiseAddr:   fmt.Sprintf("%s:%d", dswarm.Hosts[0], ds.conf.SwarmPort),
 		ForceNewCluster: true,
 		Availability:    swarm.NodeAvailabilityActive,
 	})
@@ -587,9 +586,9 @@ func (ds dockerService) SwarmCluster(ctx context.Context, entryCLI entity.Docker
 		}
 		ds.withField(entryCLI, "token", details.JoinTokens.Worker).Info("adding worker to swarm")
 		err = cli.SwarmJoin(ctx, swarm.JoinRequest{
-			ListenAddr:    fmt.Sprintf("0.0.0.0:%d", DockerSwarmPort),
-			AdvertiseAddr: fmt.Sprintf("%s:%d", host, DockerSwarmPort),
-			RemoteAddrs:   []string{fmt.Sprintf("%s:%d", dswarm.Hosts[0], DockerSwarmPort)},
+			ListenAddr:    fmt.Sprintf("0.0.0.0:%d", ds.conf.SwarmPort),
+			AdvertiseAddr: fmt.Sprintf("%s:%d", host, ds.conf.SwarmPort),
+			RemoteAddrs:   []string{fmt.Sprintf("%s:%d", dswarm.Hosts[0], ds.conf.SwarmPort)},
 			JoinToken:     details.JoinTokens.Worker,
 			Availability:  swarm.NodeAvailabilityActive,
 		})
