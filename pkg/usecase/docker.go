@@ -129,7 +129,9 @@ func (duc dockerUseCase) validationCheck(cmd command.Command) (result entity.Res
 func (duc dockerUseCase) injectLabels(cli entity.Client, cmd command.Command) entity.DockerCli {
 	out := entity.DockerCli{Client: cli, Labels: map[string]string{}}
 	out.Labels["testRun"] = cmd.Target.TestnetID
+	duc.withField(cmd, "meta", cmd.Meta).Trace("got the meta from the command")
 	mergo.Map(&out.Labels, cmd.Meta)
+
 	return out
 }
 
@@ -149,7 +151,9 @@ func (duc dockerUseCase) createContainerShim(ctx context.Context, cli entity.Cli
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
+
 	docker.Labels["name"] = container.Name
+	duc.withField(cmd, "labels", docker.Labels).Trace("got the labels for the container")
 	return duc.service.CreateContainer(ctx, docker, container)
 }
 
