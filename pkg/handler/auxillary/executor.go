@@ -65,6 +65,7 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 				sem.Release(1)
 				if !res.IsSuccess() && strings.Contains(res.Error.Error(), "connect to the Docker daemon") {
 					exec.log.WithFields(logrus.Fields{
+						"result":  res,
 						"time":    exec.conf.RetryDelay,
 						"attempt": i,
 					}).Info("connection to docker failed, retrying")

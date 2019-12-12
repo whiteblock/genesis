@@ -256,7 +256,7 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 		Stdin:  false,
 		Stdout: true,
 		Stderr: true,
-		Logs:   true,
+		Logs:   false,
 	}
 
 	ctx2, cancelFn := context.WithTimeout(context.Background(), sc.Timeout)
@@ -284,7 +284,12 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 	stderr := new(bytes.Buffer)
 	_, err = stdcopy.StdCopy(stdout, stderr, hijacked.Reader)
 	if err != nil {
-		return entity.NewFatalResult(err)
+		return entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
+			"name":   sc.Name,
+			"type":   "StartContainer",
+			"source": "stdcopy.StdCopy",
+			"error":  err.Error(),
+		})
 	}
 	return entity.NewSuccessResult()
 }
