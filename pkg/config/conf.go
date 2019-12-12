@@ -115,6 +115,7 @@ func setViperDefaults() {
 	viper.SetDefault("localMode", true)
 
 	setExecutionDefaults(viper.GetViper())
+	setDockerDefaults(viper.GetViper())
 }
 
 func init() {
