@@ -178,6 +178,8 @@ github.com/whiteblock/amqp v1.0.3 h1:yvOwXx2tpcNP6NP6PNp5/jJGQqQ4dn+Qp15TBIHVvEA
 github.com/whiteblock/amqp v1.0.3/go.mod h1:jtXr905sYSk+gICmqE21pnT4Js25fYEshBMytwOjLts=
 github.com/whiteblock/amqp v1.0.4 h1:MYOIqoDFd0l6kgzMCk/bNhWUCyTQcvvH4mVEhPHItxU=
 github.com/whiteblock/amqp v1.0.4/go.mod h1:jtXr905sYSk+gICmqE21pnT4Js25fYEshBMytwOjLts=
+github.com/whiteblock/amqp v1.0.5 h1:uVdToRbdGytW4u/ArnyavkFKwyqzy8I4D9MD2MQrkvI=
+github.com/whiteblock/amqp v1.0.5/go.mod h1:jtXr905sYSk+gICmqE21pnT4Js25fYEshBMytwOjLts=
 github.com/whiteblock/definition v0.0.0-20191212174639-bc1c306e1696 h1:0xfNjpDYSvlt9oQuMCIlBdJwSvmAgSH6uPwzn3QmD/Y=
 github.com/whiteblock/definition v0.0.0-20191212174639-bc1c306e1696/go.mod h1:jj3g2ODmZuuwDzUMkxQB7OnnYjXh7k0H9Z+pcKQw+ec=
 github.com/whiteblock/go.uuid v1.2.1 h1:prUjjtzVGGZ0A1Jt3yGxFIdTD69u9FGwaU3e73xqFeI=
