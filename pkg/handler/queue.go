@@ -72,9 +72,9 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 			TestnetID: allCmds[0][0].Target.TestnetID,
 		})
 		dh.log.WithFields(logrus.Fields{
-			"result": result,
-			"error":  result.Error.Error(),
-			"testnet":allCmds[0][0].Target.TestnetID,
+			"result":  result,
+			"error":   result.Error.Error(),
+			"testnet": allCmds[0][0].Target.TestnetID,
 		}).Error("execution resulted in a fatal error")
 		return
 	}

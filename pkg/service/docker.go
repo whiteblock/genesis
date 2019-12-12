@@ -19,7 +19,6 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"strconv"
@@ -37,7 +36,6 @@ import (
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/sirupsen/logrus"
 	"github.com/whiteblock/definition/command"
 )
@@ -251,34 +249,7 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 		return entity.NewSuccessResult()
 	}
 
-	attachOpts := types.ContainerAttachOptions{
-		Stream: sc.Attach,
-		Stdin:  false,
-		Stdout: true,
-		Stderr: true,
-		Logs:   false,
-	}
-
-	ctx2, cancelFn := context.WithTimeout(context.Background(), sc.Timeout)
-	defer cancelFn()
-
-	hijacked, err := cli.ContainerAttach(ctx2, sc.Name, attachOpts)
-	if err != nil {
-		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
-			"host":       cli.DaemonHost(),
-			"attachOpts": attachOpts,
-		})
-	}
-	err = hijacked.Conn.SetDeadline(time.Now().Add(sc.Timeout))
-	if err != nil {
-		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
-			"host":    cli.DaemonHost(),
-			"timeout": sc.Timeout,
-		})
-	}
-	defer hijacked.Close()
-
-	err = cli.ContainerStart(ctx, sc.Name, opts)
+	err := cli.ContainerStart(ctx, sc.Name, opts)
 	if err != nil {
 		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
 			"name": sc.Name,
@@ -286,16 +257,32 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 		})
 	}
 
-	stdout := new(bytes.Buffer)
-	stderr := new(bytes.Buffer)
-	_, err = stdcopy.StdCopy(stdout, stderr, hijacked.Reader)
-	if err != nil {
-		return entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
-			"name":   sc.Name,
-			"type":   "StartContainer",
-			"source": "stdcopy.StdCopy",
-			"error":  err.Error(),
-		})
+	resChan := make(chan error)
+	ctx2, cancelFn := context.WithTimeout(context.Background(), sc.Timeout)
+	defer cancelFn()
+
+	go func() {
+		startTime := time.Now().Add(sc.Timeout)
+		for time.Now().Unix() < startTime.Unix() {
+			_, err := cli.ContainerInspect(ctx2, sc.Name)
+			if err != nil {
+				resChan <- err
+			}
+		}
+	}()
+
+	select {
+	case err := <-resChan:
+		if err != nil {
+			entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
+				"name":  sc.Name,
+				"type":  "StartContainer",
+				"error": err.Error(),
+			})
+		}
+	case <-time.After(sc.Timeout):
+		ds.withFields(cli, logrus.Fields{"name": sc.Name}).Debug("timeout was reached")
+
 	}
 	return entity.NewSuccessResult()
 }
