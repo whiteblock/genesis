@@ -154,6 +154,7 @@ func (ds dockerService) GetNetworkingConfig(ctx context.Context, cli entity.Dock
 func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCli,
 	dContainer command.Container) entity.Result {
 
+	ds.withFields(cli, logrus.Fields{"container": dContainer}).Trace("create container")
 	errChan := make(chan error)
 	netConfChan := make(chan *network.NetworkingConfig)
 
