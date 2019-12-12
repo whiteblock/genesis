@@ -268,6 +268,7 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 			if err != nil {
 				resChan <- err
 			}
+			time.Sleep(1*time.Second)
 		}
 	}()
 
