@@ -264,11 +264,17 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 
 	hijacked, err := cli.ContainerAttach(ctx2, sc.Name, attachOpts)
 	if err != nil {
-		return entity.NewErrorResult(err)
+		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
+			"host":       cli.DaemonHost(),
+			"attachOpts": attachOpts,
+		})
 	}
 	err = hijacked.Conn.SetDeadline(time.Now().Add(sc.Timeout))
 	if err != nil {
-		return entity.NewErrorResult(err)
+		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
+			"host":    cli.DaemonHost(),
+			"timeout": sc.Timeout,
+		})
 	}
 	defer hijacked.Close()
 

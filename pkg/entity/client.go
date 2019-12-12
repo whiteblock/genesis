@@ -31,34 +31,37 @@ import (
 	"github.com/docker/docker/api/types/volume"
 )
 
-//Client is an interface which contains the needed methods from the docker client
+// Client is an interface which contains the needed methods from the docker client
 type Client interface {
-	//ContainerAttach attaches a connection to a container in the server. It returns a types.HijackedConnection with
-	//the hijacked connection and the a reader to get output. It's up to the called to close
-	//the hijacked connection by calling types.HijackedResponse.Close.
+	// ContainerAttach attaches a connection to a container in the server. It returns a types.HijackedConnection with
+	// the hijacked connection and the a reader to get output. It's up to the called to close
+	// the hijacked connection by calling types.HijackedResponse.Close.
 	ContainerAttach(ctx context.Context, container string, options types.ContainerAttachOptions) (types.HijackedResponse, error)
 
-	//ContainerCreate creates a new container based in the given configuration. It can be associated with a name, but it's not mandatory.
+	// ContainerCreate creates a new container based in the given configuration. It can be associated with a name, but it's not mandatory.
 	ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
 		networkingConfig *network.NetworkingConfig, containerName string) (container.ContainerCreateCreatedBody, error)
 
-	//ContainerList returns the list of containers in the docker host.
+	// ContainerList returns the list of containers in the docker host.
 	ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error)
 
-	//ContainerRemove kills and removes a container from the docker host.
+	// ContainerRemove kills and removes a container from the docker host.
 	ContainerRemove(ctx context.Context, containerID string, options types.ContainerRemoveOptions) error
 
-	//ContainerStart sends a request to the docker daemon to start a container.
+	// ContainerStart sends a request to the docker daemon to start a container.
 	ContainerStart(ctx context.Context, containerID string, options types.ContainerStartOptions) error
 
-	//CopyToContainer copies content into the container filesystem. Note that `content` must be a Reader for a TAR archive
+	// CopyToContainer copies content into the container filesystem. Note that `content` must be a Reader for a TAR archive
 	CopyToContainer(ctx context.Context, containerID, dstPath string, content io.Reader,
 		options types.CopyToContainerOptions) error
 
-	//HTTPClient returns a copy of the HTTP client bound to the server
+	// DaemonHost returns the host address used by the client
+	DaemonHost() string
+
+	// HTTPClient returns a copy of the HTTP client bound to the server
 	HTTPClient() *http.Client
 
-	//ImageList returns a list of images in the docker host
+	// ImageList returns a list of images in the docker host
 	ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error)
 
 	//ImageLoad is used to upload a docker image
@@ -67,39 +70,39 @@ type Client interface {
 	//ImagePull is used to pull a docker image
 	ImagePull(ctx context.Context, refStr string, options types.ImagePullOptions) (io.ReadCloser, error)
 
-	//NetworkCreate sends a request to the docker daemon to create a network
+	// NetworkCreate sends a request to the docker daemon to create a network
 	NetworkCreate(ctx context.Context, name string, options types.NetworkCreate) (types.NetworkCreateResponse, error)
 
-	//NetworkConnect connects a container to an existent network in the docker host.
+	// NetworkConnect connects a container to an existent network in the docker host.
 	NetworkConnect(ctx context.Context, networkID, containerID string, config *network.EndpointSettings) error
 
-	//NetworkDisconnect disconnects a container from an existent network in the docker host.
+	// NetworkDisconnect disconnects a container from an existent network in the docker host.
 	NetworkDisconnect(ctx context.Context, networkID, containerID string, force bool) error
 
-	//NetworkInspect returns the information for a specific network configured in the docker host.
+	// NetworkInspect returns the information for a specific network configured in the docker host.
 	NetworkInspect(ctx context.Context, networkID string, options types.NetworkInspectOptions) (types.NetworkResource, error)
 
-	//NetworkRemove sends a request to the docker daemon to remove a network
+	// NetworkRemove sends a request to the docker daemon to remove a network
 	NetworkRemove(ctx context.Context, networkID string) error
 
-	//NetworkList lists the networks known to the docker daemon
+	// NetworkList lists the networks known to the docker daemon
 	NetworkList(ctx context.Context, options types.NetworkListOptions) ([]types.NetworkResource, error)
 
-	//SwarmInit initializes the swarm.
+	// SwarmInit initializes the swarm.
 	SwarmInit(ctx context.Context, req swarm.InitRequest) (string, error)
 
-	//SwarmJoin joins the swarm.
+	// SwarmJoin joins the swarm.
 	SwarmJoin(ctx context.Context, req swarm.JoinRequest) error
 
-	//SwarmInspect inspects the swarm.
+	// SwarmInspect inspects the swarm.
 	SwarmInspect(ctx context.Context) (swarm.Swarm, error)
 
-	//VolumeCreate creates a volume in the docker host.
+	// VolumeCreate creates a volume in the docker host.
 	VolumeCreate(ctx context.Context, options volume.VolumeCreateBody) (types.Volume, error)
 
-	//VolumeList returns the volumes configured in the docker host.
+	// VolumeList returns the volumes configured in the docker host.
 	VolumeList(ctx context.Context, filter filters.Args) (volume.VolumeListOKBody, error)
 
-	//VolumeRemove removes a volume from the docker host.
+	// VolumeRemove removes a volume from the docker host.
 	VolumeRemove(ctx context.Context, volumeID string, force bool) error
 }
