@@ -35,9 +35,7 @@ type Config struct {
 	QueueMaxConcurrency int64  `mapstructure:"queueMaxConcurrency"`
 	CompletionQueueName string `mapstructure:"completionQueueName"`
 	CommandQueueName    string `mapstructure:"commandQueueName"`
-	DockerCACertPath    string `mapstructure:"dockerCACertPath"`
-	DockerCertPath      string `mapstructure:"dockerCertPath"`
-	DockerKeyPath       string `mapstructure:"dockerKeyPath"`
+
 	//LocalMode indicates that Genesis is operating in standalone mode
 	LocalMode        bool              `mapstructure:"localMode"`
 	VolumeDriver     string            `mapstructure:"volumeDriver"`
@@ -47,6 +45,7 @@ type Config struct {
 	Listen           string            `mapstructure:"listen"`
 
 	Execution Execution `mapstructure:"-"`
+	Docker    Docker    `mapstructure:"-"`
 }
 
 //GetLogger gets a logger according to the config
@@ -76,16 +75,6 @@ func (c Config) CommandAMQP() (queue.AMQPConfig, error) {
 	return conf, err
 }
 
-// GetDockerConfig extracts the fields of this object representing DockerConfig
-func (c Config) GetDockerConfig() entity.DockerConfig {
-	return entity.DockerConfig{
-		CACertPath: c.DockerCACertPath,
-		CertPath:   c.DockerCertPath,
-		KeyPath:    c.DockerKeyPath,
-		LocalMode:  c.LocalMode,
-	}
-}
-
 // GetVolumeConfig extracts the fields of this object representing VolumeConfig
 func (c Config) GetVolumeConfig() command.VolumeConfig {
 	return command.VolumeConfig{
@@ -103,9 +92,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("fluentDLogging", "FLUENT_D_LOGGING")
 	viper.BindEnv("maxMessageRetries", "MAX_MESSAGE_RETRIES")
 	viper.BindEnv("queueMaxConcurrency", "QUEUE_MAX_CONCURRENCY")
-	viper.BindEnv("dockerCACertPath", "DOCKER_CACERT_PATH")
-	viper.BindEnv("dockerCertPath", "DOCKER_CERT_PATH")
-	viper.BindEnv("dockerKeyPath", "DOCKER_KEY_PATH")
+
 	viper.BindEnv("localMode", "LOCAL_MODE")
 	viper.BindEnv("volumeDriver", "VOLUME_DRIVER")
 	viper.BindEnv("volumeDriverOpts", "VOLUME_DRIVER_OPTS")
@@ -114,6 +101,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("completionQueueName", "COMPLETION_QUEUE_NAME")
 	viper.BindEnv("commandQueueName", "COMMAND_QUEUE_NAME")
 	setExecutionBindings(viper.GetViper())
+	setDockerBindings(viper.GetViper())
 }
 
 func setViperDefaults() {
@@ -142,13 +130,17 @@ func init() {
 }
 
 // NewConfig creates a new config object from the global config
-func NewConfig() (*Config, error) {
-	conf := new(Config)
+func NewConfig() (conf Config, err error) {
 	_ = viper.ReadInConfig()
-	err := viper.Unmarshal(conf)
+	err = viper.Unmarshal(&conf)
 	if err != nil {
-		return nil, err
+		return
 	}
 	conf.Execution, err = NewExecution(viper.GetViper())
-	return conf, err
+	if err != nil {
+		return
+	}
+
+	conf.Docker, err = NewDocker(viper.GetViper())
+	return
 }
