@@ -124,7 +124,8 @@ func removeNetwork(dockerUseCase usecase.DockerUseCase, name string) {
 	log.WithFields(log.Fields{"res": res}).Info("removed a network")
 }
 
-func createContainer(dockerUseCase usecase.DockerUseCase, name string, args []string) {
+func createContainer(dockerUseCase usecase.DockerUseCase, name string,
+	args []string, ports map[int]int) {
 	testContainer := command.Container{
 		BoundCPUs: nil, //TODO
 		Environment: map[string]string{
@@ -135,7 +136,7 @@ func createContainer(dockerUseCase usecase.DockerUseCase, name string, args []st
 		},
 		Name:    name,
 		Network: []string{"testnet"},
-		//	Ports:   map[int]int{8888: 8889},
+		Ports:   ports,
 		Volumes: []command.Mount{command.Mount{
 			Name:      "test_volume",
 			Directory: "/foo/bar",
@@ -225,12 +226,14 @@ func dockerTest(clean bool) {
 
 	createVolume(dockerUseCase, "test_volume")
 	createNetwork(dockerUseCase, "testnet", 14)
-	createContainer(dockerUseCase, "tester", []string{"localhost"})
+	createContainer(dockerUseCase, "tester", []string{"localhost"}, map[int]int{
+		8765: 8755,
+	})
 	startContainer(dockerUseCase, "tester", false)
-	createContainer(dockerUseCase, "tester2", []string{"localhost"})
+	createContainer(dockerUseCase, "tester2", []string{"localhost"}, nil)
 	startContainer(dockerUseCase, "tester2", false)
 
-	createContainer(dockerUseCase, "tester3", []string{"-c", "10", "localhost"})
+	createContainer(dockerUseCase, "tester3", []string{"-c", "10", "localhost"}, nil)
 	startContainer(dockerUseCase, "tester3", true)
 
 	createNetwork(dockerUseCase, "testnet2", 15)
