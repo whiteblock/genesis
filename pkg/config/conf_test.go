@@ -87,9 +87,8 @@ func TestConfig_GetLogger_Success(t *testing.T) {
 		Verbosity: "INFO",
 	}
 
-	logger, err := conf.GetLogger()
+	logger := conf.GetLogger()
 	assert.NotNil(t, logger)
-	assert.NoError(t, err)
 	assert.True(t, logger.IsLevelEnabled(logrus.InfoLevel))
 	assert.False(t, logger.IsLevelEnabled(logrus.DebugLevel))
 }
@@ -99,9 +98,9 @@ func TestConfig_GetLogger_Failure(t *testing.T) {
 		Verbosity: "3434ds",
 	}
 
-	logger, err := conf.GetLogger()
-	assert.Nil(t, logger)
-	assert.Error(t, err)
+	logger := conf.GetLogger()
+	assert.NotNil(t, logger)
+	assert.True(t, logger.IsLevelEnabled(logrus.InfoLevel))
 }
 
 func TestConfig_CompletionAMQP(t *testing.T) {

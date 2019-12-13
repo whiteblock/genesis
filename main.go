@@ -39,13 +39,6 @@ func getRestServer() (controller.RestController, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	logger, err := conf.GetLogger()
-	if err != nil {
-		return nil, err
-	}
-	logger.SetReportCaller(true)
-
 	dockerRepository := repository.NewDockerRepository()
 
 	return controller.NewRestController(
@@ -55,12 +48,12 @@ func getRestServer() (controller.RestController, error) {
 				service.NewDockerService(
 					dockerRepository,
 					conf.Docker,
-					logger),
+					conf.GetLogger()),
 				validator.NewOrderValidator(),
-				logger),
-			logger),
+				conf.GetLogger()),
+			conf.GetLogger()),
 		mux.NewRouter(),
-		logger), nil
+		conf.GetLogger()), nil
 }
 
 func getCommandController() (controller.CommandController, error) {
@@ -68,12 +61,6 @@ func getCommandController() (controller.CommandController, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	logger, err := conf.GetLogger()
-	if err != nil {
-		return nil, err
-	}
-
 	complConf, err := conf.CompletionAMQP()
 	if err != nil {
 		return nil, err
@@ -96,8 +83,8 @@ func getCommandController() (controller.CommandController, error) {
 
 	return controller.NewCommandController(
 		conf.QueueMaxConcurrency,
-		queue.NewAMQPService(cmdConf, queue.NewAMQPRepository(cmdConn), logger),
-		queue.NewAMQPService(complConf, queue.NewAMQPRepository(complConn), logger),
+		queue.NewAMQPService(cmdConf, queue.NewAMQPRepository(cmdConn), conf.GetLogger()),
+		queue.NewAMQPService(complConf, queue.NewAMQPRepository(complConn), conf.GetLogger()),
 		handler.NewDeliveryHandler(
 			handAux.NewExecutor(
 				conf.Execution,
@@ -105,13 +92,13 @@ func getCommandController() (controller.CommandController, error) {
 					service.NewDockerService(
 						repository.NewDockerRepository(),
 						conf.Docker,
-						logger),
+						conf.GetLogger()),
 					validator.NewOrderValidator(),
-					logger),
-				logger),
+					conf.GetLogger()),
+				conf.GetLogger()),
 			queue.NewAMQPMessage(conf.MaxMessageRetries),
-			logger),
-		logger)
+			conf.GetLogger()),
+		conf.GetLogger())
 }
 
 func main() {
@@ -144,10 +131,6 @@ func main() {
 		go cmdCntl.Start()
 	}
 
-	logger, err := conf.GetLogger()
-	if err != nil {
-		panic(err)
-	}
-	logger.Info("starting the rest server")
+	conf.GetLogger().Info("starting the rest server")
 	restServer.Start()
 }

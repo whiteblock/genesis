@@ -48,6 +48,9 @@ func mintCommand(i interface{}, orderType command.OrderType) command.Command {
 		Order: command.Order{
 			Type: orderType,
 		},
+		Meta: map[string]string{
+			"org": "543",
+		},
 	}
 	err = json.Unmarshal(raw, &cmd.Order.Payload)
 	if err != nil {
