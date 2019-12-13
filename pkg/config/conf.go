@@ -49,16 +49,18 @@ type Config struct {
 }
 
 //GetLogger gets a logger according to the config
-func (c Config) GetLogger() (*logrus.Logger, error) {
+func (c Config) GetLogger() *logrus.Logger {
 	logger := logrus.New()
 	lvl, err := logrus.ParseLevel(c.Verbosity)
 	if err != nil {
-		return nil, err
+		logger.SetLevel(logrus.InfoLevel)
+	} else {
+		logger.SetLevel(lvl)
 	}
-	logger.SetLevel(lvl)
+
 	logger.SetReportCaller(true)
 	logger.SetFormatter(joonix.NewFormatter())
-	return logger, nil
+	return logger
 }
 
 //CompletionAMQP gets the AMQP for the completion queue
