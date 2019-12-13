@@ -44,8 +44,9 @@ type Config struct {
 	FluentDLogging   bool              `mapstructure:"fluentDLogging"`
 	Listen           string            `mapstructure:"listen"`
 
-	Execution Execution `mapstructure:"-"`
-	Docker    Docker    `mapstructure:"-"`
+	Execution   Execution   `mapstructure:"-"`
+	Docker      Docker      `mapstructure:"-"`
+	FileHandler FileHandler `mapstructure:"-"`
 }
 
 //GetLogger gets a logger according to the config

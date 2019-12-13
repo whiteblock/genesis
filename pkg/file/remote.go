@@ -24,6 +24,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -31,53 +32,77 @@ import (
 
 	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/entity"
-	"github.com/whiteblock/genesis/pkg/repository"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/api/types/strslice"
-	"github.com/docker/docker/api/types/swarm"
-	"github.com/docker/docker/api/types/volume"
-	"github.com/docker/docker/client"
 	"github.com/sirupsen/logrus"
 	"github.com/whiteblock/definition/command"
 )
 
-func (file File) writeToTar(tw TarWriter) error {
-	hdr := &tar.Header{
+type RemoteSources interface {
+	GetTarReader(testnetID string, file command.File) (io.Reader, error)
+}
+
+type remoteSources struct {
+	log  logrus.Ext1FieldLogger
+	conf config.FileHandler
+}
+
+func NewRemoteSources(conf config.FileHandler, log logrus.Ext1FieldLogger) RemoteSources {
+	return &remoteSources{conf: conf, log: log}
+}
+
+func (rf remoteSources) getTarHeader(file command.File, size int64) *tar.Header {
+	return &tar.Header{
 		Name: filepath.Base(file.Destination),
 		Mode: file.Mode,
-		Size: int64(len(file.Data)),
+		Size: size,
 	}
-	if err := tw.WriteHeader(hdr); err != nil {
-		return err
-	}
-	_, err := tw.Write(file.Data)
-	return err
 }
 
-// GetTarReader returns a reader which reads this file as if it was in a tar archive
-func (file File) GetTarReader() (io.Reader, error) {
+func (rf remoteSources) getClient() *http.Client {
+	return http.DefaultClient
+}
+
+func (rf remoteSources) getRequest(ctx context.Context, testnetID, id string) (*http.Request, error) {
+
+	return http.NewRequestWithContext(ctx, "GET",
+		fmt.Sprintf("%s/api/v1/files/tests/%s/%s", rf.APIEndpoint, testnetID, id),
+		strings.NewReader(""))
+}
+
+func (rf remoteSources) getContext() (context.Context, context.CancelFunc) {
+	if rf.conf.APITimeout.Nanoseconds() == 0 {
+		return context.WithCancel(context.Background())
+	}
+	return context.WithTimeout(context.Background(), rf.conf.APITimeout)
+}
+
+func (rf remoteSources) GetTarReader(testnetID string, file command.File) (io.Reader, error) {
+	client := rf.getClient()
+	ctx, cancel := rf.getContext()
+	defer cancel()
+	req, err := rf.getRequest()
+	if err == nil {
+		return nil, err
+	}
+
+	resp, err := client.Do(req)
+	if err == nil {
+		return nil, err
+	}
+
 	var buf bytes.Buffer
-	return &buf, file.writeToTar(tar.NewWriter(&buf))
-}
+	go func(buf *bytes.Buffer) {
+		defer resp.Close()
+		tr := tar.NewWriter(buf)
+		tr.WriteHeader(getTarHeader(file, resp.ContentLength))
+		n, err := io.Copy(resp.Body, tw)
+		rf.log.WithFields(logrus.Fields{
+			"file":  file.ID,
+			"dest":  file.Destination,
+			"bytes": n,
+			"error": err,
+		}).Info("copy has been completed")
+	}(&buf)
+	return &buf, nil
 
-// GetDir gets the destination directory
-func (file File) GetDir() string {
-	return filepath.Dir(file.Destination)
-}
-
-// TarWriter represents a writer that outputs a tar achive
-type TarWriter interface {
-	io.Closer
-	io.Writer
-	Flush() error
-	WriteHeader(hdr *tar.Header) error
-}
-
-// IFile represents the operations needed for the file object
-type IFile interface {
-	GetTarReader() (io.Reader, error)
-	GetDir() string
 }
