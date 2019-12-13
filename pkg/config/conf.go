@@ -59,7 +59,10 @@ func (c Config) GetLogger() *logrus.Logger {
 	}
 
 	logger.SetReportCaller(true)
-	logger.SetFormatter(joonix.NewFormatter())
+	if c.FluentDLogging {
+		logger.SetFormatter(joonix.NewFormatter())
+	}
+
 	return logger
 }
 

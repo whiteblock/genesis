@@ -265,11 +265,16 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 	go func() {
 		startTime := time.Now().Add(sc.Timeout)
 		for time.Now().Unix() < startTime.Unix() {
+			ds.withFields(cli, logrus.Fields{
+				"name": sc.Name}).Trace("checking container status")
 			_, err := cli.ContainerInspect(ctx2, sc.Name)
 			if err != nil {
+				ds.withFields(cli, logrus.Fields{
+					"name":  sc.Name,
+					"error": err.Error()}).Info("container finished execution")
 				resChan <- err
 			}
-			time.Sleep(1*time.Second)
+			time.Sleep(1 * time.Second)
 		}
 	}()
 

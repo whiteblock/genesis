@@ -158,8 +158,9 @@ func createContainer(dockerUseCase usecase.DockerUseCase, name string,
 
 func startContainer(dockerUseCase usecase.DockerUseCase, name string, attach bool) {
 	cmd := mintCommand(map[string]interface{}{
-		"name":   name,
-		"attach": attach,
+		"name":    name,
+		"attach":  attach,
+		"timeout": 3 * time.Minute,
 	}, command.Startcontainer)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("started a container")
@@ -212,8 +213,8 @@ func dockerTest(clean bool) {
 	dockerRepository := repository.NewDockerRepository()
 
 	dockerUseCase := usecase.NewDockerUseCase(
-		service.NewDockerService(dockerRepository, conf.Docker, log.New()),
-		validator.NewOrderValidator(), log.New())
+		service.NewDockerService(dockerRepository, conf.Docker, conf.GetLogger()),
+		validator.NewOrderValidator(), conf.GetLogger())
 
 	if clean {
 		removeContainer(dockerUseCase, "tester")
