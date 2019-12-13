@@ -237,7 +237,7 @@ func dockerTest(clean bool) {
 	createContainer(dockerUseCase, "tester2", []string{"localhost"}, nil)
 	startContainer(dockerUseCase, "tester2", false)
 
-	createContainer(dockerUseCase, "tester3", []string{"-c", "1000", "localhost"}, nil)
+	createContainer(dockerUseCase, "tester3", []string{"-c", "30", "localhost"}, nil)
 	startContainer(dockerUseCase, "tester3", true)
 
 	createNetwork(dockerUseCase, "testnet2", 15)

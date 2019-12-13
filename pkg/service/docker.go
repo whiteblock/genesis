@@ -281,7 +281,10 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 	select {
 	case err := <-resChan:
 		if err != nil {
-			entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
+			if strings.Contains(err.Error(), "No such container") {
+				return entity.NewSuccessResult()
+			}
+			return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
 				"name":  sc.Name,
 				"type":  "StartContainer",
 				"error": err.Error(),
