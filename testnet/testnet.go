@@ -146,7 +146,7 @@ func (tn *TestNet) AddNode(node db.Node) *db.Node {
 		node.Image = tn.LDD.Images[0]
 	}
 	log.WithFields(log.Fields{"node": node}).Debug("adding a node")
-	node.PortMappings = tn.GetNodeResources(node).GetParsedPortMappings()
+	node.PortMappings = tn.GetNodeResources(node).GetParsedPortMappings(node.LocalID)
 	log.WithFields(log.Fields{"node": node.PortMappings}).Debug("parsed the port mappings")
 	tn.NewlyBuiltNodes = append(tn.NewlyBuiltNodes, node)
 	tn.Nodes = append(tn.Nodes, node)

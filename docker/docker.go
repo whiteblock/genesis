@@ -114,22 +114,18 @@ func Pull(clients []ssh.Client, image string) error {
 	return nil
 }
 
-func getFlagsFromResources(res util.Resources) (string, error) {
+func getFlagsFromResources(res util.Resources, index int) (string, error) {
 	out := ""
 	if !res.NoCPULimits() {
 		out += fmt.Sprintf(" --cpus %s", res.Cpus)
 	}
 
 	if res.Volumes != nil && conf.EnableDockerVolumes {
-		for _, volume := range res.Volumes {
-			out += fmt.Sprintf(" -v %s", volume)
-		}
+		out += fmt.Sprintf(" -v %s", res.Volumes[index])
 	}
 
 	if conf.EnablePortForwarding {
-		for _, port := range res.Ports {
-			out += fmt.Sprintf(" -p %s", port)
-		}
+		out += fmt.Sprintf(" -p %s", res.Ports[index])
 	}
 
 	if !res.NoMemoryLimits() {
@@ -157,7 +153,7 @@ func dockerRunCmd(c Container) (string, error) {
 	command := fmt.Sprintf("docker run -itd --entrypoint %s ", c.GetEntryPoint())
 	command += fmt.Sprintf("--network %s ", c.GetNetworkName())
 
-	flags, err := getFlagsFromResources(c.GetResources())
+	flags, err := getFlagsFromResources(c.GetResources(), 0)
 	if err != nil {
 		return "", util.LogError(err)
 	}

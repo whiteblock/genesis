@@ -160,12 +160,12 @@ func (res Resources) NoMemoryLimits() bool {
 
 // GetParsedPortMappings fetches the port mappings in a form which is easy to use,
 // using the source port as the key
-func (res Resources) GetParsedPortMappings() map[string]string {
+func (res Resources) GetParsedPortMappings(index int) map[string]string {
 	if res.Ports == nil || len(res.Ports) == 0 {
 		return nil
 	}
 	out := map[string]string{}
-	for _, rawMapping := range res.Ports {
+	for _, rawMapping := range strings.Split(res.Ports[index]," ") {
 		mapping := strings.SplitN(rawMapping, ":", 2)
 		if len(mapping) != 2 {
 			log.WithFields(log.Fields{"raw": rawMapping}).Debug("invalid format for port mapping")
