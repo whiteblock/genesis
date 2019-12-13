@@ -42,6 +42,9 @@ type Client interface {
 	ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
 		networkingConfig *network.NetworkingConfig, containerName string) (container.ContainerCreateCreatedBody, error)
 
+	//ContainerInspect returns the container information.
+	ContainerInspect(ctx context.Context, containerID string) (types.ContainerJSON, error)
+
 	// ContainerList returns the list of containers in the docker host.
 	ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error)
 
