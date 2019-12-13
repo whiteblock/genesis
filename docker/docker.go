@@ -120,11 +120,11 @@ func getFlagsFromResources(res util.Resources, index int) (string, error) {
 		out += fmt.Sprintf(" --cpus %s", res.Cpus)
 	}
 
-	if len(res.Volumes) >= index && conf.EnableDockerVolumes {
+	if len(res.Volumes) > index && conf.EnableDockerVolumes {
 		out += fmt.Sprintf(" -v %s", res.Volumes[index])
 	}
 
-	if len(res.Ports) >= index && conf.EnablePortForwarding {
+	if len(res.Ports) > index && conf.EnablePortForwarding {
 		out += fmt.Sprintf(" -p %s", res.Ports[index])
 	}
 
