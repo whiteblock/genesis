@@ -57,7 +57,7 @@ func NewDockerUseCase(
 
 func (duc dockerUseCase) withFields(cmd command.Command, fields logrus.Fields) *logrus.Entry {
 	fields["command"] = cmd.ID
-	return logrus.WithFields(fields)
+	return duc.log.WithFields(fields)
 }
 
 func (duc dockerUseCase) withField(cmd command.Command, key string, value interface{}) *logrus.Entry {
