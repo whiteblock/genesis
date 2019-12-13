@@ -173,11 +173,6 @@ func getAMQPService() (queue.AMQPService, error) {
 		return nil, err
 	}
 
-	logger, err := conf.GetLogger()
-	if err != nil {
-		return nil, err
-	}
-
 	cmdConf, err := conf.CommandAMQP()
 	if err != nil {
 		return nil, err
@@ -187,7 +182,7 @@ func getAMQPService() (queue.AMQPService, error) {
 	if err != nil {
 		return nil, err
 	}
-	return queue.NewAMQPService(cmdConf, queue.NewAMQPRepository(cmdConn), logger), nil
+	return queue.NewAMQPService(cmdConf, queue.NewAMQPRepository(cmdConn), conf.GetLogger()), nil
 }
 
 func main() {
