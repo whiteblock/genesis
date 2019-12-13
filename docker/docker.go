@@ -124,7 +124,7 @@ func getFlagsFromResources(res util.Resources, index int) (string, error) {
 		out += fmt.Sprintf(" -v %s", res.Volumes[index])
 	}
 
-	if conf.EnablePortForwarding {
+	if res.Ports != nil && conf.EnablePortForwarding {
 		out += fmt.Sprintf(" -p %s", res.Ports[index])
 	}
 
