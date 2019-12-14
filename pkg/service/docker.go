@@ -27,6 +27,7 @@ import (
 
 	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/file"
 	"github.com/whiteblock/genesis/pkg/repository"
 
 	"github.com/docker/docker/api/types"
@@ -62,7 +63,7 @@ type DockerService interface {
 	CreateVolume(ctx context.Context, cli entity.DockerCli, volume command.Volume) entity.Result
 	RemoveVolume(ctx context.Context, cli entity.DockerCli, name string) entity.Result
 	PlaceFileInContainer(ctx context.Context, cli entity.DockerCli,
-		containerName string, file command.IFile) entity.Result
+		containerName string, testnetID string, file command.File) entity.Result
 	Emulation(ctx context.Context, cli entity.DockerCli, netem command.Netconf) entity.Result
 	SwarmCluster(ctx context.Context, cli entity.DockerCli, swarm command.SetupSwarm) entity.Result
 	PullImage(ctx context.Context, cli entity.DockerCli, imagePull command.PullImage) entity.Result
@@ -77,21 +78,24 @@ type DockerService interface {
 }
 
 type dockerService struct {
-	repo repository.DockerRepository
-	conf config.Docker
-	log  logrus.Ext1FieldLogger
+	repo   repository.DockerRepository
+	conf   config.Docker
+	log    logrus.Ext1FieldLogger
+	remote file.RemoteSources
 }
 
 //NewDockerService creates a new DockerService
 func NewDockerService(
 	repo repository.DockerRepository,
 	conf config.Docker,
+	remote file.RemoteSources,
 	log logrus.Ext1FieldLogger) DockerService {
 
 	return dockerService{
-		conf: conf,
-		repo: repo,
-		log:  log}
+		conf:   conf,
+		repo:   repo,
+		remote: remote,
+		log:    log}
 }
 
 //CreateClient creates a new client for connecting to the docker daemon
@@ -463,17 +467,17 @@ func (ds dockerService) RemoveVolume(ctx context.Context, cli entity.DockerCli, 
 }
 
 func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.DockerCli,
-	containerName string, file command.IFile) entity.Result {
+	containerName string, testnetID string, file command.File) entity.Result {
 
 	cntr, err := ds.repo.GetContainerByName(ctx, cli, containerName)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	rdr, err := file.GetTarReader()
+	rdr, err := ds.remote.GetTarReader(testnetID, file)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	err = cli.CopyToContainer(ctx, cntr.ID, file.GetDir(), rdr, types.CopyToContainerOptions{
+	err = cli.CopyToContainer(ctx, cntr.ID, file.Destination, rdr, types.CopyToContainerOptions{
 		AllowOverwriteDirWithFile: false,
 		CopyUIDGID:                false,
 	})

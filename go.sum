@@ -170,8 +170,8 @@ github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGr
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/whiteblock/amqp v1.0.5 h1:uVdToRbdGytW4u/ArnyavkFKwyqzy8I4D9MD2MQrkvI=
 github.com/whiteblock/amqp v1.0.5/go.mod h1:jtXr905sYSk+gICmqE21pnT4Js25fYEshBMytwOjLts=
-github.com/whiteblock/definition v0.0.0-20191213150339-4a5d6c6e6189 h1:gqR3uYBx5Kxo8VInbePPiO7xUHdGlYzwZwDLOoM7K6I=
-github.com/whiteblock/definition v0.0.0-20191213150339-4a5d6c6e6189/go.mod h1:jj3g2ODmZuuwDzUMkxQB7OnnYjXh7k0H9Z+pcKQw+ec=
+github.com/whiteblock/definition v0.0.0-20191213213413-4a6f6fe02cd1 h1:LBasXuahrP5S311kS8R6VMPjEGtoToX+R0ProolcvgY=
+github.com/whiteblock/definition v0.0.0-20191213213413-4a6f6fe02cd1/go.mod h1:jj3g2ODmZuuwDzUMkxQB7OnnYjXh7k0H9Z+pcKQw+ec=
 github.com/whiteblock/go.uuid v1.2.1 h1:prUjjtzVGGZ0A1Jt3yGxFIdTD69u9FGwaU3e73xqFeI=
 github.com/whiteblock/go.uuid v1.2.1/go.mod h1:J0Y9qymnDEwrdEFeIzpsul8Ye1jzfPoW3JDJVx8hdGM=
 github.com/whiteblock/utility v0.0.0-20191204153325-8c91068475f3 h1:iHqutkqzDyUAfEUyr32ZpstzpyI9FL8wqHZG0RwovfE=

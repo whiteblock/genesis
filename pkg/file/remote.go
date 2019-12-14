@@ -26,17 +26,15 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/whiteblock/genesis/pkg/config"
-	"github.com/whiteblock/genesis/pkg/entity"
 
 	"github.com/sirupsen/logrus"
 	"github.com/whiteblock/definition/command"
 )
 
+//RemoteSources represents a remote file source
 type RemoteSources interface {
 	GetTarReader(testnetID string, file command.File) (io.Reader, error)
 }
@@ -46,6 +44,7 @@ type remoteSources struct {
 	conf config.FileHandler
 }
 
+//NewRemoteSources creates a new instance of RemoteSources
 func NewRemoteSources(conf config.FileHandler, log logrus.Ext1FieldLogger) RemoteSources {
 	return &remoteSources{conf: conf, log: log}
 }
@@ -65,7 +64,7 @@ func (rf remoteSources) getClient() *http.Client {
 func (rf remoteSources) getRequest(ctx context.Context, testnetID, id string) (*http.Request, error) {
 
 	return http.NewRequestWithContext(ctx, "GET",
-		fmt.Sprintf("%s/api/v1/files/tests/%s/%s", rf.APIEndpoint, testnetID, id),
+		fmt.Sprintf("%s/api/v1/files/tests/%s/%s", rf.conf.APIEndpoint, testnetID, id),
 		strings.NewReader(""))
 }
 
@@ -76,11 +75,12 @@ func (rf remoteSources) getContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), rf.conf.APITimeout)
 }
 
+// GetTarReader fetches the file from the file handler service and converts it to a tar reader
 func (rf remoteSources) GetTarReader(testnetID string, file command.File) (io.Reader, error) {
 	client := rf.getClient()
 	ctx, cancel := rf.getContext()
 	defer cancel()
-	req, err := rf.getRequest()
+	req, err := rf.getRequest(ctx, testnetID, file.ID)
 	if err == nil {
 		return nil, err
 	}
@@ -91,18 +91,19 @@ func (rf remoteSources) GetTarReader(testnetID string, file command.File) (io.Re
 	}
 
 	var buf bytes.Buffer
-	go func(buf *bytes.Buffer) {
-		defer resp.Close()
-		tr := tar.NewWriter(buf)
-		tr.WriteHeader(getTarHeader(file, resp.ContentLength))
-		n, err := io.Copy(resp.Body, tw)
-		rf.log.WithFields(logrus.Fields{
-			"file":  file.ID,
-			"dest":  file.Destination,
-			"bytes": n,
-			"error": err,
-		}).Info("copy has been completed")
-	}(&buf)
+	buf.Grow(int(resp.ContentLength))
+	//might want to make a custom reader here for memory sake
+	defer resp.Body.Close()
+	tr := tar.NewWriter(&buf)
+	tr.WriteHeader(rf.getTarHeader(file, resp.ContentLength))
+	n, err := io.Copy(tr, resp.Body)
+	rf.log.WithFields(logrus.Fields{
+		"file":  file.ID,
+		"dest":  file.Destination,
+		"bytes": n,
+		"error": err,
+	}).Info("copy has been completed")
+
 	return &buf, nil
 
 }

@@ -23,6 +23,7 @@ import (
 
 	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/controller"
+	"github.com/whiteblock/genesis/pkg/file"
 	"github.com/whiteblock/genesis/pkg/handler"
 	handAux "github.com/whiteblock/genesis/pkg/handler/auxillary"
 	"github.com/whiteblock/genesis/pkg/repository"
@@ -48,6 +49,9 @@ func getRestServer() (controller.RestController, error) {
 				service.NewDockerService(
 					dockerRepository,
 					conf.Docker,
+					file.NewRemoteSources(
+						conf.FileHandler,
+						conf.GetLogger()),
 					conf.GetLogger()),
 				validator.NewOrderValidator(),
 				conf.GetLogger()),
@@ -92,6 +96,9 @@ func getCommandController() (controller.CommandController, error) {
 					service.NewDockerService(
 						repository.NewDockerRepository(),
 						conf.Docker,
+						file.NewRemoteSources(
+							conf.FileHandler,
+							conf.GetLogger()),
 						conf.GetLogger()),
 					validator.NewOrderValidator(),
 					conf.GetLogger()),
