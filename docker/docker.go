@@ -276,7 +276,7 @@ func StartServices(tn *testnet.TestNet, servs []services.Service) error {
 			return util.LogError(err)
 		}
 		_, err = client.KeepTryRun(serviceDockerRunCmd(net, ip,
-			fmt.Sprintf("%s%d", conf.ServicePrefix, i),
+			fmt.Sprintf("%s%d%s", conf.ServicePrefix, i, service.GetName()),
 			service.GetEnv(),
 			service.GetVolumes(),
 			service.GetPorts(),
