@@ -175,20 +175,6 @@ func pullImage(dockerUseCase usecase.DockerUseCase) {
 	log.WithFields(log.Fields{"res": res}).Info("pulled an image")
 }
 
-/*func putFile(dockerUseCase usecase.DockerUseCase) {
-
-	cmd := mintCommand(map[string]interface{}{
-		"container": "tester",
-		"file": command.File{
-			Mode:        0600,
-			Destination: "/foo/bar/baz",
-			Data:        []byte("test"),
-		},
-	}, "putFileInContainer")
-	res := dockerUseCase.Run(cmd)
-	log.WithFields(log.Fields{"res": res}).Info("placed a file")
-}*/
-
 func emulate(dockerUseCase usecase.DockerUseCase, containerName string, networkName string) {
 	cmd := mintCommand(command.Netconf{
 		Container: containerName,
@@ -252,5 +238,4 @@ func dockerTest(clean bool) {
 	detachNetwork(dockerUseCase, "testnet", "tester")
 	emulate(dockerUseCase, "tester", "testnet2")
 	emulate(dockerUseCase, "tester2", "testnet2")
-	//putFile(dockerUseCase)
 }
