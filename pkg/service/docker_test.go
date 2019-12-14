@@ -21,13 +21,13 @@ package service
 import (
 	//"bufio"
 	"fmt"
-	//"strings"
+	"strings"
 	"testing"
 	//"io"
 
-	cmdMock "github.com/whiteblock/genesis/mocks/definition/command"
 	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
 	externalsMock "github.com/whiteblock/genesis/mocks/pkg/externals"
+	fileMock "github.com/whiteblock/genesis/mocks/pkg/file"
 	repoMock "github.com/whiteblock/genesis/mocks/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/entity"
@@ -46,8 +46,7 @@ import (
 )
 
 func TestNewDockerService(t *testing.T) {
-	repo := new(repoMock.DockerRepository)
-	assert.NotNil(t, NewDockerService(repo, config.Docker{}, nil))
+	assert.NotNil(t, NewDockerService(nil, config.Docker{}, nil, nil))
 }
 
 func TestDockerService_CreateContainer(t *testing.T) {
@@ -157,7 +156,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		assert.Contains(t, testContainer.Network, args.String(2))
 	})
 
-	ds := NewDockerService(repo, config.Docker{}, logrus.New())
+	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
 	res := ds.CreateContainer(nil, entity.DockerCli{
 		Client: cli,
 		Labels: map[string]string{
@@ -193,7 +192,7 @@ func TestDockerService_StartContainer_Success(t *testing.T) {
 		}).Maybe()
 
 	repo := new(repoMock.DockerRepository)
-	ds := NewDockerService(repo, config.Docker{}, logrus.New())
+	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
 	res := ds.StartContainer(nil, entity.DockerCli{Client: cli}, scCommand)
 	assert.NoError(t, res.Error)
 	cli.AssertExpectations(t)
@@ -206,7 +205,7 @@ func TestDockerService_StartContainer_Failure(t *testing.T) {
 	cli.On("ContainerStart", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("error")).Once()
 
 	repo := new(repoMock.DockerRepository)
-	ds := NewDockerService( repo, config.Docker{}, logrus.New())
+	ds := NewDockerService( repo, config.Docker{}, nil, logrus.New())
 	res := ds.StartContainer(nil, cli, scCommand)
 	assert.Error(t, res.Error)
 	cli.AssertExpectations(t)*/
@@ -247,7 +246,7 @@ func TestDockerService_StartContainer_Attach_Success(t *testing.T) {
 		}).Once()
 
 	repo := new(repoMock.DockerRepository)
-	ds := NewDockerService( repo, config.Docker{}, logrus.New())
+	ds := NewDockerService( repo, config.Docker{}, nil, logrus.New())
 	res := ds.StartContainer(nil, cli, scCommand)
 	assert.NoError(t, res.Error)
 	cli.AssertExpectations(t)
@@ -264,7 +263,7 @@ func TestDockerService_StartContainer_Attach_Failure(t *testing.T) {
 		types.HijackedResponse{}, fmt.Errorf("err")).Once()
 
 	repo := new(repoMock.DockerRepository)
-	ds := NewDockerService( repo, config.Docker{}, logrus.New())
+	ds := NewDockerService( repo, config.Docker{}, nil, logrus.New())
 	res := ds.StartContainer(nil, cli, scCommand)
 	assert.Error(t, res.Error)
 	cli.AssertExpectations(t)*/
@@ -317,7 +316,7 @@ func TestDockerService_CreateNetwork_Success(t *testing.T) {
 	}).Twice()
 
 	repo := new(repoMock.DockerRepository)
-	ds := NewDockerService(repo, config.Docker{}, logrus.New())
+	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
 
 	res := ds.CreateNetwork(nil, entity.DockerCli{
 		Client: cli,
@@ -354,7 +353,7 @@ func TestDockerService_CreateNetwork_Failure(t *testing.T) {
 		types.NetworkCreateResponse{}, fmt.Errorf("error")).Once()
 
 	repo := new(repoMock.DockerRepository)
-	ds := NewDockerService(repo, config.Docker{}, logrus.New())
+	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
 
 	res := ds.CreateNetwork(nil, entity.DockerCli{Client: cli}, testNetwork)
 	assert.Error(t, res.Error)
@@ -381,7 +380,7 @@ func TestDockerService_RemoveNetwork_Success(t *testing.T) {
 			types.NetworkResource{ID: net.ID}, nil).Once()
 	}
 
-	ds := NewDockerService(repo, config.Docker{}, logrus.New())
+	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
 
 	for _, net := range networks {
 		res := ds.RemoveNetwork(nil, entity.DockerCli{Client: cli}, net.Name)
@@ -398,7 +397,7 @@ func TestDockerService_RemoveNetwork_NetworkList_Failure(t *testing.T) {
 	repo := new(repoMock.DockerRepository)
 	repo.On("GetNetworkByName", mock.Anything, mock.Anything, mock.Anything).Return(
 		types.NetworkResource{ID: ""}, nil).Once()
-	ds := NewDockerService(repo, config.Docker{}, logrus.New())
+	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
 
 	res := ds.RemoveNetwork(nil, entity.DockerCli{Client: cli}, "")
 	assert.Error(t, res.Error)
@@ -422,7 +421,7 @@ func TestDockerService_RemoveNetwork_NetworkRemove_Failure(t *testing.T) {
 			types.NetworkResource{ID: net.ID}, nil).Once()
 	}
 
-	ds := NewDockerService(repo, config.Docker{}, logrus.New())
+	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
 
 	for _, net := range networks {
 		res := ds.RemoveNetwork(nil, entity.DockerCli{Client: cli}, net.Name)
@@ -457,7 +456,7 @@ func TestDockerService_RemoveContainer(t *testing.T) {
 			types.Container{ID: cntr.ID}, nil).Once()
 	}
 
-	ds := NewDockerService(repo, config.Docker{}, logrus.New())
+	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
 
 	for _, cntr := range cntrs {
 		res := ds.RemoveContainer(nil, entity.DockerCli{Client: cli}, cntr.Names[0])
@@ -468,11 +467,9 @@ func TestDockerService_RemoveContainer(t *testing.T) {
 
 func TestDockerService_PlaceFileInContainer(t *testing.T) {
 	testDir := "/pkg"
+	testnet := "foobar"
+	fileID := "barfoo"
 	testContainer := types.Container{Names: []string{"test1"}, ID: "id1"}
-
-	file := new(cmdMock.IFile)
-	file.On("GetDir").Return(testDir).Once()
-	file.On("GetTarReader").Return(nil, nil).Once()
 
 	cli := new(entityMock.Client)
 	cli.On("CopyToContainer", mock.Anything, mock.Anything,
@@ -482,7 +479,7 @@ func TestDockerService_PlaceFileInContainer(t *testing.T) {
 			assert.Nil(t, args.Get(0))
 			assert.Equal(t, testContainer.ID, args.String(1))
 			assert.Equal(t, testDir, args.String(2))
-			assert.Nil(t, args.Get(3))
+			assert.NotNil(t, args.Get(3))
 			{
 				opts, ok := args.Get(4).(types.CopyToContainerOptions)
 				require.True(t, ok)
@@ -499,15 +496,20 @@ func TestDockerService_PlaceFileInContainer(t *testing.T) {
 			assert.Nil(t, args.Get(0))
 			assert.Equal(t, testContainer.Names[0], args.String(2))
 		}).Once()
+	fs := new(fileMock.RemoteSources)
+	fs.On("GetTarReader", testnet, mock.Anything).Return(strings.NewReader("barfoo"), nil).Once()
+	ds := NewDockerService(repo, config.Docker{}, fs, logrus.New())
 
-	ds := NewDockerService(repo, config.Docker{}, logrus.New())
-
-	res := ds.PlaceFileInContainer(nil, entity.DockerCli{Client: cli}, testContainer.Names[0], file)
+	res := ds.PlaceFileInContainer(nil, entity.DockerCli{Client: cli},
+		testContainer.Names[0], testnet, command.File{
+			Destination: testDir,
+			ID:          fileID,
+		})
 	assert.NoError(t, res.Error)
 
 	cli.AssertExpectations(t)
 	repo.AssertExpectations(t)
-	file.AssertExpectations(t)
+	fs.AssertExpectations(t)
 }
 
 func TestDockerService_AttachNetwork(t *testing.T) {
@@ -546,7 +548,7 @@ func TestDockerService_AttachNetwork(t *testing.T) {
 		assert.Equal(t, net.ID, epSettings.NetworkID)
 	}).Once()
 
-	ds := NewDockerService(repo, config.Docker{}, logrus.New())
+	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
 
 	res := ds.AttachNetwork(nil, entity.DockerCli{Client: cli}, net.Name, cntr.Names[0])
 	assert.NoError(t, res.Error)
@@ -588,7 +590,7 @@ func TestDockerService_DetachNetwork(t *testing.T) {
 		assert.True(t, args.Bool(3))
 	}).Once()
 
-	ds := NewDockerService(repo, config.Docker{}, logrus.New())
+	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
 
 	res := ds.DetachNetwork(nil, entity.DockerCli{Client: cli}, net.Name, cntr.Names[0])
 	assert.NoError(t, res.Error)
@@ -621,7 +623,7 @@ func TestDockerService_CreateVolume(t *testing.T) {
 
 	repo := new(repoMock.DockerRepository)
 
-	ds := NewDockerService(repo, config.Docker{}, logrus.New())
+	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
 
 	res := ds.CreateVolume(nil, entity.DockerCli{Client: cli}, command.Volume{
 		Name:   "test_volume",
@@ -646,7 +648,7 @@ func TestDockerService_RemoveVolume(t *testing.T) {
 
 	repo := new(repoMock.DockerRepository)
 
-	ds := NewDockerService(repo, config.Docker{}, logrus.New())
+	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
 
 	res := ds.RemoveVolume(nil, entity.DockerCli{Client: cli}, name)
 	assert.NoError(t, res.Error)
@@ -767,7 +769,7 @@ assert.Equal(t, resultingContainerName, containerName)*/
 			assert.Equal(t, types.ContainerStartOptions{}, args.Get(3))
 		})
 
-	ds := NewDockerService( repo, config.Docker{}, logrus.New())
+	ds := NewDockerService( repo, config.Docker{}, nil, logrus.New())
 
 	res := ds.Emulation(nil, cli, testNetConf)
 	assert.NoError(t, res.Error)
