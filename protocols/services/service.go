@@ -46,6 +46,7 @@ type SimpleService struct {
 	Network string            `json:"network"`
 	Ports   []string          `json:"ports"`
 	Volumes []string          `json:"volumes"`
+	Command string            `json:"command"`
 }
 
 // Prepare just returns nil. Simple service has no prepare step
@@ -85,7 +86,7 @@ func (s SimpleService) GetVolumes() []string {
 
 // GetCommand gets the command to run for the service with Docker.
 func (s SimpleService) GetCommand() string {
-	return ""
+	return s.Command
 }
 
 // GetServiceIps creates a map of the service names to their ip addresses. Useful

@@ -111,6 +111,7 @@ func AddTestNet(details *db.DeploymentDetails, testnetID string) error {
 			Network: s.Network,
 			Ports:   s.Ports,
 			Volumes: s.Volumes,
+			Command: s.Command,
 		})
 	}
 	//STEP 4: BUILD OUT THE DOCKER CONTAINERS AND THE NETWORK

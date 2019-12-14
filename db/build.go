@@ -25,7 +25,6 @@ import (
 	"github.com/whiteblock/genesis/util"
 )
 
-
 // ServiceDetails represent the data of a testnet service.
 type ServiceDetails struct {
 	Name    string            `json:"name"`
@@ -34,6 +33,7 @@ type ServiceDetails struct {
 	Network string            `json:"network"`
 	Ports   []string          `json:"ports"`
 	Volumes []string          `json:"volumes"`
+	Command string            `json:"command"`
 }
 
 // DeploymentDetails represents the data for the construction of a testnet.
