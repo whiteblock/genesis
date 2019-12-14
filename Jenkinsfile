@@ -82,11 +82,11 @@ pipeline {
               gcloud auth configure-docker
             """
             sh "docker pull ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest || true"
-            docker.build("${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest",
-                        "--cache-from ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest --target build .")
-            docker.image("${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest").push(
+            docker.build("${IMAGE_REPO}/${APP_NAME}",
+                        "--cache-from ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest .")
+            docker.image("${IMAGE_REPO}/${APP_NAME}").push(
               "${BRANCH_NAME}-build-latest")
-            docker.image("${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest").push(
+            docker.image("${IMAGE_REPO}/${APP_NAME}").push(
               "${BRANCH_NAME}-${REV_SHORT}")
           }
         }
