@@ -836,9 +836,12 @@ func TestDockerUseCase_Execute_RemoveVolume_Failure(t *testing.T) {
 		Target: command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: command.Removevolume,
-			Payload: command.FileAndVolume{File: command.File{
-				Destination: "/test/path/",
-				ID:          testFileID}},
+			Payload: command.FileAndContainer{
+				ContainerName: "tester",
+				File: command.File{
+					Destination: "/test/path/",
+					ID:          testFileID,
+					Mode:        0777}},
 		},
 	})
 	assert.Error(t, res.Error, nil)
