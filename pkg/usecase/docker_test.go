@@ -34,6 +34,10 @@ import (
 	"github.com/whiteblock/definition/command"
 )
 
+const (
+	testFileID = "foo"
+)
+
 func TestNewDockerUseCase(t *testing.T) {
 	duc := NewDockerUseCase(nil, nil, logrus.New())
 	assert.NotNil(t, duc)
@@ -557,9 +561,9 @@ func TestDockerUseCase_Run_RemoveVolume(t *testing.T) {
 
 func TestDockerUseCase_Run_PutFileInContainer(t *testing.T) {
 	service := new(mockService.DockerService)
-	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-	service.On("PlaceFileInContainer", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything).Return(entity.Result{Type: entity.SuccessType})
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
+	service.On("PlaceFileInContainer", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything).Return(entity.Result{Type: entity.SuccessType}).Once()
 
 	valid := new(mockValid.OrderValidator)
 
@@ -572,12 +576,12 @@ func TestDockerUseCase_Run_PutFileInContainer(t *testing.T) {
 			Type: command.Putfileincontainer,
 			Payload: command.FileAndContainer{
 				ContainerName: "tester",
-				File:          command.File{Destination: "test/path/", Data: []byte("content")},
+				File:          command.File{Destination: "test/path/", ID: testFileID},
 			},
 		},
 	})
-	assert.NoError(t, res.Error, nil)
-	assert.True(t, service.AssertNumberOfCalls(t, "PlaceFileInContainer", 1))
+	assert.NoError(t, res.Error)
+	service.AssertExpectations(t)
 }
 
 func TestDockerUseCase_Run_Emulation(t *testing.T) {
@@ -831,8 +835,13 @@ func TestDockerUseCase_Execute_RemoveVolume_Failure(t *testing.T) {
 		ID:     "TEST",
 		Target: command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
-			Type:    command.Removevolume,
-			Payload: command.FileAndVolume{File: command.File{Destination: "/test/path/", Data: []byte("contents")}},
+			Type: command.Removevolume,
+			Payload: command.FileAndContainer{
+				ContainerName: "tester",
+				File: command.File{
+					Destination: "/test/path/",
+					ID:          testFileID,
+					Mode:        0777}},
 		},
 	})
 	assert.Error(t, res.Error, nil)
@@ -840,23 +849,24 @@ func TestDockerUseCase_Execute_RemoveVolume_Failure(t *testing.T) {
 }
 
 func TestDockerUseCase_Execute_PutFileInContainer_Success(t *testing.T) {
-	mockFile := map[string]interface{}{"mode": 0777, "destination": "/test/path/", "data": []byte("contents")}
+	mockFile := map[string]interface{}{"mode": 0777,
+		"destination": "/test/path/", "id": testFileID}
 	containerName := "tester"
 	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-	service.On("PlaceFileInContainer", mock.Anything, mock.Anything, mock.Anything,
+	service.On("PlaceFileInContainer", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything).Return(entity.Result{Type: entity.SuccessType}).Run(
 		func(args mock.Arguments) {
 
-			require.Len(t, args, 4)
+			require.Len(t, args, 5)
 			assert.NotNil(t, args.Get(0))
 			assert.NotNil(t, args.Get(1))
 			assert.Equal(t, containerName, args.String(2))
-			file, ok := args.Get(3).(command.File)
+			file, ok := args.Get(4).(command.File)
 			require.True(t, ok)
 			assert.Equal(t, int64(0777), file.Mode)
 			assert.Equal(t, mockFile["destination"], file.Destination)
-			assert.ElementsMatch(t, mockFile["data"], file.Data)
+			assert.Equal(t, mockFile["id"], file.ID)
 		}).Once()
 
 	usecase := NewDockerUseCase(service, nil, logrus.New())
@@ -865,8 +875,13 @@ func TestDockerUseCase_Execute_PutFileInContainer_Success(t *testing.T) {
 		ID:     "TEST",
 		Target: command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
-			Type:    command.Putfileincontainer,
-			Payload: command.FileAndContainer{ContainerName: "tester", File: command.File{Destination: "/test/path/", Data: []byte("contents"), Mode: 0777}},
+			Type: command.Putfileincontainer,
+			Payload: command.FileAndContainer{
+				ContainerName: "tester",
+				File: command.File{
+					Destination: "/test/path/",
+					ID:          testFileID,
+					Mode:        0777}},
 		},
 	})
 	assert.NoError(t, res.Error)
@@ -889,13 +904,14 @@ func TestDockerUseCase_putFileInContainerShim_MissingFields(t *testing.T) {
 	res := duc.putFileInContainerShim(nil, nil, cmd)
 	assert.Error(t, res.Error)
 
-	cmd.Order.Payload = map[string]interface{}{"file": map[string]interface{}{"destination": 2, "Data": []byte("contents")}}
+	cmd.Order.Payload = map[string]interface{}{"file": map[string]interface{}{
+		"destination": 2, "id": testFileID}}
 	res = duc.putFileInContainerShim(nil, nil, cmd)
 	assert.Error(t, res.Error)
 
 	cmd.Order.Payload = map[string]interface{}{"file": map[string]interface{}{
 		"destination": "/test/path/",
-		"data":        []byte("contents")}}
+		"data":        testFileID}}
 	res = duc.putFileInContainerShim(nil, nil, cmd)
 	assert.Error(t, res.Error)
 }
@@ -1023,7 +1039,7 @@ func TestDockerUseCase_Execute_PutFileInContainer_NoName_Fail(t *testing.T) {
 				ContainerName: "",
 				File: command.File{
 					Destination: "/test/path/",
-					Data:        []byte("contents"),
+					ID:          testFileID,
 					Mode:        0777,
 				},
 			},

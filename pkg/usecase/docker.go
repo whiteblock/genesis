@@ -268,7 +268,7 @@ func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli entity.
 		return entity.NewFatalResult("missing field \"container\"")
 	}
 	return duc.service.PlaceFileInContainer(ctx, duc.injectLabels(cli, cmd),
-		payload.ContainerName, payload.File)
+		payload.ContainerName, cmd.Target.TestnetID, payload.File)
 }
 
 func (duc dockerUseCase) emulationShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {

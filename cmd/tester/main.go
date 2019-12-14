@@ -147,18 +147,6 @@ func startContainer(name string, attach bool) command.Command {
 	}, command.Startcontainer)
 }
 
-func putFile(containerName string) command.Command {
-
-	return mintCommand(map[string]interface{}{
-		"container": containerName,
-		"file": command.File{
-			Mode:        0600,
-			Destination: "/foo/bar/baz",
-			Data:        []byte("test"),
-		},
-	}, "putFileInContainer")
-}
-
 func emulate(containerName string, networkName string) command.Command {
 	return mintCommand(command.Netconf{
 		Container: containerName,
@@ -245,7 +233,6 @@ func runTest(serv queue.AMQPService) error {
 			detachNetwork(networkNames[0], containerNames[0]),
 			emulate(containerNames[0], networkNames[1]),
 			emulate(containerNames[1], networkNames[1]),
-			putFile(containerNames[0]),
 		},
 		[]command.Command{
 			removeContainer(containerNames[0]),

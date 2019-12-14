@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/whiteblock/genesis/pkg/config"
+	"github.com/whiteblock/genesis/pkg/file"
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/usecase"
@@ -174,20 +175,6 @@ func pullImage(dockerUseCase usecase.DockerUseCase) {
 	log.WithFields(log.Fields{"res": res}).Info("pulled an image")
 }
 
-func putFile(dockerUseCase usecase.DockerUseCase) {
-
-	cmd := mintCommand(map[string]interface{}{
-		"container": "tester",
-		"file": command.File{
-			Mode:        0600,
-			Destination: "/foo/bar/baz",
-			Data:        []byte("test"),
-		},
-	}, "putFileInContainer")
-	res := dockerUseCase.Run(cmd)
-	log.WithFields(log.Fields{"res": res}).Info("placed a file")
-}
-
 func emulate(dockerUseCase usecase.DockerUseCase, containerName string, networkName string) {
 	cmd := mintCommand(command.Netconf{
 		Container: containerName,
@@ -210,11 +197,16 @@ func dockerTest(clean bool) {
 	}
 	log.SetLevel(lvl)
 
-	dockerRepository := repository.NewDockerRepository()
-
 	dockerUseCase := usecase.NewDockerUseCase(
-		service.NewDockerService(dockerRepository, conf.Docker, conf.GetLogger()),
-		validator.NewOrderValidator(), conf.GetLogger())
+		service.NewDockerService(
+			repository.NewDockerRepository(),
+			conf.Docker,
+			file.NewRemoteSources(
+				conf.FileHandler,
+				conf.GetLogger()),
+			conf.GetLogger()),
+		validator.NewOrderValidator(),
+		conf.GetLogger())
 
 	if clean {
 		removeContainer(dockerUseCase, "tester")
@@ -246,5 +238,4 @@ func dockerTest(clean bool) {
 	detachNetwork(dockerUseCase, "testnet", "tester")
 	emulate(dockerUseCase, "tester", "testnet2")
 	emulate(dockerUseCase, "tester2", "testnet2")
-	putFile(dockerUseCase)
 }
