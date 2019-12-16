@@ -122,14 +122,8 @@ func (da dockerRepository) EnsureImagePulled(ctx context.Context, cli entity.Cli
 	if err != nil {
 		return err
 	}
-
-	response, err := cli.ImageLoad(ctx, rd, true)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-
-	_, err = ioutil.ReadAll(response.Body) //It might get stuck here...
+	defer rd.Close()
+	_, err = ioutil.ReadAll(rd)
 	return err
 }
 
