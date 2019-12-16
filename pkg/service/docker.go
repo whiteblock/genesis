@@ -474,7 +474,7 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	rdr, err := ds.remote.GetTarReader(testnetID, file)
+	rdr, err := ds.remote.GetTarReader(cli.Labels["org"], file)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
