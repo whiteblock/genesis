@@ -233,7 +233,10 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 		})
 	}
 
-	return entity.NewSuccessResult()
+	return entity.NewSuccessResult().InjectMeta(map[string]interface{}{
+		"networks": dContainer.Network,
+		"name":     dContainer.Name,
+	})
 }
 
 //StartContainer attempts to start an already created docker container
