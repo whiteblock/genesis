@@ -233,7 +233,10 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 		})
 	}
 
-	return entity.NewSuccessResult()
+	return entity.NewSuccessResult().InjectMeta(map[string]interface{}{
+		"networks": dContainer.Network,
+		"name":     dContainer.Name,
+	})
 }
 
 //StartContainer attempts to start an already created docker container
@@ -242,17 +245,6 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 
 	ds.withFields(cli, logrus.Fields{"name": sc.Name}).Trace("starting container")
 	opts := types.ContainerStartOptions{}
-	if !sc.Attach || sc.Timeout < 1 {
-		//Attaching also requires a timeout
-		err := cli.ContainerStart(ctx, sc.Name, opts)
-		if err != nil {
-			return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
-				"name": sc.Name,
-				"type": "StartContainer",
-			})
-		}
-		return entity.NewSuccessResult()
-	}
 
 	err := cli.ContainerStart(ctx, sc.Name, opts)
 	if err != nil {
@@ -262,12 +254,21 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 		})
 	}
 
+	if !sc.Attach {
+		return entity.NewSuccessResult()
+	}
+	if sc.Timeout.IsInfinite() { // Trap to stop any further execution
+		return entity.NewTrapResult().InjectMeta(map[string]interface{}{
+			"name": sc.Name,
+		})
+	}
+
 	resChan := make(chan error)
-	ctx2, cancelFn := context.WithTimeout(context.Background(), sc.Timeout)
+	ctx2, cancelFn := context.WithTimeout(context.Background(), sc.Timeout.Duration)
 	defer cancelFn()
 
 	go func() {
-		startTime := time.Now().Add(sc.Timeout)
+		startTime := time.Now().Add(sc.Timeout.Duration)
 		for time.Now().Unix() < startTime.Unix() {
 			ds.withFields(cli, logrus.Fields{
 				"name": sc.Name}).Trace("checking container status")
@@ -294,7 +295,7 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 				"error": err.Error(),
 			})
 		}
-	case <-time.After(sc.Timeout):
+	case <-time.After(sc.Timeout.Duration):
 		ds.withFields(cli, logrus.Fields{"name": sc.Name}).Debug("timeout was reached")
 
 	}
