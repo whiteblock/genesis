@@ -128,6 +128,15 @@ func removeNetwork(dockerUseCase usecase.DockerUseCase, name string) {
 	log.WithFields(log.Fields{"res": res}).Info("removed a network")
 }
 
+func pullImage(dockerUseCase usecase.DockerUseCase, image string) {
+	cmd := mintCommand(command.PullImage{
+		Image: image,
+	}, command.Pullimage)
+
+	res := dockerUseCase.Run(cmd)
+	log.WithFields(log.Fields{"res": res}).Info("pulled an image")
+}
+
 func createContainer(dockerUseCase usecase.DockerUseCase, name string,
 	args []string, ports map[int]int) {
 	testContainer := command.Container{
@@ -165,14 +174,6 @@ func startContainer(dockerUseCase usecase.DockerUseCase, name string, attach boo
 	}, command.Startcontainer)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("started a container")
-}
-
-func pullImage(dockerUseCase usecase.DockerUseCase) {
-	cmd := mintCommand(map[string]string{
-		"image": "debian:latest",
-	}, command.Pullimage)
-	res := dockerUseCase.Run(cmd)
-	log.WithFields(log.Fields{"res": res}).Info("pulled an image")
 }
 
 func emulate(dockerUseCase usecase.DockerUseCase, containerName string, networkName string) {
@@ -218,7 +219,7 @@ func dockerTest(clean bool) {
 		removeNetwork(dockerUseCase, "testnet2")
 		return
 	}
-	pullImage(dockerUseCase)
+	pullImage(dockerUseCase, "nettools/ubuntools")
 
 	createVolume(dockerUseCase, "test_volume")
 	createNetwork(dockerUseCase, "testnet", 14)

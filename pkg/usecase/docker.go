@@ -71,7 +71,7 @@ func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
 		return stat
 	}
 	duc.withField(cmd, "command", cmd).Trace("running command")
-	ctx, cancelFn := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancelFn := context.WithTimeout(context.Background(), time.Minute*10)
 	defer cancelFn()
 	return duc.Execute(ctx, cmd)
 }

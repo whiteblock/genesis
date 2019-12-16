@@ -20,7 +20,6 @@ package repository
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -147,19 +146,6 @@ func TestDockerRepository_EnsureImagePulled(t *testing.T) {
 		assert.Equal(t, "Linux", ipo.Platform)
 	}).Times(len(nonExistingImages))
 
-	cli.On("ImageLoad", mock.Anything, mock.Anything, mock.Anything).Return(
-		types.ImageLoadResponse{
-			Body: ioutil.NopCloser(testReader),
-		}, nil).Run(
-		func(args mock.Arguments) {
-
-			require.Len(t, args, 3)
-			assert.Nil(t, args.Get(0))
-			rdr, ok := args.Get(1).(io.Reader)
-			require.True(t, ok)
-			require.NotNil(t, rdr)
-		}).Times(len(nonExistingImages))
-
 	ds := NewDockerRepository()
 
 	for _, img := range existingImages {
@@ -189,35 +175,6 @@ func TestDockerRepository_EnsureImagePulled_ImagePull_Failure(t *testing.T) {
 	ds := NewDockerRepository()
 
 	err := ds.EnsureImagePulled(nil, cli, "Foobar", "")
-	assert.Error(t, err)
-	cli.AssertExpectations(t)
-}
-
-func TestDockerRepository_EnsureImagePulled_ImageLoad_Failure(t *testing.T) {
-	testImageList := []types.ImageSummary{
-		types.ImageSummary{RepoDigests: []string{"test0"}, RepoTags: []string{"test2"}},
-		types.ImageSummary{RepoDigests: []string{"test3"}, RepoTags: []string{"test4"}},
-	}
-
-	testReader := strings.NewReader("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
-
-	cli := new(entityMock.Client)
-	cli.On("ImageList", mock.Anything, mock.Anything).Return(
-		testImageList, nil).Once()
-
-	cli.On("ImagePull", mock.Anything, mock.Anything, mock.Anything).Return(
-		ioutil.NopCloser(testReader), nil).Run(func(args mock.Arguments) {
-		testReader.Reset("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
-	}).Once()
-
-	cli.On("ImageLoad", mock.Anything, mock.Anything, mock.Anything).Return(
-		types.ImageLoadResponse{}, fmt.Errorf("err")).Run(
-		func(args mock.Arguments) {
-		}).Once()
-
-	ds := NewDockerRepository()
-
-	err := ds.EnsureImagePulled(nil, cli, "FOOBAR", "")
 	assert.Error(t, err)
 	cli.AssertExpectations(t)
 }
