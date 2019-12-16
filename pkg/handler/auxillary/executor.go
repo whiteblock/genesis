@@ -72,7 +72,10 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 					time.Sleep(exec.conf.RetryDelay)
 					continue
 				}
-				resultChan <- res
+				resultChan <- res.InjectMeta(map[string]interface{}{
+					"command": cmd,
+					"attempt": i,
+				})
 				break
 			}
 			if i == exec.conf.ConnectionRetries {
