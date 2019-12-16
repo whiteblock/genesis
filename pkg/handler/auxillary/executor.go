@@ -79,7 +79,10 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 				break
 			}
 			if i == exec.conf.ConnectionRetries {
-				resultChan <- entity.NewFatalResult("could not connect to docker")
+				resultChan <- entity.NewFatalResult("could not connect to docker").InjectMeta(
+					map[string]interface{}{
+						"command": cmd,
+					})
 			}
 		}(cmd)
 	}
@@ -94,7 +97,9 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 				exec.log.WithField("result", result).Error("a command had a fatal error")
 				if exec.conf.DebugMode {
 					exec.log.Info("trapping fatal error due to debug mode")
-					return entity.NewTrapResult()
+					return entity.NewTrapResult().InjectMeta(map[string]interface{}{
+						"parent": result,
+					})
 				}
 				return result
 			}
