@@ -64,7 +64,7 @@ func (dh deliveryHandler) sleepy(msg amqp.Delivery) {
 	if _, ok := pub.Headers["retryCount"].(int64); !ok {
 		return
 	}
-	if pub.Headers["retryCount"].(int64) > 1 {
+	if pub.Headers["retryCount"].(int64) > 0 {
 		time.Sleep(5 * time.Second)
 	}
 }
