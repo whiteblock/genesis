@@ -20,6 +20,7 @@ package handler
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/handler/auxillary"
@@ -52,8 +53,26 @@ func NewDeliveryHandler(
 	return &deliveryHandler{aux: aux, log: log, msgUtil: msgUtil}
 }
 
+func (dh deliveryHandler) sleepy(msg amqp.Delivery) {
+	if pub.Headers != nil {
+		return
+	}
+	if _,ok := pub.Headers["retryCount"]; !ok {
+		return
+	}
+
+	if _, ok := pub.Headers["retryCount"].(int64); !ok {
+		return
+	}
+	if pub.Headers["retryCount"].(int64) > 1 {
+		time.Sleep(5 * time.Second)
+	}
+}
+
 //Process attempts to extract the command and execute it
 func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, result entity.Result) {
+	dh.sleepy(msg)
+
 	var allCmds [][]command.Command
 	err := json.Unmarshal(msg.Body, &allCmds)
 	if err != nil {
