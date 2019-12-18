@@ -286,9 +286,9 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 	select {
 	case err := <-resChan:
 		if err != nil {
-			if strings.Contains(err.Error(), "No such container") {
+			/*if strings.Contains(err.Error(), "No such container") {
 				return entity.NewSuccessResult()
-			}
+			}*/
 			return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
 				"name":  sc.Name,
 				"type":  "StartContainer",
@@ -356,7 +356,7 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli entity.DockerCli,
 	_, err := cli.NetworkCreate(ctx, net.Name, networkCreate)
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
-			ds.withFields(cli, logrus.Fields{"name": net.Name, "error": err}).Error("duplicate error")
+			ds.withFields(cli, logrus.Fields{"name": net.Name, "error": err}).Warn("duplicate network")
 			return entity.NewSuccessResult()
 		}
 		return entity.NewErrorResult(err)
