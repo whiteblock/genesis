@@ -63,7 +63,7 @@ type DockerService interface {
 	CreateVolume(ctx context.Context, cli entity.DockerCli, volume command.Volume) entity.Result
 	RemoveVolume(ctx context.Context, cli entity.DockerCli, name string) entity.Result
 	PlaceFileInContainer(ctx context.Context, cli entity.DockerCli,
-		containerName string, testnetID string, file command.File) entity.Result
+		containerName string, file command.File) entity.Result
 	Emulation(ctx context.Context, cli entity.DockerCli, netem command.Netconf) entity.Result
 	SwarmCluster(ctx context.Context, cli entity.DockerCli, swarm command.SetupSwarm) entity.Result
 	PullImage(ctx context.Context, cli entity.DockerCli, imagePull command.PullImage) entity.Result
@@ -430,6 +430,12 @@ func (ds dockerService) DetachNetwork(ctx context.Context, cli entity.DockerCli,
 
 	err := cli.NetworkDisconnect(ctx, networkName, containerName, true)
 	if err != nil {
+		if strings.Contains(err.Error(), "is not connected to the network") {
+			ds.withField(cli, "error", err).Info("ignoring failure on detach command")
+			return entity.NewSuccessResult().InjectMeta(map[string]interface{}{
+				"failure": "ignored",
+			})
+		}
 		return entity.NewErrorResult(err)
 	}
 	return entity.NewSuccessResult()
@@ -462,7 +468,7 @@ func (ds dockerService) RemoveVolume(ctx context.Context, cli entity.DockerCli, 
 }
 
 func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.DockerCli,
-	containerName string, testnetID string, file command.File) entity.Result {
+	containerName string, file command.File) entity.Result {
 
 	cntr, err := ds.repo.GetContainerByName(ctx, cli, containerName)
 	if err != nil {

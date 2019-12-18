@@ -41,6 +41,14 @@ type DockerUseCase interface {
 	Execute(ctx context.Context, cmd command.Command) entity.Result
 }
 
+var (
+	ErrEmptyFieldName      = entity.NewFatalResult("empty field \"name\"")
+	ErrEmptyFieldContainer = entity.NewFatalResult("empty field \"container\"")
+	ErrEmptyFieldImage     = entity.NewFatalResult("empty field \"image\"")
+	ErrEmptyFieldHosts     = entity.NewFatalResult("empty field \"hosts\"")
+	ErrEmptyFieldNetwork   = entity.NewFatalResult("empty field \"network\"")
+)
+
 type dockerUseCase struct {
 	valid   validator.OrderValidator
 	service service.DockerService
@@ -164,7 +172,7 @@ func (duc dockerUseCase) startContainerShim(ctx context.Context, cli entity.Clie
 		return entity.NewFatalResult(err)
 	}
 	if len(sc.Name) == 0 {
-		return entity.NewFatalResult("empty field \"name\"")
+		return ErrEmptyFieldName
 	}
 	return duc.service.StartContainer(ctx, duc.injectLabels(cli, cmd), sc)
 }
@@ -176,7 +184,7 @@ func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli entity.Cli
 		return entity.NewFatalResult(err)
 	}
 	if payload.Name == "" {
-		return entity.NewFatalResult("empty field \"name\"")
+		return ErrEmptyFieldName
 	}
 	return duc.service.RemoveContainer(ctx, duc.injectLabels(cli, cmd), payload.Name)
 }
@@ -202,10 +210,10 @@ func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli entity.Clien
 		return entity.NewErrorResult(err)
 	}
 	if len(payload.ContainerName) == 0 {
-		return entity.NewFatalResult(fmt.Errorf("empty field \"container\""))
+		return ErrEmptyFieldContainer
 	}
 	if len(payload.Network) == 0 {
-		return entity.NewFatalResult(fmt.Errorf("empty field \"network\""))
+		return ErrEmptyFieldNetwork
 	}
 	return duc.service.AttachNetwork(ctx, duc.injectLabels(cli, cmd), payload.Network, payload.ContainerName)
 }
@@ -218,6 +226,12 @@ func (duc dockerUseCase) detachNetworkShim(ctx context.Context,
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
+	if len(payload.ContainerName) == 0 {
+		return ErrEmptyFieldContainer
+	}
+	if len(payload.Network) == 0 {
+		return ErrEmptyFieldNetwork
+	}
 	return duc.service.DetachNetwork(ctx, duc.injectLabels(cli, cmd),
 		payload.Network, payload.ContainerName)
 }
@@ -229,7 +243,7 @@ func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli entity.Clien
 		return entity.NewFatalResult(err)
 	}
 	if payload.Name == "" {
-		return entity.NewFatalResult("empty field \"name\"")
+		return ErrEmptyFieldName
 	}
 	return duc.service.RemoveNetwork(ctx, duc.injectLabels(cli, cmd), payload.Name)
 }
@@ -254,7 +268,7 @@ func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli entity.Client
 		return entity.NewFatalResult(err)
 	}
 	if payload.Name == "" {
-		return entity.NewFatalResult("empty field \"name\"")
+		return ErrEmptyFieldName
 	}
 	return duc.service.RemoveVolume(ctx, duc.injectLabels(cli, cmd), payload.Name)
 }
@@ -265,10 +279,10 @@ func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli entity.
 		return entity.NewFatalResult(err)
 	}
 	if len(payload.ContainerName) == 0 {
-		return entity.NewFatalResult("missing field \"container\"")
+		return ErrEmptyFieldContainer
 	}
 	return duc.service.PlaceFileInContainer(ctx, duc.injectLabels(cli, cmd),
-		payload.ContainerName, cmd.Target.TestnetID, payload.File)
+		payload.ContainerName, payload.File)
 }
 
 func (duc dockerUseCase) emulationShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
@@ -287,7 +301,7 @@ func (duc dockerUseCase) swarmSetupShim(ctx context.Context, cli entity.Client, 
 		return entity.NewFatalResult(err)
 	}
 	if len(payload.Hosts) == 0 {
-		return entity.NewFatalResult("hosts cannot be empty")
+		return ErrEmptyFieldHosts
 	}
 	return duc.service.SwarmCluster(ctx, duc.injectLabels(cli, cmd), payload)
 }
@@ -299,7 +313,7 @@ func (duc dockerUseCase) pullImageShim(ctx context.Context, cli entity.Client, c
 		return entity.NewFatalResult(err)
 	}
 	if len(payload.Image) == 0 {
-		return entity.NewFatalResult("image cannot be empty")
+		return ErrEmptyFieldImage
 	}
 	return duc.service.PullImage(ctx, duc.injectLabels(cli, cmd), payload)
 }

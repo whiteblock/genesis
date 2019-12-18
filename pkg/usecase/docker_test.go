@@ -854,15 +854,15 @@ func TestDockerUseCase_Execute_PutFileInContainer_Success(t *testing.T) {
 	containerName := "tester"
 	service := new(mockService.DockerService)
 	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil)
-	service.On("PlaceFileInContainer", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+	service.On("PlaceFileInContainer", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything).Return(entity.Result{Type: entity.SuccessType}).Run(
 		func(args mock.Arguments) {
 
-			require.Len(t, args, 5)
+			require.Len(t, args, 4)
 			assert.NotNil(t, args.Get(0))
 			assert.NotNil(t, args.Get(1))
 			assert.Equal(t, containerName, args.String(2))
-			file, ok := args.Get(4).(command.File)
+			file, ok := args.Get(3).(command.File)
 			require.True(t, ok)
 			assert.Equal(t, int64(0777), file.Mode)
 			assert.Equal(t, mockFile["destination"], file.Destination)

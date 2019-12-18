@@ -395,7 +395,6 @@ func TestDockerService_RemoveContainer(t *testing.T) {
 
 func TestDockerService_PlaceFileInContainer(t *testing.T) {
 	testDir := "/pkg"
-	testnet := "foobar"
 	fileID := "barfoo"
 	testContainer := types.Container{Names: []string{"test1"}, ID: "id1"}
 
@@ -425,11 +424,11 @@ func TestDockerService_PlaceFileInContainer(t *testing.T) {
 			assert.Equal(t, testContainer.Names[0], args.String(2))
 		}).Once()
 	fs := new(fileMock.RemoteSources)
-	fs.On("GetTarReader", testnet, mock.Anything).Return(strings.NewReader("barfoo"), nil).Once()
+	fs.On("GetTarReader", mock.Anything, mock.Anything).Return(strings.NewReader("barfoo"), nil).Once()
 	ds := NewDockerService(repo, config.Docker{}, fs, logrus.New())
 
 	res := ds.PlaceFileInContainer(nil, entity.DockerCli{Client: cli},
-		testContainer.Names[0], testnet, command.File{
+		testContainer.Names[0], command.File{
 			Destination: testDir,
 			ID:          fileID,
 		})
@@ -441,26 +440,8 @@ func TestDockerService_PlaceFileInContainer(t *testing.T) {
 }
 
 func TestDockerService_AttachNetwork(t *testing.T) {
-	cntr := types.Container{Names: []string{"test1"}, ID: "id1"}
-	net := types.NetworkResource{Name: "test2", ID: "id2"}
-
-	repo := new(repoMock.DockerRepository)
-	repo.On("GetContainerByName", mock.Anything, mock.Anything, mock.Anything).Return(cntr, nil).Run(
-		func(args mock.Arguments) {
-
-			require.Len(t, args, 3)
-			assert.Nil(t, args.Get(0))
-			assert.Equal(t, cntr.Names[0], args.String(2))
-
-		}).Once()
-
-	repo.On("GetNetworkByName", mock.Anything, mock.Anything, mock.Anything).Return(net, nil).Run(
-		func(args mock.Arguments) {
-
-			require.Len(t, args, 3)
-			assert.Nil(t, args.Get(0))
-			assert.Equal(t, net.Name, args.String(2))
-		}).Once()
+	netName := "test2"
+	cntrName := "test1"
 
 	cli := new(entityMock.Client)
 	cli.On("NetworkConnect", mock.Anything, mock.Anything, mock.Anything,
@@ -468,44 +449,24 @@ func TestDockerService_AttachNetwork(t *testing.T) {
 
 		require.Len(t, args, 4)
 		assert.Nil(t, args.Get(0))
-		assert.Equal(t, net.ID, args.String(1))
-		assert.Equal(t, cntr.ID, args.String(2))
+		assert.Equal(t, netName, args.String(1))
+		assert.Equal(t, cntrName, args.String(2))
 		epSettings, ok := args.Get(3).(*network.EndpointSettings)
 		require.True(t, ok)
 		require.NotNil(t, epSettings)
-		assert.Equal(t, net.ID, epSettings.NetworkID)
 	}).Once()
 
-	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
+	ds := NewDockerService(nil, config.Docker{}, nil, logrus.New())
 
-	res := ds.AttachNetwork(nil, entity.DockerCli{Client: cli}, net.Name, cntr.Names[0])
+	res := ds.AttachNetwork(nil, entity.DockerCli{Client: cli}, netName, cntrName)
 	assert.NoError(t, res.Error)
 
 	cli.AssertExpectations(t)
-	repo.AssertExpectations(t)
 }
 
 func TestDockerService_DetachNetwork(t *testing.T) {
-	cntr := types.Container{Names: []string{"test1"}, ID: "id1"}
-	net := types.NetworkResource{Name: "test2", ID: "id2"}
-
-	repo := new(repoMock.DockerRepository)
-	repo.On("GetContainerByName", mock.Anything, mock.Anything, mock.Anything).Return(cntr, nil).Run(
-		func(args mock.Arguments) {
-
-			require.Len(t, args, 3)
-			assert.Nil(t, args.Get(0))
-			assert.Equal(t, cntr.Names[0], args.String(2))
-
-		}).Once()
-
-	repo.On("GetNetworkByName", mock.Anything, mock.Anything, mock.Anything).Return(net, nil).Run(
-		func(args mock.Arguments) {
-
-			require.Len(t, args, 3)
-			assert.Nil(t, args.Get(0))
-			assert.Equal(t, net.Name, args.String(2))
-		}).Once()
+	netName := "test2"
+	cntrName := "test1"
 
 	cli := new(entityMock.Client)
 	cli.On("NetworkDisconnect", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
@@ -513,18 +474,17 @@ func TestDockerService_DetachNetwork(t *testing.T) {
 
 		require.Len(t, args, 4)
 		assert.Nil(t, args.Get(0))
-		assert.Equal(t, net.ID, args.String(1))
-		assert.Equal(t, cntr.ID, args.String(2))
+		assert.Equal(t, netName, args.String(1))
+		assert.Equal(t, cntrName, args.String(2))
 		assert.True(t, args.Bool(3))
 	}).Once()
 
-	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
+	ds := NewDockerService(nil, config.Docker{}, nil, logrus.New())
 
-	res := ds.DetachNetwork(nil, entity.DockerCli{Client: cli}, net.Name, cntr.Names[0])
+	res := ds.DetachNetwork(nil, entity.DockerCli{Client: cli}, netName, cntrName)
 	assert.NoError(t, res.Error)
 
 	cli.AssertExpectations(t)
-	repo.AssertExpectations(t)
 }
 
 func TestDockerService_CreateVolume(t *testing.T) {
