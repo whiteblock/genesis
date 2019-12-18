@@ -20,7 +20,6 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -47,6 +46,8 @@ var (
 	ErrEmptyFieldImage     = entity.NewFatalResult("empty field \"image\"")
 	ErrEmptyFieldHosts     = entity.NewFatalResult("empty field \"hosts\"")
 	ErrEmptyFieldNetwork   = entity.NewFatalResult("empty field \"network\"")
+	ErrInvalidTargetIP     = entity.NewFatalResult("invalid target ip")
+	ErrUnknownCommandType  = entity.NewFatalResult("unknown command type")
 )
 
 type dockerUseCase struct {
@@ -121,13 +122,15 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 	case command.Pullimage:
 		return duc.pullImageShim(ctx, cli, cmd)
 	}
-	return entity.NewFatalResult(fmt.Errorf("unknown command type: %s", cmd.Order.Type))
+	return ErrUnknownCommandType.InjectMeta(map[string]interface{}{"type": cmd.Order.Type})
 }
 
 func (duc dockerUseCase) validationCheck(cmd command.Command) (result entity.Result, ok bool) {
 	ok = false
 	if len(cmd.Target.IP) == 0 || cmd.Target.IP == "0.0.0.0" {
-		result = entity.NewFatalResult(fmt.Sprintf(`invalid target ip "%s"`, cmd.Target.IP))
+		result = ErrInvalidTargetIP.InjectMeta(map[string]interface{}{
+			"ip": cmd.Target.IP,
+		})
 		return
 	}
 	ok = true
