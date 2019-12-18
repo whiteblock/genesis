@@ -99,7 +99,7 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 	}
 
 	if result.IsTrap() {
-		dh.log.Debug("propogating the trap")
+		dh.log.WithField("result", result).Debug("propogating the trap")
 		return
 	}
 

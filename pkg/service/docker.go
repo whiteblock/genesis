@@ -412,14 +412,7 @@ func (ds dockerService) getNetworkAndContainerByName(ctx context.Context, cli en
 func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli, networkName string,
 	containerName string) entity.Result {
 
-	cntr, net, err := ds.getNetworkAndContainerByName(ctx, cli, networkName, containerName)
-	if err != nil {
-		return entity.NewFatalResult(err)
-	}
-
-	err = cli.NetworkConnect(ctx, net.ID, cntr.ID, &network.EndpointSettings{
-		NetworkID: net.ID,
-	})
+	err := cli.NetworkConnect(ctx, networkName, containerName, &network.EndpointSettings{})
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
@@ -429,12 +422,7 @@ func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli,
 func (ds dockerService) DetachNetwork(ctx context.Context, cli entity.DockerCli,
 	networkName string, containerName string) entity.Result {
 
-	cntr, net, err := ds.getNetworkAndContainerByName(ctx, cli, networkName, containerName)
-	if err != nil {
-		return entity.NewFatalResult(err)
-	}
-
-	err = cli.NetworkDisconnect(ctx, net.ID, cntr.ID, true)
+	err := cli.NetworkDisconnect(ctx, networkName, containerName, true)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
