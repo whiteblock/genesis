@@ -414,6 +414,12 @@ func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli,
 
 	err := cli.NetworkConnect(ctx, networkName, containerName, &network.EndpointSettings{})
 	if err != nil {
+		if strings.Contains(err.Error(), "is already attached to network") {
+			ds.withField(cli, "error", err).Info("ignoring failure on deplicate network attach command")
+			return entity.NewSuccessResult().InjectMeta(map[string]interface{}{
+				"failure": "ignored",
+			})
+		}
 		return entity.NewErrorResult(err)
 	}
 	return entity.NewSuccessResult()
