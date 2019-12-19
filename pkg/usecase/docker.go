@@ -41,13 +41,26 @@ type DockerUseCase interface {
 }
 
 var (
-	ErrEmptyFieldName      = entity.NewFatalResult("empty field \"name\"")
+	// ErrEmptyFieldName missing a name field
+	ErrEmptyFieldName = entity.NewFatalResult("empty field \"name\"")
+
+	// ErrEmptyFieldContainer missing a container field
 	ErrEmptyFieldContainer = entity.NewFatalResult("empty field \"container\"")
-	ErrEmptyFieldImage     = entity.NewFatalResult("empty field \"image\"")
-	ErrEmptyFieldHosts     = entity.NewFatalResult("empty field \"hosts\"")
-	ErrEmptyFieldNetwork   = entity.NewFatalResult("empty field \"network\"")
-	ErrInvalidTargetIP     = entity.NewFatalResult("invalid target ip")
-	ErrUnknownCommandType  = entity.NewFatalResult("unknown command type")
+
+	// ErrEmptyFieldImage missing an image field
+	ErrEmptyFieldImage = entity.NewFatalResult("empty field \"image\"")
+
+	// ErrEmptyFieldHosts missing hosts field
+	ErrEmptyFieldHosts = entity.NewFatalResult("empty field \"hosts\"")
+
+	// ErrEmptyFieldNetwork missing network field
+	ErrEmptyFieldNetwork = entity.NewFatalResult("empty field \"network\"")
+
+	// ErrInvalidTargetIP target IP is not a dest IP or is malformed
+	ErrInvalidTargetIP = entity.NewFatalResult("invalid target ip")
+
+	// ErrUnknownCommandType the given command is of an unknown type
+	ErrUnknownCommandType = entity.NewFatalResult("unknown command type")
 )
 
 type dockerUseCase struct {
@@ -139,7 +152,7 @@ func (duc dockerUseCase) validationCheck(cmd command.Command) (result entity.Res
 
 func (duc dockerUseCase) injectLabels(cli entity.Client, cmd command.Command) entity.DockerCli {
 	out := entity.DockerCli{Client: cli, Labels: map[string]string{}}
-	out.Labels["testRun"] = cmd.Target.TestnetID
+	out.Labels["testRun"] = cmd.Target.TestID
 	duc.withField(cmd, "meta", cmd.Meta).Trace("got the meta from the command")
 	mergo.Map(&out.Labels, cmd.Meta)
 

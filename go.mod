@@ -19,16 +19,17 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/afero v1.2.2 // indirect
+	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.6.1
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
 	github.com/stretchr/testify v1.4.0
 	github.com/whiteblock/amqp v1.0.5
-	github.com/whiteblock/definition v0.0.0-20191217155840-145d31f74e82
-	github.com/whiteblock/utility v0.0.0-20191204153325-8c91068475f3
+	github.com/whiteblock/definition v0.0.0-20191219164953-a24fd5767f92
+	github.com/whiteblock/utility v0.0.0-20191219082712-ec05311a5e93
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 // indirect
+	golang.org/x/sys v0.0.0-20191218084908-4a24b4065292 // indirect
 	google.golang.org/genproto v0.0.0-20191216205247-b31c10ee225f // indirect
-	google.golang.org/grpc v1.25.1 // indirect
+	google.golang.org/grpc v1.26.0 // indirect
 )
