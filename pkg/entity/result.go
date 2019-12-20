@@ -66,6 +66,20 @@ func (res Result) IsFatal() bool {
 	return res.Error != nil && res.Type == FatalType
 }
 
+// Trap turns this result into a trapping result
+func (res Result) Trap() Result {
+	res.Type = TrapType
+	return res
+}
+
+// Fatal turns this result into a fatal result, useful for when you want to change
+// the resulting action, but want to preserve the information in the result.
+func (res Result) Fatal(err error) Result {
+	res.Type = FatalType
+	res.Error = err
+	return res
+}
+
 // IsRequeue returns true if this result indicates that the command should be retried at a
 // later time
 func (res Result) IsRequeue() bool {

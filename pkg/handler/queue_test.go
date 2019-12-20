@@ -29,6 +29,7 @@ import (
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/whiteblock/definition/command"
 	utilityMocks "github.com/whiteblock/genesis/mocks/amqp"
 )
@@ -45,7 +46,7 @@ func TestDeliveryHandler_Process_Successful(t *testing.T) {
 
 	dh := NewDeliveryHandler(aux, util, logrus.New())
 
-	cmd := [][]command.Command{[]command.Command{command.Command{
+	cmd := command.Instructions{Commands: [][]command.Command{[]command.Command{command.Command{
 		Order: command.Order{
 			Type:    "createContainer",
 			Payload: map[string]interface{}{},
@@ -53,10 +54,10 @@ func TestDeliveryHandler_Process_Successful(t *testing.T) {
 		Target: command.Target{
 			IP: "127.0.0.1",
 		},
-	}}}
+	}}}}
 
 	body, err := json.Marshal(cmd)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, res := dh.Process(amqp.Delivery{Body: body})
 	assert.NoError(t, res.Error)
@@ -81,7 +82,7 @@ func TestDeliveryHandler_Process_Unsuccessful(t *testing.T) {
 func TestDeliveryHandler_Process_NoCmds_Failures(t *testing.T) {
 	dh := NewDeliveryHandler(nil, nil, logrus.New())
 
-	cmd := [][]command.Command{}
+	cmd := command.Instructions{}
 
 	body, err := json.Marshal(cmd)
 	assert.NoError(t, err)
@@ -98,7 +99,7 @@ func TestDeliveryHandler_Process_Multiple_Commands_Successful(t *testing.T) {
 
 	dh := NewDeliveryHandler(aux, util, logrus.New())
 
-	cmd := [][]command.Command{
+	cmd := command.Instructions{Commands: [][]command.Command{
 		[]command.Command{
 			command.Command{
 				Order: command.Order{
@@ -121,7 +122,7 @@ func TestDeliveryHandler_Process_Multiple_Commands_Successful(t *testing.T) {
 				},
 			},
 		},
-	}
+	}}
 
 	body, err := json.Marshal(cmd)
 	assert.NoError(t, err)
@@ -141,7 +142,7 @@ func TestDeliveryHandler_Process_Execute_Nonfatal_Failure(t *testing.T) {
 
 	dh := NewDeliveryHandler(aux, util, logrus.New())
 
-	cmd := [][]command.Command{
+	cmd := command.Instructions{Commands: [][]command.Command{
 		[]command.Command{
 			command.Command{
 				Order: command.Order{
@@ -153,7 +154,7 @@ func TestDeliveryHandler_Process_Execute_Nonfatal_Failure(t *testing.T) {
 				},
 			},
 		},
-	}
+	}}
 
 	body, err := json.Marshal(cmd)
 	assert.NoError(t, err)
@@ -172,7 +173,7 @@ func TestDeliveryHandler_Process_Execute_Fatal_Failure(t *testing.T) {
 	util.On("CreateMessage", mock.Anything).Return(amqp.Publishing{}, nil).Once()
 	dh := NewDeliveryHandler(aux, util, logrus.New())
 
-	cmd := [][]command.Command{
+	cmd := command.Instructions{Commands: [][]command.Command{
 		[]command.Command{
 			command.Command{
 				Order: command.Order{
@@ -184,7 +185,7 @@ func TestDeliveryHandler_Process_Execute_Fatal_Failure(t *testing.T) {
 				},
 			},
 		},
-	}
+	}}
 
 	body, err := json.Marshal(cmd)
 	assert.NoError(t, err)

@@ -43,9 +43,8 @@ func mintCommand(i interface{}, orderType command.OrderType) command.Command {
 		panic(err)
 	}
 	cmd := command.Command{
-		ID:        "TEST",
-		Timestamp: time.Now().Unix() - 5,
-		Target:    command.Target{IP: "127.0.0.1"},
+		ID:     "TEST",
+		Target: command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type: orderType,
 		},
