@@ -20,6 +20,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/whiteblock/genesis/pkg/entity"
@@ -73,27 +74,37 @@ func (dh deliveryHandler) sleepy(msg amqp.Delivery) {
 func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, result entity.Result) {
 	dh.sleepy(msg)
 
-	var allCmds [][]command.Command
-	err := json.Unmarshal(msg.Body, &allCmds)
+	var inst command.Instructions
+	err := json.Unmarshal(msg.Body, &inst)
 	if err != nil {
-		dh.log.WithField("error", err).Errorf("received a malformed command sausage")
-		return amqp.Publishing{}, entity.NewFatalResult(err)
+		dh.log.WithField("error", err).Error("received malformed instructions")
+		return amqp.Publishing{}, entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
+			"data": msg.Body,
+		})
 	}
 
-	if len(allCmds) == 0 {
-		dh.log.Error("recieved an empty command sausage")
-		return amqp.Publishing{}, entity.NewFatalResult("nothing to execute")
+	cmds, err := inst.Next()
+
+	isLastOne := false
+	if err != nil {
+		if !errors.Is(err, command.ErrDone) {
+			dh.log.Error(err)
+			return amqp.Publishing{}, entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
+				"instructions": inst,
+			})
+		}
+		isLastOne = true
 	}
 
-	result = dh.aux.ExecuteCommands(allCmds[0])
+	result = dh.aux.ExecuteCommands(cmds)
 	if result.IsFatal() {
 		out, err = dh.msgUtil.CreateMessage(biome.DestroyBiome{
-			TestID: allCmds[0][0].TestID(),
+			TestID: inst.ID,
 		})
 		dh.log.WithFields(logrus.Fields{
 			"result":  result,
 			"error":   result.Error.Error(),
-			"testnet": allCmds[0][0].TestID(),
+			"testnet": inst.ID,
 		}).Error("execution resulted in a fatal error")
 		return
 	}
@@ -104,16 +115,20 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 	}
 
 	if result.IsSuccess() {
-		if len(allCmds) != 1 {
-			result = entity.NewRequeueResult()
-			dh.log.WithField("remaining", len(allCmds)-1).Debug("creating message for next round")
-			out, err = dh.msgUtil.GetNextMessage(msg, allCmds[1:])
-		} else {
+		if isLastOne {
+			if inst.NeverTerminate() {
+				result = result.Trap()
+				return
+			}
 			dh.log.Debug("creating completion message")
 			result = entity.NewAllDoneResult()
 			out, err = dh.msgUtil.CreateMessage(biome.DestroyBiome{
-				TestID: allCmds[0][0].TestID(),
+				TestID: inst.ID,
 			})
+		} else {
+			result = entity.NewRequeueResult()
+			dh.log.WithField("remaining", len(inst.Commands)).Debug("creating message for next round")
+			out, err = dh.msgUtil.GetNextMessage(msg, inst)
 		}
 	} else {
 		dh.log.WithField("result", result).Debug("something went wrong, getting kickback message")
@@ -123,7 +138,7 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 		dh.log.WithFields(logrus.Fields{
 			"result": result,
 			"err":    err}).Error("a fatal error occured, flagging as fatal")
-		result = entity.NewFatalResult(err)
+		result = result.Fatal(err)
 	}
 	return
 }
