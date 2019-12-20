@@ -152,7 +152,6 @@ func (duc dockerUseCase) validationCheck(cmd command.Command) (result entity.Res
 
 func (duc dockerUseCase) injectLabels(cli entity.Client, cmd command.Command) entity.DockerCli {
 	out := entity.DockerCli{Client: cli, Labels: map[string]string{}}
-	out.Labels["testRun"] = cmd.Target.TestID
 	duc.withField(cmd, "meta", cmd.Meta).Trace("got the meta from the command")
 	mergo.Map(&out.Labels, cmd.Meta)
 
