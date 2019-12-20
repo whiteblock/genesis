@@ -99,6 +99,10 @@ func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
 		timeout, err = cmd.Parent().GetTimeRemaining()
 		if err != nil || timeout == command.NoTimeout {
 			timeout = time.Minute * 10
+		} else {
+			duc.withFields(cmd, logrus.Fields{
+				"timeout": timeout,
+			}).Debug("changed the timeout due to a setting")
 		}
 	}
 
