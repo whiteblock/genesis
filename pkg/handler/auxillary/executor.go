@@ -44,6 +44,9 @@ type executor struct {
 	log     logrus.Ext1FieldLogger
 }
 
+// ErrDockerConnFailed is the error for when the docker daemon is unreachable
+var ErrDockerConnFailed = entity.NewFatalResult("could not connect to docker")
+
 // NewExecutor creates a new DeliveryHandler which uses the given usecase for
 // executing the extracted command
 func NewExecutor(
@@ -58,8 +61,8 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 	sem := semaphore.NewWeighted(exec.conf.LimitPerTest)
 	for _, cmd := range cmds {
 		go func(cmd command.Command) {
-			i := 0
-			for ; i < exec.conf.ConnectionRetries; i++ {
+
+			for i := 0; i < exec.conf.ConnectionRetries; i++ {
 				sem.Acquire(context.Background(), 1)
 				res := exec.usecase.Run(cmd)
 				sem.Release(1)
@@ -76,37 +79,34 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 					"command": cmd,
 					"attempt": i,
 				})
-				break
+				return
 			}
-			if i == exec.conf.ConnectionRetries {
-				resultChan <- entity.NewFatalResult("could not connect to docker").InjectMeta(
-					map[string]interface{}{
-						"command": cmd,
-					})
-			}
+			resultChan <- ErrDockerConnFailed.InjectMeta(
+				map[string]interface{}{
+					"command": cmd,
+				})
 		}(cmd)
 	}
 	var err error
 	isTrap := false
 	for range cmds {
 		result := <-resultChan
-		exec.log.WithFields(logrus.Fields{"success": result.IsSuccess()}).Trace("finished processing a command")
+		entry := exec.log.WithField("result", result)
+		entry.Trace("finished processing a command")
 		if !result.IsSuccess() {
 
 			if result.IsFatal() {
-				exec.log.WithField("result", result).Error("a command had a fatal error")
+				entry.Error("a command had a fatal error")
 				if exec.conf.DebugMode {
 					exec.log.Info("trapping fatal error due to debug mode")
-					return entity.NewTrapResult().InjectMeta(map[string]interface{}{
-						"parent": result,
-					})
+					return result.Trap()
 				}
 				return result
 			}
-			exec.log.WithField("result", result).Warn("a command failed to execute")
+			entry.Warn("a command failed to execute")
 			err = fmt.Errorf("%v;%v", err, result.Error.Error())
 		} else if result.IsTrap() {
-			exec.log.WithField("result", result).Info("a command raised a trap")
+			entry.Info("a command raised a trap")
 			isTrap = true
 		}
 	}

@@ -93,7 +93,20 @@ func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
 		return stat
 	}
 	duc.withField(cmd, "command", cmd).Trace("running command")
-	ctx, cancelFn := context.WithTimeout(context.Background(), time.Minute*10)
+	var err error
+	timeout := time.Minute * 10
+	if cmd.Parent() != nil {
+		timeout, err = cmd.Parent().GetTimeRemaining()
+		if err != nil || timeout == command.NoTimeout {
+			timeout = time.Minute * 10
+		} else {
+			duc.withFields(cmd, logrus.Fields{
+				"timeout": timeout,
+			}).Debug("changed the timeout due to a setting")
+		}
+	}
+
+	ctx, cancelFn := context.WithTimeout(context.Background(), timeout)
 	defer cancelFn()
 	return duc.Execute(ctx, cmd)
 }
@@ -152,14 +165,14 @@ func (duc dockerUseCase) validationCheck(cmd command.Command) (result entity.Res
 
 func (duc dockerUseCase) injectLabels(cli entity.Client, cmd command.Command) entity.DockerCli {
 	out := entity.DockerCli{Client: cli, Labels: map[string]string{}}
-	out.Labels["testRun"] = cmd.Target.TestID
 	duc.withField(cmd, "meta", cmd.Meta).Trace("got the meta from the command")
 	mergo.Map(&out.Labels, cmd.Meta)
-
 	return out
 }
 
-func (duc dockerUseCase) createContainerShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) createContainerShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
 	var container command.Container
 	err := cmd.ParseOrderPayloadInto(&container)
 	if err != nil {
@@ -181,7 +194,9 @@ func (duc dockerUseCase) createContainerShim(ctx context.Context, cli entity.Cli
 	return duc.service.CreateContainer(ctx, docker, container)
 }
 
-func (duc dockerUseCase) startContainerShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) startContainerShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
 	var sc command.StartContainer
 	err := cmd.ParseOrderPayloadInto(&sc)
 	if err != nil {
@@ -193,7 +208,9 @@ func (duc dockerUseCase) startContainerShim(ctx context.Context, cli entity.Clie
 	return duc.service.StartContainer(ctx, duc.injectLabels(cli, cmd), sc)
 }
 
-func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
 	var payload command.SimpleName
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
@@ -205,7 +222,8 @@ func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli entity.Cli
 	return duc.service.RemoveContainer(ctx, duc.injectLabels(cli, cmd), payload.Name)
 }
 
-func (duc dockerUseCase) createNetworkShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) createNetworkShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
 	var net command.Network
 	err := cmd.ParseOrderPayloadInto(&net)
 	if err != nil {
@@ -219,7 +237,8 @@ func (duc dockerUseCase) createNetworkShim(ctx context.Context, cli entity.Clien
 	return duc.service.CreateNetwork(ctx, docker, net)
 }
 
-func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
 	var payload command.ContainerNetwork
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
@@ -252,7 +271,9 @@ func (duc dockerUseCase) detachNetworkShim(ctx context.Context,
 		payload.Network, payload.ContainerName)
 }
 
-func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
 	var payload command.SimpleName
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
@@ -288,7 +309,9 @@ func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli entity.Client
 	}
 	return duc.service.RemoveVolume(ctx, duc.injectLabels(cli, cmd), payload.Name)
 }
-func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
 	var payload command.FileAndContainer
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {

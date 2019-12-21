@@ -541,6 +541,5 @@ func TestDockerService_RemoveVolume(t *testing.T) {
 	res := ds.RemoveVolume(nil, entity.DockerCli{Client: cli}, name)
 	assert.NoError(t, res.Error)
 
-	assert.True(t, cli.AssertNumberOfCalls(t, "VolumeRemove", 1))
 	cli.AssertExpectations(t)
 }
