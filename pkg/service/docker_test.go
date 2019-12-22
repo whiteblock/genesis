@@ -404,7 +404,7 @@ func TestDockerService_PlaceFileInContainer(t *testing.T) {
 		func(args mock.Arguments) {
 			require.Len(t, args, 5)
 			assert.Nil(t, args.Get(0))
-			assert.Equal(t, testContainer.ID, args.String(1))
+			assert.Equal(t, testContainer.Names[0], args.String(1))
 			assert.Equal(t, testDir, args.String(2))
 			assert.NotNil(t, args.Get(3))
 			{
@@ -415,17 +415,9 @@ func TestDockerService_PlaceFileInContainer(t *testing.T) {
 			}
 		}).Once()
 
-	repo := new(repoMock.DockerRepository)
-	repo.On("GetContainerByName", mock.Anything, mock.Anything, mock.Anything).Return(testContainer, nil).Run(
-		func(args mock.Arguments) {
-
-			require.Len(t, args, 3)
-			assert.Nil(t, args.Get(0))
-			assert.Equal(t, testContainer.Names[0], args.String(2))
-		}).Once()
 	fs := new(fileMock.RemoteSources)
 	fs.On("GetTarReader", mock.Anything, mock.Anything).Return(strings.NewReader("barfoo"), nil).Once()
-	ds := NewDockerService(repo, config.Docker{}, fs, logrus.New())
+	ds := NewDockerService(nil, config.Docker{}, fs, logrus.New())
 
 	res := ds.PlaceFileInContainer(nil, entity.DockerCli{Client: cli},
 		testContainer.Names[0], command.File{
@@ -435,7 +427,6 @@ func TestDockerService_PlaceFileInContainer(t *testing.T) {
 	assert.NoError(t, res.Error)
 
 	cli.AssertExpectations(t)
-	repo.AssertExpectations(t)
 	fs.AssertExpectations(t)
 }
 

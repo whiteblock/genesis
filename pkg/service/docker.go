@@ -470,20 +470,21 @@ func (ds dockerService) RemoveVolume(ctx context.Context, cli entity.DockerCli, 
 func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.DockerCli,
 	containerName string, file command.File) entity.Result {
 
-	cntr, err := ds.repo.GetContainerByName(ctx, cli, containerName)
-	if err != nil {
-		return entity.NewFatalResult(err)
-	}
 	rdr, err := ds.remote.GetTarReader(cli.Labels[command.DefinitionIDKey], file)
 	if err != nil {
-		return entity.NewFatalResult(err)
+		return entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
+			"labels": cli.Labels,
+		})
 	}
-	err = cli.CopyToContainer(ctx, cntr.ID, file.Destination, rdr, types.CopyToContainerOptions{
+	err = cli.CopyToContainer(ctx, containerName, file.Destination, rdr, types.CopyToContainerOptions{
 		AllowOverwriteDirWithFile: false,
 		CopyUIDGID:                false,
 	})
 	if err != nil {
-		return entity.NewErrorResult(err)
+		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
+			"labels":    cli.Labels,
+			"container": containerName,
+		})
 	}
 	return entity.NewSuccessResult()
 }
