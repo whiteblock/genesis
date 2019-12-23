@@ -27,7 +27,6 @@ import (
 	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/volume"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -214,50 +213,6 @@ func TestDockerRepository_GetContainerByName_Failure(t *testing.T) {
 	ds := NewDockerRepository()
 	_, err := ds.GetContainerByName(nil, cli, "DNE")
 	assert.Error(t, err)
-
-	cli.AssertExpectations(t)
-}
-
-func TestDockerRepository_GetVolumeByName_Success(t *testing.T) {
-	results := volume.VolumeListOKBody{
-		Volumes: []*types.Volume{
-			&types.Volume{Name: "test1"},
-			&types.Volume{Name: "test2"},
-		},
-	}
-	cli := new(entityMock.Client)
-	cli.On("VolumeList", mock.Anything, mock.Anything).Return(results, nil).Run(
-		func(args mock.Arguments) {
-
-			require.Len(t, args, 2)
-			assert.Nil(t, args.Get(0))
-		}).Times(len(results.Volumes) + 1)
-	ds := NewDockerRepository()
-
-	for _, vol := range results.Volumes {
-		result, err := ds.GetVolumeByName(nil, cli, vol.Name)
-		assert.NoError(t, err)
-		assert.Equal(t, result, vol)
-
-	}
-
-	res, err := ds.GetVolumeByName(nil, cli, "DNE")
-	assert.Error(t, err)
-	assert.Nil(t, res)
-
-	cli.AssertExpectations(t)
-}
-
-func TestDockerRepository_GetVolumeByName_Failure(t *testing.T) {
-
-	cli := new(entityMock.Client)
-	cli.On("VolumeList", mock.Anything, mock.Anything).Return(
-		volume.VolumeListOKBody{}, fmt.Errorf("err")).Once()
-	ds := NewDockerRepository()
-
-	res, err := ds.GetVolumeByName(nil, cli, "DNE")
-	assert.Error(t, err)
-	assert.Nil(t, res)
 
 	cli.AssertExpectations(t)
 }

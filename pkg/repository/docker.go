@@ -28,7 +28,6 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
 	"github.com/pkg/errors"
@@ -49,9 +48,6 @@ type DockerRepository interface {
 
 	//GetNetworkByName attempts to find a network with the given name and return information on it.
 	GetNetworkByName(ctx context.Context, cli entity.Client, networkName string) (types.NetworkResource, error)
-
-	//GetVolumeByName attempts to find a volume with the given name and return information on it.
-	GetVolumeByName(ctx context.Context, cli entity.Client, volumeName string) (*types.Volume, error)
 
 	//HostHasImage returns true if the docker host has an image matching what was given
 	HostHasImage(ctx context.Context, cli entity.Client, image string) (bool, error)
@@ -159,24 +155,4 @@ func (da dockerRepository) GetContainerByName(ctx context.Context, cli entity.Cl
 		}
 	}
 	return types.Container{}, fmt.Errorf("could not find the container \"%s\"", containerName)
-}
-
-//GetVolumeByName attempts to find a volume with the given name and return information on it.
-func (da dockerRepository) GetVolumeByName(ctx context.Context, cli entity.Client,
-	volumeName string) (*types.Volume, error) {
-
-	bdy, err := cli.VolumeList(ctx, filters.Args{})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, vol := range bdy.Volumes {
-		if vol == nil {
-			continue
-		}
-		if vol.Name == volumeName {
-			return vol, nil
-		}
-	}
-	return nil, fmt.Errorf("could not find the volume \"%s\"", volumeName)
 }
