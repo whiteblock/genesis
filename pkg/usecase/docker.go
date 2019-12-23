@@ -250,7 +250,7 @@ func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli entity.Clien
 	if len(payload.Network) == 0 {
 		return ErrEmptyFieldNetwork
 	}
-	return duc.service.AttachNetwork(ctx, duc.injectLabels(cli, cmd), payload.Network, payload.ContainerName)
+	return duc.service.AttachNetwork(ctx, duc.injectLabels(cli, cmd), payload)
 }
 
 func (duc dockerUseCase) detachNetworkShim(ctx context.Context,
@@ -284,7 +284,9 @@ func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli entity.Clien
 	}
 	return duc.service.RemoveNetwork(ctx, duc.injectLabels(cli, cmd), payload.Name)
 }
-func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
 	var payload command.Volume
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
@@ -298,7 +300,9 @@ func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli entity.Client
 	return duc.service.CreateVolume(ctx, docker, payload)
 }
 
-func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
 	var payload command.SimpleName
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
@@ -324,7 +328,9 @@ func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli entity.
 		payload.ContainerName, payload.File)
 }
 
-func (duc dockerUseCase) emulationShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) emulationShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
 	var payload command.Netconf
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
@@ -333,7 +339,9 @@ func (duc dockerUseCase) emulationShim(ctx context.Context, cli entity.Client, c
 	return duc.service.Emulation(ctx, duc.injectLabels(cli, cmd), payload)
 }
 
-func (duc dockerUseCase) swarmSetupShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) swarmSetupShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
 	var payload command.SetupSwarm
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
@@ -345,7 +353,9 @@ func (duc dockerUseCase) swarmSetupShim(ctx context.Context, cli entity.Client, 
 	return duc.service.SwarmCluster(ctx, duc.injectLabels(cli, cmd), payload)
 }
 
-func (duc dockerUseCase) pullImageShim(ctx context.Context, cli entity.Client, cmd command.Command) entity.Result {
+func (duc dockerUseCase) pullImageShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
 	var payload command.PullImage
 	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {

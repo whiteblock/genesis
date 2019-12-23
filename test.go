@@ -147,7 +147,7 @@ func createContainer(dockerUseCase usecase.DockerUseCase, name string,
 			"FOO": "BAR",
 		},
 		Name:    name,
-		Network: []string{"testnet"},
+		Network: "testnet",
 		Ports:   ports,
 		Volumes: []command.Mount{command.Mount{
 			Name:      "test_volume",

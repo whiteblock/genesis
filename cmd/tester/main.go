@@ -124,7 +124,7 @@ func createContainer(name string, network string, volume string, args []string) 
 			"FOO": "BAR",
 		},
 		Name:    name,
-		Network: []string{network},
+		Network: network,
 		//	Ports:   map[int]int{8888: 8889},
 		Volumes: []command.Mount{command.Mount{
 			Name:      volume,
