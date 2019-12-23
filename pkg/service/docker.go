@@ -336,37 +336,6 @@ func (ds dockerService) RemoveNetwork(ctx context.Context, cli entity.DockerCli,
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) getNetworkAndContainerByName(ctx context.Context, cli entity.DockerCli,
-	networkName string, containerName string) (container types.Container,
-	network types.NetworkResource, err error) {
-
-	errChan := make(chan error, 2)
-	netChan := make(chan types.NetworkResource, 1)
-	cntrChan := make(chan types.Container, 1)
-
-	go func(networkName string) {
-		net, err := ds.repo.GetNetworkByName(ctx, cli, networkName)
-		errChan <- err
-		netChan <- net
-	}(networkName)
-
-	go func(containerName string) {
-		cntr, err := ds.repo.GetContainerByName(ctx, cli, containerName)
-		errChan <- err
-		cntrChan <- cntr
-	}(containerName)
-
-	for i := 0; i < 2; i++ {
-		err = <-errChan
-		if err != nil {
-			return
-		}
-	}
-	network = <-netChan
-	container = <-cntrChan
-	return
-}
-
 func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli, networkName string,
 	containerName string) entity.Result {
 
