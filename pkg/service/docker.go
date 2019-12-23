@@ -477,7 +477,7 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 		})
 	}
 	err = cli.CopyToContainer(ctx, containerName, file.Destination, rdr, types.CopyToContainerOptions{
-		AllowOverwriteDirWithFile: false,
+		AllowOverwriteDirWithFile: true,
 		CopyUIDGID:                false,
 	})
 	if err != nil {
