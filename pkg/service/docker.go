@@ -70,11 +70,6 @@ type DockerService interface {
 
 	//CreateClient creates a new client for connecting to the docker daemon
 	CreateClient(host string) (entity.Client, error)
-
-	// GetNetworkingConfig determines the proper networking config based
-	// on the docker hosts state and the networks
-	GetNetworkingConfig(ctx context.Context, cli entity.DockerCli,
-		networks strslice.StrSlice) (*network.NetworkingConfig, error)
 }
 
 type dockerService struct {
@@ -129,7 +124,6 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 
 	ds.withFields(cli, logrus.Fields{"container": dContainer}).Trace("create container")
 	errChan := make(chan error)
-	netConfChan := make(chan *network.NetworkingConfig)
 
 	go func(image string) {
 		errChan <- ds.repo.EnsureImagePulled(ctx, cli, image, "")
@@ -157,7 +151,9 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 
 	cpus, err := strconv.ParseFloat(dContainer.Cpus, 64)
 	if err != nil {
-		return entity.NewFatalResult(err)
+		return entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
+			"given": dContainer.Cpus,
+		})
 	}
 
 	hostConfig := &container.HostConfig{
@@ -175,8 +171,8 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 	hostConfig.Memory = mem
 
 	networkConfig := &network.NetworkingConfig{EndpointsConfig: map[string]*network.EndpointSettings{}}
-	for _, net := range networks {
-		out.EndpointsConfig[net] = &network.EndpointSettings{
+	for _, net := range dContainer.Network {
+		networkConfig.EndpointsConfig[net] = &network.EndpointSettings{
 			NetworkID: net,
 		}
 	}
@@ -270,16 +266,13 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 	return entity.NewSuccessResult()
 }
 
-//RemoveContainer attempts to remove a container
+// RemoveContainer attempts to remove a container
 func (ds dockerService) RemoveContainer(ctx context.Context, cli entity.DockerCli,
 	name string) entity.Result {
 
 	ds.withFields(cli, logrus.Fields{"name": name}).Debug("removing container")
-	cntr, err := ds.repo.GetContainerByName(ctx, cli, name)
-	if err != nil {
-		return entity.NewErrorResult(err)
-	}
-	err = cli.ContainerRemove(ctx, cntr.ID, types.ContainerRemoveOptions{
+
+	err := cli.ContainerRemove(ctx, name, types.ContainerRemoveOptions{
 		RemoveVolumes: false,
 		RemoveLinks:   false,
 		Force:         true,
@@ -290,7 +283,7 @@ func (ds dockerService) RemoveContainer(ctx context.Context, cli entity.DockerCl
 	return entity.NewSuccessResult()
 }
 
-//CreateNetwork attempts to create a network
+// CreateNetwork attempts to create a network
 func (ds dockerService) CreateNetwork(ctx context.Context, cli entity.DockerCli,
 	net command.Network) entity.Result {
 
@@ -333,13 +326,11 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli entity.DockerCli,
 }
 
 //RemoveNetwork attempts to remove a network
-func (ds dockerService) RemoveNetwork(ctx context.Context, cli entity.DockerCli, name string) entity.Result {
+func (ds dockerService) RemoveNetwork(ctx context.Context, cli entity.DockerCli,
+	name string) entity.Result {
+
 	ds.withFields(cli, logrus.Fields{"name": name}).Debug("removing a network")
-	net, err := ds.repo.GetNetworkByName(ctx, cli, name)
-	if err != nil {
-		return entity.NewErrorResult(err)
-	}
-	err = cli.NetworkRemove(ctx, net.ID)
+	err := cli.NetworkRemove(ctx, name)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
@@ -466,16 +457,17 @@ func (ds dockerService) Emulation(ctx context.Context, cli entity.DockerCli,
 		errChan <- ds.repo.EnsureImagePulled(ctx, cli, netemImage, "")
 	}()
 
-	cntr, net, err := ds.getNetworkAndContainerByName(ctx, cli, netem.Network, netem.Container)
+	net, err := ds.repo.GetNetworkByName(ctx, cli, netem.Network)
 	if err != nil {
-		return entity.NewFatalResult(err)
-	}
-	err = <-errChan
-	if err != nil {
-		return entity.NewFatalResult(err)
+		return entity.NewErrorResult(err)
 	}
 
-	name := cntr.ID + "-" + net.ID
+	err = <-errChan
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+
+	name := netem.Container + "-" + net.ID
 	netemCmd := fmt.Sprintf(
 		"tc qdisc add dev $(ip -o addr show to %s | sed -n 's/.*\\(eth[0-9]*\\).*/\\1/p') root netem",
 		net.IPAM.Config[0].Subnet)
@@ -515,7 +507,7 @@ func (ds dockerService) Emulation(ctx context.Context, cli entity.DockerCli,
 
 	hostConfig := &container.HostConfig{
 		AutoRemove:  true,
-		NetworkMode: container.NetworkMode(fmt.Sprintf("container:%s", cntr.ID)),
+		NetworkMode: container.NetworkMode(fmt.Sprintf("container:%s", netem.Container)),
 		CapAdd:      strslice.StrSlice([]string{"NET_ADMIN"}),
 	}
 
