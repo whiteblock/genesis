@@ -55,7 +55,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 			"FOO": "BAR",
 		},
 		Name:    "TEST",
-		Network: []string{"Testnet"},
+		Network: "Testnet",
 		Ports:   map[int]int{8888: 8889},
 		Volumes: []command.Mount{command.Mount{Name: "volume1", Directory: "/foo/bar", ReadOnly: false}}, //TODO
 		Image:   "alpine",
@@ -117,7 +117,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 			require.True(t, ok)
 			require.NotNil(t, networkingConfig)
 			require.NotNil(t, networkingConfig.EndpointsConfig)
-			netconf, ok := networkingConfig.EndpointsConfig[testContainer.Network[0]]
+			netconf, ok := networkingConfig.EndpointsConfig[testContainer.Network]
 			require.True(t, ok)
 			require.NotNil(t, netconf)
 			assert.Equal(t, testNetwork.Name, netconf.NetworkID)
@@ -409,17 +409,18 @@ func TestDockerService_PlaceFileInContainer(t *testing.T) {
 }
 
 func TestDockerService_AttachNetwork(t *testing.T) {
-	netName := "test2"
-	cntrName := "test1"
-
+	cn := command.ContainerNetwork{
+		Network:       "test2",
+		ContainerName: "test1",
+	}
 	cli := new(entityMock.Client)
 	cli.On("NetworkConnect", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 
 		require.Len(t, args, 4)
 		assert.Nil(t, args.Get(0))
-		assert.Equal(t, netName, args.String(1))
-		assert.Equal(t, cntrName, args.String(2))
+		assert.Equal(t, cn.Network, args.Get(1))
+		assert.Equal(t, cn.ContainerName, args.Get(2))
 		epSettings, ok := args.Get(3).(*network.EndpointSettings)
 		require.True(t, ok)
 		require.NotNil(t, epSettings)
@@ -427,7 +428,7 @@ func TestDockerService_AttachNetwork(t *testing.T) {
 
 	ds := NewDockerService(nil, config.Docker{}, nil, logrus.New())
 
-	res := ds.AttachNetwork(nil, entity.DockerCli{Client: cli}, netName, cntrName)
+	res := ds.AttachNetwork(nil, entity.DockerCli{Client: cli}, cn)
 	assert.NoError(t, res.Error)
 
 	cli.AssertExpectations(t)

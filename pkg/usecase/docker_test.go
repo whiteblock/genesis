@@ -729,32 +729,30 @@ func TestDockerUseCase_Execute_CreateNetwork(t *testing.T) {
 }
 
 func TestDockerUseCase_Execute_AttachNetwork_Success(t *testing.T) {
-	containerName := "tester"
-	networkName := "testnet"
-	service := new(mockService.DockerService)
-	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
-	service.On("AttachNetwork", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything).Return(entity.Result{Type: entity.SuccessType}).Run(
-		func(args mock.Arguments) {
-
-			require.Len(t, args, 4)
-			assert.NotNil(t, args.Get(0))
-			assert.NotNil(t, args.Get(1))
-			assert.Equal(t, networkName, args.String(2))
-			assert.Equal(t, containerName, args.String(3))
-
-		}).Once()
-
-	usecase := NewDockerUseCase(service, nil, logrus.New())
-
-	res := usecase.Execute(context.TODO(), command.Command{
+	testCmd := command.Command{
 		ID:     "TEST",
 		Target: command.Target{IP: "127.0.0.1"},
 		Order: command.Order{
 			Type:    "attachNetwork",
 			Payload: command.ContainerNetwork{ContainerName: "tester", Network: "testnet"},
 		},
-	})
+	}
+
+	service := new(mockService.DockerService)
+	service.On("CreateClient", mock.Anything, mock.Anything).Return(nil, nil).Once()
+	service.On("AttachNetwork", mock.Anything, mock.Anything,
+		mock.Anything).Return(entity.Result{Type: entity.SuccessType}).Run(
+		func(args mock.Arguments) {
+
+			require.Len(t, args, 3)
+			assert.NotNil(t, args.Get(0))
+			assert.NotNil(t, args.Get(1))
+			assert.Equal(t, testCmd.Order.Payload, args.Get(2))
+		}).Once()
+
+	usecase := NewDockerUseCase(service, nil, logrus.New())
+
+	res := usecase.Execute(context.TODO(), testCmd)
 	assert.NoError(t, res.Error)
 	service.AssertExpectations(t)
 }
