@@ -483,7 +483,7 @@ func (ds dockerService) Emulation(ctx context.Context, cli entity.DockerCli,
 
 	_, err = cli.ContainerCreate(ctx, config, hostConfig, networkConfig, name)
 	if err != nil {
-		return entity.NewFatalResult(err)
+		return entity.NewErrorResult(err)
 	}
 	return ds.StartContainer(ctx, cli, command.StartContainer{Name: name})
 }
