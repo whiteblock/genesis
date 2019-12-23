@@ -241,6 +241,7 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 					"name":  sc.Name,
 					"error": err.Error()}).Info("container finished execution")
 				resChan <- err
+				break
 			}
 			time.Sleep(1 * time.Second)
 		}
