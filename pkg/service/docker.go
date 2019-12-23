@@ -45,7 +45,8 @@ import (
 type DockerService interface {
 
 	//CreateContainer attempts to create a docker container
-	CreateContainer(ctx context.Context, cli entity.DockerCli, container command.Container) entity.Result
+	CreateContainer(ctx context.Context, cli entity.DockerCli,
+		container command.Container) entity.Result
 
 	//StartContainer attempts to start an already created docker container
 	StartContainer(ctx context.Context, cli entity.DockerCli, sc command.StartContainer) entity.Result
@@ -58,8 +59,9 @@ type DockerService interface {
 
 	//RemoveNetwork attempts to remove a network
 	RemoveNetwork(ctx context.Context, cli entity.DockerCli, name string) entity.Result
-	AttachNetwork(ctx context.Context, cli entity.DockerCli, network string, container string) entity.Result
-	DetachNetwork(ctx context.Context, cli entity.DockerCli, network string, container string) entity.Result
+	AttachNetwork(ctx context.Context, cli entity.DockerCli, cmd command.ContainerNetwork) entity.Result
+	DetachNetwork(ctx context.Context, cli entity.DockerCli, network string,
+		container string) entity.Result
 	CreateVolume(ctx context.Context, cli entity.DockerCli, volume command.Volume) entity.Result
 	RemoveVolume(ctx context.Context, cli entity.DockerCli, name string) entity.Result
 	PlaceFileInContainer(ctx context.Context, cli entity.DockerCli,
@@ -315,11 +317,13 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli entity.DockerCli,
 		networkCreate.Scope = "local"
 		networkCreate.Options["com.docker.network.bridge.name"] = net.Name
 	}
-	ds.withFields(cli, logrus.Fields{"name": net.Name, "conf": networkCreate}).Debug("creating a network")
+	ds.withFields(cli, logrus.Fields{"name": net.Name,
+		"conf": networkCreate}).Debug("creating a network")
 	_, err := cli.NetworkCreate(ctx, net.Name, networkCreate)
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
-			ds.withFields(cli, logrus.Fields{"name": net.Name, "error": err}).Warn("duplicate network")
+			ds.withFields(cli, logrus.Fields{"name": net.Name,
+				"error": err}).Warn("duplicate network")
 			return entity.NewSuccessResult()
 		}
 		return entity.NewErrorResult(err)
@@ -339,13 +343,15 @@ func (ds dockerService) RemoveNetwork(ctx context.Context, cli entity.DockerCli,
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli, networkName string,
-	containerName string) entity.Result {
+func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli,
+	cmd command.ContainerNetwork) entity.Result {
 
-	err := cli.NetworkConnect(ctx, networkName, containerName, &network.EndpointSettings{})
+	err := cli.NetworkConnect(ctx, cmd.Network, cmd.ContainerName, &network.EndpointSettings{
+		IPAddress: cmd.IP,
+	})
 	if err != nil {
 		if strings.Contains(err.Error(), "is already attached to network") {
-			ds.withField(cli, "error", err).Info("ignoring failure on deplicate network attach command")
+			ds.withField(cli, "error", err).Info("ignoring failure on duplicate network attach command")
 			return entity.NewSuccessResult().InjectMeta(map[string]interface{}{
 				"failure": "ignored",
 			})
@@ -389,7 +395,9 @@ func (ds dockerService) CreateVolume(ctx context.Context, cli entity.DockerCli,
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) RemoveVolume(ctx context.Context, cli entity.DockerCli, name string) entity.Result {
+func (ds dockerService) RemoveVolume(ctx context.Context, cli entity.DockerCli,
+	name string) entity.Result {
+
 	err := cli.VolumeRemove(ctx, name, true)
 	if err != nil {
 		return entity.NewErrorResult(err)
