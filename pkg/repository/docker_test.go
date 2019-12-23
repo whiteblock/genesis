@@ -27,7 +27,6 @@ import (
 	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/volume"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
