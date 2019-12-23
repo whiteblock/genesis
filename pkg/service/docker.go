@@ -72,6 +72,10 @@ type DockerService interface {
 	CreateClient(host string) (entity.Client, error)
 }
 
+var (
+	ErrNoHost = entity.NewFatalResult("no hosts given")
+)
+
 type dockerService struct {
 	repo   repository.DockerRepository
 	conf   config.Docker
@@ -220,11 +224,6 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 
 	if !sc.Attach {
 		return entity.NewSuccessResult()
-	}
-	if sc.Timeout.IsInfinite() { // Trap to stop any further execution
-		return entity.NewTrapResult().InjectMeta(map[string]interface{}{
-			"name": sc.Name,
-		})
 	}
 
 	resChan := make(chan error)
@@ -524,7 +523,7 @@ func (ds dockerService) SwarmCluster(ctx context.Context, entryCLI entity.Docker
 	dswarm command.SetupSwarm) entity.Result {
 
 	if len(dswarm.Hosts) == 0 {
-		return entity.NewFatalResult("no hosts given")
+		return ErrNoHost
 	}
 	cli, err := ds.CreateClient(dswarm.Hosts[0])
 	if err != nil {
