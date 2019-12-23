@@ -73,6 +73,7 @@ type DockerService interface {
 }
 
 var (
+	// ErrNoHost is returned when the swarm init command does not contain any hosts
 	ErrNoHost = entity.NewFatalResult("no hosts given")
 )
 
