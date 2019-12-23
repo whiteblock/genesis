@@ -190,6 +190,8 @@ github.com/whiteblock/definition v0.0.0-20191222024959-c931f4c5079c h1:JpOolX70+
 github.com/whiteblock/definition v0.0.0-20191222024959-c931f4c5079c/go.mod h1:jj3g2ODmZuuwDzUMkxQB7OnnYjXh7k0H9Z+pcKQw+ec=
 github.com/whiteblock/definition v0.0.0-20191222205356-e9d97b607d97 h1:B7gp5jJIX1c/rebdF0jAYCRbDNQoNxCX81kZNhsLT+0=
 github.com/whiteblock/definition v0.0.0-20191222205356-e9d97b607d97/go.mod h1:jj3g2ODmZuuwDzUMkxQB7OnnYjXh7k0H9Z+pcKQw+ec=
+github.com/whiteblock/definition v0.0.0-20191223212402-f8df811f6767 h1:zGhO4z2Zi5JamaeYbi27NwbB0hoOmRsRQ0GjkRp4oew=
+github.com/whiteblock/definition v0.0.0-20191223212402-f8df811f6767/go.mod h1:jj3g2ODmZuuwDzUMkxQB7OnnYjXh7k0H9Z+pcKQw+ec=
 github.com/whiteblock/go.uuid v1.2.1 h1:prUjjtzVGGZ0A1Jt3yGxFIdTD69u9FGwaU3e73xqFeI=
 github.com/whiteblock/go.uuid v1.2.1/go.mod h1:J0Y9qymnDEwrdEFeIzpsul8Ye1jzfPoW3JDJVx8hdGM=
 github.com/whiteblock/utility v0.0.0-20191204153325-8c91068475f3/go.mod h1:WNIlhdAbP2knkVg3409RaQHR4t7z5prAyjwDmyaUS1Y=
@@ -293,6 +295,7 @@ gopkg.in/ini.v1 v1.51.0/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
 gopkg.in/resty.v1 v1.12.0/go.mod h1:mDo4pnntr5jdWRML875a/NmxYqAlA73dVijT2AXvQQo=
 gopkg.in/square/go-jose.v2 v2.4.0/go.mod h1:M9dMgbHiYLoDGQrXy7OpJDJWiKiU//h+vD76mk0e1AI=
 gopkg.in/yaml.v2 v2.0.0-20170812160011-eb3733d160e7/go.mod h1:JAlM8MvJe8wmxCU4Bli9HhUf9+ttbYbLASfIpnQbh74=
+gopkg.in/yaml.v2 v2.0.0/go.mod h1:JAlM8MvJe8wmxCU4Bli9HhUf9+ttbYbLASfIpnQbh74=
 gopkg.in/yaml.v2 v2.2.1/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.4/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=

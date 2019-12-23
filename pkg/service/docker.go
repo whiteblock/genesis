@@ -176,9 +176,10 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 	hostConfig.Memory = mem
 
 	networkConfig := &network.NetworkingConfig{EndpointsConfig: map[string]*network.EndpointSettings{}}
-	for _, net := range dContainer.Network {
-		networkConfig.EndpointsConfig[net] = &network.EndpointSettings{
-			NetworkID: net,
+	if len(dContainer.Network) > 0 {
+		networkConfig.EndpointsConfig[dContainer.Network] = &network.EndpointSettings{
+			NetworkID: dContainer.Network,
+			IPAddress: dContainer.IP,
 		}
 	}
 
