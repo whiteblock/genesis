@@ -123,35 +123,6 @@ func (ds dockerService) withField(cli entity.DockerCli, key string, value interf
 	return ds.withFields(cli, logrus.Fields{key: value})
 }
 
-// GetNetworkingConfig determines the proper networking
-// config based on the docker hosts state and the networks
-func (ds dockerService) GetNetworkingConfig(ctx context.Context, cli entity.DockerCli,
-	networks strslice.StrSlice) (*network.NetworkingConfig, error) {
-
-	resourceChan := make(chan types.NetworkResource, len(networks))
-	errChan := make(chan error, len(networks))
-
-	for _, net := range networks {
-		go func(net string) {
-			resource, err := ds.repo.GetNetworkByName(ctx, cli, net)
-			errChan <- err
-			resourceChan <- resource
-		}(net)
-	}
-	out := &network.NetworkingConfig{EndpointsConfig: map[string]*network.EndpointSettings{}}
-	for range networks {
-		err := <-errChan
-		if err != nil {
-			return out, err
-		}
-		resource := <-resourceChan
-		out.EndpointsConfig[resource.Name] = &network.EndpointSettings{
-			NetworkID: resource.ID,
-		}
-	}
-	return out, nil
-}
-
 //CreateContainer attempts to create a docker container
 func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCli,
 	dContainer command.Container) entity.Result {
@@ -163,12 +134,6 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 	go func(image string) {
 		errChan <- ds.repo.EnsureImagePulled(ctx, cli, image, "")
 	}(dContainer.Image)
-
-	go func(networks strslice.StrSlice) {
-		networkConfig, err := ds.GetNetworkingConfig(ctx, cli, networks)
-		netConfChan <- networkConfig
-		errChan <- err
-	}(dContainer.Network)
 
 	portSet, portMap, err := dContainer.GetPortBindings()
 	if err != nil {
@@ -209,13 +174,16 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 	hostConfig.NanoCPUs = int64(1000000000 * cpus)
 	hostConfig.Memory = mem
 
-	networkConfig := <-netConfChan
-
-	for i := 0; i < 2; i++ {
-		err = <-errChan
-		if err != nil {
-			return entity.NewErrorResult(err)
+	networkConfig := &network.NetworkingConfig{EndpointsConfig: map[string]*network.EndpointSettings{}}
+	for _, net := range networks {
+		out.EndpointsConfig[net] = &network.EndpointSettings{
+			NetworkID: net,
 		}
+	}
+
+	err = <-errChan
+	if err != nil {
+		return entity.NewErrorResult(err)
 	}
 
 	_, err = cli.ContainerCreate(ctx, config, hostConfig, networkConfig, dContainer.Name)
