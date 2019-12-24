@@ -43,6 +43,6 @@ func setFileHandlerBindings(v *viper.Viper) error {
 }
 
 func setFileHandlerDefaults(v *viper.Viper) {
-	v.SetDefault("apiEndpoint", "")
+	v.SetDefault("apiEndpoint", "https://www.infra.whiteblock.io")
 	v.SetDefault("apiTimeout", 10*time.Second)
 }
