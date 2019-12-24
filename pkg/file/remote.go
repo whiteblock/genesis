@@ -92,6 +92,7 @@ func (rf remoteSources) GetTarReader(testnetID string, file command.File) (io.Re
 		return nil, err
 	}
 	if resp.StatusCode != 200 {
+		rf.log.WithField("code", resp.StatusCode).Warn("got back a non-200 http code")
 		res, err := ioutil.ReadAll(resp.Body)
 		return nil, errors.Wrap(err, string(res))
 
