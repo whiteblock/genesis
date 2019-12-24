@@ -108,6 +108,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("commandQueueName", "COMMAND_QUEUE_NAME")
 	setExecutionBindings(viper.GetViper())
 	setDockerBindings(viper.GetViper())
+	setFileHandlerBindings(viper.GetViper())
 }
 
 func setViperDefaults() {
@@ -122,6 +123,7 @@ func setViperDefaults() {
 
 	setExecutionDefaults(viper.GetViper())
 	setDockerDefaults(viper.GetViper())
+	setFileHandlerDefaults(viper.GetViper())
 }
 
 func init() {
@@ -144,6 +146,11 @@ func NewConfig() (conf Config, err error) {
 		return
 	}
 	conf.Execution, err = NewExecution(viper.GetViper())
+	if err != nil {
+		return
+	}
+
+	conf.FileHandler, err = NewFileHandler(viper.GetViper())
 	if err != nil {
 		return
 	}
