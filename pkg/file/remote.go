@@ -24,12 +24,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"strings"
 
 	"github.com/whiteblock/genesis/pkg/config"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/whiteblock/definition/command"
 )
@@ -88,6 +90,11 @@ func (rf remoteSources) GetTarReader(testnetID string, file command.File) (io.Re
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		res, err := ioutil.ReadAll(resp.Body)
+		return nil, errors.Wrap(err, string(res))
+
 	}
 	rf.log.WithField("size", resp.ContentLength).Debug("copying a file")
 	var buf bytes.Buffer
