@@ -81,15 +81,15 @@ func (rf remoteSources) GetTarReader(testnetID string, file command.File) (io.Re
 	ctx, cancel := rf.getContext()
 	defer cancel()
 	req, err := rf.getRequest(ctx, testnetID, file.ID)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 
 	resp, err := client.Do(req)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
-
+	rf.log.WithField("size", resp.ContentLength).Debug("copying a file")
 	var buf bytes.Buffer
 	buf.Grow(int(resp.ContentLength))
 	//might want to make a custom reader here for memory sake
