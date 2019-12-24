@@ -31,7 +31,6 @@ import (
 
 	"github.com/whiteblock/genesis/pkg/config"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/whiteblock/definition/command"
 )
@@ -92,9 +91,13 @@ func (rf remoteSources) GetTarReader(testnetID string, file command.File) (io.Re
 		return nil, err
 	}
 	if resp.StatusCode != 200 {
-		rf.log.WithField("code", resp.StatusCode).Warn("got back a non-200 http code")
-		res, err := ioutil.ReadAll(resp.Body)
-		return nil, errors.Wrap(err, string(res))
+		rf.log.WithFields(logrus.Fields{
+			"file":       file.ID,
+			"dest":       file.Destination,
+			"code":       resp.StatusCode,
+			"definition": testnetID}).Warn("got back a non-200 http code")
+		res, _ := ioutil.ReadAll(resp.Body)
+		return nil, fmt.Errorf(string(res))
 
 	}
 	rf.log.WithField("size", resp.ContentLength).Debug("copying a file")
