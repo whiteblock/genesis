@@ -21,6 +21,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -37,6 +39,8 @@ import (
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/archive"
+	"github.com/docker/docker/pkg/system"
 	"github.com/sirupsen/logrus"
 	"github.com/whiteblock/definition/command"
 )
@@ -414,7 +418,47 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 			"labels": cli.Labels,
 		})
 	}
-	err = cli.CopyToContainer(ctx, containerName, file.Destination, rdr, types.CopyToContainerOptions{
+
+	srcInfo := archive.CopyInfo{ //appease the Docker Gods
+		Path:       file.Meta.Filename,
+		Exists:     true,
+		IsDir:      false,
+		RebaseName: filepath.Base(file.Meta.Path),
+	}
+	dstPath := file.Destination
+
+	// Prepare destination copy info by stat-ing the container path.
+	dstInfo := archive.CopyInfo{Path: file.Destination}
+
+	dstStat, err := cli.ContainerStatPath(ctx, containerName, file.Destination)
+
+	// If the destination is a symbolic link, we should evaluate it.
+	if err == nil && dstStat.Mode&os.ModeSymlink != 0 {
+		linkTarget := dstStat.LinkTarget
+		if !system.IsAbs(linkTarget) {
+			// Join with the parent directory.
+			dstParent, _ := archive.SplitPathDirEntry(dstPath)
+			linkTarget = filepath.Join(dstParent, linkTarget)
+		}
+
+		dstInfo.Path = linkTarget
+		dstStat, err = cli.ContainerStatPath(ctx, containerName, linkTarget)
+	}
+
+	if err == nil {
+		dstInfo.Exists, dstInfo.IsDir = true, dstStat.Mode.IsDir()
+	}
+
+	dstDir, preparedArchive, err := archive.PrepareArchiveCopy(rdr, srcInfo, dstInfo)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+	defer preparedArchive.Close()
+
+	resolvedDstPath := dstDir
+	content := preparedArchive
+
+	err = cli.CopyToContainer(ctx, containerName, resolvedDstPath, content, types.CopyToContainerOptions{
 		AllowOverwriteDirWithFile: true,
 		CopyUIDGID:                false,
 	})
