@@ -65,7 +65,7 @@ func (rf remoteSources) getClient() *http.Client {
 func (rf remoteSources) getRequest(ctx context.Context, testnetID, id string) (*http.Request, error) {
 
 	return http.NewRequestWithContext(ctx, "GET",
-		fmt.Sprintf("%s/api/v1/files/tests/%s/%s", rf.conf.APIEndpoint, testnetID, id),
+		fmt.Sprintf("%s/api/v1/files/definitions/%s/%s", rf.conf.APIEndpoint, testnetID, id),
 		strings.NewReader(""))
 }
 
