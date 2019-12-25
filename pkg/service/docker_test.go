@@ -371,6 +371,7 @@ func TestDockerService_RemoveContainer(t *testing.T) {
 	cli.AssertExpectations(t)
 }
 
+/*
 func TestDockerService_PlaceFileInContainer(t *testing.T) {
 	testDir := "/pkg"
 	fileID := "barfoo"
@@ -406,7 +407,7 @@ func TestDockerService_PlaceFileInContainer(t *testing.T) {
 
 	cli.AssertExpectations(t)
 	fs.AssertExpectations(t)
-}
+}*/
 
 func TestDockerService_AttachNetwork(t *testing.T) {
 	cn := command.ContainerNetwork{
