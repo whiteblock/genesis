@@ -51,8 +51,17 @@ func NewRemoteSources(conf config.FileHandler, log logrus.Ext1FieldLogger) Remot
 }
 
 func (rf remoteSources) getTarHeader(file command.File, size int64) *tar.Header {
+	name := filepath.Base(file.Destination)
+	if file.Destination[len(file.Destination)-1] == '/' {
+		name = filepath.Base(file.Meta.Filename)
+	}
+	rf.log.WithFields(logrus.Fields{
+		"name": name,
+		"mode": file.Mode,
+		"size": size,
+	}).Trace("got the tar header for a file")
 	return &tar.Header{
-		Name: filepath.Base(file.Destination),
+		Name: name,
 		Mode: file.Mode,
 		Size: size,
 	}
