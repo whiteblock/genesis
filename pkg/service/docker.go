@@ -423,7 +423,7 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 		Path:       file.Meta.Filename,
 		Exists:     true,
 		IsDir:      false,
-		RebaseName: filepath.Base(file.Meta.Path),
+		RebaseName: "", //filepath.Base(file.Meta.Path),
 	}
 	dstPath := file.Destination
 
