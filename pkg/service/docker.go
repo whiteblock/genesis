@@ -429,11 +429,14 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 		IsDir:  false,
 	}
 	dstPath := file.Destination
+	if !srcInfo.IsDir && dstPath[len(dstPath)-1] == '/' {
+		dstPath += filepath.Base(file.Meta.Filename)
+	}
 
 	// Prepare destination copy info by stat-ing the container path.
-	dstInfo := archive.CopyInfo{Path: file.Destination}
+	dstInfo := archive.CopyInfo{Path: dstPath}
 
-	dstStat, err := cli.ContainerStatPath(ctx, containerName, file.Destination)
+	dstStat, err := cli.ContainerStatPath(ctx, containerName, dstPath)
 
 	// If the destination is a symbolic link, we should evaluate it.
 	if err == nil && dstStat.Mode&os.ModeSymlink != 0 {
@@ -450,12 +453,6 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 
 	if err == nil {
 		dstInfo.Exists, dstInfo.IsDir = true, dstStat.Mode.IsDir()
-	}
-
-	if dstInfo.IsDir {
-		dstInfo.RebaseName = filepath.Base(file.Meta.Filename)
-	} else {
-		dstInfo.RebaseName = filepath.Base(file.Destination)
 	}
 
 	dstDir, preparedArchive, err := archive.PrepareArchiveCopy(rdr, srcInfo, dstInfo)
