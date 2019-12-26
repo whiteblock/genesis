@@ -463,6 +463,10 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 		return entity.NewErrorResult(err)
 	}
 	defer preparedArchive.Close()
+	ds.withFields(cli, logrus.Fields{
+		"destintion": dstDir,
+		"container":  containerName,
+	}).Debug("got the destination for the file")
 
 	err = cli.CopyToContainer(ctx, containerName, dstDir, preparedArchive, types.CopyToContainerOptions{
 		AllowOverwriteDirWithFile: true,
