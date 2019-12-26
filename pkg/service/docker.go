@@ -431,7 +431,7 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 	dstPath := file.Destination
 
 	// Prepare destination copy info by stat-ing the container path.
-	dstInfo := archive.CopyInfo{Path: file.Destination, RebaseName: filepath.Base(file.Meta.Filename)}
+	dstInfo := archive.CopyInfo{Path: file.Destination}
 
 	dstStat, err := cli.ContainerStatPath(ctx, containerName, file.Destination)
 
@@ -450,6 +450,12 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 
 	if err == nil {
 		dstInfo.Exists, dstInfo.IsDir = true, dstStat.Mode.IsDir()
+	}
+
+	if dstInfo.IsDir {
+		dstInfo.RebaseName = filepath.Base(file.Meta.Filename)
+	} else {
+		dstInfo.RebaseName = filepath.Base(file.Destination)
 	}
 
 	dstDir, preparedArchive, err := archive.PrepareArchiveCopy(rdr, srcInfo, dstInfo)
