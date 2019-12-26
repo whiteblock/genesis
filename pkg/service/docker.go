@@ -454,7 +454,13 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 	if err == nil {
 		dstInfo.Exists, dstInfo.IsDir = true, dstStat.Mode.IsDir()
 	}
-
+	ds.withFields(cli, logrus.Fields{
+		"srcInfo":   srcInfo,
+		"dstInfo":   dstInfo,
+		"dstStat":   dstStat,
+		"dstPath":   dstPath,
+		"container": containerName,
+	}).Trace("about to prepare the archive copy")
 	dstDir, preparedArchive, err := archive.PrepareArchiveCopy(rdr, srcInfo, dstInfo)
 	if err != nil {
 		return entity.NewErrorResult(err)
