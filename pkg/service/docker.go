@@ -412,6 +412,10 @@ func (ds dockerService) RemoveVolume(ctx context.Context, cli entity.DockerCli,
 func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.DockerCli,
 	containerName string, file command.File) entity.Result {
 
+	ds.withFields(cli, logrus.Fields{
+		"container": containerName,
+		"file":      file,
+	}).Debug("copying file to container")
 	rdr, err := ds.remote.GetTarReader(cli.Labels[command.DefinitionIDKey], file)
 	if err != nil {
 		return entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
@@ -420,15 +424,14 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 	}
 
 	srcInfo := archive.CopyInfo{ //appease the Docker Gods
-		Path:       file.Meta.Filename,
-		Exists:     true,
-		IsDir:      false,
-		RebaseName: "", //filepath.Base(file.Meta.Path),
+		Path:   file.Meta.Filename,
+		Exists: true,
+		IsDir:  false,
 	}
 	dstPath := file.Destination
 
 	// Prepare destination copy info by stat-ing the container path.
-	dstInfo := archive.CopyInfo{Path: file.Destination}
+	dstInfo := archive.CopyInfo{Path: file.Destination, RebaseName: filepath.Base(file.Meta.Filename)}
 
 	dstStat, err := cli.ContainerStatPath(ctx, containerName, file.Destination)
 
@@ -455,10 +458,7 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 	}
 	defer preparedArchive.Close()
 
-	resolvedDstPath := dstDir
-	content := preparedArchive
-
-	err = cli.CopyToContainer(ctx, containerName, resolvedDstPath, content, types.CopyToContainerOptions{
+	err = cli.CopyToContainer(ctx, containerName, dstDir, preparedArchive, types.CopyToContainerOptions{
 		AllowOverwriteDirWithFile: true,
 		CopyUIDGID:                false,
 	})
