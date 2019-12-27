@@ -33,9 +33,9 @@ import (
 	"github.com/whiteblock/definition/command/biome"
 )
 
-//DeliveryHandler handles the initial processing of a amqp delivery
+// DeliveryHandler handles the initial processing of a amqp delivery
 type DeliveryHandler interface {
-	//Process attempts to extract the command and execute it
+	// Process attempts to extract the command and execute it
 	Process(msg amqp.Delivery) (out amqp.Publishing, result entity.Result)
 }
 
@@ -45,8 +45,8 @@ type deliveryHandler struct {
 	log     logrus.Ext1FieldLogger
 }
 
-//NewDeliveryHandler creates a new DeliveryHandler which uses the given usecase for
-//executing the extracted command
+// NewDeliveryHandler creates a new DeliveryHandler which uses the given usecase for
+// executing the extracted command
 func NewDeliveryHandler(
 	aux auxillary.Executor,
 	msgUtil queue.AMQPMessage,
@@ -68,6 +68,17 @@ func (dh deliveryHandler) sleepy(msg amqp.Delivery) {
 	if msg.Headers["retryCount"].(int64) > 0 {
 		time.Sleep(5 * time.Second)
 	}
+}
+
+func (dh deliveryHandler) checkPartialFailure(cmds []command.Command, result entity.Result) ([]string, bool) {
+	if _, hasFailed := result.Meta["failed"]; !hasFailed {
+		return nil, false
+	}
+	failed, ok := result.Meta["failed"].([]string)
+	if !ok || failed == nil {
+		return nil, false
+	}
+	return failed, len(failed) != len(cmds)
 }
 
 //Process attempts to extract the command and execute it
@@ -97,6 +108,7 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 	}
 
 	result = dh.aux.ExecuteCommands(cmds)
+
 	if result.IsFatal() {
 		out, err = dh.msgUtil.CreateMessage(biome.DestroyBiome{
 			TestID: inst.ID,
@@ -106,51 +118,36 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 			"error":   result.Error.Error(),
 			"testnet": inst.ID,
 		}).Error("execution resulted in a fatal error")
-		return
-	}
-
-	if result.IsTrap() {
+	} else if result.IsTrap() {
 		dh.log.WithField("result", result).Debug("propogating the trap")
-		return
+	} else if isLastOne && result.IsSuccess() {
+		if inst.NeverTerminate() {
+			result = result.Trap()
+			return
+		}
+		dh.log.Debug("creating completion message")
+		result = entity.NewAllDoneResult()
+		out, err = dh.msgUtil.CreateMessage(biome.DestroyBiome{
+			TestID: inst.ID,
+		})
+	} else if result.IsSuccess() {
+		result = entity.NewRequeueResult()
+		dh.log.WithField("remaining", len(inst.Commands)).Debug("creating message for next round")
+		inst.Next()
+		out, err = dh.msgUtil.GetNextMessage(msg, inst)
+	} else if failed, ok := dh.checkPartialFailure(cmds, result); ok {
+		dh.log.WithFields(logrus.Fields{
+			"failed":    failed,
+			"succeeded": len(cmds) - len(failed),
+			"result":    result,
+		}).Warn("something went partially wrong, requeuing only the commands which failed")
+		inst.PartialCompletion(failed)
+		out, err = dh.msgUtil.GetNextMessage(msg, inst)
+	} else {
+		dh.log.WithField("result", result).Debug("something went wrong, getting kickback message")
+		out, err = dh.msgUtil.GetKickbackMessage(msg)
 	}
 
-	if result.IsSuccess() {
-		if isLastOne {
-			if inst.NeverTerminate() {
-				result = result.Trap()
-				return
-			}
-			dh.log.Debug("creating completion message")
-			result = entity.NewAllDoneResult()
-			out, err = dh.msgUtil.CreateMessage(biome.DestroyBiome{
-				TestID: inst.ID,
-			})
-		} else {
-			result = entity.NewRequeueResult()
-			dh.log.WithField("remaining", len(inst.Commands)).Debug("creating message for next round")
-			inst.Next()
-			out, err = dh.msgUtil.GetNextMessage(msg, inst)
-		}
-	} else {
-		if _, hasFailed := result.Meta["failed"]; hasFailed {
-			failed := result.Meta["failed"].([]string)
-			if len(failed) != len(cmds) {
-				dh.log.WithFields(logrus.Fields{
-					"failed":    failed,
-					"succeeded": len(cmds) - len(failed),
-					"result":    result,
-				}).Warn("something went partially wrong, requeuing only the commands which failed")
-				inst.PartialCompletion(failed)
-				out, err = dh.msgUtil.GetNextMessage(msg, inst)
-			} else {
-				dh.log.WithField("result", result).Debug("something went wrong, getting kickback message")
-				out, err = dh.msgUtil.GetKickbackMessage(msg)
-			}
-		} else {
-			dh.log.WithField("result", result).Debug("something went wrong, getting kickback message")
-			out, err = dh.msgUtil.GetKickbackMessage(msg)
-		}
-	}
 	if err != nil {
 		dh.log.WithFields(logrus.Fields{
 			"result": result,

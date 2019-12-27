@@ -37,6 +37,10 @@ const (
 	testFileID = "foo"
 )
 
+var (
+	testTarget = command.Target{IP: "127.0.0.1"}
+)
+
 func TestNewDockerUseCase(t *testing.T) {
 	duc := NewDockerUseCase(nil, logrus.New())
 	assert.NotNil(t, duc)
@@ -44,7 +48,7 @@ func TestNewDockerUseCase(t *testing.T) {
 
 func TestDockerUseCase_validationCheck_success(t *testing.T) {
 	cmd := command.Command{
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 	}
 	duc := NewDockerUseCase(nil, logrus.New())
 	_, ok := duc.(*dockerUseCase).validationCheck(cmd)
@@ -76,7 +80,7 @@ func TestDockerUseCase_Run_Failure_CreateClient(t *testing.T) {
 
 	usecase := NewDockerUseCase(service, logrus.New())
 
-	res := usecase.Run(command.Command{Target: command.Target{IP: "127.0.0.1"}})
+	res := usecase.Run(command.Command{Target: testTarget})
 	assert.Error(t, res.Error)
 	service.AssertExpectations(t)
 }
@@ -98,7 +102,7 @@ func TestDockerUseCase_Run_CreateContainer_Success(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: "createContainer",
 			Payload: command.Container{
@@ -121,7 +125,7 @@ func TestDockerUseCase_Run_CreateContainer_Failure(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    "createContainer",
 			Payload: map[string]interface{}{},
@@ -141,7 +145,7 @@ func TestDockerUseCase_Run_StartContainer_Success(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    command.Startcontainer,
 			Payload: command.StartContainer{Name: "test"},
@@ -159,7 +163,7 @@ func TestDockerUseCase_Run_StartContainer_Failure_ExtraField(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    command.Startcontainer,
 			Payload: map[string]interface{}{"name": "test", "invalid": "field"},
@@ -177,7 +181,7 @@ func TestDockerUseCase_Run_StartContainer_Failure_EmptyName(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    command.Startcontainer,
 			Payload: command.StartContainer{Name: ""},
@@ -206,7 +210,7 @@ func TestDockerUseCase_Run_RemoveContainer_Success(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Removecontainer,
 			Payload: command.SimpleName{
@@ -226,7 +230,7 @@ func TestDockerUseCase_Run_RemoveContainer_Failure_EmptyName(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    command.Removecontainer,
 			Payload: command.SimpleName{},
@@ -245,7 +249,7 @@ func TestDockerUseCase_Run_RemoveContainer_Failure_ExtraField(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    command.Removecontainer,
 			Payload: map[string]interface{}{"name": "tester", "extra": "field"},
@@ -265,7 +269,7 @@ func TestDockerUseCase_Run_CreateNetwork(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    "createNetwork",
 			Payload: map[string]interface{}{"name": "test"},
@@ -286,7 +290,7 @@ func TestDockerUseCase_Run_AttachNetwork_Success(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Attachnetwork,
 			Payload: command.ContainerNetwork{
@@ -308,7 +312,7 @@ func TestDockerUseCase_Run_AttachNetwork_Failure_EmptyContainerName(t *testing.T
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Attachnetwork,
 			Payload: command.ContainerNetwork{
@@ -330,7 +334,7 @@ func TestDockerUseCase_Run_AttachNetwork_Failure_EmptyNetworkName(t *testing.T) 
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Attachnetwork,
 			Payload: command.ContainerNetwork{
@@ -352,7 +356,7 @@ func TestDockerUseCase_Run_AttachNetwork_Failure_ExtraField(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Attachnetwork,
 			Payload: map[string]interface{}{
@@ -377,7 +381,7 @@ func TestDockerUseCase_Run_DetachNetwork(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    "detachNetwork",
 			Payload: command.ContainerNetwork{ContainerName: "test", Network: "testnet"},
@@ -396,7 +400,7 @@ func TestDockerUseCase_Run_DetachNetwork_Failure(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    "detachNetwork",
 			Payload: map[string]interface{}{"invalid": "value"},
@@ -417,7 +421,7 @@ func TestDockerUseCase_RemoveNetwork_Success(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Removenetwork,
 			Payload: command.SimpleName{
@@ -438,7 +442,7 @@ func TestDockerUseCase_RemoveNetwork_Failure_EmptyName(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Removenetwork,
 			Payload: command.SimpleName{
@@ -459,7 +463,7 @@ func TestDockerUseCase_RemoveNetwork_Failure_ExtraField(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Removenetwork,
 			Payload: map[string]interface{}{
@@ -483,7 +487,7 @@ func TestDockerUseCase_Run_CreateVolume(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Createvolume,
 			Payload: command.Volume{
@@ -505,7 +509,7 @@ func TestDockerUseCase_Run_RemoveVolume(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    "removeVolume",
 			Payload: command.SimpleName{Name: "test"},
@@ -525,7 +529,7 @@ func TestDockerUseCase_Run_PutFileInContainer(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Putfileincontainer,
 			Payload: command.FileAndContainer{
@@ -548,7 +552,7 @@ func TestDockerUseCase_Run_Emulation(t *testing.T) {
 
 	res := usecase.Run(command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Emulation,
 			Payload: command.Netconf{
@@ -578,7 +582,7 @@ func TestDockerUseCase_Execute_CreateContainer(t *testing.T) {
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Createcontainer,
 			Payload: command.Container{
@@ -604,7 +608,7 @@ func TestDockerUseCase_Execute_StartContainer(t *testing.T) {
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    command.Startcontainer,
 			Payload: command.SimpleName{Name: "test"},
@@ -633,7 +637,7 @@ func TestDockerUseCase_Execute_RemoveContainer_Success(t *testing.T) {
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Removecontainer,
 			Payload: command.SimpleName{
@@ -653,7 +657,7 @@ func TestDockerUseCase_Execute_RemoveContainer_Failure(t *testing.T) {
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    command.Removecontainer,
 			Payload: command.SimpleName{},
@@ -672,7 +676,7 @@ func TestDockerUseCase_Execute_CreateNetwork(t *testing.T) {
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    "createNetwork",
 			Payload: map[string]interface{}{},
@@ -685,7 +689,7 @@ func TestDockerUseCase_Execute_CreateNetwork(t *testing.T) {
 func TestDockerUseCase_Execute_AttachNetwork_Success(t *testing.T) {
 	testCmd := command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    "attachNetwork",
 			Payload: command.ContainerNetwork{ContainerName: "tester", Network: "testnet"},
@@ -719,7 +723,7 @@ func TestDockerUseCase_Execute_AttachNetwork_Failure(t *testing.T) {
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    command.Attachnetwork,
 			Payload: command.ContainerNetwork{Network: "testnet"},
@@ -738,7 +742,7 @@ func TestDockerUseCase_Execute_CreateVolume(t *testing.T) {
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    command.Createvolume,
 			Payload: command.Volume{},
@@ -767,7 +771,7 @@ func TestDockerUseCase_Execute_RemoveVolume_Success(t *testing.T) {
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    command.Removevolume,
 			Payload: command.SimpleName{Name: "vol"},
@@ -785,7 +789,7 @@ func TestDockerUseCase_Execute_RemoveVolume_Failure(t *testing.T) {
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Removevolume,
 			Payload: command.FileAndContainer{
@@ -825,7 +829,7 @@ func TestDockerUseCase_Execute_PutFileInContainer_Success(t *testing.T) {
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Putfileincontainer,
 			Payload: command.FileAndContainer{
@@ -877,7 +881,7 @@ func TestDockerUseCase_Execute_Emulation(t *testing.T) {
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Emulation,
 			Payload: command.Netconf{
@@ -903,7 +907,7 @@ func TestDockerUseCase_Execute_Emulation_Failure(t *testing.T) {
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Emulation,
 			Payload: map[string]interface{}{
@@ -923,7 +927,7 @@ func TestDockerUseCase_Execute_UnknownType_Failure(t *testing.T) {
 
 	res := usecase.Execute(context.TODO(), command.Command{
 		ID:     "TEST",
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type:    command.OrderType("I do not exist fdsfwerwerwR"),
 			Payload: nil,
@@ -940,7 +944,7 @@ func TestDockerUseCase_Execute_CreateContainer_Failure_ExtraField(t *testing.T) 
 	usecase := NewDockerUseCase(service, logrus.New())
 
 	res := usecase.Run(command.Command{
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Createcontainer,
 			Payload: map[string]interface{}{
@@ -959,7 +963,7 @@ func TestDockerUseCase_Execute_CreateVolume_Failure_ExtraField(t *testing.T) {
 	usecase := NewDockerUseCase(service, logrus.New())
 
 	res := usecase.Run(command.Command{
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Createvolume,
 			Payload: map[string]interface{}{
@@ -979,7 +983,7 @@ func TestDockerUseCase_Execute_PutFileInContainer_NoName_Fail(t *testing.T) {
 	usecase := NewDockerUseCase(service, logrus.New())
 
 	res := usecase.Execute(context.TODO(), command.Command{
-		Target: command.Target{IP: "127.0.0.1"},
+		Target: testTarget,
 		Order: command.Order{
 			Type: command.Putfileincontainer,
 			Payload: command.FileAndContainer{
