@@ -83,7 +83,7 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 		})
 	}
 
-	cmds, err := inst.Next()
+	cmds, err := inst.Peek()
 
 	isLastOne := false
 	if err != nil {
@@ -128,11 +128,28 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 		} else {
 			result = entity.NewRequeueResult()
 			dh.log.WithField("remaining", len(inst.Commands)).Debug("creating message for next round")
+			inst.Next()
 			out, err = dh.msgUtil.GetNextMessage(msg, inst)
 		}
 	} else {
-		dh.log.WithField("result", result).Debug("something went wrong, getting kickback message")
-		out, err = dh.msgUtil.GetKickbackMessage(msg)
+		if _, hasFailed := result.Meta["failed"]; hasFailed {
+			failed := result.Meta["failed"].([]string)
+			if len(failed) != len(cmds) {
+				dh.log.WithFields(logrus.Fields{
+					"failed":    failed,
+					"succeeded": len(cmds) - len(failed),
+					"result":    result,
+				}).Warn("something went partially wrong, requeuing only the commands which failed")
+				inst.PartialCompletion(failed)
+				out, err = dh.msgUtil.GetNextMessage(msg, inst)
+			} else {
+				dh.log.WithField("result", result).Debug("something went wrong, getting kickback message")
+				out, err = dh.msgUtil.GetKickbackMessage(msg)
+			}
+		} else {
+			dh.log.WithField("result", result).Debug("something went wrong, getting kickback message")
+			out, err = dh.msgUtil.GetKickbackMessage(msg)
+		}
 	}
 	if err != nil {
 		dh.log.WithFields(logrus.Fields{

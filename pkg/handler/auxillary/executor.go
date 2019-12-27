@@ -89,6 +89,7 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 	}
 	var err error
 	isTrap := false
+	failed := []string{}
 	for range cmds {
 		result := <-resultChan
 		entry := exec.log.WithField("result", result)
@@ -103,6 +104,7 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 				}
 				return result
 			}
+			failed = append(failed, result.Meta["command"].(command.Command).ID)
 			entry.Warn("a command failed to execute")
 			err = fmt.Errorf("%v;%v", err, result.Error.Error())
 		} else if result.IsTrap() {
@@ -111,7 +113,9 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 		}
 	}
 	if err != nil {
-		return entity.NewErrorResult(err)
+		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
+			"failed": failed,
+		})
 	}
 	if isTrap {
 		return entity.NewTrapResult()

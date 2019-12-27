@@ -20,12 +20,12 @@ package service
 
 import (
 	"fmt"
-	"strings"
+	//"strings"
 	"testing"
 
 	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
 	externalsMock "github.com/whiteblock/genesis/mocks/pkg/externals"
-	fileMock "github.com/whiteblock/genesis/mocks/pkg/file"
+	//fileMock "github.com/whiteblock/genesis/mocks/pkg/file"
 	repoMock "github.com/whiteblock/genesis/mocks/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/entity"

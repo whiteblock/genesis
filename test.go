@@ -103,10 +103,13 @@ func createNetwork(dockerUseCase usecase.DockerUseCase, name string, num int) {
 	log.WithFields(log.Fields{"res": res}).Info("created a network")
 }
 
-func attachNetwork(dockerUseCase usecase.DockerUseCase, networkName string, containerName string) {
-	cmd := mintCommand(map[string]string{
-		"container": containerName,
-		"network":   networkName,
+func attachNetwork(dockerUseCase usecase.DockerUseCase,
+	networkName string, containerName string, ip string) {
+
+	cmd := mintCommand(command.ContainerNetwork{
+		ContainerName: containerName,
+		Network:       networkName,
+		IP:            ip,
 	}, command.Attachnetwork)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("attached a network")
@@ -233,8 +236,8 @@ func dockerTest(clean bool) {
 	startContainer(dockerUseCase, "tester3", true)
 
 	createNetwork(dockerUseCase, "testnet2", 15)
-	attachNetwork(dockerUseCase, "testnet2", "tester")
-	attachNetwork(dockerUseCase, "testnet2", "tester2")
+	attachNetwork(dockerUseCase, "testnet2", "tester", "10.15.0.2")
+	attachNetwork(dockerUseCase, "testnet2", "tester2", "10.15.0.3")
 	detachNetwork(dockerUseCase, "testnet", "tester")
 	emulate(dockerUseCase, "tester", "testnet2")
 	emulate(dockerUseCase, "tester2", "testnet2")
