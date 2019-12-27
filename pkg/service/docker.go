@@ -363,6 +363,13 @@ func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli,
 				"failure": "ignored",
 			})
 		}
+		// Looks like this occasionally happens
+		if strings.Contains(err.Error(), "Address already in use") {
+			ds.withField(cli, "error", err).Info("ignoring failure on duplicate network attach command")
+			return entity.NewSuccessResult().InjectMeta(map[string]interface{}{
+				"error": err,
+			})
+		}
 		return entity.NewErrorResult(err)
 	}
 	return entity.NewSuccessResult()
