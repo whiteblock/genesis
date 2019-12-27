@@ -28,7 +28,6 @@ import (
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/usecase"
-	"github.com/whiteblock/genesis/pkg/validator"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/whiteblock/definition/command"
@@ -208,7 +207,6 @@ func dockerTest(clean bool) {
 				conf.FileHandler,
 				conf.GetLogger()),
 			conf.GetLogger()),
-		validator.NewOrderValidator(),
 		conf.GetLogger())
 
 	if clean {

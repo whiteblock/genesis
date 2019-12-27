@@ -64,7 +64,6 @@ var (
 )
 
 type dockerUseCase struct {
-	valid   validator.OrderValidator
 	service service.DockerService
 	log     logrus.Ext1FieldLogger
 }
@@ -72,9 +71,8 @@ type dockerUseCase struct {
 //NewDockerUseCase creates a DockerUseCase arguments given the proper dep injections
 func NewDockerUseCase(
 	service service.DockerService,
-	valid validator.OrderValidator,
 	log logrus.Ext1FieldLogger) DockerUseCase {
-	return &dockerUseCase{service: service, valid: valid, log: log}
+	return &dockerUseCase{service: service, log: log}
 }
 
 func (duc dockerUseCase) withFields(cmd command.Command, fields logrus.Fields) *logrus.Entry {
@@ -178,7 +176,7 @@ func (duc dockerUseCase) createContainerShim(ctx context.Context, cli entity.Cli
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	err = duc.valid.ValidateContainer(container)
+	err = validator.Container(container)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
