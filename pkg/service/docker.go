@@ -177,7 +177,6 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 			},
 		},
 		Mounts: dContainer.GetMounts(),
-		CapAdd:      strslice.StrSlice([]string{"NET_ADMIN"}),//TODO: REMOVE THIS
 	}
 	hostConfig.NanoCPUs = int64(1000000000 * cpus)
 	hostConfig.Memory = mem

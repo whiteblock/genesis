@@ -58,7 +58,7 @@ func NewExecutor(
 
 func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 	resultChan := make(chan entity.Result, len(cmds))
-	sem := semaphore.NewWeighted(exec.conf.LimitPerTest)
+	sem := semaphore.NewWeighted(/*exec.conf.LimitPerTest*/1)//TODO: undo this
 	for _, cmd := range cmds {
 		go func(cmd command.Command) {
 
