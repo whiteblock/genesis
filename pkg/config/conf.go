@@ -115,7 +115,7 @@ func setViperDefaults() {
 	viper.SetDefault("fluentDLogging", true)
 	viper.SetDefault("completionQueueName", "teardownRequests")
 	viper.SetDefault("commandQueueName", "commands")
-	viper.SetDefault("maxMessageRetries", 25)
+	viper.SetDefault("maxMessageRetries", 5)
 	viper.SetDefault("queueMaxConcurrency", 20)
 	viper.SetDefault("verbosity", "INFO")
 	viper.SetDefault("listen", "0.0.0.0:8000")
