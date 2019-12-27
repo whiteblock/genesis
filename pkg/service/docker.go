@@ -363,7 +363,7 @@ func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli,
 				"failure": "ignored",
 			})
 		}
-		return entity.NewFatalResult(err)//TODO: make Error
+		return entity.NewErrorResult(err)
 	}
 	return entity.NewSuccessResult()
 }
