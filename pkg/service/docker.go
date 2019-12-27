@@ -352,8 +352,8 @@ func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli,
 
 	ds.withField(cli, "cmd", cmd).Info("attaching a network")
 	err := cli.NetworkConnect(ctx, cmd.Network, cmd.ContainerName, &network.EndpointSettings{
-		NetworkID: cmd.Network,
-		IPAddress: cmd.IP,
+		/*NetworkID: cmd.Network,
+		IPAddress: cmd.IP,*/
 		IPAMConfig: &network.EndpointIPAMConfig{
 			IPv4Address: cmd.IP,
 		},
