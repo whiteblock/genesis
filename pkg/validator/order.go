@@ -33,7 +33,7 @@ var (
 	// ErrMissingName means missing name field
 	ErrMissingName = errors.New(`missing field "name"`)
 
-	// ErrMissingImage
+	// ErrMissingImage means missing image field
 	ErrMissingImage = errors.New(`missing field "image"`)
 
 	// ErrHostPortTooHigh means the host port number is too high
@@ -43,6 +43,7 @@ var (
 	ErrContainerPortTooHigh = fmt.Errorf(`container port mapping cannot exceed %d`, UnixMinEphemeralPort)
 )
 
+// Container validates a container command payload
 func Container(cntr command.Container) error {
 	if len(cntr.Name) == 0 {
 		return ErrMissingName
