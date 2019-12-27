@@ -354,6 +354,9 @@ func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli,
 	err := cli.NetworkConnect(ctx, cmd.Network, cmd.ContainerName, &network.EndpointSettings{
 		NetworkID: cmd.Network,
 		IPAddress: cmd.IP,
+		IPAMConfig: &network.EndpointIPAMConfig{
+			IPv4Address: cmd.IP,
+		},
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "is already attached to network") {
