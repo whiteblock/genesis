@@ -350,6 +350,7 @@ func (ds dockerService) RemoveNetwork(ctx context.Context, cli entity.DockerCli,
 func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli,
 	cmd command.ContainerNetwork) entity.Result {
 
+	ds.withField(cli, "cmd", cmd).Info("attaching a network")
 	err := cli.NetworkConnect(ctx, cmd.Network, cmd.ContainerName, &network.EndpointSettings{
 		NetworkID: cmd.Network,
 		IPAddress: cmd.IP,
