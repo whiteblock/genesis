@@ -588,7 +588,6 @@ func (ds dockerService) PullImage(ctx context.Context, cli entity.DockerCli,
 			"image": imagePull.Image,
 			"error": err,
 		}).Error("unable to pull an image")
-		return entity.NewErrorResult(err)
 	}
-	return entity.NewSuccessResult()
+	return entity.NewResult(err)
 }
