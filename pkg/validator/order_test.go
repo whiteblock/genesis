@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 whiteblock Inc.
+	Copyright 2019 Whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -33,8 +33,7 @@ func TestOrderValidator_ValidateContainer_Success(t *testing.T) {
 		Memory: "2GB",
 		Image:  "t",
 	}
-	valid := NewOrderValidator()
-	assert.NoError(t, valid.ValidateContainer(testContainer))
+	assert.NoError(t, Container(testContainer))
 }
 
 func TestOrderValidator_ValidateContainer_BadName(t *testing.T) {
@@ -45,8 +44,7 @@ func TestOrderValidator_ValidateContainer_BadName(t *testing.T) {
 		Memory: "2GB",
 		Image:  "t",
 	}
-	valid := NewOrderValidator()
-	assert.Error(t, valid.ValidateContainer(testContainer))
+	assert.Error(t, Container(testContainer))
 }
 
 func TestOrderValidator_ValidateContainer_BadPorts_Host(t *testing.T) {
@@ -57,8 +55,7 @@ func TestOrderValidator_ValidateContainer_BadPorts_Host(t *testing.T) {
 		Memory: "2GB",
 		Image:  "t",
 	}
-	valid := NewOrderValidator()
-	assert.Error(t, valid.ValidateContainer(testContainer))
+	assert.Error(t, Container(testContainer))
 }
 
 func TestOrderValidator_ValidateContainer_BadPorts_Container(t *testing.T) {
@@ -69,8 +66,7 @@ func TestOrderValidator_ValidateContainer_BadPorts_Container(t *testing.T) {
 		Memory: "2GB",
 		Image:  "t",
 	}
-	valid := NewOrderValidator()
-	assert.Error(t, valid.ValidateContainer(testContainer))
+	assert.Error(t, Container(testContainer))
 }
 
 func TestOrderValidator_ValidateContainer_BadCPUs(t *testing.T) {
@@ -81,8 +77,7 @@ func TestOrderValidator_ValidateContainer_BadCPUs(t *testing.T) {
 		Memory: "2GB",
 		Image:  "t",
 	}
-	valid := NewOrderValidator()
-	assert.Error(t, valid.ValidateContainer(testContainer))
+	assert.Error(t, Container(testContainer))
 }
 
 func TestOrderValidator_ValidateContainer_BadMem(t *testing.T) {
@@ -93,8 +88,7 @@ func TestOrderValidator_ValidateContainer_BadMem(t *testing.T) {
 		Memory: "fdwe2",
 		Image:  "t",
 	}
-	valid := NewOrderValidator()
-	assert.Error(t, valid.ValidateContainer(testContainer))
+	assert.Error(t, Container(testContainer))
 }
 
 func TestOrderValidator_ValidateContainer_BadImage(t *testing.T) {
@@ -105,6 +99,5 @@ func TestOrderValidator_ValidateContainer_BadImage(t *testing.T) {
 		Memory: "2GB",
 		Image:  "",
 	}
-	valid := NewOrderValidator()
-	assert.Error(t, valid.ValidateContainer(testContainer))
+	assert.Error(t, Container(testContainer))
 }

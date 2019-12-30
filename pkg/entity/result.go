@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 whiteblock Inc.
+	Copyright 2019 Whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -74,9 +74,12 @@ func (res Result) Trap() Result {
 
 // Fatal turns this result into a fatal result, useful for when you want to change
 // the resulting action, but want to preserve the information in the result.
-func (res Result) Fatal(err error) Result {
+// If no args given, keeps the original error
+func (res Result) Fatal(err ...error) Result {
 	res.Type = FatalType
-	res.Error = err
+	if len(err) > 0 {
+		res.Error = err[0]
+	}
 	return res
 }
 
@@ -160,6 +163,20 @@ func getCaller(n int) string {
 	return fmt.Sprintf("%s:%d", file, line)
 }
 
+// NewResult creates a success result if err == nil other an error result,
+func NewResult(err interface{}, depth ...int) Result {
+	n := 2
+	if len(depth) > 0 {
+		n += depth[0]
+	}
+	if err == nil {
+		return Result{Type: SuccessType, Error: nil,
+			Meta: map[string]interface{}{}, Caller: getCaller(n)}
+	}
+	return Result{Type: ErrorType, Error: fmt.Errorf("%v", err),
+		Meta: map[string]interface{}{}, Caller: getCaller(n)}
+}
+
 // NewSuccessResult indicates a successful result
 func NewSuccessResult() Result {
 	return Result{Type: SuccessType, Error: nil,
@@ -178,7 +195,8 @@ func NewFatalResult(err interface{}) Result {
 		Meta: map[string]interface{}{}, Caller: getCaller(2)}
 }
 
-// NewErrorResult creates a result which indicates a non-fatal error. Commands with this result should be requeued.
+// NewErrorResult creates a result which indicates a non-fatal error.
+// Commands with this result should be requeued.
 func NewErrorResult(err interface{}) Result {
 	return Result{Type: ErrorType, Error: fmt.Errorf("%v", err),
 		Meta: map[string]interface{}{}, Caller: getCaller(2)}

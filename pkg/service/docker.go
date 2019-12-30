@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 whiteblock Inc.
+	Copyright 2019 Whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -104,6 +104,21 @@ func NewDockerService(
 		log:    log}
 }
 
+func (ds dockerService) errorWhitelistHandler(err error, whitelist ...string) entity.Result {
+	if err == nil {
+		return entity.NewResult(nil, 1)
+	}
+	for _, entry := range whitelist {
+		if strings.Contains(err.Error(), entry) {
+			ds.log.WithField("error", err).Info("ignoring whitelisted error")
+			return entity.NewResult(nil, 1).InjectMeta(map[string]interface{}{
+				"error": err,
+			})
+		}
+	}
+	return entity.NewResult(err, 1)
+}
+
 //CreateClient creates a new client for connecting to the docker daemon
 func (ds dockerService) CreateClient(host string) (entity.Client, error) {
 	if ds.conf.LocalMode {
@@ -195,23 +210,15 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 	}
 
 	_, err = cli.ContainerCreate(ctx, config, hostConfig, networkConfig, dContainer.Name)
-	if err != nil {
-		if strings.Contains(err.Error(), "already in use by container") {
-			ds.withFields(cli, logrus.Fields{"name": dContainer.Name,
-				"error": err}).Error("duplicate container error")
-			return entity.NewSuccessResult()
-		}
-		return entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
-			"image":  dContainer.Image,
-			"name":   dContainer.Name,
-			"errMsg": err.Error(),
-			"type":   "CreateContainer",
-		})
+	res := ds.errorWhitelistHandler(err, "already in use by container")
+	if !res.IsSuccess() {
+		res = res.Fatal()
 	}
-
-	return entity.NewSuccessResult().InjectMeta(map[string]interface{}{
-		"networks": dContainer.Network,
-		"name":     dContainer.Name,
+	return res.InjectMeta(map[string]interface{}{
+		"image":   dContainer.Image,
+		"name":    dContainer.Name,
+		"network": dContainer.Network,
+		"type":    "CreateContainer",
 	})
 }
 
@@ -257,16 +264,10 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 
 	select {
 	case err := <-resChan:
-		if err != nil {
-			if strings.Contains(err.Error(), "No such container") {
-				return entity.NewSuccessResult()
-			}
-			return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
-				"name":  sc.Name,
-				"type":  "StartContainer",
-				"error": err.Error(),
-			})
-		}
+		return ds.errorWhitelistHandler(err, "No such container").InjectMeta(map[string]interface{}{
+			"name": sc.Name,
+			"type": "StartContainer",
+		})
 	case <-time.After(sc.Timeout.Duration):
 		ds.withFields(cli, logrus.Fields{"name": sc.Name}).Debug("timeout was reached")
 
@@ -285,10 +286,7 @@ func (ds dockerService) RemoveContainer(ctx context.Context, cli entity.DockerCl
 		RemoveLinks:   false,
 		Force:         true,
 	})
-	if err != nil {
-		return entity.NewErrorResult(err)
-	}
-	return entity.NewSuccessResult()
+	return entity.NewResult(err)
 }
 
 // CreateNetwork attempts to create a network
@@ -324,15 +322,8 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli entity.DockerCli,
 	ds.withFields(cli, logrus.Fields{"name": net.Name,
 		"conf": networkCreate}).Debug("creating a network")
 	_, err := cli.NetworkCreate(ctx, net.Name, networkCreate)
-	if err != nil {
-		if strings.Contains(err.Error(), "already exists") {
-			ds.withFields(cli, logrus.Fields{"name": net.Name,
-				"error": err}).Warn("duplicate network")
-			return entity.NewSuccessResult()
-		}
-		return entity.NewErrorResult(err)
-	}
-	return entity.NewSuccessResult()
+
+	return ds.errorWhitelistHandler(err, "already exists")
 }
 
 //RemoveNetwork attempts to remove a network
@@ -340,11 +331,7 @@ func (ds dockerService) RemoveNetwork(ctx context.Context, cli entity.DockerCli,
 	name string) entity.Result {
 
 	ds.withFields(cli, logrus.Fields{"name": name}).Debug("removing a network")
-	err := cli.NetworkRemove(ctx, name)
-	if err != nil {
-		return entity.NewErrorResult(err)
-	}
-	return entity.NewSuccessResult()
+	return entity.NewResult(cli.NetworkRemove(ctx, name))
 }
 
 func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli,
@@ -356,39 +343,17 @@ func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli,
 			IPv4Address: cmd.IP,
 		},
 	})
-	if err != nil {
-		if strings.Contains(err.Error(), "is already attached to network") {
-			ds.withField(cli, "error", err).Info("ignoring failure on duplicate network attach command")
-			return entity.NewSuccessResult().InjectMeta(map[string]interface{}{
-				"failure": "ignored",
-			})
-		}
-		// Looks like this occasionally happens
-		if strings.Contains(err.Error(), "Address already in use") {
-			ds.withField(cli, "error", err).Info("ignoring failure on duplicate network attach command")
-			return entity.NewSuccessResult().InjectMeta(map[string]interface{}{
-				"error": err,
-			})
-		}
-		return entity.NewErrorResult(err)
-	}
-	return entity.NewSuccessResult()
+	return ds.errorWhitelistHandler(err,
+		"is already attached to network",
+		"Address already in use")
 }
 
 func (ds dockerService) DetachNetwork(ctx context.Context, cli entity.DockerCli,
 	networkName string, containerName string) entity.Result {
 
 	err := cli.NetworkDisconnect(ctx, networkName, containerName, true)
-	if err != nil {
-		if strings.Contains(err.Error(), "is not connected to the network") {
-			ds.withField(cli, "error", err).Info("ignoring failure on detach command")
-			return entity.NewSuccessResult().InjectMeta(map[string]interface{}{
-				"failure": "ignored",
-			})
-		}
-		return entity.NewErrorResult(err)
-	}
-	return entity.NewSuccessResult()
+
+	return ds.errorWhitelistHandler(err, "is not connected to the network")
 }
 
 func (ds dockerService) CreateVolume(ctx context.Context, cli entity.DockerCli,
@@ -402,21 +367,13 @@ func (ds dockerService) CreateVolume(ctx context.Context, cli entity.DockerCli,
 	}
 
 	_, err := cli.VolumeCreate(ctx, volConfig)
-	if err != nil {
-		return entity.NewErrorResult(err)
-	}
-
-	return entity.NewSuccessResult()
+	return entity.NewResult(err)
 }
 
 func (ds dockerService) RemoveVolume(ctx context.Context, cli entity.DockerCli,
 	name string) entity.Result {
 
-	err := cli.VolumeRemove(ctx, name, true)
-	if err != nil {
-		return entity.NewErrorResult(err)
-	}
-	return entity.NewSuccessResult()
+	return entity.NewResult(cli.VolumeRemove(ctx, name, true))
 }
 
 func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.DockerCli,
@@ -485,13 +442,11 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 		AllowOverwriteDirWithFile: true,
 		CopyUIDGID:                false,
 	})
-	if err != nil {
-		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
-			"labels":    cli.Labels,
-			"container": containerName,
-		})
-	}
-	return entity.NewSuccessResult()
+
+	return entity.NewResult(err).InjectMeta(map[string]interface{}{
+		"labels":    cli.Labels,
+		"container": containerName,
+	})
 }
 
 func (ds dockerService) Emulation(ctx context.Context, cli entity.DockerCli,
@@ -633,7 +588,6 @@ func (ds dockerService) PullImage(ctx context.Context, cli entity.DockerCli,
 			"image": imagePull.Image,
 			"error": err,
 		}).Error("unable to pull an image")
-		return entity.NewErrorResult(err)
 	}
-	return entity.NewSuccessResult()
+	return entity.NewResult(err)
 }

@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 whiteblock Inc.
+	Copyright 2019 Whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -29,7 +29,6 @@ import (
 	"github.com/whiteblock/genesis/pkg/repository"
 	"github.com/whiteblock/genesis/pkg/service"
 	"github.com/whiteblock/genesis/pkg/usecase"
-	"github.com/whiteblock/genesis/pkg/validator"
 
 	"github.com/gorilla/mux"
 	queue "github.com/whiteblock/amqp"
@@ -53,7 +52,6 @@ func getRestServer() (controller.RestController, error) {
 						conf.FileHandler,
 						conf.GetLogger()),
 					conf.GetLogger()),
-				validator.NewOrderValidator(),
 				conf.GetLogger()),
 			conf.GetLogger()),
 		mux.NewRouter(),
@@ -100,7 +98,6 @@ func getCommandController() (controller.CommandController, error) {
 							conf.FileHandler,
 							conf.GetLogger()),
 						conf.GetLogger()),
-					validator.NewOrderValidator(),
 					conf.GetLogger()),
 				conf.GetLogger()),
 			queue.NewAMQPMessage(conf.MaxMessageRetries),

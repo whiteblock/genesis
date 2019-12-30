@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 whiteblock Inc.
+	Copyright 2019 Whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -20,35 +20,41 @@ package validator
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/whiteblock/definition/command"
 )
 
-//OrderValidator is a series of functions which validate different orders
-type OrderValidator interface {
-	ValidateContainer(cntr command.Container) error
-}
+// UnixMinEphemeralPort is the lowest ephermeral port number
+const UnixMinEphemeralPort = 49152
 
-type orderValidator struct {
-}
+var (
+	// ErrMissingName means missing name field
+	ErrMissingName = errors.New(`missing field "name"`)
 
-//NewOrderValidator creates a new OrderValidator
-func NewOrderValidator() OrderValidator {
-	return &orderValidator{}
-}
+	// ErrMissingImage means missing image field
+	ErrMissingImage = errors.New(`missing field "image"`)
 
-func (ov *orderValidator) ValidateContainer(cntr command.Container) error {
+	// ErrHostPortTooHigh means the host port number is too high
+	ErrHostPortTooHigh = fmt.Errorf(`host port mapping cannot exceed %d`, UnixMinEphemeralPort)
+
+	// ErrContainerPortTooHigh means the container port number is too high
+	ErrContainerPortTooHigh = fmt.Errorf(`container port mapping cannot exceed %d`, UnixMinEphemeralPort)
+)
+
+// Container validates a container command payload
+func Container(cntr command.Container) error {
 	if len(cntr.Name) == 0 {
-		return errors.New(`missing field "name"`)
+		return ErrMissingName
 	}
 
 	for hostP, cntrP := range cntr.Ports {
-		if hostP >= 49152 {
-			return errors.New(`host port mapping cannot exceed 49152`)
+		if hostP >= UnixMinEphemeralPort {
+			return ErrHostPortTooHigh
 		}
-		if cntrP >= 49152 {
-			return errors.New(`container port mapping cannot exceed 49152`)
+		if cntrP >= UnixMinEphemeralPort {
+			return ErrContainerPortTooHigh
 		}
 	}
 
@@ -63,7 +69,7 @@ func (ov *orderValidator) ValidateContainer(cntr command.Container) error {
 	}
 
 	if len(cntr.Image) == 0 {
-		return errors.New(`missing field "image"`)
+		return ErrMissingImage
 	}
 	return nil
 }
