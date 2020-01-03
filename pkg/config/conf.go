@@ -35,8 +35,9 @@ type Config struct {
 	QueueMaxConcurrency int64  `mapstructure:"queueMaxConcurrency"`
 	CompletionQueueName string `mapstructure:"completionQueueName"`
 	CommandQueueName    string `mapstructure:"commandQueueName"`
+	ErrorQueueName      string `mapstructure:"errorQueueName"`
 
-	//LocalMode indicates that Genesis is operating in standalone mode
+	// LocalMode indicates that Genesis is operating in standalone mode
 	LocalMode        bool              `mapstructure:"localMode"`
 	VolumeDriver     string            `mapstructure:"volumeDriver"`
 	VolumeDriverOpts map[string]string `mapstructure:"volumeDriverOpts"`
@@ -49,7 +50,7 @@ type Config struct {
 	FileHandler FileHandler `mapstructure:"-"`
 }
 
-//GetLogger gets a logger according to the config
+// GetLogger gets a logger according to the config
 func (c Config) GetLogger() *logrus.Logger {
 	logger := logrus.New()
 	lvl, err := logrus.ParseLevel(c.Verbosity)
@@ -67,17 +68,24 @@ func (c Config) GetLogger() *logrus.Logger {
 	return logger
 }
 
-//CompletionAMQP gets the AMQP for the completion queue
+// CompletionAMQP gets the AMQP for the completion queue
 func (c Config) CompletionAMQP() (queue.AMQPConfig, error) {
 	conf, err := queue.NewAMQPConfig(viper.GetViper())
 	conf.QueueName = c.CompletionQueueName
 	return conf, err
 }
 
-//CommandAMQP gets the AMQP for the command queue
+// CommandAMQP gets the AMQP for the command queue
 func (c Config) CommandAMQP() (queue.AMQPConfig, error) {
 	conf, err := queue.NewAMQPConfig(viper.GetViper())
 	conf.QueueName = c.CommandQueueName
+	return conf, err
+}
+
+// ErrorsAMQP gets the AMQP for the command queue
+func (c Config) ErrorsAMQP() (queue.AMQPConfig, error) {
+	conf, err := queue.NewAMQPConfig(viper.GetViper())
+	conf.QueueName = c.ErrorQueueName
 	return conf, err
 }
 
@@ -89,7 +97,7 @@ func (c Config) GetVolumeConfig() command.VolumeConfig {
 	}
 }
 
-//GetRestConfig extracts the fields of this object representing RestConfig
+// GetRestConfig extracts the fields of this object representing RestConfig
 func (c Config) GetRestConfig() entity.RestConfig {
 	return entity.RestConfig{Listen: c.Listen}
 }
@@ -106,6 +114,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("listen", "LISTEN")
 	viper.BindEnv("completionQueueName", "COMPLETION_QUEUE_NAME")
 	viper.BindEnv("commandQueueName", "COMMAND_QUEUE_NAME")
+	viper.BindEnv("errorQueueName", "ERROR_QUEUE_NAME")
 	setExecutionBindings(viper.GetViper())
 	setDockerBindings(viper.GetViper())
 	setFileHandlerBindings(viper.GetViper())
@@ -120,6 +129,7 @@ func setViperDefaults() {
 	viper.SetDefault("verbosity", "INFO")
 	viper.SetDefault("listen", "0.0.0.0:8000")
 	viper.SetDefault("localMode", true)
+	viper.SetDefault("errorQueueName", "errors")
 
 	setExecutionDefaults(viper.GetViper())
 	setDockerDefaults(viper.GetViper())

@@ -34,7 +34,7 @@ import (
 )
 
 func TestNewCommandController_Failure(t *testing.T) {
-	ctl, err := NewCommandController(0, nil, nil, nil, logrus.New())
+	ctl, err := NewCommandController(0, nil, nil, nil, nil, logrus.New())
 	assert.Nil(t, ctl)
 	assert.Error(t, err)
 }
@@ -42,15 +42,17 @@ func TestNewCommandController_Failure(t *testing.T) {
 func TestNewCommandController_Ignore_CreateQueueFailure(t *testing.T) {
 	serv := new(queue.AMQPService)
 	serv2 := new(queue.AMQPService)
+	serv3 := new(queue.AMQPService)
 	serv.On("CreateQueue").Return(fmt.Errorf("err")).Once()
 	serv2.On("CreateQueue").Return(fmt.Errorf("err")).Once()
 
-	control, err := NewCommandController(2, serv, serv2, nil, logrus.New())
+	control, err := NewCommandController(2, serv, serv3, serv2, nil, logrus.New())
 	assert.NotNil(t, control)
 	assert.NoError(t, err)
 
 	serv.AssertExpectations(t)
 	serv2.AssertExpectations(t)
+	serv3.AssertExpectations(t)
 }
 
 func TestCommandController_Consumption(t *testing.T) {
@@ -69,7 +71,7 @@ func TestCommandController_Consumption(t *testing.T) {
 		processedChan <- true
 	}).Return(amqp.Publishing{}, entity.NewSuccessResult()).Times(items)
 
-	control, err := NewCommandController(2, serv, serv2, hand, logrus.New())
+	control, err := NewCommandController(2, serv, nil, serv2, hand, logrus.New())
 	assert.Equal(t, err, nil)
 	go control.Start()
 
@@ -107,7 +109,7 @@ func TestCommandController_ConsumptionAllDone(t *testing.T) {
 	hand := new(handler.DeliveryHandler)
 	hand.On("Process", mock.Anything).Return(amqp.Publishing{}, entity.NewAllDoneResult()).Times(items)
 
-	control, err := NewCommandController(2, serv, serv2, hand, logrus.New())
+	control, err := NewCommandController(2, serv, nil, serv2, hand, logrus.New())
 	assert.Equal(t, err, nil)
 	go control.Start()
 
@@ -145,7 +147,7 @@ func TestCommandController_ConsumptionAllDone_Send_Err(t *testing.T) {
 	hand := new(handler.DeliveryHandler)
 	hand.On("Process", mock.Anything).Return(amqp.Publishing{}, entity.NewAllDoneResult()).Times(items)
 
-	control, err := NewCommandController(2, serv, serv2, hand, logrus.New())
+	control, err := NewCommandController(2, serv, nil, serv2, hand, logrus.New())
 	assert.Equal(t, err, nil)
 	go control.Start()
 
@@ -184,7 +186,7 @@ func TestCommandController_Requeue(t *testing.T) {
 	hand.On("Process", mock.Anything).Return(amqp.Publishing{},
 		entity.NewErrorResult(fmt.Errorf("some non-fatal error"))).Times(items)
 
-	control, err := NewCommandController(2, serv, serv2, hand, logrus.New())
+	control, err := NewCommandController(2, serv, nil, serv2, hand, logrus.New())
 	assert.Equal(t, err, nil)
 	go control.Start()
 

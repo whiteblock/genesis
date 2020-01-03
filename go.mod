@@ -4,11 +4,10 @@ go 1.13
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
-	github.com/Microsoft/go-winio v0.4.14 // indirect
+	github.com/Microsoft/hcsshim v0.8.7 // indirect
 	github.com/containerd/continuity v0.0.0-20191214063359-1097c8bae83b // indirect
 	github.com/docker/docker v1.4.2-0.20191106232431-31abc6c089eb
 	github.com/docker/go-connections v0.4.0
-	github.com/docker/go-units v0.4.0 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/imdario/mergo v0.3.8
@@ -27,7 +26,7 @@ require (
 	github.com/spf13/viper v1.6.1
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
 	github.com/stretchr/testify v1.4.0
-	github.com/whiteblock/amqp v1.0.5
+	github.com/whiteblock/amqp v1.1.0
 	github.com/whiteblock/definition v0.0.0-20191227164938-9354f79974b5
 	github.com/whiteblock/utility v0.0.0-20191224222157-30a6d5335ebc
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
