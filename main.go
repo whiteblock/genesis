@@ -73,6 +73,11 @@ func getCommandController() (controller.CommandController, error) {
 		return nil, err
 	}
 
+	errConf, err := conf.CommandAMQP()
+	if err != nil {
+		return nil, err
+	}
+
 	cmdConn, err := queue.OpenAMQPConnection(cmdConf.Endpoint)
 	if err != nil {
 		return nil, err
@@ -83,9 +88,15 @@ func getCommandController() (controller.CommandController, error) {
 		return nil, err
 	}
 
+	errConn, err := queue.OpenAMQPConnection(errConf.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+
 	return controller.NewCommandController(
 		conf.QueueMaxConcurrency,
 		queue.NewAMQPService(cmdConf, queue.NewAMQPRepository(cmdConn), conf.GetLogger()),
+		queue.NewAMQPService(cmdConf, queue.NewAMQPRepository(errConn), conf.GetLogger()),
 		queue.NewAMQPService(complConf, queue.NewAMQPRepository(complConn), conf.GetLogger()),
 		handler.NewDeliveryHandler(
 			handAux.NewExecutor(

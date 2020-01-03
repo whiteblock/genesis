@@ -118,6 +118,11 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 			"error":   result.Error.Error(),
 			"testnet": inst.ID,
 		}).Error("execution resulted in a fatal error")
+		result = result.InjectMeta(map[string]interface{}{
+			command.OrgIDKey:        inst.OrgID,
+			command.TestIDKey:       inst.ID,
+			command.DefinitionIDKey: inst.DefinitionID,
+		})
 	} else if result.IsTrap() {
 		dh.log.WithField("result", result).Debug("propogating the trap")
 	} else if isLastOne && result.IsSuccess() {

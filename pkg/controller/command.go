@@ -40,6 +40,7 @@ type CommandController interface {
 type consumer struct {
 	completion queue.AMQPService
 	cmds       queue.AMQPService
+	errors     queue.AMQPService
 	handle     handler.DeliveryHandler
 	log        logrus.Ext1FieldLogger
 	once       *sync.Once
@@ -50,6 +51,7 @@ type consumer struct {
 func NewCommandController(
 	maxConcurreny int64,
 	cmds queue.AMQPService,
+	errors queue.AMQPService,
 	completion queue.AMQPService,
 	handle handler.DeliveryHandler,
 	log logrus.Ext1FieldLogger) (CommandController, error) {
@@ -62,6 +64,7 @@ func NewCommandController(
 		completion: completion,
 		cmds:       cmds,
 		handle:     handle,
+		errors:     errors,
 		once:       &sync.Once{},
 		sem:        semaphore.NewWeighted(maxConcurreny),
 	}
@@ -101,6 +104,20 @@ func (c *consumer) handleMessage(msg amqp.Delivery) {
 		return
 	}
 	if res.IsAllDone() || res.IsFatal() {
+		if res.IsFatal() {
+			msg, err := queue.CreateMessage(res)
+			if err == nil {
+				go func() {
+					err := c.errors.Send(msg)
+					if err != nil {
+						c.log.WithField("err", err).WithField("res",
+							res).Error("an error occured while reporting an error")
+					}
+				}()
+			} else {
+				c.log.WithField("err", err).WithField("res", res).Error("an error occured while reporting an error")
+			}
+		}
 		c.log.Info("sending the all done signal")
 		err := c.completion.Send(pub)
 		if err != nil {
