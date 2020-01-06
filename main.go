@@ -73,7 +73,7 @@ func getCommandController() (controller.CommandController, error) {
 		return nil, err
 	}
 
-	errConf, err := conf.CommandAMQP()
+	errConf, err := conf.ErrorsAMQP()
 	if err != nil {
 		return nil, err
 	}
