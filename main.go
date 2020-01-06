@@ -77,6 +77,18 @@ func getCommandController() (controller.CommandController, error) {
 	if err != nil {
 		return nil, err
 	}
+	
+	if complConf.QueueName == cmdConf.QueueName {
+		panic("completion queue matches command queue")
+	}
+
+	if cmdConf.QueueName == errConf.QueueName {
+		panic("command queue matches error queue")
+	}
+
+	if errConf.QueueName == complConf.QueueName {
+		panic("error queue matches command queue")
+	}
 
 	cmdConn, err := queue.OpenAMQPConnection(cmdConf.Endpoint)
 	if err != nil {
