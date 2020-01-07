@@ -108,7 +108,7 @@ func getCommandController() (controller.CommandController, error) {
 	return controller.NewCommandController(
 		conf.QueueMaxConcurrency,
 		queue.NewAMQPService(cmdConf, queue.NewAMQPRepository(cmdConn), conf.GetLogger()),
-		queue.NewAMQPService(cmdConf, queue.NewAMQPRepository(errConn), conf.GetLogger()),
+		queue.NewAMQPService(errConf, queue.NewAMQPRepository(errConn), conf.GetLogger()),
 		queue.NewAMQPService(complConf, queue.NewAMQPRepository(complConn), conf.GetLogger()),
 		handler.NewDeliveryHandler(
 			handAux.NewExecutor(
