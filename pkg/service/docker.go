@@ -385,7 +385,7 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 	}).Debug("copying file to container")
 	rdr, err := ds.remote.GetTarReader(cli.Labels[command.DefinitionIDKey], file)
 	if err != nil {
-		return entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
+		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
 			"labels": cli.Labels,
 		})
 	}

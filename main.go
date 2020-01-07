@@ -77,7 +77,7 @@ func getCommandController() (controller.CommandController, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if complConf.QueueName == cmdConf.QueueName {
 		panic("completion queue matches command queue")
 	}
