@@ -98,6 +98,10 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 
 	isLastOne := false
 	if err != nil {
+		if errors.Is(err, command.ErrNoCommands) {
+			dh.log.WithField("error", err).Error("ignoring empty message")
+			return amqp.Publishing{}, entity.NewIgnoreResult(err)
+		}
 		if !errors.Is(err, command.ErrDone) {
 			dh.log.Error(err)
 			return amqp.Publishing{}, entity.NewFatalResult(err).InjectMeta(map[string]interface{}{

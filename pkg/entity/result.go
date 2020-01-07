@@ -66,6 +66,11 @@ func (res Result) IsFatal() bool {
 	return res.Error != nil && res.Type == FatalType
 }
 
+// IsIgnore returns true if this should be ignored
+func (res Result) IsIgnore() bool {
+	return res.Type == IgnoreType
+}
+
 // Trap turns this result into a trapping result
 func (res Result) Trap() Result {
 	res.Type = TrapType
@@ -153,6 +158,9 @@ const (
 	// TrapType indicates that the task is a trap, and the commands should just be acked without
 	// further action
 	TrapType
+
+	// IgnoreType indicates that the given payload should be dropped immediately without further action
+	IgnoreType
 )
 
 func getCaller(n int) string {
@@ -199,6 +207,12 @@ func NewFatalResult(err interface{}) Result {
 // Commands with this result should be requeued.
 func NewErrorResult(err interface{}) Result {
 	return Result{Type: ErrorType, Error: fmt.Errorf("%v", err),
+		Meta: map[string]interface{}{}, Caller: getCaller(2)}
+}
+
+// NewIgnoreResult creates a result which indicates to just ack the message, and ignore it
+func NewIgnoreResult(err interface{}) Result {
+	return Result{Type: IgnoreType, Error: fmt.Errorf("%v", err),
 		Meta: map[string]interface{}{}, Caller: getCaller(2)}
 }
 

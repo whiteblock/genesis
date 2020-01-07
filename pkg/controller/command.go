@@ -90,6 +90,12 @@ func (c *consumer) handleMessage(msg amqp.Delivery) {
 	defer c.sem.Release(1)
 
 	pub, res := c.handle.Process(msg)
+
+	if res.IsIgnore() {
+		c.log.Info("ignoring a message")
+		msg.Ack(false)
+		return
+	}
 	if res.IsTrap() {
 		c.log.Info("falling through due to trap")
 		msg.Ack(false)
