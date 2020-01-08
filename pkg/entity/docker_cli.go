@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 whiteblock Inc.
+	Copyright 2019 Whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -18,15 +18,8 @@
 
 package entity
 
-//DockerConfig represents the configuration needed to communicate with docker daemons
-type DockerConfig struct {
-	//CACertPath is the filepath to the CA Certificate
-	CACertPath string `json:"caCertPath"`
-	//CertPath is the filepath to the Certificate for TLS
-	CertPath string `json:"certPath"`
-	//KeyPath is the filepath to the private key for TLS
-	KeyPath string `json:"keyPath"`
-	//LocalMode causes the TLS parameters to be ignored and Genesis
-	//to assume that the docker daemon is on the local machine
-	LocalMode bool `json:"localMode"`
+// DockerCli is a wrapper around Client to provide extras such as labels
+type DockerCli struct {
+	Client
+	Labels map[string]string
 }

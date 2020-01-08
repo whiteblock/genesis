@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 whiteblock Inc.
+	Copyright 2019 Whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -19,12 +19,14 @@
 package controller
 
 import (
-	log "github.com/sirupsen/logrus"
+	"net/http"
+	"strings"
+
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/handler"
 	"github.com/whiteblock/genesis/pkg/helper"
-	"net/http"
-	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 //RestController handles the REST API server
@@ -37,12 +39,18 @@ type restController struct {
 	conf entity.RestConfig
 	hand handler.RestHandler
 	mux  helper.Router
+	log  logrus.Ext1FieldLogger
 }
 
 //NewRestController creates a new rest controller
-func NewRestController(conf entity.RestConfig, hand handler.RestHandler, mux helper.Router) RestController {
-	log.Debug("creating a new rest controller")
-	return &restController{conf: conf, hand: hand, mux: mux}
+func NewRestController(
+	conf entity.RestConfig,
+	hand handler.RestHandler,
+	mux helper.Router,
+	log logrus.Ext1FieldLogger) RestController {
+
+	log.Trace("creating a new rest controller")
+	return &restController{conf: conf, hand: hand, mux: mux, log: log}
 }
 
 // Start starts the rest server, blocking the calling thread from returning
@@ -51,8 +59,8 @@ func (rc restController) Start() {
 	rc.mux.HandleFunc("/command", rc.hand.AddCommands).Methods("POST")
 	rc.mux.HandleFunc("/health", rc.hand.HealthCheck).Methods("GET")
 
-	log.WithFields(log.Fields{"socket": rc.conf.Listen}).Info("listening for requests")
-	log.Fatal(http.ListenAndServe(rc.conf.Listen, removeTrailingSlash(rc.mux)))
+	rc.log.WithFields(logrus.Fields{"socket": rc.conf.Listen}).Info("listening for requests")
+	rc.log.Fatal(http.ListenAndServe(rc.conf.Listen, removeTrailingSlash(rc.mux)))
 }
 
 func removeTrailingSlash(next http.Handler) http.Handler { //TODO middleware

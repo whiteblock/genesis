@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 whiteblock Inc.
+	Copyright 2019 Whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -20,119 +20,140 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/whiteblock/genesis/pkg/config"
+	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/file"
+	"github.com/whiteblock/genesis/pkg/repository"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/strslice"
+	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
-	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/pkg/entity"
-	"github.com/whiteblock/genesis/pkg/repository"
-	"github.com/whiteblock/genesis/pkg/service/auxillary"
-	"strconv"
+	"github.com/docker/docker/pkg/archive"
+	"github.com/docker/docker/pkg/system"
+	"github.com/sirupsen/logrus"
+	"github.com/whiteblock/definition/command"
 )
 
 //DockerService provides a intermediate interface between docker and the order from a command
 type DockerService interface {
 
 	//CreateContainer attempts to create a docker container
-	CreateContainer(ctx context.Context, cli *client.Client, container entity.Container) entity.Result
+	CreateContainer(ctx context.Context, cli entity.DockerCli,
+		container command.Container) entity.Result
 
 	//StartContainer attempts to start an already created docker container
-	StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result
+	StartContainer(ctx context.Context, cli entity.DockerCli, sc command.StartContainer) entity.Result
 
 	//RemoveContainer attempts to remove a container
-	RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result
+	RemoveContainer(ctx context.Context, cli entity.DockerCli, name string) entity.Result
 
 	//CreateNetwork attempts to create a network
-	CreateNetwork(ctx context.Context, cli *client.Client, net entity.Network) entity.Result
+	CreateNetwork(ctx context.Context, cli entity.DockerCli, net command.Network) entity.Result
 
 	//RemoveNetwork attempts to remove a network
-	RemoveNetwork(ctx context.Context, cli *client.Client, name string) entity.Result
-	AttachNetwork(ctx context.Context, cli *client.Client, network string, container string) entity.Result
-	DetachNetwork(ctx context.Context, cli *client.Client, network string, container string) entity.Result
-	CreateVolume(ctx context.Context, cli *client.Client, volume entity.Volume) entity.Result
-	RemoveVolume(ctx context.Context, cli *client.Client, name string) entity.Result
-	PlaceFileInContainer(ctx context.Context, cli *client.Client, containerName string, file entity.File) entity.Result
-	PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file entity.File) entity.Result
-	Emulation(ctx context.Context, cli *client.Client, netem entity.Netconf) entity.Result
+	RemoveNetwork(ctx context.Context, cli entity.DockerCli, name string) entity.Result
+	AttachNetwork(ctx context.Context, cli entity.DockerCli, cmd command.ContainerNetwork) entity.Result
+	DetachNetwork(ctx context.Context, cli entity.DockerCli, network string,
+		container string) entity.Result
+	CreateVolume(ctx context.Context, cli entity.DockerCli, volume command.Volume) entity.Result
+	RemoveVolume(ctx context.Context, cli entity.DockerCli, name string) entity.Result
+	PlaceFileInContainer(ctx context.Context, cli entity.DockerCli,
+		containerName string, file command.File) entity.Result
+	Emulation(ctx context.Context, cli entity.DockerCli, netem command.Netconf) entity.Result
+	SwarmCluster(ctx context.Context, cli entity.DockerCli, swarm command.SetupSwarm) entity.Result
+	PullImage(ctx context.Context, cli entity.DockerCli, imagePull command.PullImage) entity.Result
 
 	//CreateClient creates a new client for connecting to the docker daemon
-	CreateClient(conf entity.DockerConfig, host string) (*client.Client, error)
-
-	//GetNetworkingConfig determines the proper networking config based on the docker hosts state and the networks
-	GetNetworkingConfig(ctx context.Context, cli *client.Client, networks strslice.StrSlice) (*network.NetworkingConfig, error)
+	CreateClient(host string) (entity.Client, error)
 }
 
+var (
+	// ErrNoHost is returned when the swarm init command does not contain any hosts
+	ErrNoHost = entity.NewFatalResult("no hosts given")
+)
+
 type dockerService struct {
-	repo repository.DockerRepository
-	aux  auxillary.DockerAuxillary
+	repo   repository.DockerRepository
+	conf   config.Docker
+	log    logrus.Ext1FieldLogger
+	remote file.RemoteSources
 }
 
 //NewDockerService creates a new DockerService
-func NewDockerService(repo repository.DockerRepository, aux auxillary.DockerAuxillary) (DockerService, error) {
-	return dockerService{repo: repo, aux: aux}, nil
+func NewDockerService(
+	repo repository.DockerRepository,
+	conf config.Docker,
+	remote file.RemoteSources,
+	log logrus.Ext1FieldLogger) DockerService {
+
+	return dockerService{
+		conf:   conf,
+		repo:   repo,
+		remote: remote,
+		log:    log}
+}
+
+func (ds dockerService) errorWhitelistHandler(err error, whitelist ...string) entity.Result {
+	if err == nil {
+		return entity.NewResult(nil, 1)
+	}
+	for _, entry := range whitelist {
+		if strings.Contains(err.Error(), entry) {
+			ds.log.WithField("error", err).Info("ignoring whitelisted error")
+			return entity.NewResult(nil, 1).InjectMeta(map[string]interface{}{
+				"error": err,
+			})
+		}
+	}
+	return entity.NewResult(err, 1)
 }
 
 //CreateClient creates a new client for connecting to the docker daemon
-func (ds dockerService) CreateClient(conf entity.DockerConfig, host string) (*client.Client, error) {
-	if conf.LocalMode {
+func (ds dockerService) CreateClient(host string) (entity.Client, error) {
+	if ds.conf.LocalMode {
 		return client.NewClientWithOpts(
 			client.WithAPIVersionNegotiation(),
 		)
 	}
 	return client.NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
-		client.WithHost(host),
-		client.WithTLSClientConfig(conf.CACertPath, conf.CertPath, conf.KeyPath),
+		client.WithHost("tcp://"+host+":"+ds.conf.DaemonPort),
+		ds.repo.WithTLSClientConfig(ds.conf.CACertPath, ds.conf.CertPath, ds.conf.KeyPath),
 	)
 }
 
-//GetNetworkingConfig determines the proper networking config based on the docker hosts state and the networks
-func (ds dockerService) GetNetworkingConfig(ctx context.Context, cli *client.Client,
-	networks strslice.StrSlice) (*network.NetworkingConfig, error) {
-
-	resourceChan := make(chan types.NetworkResource, len(networks))
-	errChan := make(chan error, len(networks))
-
-	for _, net := range networks {
-		go func(net string) {
-			resource, err := ds.aux.GetNetworkByName(ctx, cli, net)
-			errChan <- err
-			resourceChan <- resource
-		}(net)
+func (ds dockerService) withFields(cli entity.DockerCli, fields logrus.Fields) *logrus.Entry {
+	for key, value := range cli.Labels {
+		fields[key] = value
 	}
-	out := &network.NetworkingConfig{EndpointsConfig: map[string]*network.EndpointSettings{}}
-	for range networks {
-		err := <-errChan
-		if err != nil {
-			return out, err
-		}
-		resource := <-resourceChan
-		out.EndpointsConfig[resource.Name] = &network.EndpointSettings{
-			NetworkID: resource.ID,
-		}
-	}
-	return out, nil
+	return ds.log.WithFields(fields)
+}
+
+func (ds dockerService) withField(cli entity.DockerCli, key string, value interface{}) *logrus.Entry {
+	return ds.withFields(cli, logrus.Fields{key: value})
 }
 
 //CreateContainer attempts to create a docker container
-func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client, dContainer entity.Container) entity.Result {
+func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCli,
+	dContainer command.Container) entity.Result {
+
+	ds.withFields(cli, logrus.Fields{"container": dContainer}).Trace("create container")
 	errChan := make(chan error)
-	netConfChan := make(chan *network.NetworkingConfig)
-	defer close(errChan)
-	defer close(netConfChan)
 
 	go func(image string) {
-		errChan <- ds.aux.EnsureImagePulled(ctx, cli, image)
+		errChan <- ds.repo.EnsureImagePulled(ctx, cli, image, "")
 	}(dContainer.Image)
-
-	go func(networks strslice.StrSlice) {
-		networkConfig, err := ds.GetNetworkingConfig(ctx, cli, networks)
-		netConfChan <- networkConfig
-		errChan <- err
-	}(dContainer.Network)
 
 	portSet, portMap, err := dContainer.GetPortBindings()
 	if err != nil {
@@ -146,7 +167,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 		Env:          dContainer.GetEnv(),
 		Image:        dContainer.Image,
 		Entrypoint:   dContainer.GetEntryPoint(),
-		Labels:       dContainer.Labels,
+		Labels:       cli.Labels,
 	}
 
 	mem, err := dContainer.GetMemory()
@@ -156,70 +177,128 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli *client.Client,
 
 	cpus, err := strconv.ParseFloat(dContainer.Cpus, 64)
 	if err != nil {
-		return entity.NewFatalResult(err)
+		return entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
+			"given": dContainer.Cpus,
+		})
 	}
 
 	hostConfig := &container.HostConfig{
 		PortBindings: portMap,
 		AutoRemove:   true,
+		LogConfig: container.LogConfig{
+			Type: ds.conf.LogDriver,
+			Config: map[string]string{
+				"labels": ds.conf.LogLabels,
+			},
+		},
+		Mounts: dContainer.GetMounts(),
 	}
 	hostConfig.NanoCPUs = int64(1000000000 * cpus)
 	hostConfig.Memory = mem
 
-	networkConfig := <-netConfChan
-
-	for i := 0; i < 2; i++ {
-		err = <-errChan
-		if err != nil {
-			return entity.NewErrorResult(err)
+	networkConfig := &network.NetworkingConfig{EndpointsConfig: map[string]*network.EndpointSettings{}}
+	if len(dContainer.Network) > 0 {
+		networkConfig.EndpointsConfig[dContainer.Network] = &network.EndpointSettings{
+			NetworkID: dContainer.Network,
+			IPAddress: dContainer.IP,
 		}
 	}
 
-	_, err = ds.repo.ContainerCreate(ctx, cli, config, hostConfig, networkConfig, dContainer.Name)
+	err = <-errChan
 	if err != nil {
-		return entity.NewFatalResult(err)
+		return entity.NewErrorResult(err)
 	}
 
-	return entity.NewSuccessResult()
+	_, err = cli.ContainerCreate(ctx, config, hostConfig, networkConfig, dContainer.Name)
+	res := ds.errorWhitelistHandler(err, "already in use by container")
+	if !res.IsSuccess() {
+		res = res.Fatal()
+	}
+	return res.InjectMeta(map[string]interface{}{
+		"image":   dContainer.Image,
+		"name":    dContainer.Name,
+		"network": dContainer.Network,
+		"type":    "CreateContainer",
+	})
 }
 
 //StartContainer attempts to start an already created docker container
-func (ds dockerService) StartContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
-	log.WithFields(log.Fields{"name": name}).Trace("starting container")
+func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli,
+	sc command.StartContainer) entity.Result {
+
+	ds.withFields(cli, logrus.Fields{"name": sc.Name}).Trace("starting container")
 	opts := types.ContainerStartOptions{}
-	err := ds.repo.ContainerStart(ctx, cli, name, opts)
+
+	err := cli.ContainerStart(ctx, sc.Name, opts)
 	if err != nil {
-		return entity.NewErrorResult(err)
+		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
+			"name": sc.Name,
+			"type": "StartContainer",
+		})
 	}
 
+	if !sc.Attach {
+		return entity.NewSuccessResult()
+	}
+
+	resChan := make(chan error)
+	ctx2, cancelFn := context.WithTimeout(context.Background(), sc.Timeout.Duration)
+	defer cancelFn()
+
+	go func() {
+		startTime := time.Now().Add(sc.Timeout.Duration)
+		for time.Now().Unix() < startTime.Unix() {
+			ds.withFields(cli, logrus.Fields{
+				"name": sc.Name}).Trace("checking container status")
+			_, err := cli.ContainerInspect(ctx2, sc.Name)
+			if err != nil {
+				ds.withFields(cli, logrus.Fields{
+					"name":  sc.Name,
+					"error": err.Error()}).Info("container finished execution")
+				resChan <- err
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
+	select {
+	case err := <-resChan:
+		return ds.errorWhitelistHandler(err, "No such container").InjectMeta(map[string]interface{}{
+			"name": sc.Name,
+			"type": "StartContainer",
+		})
+	case <-time.After(sc.Timeout.Duration):
+		ds.withFields(cli, logrus.Fields{"name": sc.Name}).Debug("timeout was reached")
+
+	}
 	return entity.NewSuccessResult()
 }
 
-//RemoveContainer attempts to remove a container
-func (ds dockerService) RemoveContainer(ctx context.Context, cli *client.Client, name string) entity.Result {
-	cntr, err := ds.aux.GetContainerByName(ctx, cli, name)
-	if err != nil {
-		return entity.NewErrorResult(err)
-	}
-	err = ds.repo.ContainerRemove(ctx, cli, cntr.ID, types.ContainerRemoveOptions{
+// RemoveContainer attempts to remove a container
+func (ds dockerService) RemoveContainer(ctx context.Context, cli entity.DockerCli,
+	name string) entity.Result {
+
+	ds.withFields(cli, logrus.Fields{"name": name}).Debug("removing container")
+
+	err := cli.ContainerRemove(ctx, name, types.ContainerRemoveOptions{
 		RemoveVolumes: false,
 		RemoveLinks:   false,
 		Force:         true,
 	})
-	if err != nil {
-		return entity.NewErrorResult(err)
-	}
-	return entity.NewSuccessResult()
+	return entity.NewResult(err)
 }
 
-//CreateNetwork attempts to create a network
-func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, net entity.Network) entity.Result {
+// CreateNetwork attempts to create a network
+func (ds dockerService) CreateNetwork(ctx context.Context, cli entity.DockerCli,
+	net command.Network) entity.Result {
+
 	networkCreate := types.NetworkCreate{
 		CheckDuplicate: true,
 		Attachable:     true,
 		Ingress:        false,
 		Internal:       false,
-		Labels:         net.Labels,
+		Labels:         cli.Labels,
 		IPAM: &network.IPAM{
 			Driver:  "default",
 			Options: nil,
@@ -240,91 +319,46 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli *client.Client, n
 		networkCreate.Scope = "local"
 		networkCreate.Options["com.docker.network.bridge.name"] = net.Name
 	}
-	_, err := ds.repo.NetworkCreate(ctx, cli, net.Name, networkCreate)
-	if err != nil {
-		return entity.NewErrorResult(err)
-	}
-	return entity.NewSuccessResult()
+	ds.withFields(cli, logrus.Fields{"name": net.Name,
+		"conf": networkCreate}).Debug("creating a network")
+	_, err := cli.NetworkCreate(ctx, net.Name, networkCreate)
+
+	return ds.errorWhitelistHandler(err, "already exists")
 }
 
 //RemoveNetwork attempts to remove a network
-func (ds dockerService) RemoveNetwork(ctx context.Context, cli *client.Client, name string) entity.Result {
-	net, err := ds.aux.GetNetworkByName(ctx, cli, name)
-	if err != nil {
-		return entity.NewErrorResult(err)
-	}
-	err = ds.repo.NetworkRemove(ctx, cli, net.ID)
-	if err != nil {
-		return entity.NewErrorResult(err)
-	}
-	return entity.NewSuccessResult()
+func (ds dockerService) RemoveNetwork(ctx context.Context, cli entity.DockerCli,
+	name string) entity.Result {
+
+	ds.withFields(cli, logrus.Fields{"name": name}).Debug("removing a network")
+	return entity.NewResult(cli.NetworkRemove(ctx, name))
 }
 
-func (ds dockerService) getNetworkAndContainerIDByName(ctx context.Context, cli *client.Client, networkName string,
-	containerName string) (containerID string, networkID string, err error) {
-	errChan := make(chan error, 2)
-	netIDChan := make(chan string, 1)
-	cntrIDChan := make(chan string, 1)
-	defer close(errChan)
-	defer close(netIDChan)
-	defer close(cntrIDChan)
+func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli,
+	cmd command.ContainerNetwork) entity.Result {
 
-	go func(networkName string) {
-		net, err := ds.aux.GetNetworkByName(ctx, cli, networkName)
-		errChan <- err
-		netIDChan <- net.ID
-	}(networkName)
-
-	go func(containerName string) {
-		cntr, err := ds.aux.GetContainerByName(ctx, cli, containerName)
-		errChan <- err
-		cntrIDChan <- cntr.ID
-	}(containerName)
-
-	for i := 0; i < 2; i++ {
-		err = <-errChan
-		if err != nil {
-			return
-		}
-	}
-	networkID = <-netIDChan
-	containerID = <-cntrIDChan
-	return
-}
-
-func (ds dockerService) AttachNetwork(ctx context.Context, cli *client.Client, networkName string,
-	containerName string) entity.Result {
-
-	containerID, networkID, err := ds.getNetworkAndContainerIDByName(ctx, cli, networkName, containerName)
-	if err != nil {
-		return entity.NewFatalResult(err)
-	}
-
-	err = ds.repo.NetworkConnect(ctx, cli, networkID, containerID, &network.EndpointSettings{
-		NetworkID: networkID,
+	ds.withField(cli, "cmd", cmd).Info("attaching a network")
+	err := cli.NetworkConnect(ctx, cmd.Network, cmd.ContainerName, &network.EndpointSettings{
+		IPAMConfig: &network.EndpointIPAMConfig{
+			IPv4Address: cmd.IP,
+		},
 	})
-	if err != nil {
-		return entity.NewErrorResult(err)
-	}
-	return entity.NewSuccessResult()
+	return ds.errorWhitelistHandler(err,
+		"is already attached to network",
+		"Address already in use")
 }
 
-func (ds dockerService) DetachNetwork(ctx context.Context, cli *client.Client,
+func (ds dockerService) DetachNetwork(ctx context.Context, cli entity.DockerCli,
 	networkName string, containerName string) entity.Result {
 
-	containerID, networkID, err := ds.getNetworkAndContainerIDByName(ctx, cli, networkName, containerName)
-	if err != nil {
-		return entity.NewFatalResult(err)
-	}
+	err := cli.NetworkDisconnect(ctx, networkName, containerName, true)
 
-	err = ds.repo.NetworkDisconnect(ctx, cli, networkID, containerID, true)
-	if err != nil {
-		return entity.NewErrorResult(err)
-	}
-	return entity.NewSuccessResult()
+	return ds.errorWhitelistHandler(err, "is not connected to the network")
 }
 
-func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, vol entity.Volume) entity.Result {
+func (ds dockerService) CreateVolume(ctx context.Context, cli entity.DockerCli,
+	vol command.Volume) entity.Result {
+
 	volConfig := volume.VolumeCreateBody{
 		Driver:     vol.Driver,
 		DriverOpts: vol.DriverOpts,
@@ -332,33 +366,228 @@ func (ds dockerService) CreateVolume(ctx context.Context, cli *client.Client, vo
 		Name:       vol.Name,
 	}
 
-	_, err := ds.repo.VolumeCreate(ctx, cli, volConfig)
+	_, err := cli.VolumeCreate(ctx, volConfig)
+	return entity.NewResult(err)
+}
+
+func (ds dockerService) RemoveVolume(ctx context.Context, cli entity.DockerCli,
+	name string) entity.Result {
+
+	return entity.NewResult(cli.VolumeRemove(ctx, name, true))
+}
+
+func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.DockerCli,
+	containerName string, file command.File) entity.Result {
+
+	ds.withFields(cli, logrus.Fields{
+		"container": containerName,
+		"file":      file,
+	}).Debug("copying file to container")
+	rdr, err := ds.remote.GetTarReader(cli.Labels[command.DefinitionIDKey], file)
+	if err != nil {
+		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
+			"labels": cli.Labels,
+		})
+	}
+
+	srcInfo := archive.CopyInfo{ //appease the Docker Gods
+		Path:   file.Meta.Filename,
+		Exists: true,
+		IsDir:  false,
+	}
+	dstPath := file.Destination
+	if !srcInfo.IsDir && dstPath[len(dstPath)-1] == '/' {
+		dstPath += filepath.Base(file.Meta.Filename)
+	}
+
+	// Prepare destination copy info by stat-ing the container path.
+	dstInfo := archive.CopyInfo{Path: dstPath}
+
+	dstStat, err := cli.ContainerStatPath(ctx, containerName, dstPath)
+
+	// If the destination is a symbolic link, we should evaluate it.
+	if err == nil && dstStat.Mode&os.ModeSymlink != 0 {
+		linkTarget := dstStat.LinkTarget
+		if !system.IsAbs(linkTarget) {
+			// Join with the parent directory.
+			dstParent, _ := archive.SplitPathDirEntry(dstPath)
+			linkTarget = filepath.Join(dstParent, linkTarget)
+		}
+
+		dstInfo.Path = linkTarget
+		dstStat, err = cli.ContainerStatPath(ctx, containerName, linkTarget)
+	}
+
+	if err == nil {
+		dstInfo.Exists, dstInfo.IsDir = true, dstStat.Mode.IsDir()
+	}
+	ds.withFields(cli, logrus.Fields{
+		"srcInfo":   srcInfo,
+		"dstInfo":   dstInfo,
+		"dstStat":   dstStat,
+		"dstPath":   dstPath,
+		"container": containerName,
+	}).Trace("about to prepare the archive copy")
+	dstDir, preparedArchive, err := archive.PrepareArchiveCopy(rdr, srcInfo, dstInfo)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+	defer preparedArchive.Close()
+	ds.withFields(cli, logrus.Fields{
+		"destintion": dstDir,
+		"container":  containerName,
+	}).Debug("got the destination for the file")
+
+	err = cli.CopyToContainer(ctx, containerName, dstDir, preparedArchive, types.CopyToContainerOptions{
+		AllowOverwriteDirWithFile: true,
+		CopyUIDGID:                false,
+	})
+
+	return entity.NewResult(err).InjectMeta(map[string]interface{}{
+		"labels":    cli.Labels,
+		"container": containerName,
+	})
+}
+
+func (ds dockerService) Emulation(ctx context.Context, cli entity.DockerCli,
+	netem command.Netconf) entity.Result {
+
+	netemImage := "gaiadocker/iproute2:latest"
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- ds.repo.EnsureImagePulled(ctx, cli, netemImage, "")
+	}()
+
+	net, err := ds.repo.GetNetworkByName(ctx, cli, netem.Network)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
 
-	return entity.NewSuccessResult()
-}
-
-func (ds dockerService) RemoveVolume(ctx context.Context, cli *client.Client, name string) entity.Result {
-	err := ds.repo.VolumeRemove(ctx, cli, name, true)
+	err = <-errChan
 	if err != nil {
 		return entity.NewErrorResult(err)
+	}
+
+	name := netem.Container + "-" + net.ID
+	netemCmd := fmt.Sprintf(
+		"tc qdisc add dev $(ip -o addr show to %s | sed -n 's/.*\\(eth[0-9]*\\).*/\\1/p') root netem",
+		net.IPAM.Config[0].Subnet)
+
+	if netem.Limit > 0 {
+		netemCmd += fmt.Sprintf(" limit %d", netem.Limit)
+	}
+
+	if netem.Loss > 0 {
+		netemCmd += fmt.Sprintf(" loss %.4f", netem.Loss)
+	}
+
+	if netem.Delay > 0 {
+		netemCmd += fmt.Sprintf(" delay %dus", netem.Delay)
+	}
+
+	if len(netem.Rate) > 0 {
+		netemCmd += fmt.Sprintf(" rate %s", netem.Rate)
+	}
+
+	if netem.Duplication > 0 {
+		netemCmd += fmt.Sprintf(" duplicate %.4f", netem.Duplication)
+	}
+
+	if netem.Corrupt > 0 {
+		netemCmd += fmt.Sprintf(" corrupt %.4f", netem.Duplication)
+	}
+
+	if netem.Reorder > 0 {
+		netemCmd += fmt.Sprintf(" reorder %.4f", netem.Reorder)
+	}
+
+	config := &container.Config{
+		Image:      netemImage,
+		Entrypoint: strslice.StrSlice([]string{"/bin/sh", "-c", netemCmd}),
+	}
+
+	hostConfig := &container.HostConfig{
+		AutoRemove:  true,
+		NetworkMode: container.NetworkMode(fmt.Sprintf("container:%s", netem.Container)),
+		CapAdd:      strslice.StrSlice([]string{"NET_ADMIN"}),
+	}
+
+	networkConfig := &network.NetworkingConfig{}
+
+	_, err = cli.ContainerCreate(ctx, config, hostConfig, networkConfig, name)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+	return ds.StartContainer(ctx, cli, command.StartContainer{Name: name})
+}
+
+func (ds dockerService) SwarmCluster(ctx context.Context, entryCLI entity.DockerCli,
+	dswarm command.SetupSwarm) entity.Result {
+
+	if len(dswarm.Hosts) == 0 {
+		return ErrNoHost
+	}
+	cli, err := ds.CreateClient(dswarm.Hosts[0])
+	if err != nil {
+		ds.withField(entryCLI, "error", err).Error("creating the manager client")
+		return entity.NewErrorResult(err)
+	}
+	token, err := cli.SwarmInit(ctx, swarm.InitRequest{
+		ListenAddr:      fmt.Sprintf("0.0.0.0:%d", ds.conf.SwarmPort),
+		AdvertiseAddr:   fmt.Sprintf("%s:%d", dswarm.Hosts[0], ds.conf.SwarmPort),
+		ForceNewCluster: true,
+		Availability:    swarm.NodeAvailabilityActive,
+	})
+	if err != nil {
+		ds.withField(entryCLI, "error", err).Error("error with docker swarm init")
+		return entity.NewErrorResult(err)
+	}
+
+	details, err := cli.SwarmInspect(ctx)
+	if err != nil {
+		ds.withField(entryCLI, "error", err).Error("error with docker swarm inspect")
+		return entity.NewErrorResult(err)
+	}
+
+	ds.withField(entryCLI, "manager", token).Info("initializing docker swarm")
+	if len(dswarm.Hosts) == 1 {
+		return entity.NewSuccessResult()
+	}
+
+	for _, host := range dswarm.Hosts[1:] {
+		cli, err := ds.CreateClient(host)
+		if err != nil {
+			return entity.NewErrorResult(err)
+		}
+		ds.withField(entryCLI, "token", details.JoinTokens.Worker).Info("adding worker to swarm")
+		err = cli.SwarmJoin(ctx, swarm.JoinRequest{
+			ListenAddr:    fmt.Sprintf("0.0.0.0:%d", ds.conf.SwarmPort),
+			AdvertiseAddr: fmt.Sprintf("%s:%d", host, ds.conf.SwarmPort),
+			RemoteAddrs:   []string{fmt.Sprintf("%s:%d", dswarm.Hosts[0], ds.conf.SwarmPort)},
+			JoinToken:     details.JoinTokens.Worker,
+			Availability:  swarm.NodeAvailabilityActive,
+		})
+		if err != nil {
+			return entity.NewErrorResult(err)
+		}
 	}
 	return entity.NewSuccessResult()
 }
 
-func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli *client.Client, containerName string, file entity.File) entity.Result {
-	//TODO
-	return entity.Result{}
-}
+func (ds dockerService) PullImage(ctx context.Context, cli entity.DockerCli,
+	imagePull command.PullImage) entity.Result {
 
-func (ds dockerService) PlaceFileInVolume(ctx context.Context, cli *client.Client, volumeName string, file entity.File) entity.Result {
-	//TODO
-	return entity.Result{}
-}
+	ds.withFields(cli, logrus.Fields{
+		"image":     imagePull.Image,
+		"usingAuth": imagePull.RegistryAuth != "",
+	}).Debug("pre-emptively pulling an image if it doesn't exist")
 
-func (ds dockerService) Emulation(ctx context.Context, cli *client.Client, netem entity.Netconf) entity.Result {
-	//TODO
-	return entity.Result{}
+	err := ds.repo.EnsureImagePulled(ctx, cli, imagePull.Image, imagePull.RegistryAuth)
+	if err != nil {
+		ds.withFields(cli, logrus.Fields{
+			"image": imagePull.Image,
+			"error": err,
+		}).Error("unable to pull an image")
+	}
+	return entity.NewResult(err)
 }

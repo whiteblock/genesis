@@ -1,17 +1,23 @@
-GOC=go
 GO111MODULE=on
 
 PKG_SOURCES=$(wildcard pkg/*/*.go)
-DIRECTORIES=$(wildcard pkg/*/)
+DIRECTORIES=$(wildcard util/*/)  $(sort $(dir $(wildcard pkg/*/*/)))
 MOCKS=$(foreach x, $(DIRECTORIES), mocks/$(x))
+OUTPUT_DIR=./bin
 
+.PHONY: build test test_race lint vet get mocks clean-mocks manual-mocks
+.ONESHELL:
 
-.PHONY: build test test_race lint vet install-deps coverage mocks clean-mocks
+all: prep tester genesis
 
-all: genesis
+genesis: | get
+	go build
 
-genesis: | install-deps
-	$(GOC) build ./...
+prep:
+	@mkdir $(OUTPUT_DIR) 2>> /dev/null | true 
+
+tester:
+	go build -o $(OUTPUT_DIR)/tester ./cmd/tester 
 
 test:
 	go test ./...
@@ -25,18 +31,27 @@ lint:
 vet:
 	go vet $(go list ./... | grep -v mocks)
 
-install-deps:
+get:
 	go get ./...
 
 clean-mocks:
 	rm -rf mocks
 
-mocks: $(MOCKS)
+mocks: $(MOCKS) manual-mocks
 	
 $(MOCKS): mocks/% : %
 	mockery -output=$@ -dir=$^ -all
-	
-#install-mock:
-#	go get github.com/golang/mock/gomock
-#	go install github.com/golang/mock/mockgen
 
+manual-mocks: clone-things mock-things
+
+clone-things:
+	git clone https://github.com/whiteblock/definition.git mocks/.src/definition || true
+	git clone https://github.com/whiteblock/amqp.git mocks/.src/amqp || true
+
+mock-things:
+	cd mocks/.src/definition/command/ &&\
+	mockery -dir=. -output=../../../../mocks/definition/command/ -all && \
+	cd -
+	cd mocks/.src/amqp &&\
+	mockery -dir=. -output=../../../mocks/amqp -all && \
+	cd -

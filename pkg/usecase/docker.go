@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 whiteblock Inc.
+	Copyright 2019 Whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -20,288 +20,347 @@ package usecase
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"github.com/docker/docker/client"
-	log "github.com/sirupsen/logrus"
-	"github.com/whiteblock/genesis/pkg/command"
-	"github.com/whiteblock/genesis/pkg/entity"
-	"github.com/whiteblock/genesis/pkg/service"
-	"github.com/whiteblock/genesis/util"
 	"strings"
 	"time"
-)
 
-const (
-	numberOfRetries = 4
-	waitBeforeRetry = 10
-)
+	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/service"
+	"github.com/whiteblock/genesis/pkg/validator"
 
-var (
-	statusTooSoon = entity.Result{Type: entity.TooSoonType, Error: fmt.Errorf("command ran too soon")}
+	"github.com/imdario/mergo"
+	"github.com/sirupsen/logrus"
+	"github.com/whiteblock/definition/command"
 )
 
 //DockerUseCase is the usecase for executing the commands in docker
 type DockerUseCase interface {
 	// Run is equivalent to Execute, except it generates context based on the given command
 	Run(cmd command.Command) entity.Result
-	// TimeSupplier supplies the time as a unix timestamp
-	TimeSupplier() int64
 	// Execute executes the command with the given context
 	Execute(ctx context.Context, cmd command.Command) entity.Result
 }
 
-type dockerUseCase struct { //TODO: move to service
-	conf       entity.DockerConfig
-	service    service.DockerService
-	cmdService service.CommandService
+var (
+	// ErrEmptyFieldName missing a name field
+	ErrEmptyFieldName = entity.NewFatalResult("empty field \"name\"")
+
+	// ErrEmptyFieldContainer missing a container field
+	ErrEmptyFieldContainer = entity.NewFatalResult("empty field \"container\"")
+
+	// ErrEmptyFieldImage missing an image field
+	ErrEmptyFieldImage = entity.NewFatalResult("empty field \"image\"")
+
+	// ErrEmptyFieldHosts missing hosts field
+	ErrEmptyFieldHosts = entity.NewFatalResult("empty field \"hosts\"")
+
+	// ErrEmptyFieldNetwork missing network field
+	ErrEmptyFieldNetwork = entity.NewFatalResult("empty field \"network\"")
+
+	// ErrInvalidTargetIP target IP is not a dest IP or is malformed
+	ErrInvalidTargetIP = entity.NewFatalResult("invalid target ip")
+
+	// ErrUnknownCommandType the given command is of an unknown type
+	ErrUnknownCommandType = entity.NewFatalResult("unknown command type")
+)
+
+type dockerUseCase struct {
+	service service.DockerService
+	log     logrus.Ext1FieldLogger
 }
 
 //NewDockerUseCase creates a DockerUseCase arguments given the proper dep injections
-func NewDockerUseCase(conf entity.DockerConfig, service service.DockerService,
-	cmdService service.CommandService) (DockerUseCase, error) {
-	return &dockerUseCase{conf: conf, service: service, cmdService: cmdService}, nil
+func NewDockerUseCase(
+	service service.DockerService,
+	log logrus.Ext1FieldLogger) DockerUseCase {
+	return &dockerUseCase{service: service, log: log}
 }
 
-// TimeSupplier supplies the time as a unix timestamp
-func (duc dockerUseCase) TimeSupplier() int64 {
-	return time.Now().Unix()
+func (duc dockerUseCase) withFields(cmd command.Command, fields logrus.Fields) *logrus.Entry {
+	fields["command"] = cmd.ID
+	return duc.log.WithFields(fields)
+}
+
+func (duc dockerUseCase) withField(cmd command.Command, key string, value interface{}) *logrus.Entry {
+	return duc.withFields(cmd, logrus.Fields{key: value})
 }
 
 // Run is equivalent to Execute, except it generates context based on the given command
 func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
-	stat, ok := duc.dependencyCheck(cmd)
+	stat, ok := duc.validationCheck(cmd)
 	if !ok {
 		return stat
 	}
-	log.WithField("command", cmd).Trace("running command")
-	if cmd.Timeout == 0 {
-		return duc.Execute(context.Background(), cmd)
+	duc.withField(cmd, "command", cmd).Trace("running command")
+	var err error
+	timeout := time.Minute * 10
+	if cmd.Parent() != nil {
+		timeout, err = cmd.Parent().GetTimeRemaining()
+		if err != nil || timeout == command.NoTimeout {
+			timeout = time.Minute * 10
+		} else {
+			duc.withFields(cmd, logrus.Fields{
+				"timeout": timeout,
+			}).Debug("changed the timeout due to a setting")
+		}
 	}
-	ctx, cancelFn := context.WithTimeout(context.Background(), cmd.Timeout)
+
+	ctx, cancelFn := context.WithTimeout(context.Background(), timeout)
 	defer cancelFn()
 	return duc.Execute(ctx, cmd)
 }
 
 // Execute executes the command with the given context
 func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entity.Result {
-	cli, err := duc.service.CreateClient(duc.conf, cmd.Target.IP)
+	cli, err := duc.service.CreateClient(cmd.Target.IP)
 	if err != nil {
+		duc.withField(cmd, "dest", cmd.Target.IP).Error("failed to create a client")
 		return entity.NewFatalResult(err)
 	}
-	log.WithField("client", cli).Trace("created a client")
-	switch strings.ToLower(cmd.Order.Type) {
-	case "createcontainer":
+	duc.withField(cmd, "client", cli).Trace("created a client")
+	duc.withField(cmd, "type", cmd.Order.Type).Trace("routing a command")
+	switch command.OrderType(strings.ToLower(string(cmd.Order.Type))) {
+	case command.Createcontainer:
 		return duc.createContainerShim(ctx, cli, cmd)
-	case "startcontainer":
+	case command.Startcontainer:
 		return duc.startContainerShim(ctx, cli, cmd)
-	case "removecontainer":
+	case command.Removecontainer:
 		return duc.removeContainerShim(ctx, cli, cmd)
-	case "createnetwork":
+	case command.Createnetwork:
 		return duc.createNetworkShim(ctx, cli, cmd)
-	case "attachnetwork":
+	case command.Attachnetwork:
 		return duc.attachNetworkShim(ctx, cli, cmd)
-	case "detachnetwork":
+	case command.Detachnetwork:
 		return duc.detachNetworkShim(ctx, cli, cmd)
-	case "removenetwork":
+	case command.Removenetwork:
 		return duc.removeNetworkShim(ctx, cli, cmd)
-	case "createvolume":
+	case command.Createvolume:
 		return duc.createVolumeShim(ctx, cli, cmd)
-	case "removevolume":
+	case command.Removevolume:
 		return duc.removeVolumeShim(ctx, cli, cmd)
-	case "putfile":
-		return duc.putFileShim(ctx, cli, cmd)
-	case "putfileincontainer":
+	case command.Putfileincontainer:
 		return duc.putFileInContainerShim(ctx, cli, cmd)
-	case "emulation":
+	case command.Emulation:
 		return duc.emulationShim(ctx, cli, cmd)
+	case command.SwarmInit:
+		return duc.swarmSetupShim(ctx, cli, cmd)
+	case command.Pullimage:
+		return duc.pullImageShim(ctx, cli, cmd)
 	}
-	return entity.NewFatalResult(fmt.Errorf("unknown command type: %s", cmd.Order.Type))
+	return ErrUnknownCommandType.InjectMeta(map[string]interface{}{"type": cmd.Order.Type})
 }
 
-func (duc dockerUseCase) dependencyCheck(cmd command.Command) (stat entity.Result, ok bool) {
+func (duc dockerUseCase) validationCheck(cmd command.Command) (result entity.Result, ok bool) {
 	ok = false
-	if duc.TimeSupplier() < cmd.Timestamp {
-		stat = statusTooSoon
-		return
-	}
-
-	ready, err := duc.cmdService.CheckDependenciesExecuted(cmd)
-	if err != nil {
-		stat = entity.NewErrorResult(fmt.Errorf("error checking dependencies"))
-		return
-	}
-
-	if !ready {
-		stat = statusTooSoon
+	if len(cmd.Target.IP) == 0 || cmd.Target.IP == "0.0.0.0" {
+		result = ErrInvalidTargetIP.InjectMeta(map[string]interface{}{
+			"ip": cmd.Target.IP,
+		})
 		return
 	}
 	ok = true
 	return
 }
 
-func (duc dockerUseCase) createContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
-	raw, err := json.Marshal(cmd.Order.Payload)
-	if err != nil {
-		return entity.NewFatalResult(err)
-	}
-	var container entity.Container
-	err = json.Unmarshal(raw, &container)
-	if err != nil {
-		return entity.NewFatalResult(err)
-	}
-	return duc.service.CreateContainer(ctx, cli, container)
+func (duc dockerUseCase) injectLabels(cli entity.Client, cmd command.Command) entity.DockerCli {
+	out := entity.DockerCli{Client: cli, Labels: map[string]string{}}
+	duc.withField(cmd, "meta", cmd.Meta).Trace("got the meta from the command")
+	mergo.Map(&out.Labels, cmd.Meta)
+	return out
 }
 
-func (duc dockerUseCase) startContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
-	iName, exists := cmd.Order.Payload["name"]
-	if !exists {
-		return entity.NewFatalResult(fmt.Errorf("missing field \"name\""))
+func (duc dockerUseCase) createContainerShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
+	var container command.Container
+	err := cmd.ParseOrderPayloadInto(&container)
+	if err != nil {
+		return entity.NewFatalResult(err)
 	}
-	name, isString := iName.(string)
-	if !isString {
-		return entity.NewFatalResult(fmt.Errorf("field \"name\" is expected to be a string"))
+	err = validator.Container(container)
+	if err != nil {
+		return entity.NewFatalResult(err)
 	}
-	return duc.service.StartContainer(ctx, cli, name)
+
+	docker := duc.injectLabels(cli, cmd)
+	err = mergo.Map(&docker.Labels, container.Labels)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+
+	docker.Labels["name"] = container.Name
+	duc.withField(cmd, "labels", docker.Labels).Trace("got the labels for the container")
+	return duc.service.CreateContainer(ctx, docker, container)
 }
 
-func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
-	var name string
-	err := util.GetJSONString(cmd.Order.Payload, "name", &name)
+func (duc dockerUseCase) startContainerShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
+	var sc command.StartContainer
+	err := cmd.ParseOrderPayloadInto(&sc)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	return duc.service.RemoveContainer(ctx, cli, name)
+	if len(sc.Name) == 0 {
+		return ErrEmptyFieldName
+	}
+	return duc.service.StartContainer(ctx, duc.injectLabels(cli, cmd), sc)
 }
 
-func (duc dockerUseCase) createNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
-	raw, err := json.Marshal(cmd.Order.Payload)
+func (duc dockerUseCase) removeContainerShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
+	var payload command.SimpleName
+	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var net entity.Network
-	err = json.Unmarshal(raw, &net)
-	if err != nil {
-		return entity.NewFatalResult(err)
+	if payload.Name == "" {
+		return ErrEmptyFieldName
 	}
-	return duc.service.CreateNetwork(ctx, cli, net)
+	return duc.service.RemoveContainer(ctx, duc.injectLabels(cli, cmd), payload.Name)
 }
 
-func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
-	var networkName string
-	var containerName string
-	err := util.GetJSONString(cmd.Order.Payload, "network", &networkName)
+func (duc dockerUseCase) createNetworkShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+	var net command.Network
+	err := cmd.ParseOrderPayloadInto(&net)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	err = util.GetJSONString(cmd.Order.Payload, "container", &containerName)
+	docker := duc.injectLabels(cli, cmd)
+	err = mergo.Map(&docker.Labels, net.Labels)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	return duc.service.AttachNetwork(ctx, cli, networkName, containerName)
+	return duc.service.CreateNetwork(ctx, docker, net)
 }
 
-func (duc dockerUseCase) detachNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
-	var networkName string
-	var containerName string
-	err := util.GetJSONString(cmd.Order.Payload, "network", &networkName)
+func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+	var payload command.ContainerNetwork
+	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
-		return entity.NewFatalResult(err)
+		return entity.NewErrorResult(err)
 	}
-	err = util.GetJSONString(cmd.Order.Payload, "container", &containerName)
-	if err != nil {
-		return entity.NewFatalResult(err)
+	if len(payload.ContainerName) == 0 {
+		return ErrEmptyFieldContainer
 	}
-	return duc.service.DetachNetwork(ctx, cli, networkName, containerName)
+	if len(payload.Network) == 0 {
+		return ErrEmptyFieldNetwork
+	}
+	return duc.service.AttachNetwork(ctx, duc.injectLabels(cli, cmd), payload)
 }
 
-func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
-	var name string
-	err := util.GetJSONString(cmd.Order.Payload, "name", &name)
+func (duc dockerUseCase) detachNetworkShim(ctx context.Context,
+	cli entity.Client, cmd command.Command) entity.Result {
+
+	var payload command.ContainerNetwork
+	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
-		return entity.NewFatalResult(err)
+		return entity.NewErrorResult(err)
 	}
-	return duc.service.RemoveNetwork(ctx, cli, name)
-}
-func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
-	raw, err := json.Marshal(cmd.Order.Payload)
-	if err != nil {
-		return entity.NewFatalResult(err)
+	if len(payload.ContainerName) == 0 {
+		return ErrEmptyFieldContainer
 	}
-	var volume entity.Volume
-	err = json.Unmarshal(raw, &volume)
-	if err != nil {
-		return entity.NewFatalResult(err)
+	if len(payload.Network) == 0 {
+		return ErrEmptyFieldNetwork
 	}
-	return duc.service.CreateVolume(ctx, cli, volume)
+	return duc.service.DetachNetwork(ctx, duc.injectLabels(cli, cmd),
+		payload.Network, payload.ContainerName)
 }
 
-func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
-	var name string
-	err := util.GetJSONString(cmd.Order.Payload, "name", &name)
+func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
+	var payload command.SimpleName
+	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	return duc.service.RemoveVolume(ctx, cli, name)
+	if payload.Name == "" {
+		return ErrEmptyFieldName
+	}
+	return duc.service.RemoveNetwork(ctx, duc.injectLabels(cli, cmd), payload.Name)
+}
+func (duc dockerUseCase) createVolumeShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
+	var payload command.Volume
+	err := cmd.ParseOrderPayloadInto(&payload)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	docker := duc.injectLabels(cli, cmd)
+	err = mergo.Map(&docker.Labels, payload.Labels)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	return duc.service.CreateVolume(ctx, docker, payload)
 }
 
-func (duc dockerUseCase) putFileShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
-	var volumeName string
-	err := util.GetJSONString(cmd.Order.Payload, "volume", &volumeName)
-	if err != nil {
-		return entity.NewFatalResult(err)
-	}
+func (duc dockerUseCase) removeVolumeShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
 
-	_, hasField := cmd.Order.Payload["file"]
-	if !hasField {
-		return entity.NewFatalResult(fmt.Errorf("missing file field"))
+	var payload command.SimpleName
+	err := cmd.ParseOrderPayloadInto(&payload)
+	if err != nil {
+		return entity.NewFatalResult(err)
 	}
+	if payload.Name == "" {
+		return ErrEmptyFieldName
+	}
+	return duc.service.RemoveVolume(ctx, duc.injectLabels(cli, cmd), payload.Name)
+}
+func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
 
-	raw, err := json.Marshal(cmd.Order.Payload["file"])
+	var payload command.FileAndContainer
+	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var file entity.File
-	err = json.Unmarshal(raw, &file)
-	if err != nil {
-		return entity.NewFatalResult(err)
+	if len(payload.ContainerName) == 0 {
+		return ErrEmptyFieldContainer
 	}
-	return duc.service.PlaceFileInVolume(ctx, cli, volumeName, file)
+	return duc.service.PlaceFileInContainer(ctx, duc.injectLabels(cli, cmd),
+		payload.ContainerName, payload.File)
 }
 
-func (duc dockerUseCase) putFileInContainerShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
-	var containerName string
-	err := util.GetJSONString(cmd.Order.Payload, "container", &containerName)
-	if err != nil {
-		return entity.NewFatalResult(err)
-	}
+func (duc dockerUseCase) emulationShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
 
-	_, hasField := cmd.Order.Payload["file"]
-	if !hasField {
-		return entity.NewFatalResult(fmt.Errorf("missing file field"))
-	}
-
-	raw, err := json.Marshal(cmd.Order.Payload["file"])
+	var payload command.Netconf
+	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var file entity.File
-	err = json.Unmarshal(raw, &file)
-	if err != nil {
-		return entity.NewFatalResult(err)
-	}
-	return duc.service.PlaceFileInContainer(ctx, cli, containerName, file)
+	return duc.service.Emulation(ctx, duc.injectLabels(cli, cmd), payload)
 }
 
-func (duc dockerUseCase) emulationShim(ctx context.Context, cli *client.Client, cmd command.Command) entity.Result {
-	raw, err := json.Marshal(cmd.Order.Payload)
+func (duc dockerUseCase) swarmSetupShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
+	var payload command.SetupSwarm
+	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	var netem entity.Netconf
-	err = json.Unmarshal(raw, &netem)
+	if len(payload.Hosts) == 0 {
+		return ErrEmptyFieldHosts
+	}
+	return duc.service.SwarmCluster(ctx, duc.injectLabels(cli, cmd), payload)
+}
+
+func (duc dockerUseCase) pullImageShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
+	var payload command.PullImage
+	err := cmd.ParseOrderPayloadInto(&payload)
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
-	return duc.service.Emulation(ctx, cli, netem)
+	if len(payload.Image) == 0 {
+		return ErrEmptyFieldImage
+	}
+	return duc.service.PullImage(ctx, duc.injectLabels(cli, cmd), payload)
 }

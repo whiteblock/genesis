@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 whiteblock Inc.
+	Copyright 2019 Whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -20,74 +20,148 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
+	"time"
 
-	log "github.com/sirupsen/logrus"
-	"github.com/streadway/amqp"
-	"github.com/whiteblock/genesis/pkg/command"
 	"github.com/whiteblock/genesis/pkg/entity"
-	"github.com/whiteblock/genesis/pkg/usecase"
+	"github.com/whiteblock/genesis/pkg/handler/auxillary"
+
+	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
+	queue "github.com/whiteblock/amqp"
+	"github.com/whiteblock/definition/command"
+	"github.com/whiteblock/definition/command/biome"
 )
 
-//DeliveryHandler handles the initial processing of a amqp delivery
+// DeliveryHandler handles the initial processing of a amqp delivery
 type DeliveryHandler interface {
-	//ProcessMessage attempts to extract the command and execute it
-	ProcessMessage(msg amqp.Delivery) entity.Result
-	//GetKickbackMessage takes the delivery and creates a message from it
-	//for requeuing on non-fatal error
-	GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing, error)
+	// Process attempts to extract the command and execute it
+	Process(msg amqp.Delivery) (out amqp.Publishing, result entity.Result)
 }
 
 type deliveryHandler struct {
-	usecase usecase.DockerUseCase
+	msgUtil queue.AMQPMessage
+	aux     auxillary.Executor
+	log     logrus.Ext1FieldLogger
 }
 
-//NewDeliveryHandler creates a new DeliveryHandler which uses the given usecase for
-//executing the extracted command
-func NewDeliveryHandler(usecase usecase.DockerUseCase) (DeliveryHandler, error) {
-	return deliveryHandler{usecase: usecase}, nil
+// NewDeliveryHandler creates a new DeliveryHandler which uses the given usecase for
+// executing the extracted command
+func NewDeliveryHandler(
+	aux auxillary.Executor,
+	msgUtil queue.AMQPMessage,
+	log logrus.Ext1FieldLogger) DeliveryHandler {
+	return &deliveryHandler{aux: aux, log: log, msgUtil: msgUtil}
 }
 
-//ProcessMessage attempts to extract the command and execute it
-func (dh deliveryHandler) ProcessMessage(msg amqp.Delivery) entity.Result {
-	var cmd command.Command //TODO: add validation check
-	err := json.Unmarshal(msg.Body, &cmd)
-	if err != nil {
-		return entity.Result{Error: err}
+func (dh deliveryHandler) sleepy(msg amqp.Delivery) {
+	if msg.Headers != nil {
+		return
 	}
-	log.WithFields(log.Fields{"cmd": cmd}).Trace("finished processing a command from amqp")
-	return dh.usecase.Run(cmd)
+	if _, ok := msg.Headers["retryCount"]; !ok {
+		return
+	}
+
+	if _, ok := msg.Headers["retryCount"].(int64); !ok {
+		return
+	}
+	if msg.Headers["retryCount"].(int64) > 0 {
+		time.Sleep(5 * time.Second)
+	}
 }
 
-//GetKickbackMessage takes the delivery and creates a message from it
-//for requeuing on non-fatal error
-func (dh deliveryHandler) GetKickbackMessage(msg amqp.Delivery) (amqp.Publishing, error) {
-	pub := amqp.Publishing{
-		Headers: msg.Headers,
-		// Properties
-		ContentType:     msg.ContentType,
-		ContentEncoding: msg.ContentEncoding,
-		DeliveryMode:    msg.DeliveryMode,
-		Priority:        msg.Priority,
-		CorrelationId:   msg.CorrelationId,
-		ReplyTo:         msg.ReplyTo,
-		Expiration:      msg.Expiration,
-		MessageId:       msg.MessageId,
-		Timestamp:       msg.Timestamp,
-		Type:            msg.Type,
+func (dh deliveryHandler) checkPartialFailure(cmds []command.Command, result entity.Result) ([]string, bool) {
+	if _, hasFailed := result.Meta["failed"]; !hasFailed {
+		return nil, false
 	}
+	failed, ok := result.Meta["failed"].([]string)
+	if !ok || failed == nil {
+		return nil, false
+	}
+	return failed, len(failed) != len(cmds)
+}
 
-	var cmd command.Command
-	err := json.Unmarshal(msg.Body, &cmd)
+//Process attempts to extract the command and execute it
+func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, result entity.Result) {
+	dh.sleepy(msg)
+
+	var inst command.Instructions
+	err := json.Unmarshal(msg.Body, &inst)
 	if err != nil {
-		return pub, err
+		dh.log.WithField("error", err).Error("received malformed instructions")
+		return amqp.Publishing{}, entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
+			"data": msg.Body,
+		})
 	}
 
-	cmd = cmd.GetRetryCommand(dh.usecase.TimeSupplier())
+	cmds, err := inst.Peek()
 
-	body, err := json.Marshal(cmd)
+	isLastOne := false
 	if err != nil {
-		return pub, err
+		if errors.Is(err, command.ErrNoCommands) {
+			dh.log.WithField("error", err).Error("ignoring empty message")
+			return amqp.Publishing{}, entity.NewIgnoreResult(err)
+		}
+		if !errors.Is(err, command.ErrDone) {
+			dh.log.Error(err)
+			return amqp.Publishing{}, entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
+				"instructions": inst,
+			})
+		}
+		isLastOne = true
 	}
-	pub.Body = body
-	return pub, nil
+
+	result = dh.aux.ExecuteCommands(cmds)
+
+	if result.IsFatal() {
+		out, err = dh.msgUtil.CreateMessage(biome.DestroyBiome{
+			TestID: inst.ID,
+		})
+		dh.log.WithFields(logrus.Fields{
+			"result":  result,
+			"error":   result.Error.Error(),
+			"testnet": inst.ID,
+		}).Error("execution resulted in a fatal error")
+		result = result.InjectMeta(map[string]interface{}{
+			command.OrgIDKey:        inst.OrgID,
+			command.TestIDKey:       inst.ID,
+			command.DefinitionIDKey: inst.DefinitionID,
+		})
+	} else if result.IsTrap() {
+		dh.log.WithField("result", result).Debug("propogating the trap")
+	} else if isLastOne && result.IsSuccess() {
+		if inst.NeverTerminate() {
+			result = result.Trap()
+			return
+		}
+		dh.log.Debug("creating completion message")
+		result = entity.NewAllDoneResult()
+		out, err = dh.msgUtil.CreateMessage(biome.DestroyBiome{
+			TestID: inst.ID,
+		})
+	} else if result.IsSuccess() {
+		result = entity.NewRequeueResult()
+		dh.log.WithField("remaining", len(inst.Commands)).Debug("creating message for next round")
+		inst.Next()
+		out, err = dh.msgUtil.GetNextMessage(msg, inst)
+	} else if failed, ok := dh.checkPartialFailure(cmds, result); ok {
+		dh.log.WithFields(logrus.Fields{
+			"failed":    failed,
+			"succeeded": len(cmds) - len(failed),
+			"result":    result,
+		}).Warn("something went partially wrong, requeuing only the commands which failed")
+		inst.PartialCompletion(failed)
+		out, err = dh.msgUtil.GetNextMessage(msg, inst)
+	} else {
+		dh.log.WithField("result", result).Debug("something went wrong, getting kickback message")
+		out, err = dh.msgUtil.GetKickbackMessage(msg)
+	}
+
+	if err != nil {
+		dh.log.WithFields(logrus.Fields{
+			"result": result,
+			"err":    err}).Error("a fatal error occured, flagging as fatal")
+		result = result.Fatal(err)
+	}
+	return
 }

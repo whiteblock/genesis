@@ -15,3 +15,29 @@ https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/6874
 
 # Overview
 The Whiteblock platform allows users to provision multiple fully-functioning nodes over which they have complete control within a private test network 
+
+
+# Configuration
+## General
+
+| NAME                          | DEFAULT                                | DESCRIPTION                    |
+| ------------------------------------- | ---------------------------- | ----------
+| LOCAL_MODE | true | Puts Genesis into standalone mode for testing |
+| VERBOSITY | INFO | The verbosity level of the logging |
+| LISTEN | 0.0.0.0:8000 | The socket to listen on for the REST API
+
+## RabbitMQ
+| NAME                   | DEFAULT                    | DESCRIPTION         |
+| ------------------------------------- | ---------------------------- | ----------
+| COMPLETION_QUEUE_NAME | completion | The name of the completion queue |
+| COMMAND_QUEUE_NAME | commands | The name of the commands queue |
+| QUEUE_DURABLE | true | If Genesis creates the queue, should it be durable |
+| QUEUE_AUTO_DELETE | false | If Genesis creates the queue, should it delete messages when there is no consumer |
+| CONSUMER | genesis | The name of this consumer from the queue |
+| CONSUMER_NO_WAIT | false | Enable no wait mode |
+| QUEUE_PROTOCOL | amqp | The protocol to use to connect to the queue |
+| QUEUE_USER | user | The user portion of the auth credentials |
+| QUEUE_PASSWORD | password | The password portion of the auth credentials |
+| QUEUE_HOST | localhost | The host address which hosts rabbitmq |
+| QUEUE_PORT | 5672 | The port to connect to on the host address |
+| QUEUE_VHOST | /test | The rabbitmq vhost to connect to |

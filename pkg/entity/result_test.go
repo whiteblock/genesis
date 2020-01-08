@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 whiteblock Inc.
+	Copyright 2019 Whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -48,7 +48,7 @@ func TestResult_IsSuccess(t *testing.T) {
 		{
 			res: Result{
 				Error: nil,
-				Type:  TooSoonType, //todo should this be a success?
+				Type:  TooSoonType,
 			},
 			expected: true,
 		},
@@ -131,77 +131,45 @@ func TestResult_IsRequeue(t *testing.T) {
 	}
 }
 
+func TestResult_IsAllDone(t *testing.T) {
+	var tests = []struct {
+		res      Result
+		expected bool
+	}{
+		{
+			res:      NewAllDoneResult(),
+			expected: true,
+		},
+		{
+			res:      NewErrorResult("err"),
+			expected: false,
+		},
+		{
+			res:      NewSuccessResult(),
+			expected: false,
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.res.IsAllDone())
+		})
+	}
+}
+
 func TestNewSuccessResult(t *testing.T) {
-	expected := Result{
-		Error: nil,
-		Type:  SuccessType,
-	}
-
-	expectedUnsuccessful := Result{
-		Error: errors.New("test"),
-		Type:  FatalType,
-	}
-
-	expectedUnsuccessful2 := Result{
-		Error: errors.New("test"),
-		Type:  SuccessType,
-	}
-
-	assert.Equal(t, expected, NewSuccessResult())
-	assert.NotEqual(t, expectedUnsuccessful, NewSuccessResult())
-	assert.NotEqual(t, expectedUnsuccessful2, NewSuccessResult())
+	assert.True(t, NewSuccessResult().IsSuccess())
 }
 
 func TestNewFatalResult(t *testing.T) {
-	expected := Result{
-		Error: errors.New("fatal test"),
-		Type:  FatalType,
-	}
-
-	expectedUnsuccessful := Result{
-		Error: errors.New("test"),
-		Type:  TooSoonType,
-	}
-
-	expectedUnsuccessful2 := Result{
-		Error: errors.New("test"),
-		Type:  SuccessType,
-	}
-
-	expectedUnsuccessful3 := Result{
-		Error: nil,
-		Type:  SuccessType,
-	}
-
-	assert.Equal(t, expected, NewFatalResult(expected.Error))
-	assert.NotEqual(t, expectedUnsuccessful, NewFatalResult(expectedUnsuccessful.Error))
-	assert.NotEqual(t, expectedUnsuccessful2, NewFatalResult(expectedUnsuccessful2.Error))
-	assert.NotEqual(t, expectedUnsuccessful3, NewFatalResult(expectedUnsuccessful3.Error))
+	assert.True(t, NewFatalResult("fatal test").IsFatal())
 }
 
 func TestNewErrorResult(t *testing.T) {
-	expected := Result{
-		Error: errors.New("fatal test"),
-		Type:  ErrorType,
-	}
+	assert.False(t, NewErrorResult(errors.New("fatal test")).IsSuccess())
+	assert.False(t, NewErrorResult(errors.New("test")).IsSuccess())
+}
 
-	expectedUnsuccessful := Result{
-		Error: errors.New("test"),
-		Type:  ErrorType,
-	}
-
-	expectedUnsuccessful2 := Result{
-		Error: errors.New("test"),
-		Type:  ErrorType,
-	}
-
-	expectedUnsuccessful3 := Result{
-		Error: nil,
-		Type:  ErrorType,
-	}
-
-	assert.Equal(t, expected, NewErrorResult(expected.Error)) //todo shouldn't this not pass?
-	assert.Equal(t, expectedUnsuccessful, NewErrorResult(expectedUnsuccessful.Error))
-	assert.Equal(t, expectedUnsuccessful2, NewErrorResult(expectedUnsuccessful2.Error))
-	assert.Equal(t, expectedUnsuccessful3, NewErrorResult(expectedUnsuccessful3.Error))
+func TestNewAllDoneResult(t *testing.T) {
+	assert.True(t, NewAllDoneResult().IsAllDone())
 }

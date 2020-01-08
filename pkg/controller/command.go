@@ -1,5 +1,5 @@
 /*
-	Copyright 2019 whiteblock Inc.
+	Copyright 2019 Whiteblock Inc.
 	This file is a part of the genesis.
 
 	Genesis is free software: you can redistribute it and/or modify
@@ -21,41 +21,63 @@ package controller
 import (
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/streadway/amqp"
-	"github.com/whiteblock/genesis/pkg/handler"
-	"github.com/whiteblock/genesis/pkg/service"
-	"github.com/whiteblock/utility/utils"
-	"golang.org/x/sync/semaphore"
 	"sync"
+
+	"github.com/whiteblock/genesis/pkg/handler"
+
+	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
+	queue "github.com/whiteblock/amqp"
+	"golang.org/x/sync/semaphore"
 )
 
-//CommandController is a controller which brings in from an AMQP compatible provider
+// CommandController is a controller which brings in from an AMQP compatible provider
 type CommandController interface {
 	// Start starts the client. This function should be called only once and does not return
 	Start()
 }
 
 type consumer struct {
-	serv   service.AMQPService
-	handle handler.DeliveryHandler
-	once   *sync.Once
-	sem    *semaphore.Weighted
+	completion queue.AMQPService
+	cmds       queue.AMQPService
+	errors     queue.AMQPService
+	handle     handler.DeliveryHandler
+	log        logrus.Ext1FieldLogger
+	once       *sync.Once
+	sem        *semaphore.Weighted
 }
 
-//NewCommandController creates a new CommandController
-func NewCommandController(maxConcurreny int64, serv service.AMQPService, handle handler.DeliveryHandler) (CommandController, error) {
+// NewCommandController creates a new CommandController
+func NewCommandController(
+	maxConcurreny int64,
+	cmds queue.AMQPService,
+	errors queue.AMQPService,
+	completion queue.AMQPService,
+	handle handler.DeliveryHandler,
+	log logrus.Ext1FieldLogger) (CommandController, error) {
+
 	if maxConcurreny < 1 {
-		return nil, fmt.Errorf("maxConcurreny must be atleast 1")
+		return nil, fmt.Errorf("maxConcurreny must be at least 1")
 	}
 	out := &consumer{
-		serv:   serv,
-		handle: handle,
-		once:   &sync.Once{},
-		sem:    semaphore.NewWeighted(maxConcurreny),
+		log:        log,
+		completion: completion,
+		cmds:       cmds,
+		handle:     handle,
+		errors:     errors,
+		once:       &sync.Once{},
+		sem:        semaphore.NewWeighted(maxConcurreny),
 	}
-	err := out.serv.CreateQueue()
-	log.WithFields(log.Fields{"err": err}).Debug("attempted to create queue on start")
+	err := out.cmds.CreateQueue()
+	if err != nil {
+		log.WithFields(logrus.Fields{"err": err}).Debug("failed attempt to create queue on start")
+	}
+
+	err = out.completion.CreateQueue()
+	if err != nil {
+		log.WithFields(logrus.Fields{"err": err}).Debug("failed attempt to create queue on start")
+	}
+
 	return out, nil
 }
 
@@ -64,37 +86,63 @@ func (c *consumer) Start() {
 	c.once.Do(func() { c.loop() })
 }
 
-func (c *consumer) kickBackMessage(msg amqp.Delivery) error {
-	log.WithFields(log.Fields{"msg": msg}).Info("kicking back message")
-	pub, err := c.handle.GetKickbackMessage(msg)
-	if err != nil {
-		return err
-	}
-	return c.serv.Requeue(msg, pub)
-}
-
 func (c *consumer) handleMessage(msg amqp.Delivery) {
 	defer c.sem.Release(1)
-	res := c.handle.ProcessMessage(msg)
-	if res.IsRequeue() {
-		utils.LogError(res.Error)
-		c.kickBackMessage(msg)
-		return
-	} else if res.IsSuccess() {
+
+	pub, res := c.handle.Process(msg)
+
+	if res.IsIgnore() {
+		c.log.Info("ignoring a message")
 		msg.Ack(false)
-		//TODO: Status report
-	} else {
-		utils.LogError(msg.Ack(false))
-		//TODO: Fatal command error handling
+		return
 	}
+	if res.IsTrap() {
+		c.log.Info("falling through due to trap")
+		msg.Ack(false)
+		return
+	}
+	if res.IsRequeue() {
+		c.log.WithField("result", res).Info("a requeue is needed")
+		err := c.cmds.Requeue(msg, pub)
+		if err != nil {
+			c.log.WithField("err", err).Error("failed to re-queue")
+		}
+		return
+	}
+	if res.IsAllDone() || res.IsFatal() {
+		if res.IsFatal() {
+			msg, err := queue.CreateMessage(res)
+			if err == nil {
+				go func() {
+					err := c.errors.Send(msg)
+					if err != nil {
+						c.log.WithField("err", err).WithField("res",
+							res).Error("an error occured while reporting an error")
+					}
+				}()
+			} else {
+				c.log.WithField("err", err).WithField("res", res).Error("an error occured while reporting an error")
+			}
+		}
+		c.log.Info("sending the all done signal")
+		err := c.completion.Send(pub)
+		if err != nil {
+			c.log.WithField("err", err).Error("failed to send to the completion queue")
+			return
+		}
+	}
+	c.log.Info("successfully completed a message")
+
+	msg.Ack(false)
 }
 
 func (c *consumer) loop() {
-	msgs, err := c.serv.Consume()
+	msgs, err := c.cmds.Consume()
 	if err != nil {
-		log.Fatal(err)
+		c.log.Fatal(err)
 	}
 	for msg := range msgs {
+		c.log.Info("received a message")
 		c.sem.Acquire(context.Background(), 1)
 		go c.handleMessage(msg)
 	}
