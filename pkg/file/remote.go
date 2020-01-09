@@ -129,7 +129,7 @@ func (rf remoteSources) GetTarReader(testnetID string, file command.File) (io.Re
 	//might want to make a custom reader here for memory sake
 	defer resp.Body.Close()
 	tr := tar.NewWriter(&buf)
-	tr.WriteHeader(rf.getTarHeader(file, resp.ContentLength))
+	tr.WriteHeader(rf.getTarHeader(file, int64(len(res))))
 	n, err := io.Copy(tr, rdr)
 	rf.log.WithFields(logrus.Fields{
 		"file":  file.ID,
