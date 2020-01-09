@@ -109,7 +109,18 @@ func (rf remoteSources) GetTarReader(testnetID string, file command.File) (io.Re
 		return nil, fmt.Errorf(string(res))
 
 	}
-	rf.log.WithField("size", resp.ContentLength).Debug("copying a file")
+	rf.log.WithField("size", resp.ContentLength).WithField("file", file.ID).WithField("Destination", file.Destination).Debug("copying a file")
+
+	if resp.ContentLength == -1 {
+		rf.log.WithFields(logrus.Fields{
+			"file":       file.ID,
+			"dest":       file.Destination,
+			"code":       resp.StatusCode,
+			"definition": testnetID}).Warn("got a -1 content length")
+		res, _ := ioutil.ReadAll(resp.Body)
+		return nil, fmt.Errorf(string(res))
+	}
+
 	var buf bytes.Buffer
 	buf.Grow(int(resp.ContentLength))
 	//might want to make a custom reader here for memory sake
