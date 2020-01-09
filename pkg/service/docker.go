@@ -20,6 +20,7 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -334,14 +335,31 @@ func (ds dockerService) RemoveNetwork(ctx context.Context, cli entity.DockerCli,
 	return entity.NewResult(cli.NetworkRemove(ctx, name))
 }
 
+func generateMacAddress() (string, error) {
+	buf := make([]byte, 6)
+	_, err := rand.Read(buf)
+	if err != nil {
+		return "", err
+	}
+	// Set the local bit
+	buf[0] |= (buf[0] | 2) & 0xfe
+	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]), nil
+}
+
 func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli,
 	cmd command.ContainerNetwork) entity.Result {
 
 	ds.withField(cli, "cmd", cmd).Info("attaching a network")
-	err := cli.NetworkConnect(ctx, cmd.Network, cmd.ContainerName, &network.EndpointSettings{
+	macAddress, err := generateMacAddress()
+	if err != nil {
+		return ds.errorWhitelistHandler(err)
+	}
+	err = cli.NetworkConnect(ctx, cmd.Network, cmd.ContainerName, &network.EndpointSettings{
 		IPAMConfig: &network.EndpointIPAMConfig{
 			IPv4Address: cmd.IP,
+			MacAddress: macAddress,
 		},
+		
 	})
 	return ds.errorWhitelistHandler(err,
 		"is already attached to network",

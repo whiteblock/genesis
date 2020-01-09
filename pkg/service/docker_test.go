@@ -514,3 +514,10 @@ func TestDockerService_RemoveVolume(t *testing.T) {
 
 	cli.AssertExpectations(t)
 }
+
+func TestRandomMacAddress(t *testing.T) {
+	_, err := generateMacAddress()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
