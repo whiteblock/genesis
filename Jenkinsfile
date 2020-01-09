@@ -110,7 +110,7 @@ pipeline {
       sh "docker network prune --force"
       sh "docker volume prune --force"
       script {
-        slackNotify(env, env.BRANCH_NAME == DEFAULT_BRANCH)
+        slackNotify(env.BRANCH_NAME == DEFAULT_BRANCH)
       }
     }
     always {
