@@ -28,7 +28,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/whiteblock/amqp v1.1.0
 	github.com/whiteblock/definition v0.0.0-20200109195957-9ebb8600f85d
-	github.com/whiteblock/utility v0.0.0-20200109190149-7fa592041d65
+	github.com/whiteblock/utility v0.0.0-20200109214606-621b46096b9a
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/sys v0.0.0-20200107162124-548cf772de50 // indirect

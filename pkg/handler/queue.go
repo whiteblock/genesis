@@ -157,6 +157,7 @@ func (dh deliveryHandler) process(msg amqp.Delivery,
 			"result": result,
 			"err":    err}).Error("a fatal error occured, flagging as fatal")
 		result = result.Fatal(err)
+		out = dh.destructMsg(inst)
 	}
 	return
 }
@@ -177,9 +178,18 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing,
 	}
 	out, result = dh.process(msg, &inst)
 
-	status, err = queue.CreateMessage(inst.Status())
+	stat := inst.Status()
+
+	if result.IsAllDone() || result.IsTrap() || result.IsFatal() || result.IsIgnore() {
+		stat.Finished = true
+	}
+	if !result.IsSuccess() {
+		stat.Message = result.Error.Error()
+	}
+
+	status, err = queue.CreateMessage(stat)
 	if err != nil {
-		dh.log.WithField("error", err).Error("malform status generated")
+		dh.log.WithField("error", err).Error("malformed status generated")
 	}
 	return
 }

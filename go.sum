@@ -239,6 +239,8 @@ github.com/whiteblock/utility v0.0.0-20191224222157-30a6d5335ebc h1:UbNcEeljZRYh
 github.com/whiteblock/utility v0.0.0-20191224222157-30a6d5335ebc/go.mod h1:D2cZnXZ08m1NEri4km0KK6MDHWV1KN5Gm2G7HGAwKyM=
 github.com/whiteblock/utility v0.0.0-20200109190149-7fa592041d65 h1:Ooo4yNEno22OtJsSabmIP1cmuY6QN94KKdXJhdFq2nI=
 github.com/whiteblock/utility v0.0.0-20200109190149-7fa592041d65/go.mod h1:D2cZnXZ08m1NEri4km0KK6MDHWV1KN5Gm2G7HGAwKyM=
+github.com/whiteblock/utility v0.0.0-20200109214606-621b46096b9a h1:WhQnTptOdlcG4r1kNqvZO4A085igVpu5XxooWJE4AVM=
+github.com/whiteblock/utility v0.0.0-20200109214606-621b46096b9a/go.mod h1:D2cZnXZ08m1NEri4km0KK6MDHWV1KN5Gm2G7HGAwKyM=
 github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
 github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415/go.mod h1:GwrjFmJcFw6At/Gs6z4yjiIwzuJ1/+UwLxMQDVQXShQ=
 github.com/xeipuuv/gojsonschema v0.0.0-20180618132009-1d523034197f/go.mod h1:5yf86TLmAcydyeJq5YvxkGPE2fm/u4myDekKRoLuqhs=
