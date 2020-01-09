@@ -111,7 +111,7 @@ func (rf remoteSources) GetTarReader(testnetID string, file command.File) (io.Re
 	}
 	rf.log.WithField("size", resp.ContentLength).WithField("file", file.ID).WithField("Destination", file.Destination).Debug("copying a file")
 
-	if resp.ContentLength == -1 {
+	/*if resp.ContentLength == -1 {
 		rf.log.WithFields(logrus.Fields{
 			"file":       file.ID,
 			"dest":       file.Destination,
@@ -119,7 +119,7 @@ func (rf remoteSources) GetTarReader(testnetID string, file command.File) (io.Re
 			"definition": testnetID}).Warn("got a -1 content length")
 		res, _ := ioutil.ReadAll(resp.Body)
 		return nil, fmt.Errorf(string(res))
-	}
+	}*/
 	res, _ := ioutil.ReadAll(resp.Body)
 	rf.log.Error("I need to be reverted")
 	rdr := bytes.NewReader(res)
