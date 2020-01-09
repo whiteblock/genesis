@@ -36,22 +36,22 @@ import (
 // DeliveryHandler handles the initial processing of a amqp delivery
 type DeliveryHandler interface {
 	// Process attempts to extract the command and execute it
-	Process(msg amqp.Delivery) (out amqp.Publishing, result entity.Result)
+	Process(msg amqp.Delivery) (amqp.Publishing, amqp.Publishing, entity.Result)
 }
 
 type deliveryHandler struct {
-	msgUtil queue.AMQPMessage
-	aux     auxillary.Executor
-	log     logrus.Ext1FieldLogger
+	maxRetries int64
+	aux        auxillary.Executor
+	log        logrus.Ext1FieldLogger
 }
 
 // NewDeliveryHandler creates a new DeliveryHandler which uses the given usecase for
 // executing the extracted command
 func NewDeliveryHandler(
 	aux auxillary.Executor,
-	msgUtil queue.AMQPMessage,
+	maxRetries int64,
 	log logrus.Ext1FieldLogger) DeliveryHandler {
-	return &deliveryHandler{aux: aux, log: log, msgUtil: msgUtil}
+	return &deliveryHandler{aux: aux, log: log, maxRetries: maxRetries}
 }
 
 func (dh deliveryHandler) sleepy(msg amqp.Delivery) {
@@ -81,18 +81,18 @@ func (dh deliveryHandler) checkPartialFailure(cmds []command.Command, result ent
 	return failed, len(failed) != len(cmds)
 }
 
-//Process attempts to extract the command and execute it
-func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, result entity.Result) {
-	dh.sleepy(msg)
-
-	var inst command.Instructions
-	err := json.Unmarshal(msg.Body, &inst)
+func (dh deliveryHandler) destructMsg(inst *command.Instructions) amqp.Publishing {
+	out, err := queue.CreateMessage(biome.DestroyBiome{
+		TestID: inst.ID,
+	})
 	if err != nil {
-		dh.log.WithField("error", err).Error("received malformed instructions")
-		return amqp.Publishing{}, entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
-			"data": msg.Body,
-		})
+		dh.log.Error(err)
 	}
+	return out
+}
+
+func (dh deliveryHandler) process(msg amqp.Delivery,
+	inst *command.Instructions) (out amqp.Publishing, result entity.Result) {
 
 	cmds, err := inst.Peek()
 
@@ -104,8 +104,8 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 		}
 		if !errors.Is(err, command.ErrDone) {
 			dh.log.Error(err)
-			return amqp.Publishing{}, entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
-				"instructions": inst,
+			return dh.destructMsg(inst), entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
+				"instructions": *inst,
 			})
 		}
 		isLastOne = true
@@ -114,14 +114,10 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 	result = dh.aux.ExecuteCommands(cmds)
 
 	if result.IsFatal() {
-		out, err = dh.msgUtil.CreateMessage(biome.DestroyBiome{
-			TestID: inst.ID,
-		})
-		dh.log.WithFields(logrus.Fields{
-			"result":  result,
-			"error":   result.Error.Error(),
-			"testnet": inst.ID,
-		}).Error("execution resulted in a fatal error")
+		dh.log.WithFields(logrus.Fields{"result": result, "error": result.Error.Error(),
+			"testnet": inst.ID}).Error("execution resulted in a fatal error")
+
+		out = dh.destructMsg(inst)
 		result = result.InjectMeta(map[string]interface{}{
 			command.OrgIDKey:        inst.OrgID,
 			command.TestIDKey:       inst.ID,
@@ -136,25 +132,24 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 		}
 		dh.log.Debug("creating completion message")
 		result = entity.NewAllDoneResult()
-		out, err = dh.msgUtil.CreateMessage(biome.DestroyBiome{
+		out, err = queue.CreateMessage(biome.DestroyBiome{
 			TestID: inst.ID,
 		})
 	} else if result.IsSuccess() {
 		result = entity.NewRequeueResult()
 		dh.log.WithField("remaining", len(inst.Commands)).Debug("creating message for next round")
 		inst.Next()
-		out, err = dh.msgUtil.GetNextMessage(msg, inst)
+		out, err = queue.GetNextMessage(msg, inst)
 	} else if failed, ok := dh.checkPartialFailure(cmds, result); ok {
 		dh.log.WithFields(logrus.Fields{
-			"failed":    failed,
-			"succeeded": len(cmds) - len(failed),
-			"result":    result,
+			"failed": failed, "succeeded": len(cmds) - len(failed),
+			"result": result,
 		}).Warn("something went partially wrong, requeuing only the commands which failed")
 		inst.PartialCompletion(failed)
-		out, err = dh.msgUtil.GetNextMessage(msg, inst)
+		out, err = queue.GetNextMessage(msg, inst)
 	} else {
 		dh.log.WithField("result", result).Debug("something went wrong, getting kickback message")
-		out, err = dh.msgUtil.GetKickbackMessage(msg)
+		out, err = queue.GetKickbackMessage(dh.maxRetries, msg)
 	}
 
 	if err != nil {
@@ -162,6 +157,29 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing, resul
 			"result": result,
 			"err":    err}).Error("a fatal error occured, flagging as fatal")
 		result = result.Fatal(err)
+	}
+	return
+}
+
+//Process attempts to extract the command and execute it
+func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing,
+	status amqp.Publishing, result entity.Result) {
+	dh.sleepy(msg)
+
+	var inst command.Instructions
+	err := json.Unmarshal(msg.Body, &inst)
+	if err != nil {
+		dh.log.WithField("error", err).Error("received malformed instructions")
+		return dh.destructMsg(&inst), amqp.Publishing{},
+			entity.NewFatalResult(err).InjectMeta(map[string]interface{}{
+				"data": msg.Body,
+			})
+	}
+	out, result = dh.process(msg, &inst)
+
+	status, err = queue.CreateMessage(inst.Status())
+	if err != nil {
+		dh.log.WithField("error", err).Error("malform status generated")
 	}
 	return
 }

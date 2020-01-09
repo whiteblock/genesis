@@ -41,6 +41,7 @@ type consumer struct {
 	completion queue.AMQPService
 	cmds       queue.AMQPService
 	errors     queue.AMQPService
+	status     queue.AMQPService
 	handle     handler.DeliveryHandler
 	log        logrus.Ext1FieldLogger
 	once       *sync.Once
@@ -53,6 +54,8 @@ func NewCommandController(
 	cmds queue.AMQPService,
 	errors queue.AMQPService,
 	completion queue.AMQPService,
+	status queue.AMQPService,
+
 	handle handler.DeliveryHandler,
 	log logrus.Ext1FieldLogger) (CommandController, error) {
 
@@ -65,6 +68,7 @@ func NewCommandController(
 		cmds:       cmds,
 		handle:     handle,
 		errors:     errors,
+		status:     status,
 		once:       &sync.Once{},
 		sem:        semaphore.NewWeighted(maxConcurreny),
 	}
@@ -78,6 +82,16 @@ func NewCommandController(
 		log.WithFields(logrus.Fields{"err": err}).Debug("failed attempt to create queue on start")
 	}
 
+	err = out.errors.CreateQueue()
+	if err != nil {
+		log.WithFields(logrus.Fields{"err": err}).Debug("failed attempt to create queue on start")
+	}
+
+	err = out.status.CreateQueue()
+	if err != nil {
+		log.WithFields(logrus.Fields{"err": err}).Debug("failed attempt to create queue on start")
+	}
+
 	return out, nil
 }
 
@@ -86,11 +100,19 @@ func (c *consumer) Start() {
 	c.once.Do(func() { c.loop() })
 }
 
+func (c *consumer) reportStatus(status amqp.Publishing) {
+	err := c.status.Send(status)
+	if err != nil {
+		c.log.WithFields(logrus.Fields{
+			"err": err}).Error("an error occured while reporting status")
+	}
+}
+
 func (c *consumer) handleMessage(msg amqp.Delivery) {
 	defer c.sem.Release(1)
 
-	pub, res := c.handle.Process(msg)
-
+	pub, status, res := c.handle.Process(msg)
+	go c.reportStatus(status)
 	if res.IsIgnore() {
 		c.log.Info("ignoring a message")
 		msg.Ack(false)
