@@ -58,11 +58,25 @@ func getRestServer() (controller.RestController, error) {
 		conf.GetLogger()), nil
 }
 
+func assertUniqueQueues(conf config.Config, confs ...queue.AMQPConfig) {
+	queues := map[string]bool{}
+	for i := range confs {
+		queues[confs[i].QueueName] = false
+		if len(queues)-1 != i {
+			for j := range confs {
+				conf.GetLogger().Errorf("%d = %s", j, confs[j].QueueName)
+			}
+			panic("queue names are not unique")
+		}
+	}
+}
+
 func getCommandController() (controller.CommandController, error) {
 	conf, err := config.NewConfig()
 	if err != nil {
 		return nil, err
 	}
+
 	complConf, err := conf.CompletionAMQP()
 	if err != nil {
 		return nil, err
@@ -78,17 +92,12 @@ func getCommandController() (controller.CommandController, error) {
 		return nil, err
 	}
 
-	if complConf.QueueName == cmdConf.QueueName {
-		panic("completion queue matches command queue")
+	statusConf, err := conf.StatusAMQP()
+	if err != nil {
+		return nil, err
 	}
 
-	if cmdConf.QueueName == errConf.QueueName {
-		panic("command queue matches error queue")
-	}
-
-	if errConf.QueueName == complConf.QueueName {
-		panic("error queue matches command queue")
-	}
+	assertUniqueQueues(conf, complConf, cmdConf, errConf, statusConf)
 
 	cmdConn, err := queue.OpenAMQPConnection(cmdConf.Endpoint)
 	if err != nil {
@@ -105,11 +114,17 @@ func getCommandController() (controller.CommandController, error) {
 		return nil, err
 	}
 
+	statusConn, err := queue.OpenAMQPConnection(statusConf.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+
 	return controller.NewCommandController(
 		conf.QueueMaxConcurrency,
 		queue.NewAMQPService(cmdConf, queue.NewAMQPRepository(cmdConn), conf.GetLogger()),
 		queue.NewAMQPService(errConf, queue.NewAMQPRepository(errConn), conf.GetLogger()),
 		queue.NewAMQPService(complConf, queue.NewAMQPRepository(complConn), conf.GetLogger()),
+		queue.NewAMQPService(statusConf, queue.NewAMQPRepository(statusConn), conf.GetLogger()),
 		handler.NewDeliveryHandler(
 			handAux.NewExecutor(
 				conf.Execution,
@@ -123,7 +138,7 @@ func getCommandController() (controller.CommandController, error) {
 						conf.GetLogger()),
 					conf.GetLogger()),
 				conf.GetLogger()),
-			queue.NewAMQPMessage(conf.MaxMessageRetries),
+			conf.MaxMessageRetries,
 			conf.GetLogger()),
 		conf.GetLogger())
 }

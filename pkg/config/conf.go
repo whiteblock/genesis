@@ -36,6 +36,7 @@ type Config struct {
 	CompletionQueueName string `mapstructure:"completionQueueName"`
 	CommandQueueName    string `mapstructure:"commandQueueName"`
 	ErrorQueueName      string `mapstructure:"errorQueueName"`
+	StatusQueueName     string `mapstructure:"statusQueueName"`
 
 	// LocalMode indicates that Genesis is operating in standalone mode
 	LocalMode        bool              `mapstructure:"localMode"`
@@ -89,6 +90,13 @@ func (c Config) ErrorsAMQP() (queue.AMQPConfig, error) {
 	return conf, err
 }
 
+// StatusAMQP gets the AMQP for the command queue
+func (c Config) StatusAMQP() (queue.AMQPConfig, error) {
+	conf, err := queue.NewAMQPConfig(viper.GetViper())
+	conf.QueueName = c.StatusQueueName
+	return conf, err
+}
+
 // GetVolumeConfig extracts the fields of this object representing VolumeConfig
 func (c Config) GetVolumeConfig() command.VolumeConfig {
 	return command.VolumeConfig{
@@ -103,6 +111,7 @@ func (c Config) GetRestConfig() entity.RestConfig {
 }
 
 func setViperEnvBindings() {
+	viper.BindEnv("statusQueueName", "STATUS_QUEUE_NAME")
 	viper.BindEnv("fluentDLogging", "FLUENT_D_LOGGING")
 	viper.BindEnv("maxMessageRetries", "MAX_MESSAGE_RETRIES")
 	viper.BindEnv("queueMaxConcurrency", "QUEUE_MAX_CONCURRENCY")
@@ -121,6 +130,7 @@ func setViperEnvBindings() {
 }
 
 func setViperDefaults() {
+	viper.SetDefault("statusQueueName", "status")
 	viper.SetDefault("fluentDLogging", true)
 	viper.SetDefault("completionQueueName", "teardownRequests")
 	viper.SetDefault("commandQueueName", "commands")
