@@ -357,8 +357,9 @@ func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli,
 	err = cli.NetworkConnect(ctx, cmd.Network, cmd.ContainerName, &network.EndpointSettings{
 		IPAMConfig: &network.EndpointIPAMConfig{
 			IPv4Address: cmd.IP,
+			MacAddress: macAddress,
 		},
-		MacAddress: macAddress,
+		
 	})
 	return ds.errorWhitelistHandler(err,
 		"is already attached to network",
