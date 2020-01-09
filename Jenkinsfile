@@ -95,7 +95,6 @@ pipeline {
               sh "helm init --kube-context=${DEV_KUBE_CONTEXT} --tiller-namespace helm --service-account tiller --history-max 10 --client-only"
               sh "helm upgrade ${APP_NAME} ${CHART_PATH}/${APP_NAME} --install --namespace ${APP_NAMESPACE} --tiller-namespace helm \
                   --values ${CHART_PATH}/${APP_NAME}/dev.values.yaml \
-                  --values ${CHART_PATH}/${APP_NAME}/dev.secrets.yaml \
                   --set-string image.tag=${BRANCH_NAME}-${REV_SHORT} \
                   --set-string image.repository=${IMAGE_REPO}/${APP_NAME}"
               sh "echo '{\"Deployments\": [{\"ResourceName\": \"'${APP_NAME}'\",\"Namespace\": \"'${APP_NAMESPACE}'\"}]}' | ./kubedog multitrack -t 60"
