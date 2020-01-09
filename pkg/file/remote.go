@@ -120,14 +120,17 @@ func (rf remoteSources) GetTarReader(testnetID string, file command.File) (io.Re
 		res, _ := ioutil.ReadAll(resp.Body)
 		return nil, fmt.Errorf(string(res))
 	}
+	res, _ := ioutil.ReadAll(resp.Body)
+	rf.log.Error("I need to be reverted")
+	rdr := bytes.NewReader(res)
 
 	var buf bytes.Buffer
-	buf.Grow(int(resp.ContentLength))
+	buf.Grow(len(res))
 	//might want to make a custom reader here for memory sake
 	defer resp.Body.Close()
 	tr := tar.NewWriter(&buf)
 	tr.WriteHeader(rf.getTarHeader(file, resp.ContentLength))
-	n, err := io.Copy(tr, resp.Body)
+	n, err := io.Copy(tr, rdr)
 	rf.log.WithFields(logrus.Fields{
 		"file":  file.ID,
 		"dest":  file.Destination,
