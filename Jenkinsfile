@@ -1,4 +1,6 @@
-def DEFAULT_BRANCH = 'dev'
+@Library('whiteblock-dev')_
+
+def DEFAULT_BRANCH = 'master'
 
 pipeline {
   agent any
@@ -19,12 +21,6 @@ pipeline {
     DEV_GKE_CLUSTER_NAME  = credentials('DEV_GKE_CLUSTER_NAME')
     DEV_KUBE_CONTEXT      = "gke_${DEV_GCP_PROJECT_ID}_${GCP_REGION}_${DEV_GKE_CLUSTER_NAME}"
     IMAGE_REPO            = "gcr.io/${DEV_GCP_PROJECT_ID}"
-
-  // Slack
-    SLACK_CHANNEL         = '#alerts'
-    SLACK_CREDENTIALS_ID  = 'jenkins-slack-integration-token'
-    SLACK_TEAM_DOMAIN     = 'whiteblock'
-    GO111MODULE           = 'on'
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '10'))
@@ -32,7 +28,7 @@ pipeline {
   stages {
     stage('Run tests') {
       agent {
-        docker { 
+        docker {
           image "golang:1.13.4-alpine"
           args  "-u root ${CI_ENV}"
         }
@@ -40,8 +36,7 @@ pipeline {
       when {
         beforeAgent true
         anyOf {
-          changeRequest target: 'dev'
-          changeRequest target: 'master'
+          changeRequest target: DEFAULT_BRANCH
         }
       }
       steps {
@@ -63,12 +58,7 @@ pipeline {
       }
     }
     stage('Build docker image') {
-      when {
-        anyOf {
-          branch 'master'
-          branch 'dev'
-        }
-      }
+      when { branch DEFAULT_BRANCH }
       steps {
         script {
           withCredentials([file(credentialsId: 'google-infra-dev-auth', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
@@ -88,11 +78,7 @@ pipeline {
       }
     }
     stage('Deploy to dev cluster') {
-      when {
-        anyOf {
-          branch 'dev'
-        }
-      }
+      when { branch DEFAULT_BRANCH }
       steps {
         script {
           dir('infra') {
@@ -109,7 +95,6 @@ pipeline {
               sh "helm init --kube-context=${DEV_KUBE_CONTEXT} --tiller-namespace helm --service-account tiller --history-max 10 --client-only"
               sh "helm upgrade ${APP_NAME} ${CHART_PATH}/${APP_NAME} --install --namespace ${APP_NAMESPACE} --tiller-namespace helm \
                   --values ${CHART_PATH}/${APP_NAME}/dev.values.yaml \
-                  --values ${CHART_PATH}/${APP_NAME}/dev.secrets.yaml \
                   --set-string image.tag=${BRANCH_NAME}-${REV_SHORT} \
                   --set-string image.repository=${IMAGE_REPO}/${APP_NAME}"
               sh "echo '{\"Deployments\": [{\"ResourceName\": \"'${APP_NAME}'\",\"Namespace\": \"'${APP_NAMESPACE}'\"}]}' | ./kubedog multitrack -t 60"
@@ -124,17 +109,7 @@ pipeline {
       sh "docker network prune --force"
       sh "docker volume prune --force"
       script {
-        if (env.BRANCH_NAME == DEFAULT_BRANCH || env.BRANCH_NAME == 'master') {
-          withCredentials([
-              [$class: 'StringBinding', credentialsId: "${SLACK_CREDENTIALS_ID}", variable: 'SLACK_TOKEN']
-          ]) {
-              slackSend teamDomain: "${SLACK_TEAM_DOMAIN}",
-                  channel: "${SLACK_CHANNEL}",
-                  token: "${SLACK_TOKEN}",
-                  color: 'danger',
-                  message: "@here ALARM! \n *FAILED*: Job *${env.JOB_NAME}*. \n <${env.RUN_DISPLAY_URL}|*Build Log [${env.BUILD_NUMBER}]*>"
-          }
-        }
+        slackNotify(env.BRANCH_NAME == DEFAULT_BRANCH)
       }
     }
     always {
