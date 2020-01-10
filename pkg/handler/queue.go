@@ -182,6 +182,7 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing,
 
 	if result.IsAllDone() || result.IsTrap() || result.IsFatal() || result.IsIgnore() {
 		stat.Finished = true
+		stat.StepsLeft = 0
 	}
 	if !result.IsSuccess() {
 		stat.Message = result.Error.Error()
