@@ -50,7 +50,7 @@ func getRestServer() (controller.RestController, error) {
 						repository.NewDockerRepository(),
 						conf.Docker,
 						file.NewRemoteSources(
-							conf.FileHandler,
+							conf,
 							conf.GetLogger()),
 						conf.GetLogger()),
 					conf.GetLogger()),
@@ -135,7 +135,7 @@ func getCommandController() (controller.CommandController, error) {
 						repository.NewDockerRepository(),
 						conf.Docker,
 						file.NewRemoteSources(
-							conf.FileHandler,
+							conf,
 							conf.GetLogger()),
 						conf.GetLogger()),
 					conf.GetLogger()),
