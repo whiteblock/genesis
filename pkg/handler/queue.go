@@ -70,7 +70,7 @@ func (dh deliveryHandler) sleepy(msg amqp.Delivery) {
 	}
 }
 
-func (dh deliveryHandler) checkPartialFailure(cmds []command.Command, result entity.Result) ([]string, bool) {
+func checkPartialFailure(cmds []command.Command, result entity.Result) ([]string, bool) {
 	if _, hasFailed := result.Meta["failed"]; !hasFailed {
 		return nil, false
 	}
@@ -140,7 +140,7 @@ func (dh deliveryHandler) process(msg amqp.Delivery,
 		dh.log.WithField("remaining", len(inst.Commands)).Debug("creating message for next round")
 		inst.Next()
 		out, err = queue.GetNextMessage(msg, inst)
-	} else if failed, ok := dh.checkPartialFailure(cmds, result); ok {
+	} else if failed, ok := checkPartialFailure(cmds, result); ok {
 		dh.log.WithFields(logrus.Fields{
 			"failed": failed, "succeeded": len(cmds) - len(failed),
 			"result": result,

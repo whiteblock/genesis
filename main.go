@@ -39,17 +39,19 @@ func getRestServer() (controller.RestController, error) {
 	if err != nil {
 		return nil, err
 	}
-	dockerRepository := repository.NewDockerRepository()
 
 	return controller.NewRestController(
 		conf.GetRestConfig(),
 		handler.NewRestHandler(
-			usecase.NewDockerUseCase(
-				service.NewDockerService(
-					dockerRepository,
-					conf.Docker,
-					file.NewRemoteSources(
-						conf.FileHandler,
+			handAux.NewExecutor(
+				conf.Execution,
+				usecase.NewDockerUseCase(
+					service.NewDockerService(
+						repository.NewDockerRepository(),
+						conf.Docker,
+						file.NewRemoteSources(
+							conf.FileHandler,
+							conf.GetLogger()),
 						conf.GetLogger()),
 					conf.GetLogger()),
 				conf.GetLogger()),
