@@ -106,9 +106,9 @@ func attachNetwork(dockerUseCase usecase.DockerUseCase,
 	networkName string, containerName string, ip string) {
 
 	cmd := mintCommand(command.ContainerNetwork{
-		ContainerName: containerName,
-		Network:       networkName,
-		IP:            ip,
+		Container: containerName,
+		Network:   networkName,
+		IP:        ip,
 	}, command.Attachnetwork)
 	res := dockerUseCase.Run(cmd)
 	log.WithFields(log.Fields{"res": res}).Info("attached a network")

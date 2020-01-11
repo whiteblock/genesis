@@ -354,7 +354,7 @@ func (ds dockerService) AttachNetwork(ctx context.Context, cli entity.DockerCli,
 	if err != nil {
 		return ds.errorWhitelistHandler(err)
 	}
-	err = cli.NetworkConnect(ctx, cmd.Network, cmd.ContainerName, &network.EndpointSettings{
+	err = cli.NetworkConnect(ctx, cmd.Network, cmd.Container, &network.EndpointSettings{
 		IPAMConfig: &network.EndpointIPAMConfig{
 			IPv4Address: cmd.IP,
 		},

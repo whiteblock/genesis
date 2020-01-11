@@ -371,48 +371,10 @@ func TestDockerService_RemoveContainer(t *testing.T) {
 	cli.AssertExpectations(t)
 }
 
-/*
-func TestDockerService_PlaceFileInContainer(t *testing.T) {
-	testDir := "/pkg"
-	fileID := "barfoo"
-	testContainer := types.Container{Names: []string{"test1"}, ID: "id1"}
-
-	cli := new(entityMock.Client)
-	cli.On("CopyToContainer", mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
-		func(args mock.Arguments) {
-			require.Len(t, args, 5)
-			assert.Nil(t, args.Get(0))
-			assert.Equal(t, testContainer.Names[0], args.String(1))
-			assert.Equal(t, testDir, args.String(2))
-			assert.NotNil(t, args.Get(3))
-			{
-				opts, ok := args.Get(4).(types.CopyToContainerOptions)
-				require.True(t, ok)
-				assert.True(t, opts.AllowOverwriteDirWithFile)
-				assert.False(t, opts.CopyUIDGID)
-			}
-		}).Once()
-
-	fs := new(fileMock.RemoteSources)
-	fs.On("GetTarReader", mock.Anything, mock.Anything).Return(strings.NewReader("barfoo"), nil).Once()
-	ds := NewDockerService(nil, config.Docker{}, fs, logrus.New())
-
-	res := ds.PlaceFileInContainer(nil, entity.DockerCli{Client: cli},
-		testContainer.Names[0], command.File{
-			Destination: testDir,
-			ID:          fileID,
-		})
-	assert.NoError(t, res.Error)
-
-	cli.AssertExpectations(t)
-	fs.AssertExpectations(t)
-}*/
-
 func TestDockerService_AttachNetwork(t *testing.T) {
 	cn := command.ContainerNetwork{
-		Network:       "test2",
-		ContainerName: "test1",
+		Network:   "test2",
+		Container: "test1",
 	}
 	cli := new(entityMock.Client)
 	cli.On("NetworkConnect", mock.Anything, mock.Anything, mock.Anything,
@@ -421,7 +383,7 @@ func TestDockerService_AttachNetwork(t *testing.T) {
 		require.Len(t, args, 4)
 		assert.Nil(t, args.Get(0))
 		assert.Equal(t, cn.Network, args.Get(1))
-		assert.Equal(t, cn.ContainerName, args.Get(2))
+		assert.Equal(t, cn.Container, args.Get(2))
 		epSettings, ok := args.Get(3).(*network.EndpointSettings)
 		require.True(t, ok)
 		require.NotNil(t, epSettings)

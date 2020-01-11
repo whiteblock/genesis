@@ -242,7 +242,7 @@ func (duc dockerUseCase) attachNetworkShim(ctx context.Context, cli entity.Clien
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
-	if len(payload.ContainerName) == 0 {
+	if len(payload.Container) == 0 {
 		return ErrEmptyFieldContainer
 	}
 	if len(payload.Network) == 0 {
@@ -259,14 +259,14 @@ func (duc dockerUseCase) detachNetworkShim(ctx context.Context,
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
-	if len(payload.ContainerName) == 0 {
+	if len(payload.Container) == 0 {
 		return ErrEmptyFieldContainer
 	}
 	if len(payload.Network) == 0 {
 		return ErrEmptyFieldNetwork
 	}
 	return duc.service.DetachNetwork(ctx, duc.injectLabels(cli, cmd),
-		payload.Network, payload.ContainerName)
+		payload.Network, payload.Container)
 }
 
 func (duc dockerUseCase) removeNetworkShim(ctx context.Context, cli entity.Client,

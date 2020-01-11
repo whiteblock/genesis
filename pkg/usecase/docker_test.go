@@ -294,8 +294,8 @@ func TestDockerUseCase_Run_AttachNetwork_Success(t *testing.T) {
 		Order: command.Order{
 			Type: command.Attachnetwork,
 			Payload: command.ContainerNetwork{
-				ContainerName: "test",
-				Network:       "testnet",
+				Container: "test",
+				Network:   "testnet",
 			},
 		},
 	})
@@ -316,8 +316,8 @@ func TestDockerUseCase_Run_AttachNetwork_Failure_EmptyContainerName(t *testing.T
 		Order: command.Order{
 			Type: command.Attachnetwork,
 			Payload: command.ContainerNetwork{
-				ContainerName: "",
-				Network:       "testnet",
+				Container: "",
+				Network:   "testnet",
 			},
 		},
 	})
@@ -338,8 +338,8 @@ func TestDockerUseCase_Run_AttachNetwork_Failure_EmptyNetworkName(t *testing.T) 
 		Order: command.Order{
 			Type: command.Attachnetwork,
 			Payload: command.ContainerNetwork{
-				ContainerName: "tester",
-				Network:       "",
+				Container: "tester",
+				Network:   "",
 			},
 		},
 	})
@@ -384,7 +384,7 @@ func TestDockerUseCase_Run_DetachNetwork(t *testing.T) {
 		Target: testTarget,
 		Order: command.Order{
 			Type:    "detachNetwork",
-			Payload: command.ContainerNetwork{ContainerName: "test", Network: "testnet"},
+			Payload: command.ContainerNetwork{Container: "test", Network: "testnet"},
 		},
 	})
 	assert.NoError(t, res.Error)
@@ -692,7 +692,7 @@ func TestDockerUseCase_Execute_AttachNetwork_Success(t *testing.T) {
 		Target: testTarget,
 		Order: command.Order{
 			Type:    "attachNetwork",
-			Payload: command.ContainerNetwork{ContainerName: "tester", Network: "testnet"},
+			Payload: command.ContainerNetwork{Container: "tester", Network: "testnet"},
 		},
 	}
 

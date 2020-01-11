@@ -114,7 +114,7 @@ func (c *consumer) handleMessage(msg amqp.Delivery) {
 	pub, status, res := c.handle.Process(msg)
 	go c.reportStatus(status)
 	if res.IsIgnore() {
-		c.log.WithField("payload",string(msg.Body))Error("ignoring a message")
+		c.log.WithField("payload", string(msg.Body)).Error("ignoring a message")
 		msg.Ack(false)
 		return
 	}
