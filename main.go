@@ -141,6 +141,7 @@ func getCommandController() (controller.CommandController, error) {
 						conf.GetLogger()),
 					conf.GetLogger()),
 				conf.GetLogger()),
+			conf,
 			conf.MaxMessageRetries,
 			conf.GetLogger()),
 		conf.GetLogger())
