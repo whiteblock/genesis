@@ -76,6 +76,9 @@ func getCommandController() (controller.CommandController, error) {
 	if err != nil {
 		return nil, err
 	}
+	if conf.Execution.DebugMode {
+		conf.GetLogger().Warn("Debug mode is enabled!")
+	}
 
 	complConf, err := conf.CompletionAMQP()
 	if err != nil {
