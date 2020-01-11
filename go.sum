@@ -232,6 +232,10 @@ github.com/whiteblock/definition v0.0.0-20200109191313-272a41779398 h1:1CvIRqMpa
 github.com/whiteblock/definition v0.0.0-20200109191313-272a41779398/go.mod h1:FtNWAMy10yYY599C0B431qe64mgKOt0pcq/fJJJ7Sns=
 github.com/whiteblock/definition v0.0.0-20200109195957-9ebb8600f85d h1:Suyh3avH06B+wDyxKlym9Zb3JB+FmmbcxCwvu1MZwg0=
 github.com/whiteblock/definition v0.0.0-20200109195957-9ebb8600f85d/go.mod h1:FtNWAMy10yYY599C0B431qe64mgKOt0pcq/fJJJ7Sns=
+github.com/whiteblock/definition v0.0.0-20200110162327-1e7e160f955d h1:a0UikCwgIWgRvJyKJwOHR784jXzjvc94G987QUHu+fI=
+github.com/whiteblock/definition v0.0.0-20200110162327-1e7e160f955d/go.mod h1:FtNWAMy10yYY599C0B431qe64mgKOt0pcq/fJJJ7Sns=
+github.com/whiteblock/definition v0.0.0-20200111022825-cf184699ad26 h1:6SpPYxNSSq7+CrKx2mLE54+xYwJlKmhALfxWEahFL4g=
+github.com/whiteblock/definition v0.0.0-20200111022825-cf184699ad26/go.mod h1:FtNWAMy10yYY599C0B431qe64mgKOt0pcq/fJJJ7Sns=
 github.com/whiteblock/go-prettyjson v0.0.0-20180920040306-f579f869bbfe/go.mod h1:DiL8S7+O7oZaiYO5wOEHtZ9+0jIjA/hawX2HrVwHutM=
 github.com/whiteblock/go.uuid v1.2.1 h1:prUjjtzVGGZ0A1Jt3yGxFIdTD69u9FGwaU3e73xqFeI=
 github.com/whiteblock/go.uuid v1.2.1/go.mod h1:J0Y9qymnDEwrdEFeIzpsul8Ye1jzfPoW3JDJVx8hdGM=
@@ -241,6 +245,10 @@ github.com/whiteblock/utility v0.0.0-20200109190149-7fa592041d65 h1:Ooo4yNEno22O
 github.com/whiteblock/utility v0.0.0-20200109190149-7fa592041d65/go.mod h1:D2cZnXZ08m1NEri4km0KK6MDHWV1KN5Gm2G7HGAwKyM=
 github.com/whiteblock/utility v0.0.0-20200109214606-621b46096b9a h1:WhQnTptOdlcG4r1kNqvZO4A085igVpu5XxooWJE4AVM=
 github.com/whiteblock/utility v0.0.0-20200109214606-621b46096b9a/go.mod h1:D2cZnXZ08m1NEri4km0KK6MDHWV1KN5Gm2G7HGAwKyM=
+github.com/whiteblock/utility v0.0.0-20200110145636-37be7c440e15 h1:2V3o98Cm7P+ofzokxOEJKtLHPCapHaVyh9s1Okjdzb0=
+github.com/whiteblock/utility v0.0.0-20200110145636-37be7c440e15/go.mod h1:D2cZnXZ08m1NEri4km0KK6MDHWV1KN5Gm2G7HGAwKyM=
+github.com/whiteblock/utility v0.0.0-20200110223442-c5d878fe8a8f h1:BkawioMWK/OJluC+ZFnBgRtOP4Cr3oaQtHXqQnlZXd4=
+github.com/whiteblock/utility v0.0.0-20200110223442-c5d878fe8a8f/go.mod h1:D2cZnXZ08m1NEri4km0KK6MDHWV1KN5Gm2G7HGAwKyM=
 github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
 github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415/go.mod h1:GwrjFmJcFw6At/Gs6z4yjiIwzuJ1/+UwLxMQDVQXShQ=
 github.com/xeipuuv/gojsonschema v0.0.0-20180618132009-1d523034197f/go.mod h1:5yf86TLmAcydyeJq5YvxkGPE2fm/u4myDekKRoLuqhs=
