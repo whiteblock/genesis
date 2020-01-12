@@ -78,6 +78,9 @@ func getCommandController() (controller.CommandController, error) {
 	if err != nil {
 		return nil, err
 	}
+	if conf.Execution.DebugMode {
+		conf.GetLogger().Warn("Debug mode is enabled!")
+	}
 
 	complConf, err := conf.CompletionAMQP()
 	if err != nil {
@@ -140,6 +143,7 @@ func getCommandController() (controller.CommandController, error) {
 						conf.GetLogger()),
 					conf.GetLogger()),
 				conf.GetLogger()),
+			conf,
 			conf.MaxMessageRetries,
 			conf.GetLogger()),
 		conf.GetLogger())

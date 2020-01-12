@@ -98,10 +98,6 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 
 			if result.IsFatal() {
 				entry.Error("a command had a fatal error")
-				if exec.conf.DebugMode {
-					exec.log.Info("trapping fatal error due to debug mode")
-					return result.Trap()
-				}
 				return result
 			}
 			failed = append(failed, result.Meta["command"].(command.Command).ID)

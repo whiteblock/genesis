@@ -23,6 +23,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/handler/auxillary"
 
@@ -43,15 +44,17 @@ type deliveryHandler struct {
 	maxRetries int64
 	aux        auxillary.Executor
 	log        logrus.Ext1FieldLogger
+	conf       config.Config
 }
 
 // NewDeliveryHandler creates a new DeliveryHandler which uses the given usecase for
 // executing the extracted command
 func NewDeliveryHandler(
 	aux auxillary.Executor,
+	conf config.Config,
 	maxRetries int64,
 	log logrus.Ext1FieldLogger) DeliveryHandler {
-	return &deliveryHandler{aux: aux, log: log, maxRetries: maxRetries}
+	return &deliveryHandler{aux: aux, conf: conf, log: log, maxRetries: maxRetries}
 }
 
 func (dh deliveryHandler) sleepy(msg amqp.Delivery) {
@@ -179,6 +182,10 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing,
 	out, result = dh.process(msg, &inst)
 
 	stat := inst.Status()
+	if dh.conf.Execution.DebugMode && result.IsFatal() {
+		dh.log.Info("trapping fatal error due to debug mode")
+		result = result.Trap()
+	}
 
 	if result.IsAllDone() || result.IsTrap() || result.IsFatal() || result.IsIgnore() {
 		stat.Finished = true

@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	auxMocks "github.com/whiteblock/genesis/mocks/pkg/handler/auxillary"
+	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/entity"
 
 	"github.com/sirupsen/logrus"
@@ -34,14 +35,14 @@ import (
 )
 
 func TestNewDeliveryHandler(t *testing.T) {
-	assert.NotNil(t, NewDeliveryHandler(nil, 1, nil))
+	assert.NotNil(t, NewDeliveryHandler(nil, config.Config{}, 1, nil))
 }
 
 func TestDeliveryHandler_Process_Successful(t *testing.T) {
 	aux := new(auxMocks.Executor)
 	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewSuccessResult()).Once()
 
-	dh := NewDeliveryHandler(aux, 1, logrus.New())
+	dh := NewDeliveryHandler(aux, config.Config{}, 1, logrus.New())
 
 	cmd := command.Instructions{Commands: [][]command.Command{[]command.Command{command.Command{
 		Order: command.Order{
@@ -66,7 +67,7 @@ func TestDeliveryHandler_Process_Successful(t *testing.T) {
 func TestDeliveryHandler_Process_Unsuccessful(t *testing.T) {
 	aux := new(auxMocks.Executor)
 
-	dh := NewDeliveryHandler(aux, 1, logrus.New())
+	dh := NewDeliveryHandler(aux, config.Config{}, 1, logrus.New())
 
 	body := []byte("should be a failure")
 
@@ -77,7 +78,7 @@ func TestDeliveryHandler_Process_Unsuccessful(t *testing.T) {
 }
 
 func TestDeliveryHandler_Process_NoCmds_Failures(t *testing.T) {
-	dh := NewDeliveryHandler(nil, 1, logrus.New())
+	dh := NewDeliveryHandler(nil, config.Config{}, 1, logrus.New())
 
 	cmd := command.Instructions{}
 
@@ -92,7 +93,7 @@ func TestDeliveryHandler_Process_Multiple_Commands_Successful(t *testing.T) {
 	aux := new(auxMocks.Executor)
 	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewSuccessResult()).Once()
 
-	dh := NewDeliveryHandler(aux, 1, logrus.New())
+	dh := NewDeliveryHandler(aux, config.Config{}, 1, logrus.New())
 
 	cmd := command.Instructions{Commands: [][]command.Command{
 		[]command.Command{
@@ -132,7 +133,7 @@ func TestDeliveryHandler_Process_Multiple_Commands_Successful(t *testing.T) {
 func TestDeliveryHandler_Process_Execute_Nonfatal_Failure(t *testing.T) {
 	aux := new(auxMocks.Executor)
 	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewErrorResult("err")).Once()
-	dh := NewDeliveryHandler(aux, 1, logrus.New())
+	dh := NewDeliveryHandler(aux, config.Config{}, 1, logrus.New())
 
 	cmd := command.Instructions{Commands: [][]command.Command{
 		[]command.Command{
@@ -161,7 +162,7 @@ func TestDeliveryHandler_Process_Execute_Nonfatal_Failure(t *testing.T) {
 func TestDeliveryHandler_Process_Execute_Fatal_Failure(t *testing.T) {
 	aux := new(auxMocks.Executor)
 	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewFatalResult("err")).Once()
-	dh := NewDeliveryHandler(aux, 1, logrus.New())
+	dh := NewDeliveryHandler(aux, config.Config{}, 1, logrus.New())
 
 	cmd := command.Instructions{Commands: [][]command.Command{
 		[]command.Command{
