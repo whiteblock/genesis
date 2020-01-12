@@ -21,13 +21,14 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/whiteblock/definition/command"
-	usecase "github.com/whiteblock/genesis/mocks/pkg/usecase"
+	auxMocks "github.com/whiteblock/genesis/mocks/pkg/handler/auxillary"
 	"github.com/whiteblock/genesis/pkg/entity"
 
 	"github.com/sirupsen/logrus"
@@ -35,158 +36,123 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+var testCommands = command.Instructions{Commands: [][]command.Command{{
+	command.Command{
+		ID:     "TEST",
+		Target: command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type:    "createContainer",
+			Payload: map[string]interface{}{},
+		},
+	},
+	command.Command{
+		ID:     "TEST2",
+		Target: command.Target{IP: "0.0.0.0"},
+		Order: command.Order{
+			Type:    "createContainer",
+			Payload: map[string]interface{}{},
+		},
+	},
+}}}
+
 func TestRestHandler(t *testing.T) {
-	commands := [][]command.Command{[]command.Command{
-		command.Command{
-			ID:     "TEST",
-			Target: command.Target{IP: "0.0.0.0"},
-			Order: command.Order{
-				Type:    "createContainer",
-				Payload: map[string]interface{}{},
-			},
-		},
-		command.Command{
-			ID:     "TEST2",
-			Target: command.Target{IP: "0.0.0.0"},
-			Order: command.Order{
-				Type:    "createContainer",
-				Payload: map[string]interface{}{},
-			},
-		},
-	}}
-	data, err := json.Marshal(commands)
+
+	data, err := json.Marshal(testCommands)
 	assert.NoError(t, err)
 	req, err := http.NewRequest("POST", "/commands", bytes.NewReader(data))
 
 	assert.NoError(t, err)
 
-	runChan := make(chan command.Command)
+	runChan := make(chan []command.Command)
 
-	uc := new(usecase.DockerUseCase)
-	uc.On("Run", mock.Anything).Return(entity.NewSuccessResult()).Run(func(args mock.Arguments) {
-		cmd, ok := args.Get(0).(command.Command)
+	aux := new(auxMocks.Executor)
+	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewSuccessResult()).Run(func(args mock.Arguments) {
+		cmds, ok := args.Get(0).([]command.Command)
 		assert.True(t, ok)
-		runChan <- cmd
-	})
+		runChan <- cmds
+	}).Times(len(testCommands.Commands))
 
-	rh := NewRestHandler(uc, logrus.New())
+	rh := NewRestHandler(aux, logrus.New())
 
 	recorder := httptest.NewRecorder()
 	go rh.AddCommands(recorder, req)
 
-	for range commands[0] {
+	for i := range testCommands.Commands {
 		select {
 		case <-runChan:
 		case <-time.After(5 * time.Second):
-			t.Fatal("Report did not happen within 5 seconds")
+			t.Fatal(fmt.Sprintf("Report did not happen within 5 seconds: %d/%d", i, len(testCommands.Commands)))
 		}
 	}
 
-	uc.AssertNumberOfCalls(t, "Run", len(commands[0]))
-	close(rh.(*restHandler).cmdChan)
+	aux.AssertExpectations(t)
 }
 
 func TestRestHandler_Requeue(t *testing.T) {
-	commands := [][]command.Command{[]command.Command{
-		command.Command{
-			ID:     "TEST",
-			Target: command.Target{IP: "0.0.0.0"},
-			Order: command.Order{
-				Type:    "createContainer",
-				Payload: map[string]interface{}{},
-			},
-		},
-		command.Command{
-			ID:     "TEST2",
-			Target: command.Target{IP: "0.0.0.0"},
-			Order: command.Order{
-				Type:    "createContainer",
-				Payload: map[string]interface{}{},
-			},
-		},
-	}}
-	data, err := json.Marshal(commands)
+
+	data, err := json.Marshal(testCommands)
 	assert.NoError(t, err)
 	req, err := http.NewRequest("POST", "/commands", bytes.NewReader(data))
 
 	assert.NoError(t, err)
 
-	runChan := make(chan command.Command)
+	runChan := make(chan []command.Command)
 
-	uc := new(usecase.DockerUseCase)
-	uc.On("Run", mock.Anything).Return(entity.NewErrorResult("err")).Run(func(args mock.Arguments) {
-		cmd, ok := args.Get(0).(command.Command)
+	aux := new(auxMocks.Executor)
+	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewErrorResult("err")).Run(func(args mock.Arguments) {
+		cmds, ok := args.Get(0).([]command.Command)
 		assert.True(t, ok)
-		runChan <- cmd
+		runChan <- cmds
 
-	}).Times(len(commands[0]) * (maxRetries + 1))
+	}).Times(len(testCommands.Commands) * (maxRetries + 1))
 
-	rh := NewRestHandler(uc, logrus.New())
+	rh := NewRestHandler(aux, logrus.New())
 
 	recorder := httptest.NewRecorder()
 	go rh.AddCommands(recorder, req)
 
-	for i := 0; i < len(commands[0])*(maxRetries+1); i++ {
+	for i := 0; i < len(testCommands.Commands)*(maxRetries+1); i++ {
 		select {
 		case <-runChan:
 		case <-time.After(5 * time.Second):
-			t.Fatal("Report did not happen within 5 seconds")
+			t.Fatal(fmt.Sprintf("Report did not happen within 5 seconds: %d/%d", i,
+				len(testCommands.Commands)*(maxRetries)))
 		}
 	}
-	uc.AssertExpectations(t)
-	close(rh.(*restHandler).cmdChan)
+	aux.AssertExpectations(t)
 }
 
-func TestRestHandler_Fatal(t *testing.T) {
-	commands := [][]command.Command{[]command.Command{
-		command.Command{
-			ID:     "TEST",
-			Target: command.Target{IP: "0.0.0.0"},
-			Order: command.Order{
-				Type:    "createContainer",
-				Payload: map[string]interface{}{},
-			},
-		},
-		command.Command{
-			ID:     "TEST2",
-			Target: command.Target{IP: "0.0.0.0"},
-			Order: command.Order{
-				Type:    "createContainer",
-				Payload: map[string]interface{}{},
-			},
-		},
-	}}
-	data, err := json.Marshal(commands)
+func TestRestHandler_Fatal(t *testing.T) { //testCommands
+	data, err := json.Marshal(testCommands)
 	assert.NoError(t, err)
 	req, err := http.NewRequest("POST", "/commands", bytes.NewReader(data))
 
 	assert.NoError(t, err)
 
-	runChan := make(chan command.Command)
+	runChan := make(chan []command.Command)
 
-	uc := new(usecase.DockerUseCase)
-	uc.On("Run", mock.Anything).Return(entity.NewFatalResult("err")).Run(func(args mock.Arguments) {
+	aux := new(auxMocks.Executor)
+	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewFatalResult("err")).Run(func(args mock.Arguments) {
 		t.Log("called run")
-		cmd, ok := args.Get(0).(command.Command)
+		cmds, ok := args.Get(0).([]command.Command)
 		assert.True(t, ok)
-		runChan <- cmd
+		runChan <- cmds
 
-	}).Times(len(commands[0]))
+	}).Times(len(testCommands.Commands))
 
-	rh := NewRestHandler(uc, logrus.New())
+	rh := NewRestHandler(aux, logrus.New())
 
 	recorder := httptest.NewRecorder()
 	go rh.AddCommands(recorder, req)
 
-	for range commands[0] {
+	for range testCommands.Commands {
 		select {
 		case <-runChan:
 		case <-time.After(5 * time.Second):
 			t.Fatal("Report did not happen within 5 seconds")
 		}
 	}
-	uc.AssertExpectations(t)
-	close(rh.(*restHandler).cmdChan)
+	aux.AssertExpectations(t)
 }
 
 func TestRestHandler_HealthCheck(t *testing.T) {
