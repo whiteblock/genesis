@@ -26,39 +26,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"github.com/whiteblock/definition/command"
 )
-
-func TestConfig_GetVolumeConfig(t *testing.T) {
-	var tests = []struct {
-		conf               Config
-		expectedVolumeConf command.VolumeConfig
-	}{
-		{
-			conf: Config{
-				VolumeDriver:     "test",
-				VolumeDriverOpts: map[string]string{"test": "test"},
-			},
-			expectedVolumeConf: command.VolumeConfig{
-				Driver:     "test",
-				DriverOpts: map[string]string{"test": "test"},
-			},
-		},
-		{
-			conf: Config{VolumeDriver: "", VolumeDriverOpts: nil},
-			expectedVolumeConf: command.VolumeConfig{
-				Driver:     "",
-				DriverOpts: nil,
-			},
-		},
-	}
-
-	for i, tt := range tests {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			assert.Equal(t, tt.expectedVolumeConf, tt.conf.GetVolumeConfig())
-		})
-	}
-}
 
 func TestConfig_GetRestConfig(t *testing.T) {
 	var tests = []struct {

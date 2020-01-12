@@ -44,7 +44,7 @@ func TestDeliveryHandler_Process_Successful(t *testing.T) {
 
 	dh := NewDeliveryHandler(aux, config.Config{}, 1, logrus.New())
 
-	cmd := command.Instructions{Commands: [][]command.Command{[]command.Command{command.Command{
+	cmd := command.Instructions{Commands: [][]command.Command{{command.Command{
 		Order: command.Order{
 			Type:    "createContainer",
 			Payload: map[string]interface{}{},

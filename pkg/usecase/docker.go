@@ -145,6 +145,8 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 		return duc.swarmSetupShim(ctx, cli, cmd)
 	case command.Pullimage:
 		return duc.pullImageShim(ctx, cli, cmd)
+	case command.Volumeshare:
+		return duc.volumeShareShim(ctx, cli, cmd)
 	}
 	return ErrUnknownCommandType.InjectMeta(map[string]interface{}{"type": cmd.Order.Type})
 }
@@ -363,4 +365,18 @@ func (duc dockerUseCase) pullImageShim(ctx context.Context, cli entity.Client,
 		return ErrEmptyFieldImage
 	}
 	return duc.service.PullImage(ctx, duc.injectLabels(cli, cmd), payload)
+}
+
+func (duc dockerUseCase) volumeShareShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
+	var payload command.VolumeShare
+	err := cmd.ParseOrderPayloadInto(&payload)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	if len(payload.Hosts) == 0 {
+		return ErrEmptyFieldHosts
+	}
+	return duc.service.VolumeShare(ctx, duc.injectLabels(cli, cmd), payload)
 }
