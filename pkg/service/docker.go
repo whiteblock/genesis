@@ -74,6 +74,7 @@ type DockerService interface {
 	Emulation(ctx context.Context, cli entity.DockerCli, netem command.Netconf) entity.Result
 	SwarmCluster(ctx context.Context, cli entity.DockerCli, swarm command.SetupSwarm) entity.Result
 	PullImage(ctx context.Context, cli entity.DockerCli, imagePull command.PullImage) entity.Result
+	VolumeShare(ctx context.Context, cli entity.DockerCli, vs command.VolumeShare) entity.Result
 
 	//CreateClient creates a new client for connecting to the docker daemon
 	CreateClient(host string) (entity.Client, error)
@@ -82,6 +83,11 @@ type DockerService interface {
 var (
 	// ErrNoHost is returned when the swarm init command does not contain any hosts
 	ErrNoHost = entity.NewFatalResult("no hosts given")
+)
+
+const (
+	//GlusterContainerName is the name of the gluster container
+	GlusterContainerName = "gluster-container"
 )
 
 type dockerService struct {
@@ -373,17 +379,83 @@ func (ds dockerService) DetachNetwork(ctx context.Context, cli entity.DockerCli,
 	return ds.errorWhitelistHandler(err, "is not connected to the network")
 }
 
-func (ds dockerService) CreateVolume(ctx context.Context, cli entity.DockerCli,
+func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 	vol command.Volume) entity.Result {
 
+	if !vol.Global {
+		volConfig := volume.VolumeCreateBody{
+			Labels: vol.Labels,
+			Name:   vol.Name,
+		}
+
+		_, err := ecli.VolumeCreate(ctx, volConfig)
+		return entity.NewResult(err)
+	}
 	volConfig := volume.VolumeCreateBody{
-		Driver:     vol.Driver,
-		DriverOpts: vol.DriverOpts,
-		Labels:     vol.Labels,
-		Name:       vol.Name,
+		Driver: ds.conf.GlusterDriver,
+		Name:   vol.Name,
+		DriverOpts: map[string]string{
+			"glusteropts": fmt.Sprintf("--volfile-server=localhost --volfile-id=/%s", vol.Name),
+		},
 	}
 
-	_, err := cli.VolumeCreate(ctx, volConfig)
+	clients := make([]entity.Client, len(vol.Hosts))
+
+	for i, host := range vol.Hosts {
+		cli, err := ds.CreateClient(host)
+		if err != nil {
+			return entity.NewErrorResult(err)
+		}
+		clients[i] = cli
+		ds.withField(ecli, "host", host).Info("created a client for volume share")
+	}
+
+	errChan := make(chan error)
+
+	brickDir := fmt.Sprintf("/var/bricks/%s", vol.Name)
+	for i := range vol.Hosts {
+		go func(i int) { //create the directory for the gluster bricks
+			errChan <- ds.repo.Execd(ctx, clients[i], GlusterContainerName, []string{"mkdir", "-p",
+				brickDir}, true)
+		}(i)
+	}
+
+	for range vol.Hosts {
+		err := <-errChan
+		if err != nil {
+			return entity.NewErrorResult(err)
+		}
+	}
+
+	cmds := []string{"gluster", "volume", vol.Name, "replica", fmt.Sprint(len(vol.Hosts))}
+	for _, host := range vol.Hosts {
+		cmds = append(cmds, fmt.Sprintf("%s:%s", host, brickDir))
+	}
+	cmds = append(cmds, "force") //needed because it wants a separate partition by default
+
+	err := ds.repo.Execd(ctx, clients[0], GlusterContainerName, cmds, true) //create the replica volume
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+
+	err = ds.repo.Execd(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume", "start", vol.Name}, true)
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+
+	err = ds.repo.Execd(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume",
+		"set", vol.Name, "ctime", "off"}, true) //compatibility
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+
+	err = ds.repo.Execd(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume",
+		"set", vol.Name, "auth.allow", strings.Join(vol.Hosts, ",") + ",127.0.0.1"}, true) // restrict access by ip
+	if err != nil {
+		return entity.NewErrorResult(err)
+	}
+
+	_, err = ecli.VolumeCreate(ctx, volConfig)
 	return entity.NewResult(err)
 }
 
@@ -607,4 +679,90 @@ func (ds dockerService) PullImage(ctx context.Context, cli entity.DockerCli,
 		}).Error("unable to pull an image")
 	}
 	return entity.NewResult(err)
+}
+
+func (ds dockerService) mkConfigs() (*container.Config, *container.HostConfig, *network.NetworkingConfig, string) {
+	return &container.Config{
+			Hostname:   GlusterContainerName,
+			Domainname: GlusterContainerName,
+			Image:      ds.conf.GlusterImage,
+			Entrypoint: strslice.StrSlice([]string{"glusterd", "--no-daemon"}),
+		},
+		&container.HostConfig{
+			AutoRemove:  true,
+			NetworkMode: container.NetworkMode("host"),
+			CapAdd:      strslice.StrSlice([]string{"NET_ADMIN", "CAP_SYS_ADMIN"}),
+		}, &network.NetworkingConfig{}, GlusterContainerName
+}
+
+func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli, vs command.VolumeShare) entity.Result {
+
+	if len(vs.Hosts) == 0 {
+		return entity.NewFatalResult("given an empty volume share command")
+	}
+
+	clients := make([]entity.Client, len(vs.Hosts))
+
+	for i, host := range vs.Hosts {
+		cli, err := ds.CreateClient(host)
+		if err != nil {
+			return entity.NewErrorResult(err)
+		}
+		clients[i] = cli
+		ds.withField(ecli, "host", host).Info("created a client for volume share")
+	}
+	errChan := make(chan error)
+
+	for i := range vs.Hosts {
+		go func(i int) {
+			errChan <- ds.repo.EnsureImagePulled(ctx, clients[i], ds.conf.GlusterImage, "")
+		}(i)
+	}
+
+	for range vs.Hosts {
+		err := <-errChan
+		if err != nil {
+			return entity.NewErrorResult(err)
+		}
+	}
+
+	config, hostConfig, networkConfig, name := ds.mkConfigs()
+
+	for i := range vs.Hosts {
+		go func(i int) {
+			_, err := clients[i].ContainerCreate(ctx, config, hostConfig, networkConfig, name)
+			errChan <- err
+		}(i)
+	}
+
+	for range vs.Hosts {
+		err := <-errChan
+		if err != nil {
+			return entity.NewErrorResult(err)
+		}
+	}
+
+	for i := range vs.Hosts {
+		go func(i int) {
+			errChan <- clients[i].ContainerStart(ctx, GlusterContainerName, types.ContainerStartOptions{})
+		}(i)
+	}
+
+	for i := range vs.Hosts {
+		err := <-errChan
+		if err != nil {
+			return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
+				"host": vs.Hosts[i],
+				"type": "StartContainer",
+			})
+		}
+	}
+
+	for _, host := range vs.Hosts[1:] {
+		err := ds.repo.Execd(ctx, clients[0], GlusterContainerName, []string{"gluster", "peer", "probe", host}, true)
+		if err != nil {
+			return entity.NewErrorResult(err)
+		}
+	}
+	return entity.NewSuccessResult()
 }

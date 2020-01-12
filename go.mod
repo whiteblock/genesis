@@ -17,7 +17,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v0.1.1 // indirect
 	github.com/pelletier/go-toml v1.6.0 // indirect
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
@@ -27,7 +27,7 @@ require (
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
 	github.com/stretchr/testify v1.4.0
 	github.com/whiteblock/amqp v1.1.0
-	github.com/whiteblock/definition v0.0.0-20200111154858-68f9269b33f5
+	github.com/whiteblock/definition v0.0.0-20200112213852-5e0104c7e8a4
 	github.com/whiteblock/utility v0.0.0-20200110223442-c5d878fe8a8f
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e

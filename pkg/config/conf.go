@@ -25,7 +25,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	queue "github.com/whiteblock/amqp"
-	"github.com/whiteblock/definition/command"
 )
 
 // Config groups all of the global configuration parameters into
@@ -95,14 +94,6 @@ func (c Config) StatusAMQP() (queue.AMQPConfig, error) {
 	conf, err := queue.NewAMQPConfig(viper.GetViper())
 	conf.QueueName = c.StatusQueueName
 	return conf, err
-}
-
-// GetVolumeConfig extracts the fields of this object representing VolumeConfig
-func (c Config) GetVolumeConfig() command.VolumeConfig {
-	return command.VolumeConfig{
-		Driver:     c.VolumeDriver,
-		DriverOpts: c.VolumeDriverOpts,
-	}
 }
 
 // GetRestConfig extracts the fields of this object representing RestConfig

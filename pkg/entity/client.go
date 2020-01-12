@@ -42,7 +42,21 @@ type Client interface {
 	ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
 		networkingConfig *network.NetworkingConfig, containerName string) (container.ContainerCreateCreatedBody, error)
 
-	//ContainerInspect returns the container information.
+	// ContainerExecAttach attaches a connection to an exec process in the server. It returns a
+	// types.HijackedConnection with the hijacked connection and the a reader to get output. It's up
+	// to the called to close the hijacked connection by calling types.HijackedResponse.Close.
+	ContainerExecAttach(ctx context.Context, execID string, config types.ExecStartCheck) (types.HijackedResponse, error)
+
+	// ContainerExecCreate creates a new exec configuration to run an exec process.
+	ContainerExecCreate(ctx context.Context, container string, config types.ExecConfig) (types.IDResponse, error)
+
+	// ContainerExecInspect returns information about a specific exec process on the docker host.
+	ContainerExecInspect(ctx context.Context, execID string) (types.ContainerExecInspect, error)
+
+	// ContainerExecStart starts an exec process already created in the docker host.
+	ContainerExecStart(ctx context.Context, execID string, config types.ExecStartCheck) error
+
+	// ContainerInspect returns the container information.
 	ContainerInspect(ctx context.Context, containerID string) (types.ContainerJSON, error)
 
 	// ContainerList returns the list of containers in the docker host.

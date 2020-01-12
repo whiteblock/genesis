@@ -42,6 +42,10 @@ type Docker struct {
 	SwarmPort int `mapstructure:"dockerSwarmPort"`
 	// DaemonPort is the port docker daemon is listening on
 	DaemonPort string `mapstructure:"dockerDaemonPort"`
+
+	GlusterImage string `mapstructure:"dockerGlusterImage"`
+
+	GlusterDriver string `mapstructure:"dockerGlusterDriver"`
 }
 
 // NewDocker creates a new docker configuration from viper
@@ -80,6 +84,16 @@ func setDockerBindings(v *viper.Viper) error {
 		return err
 	}
 
+	err = v.BindEnv("dockerGlusterImage", "DOCKER_GLUSTER_IMAGE")
+	if err != nil {
+		return err
+	}
+
+	err = v.BindEnv("dockerGlusterDriver", "DOCKER_GLUSTER_DRIVER")
+	if err != nil {
+		return err
+	}
+
 	return v.BindEnv("dockerKeyPath", "DOCKER_KEY_PATH")
 }
 
@@ -88,5 +102,6 @@ func setDockerDefaults(v *viper.Viper) {
 	v.SetDefault("dockerLogLabels", "org,name,testRun,test,phase")
 	v.SetDefault("dockerSwarmPort", 2477)
 	v.SetDefault("dockerDaemonPort", "2376")
-
+	v.SetDefault("dockerGlusterImage", "gcr.io/infra-dev-249211/gluster")
+	v.SetDefault("dockerGlusterDriver", "glusterfs")
 }

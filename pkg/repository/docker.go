@@ -51,6 +51,9 @@ type DockerRepository interface {
 
 	//HostHasImage returns true if the docker host has an image matching what was given
 	HostHasImage(ctx context.Context, cli entity.Client, image string) (bool, error)
+
+	//Execd is sort of like docker exec -d
+	Execd(ctx context.Context, cli entity.Client, containerName string, cmd []string, privileged bool) error
 }
 
 type dockerRepository struct {
@@ -155,4 +158,28 @@ func (da dockerRepository) GetContainerByName(ctx context.Context, cli entity.Cl
 		}
 	}
 	return types.Container{}, fmt.Errorf("could not find the container \"%s\"", containerName)
+}
+
+// GetContainerByName attempts to find a container with the given name and return information on it.
+func (da dockerRepository) Execd(ctx context.Context, cli entity.Client,
+	containerName string, cmd []string, privileged bool) error {
+
+	idRes, err := cli.ContainerExecCreate(ctx, containerName, types.ExecConfig{
+		User:         "",
+		Privileged:   privileged,
+		Tty:          false,
+		AttachStdin:  false,
+		AttachStderr: false,
+		AttachStdout: false,
+		Detach:       true,
+		DetachKeys:   "",
+		Env:          nil,
+		WorkingDir:   "",
+		Cmd:          cmd,
+	})
+	if err != nil {
+		return err
+	}
+
+	return cli.ContainerExecStart(ctx, idRes.ID, types.ExecStartCheck{})
 }
