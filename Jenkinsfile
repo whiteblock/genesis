@@ -23,6 +23,7 @@ pipeline {
     IMAGE_REPO            = "gcr.io/${DEV_GCP_PROJECT_ID}"
   }
   options {
+    disableConcurrentBuilds()
     buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '10'))
   }
   stages {
