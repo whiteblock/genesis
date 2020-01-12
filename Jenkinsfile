@@ -109,11 +109,9 @@ pipeline {
     failure {
       sh "docker network prune --force"
       sh "docker volume prune --force"
-      script {
-        slackNotify(env.BRANCH_NAME == DEFAULT_BRANCH)
-      }
     }
     always {
+      slackNotify(env.BRANCH_NAME == DEFAULT_BRANCH)
       sh "kubectl config delete-context ${DEV_KUBE_CONTEXT} || true"
       sh "gcloud auth revoke || true"
       deleteDir()
