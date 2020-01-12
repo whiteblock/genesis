@@ -1,0 +1,82 @@
+# Default values for genesis.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+secretMounts:
+  - name: 'docker-cert'
+    secretName: 'genesis-docker-cert'
+    mountPath: '/var/secrets'
+    readOnly: true
+
+replicaCount: 1
+
+image:
+  repository: gcr.io/whiteblock/genesis
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  name: genesis
+  type: ClusterIP
+  port: 8000
+  protocol: TCP
+  targetPort: 8000
+
+environment:
+  - name: LISTEN
+    value: "0.0.0.0:8000"
+  - name: TLS
+    value: "0"
+  - name: QUEUE_HOST
+    value: "rabbitmq-ha.rabbitmq"
+  - name: QUEUE_VHOST
+    value: "/"
+  - name: API_ENDPOINT
+    value: "http://filehandler.apps.svc.cluster.local"
+  - name: LOCAL_MODE
+    value: "0"
+  - name: VERBOSITY
+    value: TRACE
+  - name: QUEUE_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: genesis-platform-secret
+        key: queue_password
+  - name: QUEUE_USER
+    valueFrom:
+      secretKeyRef:
+        name: genesis-platform-secret
+        key: queue_user
+  - name: DOCKER_CACERT_PATH
+    value: "/var/secrets/ca.cert"
+  - name: DOCKER_CERT_PATH
+    value: "/var/secrets/key.cert"
+  - name: DOCKER_KEY_PATH
+    value: "/var/secrets/key.pem"
+  - name: EXECUTION_CONNECTION_RETRIES
+    value: "50"
+  - name: EXECUTION_RETRY_DELAY
+    value: "15s"
+  - name: MAX_MESSAGE_RETRIES
+    value: "50"
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
