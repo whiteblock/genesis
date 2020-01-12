@@ -86,6 +86,7 @@ var (
 )
 
 const (
+	//GlusterContainerName is the name of the gluster container
 	GlusterContainerName = "gluster-container"
 )
 
