@@ -204,7 +204,7 @@ func dockerTest(clean bool) {
 			repository.NewDockerRepository(),
 			conf.Docker,
 			file.NewRemoteSources(
-				conf.FileHandler,
+				conf,
 				conf.GetLogger()),
 			conf.GetLogger()),
 		conf.GetLogger())
