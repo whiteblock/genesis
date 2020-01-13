@@ -201,7 +201,7 @@ func dockerTest(clean bool) {
 
 	dockerUseCase := usecase.NewDockerUseCase(
 		service.NewDockerService(
-			repository.NewDockerRepository(),
+			repository.NewDockerRepository(conf.GetLogger()),
 			conf.Docker,
 			file.NewRemoteSources(
 				conf,

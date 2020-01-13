@@ -31,6 +31,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 //DockerRepository provides extra functions for docker service, which could be placed inside of docker
@@ -57,11 +58,12 @@ type DockerRepository interface {
 }
 
 type dockerRepository struct {
+	log logrus.Ext1FieldLogger
 }
 
 //NewDockerRepository creates a new DockerRepository instance
-func NewDockerRepository() DockerRepository {
-	return &dockerRepository{}
+func NewDockerRepository(log logrus.Ext1FieldLogger) DockerRepository {
+	return &dockerRepository{log: log}
 }
 
 func (da dockerRepository) WithTLSClientConfig(cacertPath, certPath, keyPath string) client.Opt {
@@ -163,7 +165,9 @@ func (da dockerRepository) GetContainerByName(ctx context.Context, cli entity.Cl
 // GetContainerByName attempts to find a container with the given name and return information on it.
 func (da dockerRepository) Execd(ctx context.Context, cli entity.Client,
 	containerName string, cmd []string, privileged bool) error {
-
+	da.log.WithFields(logrus.Fields{
+		"command": strings.Join(cmd, " "),
+	}).Debug("executing a command")
 	idRes, err := cli.ContainerExecCreate(ctx, containerName, types.ExecConfig{
 		User:         "",
 		Privileged:   privileged,

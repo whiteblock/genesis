@@ -47,7 +47,7 @@ func getRestServer() (controller.RestController, error) {
 				conf.Execution,
 				usecase.NewDockerUseCase(
 					service.NewDockerService(
-						repository.NewDockerRepository(),
+						repository.NewDockerRepository(conf.GetLogger()),
 						conf.Docker,
 						file.NewRemoteSources(
 							conf,
@@ -135,7 +135,7 @@ func getCommandController() (controller.CommandController, error) {
 				conf.Execution,
 				usecase.NewDockerUseCase(
 					service.NewDockerService(
-						repository.NewDockerRepository(),
+						repository.NewDockerRepository(conf.GetLogger()),
 						conf.Docker,
 						file.NewRemoteSources(
 							conf,
