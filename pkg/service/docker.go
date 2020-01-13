@@ -427,7 +427,7 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 		}
 	}
 
-	cmds := []string{"gluster", "volume", vol.Name, "replica", fmt.Sprint(len(vol.Hosts))}
+	cmds := []string{"gluster", "volume", "create", vol.Name, "replica", fmt.Sprint(len(vol.Hosts))}
 	for _, host := range vol.Hosts {
 		cmds = append(cmds, fmt.Sprintf("%s:%s", host, brickDir))
 	}
@@ -442,7 +442,7 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
-
+	time.Sleep(1 * time.Second)
 	err = ds.repo.Execd(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume",
 		"set", vol.Name, "ctime", "off"}, true) //compatibility
 	if err != nil {
