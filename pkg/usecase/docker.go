@@ -20,6 +20,7 @@ package usecase
 
 import (
 	"context"
+	"net"
 	"strings"
 	"time"
 
@@ -109,6 +110,27 @@ func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
 	return duc.Execute(ctx, cmd)
 }
 
+func (duc dockerUseCase) diagnoseConnIssue(ctx context.Context, cli entity.Client, cmd command.Command) {
+	res, err := cli.Ping(ctx)
+	if err != nil {
+		duc.withField(cmd, "error", err).Error("failed to ping the docker api")
+	} else {
+		duc.withField(cmd, "res", res).Info("got a ping response from the docker daemon")
+		return
+	}
+
+	conn, err := net.DialTimeout("tcp", cli.DaemonHost(), 1*time.Second)
+	if err != nil {
+		duc.withFields(cmd, logrus.Fields{
+			"error": err,
+			"host":  cli.DaemonHost()}).Error("docker appears to be down")
+	} else {
+		duc.withField(cmd, "host", cli.DaemonHost()).Error("docker is listening on the expected port")
+		conn.Close()
+	}
+
+}
+
 // Execute executes the command with the given context
 func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entity.Result {
 	cli, err := duc.service.CreateClient(cmd.Target.IP)
@@ -145,12 +167,7 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 	case command.SwarmInit:
 		res := duc.swarmSetupShim(ctx, cli, cmd)
 		if !res.IsSuccess() {
-			res, err := cli.Ping(ctx)
-			if err != nil {
-				duc.withField(cmd, "error", err).Error("failed to ping the docker api")
-			} else {
-				duc.withField(cmd, "res", res).Info("got a ping response from the docker daemon")
-			}
+			duc.diagnoseConnIssue(ctx, cli, cmd)
 		}
 		return res
 	case command.Pullimage:
