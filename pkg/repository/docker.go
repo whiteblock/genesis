@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/whiteblock/genesis/pkg/entity"
 
@@ -54,7 +55,7 @@ type DockerRepository interface {
 	HostHasImage(ctx context.Context, cli entity.Client, image string) (bool, error)
 
 	//Exec is sort of like docker exec
-	Exec(ctx context.Context, cli entity.Client, containerName string, cmd []string, privileged bool) error
+	Exec(ctx context.Context, cli entity.Client, containerName string, details entity.Exec) error
 }
 
 type dockerRepository struct {
@@ -162,15 +163,15 @@ func (da dockerRepository) GetContainerByName(ctx context.Context, cli entity.Cl
 	return types.Container{}, fmt.Errorf("could not find the container \"%s\"", containerName)
 }
 
-// GetContainerByName attempts to find a container with the given name and return information on it.
-func (da dockerRepository) Exec(ctx context.Context, cli entity.Client,
-	containerName string, cmd []string, privileged bool) error {
+func (da dockerRepository) exec(ctx context.Context, cli entity.Client,
+	containerName string, details entity.Exec) error {
+
 	da.log.WithFields(logrus.Fields{
-		"command": strings.Join(cmd, " "),
+		"command": strings.Join(details.Cmd, " "),
 	}).Debug("executing a command")
 	idRes, err := cli.ContainerExecCreate(ctx, containerName, types.ExecConfig{
 		User:         "",
-		Privileged:   privileged,
+		Privileged:   details.Privileged,
 		Tty:          false,
 		AttachStdin:  false,
 		AttachStderr: false,
@@ -179,7 +180,7 @@ func (da dockerRepository) Exec(ctx context.Context, cli entity.Client,
 		DetachKeys:   "",
 		Env:          nil,
 		WorkingDir:   "",
-		Cmd:          cmd,
+		Cmd:          details.Cmd,
 	})
 	if err != nil {
 		return err
@@ -195,11 +196,34 @@ func (da dockerRepository) Exec(ctx context.Context, cli entity.Client,
 		}
 		if !res.Running {
 			if res.ExitCode != 0 {
-				return fmt.Errorf(`command "%s" exited with exit code %d`, strings.Join(cmd, " "), res.ExitCode)
+				return fmt.Errorf(`command "%s" exited with exit code %d`, strings.Join(details.Cmd, " "), res.ExitCode)
 			}
 			break
 		}
 	}
 
 	return nil
+}
+
+func (da dockerRepository) Exec(ctx context.Context, cli entity.Client,
+	containerName string, details entity.Exec) error {
+	err := da.exec(ctx, cli, containerName, details)
+	if err == nil {
+		return nil
+	}
+
+	for i := 0; i < details.Retries; i++ {
+		if details.Delay != 0 {
+			time.Sleep(details.Delay)
+		}
+		da.log.WithFields(logrus.Fields{
+			"command": details.Cmd,
+			"attempt": i + 1,
+		}).Debug("retrying a command")
+		err = da.exec(ctx, cli, containerName, details)
+		if err == nil {
+			break
+		}
+	}
+	return err
 }

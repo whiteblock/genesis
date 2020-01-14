@@ -408,8 +408,11 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 	brickDir := fmt.Sprintf("/var/bricks/%s", vol.Name)
 	for i := range vol.Hosts {
 		go func(i int) { //create the directory for the gluster bricks
-			errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, []string{"mkdir", "-p",
-				brickDir}, true)
+			errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, entity.Exec{
+				Cmd:        []string{"mkdir", "-p", brickDir},
+				Privileged: true,
+				Retries:    5,
+			})
 		}(i)
 	}
 
@@ -422,27 +425,33 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 
 	cmds := []string{"gluster", "volume", "create", vol.Name, "replica", fmt.Sprint(len(vol.Hosts))}
 	for i, _ := range vol.Hosts {
-		/*if i == 0 {
-			cmds = append(cmds, fmt.Sprintf("%s:%s", GlusterContainerName, brickDir))
-		} else {
-			cmds = append(cmds, fmt.Sprintf("%s:%s", host, brickDir))
-		}*/
 		cmds = append(cmds, fmt.Sprintf("%s:%s", ds.hostName(ecli, i), brickDir))
 	}
 	cmds = append(cmds, "force") //needed because it wants a separate partition by default
 
-	err := ds.repo.Exec(ctx, clients[0], GlusterContainerName, cmds, true) //create the replica volume
+	err := ds.repo.Exec(ctx, clients[0], GlusterContainerName, entity.Exec{
+		Cmd:        cmds,
+		Privileged: true,
+		Retries:    5,
+	}) //create the replica volume
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
 
-	err = ds.repo.Exec(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume", "start", vol.Name}, true)
+	err = ds.repo.Exec(ctx, clients[0], GlusterContainerName, entity.Exec{
+		Cmd:        []string{"gluster", "volume", "start", vol.Name},
+		Privileged: true,
+		Retries:    5,
+	})
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
 
-	err = ds.repo.Exec(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume",
-		"set", vol.Name, "ctime", "off"}, true) //compatibility
+	err = ds.repo.Exec(ctx, clients[0], GlusterContainerName, entity.Exec{
+		Cmd:        []string{"gluster", "volume", "set", vol.Name, "ctime", "off"},
+		Privileged: true,
+		Retries:    5,
+	}) //compatibility
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
@@ -773,13 +782,20 @@ func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli,
 
 			for j := range vs.Hosts {
 				if i == j {
-					errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, []string{
-						"bash", "-c", fmt.Sprintf(`echo "%s  %s" >> /etc/hosts`,
-							"127.0.0.1", ds.hostName(ecli, j))}, true)
+					errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, entity.Exec{
+						Cmd: []string{"bash", "-c", fmt.Sprintf(`echo "%s  %s" >> /etc/hosts`,
+							"127.0.0.1", ds.hostName(ecli, j))},
+						Privileged: true,
+						Retries:    2,
+					})
 				} else {
-					errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, []string{
-						"bash", "-c", fmt.Sprintf(`echo "%s  %s" >> /etc/hosts`,
-							vs.Hosts[j], ds.hostName(ecli, j))}, true)
+					errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, entity.Exec{
+						Cmd: []string{
+							"bash", "-c", fmt.Sprintf(`echo "%s  %s" >> /etc/hosts`,
+								vs.Hosts[j], ds.hostName(ecli, j))},
+						Privileged: true,
+						Retries:    2,
+					})
 				}
 
 			}
@@ -801,8 +817,12 @@ func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli,
 			}
 			cnt++
 			go func(i int, j int) {
-				errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, []string{"gluster",
-					"peer", "probe", ds.hostName(ecli, j)}, true)
+				errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, entity.Exec{
+					Cmd:        []string{"gluster", "peer", "probe", ds.hostName(ecli, j)},
+					Privileged: true,
+					Retries:    20,
+					Delay:      100 * time.Millisecond,
+				})
 			}(i, j)
 		}
 	}
