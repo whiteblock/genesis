@@ -194,6 +194,9 @@ func (da dockerRepository) Exec(ctx context.Context, cli entity.Client,
 			return err
 		}
 		if !res.Running {
+			if res.ExitCode != 0 {
+				return fmt.Errorf(`command "%s" exited with exit code %d`, strings.Join(cmd, " "), res.ExitCode)
+			}
 			break
 		}
 	}
