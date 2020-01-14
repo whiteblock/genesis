@@ -141,7 +141,6 @@ func pullImage(dockerUseCase usecase.DockerUseCase, image string) {
 func createContainer(dockerUseCase usecase.DockerUseCase, name string,
 	args []string, ports map[int]int) {
 	testContainer := command.Container{
-		BoundCPUs: nil, //TODO
 		Environment: map[string]string{
 			"FOO": "BAR",
 		},

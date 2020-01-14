@@ -57,7 +57,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 		Name:    "TEST",
 		Network: "Testnet",
 		Ports:   map[int]int{8888: 8889},
-		Volumes: []command.Mount{command.Mount{Name: "volume1", Directory: "/foo/bar", ReadOnly: false}}, //TODO
+		Volumes: []command.Mount{{Name: "volume1", Directory: "/foo/bar", ReadOnly: false}},
 		Image:   "alpine",
 		Args:    []string{"test"},
 	}

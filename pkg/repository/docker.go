@@ -118,7 +118,7 @@ func (da dockerRepository) EnsureImagePulled(ctx context.Context, cli entity.Cli
 	}
 
 	rd, err := cli.ImagePull(ctx, imageName, types.ImagePullOptions{
-		Platform:     "Linux", //TODO: pull out to a config
+		Platform:     "Linux",
 		RegistryAuth: auth,
 	})
 	if err != nil {

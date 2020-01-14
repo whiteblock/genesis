@@ -30,6 +30,7 @@ func assertNotEmpty(s string, errMsg string) {
 	}
 }
 
+// SanityCheck makes sure that the config is sane
 func SanityCheck(conf Config) {
 	log := conf.GetLogger()
 

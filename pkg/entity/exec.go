@@ -20,6 +20,7 @@ package entity
 
 import "time"
 
+// Exec contains the information for an exec call
 type Exec struct {
 	Cmd        []string
 	Privileged bool

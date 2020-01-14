@@ -127,10 +127,10 @@ func (duc dockerUseCase) diagnoseConnIssue(ctx context.Context, cli entity.Clien
 			"error": err,
 			"host":  cli.DaemonHost()}).Error("docker appears to be down")
 		return //nothing more to report
-	} else {
-		duc.withField(cmd, "host", cli.DaemonHost()).Error("docker is listening on the expected port")
-		conn.Close()
 	}
+	duc.withField(cmd, "host", cli.DaemonHost()).Error("docker is listening on the expected port")
+	conn.Close()
+
 	httpClient := cli.HTTPClient()
 	resp, err := httpClient.Get(fmt.Sprintf("https://%s/info", baseHost))
 	if err != nil {
@@ -171,7 +171,11 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 		duc.withField(cmd, "dest", cmd.Target.IP).Error("failed to create a client")
 		return entity.NewFatalResult(err)
 	}
-	defer cli.Close()
+	defer func() {
+		if cli != nil {
+			cli.Close()
+		}
+	}()
 	duc.withField(cmd, "client", cli).Trace("created a client")
 	duc.withField(cmd, "type", cmd.Order.Type).Trace("routing a command")
 	switch command.OrderType(strings.ToLower(string(cmd.Order.Type))) {
