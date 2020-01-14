@@ -19,7 +19,9 @@
 package config
 
 import (
+	"fmt"
 	"os"
+	"regexp"
 )
 
 func assertNotEmpty(s string, errMsg string) {
@@ -35,6 +37,8 @@ func SanityCheck(conf Config) {
 	log.Info("docker configuration checks passed")
 }
 
+var portRegexp = regexp.MustCompile(`[0-9]+`)
+
 func dockerSanityCheck(conf Docker) {
 	if !conf.LocalMode {
 		dockerFilesConfCheck(conf)
@@ -45,6 +49,10 @@ func dockerSanityCheck(conf Docker) {
 	assertNotEmpty(conf.DaemonPort, "invalid docker daemon port given")
 	assertNotEmpty(conf.GlusterImage, "missing gluster image")
 	assertNotEmpty(conf.GlusterDriver, "missing gluster driver")
+
+	if !portRegexp.MatchString(conf.DaemonPort) {
+		panic(fmt.Sprintf(`daemon port is invalid: "%s"`, conf.DaemonPort))
+	}
 }
 
 func dockerFilesConfCheck(conf Docker) {
