@@ -94,7 +94,6 @@ func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
 		return stat
 	}
 	duc.withField(cmd, "command", cmd).Trace("running command")
-	var err error
 	timeout := time.Minute * 10
 	/*if cmd.Parent() != nil {
 		timeout, err = cmd.Parent().GetTimeRemaining()
