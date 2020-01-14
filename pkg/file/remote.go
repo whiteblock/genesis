@@ -138,7 +138,6 @@ func (rf remoteSources) GetTarReader(testnetID string, file command.File) (io.Re
 	}
 	defer fileReader.Close()
 	res, _ := ioutil.ReadAll(fileReader)
-	rf.log.Error("I need to be reverted")
 	rdr := bytes.NewReader(res)
 
 	var buf bytes.Buffer

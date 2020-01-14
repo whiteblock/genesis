@@ -254,9 +254,13 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 
 	go func() {
 		startTime := time.Now().Add(sc.Timeout.Duration)
+		cnt := 0
 		for time.Now().Unix() < startTime.Unix() {
-			ds.withFields(cli, logrus.Fields{
-				"name": sc.Name}).Trace("checking container status")
+			if cnt%20 == 0 {
+				ds.withFields(cli, logrus.Fields{
+					"name": sc.Name}).Trace("checking container status")
+			}
+
 			_, err := cli.ContainerInspect(ctx2, sc.Name)
 			if err != nil {
 				ds.withFields(cli, logrus.Fields{
@@ -266,6 +270,7 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 				break
 			}
 			time.Sleep(1 * time.Second)
+			cnt++
 		}
 	}()
 
