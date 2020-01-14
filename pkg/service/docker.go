@@ -391,13 +391,6 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 		_, err := ecli.VolumeCreate(ctx, volConfig)
 		return entity.NewResult(err)
 	}
-	volConfig := volume.VolumeCreateBody{
-		Driver: ds.conf.GlusterDriver,
-		Name:   vol.Name,
-		DriverOpts: map[string]string{
-			"glusteropts": fmt.Sprintf("--volfile-server=localhost --volfile-id=/%s", vol.Name),
-		},
-	}
 
 	clients := make([]entity.Client, len(vol.Hosts))
 
@@ -434,7 +427,7 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 		} else {
 			cmds = append(cmds, fmt.Sprintf("%s:%s", host, brickDir))
 		}*/
-		cmds = append(cmds, fmt.Sprintf("host%d:%s", i, brickDir))
+		cmds = append(cmds, fmt.Sprintf("%s:%s", ds.hostName(ecli, i), brickDir))
 	}
 	cmds = append(cmds, "force") //needed because it wants a separate partition by default
 
@@ -460,8 +453,26 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 		return entity.NewErrorResult(err)
 	}*/
 
-	_, err = ecli.VolumeCreate(ctx, volConfig)
-	return entity.NewResult(err)
+	for i := range clients {
+		go func(i int) {
+			_, err = ecli.VolumeCreate(ctx, volume.VolumeCreateBody{
+				Driver: ds.conf.GlusterDriver,
+				Name:   vol.Name,
+				DriverOpts: map[string]string{
+					"glusteropts": fmt.Sprintf("--volfile-server=%s --volfile-id=/%s", ds.hostName(ecli, i), vol.Name),
+				},
+			})
+		}(i)
+	}
+
+	for range clients {
+		err := <-errChan
+		if err != nil {
+			return entity.NewErrorResult(err)
+		}
+	}
+
+	return entity.NewSuccessResult()
 }
 
 func (ds dockerService) RemoveVolume(ctx context.Context, cli entity.DockerCli,
@@ -700,6 +711,10 @@ func (ds dockerService) mkConfigs() (*container.Config, *container.HostConfig, *
 		}, &network.NetworkingConfig{}, GlusterContainerName
 }
 
+func (ds dockerService) hostName(ecli entity.DockerCli, index int) string {
+	return fmt.Sprintf("biome-%s-%d", ecli.Labels[command.TestIDKey], index)
+}
+
 func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli,
 	vs command.VolumeShare) entity.Result {
 
@@ -752,18 +767,20 @@ func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli,
 	}
 	cnt := 0
 	for i := range vs.Hosts {
-		cnt += len(vs.Hosts)
+		cnt++
 		go func(i int) {
-			for j := range vs.Hosts {
+			errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, []string{
+				"bash", "-c", fmt.Sprintf(`echo "%s  %s" >> /etc/hosts`,
+					"127.0.0.1", ds.hostName(ecli, i))}, true)
+			/*for j := range vs.Hosts {
 				if i == j {
-					errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, []string{
-						"bash", "-c", fmt.Sprintf(`echo "%s  host%d" >> /etc/hosts`, "127.0.0.1", j)}, true)
+
 				} else {
 					errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, []string{
 						"bash", "-c", fmt.Sprintf(`echo "%s  host%d" >> /etc/hosts`, vs.Hosts[j], j)}, true)
 				}
 
-			}
+			}*/
 		}(i)
 	}
 	for i := 0; i < cnt; i++ {
@@ -783,7 +800,7 @@ func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli,
 			cnt++
 			go func(i int, j int) {
 				errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, []string{"gluster",
-					"peer", "probe", fmt.Sprintf("host%d", j)}, true)
+					"peer", "probe", ds.hostName(ecli, j)}, true)
 			}(i, j)
 		}
 	}
