@@ -63,7 +63,7 @@ func (rc restController) Start() {
 	rc.log.Fatal(http.ListenAndServe(rc.conf.Listen, removeTrailingSlash(rc.mux)))
 }
 
-func removeTrailingSlash(next http.Handler) http.Handler { //TODO middleware
+func removeTrailingSlash(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = strings.TrimSuffix(r.URL.Path, "/")
 		next.ServeHTTP(w, r)

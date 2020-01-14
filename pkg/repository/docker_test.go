@@ -27,6 +27,7 @@ import (
 	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
 
 	"github.com/docker/docker/api/types"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -44,7 +45,7 @@ func TestDockerRepository_GetNetworkByName_Success(t *testing.T) {
 			require.Len(t, args, 2)
 			assert.Nil(t, args.Get(0))
 		}).Times(len(results) + 1)
-	ds := NewDockerRepository()
+	ds := NewDockerRepository(logrus.New())
 
 	for _, result := range results {
 		net, err := ds.GetNetworkByName(nil, cli, result.Name)
@@ -61,7 +62,7 @@ func TestDockerRepository_GetNetworkByName_Success(t *testing.T) {
 func TestDockerRepository_GetNetworkByName_Failure(t *testing.T) {
 	cli := new(entityMock.Client)
 	cli.On("NetworkList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("eerrr")).Once()
-	ds := NewDockerRepository()
+	ds := NewDockerRepository(logrus.New())
 	_, err := ds.GetNetworkByName(nil, cli, "foo")
 	assert.Error(t, err)
 
@@ -89,7 +90,7 @@ func TestDockerRepository_HostHasImage_Success(t *testing.T) {
 			assert.Nil(t, args.Get(0))
 		})
 
-	ds := NewDockerRepository()
+	ds := NewDockerRepository(logrus.New())
 
 	for _, term := range append(existingImageTags, existingImageDigests...) {
 		exists, err := ds.HostHasImage(nil, cli, term)
@@ -109,7 +110,7 @@ func TestDockerRepository_HostHasImage_Failure(t *testing.T) {
 	cli := new(entityMock.Client)
 	cli.On("ImageList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err"))
 
-	ds := NewDockerRepository()
+	ds := NewDockerRepository(logrus.New())
 	exists, err := ds.HostHasImage(nil, cli, "foo")
 	assert.Error(t, err)
 	assert.False(t, exists)
@@ -145,7 +146,7 @@ func TestDockerRepository_EnsureImagePulled(t *testing.T) {
 		assert.Equal(t, "Linux", ipo.Platform)
 	}).Times(len(nonExistingImages))
 
-	ds := NewDockerRepository()
+	ds := NewDockerRepository(logrus.New())
 
 	for _, img := range existingImages {
 		err := ds.EnsureImagePulled(nil, cli, img, "")
@@ -171,7 +172,7 @@ func TestDockerRepository_EnsureImagePulled_ImagePull_Failure(t *testing.T) {
 	cli.On("ImagePull", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
 		nil, fmt.Errorf("err")).Once()
 
-	ds := NewDockerRepository()
+	ds := NewDockerRepository(logrus.New())
 
 	err := ds.EnsureImagePulled(nil, cli, "Foobar", "")
 	assert.Error(t, err)
@@ -190,7 +191,7 @@ func TestDockerRepository_GetContainerByName_Success(t *testing.T) {
 			require.Len(t, args, 2)
 			assert.Nil(t, args.Get(0))
 		}).Times((2 * len(results)) + 1)
-	ds := NewDockerRepository()
+	ds := NewDockerRepository(logrus.New())
 
 	for _, result := range results {
 		for _, name := range result.Names {
@@ -210,7 +211,7 @@ func TestDockerRepository_GetContainerByName_Success(t *testing.T) {
 func TestDockerRepository_GetContainerByName_Failure(t *testing.T) {
 	cli := new(entityMock.Client)
 	cli.On("ContainerList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err")).Once()
-	ds := NewDockerRepository()
+	ds := NewDockerRepository(logrus.New())
 	_, err := ds.GetContainerByName(nil, cli, "DNE")
 	assert.Error(t, err)
 

@@ -424,7 +424,7 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 	}
 
 	cmds := []string{"gluster", "volume", "create", vol.Name, "replica", fmt.Sprint(len(vol.Hosts))}
-	for i, _ := range vol.Hosts {
+	for i := range vol.Hosts {
 		cmds = append(cmds, fmt.Sprintf("%s:%s", ds.hostName(ecli, i), brickDir))
 	}
 	cmds = append(cmds, "force") //needed because it wants a separate partition by default

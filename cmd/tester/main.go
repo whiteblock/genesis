@@ -116,7 +116,7 @@ func removeNetwork(name string) command.Command {
 
 func createContainer(name string, network string, volume string, args []string) command.Command {
 	testContainer := command.Container{
-		BoundCPUs: nil, //TODO
+		BoundCPUs: nil,
 		Environment: map[string]string{
 			"FOO": "BAR",
 		},
@@ -125,8 +125,7 @@ func createContainer(name string, network string, volume string, args []string) 
 		},
 		Name:    name,
 		Network: network,
-		//	Ports:   map[int]int{8888: 8889},
-		Volumes: []command.Mount{command.Mount{
+		Volumes: []command.Mount{{
 			Name:      volume,
 			Directory: "/foo/bar",
 			ReadOnly:  false,
