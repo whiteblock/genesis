@@ -96,7 +96,7 @@ func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
 	duc.withField(cmd, "command", cmd).Trace("running command")
 	var err error
 	timeout := time.Minute * 10
-	if cmd.Parent() != nil {
+	/*if cmd.Parent() != nil {
 		timeout, err = cmd.Parent().GetTimeRemaining()
 		if err != nil || timeout == command.NoTimeout {
 			timeout = time.Minute * 10
@@ -105,7 +105,7 @@ func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
 				"timeout": timeout,
 			}).Debug("changed the timeout due to a setting")
 		}
-	}
+	}*/
 
 	ctx, cancelFn := context.WithTimeout(context.Background(), timeout)
 	defer cancelFn()
