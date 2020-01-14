@@ -136,6 +136,21 @@ func (duc dockerUseCase) diagnoseConnIssue(ctx context.Context, cli entity.Clien
 	if err != nil {
 		duc.withField(cmd, "error", err).Error("failed to get info from the docker host directly")
 	} else {
+
+		data, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			duc.withField(cmd, "error", err).Error("an addition io error occured")
+		}
+		resp.Body.Close()
+		duc.withFields(cmd, logrus.Fields{
+			"statusCode": resp.StatusCode,
+			"body":       string(data),
+		}).Info("got back information from the docker daemon")
+	}
+	resp, err = httpClient.Get(fmt.Sprintf("https://%s/_ping", baseHost))
+	if err != nil {
+		duc.withField(cmd, "error", err).Error("failed to ping the docker host directly")
+	} else {
 		defer resp.Body.Close()
 		data, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
@@ -144,7 +159,7 @@ func (duc dockerUseCase) diagnoseConnIssue(ctx context.Context, cli entity.Clien
 		duc.withFields(cmd, logrus.Fields{
 			"statusCode": resp.StatusCode,
 			"body":       string(data),
-		}).Info("got back information from the docker daemon")
+		}).Info("successfully pinged docker daemon")
 	}
 
 }
