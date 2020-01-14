@@ -211,6 +211,9 @@ func (da dockerRepository) Exec(ctx context.Context, cli entity.Client,
 	if err == nil {
 		return nil
 	}
+	if strings.Contains(err.Error(), "connect to the Docker daemon") { //bypass to help get out the dead things
+		return err
+	}
 
 	for i := 0; i < details.Retries; i++ {
 		if details.Delay != 0 {
