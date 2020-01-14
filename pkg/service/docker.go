@@ -464,7 +464,7 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 
 	for i := range clients {
 		go func(i int) {
-			_, err = ecli.VolumeCreate(ctx, volume.VolumeCreateBody{
+			_, err = clients[i].VolumeCreate(ctx, volume.VolumeCreateBody{
 				Driver: ds.conf.GlusterDriver,
 				Name:   vol.Name,
 				DriverOpts: map[string]string{
