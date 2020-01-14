@@ -767,20 +767,21 @@ func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli,
 	}
 	cnt := 0
 	for i := range vs.Hosts {
-		cnt++
+		cnt += len(vs.Hosts)
 		go func(i int) {
-			errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, []string{
-				"bash", "-c", fmt.Sprintf(`echo "%s  %s" >> /etc/hosts`,
-					"127.0.0.1", ds.hostName(ecli, i))}, true)
-			/*for j := range vs.Hosts {
+			
+			for j := range vs.Hosts {
 				if i == j {
-
+					errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, []string{
+						"bash", "-c", fmt.Sprintf(`echo "%s  %s" >> /etc/hosts`,
+						"127.0.0.1", ds.hostName(ecli, j))}, true)
 				} else {
 					errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, []string{
-						"bash", "-c", fmt.Sprintf(`echo "%s  host%d" >> /etc/hosts`, vs.Hosts[j], j)}, true)
+						"bash", "-c", fmt.Sprintf(`echo "%s  %s" >> /etc/hosts`, 
+						vs.Hosts[j], ds.hostName(ecli, j))}, true)
 				}
 
-			}*/
+			}
 		}(i)
 	}
 	for i := 0; i < cnt; i++ {
