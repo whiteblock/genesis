@@ -119,7 +119,7 @@ func (duc dockerUseCase) diagnoseConnIssue(ctx context.Context, cli entity.Clien
 		return
 	}
 
-	conn, err := net.DialTimeout("tcp", cli.DaemonHost(), 1*time.Second)
+	conn, err := net.DialTimeout("tcp", strings.TrimPrefix(cli.DaemonHost(), "tcp://"), 1*time.Second)
 	if err != nil {
 		duc.withFields(cmd, logrus.Fields{
 			"error": err,
