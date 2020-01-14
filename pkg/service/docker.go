@@ -415,7 +415,7 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 	brickDir := fmt.Sprintf("/var/bricks/%s", vol.Name)
 	for i := range vol.Hosts {
 		go func(i int) { //create the directory for the gluster bricks
-			errChan <- ds.repo.Execd(ctx, clients[i], GlusterContainerName, []string{"mkdir", "-p",
+			errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, []string{"mkdir", "-p",
 				brickDir}, true)
 		}(i)
 	}
@@ -437,23 +437,23 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 	}
 	cmds = append(cmds, "force") //needed because it wants a separate partition by default
 
-	err := ds.repo.Execd(ctx, clients[0], GlusterContainerName, cmds, true) //create the replica volume
+	err := ds.repo.Exec(ctx, clients[0], GlusterContainerName, cmds, true) //create the replica volume
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
-	time.Sleep(1 * time.Second)
-	err = ds.repo.Execd(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume", "start", vol.Name}, true)
+
+	err = ds.repo.Exec(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume", "start", vol.Name}, true)
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
-	time.Sleep(1 * time.Second)
-	err = ds.repo.Execd(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume",
+
+	err = ds.repo.Exec(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume",
 		"set", vol.Name, "ctime", "off"}, true) //compatibility
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
 
-	/*err = ds.repo.Execd(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume",
+	/*err = ds.repo.Exec(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume",
 		"set", vol.Name, "auth.allow", strings.Join(vol.Hosts, ",") + ",127.0.0.1"}, true) // restrict access by ip
 	if err != nil {
 		return entity.NewErrorResult(err)
@@ -699,7 +699,8 @@ func (ds dockerService) mkConfigs() (*container.Config, *container.HostConfig, *
 		}, &network.NetworkingConfig{}, GlusterContainerName
 }
 
-func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli, vs command.VolumeShare) entity.Result {
+func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli,
+	vs command.VolumeShare) entity.Result {
 
 	if len(vs.Hosts) == 0 {
 		return entity.NewFatalResult("given an empty volume share command")
@@ -748,12 +749,28 @@ func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli, 
 			})
 		}
 	}
-
-	for _, host := range vs.Hosts[1:] {
-		err := ds.repo.Execd(ctx, clients[0], GlusterContainerName, []string{"gluster", "peer", "probe", host}, true)
-		if err != nil {
-			return entity.NewErrorResult(err)
+	cnt := 0
+	for i := range vs.Hosts {
+		for j := range vs.Hosts {
+			if i == j {
+				continue
+			}
+			cnt++
+			go func(i int, j int) {
+				errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, []string{
+					"gluster", "peer", "probe", vs.Hosts[j]}, true)
+			}(i, j)
 		}
 	}
+
+	for i := 0; i < cnt; i++ {
+		err := <-errChan
+		if err != nil {
+			return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
+				"type": "Exec",
+			})
+		}
+	}
+
 	return entity.NewSuccessResult()
 }
