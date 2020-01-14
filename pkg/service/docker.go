@@ -695,7 +695,7 @@ func (ds dockerService) mkConfigs() (*container.Config, *container.HostConfig, *
 		&container.HostConfig{
 			AutoRemove:  true,
 			NetworkMode: container.NetworkMode("host"),
-			CapAdd:      strslice.StrSlice([]string{"NET_ADMIN", "CAP_SYS_ADMIN"}),
+			CapAdd:      strslice.StrSlice([]string{"NET_ADMIN", "SYS_ADMIN"}),
 		}, &network.NetworkingConfig{}, GlusterContainerName
 }
 
