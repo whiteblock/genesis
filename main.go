@@ -39,6 +39,7 @@ func getRestServer() (controller.RestController, error) {
 	if err != nil {
 		return nil, err
 	}
+	config.SanityCheck(conf)
 
 	return controller.NewRestController(
 		conf.GetRestConfig(),
@@ -78,6 +79,7 @@ func getCommandController() (controller.CommandController, error) {
 	if err != nil {
 		return nil, err
 	}
+	config.SanityCheck(conf)
 	if conf.Execution.DebugMode {
 		conf.GetLogger().Warn("Debug mode is enabled!")
 	}
