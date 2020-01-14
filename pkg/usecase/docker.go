@@ -95,16 +95,17 @@ func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
 	}
 	duc.withField(cmd, "command", cmd).Trace("running command")
 	timeout := time.Minute * 10
-	/*if cmd.Parent() != nil {
+	var err error
+	if cmd.Parent() != nil {
 		timeout, err = cmd.Parent().GetTimeRemaining()
-		if err != nil || timeout == command.NoTimeout {
+		if err != nil || timeout == command.NoTimeout || timeout < 0 {
 			timeout = time.Minute * 10
 		} else {
 			duc.withFields(cmd, logrus.Fields{
 				"timeout": timeout,
 			}).Debug("changed the timeout due to a setting")
 		}
-	}*/
+	}
 
 	ctx, cancelFn := context.WithTimeout(context.Background(), timeout)
 	defer cancelFn()
