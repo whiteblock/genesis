@@ -20,6 +20,8 @@ package usecase
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 	"net"
 	"strings"
 	"time"
@@ -118,15 +120,31 @@ func (duc dockerUseCase) diagnoseConnIssue(ctx context.Context, cli entity.Clien
 		duc.withField(cmd, "res", res).Info("got a ping response from the docker daemon")
 		return
 	}
-
-	conn, err := net.DialTimeout("tcp", strings.TrimPrefix(cli.DaemonHost(), "tcp://"), 1*time.Second)
+	baseHost := strings.TrimPrefix(cli.DaemonHost(), "tcp://")
+	conn, err := net.DialTimeout("tcp", baseHost, 1*time.Second)
 	if err != nil {
 		duc.withFields(cmd, logrus.Fields{
 			"error": err,
 			"host":  cli.DaemonHost()}).Error("docker appears to be down")
+		return //nothing more to report
 	} else {
 		duc.withField(cmd, "host", cli.DaemonHost()).Error("docker is listening on the expected port")
 		conn.Close()
+	}
+	httpClient := cli.HTTPClient()
+	resp, err := httpClient.Get(fmt.Sprintf("https://%s/info", baseHost))
+	if err != nil {
+		duc.withField(cmd, "error", err).Error("failed to get info from the docker host directly")
+	} else {
+		defer resp.Body.Close()
+		data, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			duc.withField(cmd, "error", err).Error("an addition io error occured")
+		}
+		duc.withFields(cmd, logrus.Fields{
+			"statusCode": resp.StatusCode,
+			"body":       string(data),
+		}).Info("got back information from the docker daemon")
 	}
 
 }
