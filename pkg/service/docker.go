@@ -437,7 +437,7 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 	if err != nil {
 		return entity.NewErrorResult(err)
 	}
-
+	time.Sleep(1 * time.Second)
 	err = ds.repo.Execd(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume", "start", vol.Name}, true)
 	if err != nil {
 		return entity.NewErrorResult(err)
@@ -449,11 +449,11 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 		return entity.NewErrorResult(err)
 	}
 
-	err = ds.repo.Execd(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume",
+	/*err = ds.repo.Execd(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume",
 		"set", vol.Name, "auth.allow", strings.Join(vol.Hosts, ",") + ",127.0.0.1"}, true) // restrict access by ip
 	if err != nil {
 		return entity.NewErrorResult(err)
-	}
+	}*/
 
 	_, err = ecli.VolumeCreate(ctx, volConfig)
 	return entity.NewResult(err)
