@@ -126,7 +126,7 @@ func (ds dockerService) errorWhitelistHandler(err error, whitelist ...string) en
 	return entity.NewResult(err, 1)
 }
 
-//CreateClient creates a new client for connecting to the docker daemon
+// CreateClient creates a new client for connecting to the docker daemon
 func (ds dockerService) CreateClient(host string) (entity.Client, error) {
 	if ds.conf.LocalMode {
 		return client.NewClientWithOpts(

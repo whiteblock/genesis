@@ -116,6 +116,7 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 		duc.withField(cmd, "dest", cmd.Target.IP).Error("failed to create a client")
 		return entity.NewFatalResult(err)
 	}
+	defer cli.Close()
 	duc.withField(cmd, "client", cli).Trace("created a client")
 	duc.withField(cmd, "type", cmd.Order.Type).Trace("routing a command")
 	switch command.OrderType(strings.ToLower(string(cmd.Order.Type))) {
@@ -142,7 +143,16 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 	case command.Emulation:
 		return duc.emulationShim(ctx, cli, cmd)
 	case command.SwarmInit:
-		return duc.swarmSetupShim(ctx, cli, cmd)
+		res := duc.swarmSetupShim(ctx, cli, cmd)
+		if !res.IsSuccess() {
+			res, err := cli.Ping(ctx)
+			if err != nil {
+				duc.withField(cmd, "error", err).Error("failed to ping the docker api")
+			} else {
+				duc.withField(cmd, "res", res).Info("got a ping response from the docker daemon")
+			}
+		}
+		return res
 	case command.Pullimage:
 		return duc.pullImageShim(ctx, cli, cmd)
 	case command.Volumeshare:

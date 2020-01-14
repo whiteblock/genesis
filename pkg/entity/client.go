@@ -33,6 +33,8 @@ import (
 
 // Client is an interface which contains the needed methods from the docker client
 type Client interface {
+	// Close the transport used by the client
+	Close() error
 	// ContainerAttach attaches a connection to a container in the server. It returns a types.HijackedConnection with
 	// the hijacked connection and the a reader to get output. It's up to the called to close
 	// the hijacked connection by calling types.HijackedResponse.Close.
@@ -107,6 +109,11 @@ type Client interface {
 
 	// NetworkList lists the networks known to the docker daemon
 	NetworkList(ctx context.Context, options types.NetworkListOptions) ([]types.NetworkResource, error)
+
+	// Ping pings the server and returns the value of the "Docker-Experimental", "Builder-Version",
+	// "OS-Type" & "API-Version" headers. It attempts to use a HEAD request on the endpoint, but
+	// falls back to GET if HEAD is not supported by the daemon.
+	Ping(ctx context.Context) (types.Ping, error)
 
 	// SwarmInit initializes the swarm.
 	SwarmInit(ctx context.Context, req swarm.InitRequest) (string, error)
