@@ -428,12 +428,13 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 	}
 
 	cmds := []string{"gluster", "volume", "create", vol.Name, "replica", fmt.Sprint(len(vol.Hosts))}
-	for i, host := range vol.Hosts {
-		if i == 0 {
+	for i, _ := range vol.Hosts {
+		/*if i == 0 {
 			cmds = append(cmds, fmt.Sprintf("%s:%s", GlusterContainerName, brickDir))
 		} else {
 			cmds = append(cmds, fmt.Sprintf("%s:%s", host, brickDir))
-		}
+		}*/
+		cmds = append(cmds, fmt.Sprintf("host%d:%s", i, brickDir))
 	}
 	cmds = append(cmds, "force") //needed because it wants a separate partition by default
 
@@ -751,6 +752,13 @@ func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli,
 	}
 	cnt := 0
 	for i := range vs.Hosts {
+		cnt += len(vs.Hosts)
+		go func(i int) {
+			for j := range vs.Hosts {
+				errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, []string{
+					"bash", "-c", fmt.Sprintf(`echo "%s  host%d" >> /etc/hosts`, vs.Hosts[j], j)}, true)
+			}
+		}(i)
 		for j := range vs.Hosts {
 			if i == j {
 				continue
