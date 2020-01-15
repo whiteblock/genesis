@@ -9,7 +9,7 @@ pipeline {
     APP_NAME              = "genesis"
     GCP_REGION            = credentials('GCP_REGION')
     APP_NAMESPACE         = "apps"
-    CHART_PATH            = "kubernetes/helm"
+    CHART_PATH            = "chart"
     KUBEDOG_VERSION       = "0.3.2"
     REV_SHORT             = sh(script: "git log --pretty=format:'%h' -n 1", , returnStdout: true).trim()
     INFRA_REPO_URL        = credentials('INFRA_REPO_URL')
@@ -23,6 +23,7 @@ pipeline {
     IMAGE_REPO            = "gcr.io/${DEV_GCP_PROJECT_ID}"
   }
   options {
+    disableConcurrentBuilds()
     buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '10'))
   }
   stages {
@@ -81,24 +82,17 @@ pipeline {
       when { branch DEFAULT_BRANCH }
       steps {
         script {
-          dir('infra') {
-            git branch: 'master',
-                credentialsId: 'jenkins-github',
-                url: "${INFRA_REPO_URL}"
-            withCredentials([file(credentialsId: 'google-infra-dev-auth', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-              sh "gcloud auth activate-service-account --key-file ${GOOGLE_APPLICATION_CREDENTIALS}"
-              sh "gcloud config set project ${DEV_GCP_PROJECT_ID}"
-              sh "gcloud container clusters get-credentials ${DEV_GKE_CLUSTER_NAME} --project ${DEV_GCP_PROJECT_ID} --region ${GCP_REGION}"
-              sh "git secret reveal"
-              sh "curl -L https://dl.bintray.com/flant/kubedog/v${KUBEDOG_VERSION}/kubedog-linux-amd64-v${KUBEDOG_VERSION} -o kubedog"
-              sh "chmod +x kubedog"
-              sh "helm init --kube-context=${DEV_KUBE_CONTEXT} --tiller-namespace helm --service-account tiller --history-max 10 --client-only"
-              sh "helm upgrade ${APP_NAME} ${CHART_PATH}/${APP_NAME} --install --namespace ${APP_NAMESPACE} --tiller-namespace helm \
-                  --values ${CHART_PATH}/${APP_NAME}/dev.values.yaml \
-                  --set-string image.tag=${BRANCH_NAME}-${REV_SHORT} \
-                  --set-string image.repository=${IMAGE_REPO}/${APP_NAME}"
-              sh "echo '{\"Deployments\": [{\"ResourceName\": \"'${APP_NAME}'\",\"Namespace\": \"'${APP_NAMESPACE}'\"}]}' | ./kubedog multitrack -t 60"
-            }
+          withCredentials([file(credentialsId: 'google-infra-dev-auth', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+            sh "gcloud auth activate-service-account --key-file ${GOOGLE_APPLICATION_CREDENTIALS}"
+            sh "gcloud config set project ${DEV_GCP_PROJECT_ID}"
+            sh "gcloud container clusters get-credentials ${DEV_GKE_CLUSTER_NAME} --project ${DEV_GCP_PROJECT_ID} --region ${GCP_REGION}"
+            sh "curl -L https://dl.bintray.com/flant/kubedog/v${KUBEDOG_VERSION}/kubedog-linux-amd64-v${KUBEDOG_VERSION} -o kubedog"
+            sh "chmod +x kubedog"
+            sh "helm init --kube-context=${DEV_KUBE_CONTEXT} --tiller-namespace helm --service-account tiller --history-max 10 --client-only"
+            sh "helm upgrade ${APP_NAME} ${CHART_PATH}/${APP_NAME} --install --namespace ${APP_NAMESPACE} --tiller-namespace helm \
+                --set-string image.tag=${BRANCH_NAME}-${REV_SHORT} \
+                --set-string image.repository=${IMAGE_REPO}/${APP_NAME}"
+            sh "echo '{\"Deployments\": [{\"ResourceName\": \"'${APP_NAME}'\",\"Namespace\": \"'${APP_NAMESPACE}'\"}]}' | ./kubedog multitrack -t 60"
           }
         }
       }
@@ -108,11 +102,9 @@ pipeline {
     failure {
       sh "docker network prune --force"
       sh "docker volume prune --force"
-      script {
-        slackNotify(env.BRANCH_NAME == DEFAULT_BRANCH)
-      }
     }
     always {
+      slackNotify(env.BRANCH_NAME == DEFAULT_BRANCH)
       sh "kubectl config delete-context ${DEV_KUBE_CONTEXT} || true"
       sh "gcloud auth revoke || true"
       deleteDir()

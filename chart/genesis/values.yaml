@@ -1,0 +1,121 @@
+# Default values for genesis.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+secretMounts:
+  - name: 'docker-cert'
+    secretName: 'genesis-docker-cert'
+    mountPath: '/var/secrets'
+    readOnly: true
+
+replicaCount: 1
+
+image:
+  repository: gcr.io/whiteblock/genesis
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  name: genesis
+  type: ClusterIP
+  port: 8000
+  protocol: TCP
+  targetPort: 8000
+
+environment:
+  - name: LISTEN
+    valueFrom:
+      configMapKeyRef:
+        name: genesis-config
+        value: env.listen
+  - name: TLS
+    valueFrom:
+      configMapKeyRef:
+        name: genesis-config
+        value: env.tls
+  - name: QUEUE_HOST
+    valueFrom:
+      configMapKeyRef:
+        name: genesis-config
+        value: env.queue-host
+  - name: QUEUE_VHOST
+    valueFrom:
+      configMapKeyRef:
+        name: genesis-config
+        value: env.queue-vhost
+  - name: API_ENDPOINT
+    valueFrom:
+      configMapKeyRef:
+        name: genesis-config
+        value: env.api-endpoint
+  - name: LOCAL_MODE
+    valueFrom:
+      configMapKeyRef:
+        name: genesis-config
+        value: env.local-mode
+  - name: VERBOSITY
+    valueFrom:
+      configMapKeyRef:
+        name: genesis-config
+        value: env.local-mode
+  - name: QUEUE_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: genesis-platform-secret
+        key: queue_password
+  - name: QUEUE_USER
+    valueFrom:
+      secretKeyRef:
+        name: genesis-platform-secret
+        key: queue_user
+  - name: DOCKER_CACERT_PATH
+    valueFrom:
+      configMapKeyRef:
+        name: genesis-config
+        value: env.docker-cacert-path
+  - name: DOCKER_CERT_PATH
+    valueFrom:
+      configMapKeyRef:
+        name: genesis-config
+        value: env.docker-cert-path
+  - name: DOCKER_KEY_PATH
+    valueFrom:
+      configMapKeyRef:
+        name: genesis-config
+        value: env.docker-key-path
+  - name: EXECUTION_CONNECTION_RETRIES
+    valueFrom:
+      configMapKeyRef:
+        name: genesis-config
+        value: env.execution-connection-retries
+  - name: EXECUTION_RETRY_DELAY
+    valueFrom:
+      configMapKeyRef:
+        name: genesis-config
+        value: env.execution-retry-delay
+  - name: MAX_MESSAGE_RETRIES
+    valueFrom:
+      configMapKeyRef:
+        name: genesis-config
+        value: env.max-message-retries
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
