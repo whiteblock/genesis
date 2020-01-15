@@ -25,12 +25,6 @@ service:
   protocol: TCP
   targetPort: 8000
 
-secrets:
-  genesis-platform-secret: |
-    QUEUE_USER: rabbitmq
-    QUEUE_PASSWORD: 39g5GD23fjk4FRE
-
-
 environment:
   - name: QUEUE_PASSWORD
     valueFrom:
