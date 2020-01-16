@@ -147,7 +147,9 @@ func (dh deliveryHandler) process(msg amqp.Delivery,
 		dh.log.WithFields(logrus.Fields{
 			"result": result,
 			"err":    err}).Error("a fatal error occured, flagging as fatal")
-		result = result.Fatal(err)
+		result = result.Fatal().InjectMeta(map[string]interface{}{
+			"secondaryError": err,
+		})
 		out = dh.destructMsg(inst)
 	}
 	return

@@ -90,6 +90,6 @@ func setDockerDefaults(v *viper.Viper) {
 	v.SetDefault("dockerLogLabels", "org,name,testRun,test,phase")
 	v.SetDefault("dockerSwarmPort", 2477)
 	v.SetDefault("dockerDaemonPort", "2376")
-	v.SetDefault("dockerGlusterImage", "gcr.io/infra-dev-249211/gluster")
+	v.SetDefault("dockerGlusterImage", "gcr.io/whiteblock/gluster:latest")
 	v.SetDefault("dockerGlusterDriver", "glusterfs")
 }

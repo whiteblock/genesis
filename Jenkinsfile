@@ -104,6 +104,7 @@ pipeline {
       sh "docker volume prune --force"
     }
     always {
+      // slack notify first to ignore teardown errors
       slackNotify(env.BRANCH_NAME == DEFAULT_BRANCH)
       sh "kubectl config delete-context ${DEV_KUBE_CONTEXT} || true"
       sh "gcloud auth revoke || true"

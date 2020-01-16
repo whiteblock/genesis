@@ -60,25 +60,7 @@ func NewCommandController(
 		once:       &sync.Once{},
 		sem:        semaphore.NewWeighted(maxConcurreny),
 	}
-	err := out.cmds.CreateQueue()
-	if err != nil {
-		log.WithFields(logrus.Fields{"err": err}).Debug("failed attempt to create queue on start")
-	}
-
-	err = out.completion.CreateQueue()
-	if err != nil {
-		log.WithFields(logrus.Fields{"err": err}).Debug("failed attempt to create queue on start")
-	}
-
-	err = out.errors.CreateQueue()
-	if err != nil {
-		log.WithFields(logrus.Fields{"err": err}).Debug("failed attempt to create queue on start")
-	}
-
-	err = out.status.CreateQueue()
-	if err != nil {
-		log.WithFields(logrus.Fields{"err": err}).Debug("failed attempt to create queue on start")
-	}
+	queue.TryCreateQueues(log, cmds, completion, errors, status)
 
 	return out, nil
 }

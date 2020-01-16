@@ -737,6 +737,19 @@ func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli,
 	}
 	errChan := make(chan error)
 
+	for i := range vs.Hosts {
+		go func(i int) {
+			errChan <- ds.repo.EnsureImagePulled(ctx, clients[i], ds.conf.GlusterImage, "")
+		}(i)
+	}
+
+	for range vs.Hosts {
+		err := <-errChan
+		if err != nil {
+			return entity.NewErrorResult(err)
+		}
+	}
+
 	config, hostConfig, networkConfig, name := ds.mkConfigs()
 
 	for i := range vs.Hosts {
