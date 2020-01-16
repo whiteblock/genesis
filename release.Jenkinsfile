@@ -48,7 +48,6 @@ pipeline {
           target = new container.Image(
             registry: targetRegistry,
             name: imageName,
-            // TODO: additionally overwrite :latest tag
             tag: "${params.tag_name}"
           )
           tagContainerImage(source, target)
