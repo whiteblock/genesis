@@ -39,7 +39,7 @@ environment:
 
 envFrom:
 - configMapRef:
-    name: test-config-map-genesis-configmap
+    name: genesis-configmap-0.1.0
 
 
 resources: {}
