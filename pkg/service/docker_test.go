@@ -158,7 +158,6 @@ func TestDockerService_StartContainer_Success(t *testing.T) {
 	conn := new(externalsMock.NetConn)
 	conn.On("SetDeadline", mock.Anything).Return(nil).Maybe()
 	conn.On("Close", mock.Anything).Return(nil).Maybe()
-	//conn.On("Read",mock.Anything).Return(0,io.EOF)
 
 	cli.On("ContainerAttach", mock.Anything, mock.Anything, mock.Anything).Return(
 		types.HijackedResponse{Conn: conn}, nil).Run(

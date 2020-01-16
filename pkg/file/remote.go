@@ -57,7 +57,7 @@ func (rf remoteSources) getTarHeader(file command.File, size int64) *tar.Header 
 }
 
 func (rf remoteSources) getClient() *http.Client {
-	return http.DefaultClient
+	return &http.Client{Timeout: rf.conf.FileHandler.APITimeout}
 }
 
 func (rf remoteSources) getRequest(ctx context.Context, testnetID, id string) (*http.Request, error) {
@@ -74,23 +74,23 @@ func (rf remoteSources) getContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), rf.conf.FileHandler.APITimeout)
 }
 
-func (rf remoteSources) getReader(testnetID string, file command.File) (io.ReadCloser, int64, error) {
+func (rf remoteSources) getReader(testnetID string, file command.File) (io.ReadCloser, error) {
 	if rf.conf.LocalMode {
 		rf.log.Info("reading a file locally")
 		f, err := os.Open(file.ID)
-		return f, 0, err
+		return f, err
 	}
 	client := rf.getClient()
 	ctx, cancel := rf.getContext()
 	defer cancel()
 	req, err := rf.getRequest(ctx, testnetID, file.ID)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	if resp.StatusCode != 200 {
 		rf.log.WithFields(logrus.Fields{
@@ -100,27 +100,18 @@ func (rf remoteSources) getReader(testnetID string, file command.File) (io.ReadC
 			"definition": testnetID}).Warn("got back a non-200 http code")
 		res, _ := ioutil.ReadAll(resp.Body)
 		resp.Body.Close()
-		return nil, 0, fmt.Errorf(string(res))
+		return nil, fmt.Errorf(string(res))
 
 	}
-	/*if resp.ContentLength == -1 {
-		rf.log.WithFields(logrus.Fields{
-			"file":       file.ID,
-			"dest":       file.Destination,
-			"code":       resp.StatusCode,
-			"definition": testnetID}).Warn("got a -1 content length")
-		res, _ := ioutil.ReadAll(resp.Body)
-		return nil, 0, fmt.Errorf(string(res))
-	}*/
-	rf.log.WithFields(logrus.Fields{"size": resp.ContentLength,
+	rf.log.WithFields(logrus.Fields{
 		"file": file.ID, "Destination": file.Destination}).Debug("copying a file")
-	return resp.Body, resp.ContentLength, nil
+	return resp.Body, nil
 
 }
 
 // GetTarReader fetches the file from the file handler service and converts it to a tar reader
 func (rf remoteSources) GetTarReader(testnetID string, file command.File) (io.Reader, error) {
-	fileReader, _, err := rf.getReader(testnetID, file)
+	fileReader, err := rf.getReader(testnetID, file)
 	if err != nil {
 		return nil, err
 	}
