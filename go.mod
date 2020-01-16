@@ -27,7 +27,7 @@ require (
 	github.com/spf13/viper v1.6.1
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
 	github.com/stretchr/testify v1.4.0
-	github.com/whiteblock/amqp v1.1.0
+	github.com/whiteblock/amqp v1.1.3
 	github.com/whiteblock/definition v0.0.0-20200114154534-1a4a4f8fd6df
 	github.com/whiteblock/utility v0.0.0-20200113035647-db557feae653
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
