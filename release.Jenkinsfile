@@ -40,54 +40,54 @@ pipeline {
         }
       }
     }
-    stage('publish artifacts') {
-      steps {
-        script {
-          source = new container.Image(
-            registry: registry,
-            name: imageName,
-            /*
-            NOTE: Ignores target_commitish value and gets the latest build
-                  from master branch no matter what
-            */
-            tag: "master-${env.REV_SHORT}"
-          )
-          target = new container.Image(
-            registry: registry,
-            name: imageName,
-            tag: "${params.tag_name}"
-          )
-          tagContainerImage(source, target)
-
-          // just here for convenience when
-          // users download gcr.io/whiteblock/genesis:latest
-          target = new container.Image(
-            registry: registry,
-            name: imageName,
-            tag: "latest"
-          )
-          tagContainerImage(source, target)
-
-
-          chart = new helm.Chart(
-            directory: chartDir,
-            version: params.tag_name
-          )
-          publishHelmChart(chart)
-        }
-      }
-    }
-    stage('github release') {
-      steps {
-        script {
-          withCredentials([
-            usernameColonPassword(credentialsId: gitTagCredentialsId, variable: 'USERPASS')
-          ]) {
-            String text = createRelease(release, env.USERPASS)
-            println text
-          }
-        }
-      }
-    }
+    // stage('publish artifacts') {
+    //   steps {
+    //     script {
+    //       source = new container.Image(
+    //         registry: registry,
+    //         name: imageName,
+    //         /*
+    //         NOTE: Ignores target_commitish value and gets the latest build
+    //               from master branch no matter what
+    //         */
+    //         tag: "master-${env.REV_SHORT}"
+    //       )
+    //       target = new container.Image(
+    //         registry: registry,
+    //         name: imageName,
+    //         tag: "${params.tag_name}"
+    //       )
+    //       tagContainerImage(source, target)
+    //
+    //       // just here for convenience when
+    //       // users download gcr.io/whiteblock/genesis:latest
+    //       target = new container.Image(
+    //         registry: registry,
+    //         name: imageName,
+    //         tag: "latest"
+    //       )
+    //       tagContainerImage(source, target)
+    //
+    //
+    //       chart = new helm.Chart(
+    //         directory: chartDir,
+    //         version: params.tag_name
+    //       )
+    //       publishHelmChart(chart)
+    //     }
+    //   }
+    // }
+    // stage('github release') {
+    //   steps {
+    //     script {
+    //       withCredentials([
+    //         usernameColonPassword(credentialsId: gitTagCredentialsId, variable: 'USERPASS')
+    //       ]) {
+    //         String text = createRelease(release, env.USERPASS)
+    //         println text
+    //       }
+    //     }
+    //   }
+    // }
   }
 }
