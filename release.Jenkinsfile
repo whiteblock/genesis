@@ -29,14 +29,26 @@ pipeline {
   stages {
     stage('validate tag') {
       steps {
-        validateTag(params.tag_name)
+        script {
+          def release = new github.Release(
+              tag_name: params.tag_name,
+              body: params.body,
+              target_commitish: params.target_commitish,
+              repo: repo
+          )
+          withCredentials([
+            usernameColonPassword(credentialsId: gitTagCredentialsId, variable: 'USERPASS')
+          ]) {
+            validateTag(release, env.USERPASS)
+          }
+        }
       }
     }
     stage('publish artifacts') {
       steps {
         script {
           source = new container.Image(
-            registry: sourceRegistry,
+            registry: registry,
             name: imageName,
             /*
             NOTE: Ignores target_commitish value and gets the latest build
@@ -45,16 +57,16 @@ pipeline {
             tag: "master-${env.REV_SHORT}"
           )
           target = new container.Image(
-            registry: targetRegistry,
+            registry: registry,
             name: imageName,
             tag: "${params.tag_name}"
           )
           tagContainerImage(source, target)
 
           // just here for convenience when
-          // users download gcr.io/whiteblock/genesis:latest
+          // manually installing chart from source
           target = new container.Image(
-            registry: targetRegistry,
+            registry: registry,
             name: imageName,
             tag: "latest"
           )
@@ -72,12 +84,6 @@ pipeline {
     stage('github release') {
       steps {
         script {
-          def release = new github.Release(
-              tag_name: params.tag_name,
-              body: params.body,
-              target_commitish: params.target_commitish,
-              repo: repo
-          )
           withCredentials([
             usernameColonPassword(credentialsId: gitTagCredentialsId, variable: 'USERPASS')
           ]) {
