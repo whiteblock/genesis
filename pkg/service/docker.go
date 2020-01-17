@@ -449,11 +449,14 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 		return entity.NewErrorResult(err)
 	}
 
-	/*err = ds.repo.Exec(ctx, clients[0], GlusterContainerName, []string{"gluster", "volume",
-		"set", vol.Name, "auth.allow", strings.Join(vol.Hosts, ",") + ",127.0.0.1"}, true) // restrict access by ip
+	err = ds.repo.Exec(ctx, clients[0], GlusterContainerName, entity.Exec{
+		Cmd:        []string{"gluster", "volume", "set", vol.Name, "auth.allow", strings.Join(vol.Hosts, ",") + ",127.0.0.1"},
+		Privileged: true,
+		Retries:    5,
+	}) // restrict access by ip
 	if err != nil {
 		return entity.NewErrorResult(err)
-	}*/
+	}
 
 	for i := range clients {
 		go func(i int) {
