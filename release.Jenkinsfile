@@ -1,4 +1,4 @@
-@Library('whiteblock-dev')
+@Library('whiteblock-dev@validate-tag')
 import github.Release
 import helm.Chart
 
@@ -29,7 +29,15 @@ pipeline {
   stages {
     stage('validate tag') {
       steps {
-        validateTag(params.tag_name)
+        script {
+          def release = new github.Release(
+              tag_name: params.tag_name,
+              body: params.body,
+              target_commitish: params.target_commitish,
+              repo: repo
+          )
+          validateTag(release)
+        }
       }
     }
     stage('publish artifacts') {
@@ -72,12 +80,6 @@ pipeline {
     stage('github release') {
       steps {
         script {
-          def release = new github.Release(
-              tag_name: params.tag_name,
-              body: params.body,
-              target_commitish: params.target_commitish,
-              repo: repo
-          )
           withCredentials([
             usernameColonPassword(credentialsId: gitTagCredentialsId, variable: 'USERPASS')
           ]) {
