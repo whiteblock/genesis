@@ -1,0 +1,61 @@
+# Default values for genesis.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+secretMounts:
+  - name: 'docker-cert'
+    secretName: 'genesis-docker-cert'
+    mountPath: '/var/secrets'
+    readOnly: true
+
+replicaCount: 1
+
+image:
+  repository: gcr.io/infra-dev-249211/genesis
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  name: genesis
+  type: ClusterIP
+  port: 8000
+  protocol: TCP
+  targetPort: 8000
+
+environment:
+  - name: QUEUE_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: genesis-platform-secret
+        key: queue_password
+  - name: QUEUE_USER
+    valueFrom:
+      secretKeyRef:
+        name: genesis-platform-secret
+        key: queue_user
+
+envFrom:
+- configMapRef:
+    name: genesis-configmap-0.1.0
+
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
