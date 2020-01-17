@@ -1,4 +1,4 @@
-@Library('whiteblock-dev@validate-tag')
+@Library('whiteblock-dev')
 import github.Release
 import helm.Chart
 
