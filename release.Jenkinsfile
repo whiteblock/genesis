@@ -36,7 +36,7 @@ pipeline {
       steps {
         script {
           source = new container.Image(
-            registry: sourceRegistry,
+            registry: registry,
             name: imageName,
             /*
             NOTE: Ignores target_commitish value and gets the latest build
@@ -45,7 +45,7 @@ pipeline {
             tag: "master-${env.REV_SHORT}"
           )
           target = new container.Image(
-            registry: targetRegistry,
+            registry: registry,
             name: imageName,
             tag: "${params.tag_name}"
           )
@@ -54,7 +54,7 @@ pipeline {
           // just here for convenience when
           // users download gcr.io/whiteblock/genesis:latest
           target = new container.Image(
-            registry: targetRegistry,
+            registry: registry,
             name: imageName,
             tag: "latest"
           )
