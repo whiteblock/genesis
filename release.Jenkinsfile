@@ -30,7 +30,8 @@ pipeline {
     stage('validate tag') {
       steps {
         script {
-          def release = new github.Release(
+          // not `def release` so that the variable can be used in github release stage
+          release = new github.Release(
               tag_name: params.tag_name,
               body: params.body,
               target_commitish: params.target_commitish,
