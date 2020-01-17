@@ -11,7 +11,7 @@ secretMounts:
 replicaCount: 1
 
 image:
-  repository: gcr.io/whiteblock/genesis
+  repository: gcr.io/infra-dev-249211/genesis
   tag: latest
   pullPolicy: IfNotPresent
 

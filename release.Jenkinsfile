@@ -3,8 +3,7 @@ import github.Release
 import helm.Chart
 
 String imageName = 'genesis'
-String sourceRegistry = 'gcr.io/infra-dev-249211'
-String targetRegistry = 'gcr.io/whiteblock'
+String registry = 'gcr.io/infra-dev-249211'
 
 String chartDir = 'chart/genesis'
 
