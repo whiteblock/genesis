@@ -36,7 +36,11 @@ pipeline {
               target_commitish: params.target_commitish,
               repo: repo
           )
-          validateTag(release)
+          withCredentials([
+            usernameColonPassword(credentialsId: gitTagCredentialsId, variable: 'USERPASS')
+          ]) {
+            validateTag(release, env.USERPASS)
+          }
         }
       }
     }
