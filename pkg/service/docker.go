@@ -765,7 +765,7 @@ func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli,
 	for range vs.Hosts {
 		err := <-errChan
 		if err != nil {
-			return entity.NewErrorResult(err)
+			return ds.errorWhitelistHandler(err, "already in use by container")
 		}
 	}
 
