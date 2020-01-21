@@ -196,6 +196,9 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 		networkConfig.EndpointsConfig[dContainer.Network] = &network.EndpointSettings{
 			NetworkID: dContainer.Network,
 			IPAddress: dContainer.IP,
+			IPAMConfig: &network.EndpointIPAMConfig{
+				IPv4Address: dContainer.IP,
+			},
 		}
 	}
 
