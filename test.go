@@ -7,6 +7,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -55,7 +56,7 @@ func createVolume(dockerUseCase usecase.DockerUseCase, name string) {
 	}
 
 	cmd := mintCommand(vol, command.Createvolume)
-	res := dockerUseCase.Run(cmd)
+	res := dockerUseCase.Run(context.TODO(), cmd)
 	log.WithFields(log.Fields{"res": res}).Info("created a volume")
 }
 
@@ -63,7 +64,7 @@ func removeVolume(dockerUseCase usecase.DockerUseCase, name string) {
 	cmd := mintCommand(map[string]string{
 		"name": name,
 	}, command.Removevolume)
-	res := dockerUseCase.Run(cmd)
+	res := dockerUseCase.Run(context.TODO(), cmd)
 	log.WithFields(log.Fields{"res": res}).Info("removed a volume")
 }
 
@@ -71,7 +72,7 @@ func removeContainer(dockerUseCase usecase.DockerUseCase, name string) {
 	cmd := mintCommand(command.SimpleName{
 		Name: name,
 	}, command.Removecontainer)
-	res := dockerUseCase.Run(cmd)
+	res := dockerUseCase.Run(context.TODO(), cmd)
 	log.WithFields(log.Fields{"res": res}).Info("removed a container")
 }
 
@@ -86,7 +87,7 @@ func createNetwork(dockerUseCase usecase.DockerUseCase, name string, num int) {
 		Subnet:  fmt.Sprintf("10.%d.0.0/16", num),
 	}
 	cmd := mintCommand(testNetwork, command.Createnetwork)
-	res := dockerUseCase.Run(cmd)
+	res := dockerUseCase.Run(context.TODO(), cmd)
 	log.WithFields(log.Fields{"res": res}).Info("created a network")
 }
 
@@ -98,7 +99,7 @@ func attachNetwork(dockerUseCase usecase.DockerUseCase,
 		Network:   networkName,
 		IP:        ip,
 	}, command.Attachnetwork)
-	res := dockerUseCase.Run(cmd)
+	res := dockerUseCase.Run(context.TODO(), cmd)
 	log.WithFields(log.Fields{"res": res}).Info("attached a network")
 }
 
@@ -107,13 +108,13 @@ func detachNetwork(dockerUseCase usecase.DockerUseCase, networkName string, cont
 		"container": "tester",
 		"network":   networkName,
 	}, command.Detachnetwork)
-	res := dockerUseCase.Run(cmd)
+	res := dockerUseCase.Run(context.TODO(), cmd)
 	log.WithFields(log.Fields{"res": res}).Info("detached a network")
 }
 
 func removeNetwork(dockerUseCase usecase.DockerUseCase, name string) {
 	cmd := mintCommand(map[string]string{"name": name}, command.Removenetwork)
-	res := dockerUseCase.Run(cmd)
+	res := dockerUseCase.Run(context.TODO(), cmd)
 	log.WithFields(log.Fields{"res": res}).Info("removed a network")
 }
 
@@ -122,7 +123,7 @@ func pullImage(dockerUseCase usecase.DockerUseCase, image string) {
 		Image: image,
 	}, command.Pullimage)
 
-	res := dockerUseCase.Run(cmd)
+	res := dockerUseCase.Run(context.TODO(), cmd)
 	log.WithFields(log.Fields{"res": res}).Info("pulled an image")
 }
 
@@ -150,7 +151,7 @@ func createContainer(dockerUseCase usecase.DockerUseCase, name string,
 	testContainer.Cpus = "1"
 	testContainer.Memory = "1gb"
 	cmd := mintCommand(testContainer, "createContainer")
-	res := dockerUseCase.Run(cmd)
+	res := dockerUseCase.Run(context.TODO(), cmd)
 	log.WithFields(log.Fields{"res": res}).Info("created a container")
 }
 
@@ -160,7 +161,7 @@ func startContainer(dockerUseCase usecase.DockerUseCase, name string, attach boo
 		"attach":  attach,
 		"timeout": 3 * time.Minute,
 	}, command.Startcontainer)
-	res := dockerUseCase.Run(cmd)
+	res := dockerUseCase.Run(context.TODO(), cmd)
 	log.WithFields(log.Fields{"res": res}).Info("started a container")
 }
 
@@ -170,7 +171,7 @@ func emulate(dockerUseCase usecase.DockerUseCase, containerName string, networkN
 		Network:   networkName,
 		Delay:     100000,
 	}, command.Emulation)
-	res := dockerUseCase.Run(cmd)
+	res := dockerUseCase.Run(context.TODO(), cmd)
 	log.WithFields(log.Fields{"res": res}).Info("applied emulation")
 }
 

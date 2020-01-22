@@ -12,7 +12,7 @@ import (
 	joonix "github.com/joonix/log"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	queue "github.com/whiteblock/amqp"
+	"github.com/whiteblock/amqp/config"
 )
 
 // Config groups all of the global configuration parameters into
@@ -57,29 +57,33 @@ func (c Config) GetLogger() *logrus.Logger {
 }
 
 // CompletionAMQP gets the AMQP for the completion queue
-func (c Config) CompletionAMQP() (queue.AMQPConfig, error) {
-	conf, err := queue.NewAMQPConfig(viper.GetViper())
+func (c Config) CompletionAMQP() (config.Config, error) {
+	conf, err := config.New(viper.GetViper())
 	conf.QueueName = c.CompletionQueueName
+	if c.Execution.DebugMode {
+		conf.Exchange = conf.Exchange.AsXDelay()
+	}
 	return conf, err
 }
 
 // CommandAMQP gets the AMQP for the command queue
-func (c Config) CommandAMQP() (queue.AMQPConfig, error) {
-	conf, err := queue.NewAMQPConfig(viper.GetViper())
+func (c Config) CommandAMQP() (config.Config, error) {
+	conf, err := config.New(viper.GetViper())
 	conf.QueueName = c.CommandQueueName
+	conf.Exchange = conf.Exchange.AsXDelay()
 	return conf, err
 }
 
 // ErrorsAMQP gets the AMQP for the command queue
-func (c Config) ErrorsAMQP() (queue.AMQPConfig, error) {
-	conf, err := queue.NewAMQPConfig(viper.GetViper())
+func (c Config) ErrorsAMQP() (config.Config, error) {
+	conf, err := config.New(viper.GetViper())
 	conf.QueueName = c.ErrorQueueName
 	return conf, err
 }
 
 // StatusAMQP gets the AMQP for the command queue
-func (c Config) StatusAMQP() (queue.AMQPConfig, error) {
-	conf, err := queue.NewAMQPConfig(viper.GetViper())
+func (c Config) StatusAMQP() (config.Config, error) {
+	conf, err := config.New(viper.GetViper())
 	conf.QueueName = c.StatusQueueName
 	return conf, err
 }
@@ -119,6 +123,7 @@ func setViperDefaults() {
 	viper.SetDefault("listen", "0.0.0.0:8000")
 	viper.SetDefault("localMode", true)
 	viper.SetDefault("errorQueueName", "errors")
+	viper.SetDefault("exchangeName", "delay")
 
 	setExecutionDefaults(viper.GetViper())
 	setDockerDefaults(viper.GetViper())
@@ -126,7 +131,7 @@ func setViperDefaults() {
 }
 
 func init() {
-	queue.SetConfig(viper.GetViper())
+	config.Setup(viper.GetViper())
 	setViperDefaults()
 	setViperEnvBindings()
 

@@ -184,6 +184,9 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing,
 	if !result.IsSuccess() {
 		stat.Message = result.Error.Error()
 	}
+	if result.IsDelayed() {
+		out.Headers["x-delay"] = result.Delay.Milliseconds()
+	}
 
 	status, err = queue.CreateMessage(stat)
 	if err != nil {

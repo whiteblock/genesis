@@ -131,7 +131,7 @@ func TestRestHandler_Fatal(t *testing.T) { //testCommands
 	rh := NewRestHandler(aux, logrus.New())
 
 	recorder := httptest.NewRecorder()
-	go rh.AddCommands(recorder, req)
+	rh.AddCommands(recorder, req)
 
 	for range testCommands.Commands {
 		select {

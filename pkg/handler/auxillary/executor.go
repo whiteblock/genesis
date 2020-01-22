@@ -47,12 +47,22 @@ func NewExecutor(
 func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 	resultChan := make(chan entity.Result, len(cmds))
 	sem := semaphore.NewWeighted(exec.conf.LimitPerTest)
+	ctx, cancelFn := context.WithTimeout(context.Background(), exec.conf.TimeLimit)
+	defer cancelFn()
 	for _, cmd := range cmds {
 		go func(cmd command.Command) {
-
 			for i := 0; i < exec.conf.ConnectionRetries; i++ {
-				sem.Acquire(context.Background(), 1)
-				res := exec.usecase.Run(cmd)
+				err := sem.Acquire(ctx, 1)
+				if err != nil {
+					exec.log.WithFields(logrus.Fields{
+						"error": err,
+						"cmd":   cmd,
+					}).Debug("received a cancelation signal")
+					resultChan <- entity.NewSuccessResult() // successfully killed
+					return
+				}
+
+				res := exec.usecase.Run(ctx, cmd)
 				sem.Release(1)
 				if !res.IsSuccess() && strings.Contains(res.Error.Error(), "connect to the Docker daemon") {
 					exec.log.WithFields(logrus.Fields{
@@ -78,16 +88,17 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 	var err error
 	isTrap := false
 	failed := []string{}
+	var fatalErr entity.Result
 	for range cmds {
 		result := <-resultChan
 		entry := exec.log.WithField("result", result)
-		entry.Trace("finished processing a command")
-		if !result.IsSuccess() {
 
-			if result.IsFatal() {
-				entry.Error("a command had a fatal error")
-				return result
-			}
+		entry.Trace("finished processing a command")
+		if result.IsFatal() {
+			entry.Error("a command had a fatal error")
+			cancelFn()
+			fatalErr = result
+		} else if !result.IsSuccess() {
 			failed = append(failed, result.Meta["command"].(command.Command).ID)
 			entry.Warn("a command failed to execute")
 			err = fmt.Errorf("%v;%v", err, result.Error.Error())
@@ -95,6 +106,9 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 			entry.Info("a command raised a trap")
 			isTrap = true
 		}
+	}
+	if fatalErr.IsFatal() { // was there a fatal error? If so, just return that
+		return fatalErr
 	}
 	if err != nil {
 		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
