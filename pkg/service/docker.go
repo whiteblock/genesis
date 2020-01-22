@@ -418,20 +418,27 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 			return entity.NewErrorResult(err)
 		}
 	}
-
-	cmds := []string{"gluster", "volume", "create", vol.Name, "replica", fmt.Sprint(len(vol.Hosts))}
-	for i := range vol.Hosts {
-		cmds = append(cmds, fmt.Sprintf("%s:%s", ds.hostName(ecli, i), brickDir))
-	}
-	cmds = append(cmds, "force") //needed because it wants a separate partition by default
-
 	err := ds.repo.Exec(ctx, clients[0], GlusterContainerName, entity.Exec{
-		Cmd:        cmds,
+		Cmd:        []string{"gluster", "volume", "status", vol.Name},
 		Privileged: true,
-		Retries:    5,
-	}) //create the replica volume
+		Retries:    1,
+	}) //check if it already exists, if so, don't try to create it
+
 	if err != nil {
-		return entity.NewErrorResult(err)
+		cmds := []string{"gluster", "volume", "create", vol.Name, "replica", fmt.Sprint(len(vol.Hosts))}
+		for i := range vol.Hosts {
+			cmds = append(cmds, fmt.Sprintf("%s:%s", ds.hostName(ecli, i), brickDir))
+		}
+		cmds = append(cmds, "force") //needed because it wants a separate partition by default
+
+		err = ds.repo.Exec(ctx, clients[0], GlusterContainerName, entity.Exec{
+			Cmd:        cmds,
+			Privileged: true,
+			Retries:    5,
+		}) //create the replica volume
+		if err != nil {
+			return entity.NewErrorResult(err)
+		}
 	}
 
 	err = ds.repo.Exec(ctx, clients[0], GlusterContainerName, entity.Exec{
