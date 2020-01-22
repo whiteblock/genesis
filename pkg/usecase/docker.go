@@ -26,7 +26,7 @@ import (
 //DockerUseCase is the usecase for executing the commands in docker
 type DockerUseCase interface {
 	// Run is equivalent to Execute, except it generates context based on the given command
-	Run(cmd command.Command) entity.Result
+	Run(ctx context.Context, cmd command.Command) entity.Result
 	// Execute executes the command with the given context
 	Execute(ctx context.Context, cmd command.Command) entity.Result
 }
@@ -76,27 +76,13 @@ func (duc dockerUseCase) withField(cmd command.Command, key string, value interf
 }
 
 // Run is equivalent to Execute, except it generates context based on the given command
-func (duc dockerUseCase) Run(cmd command.Command) entity.Result {
+func (duc dockerUseCase) Run(ctx context.Context, cmd command.Command) entity.Result {
 	stat, ok := duc.validationCheck(cmd)
 	if !ok {
 		return stat
 	}
 	duc.withField(cmd, "command", cmd).Trace("running command")
-	timeout := time.Minute * 10
-	var err error
-	if cmd.Parent() != nil {
-		timeout, err = cmd.Parent().GetTimeRemaining()
-		if err != nil || timeout == command.NoTimeout || timeout < 0 {
-			timeout = time.Minute * 10
-		} else {
-			duc.withFields(cmd, logrus.Fields{
-				"timeout": timeout,
-			}).Debug("changed the timeout due to a setting")
-		}
-	}
 
-	ctx, cancelFn := context.WithTimeout(context.Background(), timeout)
-	defer cancelFn()
 	return duc.Execute(ctx, cmd)
 }
 
@@ -199,6 +185,10 @@ func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entit
 		return duc.pullImageShim(ctx, cli, cmd)
 	case command.Volumeshare:
 		return duc.volumeShareShim(ctx, cli, cmd)
+	case command.Pauseexecution:
+		return duc.pauseExecutionShim(ctx, cli, cmd)
+	case command.Resumeexecution:
+		return duc.resumeExecutionShim(ctx, cli, cmd)
 	}
 	return ErrUnknownCommandType.InjectMeta(map[string]interface{}{"type": cmd.Order.Type})
 }
@@ -431,4 +421,26 @@ func (duc dockerUseCase) volumeShareShim(ctx context.Context, cli entity.Client,
 		return ErrEmptyFieldHosts
 	}
 	return duc.service.VolumeShare(ctx, duc.injectLabels(cli, cmd), payload)
+}
+
+func (duc dockerUseCase) pauseExecutionShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
+	var payload command.Duration
+	err := cmd.ParseOrderPayloadInto(&payload)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	return entity.NewDelayResult(payload.Duration)
+}
+
+func (duc dockerUseCase) resumeExecutionShim(ctx context.Context, cli entity.Client,
+	cmd command.Command) entity.Result {
+
+	var payload command.ResumeExecution
+	err := cmd.ParseOrderPayloadInto(&payload)
+	if err != nil {
+		return entity.NewFatalResult(err)
+	}
+	return duc.service.RemoveContainer(ctx, duc.injectLabels(cli, cmd), payload.Tasks...)
 }

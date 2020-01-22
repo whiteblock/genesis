@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/getlantern/deepcopy"
 	"github.com/imdario/mergo"
 )
 
@@ -63,21 +64,31 @@ func (res Result) IsIgnore() bool {
 	return res.Type == IgnoreType
 }
 
+func (res Result) CopyTo(out *Result) {
+	if out == nil {
+		out = new(Result)
+	}
+	*out = res
+	deepcopy.Copy(&out.Meta, res.Meta)
+}
+
 // Trap turns this result into a trapping result
-func (res Result) Trap() Result {
-	res.Type = TrapType
-	return res
+func (res Result) Trap() (out Result) {
+	res.CopyTo(&out)
+	out.Type = TrapType
+	return out
 }
 
 // Fatal turns this result into a fatal result, useful for when you want to change
 // the resulting action, but want to preserve the information in the result.
 // If no args given, keeps the original error
-func (res Result) Fatal(err ...error) Result {
-	res.Type = FatalType
+func (res Result) Fatal(err ...error) (out Result) {
+	res.CopyTo(&out)
+	out.Type = FatalType
 	if len(err) > 0 {
-		res.Error = err[0]
+		out.Error = err[0]
 	}
-	return res
+	return out
 }
 
 // IsRequeue returns true if this result indicates that the command should be retried at a
@@ -92,12 +103,13 @@ func (res Result) IsDelayed() bool {
 }
 
 // InjectMeta allows for chaining on New...Result for the return statement
-func (res Result) InjectMeta(meta map[string]interface{}) Result {
-	mergo.Map(&res.Meta, meta)
-	return res
+func (res Result) InjectMeta(meta map[string]interface{}) (out Result) {
+	res.CopyTo(&out)
+	mergo.Map(&out.Meta, meta)
+	return out
 }
 
-//MarshalJSON allows Result to customize the marshaling into JSON
+// MarshalJSON allows Result to customize the marshaling into JSON
 func (res Result) MarshalJSON() ([]byte, error) {
 	resType := ""
 	switch res.Type {
@@ -195,8 +207,8 @@ func NewSuccessResult() Result {
 }
 
 // NewDelayResult indicates a time delay result, aka a success result with a delay
-func NewDelayResult() Result {
-	return Result{Type: DelayType, Error: nil,
+func NewDelayResult(delay time.Duration) Result {
+	return Result{Type: DelayType, Error: nil, Delay: delay,
 		Meta: map[string]interface{}{}, Caller: getCaller(2)}
 }
 

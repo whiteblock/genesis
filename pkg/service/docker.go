@@ -34,23 +34,23 @@ import (
 	"github.com/whiteblock/definition/command"
 )
 
-//DockerService provides a intermediate interface between docker and the order from a command
+// DockerService provides a intermediate interface between docker and the order from a command
 type DockerService interface {
 
-	//CreateContainer attempts to create a docker container
+	// CreateContainer attempts to create a docker container
 	CreateContainer(ctx context.Context, cli entity.DockerCli,
 		container command.Container) entity.Result
 
-	//StartContainer attempts to start an already created docker container
+	// StartContainer attempts to start an already created docker container
 	StartContainer(ctx context.Context, cli entity.DockerCli, sc command.StartContainer) entity.Result
 
-	//RemoveContainer attempts to remove a container
-	RemoveContainer(ctx context.Context, cli entity.DockerCli, name string) entity.Result
+	// RemoveContainer attempts to remove (a) container(s)
+	RemoveContainer(ctx context.Context, cli entity.DockerCli, names ...string) entity.Result
 
-	//CreateNetwork attempts to create a network
+	// CreateNetwork attempts to create a network
 	CreateNetwork(ctx context.Context, cli entity.DockerCli, net command.Network) entity.Result
 
-	//RemoveNetwork attempts to remove a network
+	// RemoveNetwork attempts to remove a network
 	RemoveNetwork(ctx context.Context, cli entity.DockerCli, name string) entity.Result
 	AttachNetwork(ctx context.Context, cli entity.DockerCli, cmd command.ContainerNetwork) entity.Result
 	DetachNetwork(ctx context.Context, cli entity.DockerCli, network string,
@@ -279,16 +279,30 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 }
 
 // RemoveContainer attempts to remove a container
-func (ds dockerService) RemoveContainer(ctx context.Context, cli entity.DockerCli,
-	name string) entity.Result {
+func (ds dockerService) RemoveContainer(ctx context.Context, cli entity.DockerCli, names ...string) entity.Result {
+	errChan := make(chan error)
+	for i := range names {
+		go func(name string) {
+			ds.withFields(cli, logrus.Fields{"name": name}).Debug("removing container")
+			errChan <- cli.ContainerRemove(ctx, name, types.ContainerRemoveOptions{
+				RemoveVolumes: false,
+				RemoveLinks:   false,
+				Force:         true,
+			})
+		}(names[i])
+	}
+	var err error
+	for range names {
+		e := <-errChan
+		if e == nil {
+			continue
+		}
+		if strings.Contains(e.Error(), "No such container") {
+			continue //the container is already gone
+		}
+		err = fmt.Errorf("%v:%w", err, e)
+	}
 
-	ds.withFields(cli, logrus.Fields{"name": name}).Debug("removing container")
-
-	err := cli.ContainerRemove(ctx, name, types.ContainerRemoveOptions{
-		RemoveVolumes: false,
-		RemoveLinks:   false,
-		Force:         true,
-	})
 	return entity.NewResult(err)
 }
 
