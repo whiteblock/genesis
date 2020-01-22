@@ -49,19 +49,6 @@ func getRestServer() (controller.RestController, error) {
 		conf.GetLogger()), nil
 }
 
-func assertUniqueQueues(conf config.Config, confs ...queue.AMQPConfig) {
-	queues := map[string]bool{}
-	for i := range confs {
-		queues[confs[i].QueueName] = false
-		if len(queues)-1 != i {
-			for j := range confs {
-				conf.GetLogger().Errorf("%d = %s", j, confs[j].QueueName)
-			}
-			panic("queue names are not unique")
-		}
-	}
-}
-
 func getCommandController() (controller.CommandController, error) {
 	conf, err := config.NewConfig()
 	if err != nil {
@@ -92,7 +79,7 @@ func getCommandController() (controller.CommandController, error) {
 		return nil, err
 	}
 
-	assertUniqueQueues(conf, complConf, cmdConf, errConf, statusConf)
+	queue.AssertUniqueQueues(conf.GetLogger(), complConf, cmdConf, errConf, statusConf)
 
 	cmdConn, err := queue.OpenAMQPConnection(cmdConf.Endpoint)
 	if err != nil {

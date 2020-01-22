@@ -26,9 +26,9 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.6.2
-	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
+	github.com/streadway/amqp v0.0.0-20200108173154-1c71cc93ed71
 	github.com/stretchr/testify v1.4.0
-	github.com/whiteblock/amqp v1.1.3
+	github.com/whiteblock/amqp v1.1.4-0.20200122201228-721107e37fc9
 	github.com/whiteblock/definition v0.0.0-20200121185255-5c81ba02ff0b
 	github.com/whiteblock/utility v0.0.0-20200121024402-a5fdb8d0292d
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
