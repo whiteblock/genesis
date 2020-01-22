@@ -431,6 +431,9 @@ func (duc dockerUseCase) pauseExecutionShim(ctx context.Context, cli entity.Clie
 	if err != nil {
 		return entity.NewFatalResult(err)
 	}
+	if payload.IsInfinite() {
+		return entity.NewTrapResult()
+	}
 	return entity.NewDelayResult(payload.Duration)
 }
 
