@@ -111,7 +111,7 @@ func TestDockerService_CreateContainer(t *testing.T) {
 			assert.Equal(t, testNetwork.Name, netconf.NetworkID)
 			assert.Nil(t, netconf.Links)
 			assert.Nil(t, netconf.Aliases)
-			assert.Nil(t, netconf.IPAMConfig)
+			assert.NotNil(t, netconf.IPAMConfig)
 			assert.Empty(t, netconf.IPv6Gateway)
 			assert.Empty(t, netconf.GlobalIPv6Address)
 			assert.Empty(t, netconf.EndpointID)
