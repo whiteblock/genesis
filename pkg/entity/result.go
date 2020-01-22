@@ -64,6 +64,7 @@ func (res Result) IsIgnore() bool {
 	return res.Type == IgnoreType
 }
 
+// CopyTo copies this result's data into another result
 func (res Result) CopyTo(out *Result) {
 	if out == nil {
 		out = new(Result)
