@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"runtime"
+	"time"
 
 	"github.com/imdario/mergo"
 )
@@ -29,6 +30,9 @@ type Result struct {
 
 	//Caller is the location in which it was first created
 	Caller string
+
+	//Delay is the delay for the next round of execution
+	Delay time.Duration
 }
 
 // IsAllDone checks whether the request is completely finished. If true, then the completion
@@ -82,6 +86,11 @@ func (res Result) IsRequeue() bool {
 	return res.Type == RequeueType || !res.IsSuccess() && !res.IsFatal()
 }
 
+// IsDelayed returns true if this result is a delay result with a delay greater than 0
+func (res Result) IsDelayed() bool {
+	return res.Type == DelayType && res.Delay > 0
+}
+
 // InjectMeta allows for chaining on New...Result for the return statement
 func (res Result) InjectMeta(meta map[string]interface{}) Result {
 	mergo.Map(&res.Meta, meta)
@@ -106,6 +115,8 @@ func (res Result) MarshalJSON() ([]byte, error) {
 		resType = "Requeue"
 	case TrapType:
 		resType = "Trap"
+	case DelayType:
+		resType = "Delay"
 	default:
 		resType = "Unknown"
 	}
@@ -149,6 +160,10 @@ const (
 
 	// IgnoreType indicates that the given payload should be dropped immediately without further action
 	IgnoreType
+
+	// DelayType indicates that the given payload should continue as if a SuccessType was returned, but should
+	// be requeued on a time delay according to the value in Delay
+	DelayType
 )
 
 func getCaller(n int) string {
@@ -176,6 +191,12 @@ func NewResult(err interface{}, depth ...int) Result {
 // NewSuccessResult indicates a successful result
 func NewSuccessResult() Result {
 	return Result{Type: SuccessType, Error: nil,
+		Meta: map[string]interface{}{}, Caller: getCaller(2)}
+}
+
+// NewDelayResult indicates a time delay result, aka a success result with a delay
+func NewDelayResult() Result {
+	return Result{Type: DelayType, Error: nil,
 		Meta: map[string]interface{}{}, Caller: getCaller(2)}
 }
 
