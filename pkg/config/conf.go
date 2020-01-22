@@ -15,6 +15,8 @@ import (
 	"github.com/whiteblock/amqp/config"
 )
 
+const ExchangeName = "delay"
+
 // Config groups all of the global configuration parameters into
 // a single struct
 type Config struct {
@@ -62,6 +64,7 @@ func (c Config) CompletionAMQP() (config.Config, error) {
 	conf.QueueName = c.CompletionQueueName
 	if c.Execution.DebugMode {
 		conf.Exchange = conf.Exchange.AsXDelay()
+		conf.Exchange.Name = ExchangeName
 	}
 	return conf, err
 }
@@ -71,6 +74,7 @@ func (c Config) CommandAMQP() (config.Config, error) {
 	conf, err := config.New(viper.GetViper())
 	conf.QueueName = c.CommandQueueName
 	conf.Exchange = conf.Exchange.AsXDelay()
+	conf.Exchange.Name = ExchangeName
 	return conf, err
 }
 
@@ -123,7 +127,6 @@ func setViperDefaults() {
 	viper.SetDefault("listen", "0.0.0.0:8000")
 	viper.SetDefault("localMode", true)
 	viper.SetDefault("errorQueueName", "errors")
-	viper.SetDefault("exchangeName", "delay")
 
 	setExecutionDefaults(viper.GetViper())
 	setDockerDefaults(viper.GetViper())
