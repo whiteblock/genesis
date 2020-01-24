@@ -157,6 +157,18 @@ func (dh deliveryHandler) process(msg amqp.Delivery,
 	return
 }
 
+func (dh deliveryHandler) isDebugMode(inst *command.Instructions) bool {
+	if dh.conf.Execution.DebugMode {
+		return true
+	}
+	val, exists := inst.Meta["debugMode"]
+	if !exists {
+		return false
+	}
+	boolVal, typeOK := val.(bool)
+	return boolVal && typeOK
+}
+
 //Process attempts to extract the command and execute it
 func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing,
 	status amqp.Publishing, result entity.Result) {
@@ -174,7 +186,7 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing,
 	out, result = dh.process(msg, &inst)
 
 	stat := inst.Status()
-	if dh.conf.Execution.DebugMode && result.IsFatal() {
+	if result.IsFatal() && dh.isDebugMode(&inst) {
 		dh.log.Info("wrapping fatal error due to debug mode")
 		result = result.Trap()
 		out.Headers["x-delay"] = dh.conf.Execution.DMCompletionDelay.Milliseconds()
