@@ -103,8 +103,10 @@ func (dh deliveryHandler) process(msg amqp.Delivery,
 	}
 
 	result = dh.aux.ExecuteCommands(cmds)
-
-	if result.IsFatal() {
+	if result.IsDelayed() {
+		inst.Next()
+		out, err = queue.GetNextMessage(msg, inst)
+	} else if result.IsFatal() {
 		dh.log.WithFields(logrus.Fields{"result": result, "error": result.Error.Error(),
 			"testnet": inst.ID}).Error("execution resulted in a fatal error")
 
