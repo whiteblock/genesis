@@ -95,6 +95,7 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 
 		entry.Trace("finished processing a command")
 		if result.IsDelayed() {
+			entry.Debug("result contains a delay, propogating it")
 			propagatedResult = result
 		} else if result.IsFatal() {
 			entry.Error("a command had a fatal error")
