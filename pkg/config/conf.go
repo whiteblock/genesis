@@ -63,10 +63,8 @@ func (c Config) GetLogger() *logrus.Logger {
 func (c Config) CompletionAMQP() (config.Config, error) {
 	conf, err := config.New(viper.GetViper())
 	conf.QueueName = c.CompletionQueueName
-	if c.Execution.DebugMode {
-		conf.Exchange = conf.Exchange.AsXDelay()
-		conf.Exchange.Name = ExchangeName
-	}
+	conf.Exchange = conf.Exchange.AsXDelay()
+	conf.Exchange.Name = ExchangeName
 	return conf, err
 }
 
