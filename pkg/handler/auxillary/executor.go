@@ -104,7 +104,12 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 		} else if !result.IsSuccess() {
 			failed = append(failed, result.Meta["command"].(command.Command).ID)
 			entry.Warn("a command failed to execute")
-			err = fmt.Errorf("%v;%v", err, result.Error.Error())
+			if err != nil {
+				err = fmt.Errorf("%v;%v", err, result.Error.Error())
+			} else {
+				err = result.Error
+			}
+
 		} else if result.IsTrap() {
 			entry.Info("a command raised a trap")
 			isTrap = true
