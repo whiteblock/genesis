@@ -88,16 +88,18 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 	var err error
 	isTrap := false
 	failed := []string{}
-	var fatalErr entity.Result
+	var propagatedResult entity.Result
 	for range cmds {
 		result := <-resultChan
 		entry := exec.log.WithField("result", result)
 
 		entry.Trace("finished processing a command")
-		if result.IsFatal() {
+		if result.IsDelayed() {
+			propagatedResult = result
+		} else if result.IsFatal() {
 			entry.Error("a command had a fatal error")
 			cancelFn()
-			fatalErr = result
+			propagatedResult = result
 		} else if !result.IsSuccess() {
 			failed = append(failed, result.Meta["command"].(command.Command).ID)
 			entry.Warn("a command failed to execute")
@@ -107,8 +109,8 @@ func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {
 			isTrap = true
 		}
 	}
-	if fatalErr.IsFatal() { // was there a fatal error? If so, just return that
-		return fatalErr
+	if propagatedResult.IsFatal() || propagatedResult.IsDelayed() { // was there a fatal error? If so, just return that
+		return propagatedResult
 	}
 	if err != nil {
 		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
