@@ -843,22 +843,22 @@ func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli,
 		}
 	}
 	cnt = 0
-	for i := range vs.Hosts {
-		for j := range vs.Hosts {
-			if i == j {
-				continue
-			}
-			cnt++
-			go func(i int, j int) {
-				errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, entity.Exec{
-					Cmd:        []string{"gluster", "peer", "probe", ds.hostName(ecli, j)},
-					Privileged: true,
-					Retries:    20,
-					Delay:      100 * time.Millisecond,
-				})
-			}(i, j)
+	//for i := range vs.Hosts {
+	for j := range vs.Hosts {
+		if 0 == j {
+			continue
 		}
+		cnt++
+		go func(i int, j int) {
+			errChan <- ds.repo.Exec(ctx, clients[i], GlusterContainerName, entity.Exec{
+				Cmd:        []string{"gluster", "peer", "probe", ds.hostName(ecli, j)},
+				Privileged: true,
+				Retries:    20,
+				Delay:      100 * time.Millisecond,
+			})
+		}(0, j)
 	}
+	//}
 
 	for i := 0; i < cnt; i++ {
 		err := <-errChan
