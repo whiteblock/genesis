@@ -15,6 +15,7 @@ import (
 	"github.com/whiteblock/amqp/config"
 )
 
+// ExchangeName is the name of the delayed exchange
 const ExchangeName = "delay"
 
 // Config groups all of the global configuration parameters into
