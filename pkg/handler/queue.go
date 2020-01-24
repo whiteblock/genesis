@@ -175,8 +175,9 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing,
 
 	stat := inst.Status()
 	if dh.conf.Execution.DebugMode && result.IsFatal() {
-		dh.log.Info("trapping fatal error due to debug mode")
+		dh.log.Info("wrapping fatal error due to debug mode")
 		result = result.Trap()
+		out.Headers["x-delay"] = result.Delay.Milliseconds()
 	}
 
 	if result.IsAllDone() || result.IsTrap() || result.IsFatal() || result.IsIgnore() {
