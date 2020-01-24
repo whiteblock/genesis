@@ -432,8 +432,10 @@ func (duc dockerUseCase) pauseExecutionShim(ctx context.Context, cli entity.Clie
 		return entity.NewFatalResult(err)
 	}
 	if payload.IsInfinite() {
+		duc.withField(cmd, "cmd", cmd).Info("trapping since pause is infinite")
 		return entity.NewTrapResult()
 	}
+	duc.withField(cmd, "cmd", cmd).Info("pausing execution")
 	return entity.NewDelayResult(payload.Duration)
 }
 

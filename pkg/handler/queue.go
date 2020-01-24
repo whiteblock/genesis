@@ -185,6 +185,9 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing,
 		stat.Message = result.Error.Error()
 	}
 	if result.IsDelayed() {
+		dh.log.WithFields(logrus.Fields{
+			"result": result,
+		}).Info("addding the delay field to the header")
 		out.Headers["x-delay"] = result.Delay.Milliseconds()
 	}
 
