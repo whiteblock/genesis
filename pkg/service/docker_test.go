@@ -98,7 +98,6 @@ func TestDockerService_CreateContainer(t *testing.T) {
 				assert.Nil(t, hostConfig.Mounts[i].TmpfsOptions)
 				assert.Nil(t, hostConfig.Mounts[i].BindOptions)
 			}
-			assert.True(t, hostConfig.AutoRemove)
 		}
 		{
 			networkingConfig, ok := args.Get(3).(*network.NetworkingConfig)
