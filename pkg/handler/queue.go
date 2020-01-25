@@ -189,7 +189,7 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing,
 	if result.IsFatal() && dh.isDebugMode(&inst) {
 		dh.log.Info("wrapping fatal error due to debug mode")
 		result = result.Trap()
-		out.Headers["x-delay"] = dh.conf.Execution.DMCompletionDelay.Milliseconds()
+		out.Headers["x-delay"] = int32(dh.conf.Execution.DMCompletionDelay.Milliseconds())
 	}
 
 	if result.IsAllDone() || result.IsTrap() || result.IsFatal() || result.IsIgnore() {
@@ -203,7 +203,7 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing,
 		dh.log.WithFields(logrus.Fields{
 			"result": result,
 		}).Info("adding the delay field to the header")
-		out.Headers["x-delay"] = result.Delay.Milliseconds()
+		out.Headers["x-delay"] = int32(result.Delay.Milliseconds())
 	}
 
 	status, err = queue.CreateMessage(stat)
