@@ -28,13 +28,14 @@ require (
 	github.com/spf13/viper v1.6.2
 	github.com/streadway/amqp v0.0.0-20200108173154-1c71cc93ed71
 	github.com/stretchr/testify v1.4.0
-	github.com/whiteblock/amqp v1.2.0
+	github.com/whiteblock/amqp v1.2.1-0.20200125004544-ce8b1da9fbdf
 	github.com/whiteblock/definition v0.0.0-20200121185255-5c81ba02ff0b
 	github.com/whiteblock/utility v0.0.0-20200121024402-a5fdb8d0292d
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/sys v0.0.0-20200122134326-e047566fdf82 // indirect
+	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9 // indirect
 	google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // indirect
 	google.golang.org/grpc v1.26.0 // indirect
 	gopkg.in/ini.v1 v1.51.1 // indirect
+	gopkg.in/yaml.v2 v2.2.8 // indirect
 )

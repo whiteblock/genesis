@@ -244,6 +244,8 @@ github.com/whiteblock/amqp v1.1.4-0.20200122201228-721107e37fc9 h1:DxMU5hpK5jsHR
 github.com/whiteblock/amqp v1.1.4-0.20200122201228-721107e37fc9/go.mod h1:jtXr905sYSk+gICmqE21pnT4Js25fYEshBMytwOjLts=
 github.com/whiteblock/amqp v1.2.0 h1:Hqrd28HPhvbi5wAEqLmSDU/BP032hGB8iP8ZJL16wT8=
 github.com/whiteblock/amqp v1.2.0/go.mod h1:jtXr905sYSk+gICmqE21pnT4Js25fYEshBMytwOjLts=
+github.com/whiteblock/amqp v1.2.1-0.20200125004544-ce8b1da9fbdf h1:7ip4DpTifmpeLkNi62u/slc+7ZlE3x1AcaHe+CxWA8g=
+github.com/whiteblock/amqp v1.2.1-0.20200125004544-ce8b1da9fbdf/go.mod h1:jtXr905sYSk+gICmqE21pnT4Js25fYEshBMytwOjLts=
 github.com/whiteblock/definition v0.0.0-20200114154534-1a4a4f8fd6df h1:ZZ5xSpI92rCJruT5JnPLEh7081kFJk4cTLZx9pIqeD0=
 github.com/whiteblock/definition v0.0.0-20200114154534-1a4a4f8fd6df/go.mod h1:FtNWAMy10yYY599C0B431qe64mgKOt0pcq/fJJJ7Sns=
 github.com/whiteblock/definition v0.0.0-20200121185255-5c81ba02ff0b h1:ohzw0Iz7wuY5NNIwlA34ZOM6nC+dcmi+1e+Uj5yuNP0=
@@ -322,6 +324,8 @@ golang.org/x/sys v0.0.0-20200113162924-86b910548bc1 h1:gZpLHxUX5BdYLA08Lj4YCJNN/
 golang.org/x/sys v0.0.0-20200113162924-86b910548bc1/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200122134326-e047566fdf82 h1:ywK/j/KkyTHcdyYSZNXGjMwgmDSfjglYZ3vStQ/gSCU=
 golang.org/x/sys v0.0.0-20200122134326-e047566fdf82/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9 h1:1/DFK4b7JH8DmkqhUk48onnSfrPzImPoVxuomtbT2nk=
+golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.2 h1:tW2bmiBqwgJj/UpqtC8EpXEZVYOwU0yG4iWbprSVAcs=
@@ -379,6 +383,8 @@ gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.4/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.7 h1:VUgggvou5XRW9mHwD/yXxIYSMtY0zoKQf/v226p2nyo=
 gopkg.in/yaml.v2 v2.2.7/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
+gopkg.in/yaml.v2 v2.2.8 h1:obN1ZagJSUGI0Ek/LBmuj4SNLPfIny3KsKFopxRdj10=
+gopkg.in/yaml.v2 v2.2.8/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gotest.tools v2.2.0+incompatible/go.mod h1:DsYFclhRJ6vuDpmuTbkuFWG+y2sxOXAzmJt81HFBacw=
 honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.0-20190106161140-3f1c8253044a/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
