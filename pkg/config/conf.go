@@ -64,8 +64,7 @@ func (c Config) CompletionAMQP() (config.Config, error) {
 	conf, err := config.New(viper.GetViper())
 	conf.QueueName = c.CompletionQueueName
 	conf.Exchange = conf.Exchange.AsXDelay()
-	conf.Exchange.Name = ExchangeName
-	conf.Publish.Exchange = ExchangeName
+	conf = conf.SetExchangeName(ExchangeName)
 	return conf, err
 }
 
@@ -74,8 +73,7 @@ func (c Config) CommandAMQP() (config.Config, error) {
 	conf, err := config.New(viper.GetViper())
 	conf.QueueName = c.CommandQueueName
 	conf.Exchange = conf.Exchange.AsXDelay()
-	conf.Exchange.Name = ExchangeName
-	conf.Publish.Exchange = ExchangeName
+	conf = conf.SetExchangeName(ExchangeName)
 	return conf, err
 }
 

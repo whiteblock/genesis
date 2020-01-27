@@ -60,7 +60,7 @@ func NewCommandController(
 		once:       &sync.Once{},
 		sem:        semaphore.NewWeighted(maxConcurreny),
 	}
-	queue.TryCreateQueues(log, cmds, completion, errors, status)
+	queue.AutoSetup(log, cmds, completion, errors, status)
 
 	return out, nil
 }
