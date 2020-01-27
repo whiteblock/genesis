@@ -179,7 +179,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 
 	hostConfig := &container.HostConfig{
 		PortBindings: portMap,
-		AutoRemove:   false,
+		AutoRemove:   dContainer.AutoRemove,
 		LogConfig: container.LogConfig{
 			Type: ds.conf.LogDriver,
 			Config: map[string]string{
