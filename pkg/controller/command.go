@@ -93,7 +93,7 @@ func (c *consumer) handleMessage(msg amqp.Delivery) {
 		msg.Ack(false)
 		return
 	}
-	if res.IsRequeue() {
+	if res.IsRequeue() || res.IsDelayed() {
 		c.log.WithField("result", res).Info("a requeue is needed")
 		err := c.cmds.Requeue(msg, pub)
 		if err != nil {
