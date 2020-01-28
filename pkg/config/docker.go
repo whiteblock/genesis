@@ -57,6 +57,11 @@ func setDockerBindings(v *viper.Viper) error {
 		return err
 	}
 
+	err = v.BindEnv("dockerKeyPath", "DOCKER_KEY_PATH")
+	if err != nil {
+		return err
+	}
+
 	err = v.BindEnv("dockerLogLabels", "DOCKER_LOG_DRIVER")
 	if err != nil {
 		return err
@@ -82,7 +87,7 @@ func setDockerBindings(v *viper.Viper) error {
 		return err
 	}
 
-	return v.BindEnv("dockerKeyPath", "DOCKER_KEY_PATH")
+	return nil
 }
 
 func setDockerDefaults(v *viper.Viper) {
