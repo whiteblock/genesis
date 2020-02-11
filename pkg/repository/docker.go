@@ -8,7 +8,7 @@ package repository
 
 import (
 	"context"
-	"encoding/base64"
+	//"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -18,6 +18,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 
 	"github.com/docker/cli/cli/command"
+	def "github.com/whiteblock/definition/command"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -34,7 +35,7 @@ type DockerRepository interface {
 
 	//EnsureImagePulled checks if the docker host contains an image and pulls it if it does not
 	EnsureImagePulled(ctx context.Context, cli entity.Client,
-		imageName string, auth string) error
+		imageName string, auth def.Credentials) error
 
 	//GetContainerByName attempts to find a container with the given name and return information on it.
 	GetContainerByName(ctx context.Context, cli entity.Client, containerName string) (types.Container, error)
@@ -100,24 +101,14 @@ func (da dockerRepository) HostHasImage(ctx context.Context, cli entity.Client, 
 	return false, nil
 }
 
-func (da dockerRepository) handleCredentials(auth string) string {
-	if auth == "" {
-		return ""
-	}
-	decoded, err := base64.StdEncoding.DecodeString(auth)
-	if err != nil {
-		da.log.WithField("error", err).Error("failed to decode auth string")
-		return ""
-	}
-	raw := string(decoded)
-	creds := strings.SplitN(raw, ":", 2)
-	if len(creds) != 2 {
-		da.log.Error("given malformed credentials")
+func (da dockerRepository) handleCredentials(auth def.Credentials) string {
+	if auth.Empty() {
 		return ""
 	}
 	b64, err := command.EncodeAuthToBase64(types.AuthConfig{
-		Username: creds[0],
-		Password: creds[1],
+		Username:      auth.Username,
+		Password:      auth.Password,
+		RegistryToken: auth.RegistryToken,
 	})
 	if err != nil {
 		da.log.WithField("error", err).Error("unable to base64 encode the credentials")
@@ -128,7 +119,7 @@ func (da dockerRepository) handleCredentials(auth string) string {
 
 //EnsureImagePulled checks if the docker host contains an image and pulls it if it does not
 func (da dockerRepository) EnsureImagePulled(ctx context.Context, cli entity.Client,
-	imageName string, auth string) error {
+	imageName string, auth def.Credentials) error {
 	distributionRef, err := reference.ParseNormalizedNamed(imageName)
 	if err != nil {
 		return err

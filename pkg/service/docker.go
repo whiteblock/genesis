@@ -147,7 +147,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 	errChan := make(chan error)
 
 	go func(image string) {
-		errChan <- ds.repo.EnsureImagePulled(ctx, cli, image, "")
+		errChan <- ds.repo.EnsureImagePulled(ctx, cli, image, command.Credentials{})
 	}(dContainer.Image)
 
 	portSet, portMap, err := dContainer.GetPortBindings()
@@ -590,7 +590,7 @@ func (ds dockerService) Emulation(ctx context.Context, cli entity.DockerCli,
 	netemImage := "gaiadocker/iproute2:latest"
 	errChan := make(chan error, 1)
 	go func() {
-		errChan <- ds.repo.EnsureImagePulled(ctx, cli, netemImage, "")
+		errChan <- ds.repo.EnsureImagePulled(ctx, cli, netemImage, command.Credentials{})
 	}()
 
 	net, err := ds.repo.GetNetworkByName(ctx, cli, netem.Network)
@@ -714,9 +714,9 @@ func (ds dockerService) PullImage(ctx context.Context, cli entity.DockerCli,
 
 	ds.withFields(cli, logrus.Fields{
 		"image":     imagePull.Image,
-		"usingAuth": imagePull.RegistryAuth != "",
+		"usingAuth": !imagePull.Credentials.Empty(),
 	}).Debug("pre-emptively pulling an image if it doeslsn't exist")
-	err := ds.repo.EnsureImagePulled(ctx, cli, imagePull.Image, imagePull.RegistryAuth)
+	err := ds.repo.EnsureImagePulled(ctx, cli, imagePull.Image, imagePull.Credentials)
 	if err != nil {
 		ds.withFields(cli, logrus.Fields{
 			"image": imagePull.Image,
@@ -765,7 +765,7 @@ func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli,
 
 	for i := range vs.Hosts {
 		go func(i int) {
-			errChan <- ds.repo.EnsureImagePulled(ctx, clients[i], ds.conf.GlusterImage, "")
+			errChan <- ds.repo.EnsureImagePulled(ctx, clients[i], ds.conf.GlusterImage, command.Credentials{})
 		}(i)
 	}
 
