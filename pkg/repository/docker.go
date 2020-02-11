@@ -8,6 +8,7 @@ package repository
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -16,6 +17,8 @@ import (
 
 	"github.com/whiteblock/genesis/pkg/entity"
 
+	"github.com/docker/cli/cli/command"
+	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
@@ -97,17 +100,47 @@ func (da dockerRepository) HostHasImage(ctx context.Context, cli entity.Client, 
 	return false, nil
 }
 
+func (da dockerRepository) handleCredentials(auth string) string {
+	if auth == "" {
+		return ""
+	}
+	decoded, err := base64.StdEncoding.DecodeString(auth)
+	if err != nil {
+		da.log.WithField("error", err).Error("failed to decode auth string")
+		return ""
+	}
+	raw := string(decoded)
+	creds := strings.SplitN(raw, ":", 2)
+	if len(creds) != 2 {
+		da.log.Error("given malformed credentials")
+		return ""
+	}
+	b64, err := command.EncodeAuthToBase64(types.AuthConfig{
+		Username: creds[0],
+		Password: creds[1],
+	})
+	if err != nil {
+		da.log.WithField("error", err).Error("unable to base64 encode the credentials")
+		return ""
+	}
+	return b64
+}
+
 //EnsureImagePulled checks if the docker host contains an image and pulls it if it does not
 func (da dockerRepository) EnsureImagePulled(ctx context.Context, cli entity.Client,
 	imageName string, auth string) error {
-	exists, err := da.HostHasImage(ctx, cli, imageName)
+	distributionRef, err := reference.ParseNormalizedNamed(imageName)
+	if err != nil {
+		return err
+	}
+	name := distributionRef.String()
+	exists, err := da.HostHasImage(ctx, cli, name)
 	if exists || err != nil {
 		return err
 	}
-
-	rd, err := cli.ImagePull(ctx, imageName, types.ImagePullOptions{
+	rd, err := cli.ImagePull(ctx, name, types.ImagePullOptions{
 		Platform:     "Linux",
-		RegistryAuth: auth,
+		RegistryAuth: da.handleCredentials(auth),
 	})
 	if err != nil {
 		return err

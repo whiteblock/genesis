@@ -715,8 +715,7 @@ func (ds dockerService) PullImage(ctx context.Context, cli entity.DockerCli,
 	ds.withFields(cli, logrus.Fields{
 		"image":     imagePull.Image,
 		"usingAuth": imagePull.RegistryAuth != "",
-	}).Debug("pre-emptively pulling an image if it doesn't exist")
-
+	}).Debug("pre-emptively pulling an image if it doeslsn't exist")
 	err := ds.repo.EnsureImagePulled(ctx, cli, imagePull.Image, imagePull.RegistryAuth)
 	if err != nil {
 		ds.withFields(cli, logrus.Fields{
