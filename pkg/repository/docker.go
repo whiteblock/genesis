@@ -18,13 +18,13 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 
 	"github.com/docker/cli/cli/command"
-	def "github.com/whiteblock/definition/command"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	def "github.com/whiteblock/definition/command"
 )
 
 //DockerRepository provides extra functions for docker service, which could be placed inside of docker

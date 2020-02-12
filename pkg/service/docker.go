@@ -147,7 +147,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 	errChan := make(chan error)
 
 	go func(image string) {
-		errChan <- ds.repo.EnsureImagePulled(ctx, cli, image, command.Credentials{})
+		errChan <- ds.repo.EnsureImagePulled(ctx, cli, image, dContainer.Credentials)
 	}(dContainer.Image)
 
 	portSet, portMap, err := dContainer.GetPortBindings()
