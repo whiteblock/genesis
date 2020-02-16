@@ -5,9 +5,15 @@ go 1.13
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Microsoft/hcsshim v0.8.7 // indirect
+	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
 	github.com/containerd/continuity v0.0.0-20191214063359-1097c8bae83b // indirect
+	github.com/docker/cli v0.0.0-20200211170139-b52debd9318f
+	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v1.4.2-0.20191106232431-31abc6c089eb
+	github.com/docker/docker-credential-helpers v0.6.3 // indirect
+	github.com/docker/go v1.5.1-1 // indirect
 	github.com/docker/go-connections v0.4.0
+	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/dspinhirne/netaddr-go v0.0.0-20200114144454-1f4c8303963f // indirect
 	github.com/getlantern/deepcopy v0.0.0-20160317154340-7f45deb8130a
 	github.com/gogo/protobuf v1.3.1 // indirect
@@ -28,14 +34,15 @@ require (
 	github.com/spf13/viper v1.6.2
 	github.com/streadway/amqp v0.0.0-20200108173154-1c71cc93ed71
 	github.com/stretchr/testify v1.4.0
+	github.com/theupdateframework/notary v0.6.1 // indirect
 	github.com/whiteblock/amqp v1.3.1
-	github.com/whiteblock/definition v0.0.0-20200127195026-eb756c4c5105
-	github.com/whiteblock/utility v0.0.0-20200127171929-dfacb2899b30
+	github.com/whiteblock/definition v0.0.0-20200212150411-22a768488e8e
+	github.com/whiteblock/utility v0.0.0-20200208164302-6e8ffa7b7d09
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9 // indirect
-	google.golang.org/genproto v0.0.0-20200127141224-2548664c049f // indirect
-	google.golang.org/grpc v1.26.0 // indirect
-	gopkg.in/ini.v1 v1.51.1 // indirect
+	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4 // indirect
+	google.golang.org/genproto v0.0.0-20200212121238-0849286c0f0e // indirect
+	gopkg.in/ini.v1 v1.52.0 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
+	vbom.ml/util v0.0.0-20180919145318-efcd4e0f9787 // indirect
 )
