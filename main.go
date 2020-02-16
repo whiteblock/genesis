@@ -102,7 +102,7 @@ func getCommandController() (controller.CommandController, error) {
 	}
 
 	return controller.NewCommandController(
-		conf.QueueMaxConcurrency,
+		conf,
 		queue.NewAMQPService(cmdConf, queue.NewAMQPRepository(cmdConn), conf.GetLogger()),
 		queue.NewAMQPService(errConf, queue.NewAMQPRepository(errConn), conf.GetLogger()),
 		queue.NewAMQPService(complConf, queue.NewAMQPRepository(complConn), conf.GetLogger()),
@@ -123,7 +123,7 @@ func getCommandController() (controller.CommandController, error) {
 			conf,
 			conf.MaxMessageRetries,
 			conf.GetLogger()),
-		conf.GetLogger())
+		conf.GetLogger()), nil
 }
 
 func main() {

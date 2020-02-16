@@ -8,9 +8,9 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
+	"github.com/whiteblock/genesis/pkg/config"
 	"github.com/whiteblock/genesis/pkg/handler"
 
 	"github.com/sirupsen/logrus"
@@ -34,22 +34,20 @@ type consumer struct {
 	log        logrus.Ext1FieldLogger
 	once       *sync.Once
 	sem        *semaphore.Weighted
+	conf       config.Config
 }
 
 // NewCommandController creates a new CommandController
 func NewCommandController(
-	maxConcurreny int64,
+	conf config.Config,
 	cmds queue.AMQPService,
 	errors queue.AMQPService,
 	completion queue.AMQPService,
 	status queue.AMQPService,
 
 	handle handler.DeliveryHandler,
-	log logrus.Ext1FieldLogger) (CommandController, error) {
+	log logrus.Ext1FieldLogger) CommandController {
 
-	if maxConcurreny < 1 {
-		return nil, fmt.Errorf("maxConcurreny must be at least 1")
-	}
 	out := &consumer{
 		log:        log,
 		completion: completion,
@@ -58,11 +56,12 @@ func NewCommandController(
 		errors:     errors,
 		status:     status,
 		once:       &sync.Once{},
-		sem:        semaphore.NewWeighted(maxConcurreny),
+		sem:        semaphore.NewWeighted(conf.QueueMaxConcurrency),
+		conf:       conf,
 	}
 	queue.AutoSetup(log, cmds, completion, errors, status)
 
-	return out, nil
+	return out
 }
 
 // Start starts the client. This function should be called only once and does not return
@@ -102,7 +101,7 @@ func (c *consumer) handleMessage(msg amqp.Delivery) {
 		return
 	}
 	if res.IsAllDone() || res.IsFatal() {
-		if res.IsFatal() {
+		if res.IsFatal() && c.conf.EnableErrorCollection {
 			msg, err := queue.CreateMessage(res)
 			if err == nil {
 				go func() {
