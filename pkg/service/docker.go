@@ -163,7 +163,6 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 		Image:        dContainer.Image,
 		Entrypoint:   dContainer.GetEntryPoint(),
 		Labels:       cli.Labels,
-		Cmd:          dContainer.GetCmd(),
 	}
 
 	mem, err := dContainer.GetMemory()
