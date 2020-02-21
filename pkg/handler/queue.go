@@ -204,7 +204,7 @@ func (dh deliveryHandler) Process(msg amqp.Delivery) (out amqp.Publishing,
 			"result": result,
 		}).Info("adding the delay field to the header")
 		out.Headers["x-delay"] = int32(result.Delay.Milliseconds())
-	} else {
+	} else if out.Headers != nil {
 		out.Headers["x-delay"] = int32(0)
 	}
 
