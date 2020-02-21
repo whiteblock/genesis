@@ -36,7 +36,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/theupdateframework/notary v0.6.1 // indirect
 	github.com/whiteblock/amqp v1.3.1
-	github.com/whiteblock/definition v0.0.0-20200221224146-face09784cf4
+	github.com/whiteblock/definition v0.0.0-20200221215110-83f0bf2ec1be
 	github.com/whiteblock/utility v0.0.0-20200213150802-f8c68628a3bd
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
