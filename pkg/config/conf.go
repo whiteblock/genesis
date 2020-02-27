@@ -21,12 +21,13 @@ const ExchangeName = "delay"
 // Config groups all of the global configuration parameters into
 // a single struct
 type Config struct {
-	MaxMessageRetries   int64  `mapstructure:"maxMessageRetries"`
-	QueueMaxConcurrency int64  `mapstructure:"queueMaxConcurrency"`
-	CompletionQueueName string `mapstructure:"completionQueueName"`
-	CommandQueueName    string `mapstructure:"commandQueueName"`
-	ErrorQueueName      string `mapstructure:"errorQueueName"`
-	StatusQueueName     string `mapstructure:"statusQueueName"`
+	MaxMessageRetries     int64  `mapstructure:"maxMessageRetries"`
+	QueueMaxConcurrency   int64  `mapstructure:"queueMaxConcurrency"`
+	CompletionQueueName   string `mapstructure:"completionQueueName"`
+	CommandQueueName      string `mapstructure:"commandQueueName"`
+	ErrorQueueName        string `mapstructure:"errorQueueName"`
+	StatusQueueName       string `mapstructure:"statusQueueName"`
+	EnableErrorCollection bool   `mapstructure:"enableErrorCollection"`
 
 	// LocalMode indicates that Genesis is operating in standalone mode
 	LocalMode        bool              `mapstructure:"localMode"`
@@ -110,6 +111,7 @@ func setViperEnvBindings() {
 	viper.BindEnv("completionQueueName", "COMPLETION_QUEUE_NAME")
 	viper.BindEnv("commandQueueName", "COMMAND_QUEUE_NAME")
 	viper.BindEnv("errorQueueName", "ERROR_QUEUE_NAME")
+	viper.BindEnv("enableErrorCollection", "ENABLE_ERROR_COLLECTION")
 	setExecutionBindings(viper.GetViper())
 	setDockerBindings(viper.GetViper())
 	setFileHandlerBindings(viper.GetViper())
