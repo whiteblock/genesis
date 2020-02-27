@@ -61,6 +61,10 @@ type Client interface {
 	// ContainerStatPath returns Stat information about a path inside the container filesystem.
 	ContainerStatPath(ctx context.Context, containerID, path string) (types.ContainerPathStat, error)
 
+	// ContainerWait waits until the specified container is in a certain state indicated by the given condition, either "not-running" (default), "next-exit", or "removed".
+	ContainerWait(ctx context.Context, containerID string,
+		condition container.WaitCondition) (<-chan container.ContainerWaitOKBody, <-chan error)
+
 	// CopyToContainer copies content into the container filesystem. Note that `content` must be a Reader for a TAR archive
 	CopyToContainer(ctx context.Context, containerID, dstPath string, content io.Reader,
 		options types.CopyToContainerOptions) error

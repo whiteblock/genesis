@@ -239,35 +239,18 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 		return entity.NewSuccessResult()
 	}
 
-	resChan := make(chan error)
 	ctx2, cancelFn := context.WithTimeout(context.Background(), sc.Timeout.Duration)
 	defer cancelFn()
-
-	go func() {
-		startTime := time.Now().Add(sc.Timeout.Duration)
-		cnt := 0
-		for time.Now().Unix() < startTime.Unix() {
-			if cnt%20 == 0 {
-				ds.withFields(cli, logrus.Fields{
-					"name": sc.Name}).Trace("checking container status")
-			}
-
-			_, err := cli.ContainerInspect(ctx2, sc.Name)
-			if err != nil {
-				ds.withFields(cli, logrus.Fields{
-					"name":  sc.Name,
-					"error": err.Error()}).Info("container finished execution")
-				resChan <- err
-				break
-			}
-			time.Sleep(1 * time.Second)
-			cnt++
-		}
-	}()
+	resChan, errChan := cli.ContainerWait(ctx2, sc.Name, container.WaitConditionNotRunning)
 
 	select {
-	case err := <-resChan:
-		return ds.errorWhitelistHandler(err, "No such container").InjectMeta(map[string]interface{}{
+	case res := <-resChan:
+		if res.StatusCode != 0 {
+			return entity.NewErrorResult(
+				fmt.Sprintf("Task %s exited with %d", sc.Name, res.StatusCode))
+		}
+	case err := <-errChan:
+		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{
 			"name": sc.Name,
 			"type": "StartContainer",
 		})
