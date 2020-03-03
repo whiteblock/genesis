@@ -17,6 +17,7 @@ require (
 	github.com/dspinhirne/netaddr-go v0.0.0-20200114144454-1f4c8303963f // indirect
 	github.com/getlantern/deepcopy v0.0.0-20160317154340-7f45deb8130a
 	github.com/gogo/protobuf v1.3.1 // indirect
+	github.com/golang/protobuf v1.3.4 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/imdario/mergo v0.3.8
 	github.com/joonix/log v0.0.0-20190524090622-13fe31bbdd7a
@@ -36,12 +37,12 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/theupdateframework/notary v0.6.1 // indirect
 	github.com/whiteblock/amqp v1.3.1
-	github.com/whiteblock/definition v0.0.0-20200212150411-22a768488e8e
-	github.com/whiteblock/utility v0.0.0-20200208164302-6e8ffa7b7d09
+	github.com/whiteblock/definition v0.0.0-20200303210242-86bdcec8f9f5
+	github.com/whiteblock/utility v0.0.0-20200213150802-f8c68628a3bd
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4 // indirect
-	google.golang.org/genproto v0.0.0-20200212121238-0849286c0f0e // indirect
+	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 // indirect
+	google.golang.org/genproto v0.0.0-20200303153909-beee998c1893 // indirect
 	gopkg.in/ini.v1 v1.52.0 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 	vbom.ml/util v0.0.0-20180919145318-efcd4e0f9787 // indirect
