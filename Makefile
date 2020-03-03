@@ -46,12 +46,8 @@ manual-mocks: clone-things mock-things
 
 clone-things:
 	git clone https://github.com/whiteblock/definition.git mocks/.src/definition || true
-	git clone https://github.com/whiteblock/amqp.git mocks/.src/amqp || true
 
 mock-things:
 	cd mocks/.src/definition/command/ &&\
 	mockery -dir=. -output=../../../../mocks/definition/command/ -all && \
-	cd -
-	cd mocks/.src/amqp &&\
-	mockery -dir=. -output=../../../mocks/amqp -all && \
 	cd -

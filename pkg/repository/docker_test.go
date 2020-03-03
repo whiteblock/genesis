@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/whiteblock/definition/command"
 )
 
 func TestDockerRepository_GetNetworkByName_Success(t *testing.T) {
@@ -67,8 +68,8 @@ func TestDockerRepository_HostHasImage_Success(t *testing.T) {
 
 	existingImageTags := []string{"test2", "test6"}
 	existingImageDigests := []string{"test0", "test3"}
-	noneExistingImageTags := []string{"A", "B"}
-	noneExistingImageDigests := []string{"C", "D"}
+	noneExistingImageTags := []string{"a", "b"}
+	noneExistingImageDigests := []string{"c", "d"}
 
 	cli := new(entityMock.Client)
 	cli.On("ImageList", mock.Anything, mock.Anything).Return(testImageList, nil).Run(
@@ -113,13 +114,12 @@ func TestDockerRepository_EnsureImagePulled(t *testing.T) {
 	}
 
 	existingImages := []string{"test7", "test6"}
-	nonExistingImages := []string{"A", "B"}
+	nonExistingImages := []string{"a", "b"}
 	testReader := strings.NewReader("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
 
 	cli := new(entityMock.Client)
 	cli.On("ImageList", mock.Anything, mock.Anything).Return(testImageList, nil).Run(
 		func(args mock.Arguments) {
-
 			require.Len(t, args, 2)
 			assert.Nil(t, args.Get(0))
 		}).Times(len(nonExistingImages) + len(existingImages))
@@ -137,12 +137,12 @@ func TestDockerRepository_EnsureImagePulled(t *testing.T) {
 	ds := NewDockerRepository(logrus.New())
 
 	for _, img := range existingImages {
-		err := ds.EnsureImagePulled(nil, cli, img, "")
+		err := ds.EnsureImagePulled(nil, cli, img, command.Credentials{})
 		assert.NoError(t, err)
 	}
 
 	for _, img := range nonExistingImages {
-		err := ds.EnsureImagePulled(nil, cli, img, "")
+		err := ds.EnsureImagePulled(nil, cli, img, command.Credentials{})
 		assert.NoError(t, err)
 	}
 	cli.AssertExpectations(t)
@@ -162,7 +162,7 @@ func TestDockerRepository_EnsureImagePulled_ImagePull_Failure(t *testing.T) {
 
 	ds := NewDockerRepository(logrus.New())
 
-	err := ds.EnsureImagePulled(nil, cli, "Foobar", "")
+	err := ds.EnsureImagePulled(nil, cli, "foobar", command.Credentials{})
 	assert.Error(t, err)
 	cli.AssertExpectations(t)
 }

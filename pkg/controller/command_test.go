@@ -11,22 +11,17 @@ import (
 	"testing"
 	"time"
 
-	queue "github.com/whiteblock/genesis/mocks/amqp"
+	queue "github.com/whiteblock/amqp/mocks"
 	handler "github.com/whiteblock/genesis/mocks/pkg/handler"
 	"github.com/whiteblock/genesis/pkg/entity"
+	"github.com/whiteblock/genesis/pkg/config"
 
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-func TestNewCommandController_Failure(t *testing.T) {
-	ctl, err := NewCommandController(0, nil, nil, nil, nil, nil, logrus.New())
-	assert.Nil(t, ctl)
-	assert.Error(t, err)
-}
-
+var testConf = config.Config{QueueMaxConcurrency:2}
 func TestNewCommandController_Ignore_CreateQueueFailure(t *testing.T) {
 	serv := new(queue.AMQPService)
 	serv2 := new(queue.AMQPService)
@@ -41,9 +36,8 @@ func TestNewCommandController_Ignore_CreateQueueFailure(t *testing.T) {
 	serv3.On("CreateExchange").Return(nil).Once()
 	serv4.On("CreateExchange").Return(nil).Once()
 
-	control, err := NewCommandController(2, serv, serv3, serv2, serv4, nil, logrus.New())
+	control := NewCommandController(testConf, serv, serv3, serv2, serv4, nil, logrus.New())
 	assert.NotNil(t, control)
-	assert.NoError(t, err)
 
 	serv.AssertExpectations(t)
 	serv2.AssertExpectations(t)
@@ -74,8 +68,7 @@ func TestCommandController_Consumption(t *testing.T) {
 		processedChan <- true
 	}).Return(amqp.Publishing{}, amqp.Publishing{}, entity.NewSuccessResult()).Times(items)
 
-	control, err := NewCommandController(2, serv, serv3, serv2, serv4, hand, logrus.New())
-	assert.Equal(t, err, nil)
+	control := NewCommandController(testConf, serv, serv3, serv2, serv4, hand, logrus.New())
 	go control.Start()
 
 	for i := 0; i < items; i++ {
@@ -123,8 +116,7 @@ func TestCommandController_ConsumptionAllDone(t *testing.T) {
 	hand.On("Process", mock.Anything).Return(amqp.Publishing{}, amqp.Publishing{},
 		entity.NewAllDoneResult()).Times(items)
 
-	control, err := NewCommandController(2, serv, serv3, serv2, serv4, hand, logrus.New())
-	assert.Equal(t, err, nil)
+	control := NewCommandController(testConf, serv, serv3, serv2, serv4, hand, logrus.New())
 	go control.Start()
 
 	for i := 0; i < items; i++ {
@@ -171,8 +163,7 @@ func TestCommandController_ConsumptionAllDone_Send_Err(t *testing.T) {
 	hand.On("Process", mock.Anything).Return(amqp.Publishing{}, amqp.Publishing{},
 		entity.NewAllDoneResult()).Times(items)
 
-	control, err := NewCommandController(2, serv, serv3, serv2, serv4, hand, logrus.New())
-	assert.Equal(t, err, nil)
+	control := NewCommandController(testConf, serv, serv3, serv2, serv4, hand, logrus.New())
 	go control.Start()
 
 	for i := 0; i < items; i++ {
@@ -219,8 +210,7 @@ func TestCommandController_Requeue(t *testing.T) {
 	hand.On("Process", mock.Anything).Return(amqp.Publishing{}, amqp.Publishing{},
 		entity.NewErrorResult(fmt.Errorf("some non-fatal error"))).Times(items)
 
-	control, err := NewCommandController(2, serv, serv3, serv2, serv4, hand, logrus.New())
-	assert.Equal(t, err, nil)
+	control := NewCommandController(testConf, serv, serv3, serv2, serv4, hand, logrus.New())
 	go control.Start()
 
 	for i := 0; i < items; i++ {

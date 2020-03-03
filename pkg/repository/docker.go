@@ -129,6 +129,10 @@ func (da dockerRepository) EnsureImagePulled(ctx context.Context, cli entity.Cli
 	if exists || err != nil {
 		return err
 	}
+	exists2, err := da.HostHasImage(ctx, cli, imageName)
+	if exists2 || err != nil {
+		return err
+	}
 	rd, err := cli.ImagePull(ctx, name, types.ImagePullOptions{
 		Platform:     "Linux",
 		RegistryAuth: da.handleCredentials(auth),

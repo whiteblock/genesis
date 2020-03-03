@@ -128,7 +128,7 @@ func pullImage(dockerUseCase usecase.DockerUseCase, image string) {
 }
 
 func createContainer(dockerUseCase usecase.DockerUseCase, name string,
-	args []string, ports map[int]int) {
+	args []string, ports map[string]string) {
 	testContainer := command.Container{
 		Environment: map[string]string{
 			"FOO": "BAR",
@@ -211,8 +211,8 @@ func dockerTest(clean bool) {
 
 	createVolume(dockerUseCase, "test_volume")
 	createNetwork(dockerUseCase, "testnet", 14)
-	createContainer(dockerUseCase, "tester", []string{"localhost"}, map[int]int{
-		8765: 8755,
+	createContainer(dockerUseCase, "tester", []string{"localhost"}, map[string]string{
+		"8765": "8755",
 	})
 	startContainer(dockerUseCase, "tester", false)
 	createContainer(dockerUseCase, "tester2", []string{"localhost"}, nil)
