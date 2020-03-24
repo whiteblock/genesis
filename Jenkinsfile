@@ -67,13 +67,11 @@ pipeline {
               gcloud auth activate-service-account --key-file ${GOOGLE_APPLICATION_CREDENTIALS}
               gcloud auth configure-docker
             """
-            sh "docker pull ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest || true"
+            sh "docker pull ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME} || true"
             docker.build("${IMAGE_REPO}/${APP_NAME}",
-                        "--cache-from ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME}-build-latest .")
-            docker.image("${IMAGE_REPO}/${APP_NAME}").push(
-              "${BRANCH_NAME}-build-latest")
-            docker.image("${IMAGE_REPO}/${APP_NAME}").push(
-              "${BRANCH_NAME}-${REV_SHORT}")
+                        "--cache-from ${IMAGE_REPO}/${APP_NAME}:${BRANCH_NAME} .")
+            docker.image("${IMAGE_REPO}/${APP_NAME}").push("${BRANCH_NAME}")
+            docker.image("${IMAGE_REPO}/${APP_NAME}").push("${REV_SHORT}")
           }
         }
       }

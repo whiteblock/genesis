@@ -55,7 +55,7 @@ pipeline {
             NOTE: Ignores target_commitish value and gets the latest build
                   from master branch no matter what
             */
-            tag: "master-${env.REV_SHORT}"
+            tag: "${env.REV_SHORT}"
           )
           target = new container.Image(
             registry: registry,
