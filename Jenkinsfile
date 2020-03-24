@@ -11,7 +11,7 @@ pipeline {
     APP_NAMESPACE         = "apps"
     CHART_PATH            = "chart"
     KUBEDOG_VERSION       = "0.3.2"
-    REV_SHORT             = sh(script: "git log --pretty=format:'%h' -n 1", returnStdout: true).trim()
+    REV_SHORT             = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
     INFRA_REPO_URL        = credentials('INFRA_REPO_URL')
     CODECOV_TOKEN         = credentials('CODECOV_TOKEN')
     CI_ENV                = sh(script: "curl -s https://codecov.io/env | bash", , returnStdout: true).trim()

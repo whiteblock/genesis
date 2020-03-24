@@ -15,7 +15,7 @@ def semverRegex = ~/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|
 pipeline {
   agent any
   environment {
-    REV_SHORT = sh(script: "git log --pretty=format:'%h' -n 1", , returnStdout: true).trim()
+    REV_SHORT = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
   }
   parameters {
     string(name: "tag_name", description: "(REQUIRED) The name of the tag.")
