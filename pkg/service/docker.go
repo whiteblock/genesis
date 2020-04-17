@@ -245,8 +245,8 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 
 	select {
 	case res := <-resChan:
-		if res.StatusCode != 0 {
-			return entity.NewErrorResult(
+		if res.StatusCode != 0 && !sc.IgnoreExitCode {
+			return entity.NewFatalResult(
 				fmt.Sprintf("Task %s exited with %d", sc.Name, res.StatusCode))
 		}
 	case err := <-errChan:

@@ -13,15 +13,17 @@ import (
 
 	queue "github.com/whiteblock/amqp/mocks"
 	handler "github.com/whiteblock/genesis/mocks/pkg/handler"
-	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/config"
+	"github.com/whiteblock/genesis/pkg/entity"
 
 	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-var testConf = config.Config{QueueMaxConcurrency:2}
+
+var testConf = config.Config{QueueMaxConcurrency: 2}
+
 func TestNewCommandController_Ignore_CreateQueueFailure(t *testing.T) {
 	serv := new(queue.AMQPService)
 	serv2 := new(queue.AMQPService)
