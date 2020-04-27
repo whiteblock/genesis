@@ -128,7 +128,7 @@ func pullImage(dockerUseCase usecase.DockerUseCase, image string) {
 }
 
 func createContainer(dockerUseCase usecase.DockerUseCase, name string,
-	args []string, ports map[string]string) {
+	args []string) {
 	testContainer := command.Container{
 		Environment: map[string]string{
 			"FOO": "BAR",
@@ -138,7 +138,6 @@ func createContainer(dockerUseCase usecase.DockerUseCase, name string,
 		},
 		Name:    name,
 		Network: "testnet",
-		Ports:   ports,
 		Volumes: []command.Mount{command.Mount{
 			Name:      "test_volume",
 			Directory: "/foo/bar",
@@ -211,14 +210,12 @@ func dockerTest(clean bool) {
 
 	createVolume(dockerUseCase, "test_volume")
 	createNetwork(dockerUseCase, "testnet", 14)
-	createContainer(dockerUseCase, "tester", []string{"localhost"}, map[string]string{
-		"8765": "8755",
-	})
+	createContainer(dockerUseCase, "tester", []string{"localhost"})
 	startContainer(dockerUseCase, "tester", false)
-	createContainer(dockerUseCase, "tester2", []string{"localhost"}, nil)
+	createContainer(dockerUseCase, "tester2", []string{"localhost"})
 	startContainer(dockerUseCase, "tester2", false)
 
-	createContainer(dockerUseCase, "tester3", []string{"-c", "30", "localhost"}, nil)
+	createContainer(dockerUseCase, "tester3", []string{"-c", "30", "localhost"})
 	startContainer(dockerUseCase, "tester3", true)
 
 	createNetwork(dockerUseCase, "testnet2", 15)

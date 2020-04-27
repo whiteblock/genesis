@@ -15,35 +15,37 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/dspinhirne/netaddr-go v0.0.0-20200114144454-1f4c8303963f // indirect
+	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/getlantern/deepcopy v0.0.0-20160317154340-7f45deb8130a
 	github.com/gogo/protobuf v1.3.1 // indirect
-	github.com/golang/protobuf v1.3.4 // indirect
+	github.com/golang/protobuf v1.4.0 // indirect
 	github.com/gorilla/mux v1.7.3
-	github.com/imdario/mergo v0.3.8
-	github.com/joonix/log v0.0.0-20190524090622-13fe31bbdd7a
+	github.com/imdario/mergo v0.3.9
+	github.com/joonix/log v0.0.0-20200409080653-9c1d2ceb5f1d
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
+	github.com/mitchellh/mapstructure v1.2.3 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v0.1.1 // indirect
-	github.com/pelletier/go-toml v1.6.0 // indirect
+	github.com/pelletier/go-toml v1.7.0 // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.5.0
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.6.2
+	github.com/spf13/viper v1.6.3
 	github.com/streadway/amqp v0.0.0-20200108173154-1c71cc93ed71
 	github.com/stretchr/testify v1.4.0
 	github.com/theupdateframework/notary v0.6.1 // indirect
 	github.com/whiteblock/amqp v1.3.2
-	github.com/whiteblock/definition v0.0.0-20200424173352-e2b1aa706cbd
-	github.com/whiteblock/utility v0.0.0-20200213150802-f8c68628a3bd
+	github.com/whiteblock/definition v0.0.0-20200427184435-49e082ad4926
+	github.com/whiteblock/utility v0.0.0-20200422205139-30654ec668a3
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 // indirect
-	google.golang.org/genproto v0.0.0-20200309141739-5b75447e413d // indirect
-	gopkg.in/ini.v1 v1.54.0 // indirect
+	golang.org/x/sys v0.0.0-20200427175716-29b57079015a // indirect
+	google.golang.org/genproto v0.0.0-20200424135956-bca184e23272 // indirect
+	gopkg.in/ini.v1 v1.55.0 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 	vbom.ml/util v0.0.0-20180919145318-efcd4e0f9787 // indirect
 )
