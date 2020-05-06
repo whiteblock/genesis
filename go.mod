@@ -36,12 +36,11 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.6.3
 	github.com/streadway/amqp v0.0.0-20200108173154-1c71cc93ed71
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.5.1
 	github.com/theupdateframework/notary v0.6.1 // indirect
 	github.com/whiteblock/amqp v1.3.2
-	github.com/whiteblock/definition v0.0.0-20200427184435-49e082ad4926
+	github.com/whiteblock/definition v0.0.0-20200506161537-7b40d3fa97c9
 	github.com/whiteblock/utility v0.0.0-20200422205139-30654ec668a3
-	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/sys v0.0.0-20200427175716-29b57079015a // indirect
 	google.golang.org/genproto v0.0.0-20200424135956-bca184e23272 // indirect
