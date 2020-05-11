@@ -140,7 +140,7 @@ func (duc dockerUseCase) diagnoseConnIssue(ctx context.Context, cli entity.Clien
 
 // Execute executes the command with the given context
 func (duc dockerUseCase) Execute(ctx context.Context, cmd command.Command) entity.Result {
-	cli, err := duc.service.CreateClient(cmd.Target.IP)
+	cli, err := duc.service.CreateClient(cmd)
 	if err != nil {
 		duc.withField(cmd, "dest", cmd.Target.IP).Error("failed to create a client")
 		return entity.NewFatalResult(err)
@@ -206,7 +206,7 @@ func (duc dockerUseCase) validationCheck(cmd command.Command) (result entity.Res
 }
 
 func (duc dockerUseCase) injectLabels(cli entity.Client, cmd command.Command) entity.DockerCli {
-	out := entity.DockerCli{Client: cli, Labels: map[string]string{}}
+	out := entity.DockerCli{Client: cli, Labels: map[string]string{}, TestID: cmd.TestID()}
 	duc.withField(cmd, "meta", cmd.Meta).Trace("got the meta from the command")
 	mergo.Map(&out.Labels, cmd.Meta)
 	return out

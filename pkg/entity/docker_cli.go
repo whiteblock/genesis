@@ -10,4 +10,5 @@ package entity
 type DockerCli struct {
 	Client
 	Labels map[string]string
+	TestID string
 }

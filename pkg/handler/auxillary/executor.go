@@ -8,7 +8,11 @@ package auxillary
 
 import (
 	"context"
+	"encoding/pem"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -16,6 +20,7 @@ import (
 	"github.com/whiteblock/genesis/pkg/entity"
 	"github.com/whiteblock/genesis/pkg/usecase"
 
+	"github.com/innodv/errors/await"
 	"github.com/sirupsen/logrus"
 	"github.com/whiteblock/definition/command"
 	"golang.org/x/sync/semaphore"
@@ -24,6 +29,7 @@ import (
 // Executor handles the  processing of mutliple commands
 type Executor interface {
 	ExecuteCommands(cmds []command.Command) entity.Result
+	Prepare(inst *command.Instructions) error
 }
 
 type executor struct {
@@ -42,6 +48,34 @@ func NewExecutor(
 	usecase usecase.DockerUseCase,
 	log logrus.Ext1FieldLogger) Executor {
 	return &executor{usecase: usecase, conf: conf, log: log}
+}
+
+func (exec executor) Prepare(inst *command.Instructions) error {
+	dir := filepath.Join("/tmp", inst.ID)
+	_, err := os.Lstat(dir)
+	if err == nil { //already exists
+		return nil
+	}
+	err = os.Mkdir(dir, 0755)
+	if err != nil {
+		return err
+	}
+	errChan := make(chan error)
+	go func() {
+		errChan <- ioutil.WriteFile(filepath.Join(dir, "ca.cert"), pem.EncodeToMemory(
+			&pem.Block{Type: "CERTIFICATE", Bytes: inst.Auth.CACert}), 0644)
+	}()
+
+	go func() {
+		errChan <- ioutil.WriteFile(filepath.Join(dir, "client.cert"), pem.EncodeToMemory(
+			&pem.Block{Type: "CERTIFICATE", Bytes: inst.Auth.ClientCert}), 0644)
+	}()
+
+	go func() {
+		errChan <- ioutil.WriteFile(filepath.Join(dir, "client.key"), pem.EncodeToMemory(
+			&pem.Block{Type: "RSA PRIVATE KEY", Bytes: inst.Auth.ClientPrivKeyPKCS1()}), 0644)
+	}()
+	return await.AwaitErrors(errChan, 3)
 }
 
 func (exec executor) ExecuteCommands(cmds []command.Command) entity.Result {

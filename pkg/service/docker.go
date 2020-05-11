@@ -65,7 +65,8 @@ type DockerService interface {
 	VolumeShare(ctx context.Context, cli entity.DockerCli, vs command.VolumeShare) entity.Result
 
 	//CreateClient creates a new client for connecting to the docker daemon
-	CreateClient(host string) (entity.Client, error)
+	CreateClient(cmd command.Command) (entity.Client, error)
+	CreateClient2(ip, testID string) (entity.Client, error)
 }
 
 var (
@@ -115,16 +116,25 @@ func (ds dockerService) errorWhitelistHandler(err error, whitelist ...string) en
 }
 
 // CreateClient creates a new client for connecting to the docker daemon
-func (ds dockerService) CreateClient(host string) (entity.Client, error) {
+func (ds dockerService) CreateClient(cmd command.Command) (entity.Client, error) {
+	return ds.CreateClient2(cmd.Target.IP, cmd.TestID())
+}
+
+// CreateClient creates a new client for connecting to the docker daemon
+func (ds dockerService) CreateClient2(ip, testID string) (entity.Client, error) {
 	if ds.conf.LocalMode {
 		return client.NewClientWithOpts(
 			client.WithAPIVersionNegotiation(),
 		)
 	}
+	dir := filepath.Join("/tmp", testID)
 	return client.NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
-		client.WithHost("tcp://"+host+":"+ds.conf.DaemonPort),
-		ds.repo.WithTLSClientConfig(ds.conf.CACertPath, ds.conf.CertPath, ds.conf.KeyPath),
+		client.WithHost("tcp://"+ip+":"+ds.conf.DaemonPort),
+		ds.repo.WithTLSClientConfig(
+			filepath.Join(dir, "ca.cert"),
+			filepath.Join(dir, "client.cert"),
+			filepath.Join(dir, "client.key")),
 	)
 }
 
@@ -388,7 +398,7 @@ func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 	clients := make([]entity.Client, len(vol.Hosts))
 
 	for i, host := range vol.Hosts {
-		cli, err := ds.CreateClient(host)
+		cli, err := ds.CreateClient2(host, ecli.TestID)
 		if err != nil {
 			return entity.NewErrorResult(err)
 		}
@@ -645,7 +655,7 @@ func (ds dockerService) SwarmCluster(ctx context.Context, entryCLI entity.Docker
 	if len(dswarm.Hosts) == 0 {
 		return ErrNoHost
 	}
-	cli, err := ds.CreateClient(dswarm.Hosts[0])
+	cli, err := ds.CreateClient2(dswarm.Hosts[0], entryCLI.TestID)
 	if err != nil {
 		ds.withField(entryCLI, "error", err).Error("creating the manager client")
 		return entity.NewErrorResult(err)
@@ -673,7 +683,7 @@ func (ds dockerService) SwarmCluster(ctx context.Context, entryCLI entity.Docker
 	}
 
 	for _, host := range dswarm.Hosts[1:] {
-		cli, err := ds.CreateClient(host)
+		cli, err := ds.CreateClient2(host, entryCLI.TestID)
 		if err != nil {
 			return entity.NewErrorResult(err)
 		}
@@ -737,7 +747,7 @@ func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli,
 	clients := make([]entity.Client, len(vs.Hosts))
 
 	for i, host := range vs.Hosts {
-		cli, err := ds.CreateClient(host)
+		cli, err := ds.CreateClient2(host, ecli.TestID)
 		if err != nil {
 			return entity.NewErrorResult(err)
 		}

@@ -21,8 +21,10 @@ require (
 	github.com/golang/protobuf v1.4.0 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/imdario/mergo v0.3.9
+	github.com/innodv/errors v1.1.3
 	github.com/joonix/log v0.0.0-20200409080653-9c1d2ceb5f1d
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
+	github.com/miekg/pkcs11 v1.0.3 // indirect
 	github.com/mitchellh/mapstructure v1.2.3 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
@@ -39,7 +41,7 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/theupdateframework/notary v0.6.1 // indirect
 	github.com/whiteblock/amqp v1.3.2
-	github.com/whiteblock/definition v0.0.0-20200506161537-7b40d3fa97c9
+	github.com/whiteblock/definition v0.0.0-20200511150048-3dfdd1592fb9
 	github.com/whiteblock/utility v0.0.0-20200422205139-30654ec668a3
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/sys v0.0.0-20200427175716-29b57079015a // indirect

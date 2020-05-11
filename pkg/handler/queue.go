@@ -19,7 +19,6 @@ import (
 	"github.com/streadway/amqp"
 	queue "github.com/whiteblock/amqp"
 	"github.com/whiteblock/definition/command"
-	"github.com/whiteblock/definition/command/biome"
 )
 
 // DeliveryHandler handles the initial processing of a amqp delivery
@@ -73,9 +72,7 @@ func checkPartialFailure(cmds []command.Command, result entity.Result) ([]string
 }
 
 func (dh deliveryHandler) destructMsg(inst *command.Instructions) amqp.Publishing {
-	out, err := queue.CreateMessage(biome.DestroyBiome{
-		TestID: inst.ID,
-	})
+	out, err := queue.CreateMessage(inst.TeardownCmd)
 	if err != nil {
 		dh.log.Error(err)
 	}
@@ -101,7 +98,10 @@ func (dh deliveryHandler) process(msg amqp.Delivery,
 		}
 		isLastOne = true
 	}
-
+	err = dh.aux.Prepare(inst)
+	if err != nil {
+		return dh.destructMsg(inst), entity.NewFatalResult(err)
+	}
 	result = dh.aux.ExecuteCommands(cmds)
 	if result.IsDelayed() {
 		inst.Next()
@@ -125,9 +125,7 @@ func (dh deliveryHandler) process(msg amqp.Delivery,
 		}
 		dh.log.Debug("creating completion message")
 		result = entity.NewAllDoneResult()
-		out, err = queue.CreateMessage(biome.DestroyBiome{
-			TestID: inst.ID,
-		})
+		out = dh.destructMsg(inst)
 	} else if result.IsSuccess() {
 		result = entity.NewRequeueResult()
 		dh.log.WithField("remaining", len(inst.Commands)).Debug("creating message for next round")
