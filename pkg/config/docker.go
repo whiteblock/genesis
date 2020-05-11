@@ -12,12 +12,6 @@ import (
 
 // Docker represents the configuration needed to communicate with docker daemons
 type Docker struct {
-	// CACertPath is the filepath to the CA Certificate
-	CACertPath string `mapstructure:"dockerCACertPath"`
-	// CertPath is the filepath to the Certificate for TLS
-	CertPath string `mapstructure:"dockerCertPath"`
-	// KeyPath is the filepath to the private key for TLS
-	KeyPath string `mapstructure:"dockerKeyPath"`
 	// LocalMode causes the TLS parameters to be ignored and Genesis
 	// to assume that the docker daemon is on the local machine
 	LocalMode bool `mapstructure:"localMode"`
@@ -42,22 +36,7 @@ func NewDocker(v *viper.Viper) (out Docker, err error) {
 }
 
 func setDockerBindings(v *viper.Viper) error {
-	err := v.BindEnv("dockerCACertPath", "DOCKER_CACERT_PATH")
-	if err != nil {
-		return err
-	}
-
-	err = v.BindEnv("dockerCertPath", "DOCKER_CERT_PATH")
-	if err != nil {
-		return err
-	}
-
-	err = v.BindEnv("dockerLogDriver", "DOCKER_LOG_DRIVER")
-	if err != nil {
-		return err
-	}
-
-	err = v.BindEnv("dockerKeyPath", "DOCKER_KEY_PATH")
+	err := v.BindEnv("dockerLogDriver", "DOCKER_LOG_DRIVER")
 	if err != nil {
 		return err
 	}

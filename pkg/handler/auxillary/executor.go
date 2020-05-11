@@ -60,6 +60,10 @@ func (exec executor) Prepare(inst *command.Instructions) error {
 	if err != nil {
 		return err
 	}
+	exec.log.WithFields(logrus.Fields{
+		"testID": inst.ID,
+		"dir":    dir,
+	}).Info("creating the tls auth files")
 	errChan := make(chan error)
 	go func() {
 		errChan <- ioutil.WriteFile(filepath.Join(dir, "ca.cert"), pem.EncodeToMemory(

@@ -8,7 +8,6 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 )
 
@@ -29,9 +28,6 @@ func SanityCheck(conf Config) {
 var portRegexp = regexp.MustCompile(`[0-9]+`)
 
 func dockerSanityCheck(conf Docker) {
-	if !conf.LocalMode {
-		dockerFilesConfCheck(conf)
-	}
 	if conf.SwarmPort == 0 {
 		panic("invalid docker swarm port given")
 	}
@@ -41,22 +37,5 @@ func dockerSanityCheck(conf Docker) {
 
 	if !portRegexp.MatchString(conf.DaemonPort) {
 		panic(fmt.Sprintf(`daemon port is invalid: "%s"`, conf.DaemonPort))
-	}
-}
-
-func dockerFilesConfCheck(conf Docker) {
-	_, err := os.Lstat(conf.CACertPath)
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = os.Lstat(conf.CertPath)
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = os.Lstat(conf.KeyPath)
-	if err != nil {
-		panic(err)
 	}
 }

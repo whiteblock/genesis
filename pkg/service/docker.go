@@ -128,13 +128,28 @@ func (ds dockerService) CreateClient2(ip, testID string) (entity.Client, error) 
 		)
 	}
 	dir := filepath.Join("/tmp", testID)
+	caCertFile := filepath.Join(dir, "ca.cert")
+	clientCertFile := filepath.Join(dir, "client.cert")
+	clientKeyFile := filepath.Join(dir, "client.key")
+
+	stat, err := os.Lstat(caCertFile)
+	if err != nil || stat.Size() == 0 {
+		return nil, fmt.Errorf("missing ca cert file")
+	}
+
+	stat, err = os.Lstat(clientCertFile)
+	if err != nil || stat.Size() == 0 {
+		return nil, fmt.Errorf("missing client key file")
+	}
+
+	stat, err = os.Lstat(clientKeyFile)
+	if err != nil || stat.Size() == 0 {
+		return nil, fmt.Errorf("missing client key file")
+	}
 	return client.NewClientWithOpts(
 		client.WithAPIVersionNegotiation(),
 		client.WithHost("tcp://"+ip+":"+ds.conf.DaemonPort),
-		ds.repo.WithTLSClientConfig(
-			filepath.Join(dir, "ca.cert"),
-			filepath.Join(dir, "client.cert"),
-			filepath.Join(dir, "client.key")),
+		ds.repo.WithTLSClientConfig(caCertFile, clientCertFile, clientKeyFile),
 	)
 }
 

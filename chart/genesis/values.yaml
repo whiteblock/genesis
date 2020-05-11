@@ -2,11 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-secretMounts:
-  - name: 'docker-cert'
-    secretName: 'genesis-docker-cert'
-    mountPath: '/var/secrets'
-    readOnly: true
+secretMounts: []
 
 replicaCount: 1
 
