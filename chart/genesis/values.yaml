@@ -22,6 +22,8 @@ service:
   targetPort: 8000
 
 environment:
+  - name: DEBUG_MODE
+    value: "1"
   - name: QUEUE_PASSWORD
     valueFrom:
       secretKeyRef:

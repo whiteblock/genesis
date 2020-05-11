@@ -8,7 +8,6 @@ package auxillary
 
 import (
 	"context"
-	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -66,18 +65,15 @@ func (exec executor) Prepare(inst *command.Instructions) error {
 	}).Info("creating the tls auth files")
 	errChan := make(chan error)
 	go func() {
-		errChan <- ioutil.WriteFile(filepath.Join(dir, "ca.cert"), pem.EncodeToMemory(
-			&pem.Block{Type: "CERTIFICATE", Bytes: inst.Auth.CACert}), 0644)
+		errChan <- ioutil.WriteFile(filepath.Join(dir, "ca.cert"), inst.Auth.CACertPEM(), 0644)
 	}()
 
 	go func() {
-		errChan <- ioutil.WriteFile(filepath.Join(dir, "client.cert"), pem.EncodeToMemory(
-			&pem.Block{Type: "CERTIFICATE", Bytes: inst.Auth.ClientCert}), 0644)
+		errChan <- ioutil.WriteFile(filepath.Join(dir, "client.cert"), inst.Auth.ClientCertPEM(), 0644)
 	}()
 
 	go func() {
-		errChan <- ioutil.WriteFile(filepath.Join(dir, "client.key"), pem.EncodeToMemory(
-			&pem.Block{Type: "RSA PRIVATE KEY", Bytes: inst.Auth.ClientPrivKeyPKCS1()}), 0644)
+		errChan <- ioutil.WriteFile(filepath.Join(dir, "client.key"), inst.Auth.ClientPKPEM(), 0644)
 	}()
 	return await.AwaitErrors(errChan, 3)
 }
