@@ -595,11 +595,6 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 func (ds dockerService) Emulation(ctx context.Context, cli entity.DockerCli,
 	netem command.Netconf) entity.Result {
 
-	if ds.conf.LocalMode {
-		// Do nothing if it is in local mode
-		return entity.NewSuccessResult()
-	}
-
 	netemImage := "gaiadocker/iproute2:latest"
 	errChan := make(chan error, 1)
 	go func() {
