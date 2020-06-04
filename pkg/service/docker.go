@@ -400,7 +400,7 @@ func (ds dockerService) DetachNetwork(ctx context.Context, cli entity.DockerCli,
 func (ds dockerService) CreateVolume(ctx context.Context, ecli entity.DockerCli,
 	vol command.Volume) entity.Result {
 
-	if !vol.Global {
+	if !vol.Global || ds.conf.LocalMode {
 		volConfig := volume.VolumeCreateBody{
 			Labels: vol.Labels,
 			Name:   vol.Name,
