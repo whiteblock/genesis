@@ -8,7 +8,6 @@ package repository
 
 import (
 	"context"
-	//"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net/http"
