@@ -595,6 +595,11 @@ func (ds dockerService) PlaceFileInContainer(ctx context.Context, cli entity.Doc
 func (ds dockerService) Emulation(ctx context.Context, cli entity.DockerCli,
 	netem command.Netconf) entity.Result {
 
+	if ds.conf.LocalMode {
+		// Do nothing if it is in local mode
+		return entity.NewSuccessResult()
+	}
+
 	netemImage := "gaiadocker/iproute2:latest"
 	errChan := make(chan error, 1)
 	go func() {
@@ -667,6 +672,11 @@ func (ds dockerService) Emulation(ctx context.Context, cli entity.DockerCli,
 func (ds dockerService) SwarmCluster(ctx context.Context, entryCLI entity.DockerCli,
 	dswarm command.SetupSwarm) entity.Result {
 
+	if ds.conf.LocalMode {
+		// Do nothing if it is in local mode
+		return entity.NewSuccessResult()
+	}
+
 	if len(dswarm.Hosts) == 0 {
 		return ErrNoHost
 	}
@@ -723,7 +733,7 @@ func (ds dockerService) PullImage(ctx context.Context, cli entity.DockerCli,
 	ds.withFields(cli, logrus.Fields{
 		"image":     imagePull.Image,
 		"usingAuth": !imagePull.Credentials.Empty(),
-	}).Debug("pre-emptively pulling an image if it doeslsn't exist")
+	}).Debug("pre-emptively pulling an image if it doesn't exist")
 	err := ds.repo.EnsureImagePulled(ctx, cli, imagePull.Image, imagePull.Credentials)
 	if err != nil {
 		ds.withFields(cli, logrus.Fields{
@@ -754,7 +764,10 @@ func (ds dockerService) hostName(ecli entity.DockerCli, index int) string {
 
 func (ds dockerService) VolumeShare(ctx context.Context, ecli entity.DockerCli,
 	vs command.VolumeShare) entity.Result {
-
+	if ds.conf.LocalMode {
+		// Do nothing if it is in local mode
+		return entity.NewSuccessResult()
+	}
 	if len(vs.Hosts) == 0 {
 		return entity.NewFatalResult("given an empty volume share command")
 	}
