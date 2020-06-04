@@ -336,13 +336,13 @@ func (ds dockerService) CreateNetwork(ctx context.Context, cli entity.DockerCli,
 		},
 		Options: map[string]string{},
 	}
-	if net.Global {
-		networkCreate.Driver = "overlay"
-		networkCreate.Scope = "swarm"
-	} else {
+	if ds.conf.LocalMode || !net.Global {
 		networkCreate.Driver = "bridge"
 		networkCreate.Scope = "local"
 		networkCreate.Options["com.docker.network.bridge.name"] = net.Name
+	} else {
+		networkCreate.Driver = "overlay"
+		networkCreate.Scope = "swarm"
 	}
 	ds.withFields(cli, logrus.Fields{"name": net.Name,
 		"conf": networkCreate}).Debug("creating a network")
