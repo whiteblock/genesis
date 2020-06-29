@@ -286,7 +286,7 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 			}
 			data, err := ioutil.ReadAll(rdr)
 			out := fmt.Sprintf("Task %s exited with %d", sc.Name, res.StatusCode)
-			if err != nil {
+			if err == nil {
 				out += "\n" + string(data)
 			}
 			return entity.NewFatalResult(out)
