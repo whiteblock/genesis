@@ -10,6 +10,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -204,7 +205,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 
 	hostConfig := &container.HostConfig{
 		PortBindings: portMap,
-		AutoRemove:   dContainer.AutoRemove && !ds.conf.LocalMode,
+		AutoRemove:   false, //dContainer.AutoRemove && !ds.conf.LocalMode,
 		LogConfig: container.LogConfig{
 			Type: ds.conf.LogDriver,
 			Config: map[string]string{
@@ -267,12 +268,28 @@ func (ds dockerService) StartContainer(ctx context.Context, cli entity.DockerCli
 	ctx2, cancelFn := context.WithTimeout(context.Background(), sc.Timeout.Duration)
 	defer cancelFn()
 	resChan, errChan := cli.ContainerWait(ctx2, sc.Name, container.WaitConditionNotRunning)
-
+	ctx3, cancelFn2 := context.WithTimeout(context.Background(), 4*time.Minute)
+	defer cancelFn2()
 	select {
 	case res := <-resChan:
 		if res.StatusCode != 0 && !sc.IgnoreExitCode {
-			return entity.NewFatalResult(
-				fmt.Sprintf("Task %s exited with %d", sc.Name, res.StatusCode))
+			rdr, err := cli.ContainerLogs(ctx3, sc.Name, types.ContainerLogsOptions{
+				Tail:       "15",
+				ShowStderr: true,
+				ShowStdout: true,
+			})
+			if err != nil {
+				ds.withFields(cli, logrus.Fields{"name": sc.Name}).Error("failed to fetch logs")
+
+				return entity.NewFatalResult(
+					fmt.Sprintf("Task %s exited with %d", sc.Name, res.StatusCode))
+			}
+			data, err := ioutil.ReadAll(rdr)
+			out := fmt.Sprintf("Task %s exited with %d", sc.Name, res.StatusCode)
+			if err != nil {
+				out += "\n" + string(data)
+			}
+			return entity.NewFatalResult(out)
 		}
 	case err := <-errChan:
 		return entity.NewErrorResult(err).InjectMeta(map[string]interface{}{

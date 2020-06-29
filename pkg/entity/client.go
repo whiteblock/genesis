@@ -52,6 +52,8 @@ type Client interface {
 	// ContainerList returns the list of containers in the docker host.
 	ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error)
 
+	ContainerLogs(ctx context.Context, container string, options types.ContainerLogsOptions) (io.ReadCloser, error)
+
 	// ContainerRemove kills and removes a container from the docker host.
 	ContainerRemove(ctx context.Context, containerID string, options types.ContainerRemoveOptions) error
 
