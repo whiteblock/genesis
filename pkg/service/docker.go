@@ -182,6 +182,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 	}
 
 	config := &container.Config{
+		User:         dContainer.User,
 		Hostname:     dContainer.Name,
 		Domainname:   dContainer.Name,
 		ExposedPorts: portSet,
