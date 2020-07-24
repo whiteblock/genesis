@@ -28,6 +28,8 @@ type Docker struct {
 	GlusterImage string `mapstructure:"dockerGlusterImage"`
 
 	GlusterDriver string `mapstructure:"dockerGlusterDriver"`
+
+	GlusterMaxNanoCPU int64 `mapstructure:"dockerGlusterMaxNanoCPU"`
 }
 
 // NewDocker creates a new docker configuration from viper
@@ -66,6 +68,11 @@ func setDockerBindings(v *viper.Viper) error {
 		return err
 	}
 
+	err = v.BindEnv("dockerGlusterMaxNanoCPU", "DOCKER_GLUSTER_MAX_NANO_CPU")
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -76,4 +83,5 @@ func setDockerDefaults(v *viper.Viper) {
 	v.SetDefault("dockerDaemonPort", "2376")
 	v.SetDefault("dockerGlusterImage", "gcr.io/whiteblock/gluster:latest")
 	v.SetDefault("dockerGlusterDriver", "glusterfs")
+	v.SetDefault("dockerGlusterMaxNanoCPU", 2000000000)
 }

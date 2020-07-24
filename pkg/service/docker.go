@@ -768,6 +768,7 @@ func (ds dockerService) mkConfigs() (*container.Config, *container.HostConfig, *
 			AutoRemove:  true,
 			NetworkMode: container.NetworkMode("host"),
 			CapAdd:      strslice.StrSlice([]string{"NET_ADMIN", "SYS_ADMIN"}),
+			Resources:   container.Resources{NanoCPUs: ds.conf.GlusterMaxNanoCPU},
 		}, &network.NetworkingConfig{}, GlusterContainerName
 }
 
