@@ -217,6 +217,7 @@ func (ds dockerService) CreateContainer(ctx context.Context, cli entity.DockerCl
 	}
 	hostConfig.NanoCPUs = int64(1000000000 * cpus)
 	hostConfig.Memory = mem
+	hostConfig.CpusetCpus = dContainer.GetCPUSet()
 
 	networkConfig := &network.NetworkingConfig{EndpointsConfig: map[string]*network.EndpointSettings{}}
 	if len(dContainer.Network) > 0 {
