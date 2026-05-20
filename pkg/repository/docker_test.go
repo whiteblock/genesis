@@ -8,24 +8,26 @@ package repository
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strings"
 	"testing"
 
-	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
-
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/network"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/whiteblock/definition/command"
+
+	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
 )
 
 func TestDockerRepository_GetNetworkByName_Success(t *testing.T) {
-	results := []types.NetworkResource{
-		types.NetworkResource{Name: "test1", ID: "id1"},
-		types.NetworkResource{Name: "test2", ID: "id2"},
+	results := []network.Summary{
+		{Name: "test1", ID: "id1"},
+		{Name: "test2", ID: "id2"},
 	}
 	cli := new(entityMock.Client)
 	cli.On("NetworkList", mock.Anything, mock.Anything).Return(results, nil).Run(
@@ -50,7 +52,7 @@ func TestDockerRepository_GetNetworkByName_Success(t *testing.T) {
 
 func TestDockerRepository_GetNetworkByName_Failure(t *testing.T) {
 	cli := new(entityMock.Client)
-	cli.On("NetworkList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("eerrr")).Once()
+	cli.On("NetworkList", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("eerrr")).Once()
 	ds := NewDockerRepository(logrus.New())
 	_, err := ds.GetNetworkByName(nil, cli, "foo")
 	assert.Error(t, err)
@@ -59,11 +61,11 @@ func TestDockerRepository_GetNetworkByName_Failure(t *testing.T) {
 }
 
 func TestDockerRepository_HostHasImage_Success(t *testing.T) {
-	testImageList := []types.ImageSummary{
-		types.ImageSummary{RepoDigests: []string{"test0"}, RepoTags: []string{"test2"}},
-		types.ImageSummary{RepoDigests: []string{"test3"}, RepoTags: []string{"test4"}},
-		types.ImageSummary{RepoDigests: []string{"test5"}, RepoTags: []string{"test6"}},
-		types.ImageSummary{RepoDigests: []string{"test7"}, RepoTags: []string{"test8"}},
+	testImageList := []image.Summary{
+		{RepoDigests: []string{"test0"}, RepoTags: []string{"test2"}},
+		{RepoDigests: []string{"test3"}, RepoTags: []string{"test4"}},
+		{RepoDigests: []string{"test5"}, RepoTags: []string{"test6"}},
+		{RepoDigests: []string{"test7"}, RepoTags: []string{"test8"}},
 	}
 
 	existingImageTags := []string{"test2", "test6"}
@@ -97,7 +99,7 @@ func TestDockerRepository_HostHasImage_Success(t *testing.T) {
 func TestDockerRepository_HostHasImage_Failure(t *testing.T) {
 
 	cli := new(entityMock.Client)
-	cli.On("ImageList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err"))
+	cli.On("ImageList", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err"))
 
 	ds := NewDockerRepository(logrus.New())
 	exists, err := ds.HostHasImage(nil, cli, "foo")
@@ -106,11 +108,11 @@ func TestDockerRepository_HostHasImage_Failure(t *testing.T) {
 }
 
 func TestDockerRepository_EnsureImagePulled(t *testing.T) {
-	testImageList := []types.ImageSummary{
-		types.ImageSummary{RepoDigests: []string{"test0"}, RepoTags: []string{"test2"}},
-		types.ImageSummary{RepoDigests: []string{"test3"}, RepoTags: []string{"test4"}},
-		types.ImageSummary{RepoDigests: []string{"test5"}, RepoTags: []string{"test6"}},
-		types.ImageSummary{RepoDigests: []string{"test7"}, RepoTags: []string{"test8"}},
+	testImageList := []image.Summary{
+		{RepoDigests: []string{"test0"}, RepoTags: []string{"test2"}},
+		{RepoDigests: []string{"test3"}, RepoTags: []string{"test4"}},
+		{RepoDigests: []string{"test5"}, RepoTags: []string{"test6"}},
+		{RepoDigests: []string{"test7"}, RepoTags: []string{"test8"}},
 	}
 
 	existingImages := []string{"test7", "test6"}
@@ -122,14 +124,14 @@ func TestDockerRepository_EnsureImagePulled(t *testing.T) {
 		func(args mock.Arguments) {
 			require.Len(t, args, 2)
 			assert.Nil(t, args.Get(0))
-		}).Times(len(nonExistingImages) + len(existingImages))
+		}).Times(2 * (len(nonExistingImages) + len(existingImages)))
 
 	cli.On("ImagePull", mock.Anything, mock.Anything, mock.Anything).Return(
-		ioutil.NopCloser(testReader), nil).Run(func(args mock.Arguments) {
+		io.NopCloser(testReader), nil).Run(func(args mock.Arguments) {
 		testReader.Reset("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
 		require.Len(t, args, 3)
 		assert.Nil(t, args.Get(0))
-		ipo, ok := args.Get(2).(types.ImagePullOptions)
+		ipo, ok := args.Get(2).(image.PullOptions)
 		require.True(t, ok)
 		assert.Equal(t, "Linux", ipo.Platform)
 	}).Times(len(nonExistingImages))
@@ -149,15 +151,15 @@ func TestDockerRepository_EnsureImagePulled(t *testing.T) {
 }
 
 func TestDockerRepository_EnsureImagePulled_ImagePull_Failure(t *testing.T) {
-	testImageList := []types.ImageSummary{
-		types.ImageSummary{RepoDigests: []string{"test0"}, RepoTags: []string{"test2"}},
-		types.ImageSummary{RepoDigests: []string{"test3"}, RepoTags: []string{"test4"}},
+	testImageList := []image.Summary{
+		{RepoDigests: []string{"test0"}, RepoTags: []string{"test2"}},
+		{RepoDigests: []string{"test3"}, RepoTags: []string{"test4"}},
 	}
 
 	cli := new(entityMock.Client)
-	cli.On("ImageList", mock.Anything, mock.Anything, mock.Anything).Return(testImageList, nil).Once()
+	cli.On("ImageList", mock.Anything, mock.Anything).Return(testImageList, nil).Times(2)
 
-	cli.On("ImagePull", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+	cli.On("ImagePull", mock.Anything, mock.Anything, mock.Anything).Return(
 		nil, fmt.Errorf("err")).Once()
 
 	ds := NewDockerRepository(logrus.New())
@@ -168,9 +170,9 @@ func TestDockerRepository_EnsureImagePulled_ImagePull_Failure(t *testing.T) {
 }
 
 func TestDockerRepository_GetContainerByName_Success(t *testing.T) {
-	results := []types.Container{
-		types.Container{Names: []string{"test1", "test3"}, ID: "id1"},
-		types.Container{Names: []string{"test2", "test4"}, ID: "id2"},
+	results := []container.Summary{
+		{Names: []string{"test1", "test3"}, ID: "id1"},
+		{Names: []string{"test2", "test4"}, ID: "id2"},
 	}
 	cli := new(entityMock.Client)
 	cli.On("ContainerList", mock.Anything, mock.Anything).Return(results, nil).Run(
@@ -198,7 +200,7 @@ func TestDockerRepository_GetContainerByName_Success(t *testing.T) {
 
 func TestDockerRepository_GetContainerByName_Failure(t *testing.T) {
 	cli := new(entityMock.Client)
-	cli.On("ContainerList", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err")).Once()
+	cli.On("ContainerList", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("err")).Once()
 	ds := NewDockerRepository(logrus.New())
 	_, err := ds.GetContainerByName(nil, cli, "DNE")
 	assert.Error(t, err)

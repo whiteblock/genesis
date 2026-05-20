@@ -8,27 +8,23 @@ package service
 
 import (
 	"fmt"
-	//"strings"
 	"testing"
 
-	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
-	externalsMock "github.com/whiteblock/genesis/mocks/pkg/externals"
-	//fileMock "github.com/whiteblock/genesis/mocks/pkg/file"
-	repoMock "github.com/whiteblock/genesis/mocks/pkg/repository"
-	"github.com/whiteblock/genesis/pkg/config"
-	"github.com/whiteblock/genesis/pkg/entity"
-
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
-	dockerVolume "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/whiteblock/definition/command"
 	"github.com/whiteblock/utility/utils"
+
+	entityMock "github.com/whiteblock/genesis/mocks/pkg/entity"
+	repoMock "github.com/whiteblock/genesis/mocks/pkg/repository"
+	"github.com/whiteblock/genesis/pkg/config"
+	"github.com/whiteblock/genesis/pkg/entity"
 )
 
 func TestNewDockerService(t *testing.T) {
@@ -36,16 +32,16 @@ func TestNewDockerService(t *testing.T) {
 }
 
 func TestDockerService_CreateContainer(t *testing.T) {
-	testNetwork := types.NetworkResource{Name: "Testnet", ID: "id1"}
+	testNetwork := network.Summary{Name: "Testnet", ID: "id1"}
 	testContainer := command.Container{
 		EntryPoint: "/bin/bash",
 		Environment: map[string]string{
 			"FOO": "BAR",
 		},
-		Name:    "TEST",
-		Network: "Testnet",
-		Ports:   map[string]string{"8888": "8889"},
-		Volumes: []command.Mount{{Name: "volume1", Directory: "/foo/bar", ReadOnly: false}},
+		Name:     "TEST",
+		Network:  "Testnet",
+		TCPPorts: map[int]int{8888: 8889},
+		Volumes:  []command.Mount{{Name: "volume1", Directory: "/foo/bar", ReadOnly: false}},
 		Image:   "alpine",
 		Args:    []string{"test"},
 	}
@@ -53,9 +49,9 @@ func TestDockerService_CreateContainer(t *testing.T) {
 	testContainer.Memory = "5gb"
 
 	cli := new(entityMock.Client)
-	cli.On("ContainerCreate", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
-		container.ContainerCreateCreatedBody{}, nil).Run(func(args mock.Arguments) {
-		require.Len(t, args, 5)
+	cli.On("ContainerCreate", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+		container.CreateResponse{}, nil).Run(func(args mock.Arguments) {
+		require.Len(t, args, 6)
 		assert.Nil(t, args.Get(0))
 		{
 			config, ok := args.Get(1).(*container.Config)
@@ -118,7 +114,8 @@ func TestDockerService_CreateContainer(t *testing.T) {
 			assert.Empty(t, netconf.IPAddress)
 			assert.Nil(t, netconf.DriverOpts)
 		}
-		containerName, ok := args.Get(4).(string)
+		assert.Nil(t, args.Get(4))
+		containerName, ok := args.Get(5).(string)
 		require.True(t, ok)
 		assert.Equal(t, testContainer.Name, containerName)
 	})
@@ -152,27 +149,14 @@ func TestDockerService_StartContainer_Success(t *testing.T) {
 			require.Len(t, args, 3)
 			assert.Nil(t, args.Get(0))
 			assert.Equal(t, scCommand.Name, args.Get(1))
-			assert.Equal(t, types.ContainerStartOptions{}, args.Get(2))
+			assert.Equal(t, container.StartOptions{}, args.Get(2))
 		}).Once()
-	conn := new(externalsMock.NetConn)
-	conn.On("SetDeadline", mock.Anything).Return(nil).Maybe()
-	conn.On("Close", mock.Anything).Return(nil).Maybe()
-
-	cli.On("ContainerAttach", mock.Anything, mock.Anything, mock.Anything).Return(
-		types.HijackedResponse{Conn: conn}, nil).Run(
-		func(args mock.Arguments) {
-
-			require.Len(t, args, 3)
-			assert.Nil(t, args.Get(0))
-			assert.Equal(t, scCommand.Name, args.Get(1))
-		}).Maybe()
 
 	repo := new(repoMock.DockerRepository)
 	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
 	res := ds.StartContainer(nil, entity.DockerCli{Client: cli}, scCommand)
 	assert.NoError(t, res.Error)
 	cli.AssertExpectations(t)
-	conn.AssertExpectations(t)
 }
 
 func TestDockerService_CreateNetwork_Success(t *testing.T) {
@@ -183,21 +167,18 @@ func TestDockerService_CreateNetwork_Success(t *testing.T) {
 		Subnet:  "10.14.0.0/16",
 	}
 	cli := new(entityMock.Client)
-	cli.On("NetworkCreate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
-		types.NetworkCreateResponse{}, nil).Run(func(args mock.Arguments) {
+	cli.On("NetworkCreate", mock.Anything, mock.Anything, mock.Anything).Return(
+		network.CreateResponse{}, nil).Run(func(args mock.Arguments) {
 
 		require.Len(t, args, 3)
 		assert.Nil(t, args.Get(0))
 		assert.Equal(t, testNetwork.Name, args.String(1))
 
-		networkCreate, ok := args.Get(2).(types.NetworkCreate)
+		networkCreate, ok := args.Get(2).(network.CreateOptions)
 		require.True(t, ok)
-		require.NotNil(t, networkCreate)
-		assert.True(t, networkCreate.CheckDuplicate)
 		assert.True(t, networkCreate.Attachable)
 		assert.False(t, networkCreate.Ingress)
 		assert.False(t, networkCreate.Internal)
-		assert.False(t, networkCreate.EnableIPv6)
 		assert.NotNil(t, networkCreate.Labels)
 		assert.Nil(t, networkCreate.ConfigFrom)
 
@@ -256,7 +237,7 @@ func TestDockerService_CreateNetwork_Failure(t *testing.T) {
 	}
 	cli := new(entityMock.Client)
 	cli.On("NetworkCreate", mock.Anything, mock.Anything, mock.Anything).Return(
-		types.NetworkCreateResponse{}, fmt.Errorf("error")).Once()
+		network.CreateResponse{}, fmt.Errorf("error")).Once()
 
 	repo := new(repoMock.DockerRepository)
 	ds := NewDockerService(repo, config.Docker{}, nil, logrus.New())
@@ -269,9 +250,9 @@ func TestDockerService_CreateNetwork_Failure(t *testing.T) {
 
 func TestDockerService_RemoveNetwork_Success(t *testing.T) {
 	cli := new(entityMock.Client)
-	networks := []types.NetworkResource{
-		types.NetworkResource{Name: "test1"},
-		types.NetworkResource{Name: "test2"},
+	networks := []network.Summary{
+		{Name: "test1"},
+		{Name: "test2"},
 	}
 
 	for _, net := range networks {
@@ -307,9 +288,9 @@ func TestDockerService_RemoveNetwork_NetworkList_Failure(t *testing.T) {
 
 func TestDockerService_RemoveNetwork_NetworkRemove_Failure(t *testing.T) {
 	cli := new(entityMock.Client)
-	networks := []types.NetworkResource{
-		types.NetworkResource{Name: "test1"},
-		types.NetworkResource{Name: "test2"},
+	networks := []network.Summary{
+		{Name: "test1"},
+		{Name: "test2"},
 	}
 
 	for _, net := range networks {
@@ -328,9 +309,9 @@ func TestDockerService_RemoveNetwork_NetworkRemove_Failure(t *testing.T) {
 
 func TestDockerService_RemoveContainer(t *testing.T) {
 	cli := new(entityMock.Client)
-	cntrs := []types.Container{
-		types.Container{Names: []string{"test1", "test3"}, ID: "id1"},
-		types.Container{Names: []string{"test2", "test4"}, ID: "id2"},
+	cntrs := []container.Summary{
+		{Names: []string{"test1", "test3"}, ID: "id1"},
+		{Names: []string{"test2", "test4"}, ID: "id2"},
 	}
 
 	for _, cntr := range cntrs {
@@ -339,7 +320,7 @@ func TestDockerService_RemoveContainer(t *testing.T) {
 
 				require.Len(t, args, 3)
 				assert.Nil(t, args.Get(0))
-				opts, ok := args.Get(2).(types.ContainerRemoveOptions)
+				opts, ok := args.Get(2).(container.RemoveOptions)
 				require.True(t, ok)
 				assert.False(t, opts.RemoveVolumes)
 				assert.False(t, opts.RemoveLinks)
@@ -388,8 +369,7 @@ func TestDockerService_DetachNetwork(t *testing.T) {
 	cntrName := "test1"
 
 	cli := new(entityMock.Client)
-	cli.On("NetworkDisconnect", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+	cli.On("NetworkDisconnect", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 
 		require.Len(t, args, 4)
 		assert.Nil(t, args.Get(0))
@@ -407,24 +387,23 @@ func TestDockerService_DetachNetwork(t *testing.T) {
 }
 
 func TestDockerService_CreateVolume(t *testing.T) {
-	volume := types.Volume{
+	vol := volume.Volume{
 		Name:   "test_volume",
 		Labels: map[string]string{"foo": "bar"},
 	}
 
 	cli := new(entityMock.Client)
-	cli.On("VolumeCreate", mock.Anything, mock.Anything).Return(volume, nil).Run(
+	cli.On("VolumeCreate", mock.Anything, mock.Anything).Return(vol, nil).Run(
 		func(args mock.Arguments) {
 			require.Len(t, args, 2)
 			assert.Nil(t, args.Get(0))
 
-			vol, ok := args.Get(1).(dockerVolume.VolumeCreateBody)
+			opts, ok := args.Get(1).(volume.CreateOptions)
 			require.True(t, ok)
-			require.NotNil(t, vol)
-			assert.Contains(t, vol.Labels, "foo")
+			assert.Contains(t, opts.Labels, "foo")
 
-			assert.Equal(t, volume.Name, vol.Name)
-			assert.Equal(t, volume.Labels["foo"], vol.Labels["foo"])
+			assert.Equal(t, vol.Name, opts.Name)
+			assert.Equal(t, vol.Labels["foo"], opts.Labels["foo"])
 
 		}).Once()
 
@@ -445,7 +424,7 @@ func TestDockerService_RemoveVolume(t *testing.T) {
 	name := "test_volume"
 
 	cli := new(entityMock.Client)
-	cli.On("VolumeRemove", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
+	cli.On("VolumeRemove", mock.Anything, mock.Anything, mock.Anything).Return(nil).Run(
 		func(args mock.Arguments) {
 			require.Len(t, args, 3)
 			assert.Nil(t, args.Get(0))
