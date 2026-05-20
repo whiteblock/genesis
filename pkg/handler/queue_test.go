@@ -28,6 +28,7 @@ func TestNewDeliveryHandler(t *testing.T) {
 
 func TestDeliveryHandler_Process_Successful(t *testing.T) {
 	aux := new(auxMocks.Executor)
+	aux.On("Prepare", mock.Anything).Return(nil).Once()
 	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewSuccessResult()).Once()
 
 	dh := NewDeliveryHandler(aux, config.Config{}, 1, logrus.New())
@@ -79,6 +80,7 @@ func TestDeliveryHandler_Process_NoCmds_Failures(t *testing.T) {
 
 func TestDeliveryHandler_Process_Multiple_Commands_Successful(t *testing.T) {
 	aux := new(auxMocks.Executor)
+	aux.On("Prepare", mock.Anything).Return(nil).Once()
 	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewSuccessResult()).Once()
 
 	dh := NewDeliveryHandler(aux, config.Config{}, 1, logrus.New())
@@ -120,6 +122,7 @@ func TestDeliveryHandler_Process_Multiple_Commands_Successful(t *testing.T) {
 
 func TestDeliveryHandler_Process_Execute_Nonfatal_Failure(t *testing.T) {
 	aux := new(auxMocks.Executor)
+	aux.On("Prepare", mock.Anything).Return(nil).Once()
 	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewErrorResult("err")).Once()
 	dh := NewDeliveryHandler(aux, config.Config{}, 1, logrus.New())
 
@@ -149,6 +152,7 @@ func TestDeliveryHandler_Process_Execute_Nonfatal_Failure(t *testing.T) {
 
 func TestDeliveryHandler_Process_Execute_Fatal_Failure(t *testing.T) {
 	aux := new(auxMocks.Executor)
+	aux.On("Prepare", mock.Anything).Return(nil).Once()
 	aux.On("ExecuteCommands", mock.Anything).Return(entity.NewFatalResult("err")).Once()
 	dh := NewDeliveryHandler(aux, config.Config{}, 1, logrus.New())
 

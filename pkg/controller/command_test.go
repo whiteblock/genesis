@@ -37,6 +37,10 @@ func TestNewCommandController_Ignore_CreateQueueFailure(t *testing.T) {
 	serv2.On("CreateExchange").Return(nil).Once()
 	serv3.On("CreateExchange").Return(nil).Once()
 	serv4.On("CreateExchange").Return(nil).Once()
+	serv.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
+	serv2.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
+	serv3.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
+	serv4.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
 
 	control := NewCommandController(testConf, serv, serv3, serv2, serv4, nil, logrus.New())
 	assert.NotNil(t, control)
@@ -64,6 +68,10 @@ func TestCommandController_Consumption(t *testing.T) {
 	serv2.On("CreateExchange").Return(nil).Once()
 	serv3.On("CreateExchange").Return(nil).Once()
 	serv4.On("CreateExchange").Return(nil).Once()
+	serv.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
+	serv2.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
+	serv3.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
+	serv4.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
 	serv4.On("Send", mock.Anything).Return(nil)
 	hand := new(handler.DeliveryHandler)
 	hand.On("Process", mock.Anything).Run(func(_ mock.Arguments) {
@@ -108,6 +116,10 @@ func TestCommandController_ConsumptionAllDone(t *testing.T) {
 	serv2.On("CreateExchange").Return(nil).Once()
 	serv3.On("CreateExchange").Return(nil).Once()
 	serv4.On("CreateExchange").Return(nil).Once()
+	serv.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
+	serv2.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
+	serv3.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
+	serv4.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
 	serv4.On("Send", mock.Anything).Return(nil)
 	serv3.On("Send", mock.Anything).Return(nil)
 	serv2.On("Send", mock.Anything).Return(nil).Times(items).Run(func(_ mock.Arguments) {
@@ -160,6 +172,10 @@ func TestCommandController_ConsumptionAllDone_Send_Err(t *testing.T) {
 	serv2.On("CreateExchange").Return(nil).Once()
 	serv3.On("CreateExchange").Return(nil).Once()
 	serv4.On("CreateExchange").Return(nil).Once()
+	serv.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
+	serv2.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
+	serv3.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
+	serv4.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
 
 	hand := new(handler.DeliveryHandler)
 	hand.On("Process", mock.Anything).Return(amqp.Publishing{}, amqp.Publishing{},
@@ -206,6 +222,10 @@ func TestCommandController_Requeue(t *testing.T) {
 	serv2.On("CreateExchange").Return(nil).Once()
 	serv3.On("CreateExchange").Return(nil).Once()
 	serv4.On("CreateExchange").Return(nil).Once()
+	serv.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
+	serv2.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
+	serv3.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
+	serv4.On("Channel").Return(nil, fmt.Errorf("test")).Maybe()
 	serv4.On("Send", mock.Anything).Return(nil)
 
 	hand := new(handler.DeliveryHandler)

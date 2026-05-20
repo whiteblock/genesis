@@ -100,7 +100,7 @@ func (rf remoteSources) getReader(testnetID string, file command.File) (io.ReadC
 			"definition": testnetID}).Warn("got back a non-200 http code")
 		res, _ := ioutil.ReadAll(resp.Body)
 		resp.Body.Close()
-		return nil, fmt.Errorf(string(res))
+		return nil, fmt.Errorf("%s", string(res))
 
 	}
 	rf.log.WithFields(logrus.Fields{
